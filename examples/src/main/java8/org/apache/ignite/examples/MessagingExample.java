@@ -33,7 +33,7 @@ import java.util.concurrent.*;
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-compute.xml} configuration.
  */
 public final class MessagingExample {
@@ -50,8 +50,8 @@ public final class MessagingExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
-            if (g.nodes().size() < 2) {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
+            if (ignite.nodes().size() < 2) {
                 System.out.println();
                 System.out.println(">>> Please start at least 2 grid nodes to run example.");
                 System.out.println();
@@ -63,7 +63,7 @@ public final class MessagingExample {
             System.out.println(">>> Messaging example started.");
 
             // Projection for remote nodes.
-            ClusterGroup rmtPrj = g.forRemotes();
+            ClusterGroup rmtPrj = ignite.forRemotes();
 
             // Listen for messages from remote nodes to make sure that they received all the messages.
             int msgCnt = rmtPrj.nodes().size() * MESSAGES_NUM;
@@ -71,7 +71,7 @@ public final class MessagingExample {
             CountDownLatch orderedLatch = new CountDownLatch(msgCnt);
             CountDownLatch unorderedLatch = new CountDownLatch(msgCnt);
 
-            localListen(g.forLocal(), orderedLatch, unorderedLatch);
+            localListen(ignite.forLocal(), orderedLatch, unorderedLatch);
 
             // Register listeners on all grid nodes.
             startListening(rmtPrj);

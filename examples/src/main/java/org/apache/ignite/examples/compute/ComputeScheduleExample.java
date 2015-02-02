@@ -32,7 +32,7 @@ import java.util.concurrent.*;
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-compute.xml} configuration.
  */
 public class ComputeScheduleExample {
@@ -43,12 +43,12 @@ public class ComputeScheduleExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println("Compute schedule example started.");
 
             // Schedule output message every minute.
-            SchedulerFuture<?> fut = g.scheduler().scheduleLocal(
+            SchedulerFuture<?> fut = ignite.scheduler().scheduleLocal(
                 new Callable<Integer>() {
                     private int invocations;
 
@@ -56,7 +56,7 @@ public class ComputeScheduleExample {
                         invocations++;
 
                         try {
-                            g.compute().broadcast(
+                            ignite.compute().broadcast(
                                 new IgniteRunnable() {
                                     @Override public void run() {
                                         System.out.println();

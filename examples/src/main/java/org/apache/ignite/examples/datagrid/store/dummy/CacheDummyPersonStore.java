@@ -83,7 +83,7 @@ public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
             // Generate dummy person on the fly.
             Person p = new Person(i, "first-" + i, "last-" + 1);
 
-            // GridGain will automatically discard entries that don't belong on this node,
+            // Ignite will automatically discard entries that don't belong on this node,
             // but we check if local node is primary or backup anyway just to demonstrate that we can.
             // Ideally, partition ID of a key would be stored  in the database and only keys
             // for partitions that belong on this node would be loaded from database.

@@ -45,16 +45,16 @@ public class CacheStoreExample {
         IgniteConfiguration cfg = CacheNodeWithStoreStartup.configure();
 
         // To start grid with desired configuration uncomment the appropriate line.
-        try (Ignite g = Ignition.start(cfg)) {
+        try (Ignite ignite = Ignition.start(cfg)) {
             System.out.println();
             System.out.println(">>> Cache store example started.");
 
-            IgniteCache<Long, Person> cache = g.jcache(null);
+            IgniteCache<Long, Person> cache = ignite.jcache(null);
 
             // Clean up caches on all nodes before run.
             cache.clear();
 
-            try (IgniteTx tx = g.transactions().txStart()) {
+            try (IgniteTx tx = ignite.transactions().txStart()) {
                 Person val = cache.get(id);
 
                 System.out.println("Read value: " + val);

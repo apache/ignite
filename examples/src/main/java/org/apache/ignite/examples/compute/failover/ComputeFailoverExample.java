@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.lang.*;
 import java.util.*;
 
 /**
- * Demonstrates the usage of checkpoints in GridGain.
+ * Demonstrates the usage of checkpoints in Ignite.
  * <p>
  * The example tries to compute phrase length. In order to mitigate possible node failures, intermediate
  * result is saved as as checkpoint after each job step.
@@ -42,15 +42,15 @@ public class ComputeFailoverExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        try (Ignite g = Ignition.start(ComputeFailoverNodeStartup.configuration())) {
-            if (!ExamplesUtils.checkMinTopologySize(g.cluster(), 2))
+        try (Ignite ignite = Ignition.start(ComputeFailoverNodeStartup.configuration())) {
+            if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2))
                 return;
 
             System.out.println();
             System.out.println("Compute failover example started.");
 
             // Number of letters.
-            int charCnt = g.compute().apply(new CheckPointJob(), "Stage1 Stage2");
+            int charCnt = ignite.compute().apply(new CheckPointJob(), "Stage1 Stage2");
 
             System.out.println();
             System.out.println(">>> Finished executing fail-over example with checkpoints.");
@@ -66,7 +66,7 @@ public class ComputeFailoverExample {
         @IgniteTaskSessionResource
         private ComputeTaskSession jobSes;
 
-        /** Injected grid logger. */
+        /** Injected ignite logger. */
         @IgniteLoggerResource
         private IgniteLogger log;
 

@@ -26,12 +26,12 @@ import org.apache.ignite.resources.*;
 import java.util.*;
 
 /**
- * Example that demonstrates how to deploy distributed services in GridGain.
+ * Example that demonstrates how to deploy distributed services in Ignite.
  * Distributed services are especially useful when deploying singletons on the grid,
  * be that cluster-singleton, or per-node-singleton, etc...
  * <p>
  * To start remote nodes, you must run {@link ComputeNodeStartup} in another JVM
- * which will start GridGain node with {@code examples/config/example-compute.xml} configuration.
+ * which will start node with {@code examples/config/example-compute.xml} configuration.
  * <p>
  * NOTE:<br/>
  * Starting {@code ignite.sh} directly will not work, as distributed services
@@ -81,7 +81,7 @@ public class ServicesExample {
     /**
      * Simple example to demonstrate service proxy invocation of a remotely deployed service.
      *
-     * @param ignite Grid instance.
+     * @param ignite Ignite instance.
      * @throws Exception If failed.
      */
     private static void serviceProxyExample(Ignite ignite) throws Exception {
@@ -111,7 +111,7 @@ public class ServicesExample {
     /**
      * Simple example to demonstrate how to inject service proxy into distributed closures.
      *
-     * @param ignite Grid instance.
+     * @param ignite Ignite instance.
      * @throws Exception If failed.
      */
     private static void serviceInjectionExample(Ignite ignite) throws Exception {

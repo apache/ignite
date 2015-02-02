@@ -33,7 +33,7 @@ import java.util.*;
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public final class CacheAffinityExample {
     /** Cache name. */
@@ -49,11 +49,11 @@ public final class CacheAffinityExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache affinity example started.");
 
-            IgniteCache<Integer, String> cache = g.jcache(CACHE_NAME);
+            IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
 
             // Clean up caches on all nodes before run.
             cache.clear();
@@ -76,9 +76,9 @@ public final class CacheAffinityExample {
      * @throws IgniteCheckedException If failed.
      */
     private static void visitUsingAffinityRun() throws IgniteCheckedException {
-        Ignite g = Ignition.ignite();
+        Ignite ignite = Ignition.ignite();
 
-        final IgniteCache<Integer, String> cache = g.jcache(CACHE_NAME);
+        final IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
 
         for (int i = 0; i < KEY_CNT; i++) {
             final int key = i;
@@ -86,7 +86,7 @@ public final class CacheAffinityExample {
             // This runnable will execute on the remote node where
             // data with the given key is located. Since it will be co-located
             // we can use local 'peek' operation safely.
-            g.compute().affinityRun(CACHE_NAME, key, new IgniteRunnable() {
+            ignite.compute().affinityRun(CACHE_NAME, key, new IgniteRunnable() {
                 @Override public void run() {
                     // Peek is a local memory lookup, however, value should never be 'null'
                     // as we are co-located with node that has a given key.
@@ -104,7 +104,7 @@ public final class CacheAffinityExample {
      * @throws IgniteCheckedException If failed.
      */
     private static void visitUsingMapKeysToNodes() throws IgniteCheckedException {
-        final Ignite g = Ignition.ignite();
+        final Ignite ignite = Ignition.ignite();
 
         Collection<Integer> keys = new ArrayList<>(KEY_CNT);
 
@@ -112,7 +112,7 @@ public final class CacheAffinityExample {
             keys.add(i);
 
         // Map all keys to nodes.
-        Map<ClusterNode, Collection<Integer>> mappings = g.cluster().mapKeysToNodes(CACHE_NAME, keys);
+        Map<ClusterNode, Collection<Integer>> mappings = ignite.cluster().mapKeysToNodes(CACHE_NAME, keys);
 
         for (Map.Entry<ClusterNode, Collection<Integer>> mapping : mappings.entrySet()) {
             ClusterNode node = mapping.getKey();
@@ -121,9 +121,10 @@ public final class CacheAffinityExample {
 
             if (node != null) {
                 // Bring computations to the nodes where the data resides (i.e. collocation).
-                g.compute(g.cluster().forNode(node)).run(new IgniteRunnable() {
-                    @Override public void run() {
-                        IgniteCache<Integer, String> cache = g.jcache(CACHE_NAME);
+                ignite.compute(ignite.cluster().forNode(node)).run(new IgniteRunnable() {
+                    @Override
+                    public void run() {
+                        IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
 
                         // Peek is a local memory lookup, however, value should never be 'null'
                         // as we are co-located with node that has a given key.

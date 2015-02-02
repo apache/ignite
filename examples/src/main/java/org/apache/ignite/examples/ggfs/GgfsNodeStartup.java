@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 
 /**
  * Starts up an empty node with GGFS configuration.
- * You can also start a stand-alone GridGain instance by passing the path
+ * You can also start a stand-alone Ignite instance by passing the path
  * to configuration file to {@code 'ignite.{sh|bat}'} script, like so:
  * {@code 'ignite.sh examples/config/filesystem/example-ggfs.xml'}.
  * <p>

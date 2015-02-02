@@ -31,7 +31,7 @@ import java.util.concurrent.*;
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheApiExample {
     /** Cache name. */
@@ -44,12 +44,12 @@ public class CacheApiExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache API example started.");
 
             // Clean up caches on all nodes before run.
-            g.jcache(CACHE_NAME).clear();
+            ignite.jcache(CACHE_NAME).clear();
 
             // Demonstrate atomic map operations.
             atomicMapOperations();

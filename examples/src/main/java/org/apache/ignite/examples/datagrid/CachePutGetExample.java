@@ -29,7 +29,7 @@ import java.util.*;
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CachePutGetExample {
     /** Cache name. */
@@ -42,9 +42,9 @@ public class CachePutGetExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             // Clean up caches on all nodes before run.
-            g.jcache(CACHE_NAME).clear();
+            ignite.jcache(CACHE_NAME).clear();
 
             // Individual puts and gets.
             putGet();
@@ -63,9 +63,9 @@ public class CachePutGetExample {
         System.out.println();
         System.out.println(">>> Cache put-get example started.");
 
-        Ignite g = Ignition.ignite();
+        Ignite ignite = Ignition.ignite();
 
-        final IgniteCache<Integer, String> cache = g.jcache(CACHE_NAME);
+        final IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
 
         final int keyCnt = 20;
 
@@ -88,9 +88,9 @@ public class CachePutGetExample {
         System.out.println();
         System.out.println(">>> Starting putAll-getAll example.");
 
-        Ignite g = Ignition.ignite();
+        Ignite ignite = Ignition.ignite();
 
-        final IgniteCache<Integer, String> cache = g.jcache(CACHE_NAME);
+        final IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
 
         final int keyCnt = 20;
 

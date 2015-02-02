@@ -80,11 +80,11 @@ object ScalarJvmCloudExample {
             JOptionPane.showMessageDialog(
                 null,
                 Array[JComponent](
-                    new JLabel("GridGain JVM cloud started."),
+                    new JLabel("Ignite JVM cloud started."),
                     new JLabel("Number of nodes in the grid: " + scalar.grid$(NODES(1)).get.cluster().nodes().size()),
                     new JLabel("Click OK to stop.")
                 ),
-                "GridGain",
+                "Ignite",
                 JOptionPane.INFORMATION_MESSAGE)
 
         }

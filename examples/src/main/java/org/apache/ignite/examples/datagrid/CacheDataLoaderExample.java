@@ -30,7 +30,7 @@ import org.apache.ignite.examples.*;
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheDataLoaderExample {
     /** Cache name. */
@@ -51,19 +51,19 @@ public class CacheDataLoaderExample {
     public static void main(String[] args) throws Exception {
         ExamplesUtils.checkMinMemory(MIN_MEMORY);
 
-        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache data loader example started.");
 
             // Clean up caches on all nodes before run.
-            g.jcache(CACHE_NAME).clear();
+            ignite.jcache(CACHE_NAME).clear();
 
             System.out.println();
             System.out.println(">>> Cache clear finished.");
 
             long start = System.currentTimeMillis();
 
-            try (IgniteDataLoader<Integer, String> ldr = g.dataLoader(CACHE_NAME)) {
+            try (IgniteDataLoader<Integer, String> ldr = ignite.dataLoader(CACHE_NAME)) {
                 // Configure loader.
                 ldr.perNodeBufferSize(1024);
                 ldr.perNodeParallelLoadOperations(8);

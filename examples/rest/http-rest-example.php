@@ -19,7 +19,7 @@
  */
 
 /**
- * To execute this script simply start up an instance of GridGain with cache enabled.
+ * To execute this script simply start up an instance of Ignite with cache enabled.
  * You can use any cache configuration from examples/config folder as follows:
  * ----
  * ${IGNITE_HOME}/bin/ignite.sh examples/config/example-cache.xml
@@ -95,9 +95,9 @@ function execute($query, $post) {
     curl_close($request);
 
     if (!$response)
-        die('Nothing was returned. Do you have a connection to GridGain Jetty server?');
+        die('Nothing was returned. Do you have a connection to Ignite Jetty server?');
 
-    echo "Response received from GridGain: $response\n\n";
+    echo "Response received from Ignite: $response\n\n";
 
     // JSON decoder.
     $result = json_decode($response, true);

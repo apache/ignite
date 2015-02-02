@@ -31,7 +31,7 @@ import java.util.concurrent.*;
  * <i>Dimensions</i> can be referenced or joined by other <i>dimensions</i> or <i>facts</i>,
  * however, <i>facts</i> are generally not referenced by other facts. You can view <i>dimensions</i>
  * as your master or reference data, while <i>facts</i> are usually large data sets of events or
- * other objects that continuously come into the system and may change frequently. In GridGain
+ * other objects that continuously come into the system and may change frequently. In Ignite
  * such architecture is supported via cross-cache queries. By storing <i>dimensions</i> in
  * {@link org.apache.ignite.cache.CacheMode#REPLICATED REPLICATED} caches and <i>facts</i> in much larger
  * {@link org.apache.ignite.cache.CacheMode#PARTITIONED PARTITIONED} caches you can freely execute distributed joins across
@@ -45,7 +45,7 @@ import java.util.concurrent.*;
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheStarSchemaExample {
     /** Partitioned cache name. */
@@ -64,14 +64,14 @@ public class CacheStarSchemaExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        Ignite g = Ignition.start("examples/config/example-cache.xml");
+        Ignite ignite = Ignition.start("examples/config/example-cache.xml");
 
         System.out.println();
         System.out.println(">>> Cache star schema example started.");
 
         // Clean up caches on all nodes before run.
-        g.jcache(PARTITIONED_CACHE_NAME).clear();
-        g.jcache(REPLICATED_CACHE_NAME).clear();
+        ignite.jcache(PARTITIONED_CACHE_NAME).clear();
+        ignite.jcache(REPLICATED_CACHE_NAME).clear();
 
         try {
             populateDimensions();

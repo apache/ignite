@@ -82,7 +82,7 @@ public class ExamplesUtils {
     }
 
     /**
-     * @param ignite Grid.
+     * @param ignite Ignite.
      * @param name Streamer name.
      * @return {@code True} if grid has streamer with given name.
      */

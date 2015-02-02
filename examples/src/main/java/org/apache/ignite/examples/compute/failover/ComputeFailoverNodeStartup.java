@@ -43,9 +43,9 @@ public class ComputeFailoverNodeStartup {
     }
 
     /**
-     * Create Grid configuration with configured checkpoints.
+     * Create Ignite configuration with configured checkpoints.
      *
-     * @return Grid configuration.
+     * @return Ignite configuration.
      * @throws IgniteCheckedException If configuration creation failed.
      */
     public static IgniteConfiguration configuration() throws IgniteCheckedException {

@@ -43,7 +43,7 @@ import java.util.*;
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-compute.xml} configuration.
+ * start node with {@code examples/config/example-compute.xml} configuration.
  */
 public final class DeploymentExample {
     /** Name of the deployed task. */
@@ -56,7 +56,7 @@ public final class DeploymentExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Deployment example started.");
 
@@ -67,21 +67,21 @@ public final class DeploymentExample {
             // 'GridCompute.localDeployTask(Class, ClassLoader) apply and
             // then use 'GridCompute.execute(String, Object)' method
             // passing your task name as first parameter.
-            g.compute().localDeployTask(ExampleTask.class, ExampleTask.class.getClassLoader());
+            ignite.compute().localDeployTask(ExampleTask.class, ExampleTask.class.getClassLoader());
 
-            for (Map.Entry<String, Class<? extends ComputeTask<?, ?>>> e : g.compute().localTasks().entrySet())
+            for (Map.Entry<String, Class<? extends ComputeTask<?, ?>>> e : ignite.compute().localTasks().entrySet())
                 System.out.println(">>> Found locally deployed task [alias=" + e.getKey() + ", taskCls=" + e.getValue());
 
             // Execute the task passing its name as a parameter. The system will find
             // the deployed task by its name and execute it.
-            g.compute().execute(TASK_NAME, null);
+            ignite.compute().execute(TASK_NAME, null);
 
             // Execute the task passing class name as a parameter. The system will find
             // the deployed task by its class name and execute it.
             // g.compute().execute(ExampleTask.class.getName(), null).get();
 
             // Undeploy task
-            g.compute().undeployTask(TASK_NAME);
+            ignite.compute().undeployTask(TASK_NAME);
 
             System.out.println();
             System.out.println(">>> Finished executing Grid Direct Deployment Example.");

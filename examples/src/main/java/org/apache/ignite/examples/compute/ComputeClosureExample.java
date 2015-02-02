@@ -24,7 +24,7 @@ import org.apache.ignite.lang.*;
 import java.util.*;
 
 /**
- * Demonstrates a simple use of GridGain grid with reduce closure.
+ * Demonstrates a simple use of Ignite grid with reduce closure.
  * <p>
  * This example splits a phrase into collection of words, computes their length on different
  * nodes and then computes total amount of non-whitespaces characters in the phrase.
@@ -32,7 +32,7 @@ import java.util.*;
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-compute.xml} configuration.
  */
 public class ComputeClosureExample {
@@ -43,12 +43,12 @@ public class ComputeClosureExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Compute closure example started.");
 
             // Execute closure on all grid nodes.
-            Collection<Integer> res = g.compute().apply(
+            Collection<Integer> res = ignite.compute().apply(
                 new IgniteClosure<String, Integer>() {
                     @Override public Integer apply(String word) {
                         System.out.println();
@@ -59,7 +59,7 @@ public class ComputeClosureExample {
                     }
                 },
 
-                // Job parameters. GridGain will create as many jobs as there are parameters.
+                // Job parameters. Ignite will create as many jobs as there are parameters.
                 Arrays.asList("Count characters using closure".split(" "))
             );
 

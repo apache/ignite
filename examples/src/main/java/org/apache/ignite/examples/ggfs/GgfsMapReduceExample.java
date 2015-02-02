@@ -34,7 +34,7 @@ import java.util.*;
  * GGFS: {@code 'ignite.sh examples/config/filesystem/example-ggfs.xml'}.
  * <p>
  * Alternatively you can run {@link GgfsNodeStartup} in another JVM which will start
- * GridGain node with {@code examples/config/filesystem/example-ggfs.xml} configuration.
+ * node with {@code examples/config/filesystem/example-ggfs.xml} configuration.
  */
 public class GgfsMapReduceExample {
     /**
@@ -49,7 +49,7 @@ public class GgfsMapReduceExample {
         else if (args.length == 1)
             System.out.println("Please provide regular expression.");
         else {
-            try (Ignite g = Ignition.start("examples/config/filesystem/example-ggfs.xml")) {
+            try (Ignite ignite = Ignition.start("examples/config/filesystem/example-ggfs.xml")) {
                 System.out.println();
                 System.out.println(">>> GGFS map reduce example started.");
 
@@ -60,8 +60,8 @@ public class GgfsMapReduceExample {
 
                 String regexStr = args[1];
 
-                // Get an instance of GridGain File System.
-                IgniteFs fs = g.fileSystem("ggfs");
+                // Get an instance of Ignite File System.
+                IgniteFs fs = ignite.fileSystem("ggfs");
 
                 // Working directory path.
                 IgniteFsPath workDir = new IgniteFsPath("/examples/ggfs");
@@ -87,10 +87,10 @@ public class GgfsMapReduceExample {
     }
 
     /**
-     * Write file to the GridGain file system.
+     * Write file to the Ignite file system.
      *
-     * @param fs GridGain file system.
-     * @param fsPath GridGain file system path.
+     * @param fs Ignite file system.
+     * @param fsPath Ignite file system path.
      * @param file File to write.
      * @throws Exception In case of exception.
      */

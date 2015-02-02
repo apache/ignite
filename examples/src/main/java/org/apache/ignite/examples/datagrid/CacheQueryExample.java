@@ -62,7 +62,7 @@ import java.util.*;
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheQueryExample {
     /** Cache name. */
@@ -75,12 +75,12 @@ public class CacheQueryExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache query example started.");
 
             // Clean up caches on all nodes before run.
-            g.jcache(CACHE_NAME).clear();
+            ignite.jcache(CACHE_NAME).clear();
 
             // Populate cache.
             initialize();
@@ -148,7 +148,7 @@ public class CacheQueryExample {
                 "and lower(Organization.name) = lower(?)");
 
         // Execute queries for find employees for different organizations.
-        print("Following people are 'GridGain' employees: ", qry.execute("GridGain").get());
+        print("Following people are 'Ignite' employees: ", qry.execute("Ignite").get());
         print("Following people are 'Other' employees: ", qry.execute("Other").get());
     }
 
@@ -181,7 +181,7 @@ public class CacheQueryExample {
     private static void sqlQueryWithReducers() throws IgniteCheckedException {
         CacheProjection<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
 
-        // Calculate average of salary of all persons in GridGain.
+        // Calculate average of salary of all persons in Ignite.
         CacheQuery<Map.Entry<CacheAffinityKey<UUID>, Person>> qry = cache.queries().createSqlQuery(
             Person.class,
             "from Person, Organization where Person.orgId = Organization.id and " +
@@ -205,7 +205,7 @@ public class CacheQueryExample {
                 @Override public IgniteBiTuple<Double, Integer> reduce() {
                     return new IgniteBiTuple<>(sum, cnt);
                 }
-            }, "GridGain").get();
+            }, "Ignite").get();
 
         double sum = 0.0d;
         int cnt = 0;
@@ -218,7 +218,7 @@ public class CacheQueryExample {
         double avg = sum / cnt;
 
         // Calculate average salary for a specific organization.
-        print("Average salary for 'GridGain' employees: " + avg);
+        print("Average salary for 'Ignite' employees: " + avg);
     }
 
     /**
@@ -246,8 +246,8 @@ public class CacheQueryExample {
                 }
             };
 
-        // Query all nodes for names of all GridGain employees.
-        print("Names of all 'GridGain' employees: " + qry.execute(trans, "GridGain").get());
+        // Query all nodes for names of all Ignite employees.
+        print("Names of all 'Ignite' employees: " + qry.execute(trans, "Ignite").get());
     }
 
     /**
@@ -310,7 +310,7 @@ public class CacheQueryExample {
             cache.projection(CacheAffinityKey.class, Person.class);
 
         // Organizations.
-        Organization org1 = new Organization("GridGain");
+        Organization org1 = new Organization("Ignite");
         Organization org2 = new Organization("Other");
 
         // People.

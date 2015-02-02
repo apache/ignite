@@ -24,7 +24,7 @@ import org.springframework.context.support.*;
 import java.util.concurrent.*;
 
 /**
- * Demonstrates a simple use of GridGain grid configured with Spring.
+ * Demonstrates a simple use of Ignite grid configured with Spring.
  * <p>
  * String "Hello World." is printed out by Callable passed into
  * the executor service provided by Grid. This statement could be printed
@@ -38,7 +38,7 @@ import java.util.concurrent.*;
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-compute.xml} configuration.
  */
 public final class SpringBeanExample {
@@ -58,10 +58,10 @@ public final class SpringBeanExample {
 
         try {
             // Get grid from Spring (note that local grid node is already started).
-            Ignite g = (Ignite)ctx.getBean("mySpringBean");
+            Ignite ignite = (Ignite)ctx.getBean("mySpringBean");
 
             // Execute any method on the retrieved grid instance.
-            ExecutorService exec = g.executorService();
+            ExecutorService exec = ignite.executorService();
 
             Future<String> res = exec.submit(new Callable<String>() {
                 @Override public String call() throws Exception {

@@ -33,7 +33,7 @@ import scala.util.Random
  * enables P2P class loading: `ignite.sh examples/config/example-cache.xml`
  * <p>
  * Alternatively you can run [[CacheNodeStartup]] in another JVM which will
- * start GridGain node with `examples/config/example-cache.xml` configuration.
+ * start node with `examples/config/example-cache.xml` configuration.
  * <p>
  * The counts are kept in cache on all remote nodes. Top `10` counts from each node are then grabbed to produce
  * an overall top `10` list within the grid.

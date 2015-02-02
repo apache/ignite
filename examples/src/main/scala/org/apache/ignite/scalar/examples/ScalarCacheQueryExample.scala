@@ -76,12 +76,12 @@ object ScalarCacheQueryExample {
 
         // Example for SQL-based querying with custom remote transformer to make sure
         // that only required data without any overhead is returned to caller.
-        // Gets last names of all 'GridGain' employees.
-        print("Last names of all 'GridGain' employees: ",
+        // Gets last names of all 'Ignite' employees.
+        print("Last names of all 'Ignite' employees: ",
             cache.sqlTransform(
                 prj,
                 "from Person, Organization where Person.orgId = Organization.id " +
-                    "and Organization.name = 'GridGain'",
+                    "and Organization.name = 'Ignite'",
                 (p: Person) => p.lastName
             ).map(_._2)
         )
@@ -120,7 +120,7 @@ object ScalarCacheQueryExample {
         val orgCache = mkCache[UUID, Organization]
 
         // Organizations.
-        val org1 = Organization("GridGain")
+        val org1 = Organization("Ignite")
         val org2 = Organization("Other")
 
         orgCache += (org1.id -> org1)

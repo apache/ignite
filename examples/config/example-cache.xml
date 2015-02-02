@@ -18,13 +18,13 @@
   -->
 
 <!--
-    GridGain Spring configuration file to startup grid cache.
+    Ignite Spring configuration file to startup grid cache.
 
-    When starting a standalone GridGain node, you need to execute the following command:
+    When starting a standalone node, you need to execute the following command:
     {IGNITE_HOME}/bin/ignite.{bat|sh} examples/config/example-cache.xml
 
-    When starting GridGain from Java IDE, pass path to this file to GridGain:
-    GridGain.start("examples/config/example-cache.xml");
+    When starting Ignite from Java IDE, pass path to this file to Ignition:
+    Ignition.start("examples/config/example-cache.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -106,7 +106,7 @@
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
                     <!--
-                        GridGain provides several options for automatic discovery that can be used
+                        Ignite provides several options for automatic discovery that can be used
                         instead os static IP based discovery. For information on all options refer
                         to our documentation: http://doc.gridgain.org/latest/Automatic+Node+Discovery
                     -->

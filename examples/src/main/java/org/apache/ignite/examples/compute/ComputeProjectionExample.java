@@ -28,7 +28,7 @@ import org.apache.ignite.lang.*;
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-compute.xml} configuration.
  */
 public class ComputeProjectionExample {
@@ -49,7 +49,6 @@ public class ComputeProjectionExample {
             IgniteCluster cluster = ignite.cluster();
 
             // Say hello to all nodes in the grid, including local node.
-            // Note, that Grid itself also implements GridProjection.
             sayHello(ignite, cluster);
 
             // Say hello to all remote nodes.
@@ -74,10 +73,10 @@ public class ComputeProjectionExample {
     }
 
     /**
-     * Print 'Hello' message on remote grid nodes.
+     * Print 'Hello' message on remote nodes.
      *
-     * @param ignite Grid.
-     * @param prj Grid projection.
+     * @param ignite Ignite.
+     * @param prj Projection.
      * @throws IgniteCheckedException If failed.
      */
     private static void sayHello(Ignite ignite, final ClusterGroup prj) throws IgniteCheckedException {

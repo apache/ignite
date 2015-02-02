@@ -36,7 +36,7 @@ import java.util.concurrent.*;
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-compute.xml} configuration.
  */
 public final class MessagingExample {
@@ -53,15 +53,15 @@ public final class MessagingExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
-            if (!ExamplesUtils.checkMinTopologySize(g.cluster(), 2))
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
+            if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2))
                 return;
 
             System.out.println();
             System.out.println(">>> Messaging example started.");
 
             // Projection for remote nodes.
-            ClusterGroup rmtPrj = g.cluster().forRemotes();
+            ClusterGroup rmtPrj = ignite.cluster().forRemotes();
 
             // Listen for messages from remote nodes to make sure that they received all the messages.
             int msgCnt = rmtPrj.nodes().size() * MESSAGES_NUM;
@@ -69,20 +69,20 @@ public final class MessagingExample {
             CountDownLatch orderedLatch = new CountDownLatch(msgCnt);
             CountDownLatch unorderedLatch = new CountDownLatch(msgCnt);
 
-            localListen(g.message(g.cluster().forLocal()), orderedLatch, unorderedLatch);
+            localListen(ignite.message(ignite.cluster().forLocal()), orderedLatch, unorderedLatch);
 
             // Register listeners on all grid nodes.
-            startListening(g.message(rmtPrj));
+            startListening(ignite.message(rmtPrj));
 
             // Send unordered messages to all remote nodes.
             for (int i = 0; i < MESSAGES_NUM; i++)
-                g.message(rmtPrj).send(TOPIC.UNORDERED, Integer.toString(i));
+                ignite.message(rmtPrj).send(TOPIC.UNORDERED, Integer.toString(i));
 
             System.out.println(">>> Finished sending unordered messages.");
 
             // Send ordered messages to all remote nodes.
             for (int i = 0; i < MESSAGES_NUM; i++)
-                g.message(rmtPrj).sendOrdered(TOPIC.ORDERED, Integer.toString(i), 0);
+                ignite.message(rmtPrj).sendOrdered(TOPIC.ORDERED, Integer.toString(i), 0);
 
             System.out.println(">>> Finished sending ordered messages.");
             System.out.println(">>> Check output on all nodes for message printouts.");
@@ -105,13 +105,13 @@ public final class MessagingExample {
         // Add ordered message listener.
         msg.remoteListen(TOPIC.ORDERED, new IgniteBiPredicate<UUID, String>() {
             @IgniteInstanceResource
-            private Ignite g;
+            private Ignite ignite;
 
             @Override public boolean apply(UUID nodeId, String msg) {
                 System.out.println("Received ordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
                 try {
-                    g.message(g.cluster().forNodeId(nodeId)).send(TOPIC.ORDERED, msg);
+                    ignite.message(ignite.cluster().forNodeId(nodeId)).send(TOPIC.ORDERED, msg);
                 }
                 catch (IgniteCheckedException e) {
                     e.printStackTrace();
@@ -124,13 +124,13 @@ public final class MessagingExample {
         // Add unordered message listener.
         msg.remoteListen(TOPIC.UNORDERED, new IgniteBiPredicate<UUID, String>() {
             @IgniteInstanceResource
-            private Ignite g;
+            private Ignite ignite;
 
             @Override public boolean apply(UUID nodeId, String msg) {
                 System.out.println("Received unordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
                 try {
-                    g.message(g.cluster().forNodeId(nodeId)).send(TOPIC.UNORDERED, msg);
+                    ignite.message(ignite.cluster().forNodeId(nodeId)).send(TOPIC.UNORDERED, msg);
                 }
                 catch (IgniteCheckedException e) {
                     e.printStackTrace();

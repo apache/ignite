@@ -47,11 +47,11 @@ public class CacheStoreLoadDataExample {
     public static void main(String[] args) throws Exception {
         ExamplesUtils.checkMinMemory(MIN_MEMORY);
 
-        try (Ignite g = Ignition.start(CacheNodeWithStoreStartup.configure())) {
+        try (Ignite ignite = Ignition.start(CacheNodeWithStoreStartup.configure())) {
             System.out.println();
             System.out.println(">>> Cache store load data example started.");
 
-            final IgniteCache<String, Integer> cache = g.jcache(null);
+            final IgniteCache<String, Integer> cache = ignite.jcache(null);
 
             // Clean up caches on all nodes before run.
             cache.clear();
@@ -59,8 +59,9 @@ public class CacheStoreLoadDataExample {
             long start = System.currentTimeMillis();
 
             // Start loading cache on all caching nodes.
-            g.compute(g.cluster().forCache(null)).broadcast(new IgniteCallable<Object>() {
-                @Override public Object call() throws Exception {
+            ignite.compute(ignite.cluster().forCache(null)).broadcast(new IgniteCallable<Object>() {
+                @Override
+                public Object call() throws Exception {
                     // Load cache from persistent store.
                     cache.loadCache(null, 0, ENTRY_COUNT);
 

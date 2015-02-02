@@ -31,7 +31,7 @@ import java.util.*;
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public final class CacheAtomicReferenceExample {
     /** Cache name. */
@@ -44,7 +44,7 @@ public final class CacheAtomicReferenceExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache atomic reference example started.");
 
@@ -55,7 +55,7 @@ public final class CacheAtomicReferenceExample {
             String val = UUID.randomUUID().toString();
 
             // Initialize atomic reference in grid.
-            CacheAtomicReference<String> ref = g.cache(CACHE_NAME).dataStructures().
+            CacheAtomicReference<String> ref = ignite.cache(CACHE_NAME).dataStructures().
                 atomicReference(refName, val, true);
 
             System.out.println("Atomic reference initial value : " + ref.get() + '.');
@@ -64,7 +64,7 @@ public final class CacheAtomicReferenceExample {
             Runnable c = new ReferenceClosure(CACHE_NAME, refName);
 
             // Check atomic reference on all grid nodes.
-            g.compute().run(c);
+            ignite.compute().run(c);
 
             // Make new value of atomic reference.
             String newVal = UUID.randomUUID().toString();
@@ -75,7 +75,7 @@ public final class CacheAtomicReferenceExample {
 
             // Check atomic reference on all grid nodes.
             // Atomic reference value shouldn't be changed.
-            g.compute().run(c);
+            ignite.compute().run(c);
 
             System.out.println("Try to change value of atomic reference with correct expected value.");
 
@@ -83,7 +83,7 @@ public final class CacheAtomicReferenceExample {
 
             // Check atomic reference on all grid nodes.
             // Atomic reference value should be changed.
-            g.compute().run(c);
+            ignite.compute().run(c);
         }
 
         System.out.println();

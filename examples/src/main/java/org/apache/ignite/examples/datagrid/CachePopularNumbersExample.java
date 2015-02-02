@@ -33,7 +33,7 @@ import java.util.*;
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CachePopularNumbersExample {
     /** Cache name. */
@@ -60,14 +60,14 @@ public class CachePopularNumbersExample {
     public static void main(String[] args) throws Exception {
         Timer popularNumbersQryTimer = new Timer("numbers-query-worker");
 
-        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache popular numbers example started.");
 
             // Clean up caches on all nodes before run.
-            g.jcache(CACHE_NAME).clear();
+            ignite.jcache(CACHE_NAME).clear();
 
-            ClusterGroup prj = g.cluster().forCache(CACHE_NAME);
+            ClusterGroup prj = ignite.cluster().forCache(CACHE_NAME);
 
             if (prj.nodes().isEmpty()) {
                 System.out.println("Grid does not have cache configured: " + CACHE_NAME);
@@ -75,9 +75,9 @@ public class CachePopularNumbersExample {
                 return;
             }
 
-            TimerTask task = scheduleQuery(g, popularNumbersQryTimer, POPULAR_NUMBERS_CNT);
+            TimerTask task = scheduleQuery(ignite, popularNumbersQryTimer, POPULAR_NUMBERS_CNT);
 
-            streamData(g);
+            streamData(ignite);
 
             // Force one more run to get final counts.
             task.run();
@@ -89,11 +89,11 @@ public class CachePopularNumbersExample {
     /**
      * Populates cache in real time with numbers and keeps count for every number.
      *
-     * @param g Grid.
+     * @param ignite Ignite.
      * @throws IgniteCheckedException If failed.
      */
-    private static void streamData(final Ignite g) throws IgniteCheckedException {
-        try (IgniteDataLoader<Integer, Long> ldr = g.dataLoader(CACHE_NAME)) {
+    private static void streamData(final Ignite ignite) throws IgniteCheckedException {
+        try (IgniteDataLoader<Integer, Long> ldr = ignite.dataLoader(CACHE_NAME)) {
             // Set larger per-node buffer size since our state is relatively small.
             ldr.perNodeBufferSize(2048);
 
@@ -107,18 +107,18 @@ public class CachePopularNumbersExample {
     /**
      * Schedules our popular numbers query to run every 3 seconds.
      *
-     * @param g Grid.
+     * @param ignite Ignite.
      * @param timer Timer.
      * @param cnt Number of popular numbers to return.
      * @return Scheduled task.
      */
-    private static TimerTask scheduleQuery(final Ignite g, Timer timer, final int cnt) {
+    private static TimerTask scheduleQuery(final Ignite ignite, Timer timer, final int cnt) {
         TimerTask task = new TimerTask() {
             private CacheQuery<List<?>> qry;
 
             @Override public void run() {
                 // Get reference to cache.
-                GridCache<Integer, Long> cache = g.cache(CACHE_NAME);
+                GridCache<Integer, Long> cache = ignite.cache(CACHE_NAME);
 
                 if (qry == null)
                     qry = cache.queries().

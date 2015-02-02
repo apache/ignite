@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.*;
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-compute.xml} configuration.
  */
 public class ComputeContinuousMapperExample {
@@ -56,8 +56,8 @@ public class ComputeContinuousMapperExample {
         System.out.println();
         System.out.println(">>> Compute continuous mapper example started.");
 
-        try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
-            int phraseLen = g.compute().execute(GridContinuousMapperTask.class, "Hello Continuous Mapper");
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
+            int phraseLen = ignite.compute().execute(GridContinuousMapperTask.class, "Hello Continuous Mapper");
 
             System.out.println();
             System.out.println(">>> Total number of characters in the phrase is '" + phraseLen + "'.");
@@ -69,7 +69,7 @@ public class ComputeContinuousMapperExample {
      * is split into multiple words and next word is sent out for processing only
      * when the result for the previous word was received.
      * <p>
-     * Note that annotation {@link org.apache.ignite.compute.ComputeTaskNoResultCache} is optional and tells GridGain
+     * Note that annotation {@link org.apache.ignite.compute.ComputeTaskNoResultCache} is optional and tells Ignite
      * not to accumulate results from individual jobs. In this example we increment
      * total character count directly in {@link #result(org.apache.ignite.compute.ComputeJobResult, List)} method,
      * and therefore don't need to accumulate them be be processed at reduction step.

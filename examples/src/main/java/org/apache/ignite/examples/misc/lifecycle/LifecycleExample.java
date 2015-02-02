@@ -26,7 +26,7 @@ import static org.apache.ignite.lifecycle.LifecycleEventType.*;
 
 /**
  * This example shows how to provide your own {@link org.apache.ignite.lifecycle.LifecycleBean} implementation
- * to be able to hook into GridGain lifecycle. The {@link LifecycleExampleBean} bean
+ * to be able to hook into Ignite lifecycle. The {@link LifecycleExampleBean} bean
  * will output occurred lifecycle events to the console.
  * <p>
  * This example does not require remote nodes to be started.
@@ -50,7 +50,7 @@ public final class LifecycleExample {
         // Provide lifecycle bean to configuration.
         cfg.setLifecycleBeans(bean);
 
-        try (Ignite g  = Ignition.start(cfg)) {
+        try (Ignite ignite  = Ignition.start(cfg)) {
             // Make sure that lifecycle bean was notified about grid startup.
             assert bean.isStarted();
         }

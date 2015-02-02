@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable
 import java.util.concurrent.Callable
 
 /**
- * Example of how to collocate computations and data in GridGain using
+ * Example of how to collocate computations and data in Ignite using
  * `CacheAffinityKeyMapped` annotation as opposed to direct API calls. This
  * example will first populate cache on some node where cache is available, and then
  * will send jobs to the nodes where keys reside and print out values for those

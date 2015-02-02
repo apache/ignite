@@ -34,7 +34,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheEventsExample {
     /** Cache name. */
@@ -47,11 +47,11 @@ public class CacheEventsExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws IgniteCheckedException, InterruptedException {
-        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache events example started.");
 
-            final IgniteCache<Integer, String> cache = g.jcache(CACHE_NAME);
+            final IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
 
             // Clean up caches on all nodes before run.
             cache.clear();
@@ -75,13 +75,13 @@ public class CacheEventsExample {
 
                     int key = evt.key();
 
-                    return key >= 10 && g.affinity(CACHE_NAME).isPrimary(g.cluster().localNode(), key);
+                    return key >= 10 && ignite.affinity(CACHE_NAME).isPrimary(ignite.cluster().localNode(), key);
                 }
             };
 
             // Subscribe to specified cache events on all nodes that have cache running.
             // Cache events are explicitly enabled in examples/config/example-cache.xml file.
-            g.events(g.cluster().forCache(CACHE_NAME)).remoteListen(locLsnr, rmtLsnr,
+            ignite.events(ignite.cluster().forCache(CACHE_NAME)).remoteListen(locLsnr, rmtLsnr,
                 EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
 
             // Generate cache events.

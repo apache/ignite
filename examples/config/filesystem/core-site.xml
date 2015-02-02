@@ -19,7 +19,7 @@
   -->
 
 <!--
-    Example configuration of the Hadoop FS driver over GridGain FS API.
+    Example configuration of the Hadoop FS driver over Ignite FS API.
     Copy this file into '$HADOOP_HOME/conf/core-site.xml'.
 -->
 <configuration>

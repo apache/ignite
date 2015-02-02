@@ -29,7 +29,7 @@ import java.util.*;
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-compute.xml} configuration.
  */
 public final class CreditRiskExample {
@@ -40,7 +40,7 @@ public final class CreditRiskExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println("Credit risk example started.");
 
@@ -78,7 +78,7 @@ public final class CreditRiskExample {
             // Credit risk crdRisk is the minimal amount that creditor has to have
             // available to cover possible defaults.
 
-            double crdRisk = g.compute().call(jobs(g.cluster().nodes().size(), portfolio, horizon, iter, percentile),
+            double crdRisk = ignite.compute().call(jobs(ignite.cluster().nodes().size(), portfolio, horizon, iter, percentile),
                 new IgniteReducer<Double, Double>() {
                     /** Collected values sum. */
                     private double sum;
@@ -134,7 +134,7 @@ public final class CreditRiskExample {
         // will be identical. In real life scenarios when heterogeneous environment
         // is used a split that is weighted by, for example, CPU benchmarks of each
         // node in the split will be more efficient. It is fairly easy addition and
-        // GridGain comes with convenient Spring-compatible benchmark that can be
+        // Ignite comes with convenient Spring-compatible benchmark that can be
         // used for weighted splits.
         for (int i = 0; i < gridSize; i++) {
             final int nodeIter = i == gridSize - 1 ? lastNodeIter : iterPerNode;

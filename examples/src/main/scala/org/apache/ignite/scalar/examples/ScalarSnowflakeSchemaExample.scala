@@ -33,7 +33,7 @@ import scala.collection.JavaConversions._
  * <i>Dimensions</i> can be referenced or joined by other <i>dimensions</i> or <i>facts</i>,
  * however, <i>facts</i> are generally not referenced by other facts. You can view <i>dimensions</i>
  * as your master or reference data, while <i>facts</i> are usually large data sets of events or
- * other objects that continuously come into the system and may change frequently. In GridGain
+ * other objects that continuously come into the system and may change frequently. In Ignite
  * such architecture is supported via cross-cache queries. By storing <i>dimensions</i> in
  * `CacheMode#REPLICATED REPLICATED` caches and <i>facts</i> in much larger
  * `CacheMode#PARTITIONED PARTITIONED` caches you can freely execute distributed joins across

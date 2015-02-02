@@ -25,7 +25,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Example that shows usage of {@link org.apache.ignite.IgniteFs} API. It starts a GridGain node with {@code GGFS}
+ * Example that shows usage of {@link org.apache.ignite.IgniteFs} API. It starts a node with {@code GGFS}
  * configured and performs several file system operations (create, write, append, read and delete
  * files, create, list and delete directories).
  * <p>
@@ -33,7 +33,7 @@ import java.util.*;
  * GGFS: {@code 'ignite.sh examples/config/filesystem/example-ggfs.xml'}.
  * <p>
  * Alternatively you can run {@link GgfsNodeStartup} in another JVM which will start
- * GridGain node with {@code examples/config/filesystem/example-ggfs.xml} configuration.
+ * node with {@code examples/config/filesystem/example-ggfs.xml} configuration.
  */
 public final class GgfsExample {
     /**
@@ -43,14 +43,14 @@ public final class GgfsExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        Ignite g = Ignition.start("examples/config/filesystem/example-ggfs.xml");
+        Ignite ignite = Ignition.start("examples/config/filesystem/example-ggfs.xml");
 
         System.out.println();
         System.out.println(">>> GGFS example started.");
 
         try {
-            // Get an instance of GridGain File System.
-            IgniteFs fs = g.fileSystem("ggfs");
+            // Get an instance of Ignite File System.
+            IgniteFs fs = ignite.fileSystem("ggfs");
 
             // Working directory path.
             IgniteFsPath workDir = new IgniteFsPath("/examples/ggfs");

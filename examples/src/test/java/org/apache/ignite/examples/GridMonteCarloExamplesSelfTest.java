@@ -28,7 +28,7 @@ import org.apache.ignite.testframework.junits.common.*;
  * AOP configurations must be provided.
  * <h2 class="header">Jboss AOP</h2>
  * The following configuration needs to be applied to enable JBoss byte code
- * weaving. Note that GridGain is not shipped with JBoss and necessary
+ * weaving. Note that Ignite is not shipped with JBoss and necessary
  * libraries will have to be downloaded separately (they come standard
  * if you have JBoss installed already):
  * <ul>
