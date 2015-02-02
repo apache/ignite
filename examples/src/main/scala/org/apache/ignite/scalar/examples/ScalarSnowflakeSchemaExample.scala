@@ -66,7 +66,6 @@ object ScalarSnowflakeSchemaExample {
             cache$(PART_CACHE_NAME).get.globalClearAll(0)
 
             populateDimensions()
-            populateFacts()
 
             queryStorePurchases()
             queryProductPurchases()
@@ -78,7 +77,7 @@ object ScalarSnowflakeSchemaExample {
      * `DimStore` and `DimProduct` instances.
      */
     def populateDimensions() {
-        val dimCache = grid$.cache[Int, Object](REPL_CACHE_NAME)
+        val dimCache = grid$.jcache[Int, Object](REPL_CACHE_NAME)
 
         val store1 = new DimStore(idGen.next(), "Store1", "12345", "321 Chilly Dr, NY")
         val store2 = new DimStore(idGen.next(), "Store2", "54321", "123 Windy Dr, San Francisco")
@@ -91,25 +90,6 @@ object ScalarSnowflakeSchemaExample {
             val product = new DimProduct(idGen.next(), "Product" + i, i + 1, (i + 1) * 10)
 
             dimCache.put(product.id, product)
-        }
-    }
-
-    /**
-     * Populate cache with `facts`, which in our case are `FactPurchase` objects.
-     */
-    def populateFacts() {
-        val dimCache = grid$.cache[Int, Object](REPL_CACHE_NAME)
-        val factCache = grid$.cache[Int, FactPurchase](PART_CACHE_NAME)
-
-        val stores: CacheProjection[Int, DimStore] = dimCache.viewByType(classOf[Int], classOf[DimStore])
-        val prods: CacheProjection[Int, DimProduct] = dimCache.viewByType(classOf[Int], classOf[DimProduct])
-
-        for (i <- 1 to 100) {
-            val store: DimStore = rand(stores.values)
-            val prod: DimProduct = rand(prods.values)
-            val purchase: FactPurchase = new FactPurchase(idGen.next(), prod.id, store.id, i + 1)
-
-            factCache.put(purchase.id, purchase)
         }
     }
 

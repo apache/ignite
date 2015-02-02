@@ -75,7 +75,6 @@ public class CacheStarSchemaExample {
 
         try {
             populateDimensions();
-            populateFacts();
 
             queryStorePurchases();
             queryProductPurchases();
@@ -106,28 +105,6 @@ public class CacheStarSchemaExample {
             int id = idGen++;
 
             cache.put(id, new DimProduct(id, "Product" + i, i + 1, (i + 1) * 10));
-        }
-    }
-
-    /**
-     * Populate cache with {@code 'facts'}, which in our case are {@link FactPurchase} objects.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    private static void populateFacts() throws IgniteCheckedException {
-        GridCache<Integer, Object> dimCache = Ignition.ignite().cache(REPLICATED_CACHE_NAME);
-        GridCache<Integer, Object> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
-
-        CacheProjection<Integer, DimStore> stores = dimCache.projection(Integer.class, DimStore.class);
-        CacheProjection<Integer, DimProduct> prods = dimCache.projection(Integer.class, DimProduct.class);
-
-        for (int i = 0; i < 100; i++) {
-            int id = idGen++;
-
-            DimStore store = rand(stores.values());
-            DimProduct prod = rand(prods.values());
-
-            factCache.put(id, new FactPurchase(id, prod.getId(), store.getId(), (i + 1)));
         }
     }
 
