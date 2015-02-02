@@ -311,7 +311,7 @@
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/core-jar.xml</descriptor>
+                                <descriptor>${basedir}/assembly/core-jar.xml</descriptor>
                             </descriptors>
                             <appendAssemblyId>false</appendAssemblyId>
                             <finalName>ignite-core-${ignite.version}</finalName>
@@ -326,12 +326,11 @@
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/dependencies-${gridgain.edition}.xml</descriptor>
+                                <descriptor>${basedir}/assembly/dependencies-${gridgain.edition}.xml</descriptor>
                             </descriptors>
                             <outputDirectory>${basedir}</outputDirectory>
                             <finalName>libs</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
-                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                         </configuration>
                     </execution>
 
@@ -343,12 +342,11 @@
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/dependencies-optional-${gridgain.edition}.xml</descriptor>
+                                <descriptor>${basedir}/assembly/dependencies-optional-${gridgain.edition}.xml</descriptor>
                             </descriptors>
                             <outputDirectory>${basedir}/libs</outputDirectory>
                             <finalName>optional</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
-                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                         </configuration>
                     </execution>
 
@@ -360,12 +358,11 @@
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/dependencies-visor-console.xml</descriptor>
+                                <descriptor>${basedir}/assembly/dependencies-visor-console.xml</descriptor>
                             </descriptors>
                             <outputDirectory>${basedir}/bin</outputDirectory>
                             <finalName>include</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
-                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                         </configuration>
                     </execution>
 
@@ -381,7 +378,6 @@
                             </descriptors>
                             <finalName>release-package</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
-                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                         </configuration>
                     </execution>
                 </executions>
@@ -613,7 +609,7 @@
                                         <link>http://docs.oracle.com/javase/7/docs/api/</link>
                                         <link>http://hadoop.apache.org/docs/current/api/</link>
                                     </links>
-                                    <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
+                                    <stylesheetfile>${project.basedir}/${parent.relativePath}/assembly/docfiles/javadoc.css</stylesheetfile>
                                     <groups>
                                         <group>
                                             <title>Common Grid APIs</title>
@@ -807,7 +803,7 @@
                                             </tagletArtifact>
                                         </taglet>
                                     </taglets>
-                                    <reportOutputDirectory>target/javadoc</reportOutputDirectory>
+                                    <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
                                     <destDir>core</destDir>
                                     <doctitle>GridGain ${ignite.version}</doctitle>
                                     <windowtitle>GridGain ${ignite.version}</windowtitle>
@@ -822,7 +818,7 @@
                                         <link>http://docs.oracle.com/javase/7/docs/api/</link>
                                         <link>http://hadoop.apache.org/docs/current/api/</link>
                                     </links>
-                                    <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
+                                    <stylesheetfile>${basedir}/assembly/docfiles/javadoc.css</stylesheetfile>
                                     <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.internal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.apache.ignite.portables</excludePackageNames>
                                     <groups>
                                         <group>
@@ -1029,7 +1025,7 @@
                                             </tagletArtifact>
                                         </taglet>
                                     </taglets>
-                                    <reportOutputDirectory>target/javadoc</reportOutputDirectory>
+                                    <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
                                     <destDir>client</destDir>
                                     <doctitle>GridGain ${ignite.version} - Java Client</doctitle>
                                     <windowtitle>GridGain ${ignite.version} - Java Client</windowtitle>
@@ -1043,7 +1039,7 @@
                                     <links>
                                         <link>http://docs.oracle.com/javase/7/docs/api/</link>
                                     </links>
-                                    <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
+                                    <stylesheetfile>${basedir}/assembly/docfiles/javadoc.css</stylesheetfile>
                                     <subpackages>org.apache.ignite.client</subpackages>
                                     <additionalparam>-exclude
                                         org.apache.ignite.client.impl:org.apache.ignite.client.util:org.apache.ignite.client.router.impl</additionalparam>
@@ -1126,14 +1122,14 @@
                                 <phase>prepare-package</phase>
                                 <configuration>
                                     <target>
-                                        <copy todir="target/javadoc/core">
+                                        <copy todir="${basedir}/target/javadoc/core">
                                             <fileset dir="assembly/docfiles">
                                                 <include name="img/**"/>
                                                 <include name="*.js"/>
                                             </fileset>
                                         </copy>
 
-                                        <copy todir="target/javadoc/client">
+                                        <copy todir="${basedir}/target/javadoc/client">
                                             <fileset dir="assembly/docfiles">
                                                 <include name="img/**"/>
                                                 <include name="*.js"/>
@@ -1171,7 +1167,7 @@
                                         <replaceregexp byline="true">
                                             <regexp pattern='pushd "%~dp0"/\.\./\.\.(\s*&amp;::.+)?'/>
                                             <substitution expression='pushd "%~dp0"/..'/>
-                                            <fileset dir="target/release-package/bin">
+                                            <fileset dir="${basedir}/target/release-package/bin">
                                                 <include name="**/*.bat"/>
                                             </fileset>
                                         </replaceregexp>
@@ -1179,7 +1175,7 @@
                                         <replaceregexp byline="true">
                                             <regexp pattern='IGNITE_HOME_TMP="\$\(dirname "\$\{IGNITE_HOME_TMP\}"\)"(\s*#.*)?'/>
                                             <substitution expression=""/>
-                                            <fileset dir="target/release-package/bin">
+                                            <fileset dir="${basedir}/target/release-package/bin">
                                                 <include name="**/*.sh"/>
                                             </fileset>
                                         </replaceregexp>
@@ -1187,7 +1183,7 @@
                                         <replaceregexp byline="true">
                                             <regexp pattern='set SCRIPTS_HOME=%IGNITE_HOME%\\os\\bin(\s*&amp;::.*)?'/>
                                             <substitution expression='set SCRIPTS_HOME=%IGNITE_HOME%\\\\bin'/>
-                                            <fileset dir="target/release-package/bin">
+                                            <fileset dir="${basedir}/target/release-package/bin">
                                                 <include name="**/*.bat"/>
                                             </fileset>
                                         </replaceregexp>
@@ -1195,7 +1191,7 @@
                                         <replaceregexp byline="true">
                                             <regexp pattern='SCRIPTS_HOME="\$\{IGNITE_HOME_TMP\}/os/bin"(\s*#.*)?'/>
                                             <substitution expression='SCRIPTS_HOME="$${IGNITE_HOME_TMP}/bin"'/>
-                                            <fileset dir="target/release-package/bin">
+                                            <fileset dir="${basedir}/target/release-package/bin">
                                                 <include name="**/*.sh"/>
                                             </fileset>
                                         </replaceregexp>
@@ -1203,7 +1199,7 @@
                                         <replaceregexp byline="true">
                                             <regexp pattern='\. "\$\{SCRIPTS_HOME\}"/include/target-classpath.sh(\s*#.*)?'/>
                                             <substitution expression=""/>
-                                            <fileset dir="target/release-package/bin">
+                                            <fileset dir="${basedir}/target/release-package/bin">
                                                 <include name="**/*.sh"/>
                                             </fileset>
                                         </replaceregexp>
@@ -1211,7 +1207,7 @@
                                         <replaceregexp byline="true">
                                             <regexp pattern='call "%SCRIPTS_HOME%\\include\\target-classpath.bat"(\s*&amp;::.*)?'/>
                                             <substitution expression=""/>
-                                            <fileset dir="target/release-package/bin">
+                                            <fileset dir="${basedir}/target/release-package/bin">
                                                 <include name="**/*.bat"/>
                                             </fileset>
                                         </replaceregexp>
@@ -1219,7 +1215,7 @@
                                         <replaceregexp byline="true">
                                             <regexp pattern='ENABLE_ASSERTIONS=.*'/>
                                             <substitution expression="ENABLE_ASSERTIONS=&quot;0&quot;"/>
-                                            <fileset dir="target/release-package/bin">
+                                            <fileset dir="${basedir}/target/release-package/bin">
                                                 <include name="**/*.sh"/>
                                             </fileset>
                                         </replaceregexp>
@@ -1227,32 +1223,32 @@
                                         <replaceregexp byline="true">
                                             <regexp pattern='ENABLE_ASSERTIONS=.*'/>
                                             <substitution expression="ENABLE_ASSERTIONS=0"/>
-                                            <fileset dir="target/release-package/bin">
+                                            <fileset dir="${basedir}/target/release-package/bin">
                                                 <include name="**/*.bat"/>
                                             </fileset>
                                         </replaceregexp>
 
                                         <replace token="@sh.file.version" value="${ignite.version}">
-                                            <fileset dir="target/release-package/bin">
+                                            <fileset dir="${basedir}/target/release-package/bin">
                                                 <include name="**/*.sh"/>
                                             </fileset>
                                         </replace>
 
                                         <replace token="@bat.file.version" value="${ignite.version}">
-                                            <fileset dir="target/release-package/bin">
+                                            <fileset dir="${basedir}/target/release-package/bin">
                                                 <include name="**/*.bat"/>
                                             </fileset>
                                         </replace>
 
                                         <replace token="@xml.file.version" value="${ignite.version}">
-                                            <fileset dir="target/release-package">
+                                            <fileset dir="${basedir}/target/release-package">
                                                 <include name="**/*.xml"/>
                                             </fileset>
                                         </replace>
 
-                                        <zip destfile="target/ignite-${gridgain.edition}-${ignite.version}.zip"
+                                        <zip destfile="${basedir}/target/ignite-${gridgain.edition}-${ignite.version}.zip"
                                              encoding="UTF-8">
-                                            <zipfileset dir="target/release-package"
+                                            <zipfileset dir="${basedir}/target/release-package"
                                                         prefix="ignite-${gridgain.edition}-${ignite.version}"
                                                         filemode="755">
                                                 <include name="**/*.sh"/>
@@ -1261,7 +1257,7 @@
                                                 <include name="**/compile"/>
                                                 <include name="**/missing"/>
                                             </zipfileset>
-                                            <zipfileset dir="target/release-package"
+                                            <zipfileset dir="${basedir}/target/release-package"
                                                         prefix="ignite-${gridgain.edition}-${ignite.version}">
                                                 <exclude name="**/*.sh"/>
                                                 <exclude name="**/configure"/>
