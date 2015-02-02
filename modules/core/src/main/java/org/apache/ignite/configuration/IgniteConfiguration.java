@@ -72,7 +72,7 @@ import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
  */
 public class IgniteConfiguration {
     /** Courtesy notice log category. */
-    public static final String COURTESY_LOGGER_NAME = "org.gridgain.grid.CourtesyConfigNotice";
+    public static final String COURTESY_LOGGER_NAME = "org.apache.ignite.CourtesyConfigNotice";
 
     /**
      * Default flag for peer class loading. By default the value is {@code false}
@@ -389,9 +389,6 @@ public class IgniteConfiguration {
     /** Transactions configuration. */
     private TransactionsConfiguration txCfg = new TransactionsConfiguration();
 
-    /** Interop configuration. */
-    private InteropConfiguration interopCfg;
-
     /** */
     private Collection<? extends PluginConfiguration> pluginCfgs;
 
@@ -585,7 +582,6 @@ public class IgniteConfiguration {
         hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
-        interopCfg = cfg.getInteropConfiguration() != null ? cfg.getInteropConfiguration().copy() : null;
         jettyPath = cfg.getRestJettyPath();
         licUrl = cfg.getLicenseUrl();
         lifecycleBeans = cfg.getLifecycleBeans();
@@ -3114,24 +3110,6 @@ public class IgniteConfiguration {
      */
     public void setWarmupClosure(IgniteInClosure<IgniteConfiguration> warmupClos) {
         this.warmupClos = warmupClos;
-    }
-
-    /**
-     * Gets interop configuration.
-     *
-     * @return Interop configuration.
-     */
-    @Nullable public InteropConfiguration getInteropConfiguration() {
-        return interopCfg;
-    }
-
-    /**
-     * Sets interop configuration.
-     *
-     * @param interopCfg Interop configuration.
-     */
-    public void setInteropConfiguration(@Nullable InteropConfiguration interopCfg) {
-        this.interopCfg = interopCfg;
     }
 
     /**

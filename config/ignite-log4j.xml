@@ -21,7 +21,7 @@
     "http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/xml/doc-files/log4j.dtd">
 
 <!--
-    Default log4j configuration for GridGain.
+    Default log4j configuration for Ignite.
 -->
 <log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
     <!--
@@ -67,7 +67,7 @@
         Logs all output to specified file.
         By default, the logging goes to IGNITE_HOME/work/log folder
     -->
-    <appender name="FILE" class="org.gridgain.grid.logger.log4j.GridLog4jRollingFileAppender">
+    <appender name="FILE" class="org.apache.ignite.logger.log4j.IgniteLog4jFileAppender">
         <param name="Threshold" value="DEBUG"/>
         <param name="File" value="${IGNITE_HOME}/work/log/ignite.log"/>
         <param name="Append" value="true"/>
@@ -79,26 +79,7 @@
     </appender>
 
     <!--
-    <category name="org.gridgain">
-        <level value="DEBUG"/>
-    </category>
-    -->
-
-    <!--
-        Uncomment this category to enable cache
-        query execution tracing.
-    -->
-    <!--
-    <category name="org.gridgain.cache.queries">
-        <level value="DEBUG"/>
-    </category>
-    -->
-
-    <!--
-        Uncomment to enable DGC tracing.
-    -->
-    <!--
-    <category name="org.gridgain.grid.kernal.processors.cache.GridCacheDgcManager.trace">
+    <category name="org.apache.ignite">
         <level value="DEBUG"/>
     </category>
     -->
@@ -108,7 +89,7 @@
         consistency warnings.
     -->
     <!--
-    <category name="org.gridgain.grid.CourtesyConfigNotice">
+    <category name="org.apache.ignite.CourtesyConfigNotice">
         <level value="OFF"/>
     </category>
     -->

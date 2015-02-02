@@ -18,13 +18,13 @@
   -->
 
 <!--
-    GridGain Spring configuration file to startup grid cache.
+    Ignite Spring configuration file to startup grid cache.
 
-    When starting a standalone GridGain node, you need to execute the following command:
+    When starting a standalone Ignite node, you need to execute the following command:
     {IGNITE_HOME}/bin/ignite.{bat|sh} path-to-this-file/example-ggfs-loopback.xml
 
-    When starting GridGain from Java IDE, pass path to this file into GridGain:
-    GridGain.start("path-to-this-file/example-ggfs-loopback.xml");
+    When starting Ignite from Java IDE, pass path to this file into Ignite:
+    Ignition.start("path-to-this-file/example-ggfs-loopback.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
