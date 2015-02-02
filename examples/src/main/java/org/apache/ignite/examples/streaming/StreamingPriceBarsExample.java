@@ -78,7 +78,7 @@ public class StreamingPriceBarsExample {
     public static void main(String[] args) throws Exception {
         Timer timer = new Timer("priceBars");
 
-        // Start grid.
+        // Start ignite.
         final Ignite ignite = Ignition.start("examples/config/example-streamer.xml");
 
         System.out.println();

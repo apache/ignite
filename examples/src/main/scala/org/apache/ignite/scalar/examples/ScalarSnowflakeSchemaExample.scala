@@ -77,7 +77,7 @@ object ScalarSnowflakeSchemaExample {
      * `DimStore` and `DimProduct` instances.
      */
     def populateDimensions() {
-        val dimCache = grid$.jcache[Int, Object](REPL_CACHE_NAME)
+        val dimCache = ignite.jcache[Int, Object](REPL_CACHE_NAME)
 
         val store1 = new DimStore(idGen.next(), "Store1", "12345", "321 Chilly Dr, NY")
         val store2 = new DimStore(idGen.next(), "Store2", "54321", "123 Windy Dr, San Francisco")
@@ -99,7 +99,7 @@ object ScalarSnowflakeSchemaExample {
      * `FactPurchase` objects stored in `partitioned` cache.
      */
     def queryStorePurchases() {
-        val factCache = grid$.cache[Int, FactPurchase](PART_CACHE_NAME)
+        val factCache = ignite.cache[Int, FactPurchase](PART_CACHE_NAME)
 
         val storePurchases = factCache.sql(
             "from \"replicated\".DimStore, \"partitioned\".FactPurchase " +
@@ -115,8 +115,8 @@ object ScalarSnowflakeSchemaExample {
      * stored in `partitioned` cache.
      */
     private def queryProductPurchases() {
-        val dimCache = grid$.cache[Int, Object](REPL_CACHE_NAME)
-        val factCache = grid$.cache[Int, FactPurchase](PART_CACHE_NAME)
+        val dimCache = ignite.cache[Int, Object](REPL_CACHE_NAME)
+        val factCache = ignite.cache[Int, FactPurchase](PART_CACHE_NAME)
 
         val prods: CacheProjection[Int, DimProduct] = dimCache.viewByType(classOf[Int], classOf[DimProduct])
 

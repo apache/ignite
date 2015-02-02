@@ -39,7 +39,7 @@ public class CachePopularNumbersExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
 
-    /** Count of most popular numbers to retrieve from grid. */
+    /** Count of most popular numbers to retrieve from cluster. */
     private static final int POPULAR_NUMBERS_CNT = 10;
 
     /** Random number generator. */

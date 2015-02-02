@@ -166,7 +166,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
                 private Ignite ignite;
 
                 @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
-                    if (evt == LifecycleEventType.AFTER_GRID_START) {
+                    if (evt == LifecycleEventType.AFTER_IGNITE_START) {
                         GridCache<Integer, byte[]> c = ignite.cache(null);
 
                         if (c.putxIfAbsent(-1, new byte[1])) {

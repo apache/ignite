@@ -17,17 +17,17 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.compute.*;
+import org.apache.ignite.examples.misc.deployment.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
- * GridContinuousMapperExample self test.
+ * Deployment examples self test.
  */
-public class GridContinuousMapperExamplesSelfTest extends GridAbstractExamplesTest {
+public class DeploymentExamplesSelfTest extends AbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGridContinuousMapperExample() throws Exception {
-        ComputeContinuousMapperExample.main(EMPTY_ARGS);
+    public void testGridDeploymentExample() throws Exception {
+        DeploymentExample.main(EMPTY_ARGS);
     }
 }

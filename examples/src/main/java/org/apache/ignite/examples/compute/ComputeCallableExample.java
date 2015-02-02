@@ -24,7 +24,7 @@ import org.apache.ignite.lang.*;
 import java.util.*;
 
 /**
- * Demonstrates using of {@link org.apache.ignite.lang.IgniteCallable} job execution on the grid.
+ * Demonstrates using of {@link org.apache.ignite.lang.IgniteCallable} job execution on the cluster.
  * <p>
  * This example takes a sentence composed of multiple words and counts number of non-space
  * characters in the sentence by having each compute job count characters in each individual
@@ -55,14 +55,14 @@ public class ComputeCallableExample {
                 calls.add(new IgniteCallable<Integer>() {
                     @Override public Integer call() throws Exception {
                         System.out.println();
-                        System.out.println(">>> Printing '" + word + "' on this node from grid job.");
+                        System.out.println(">>> Printing '" + word + "' on this node from igntie job.");
 
                         return word.length();
                     }
                 });
             }
 
-            // Execute collection of callables on the grid.
+            // Execute collection of callables on the ignite.
             Collection<Integer> res = ignite.compute().call(calls);
 
             int sum = 0;
@@ -73,7 +73,7 @@ public class ComputeCallableExample {
 
             System.out.println();
             System.out.println(">>> Total number of characters in the phrase is '" + sum + "'.");
-            System.out.println(">>> Check all nodes for output (this node is also part of the grid).");
+            System.out.println(">>> Check all nodes for output (this node is also part of the cluster).");
         }
     }
 }

@@ -27,7 +27,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Grid cache queries example. This example demonstrates SQL, TEXT, and FULL SCAN
+ * Cache queries example. This example demonstrates SQL, TEXT, and FULL SCAN
  * queries over cache.
  * <p>
  * Example also demonstrates usage of fields queries that return only required

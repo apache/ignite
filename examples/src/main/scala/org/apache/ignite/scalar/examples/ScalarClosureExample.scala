@@ -41,7 +41,7 @@ object ScalarClosureExample extends App {
      * Prints grid topology.
      */
     def topology() {
-        grid$ foreach (n => println("Node: " + nid8$(n)))
+        ignite foreach (n => println("Node: " + nid8$(n)))
     }
 
     /**
@@ -51,31 +51,31 @@ object ScalarClosureExample extends App {
         // Notice the example usage of Java-side closure 'F.println(...)' and method 'scala'
         // that explicitly converts Java side object to a proper Scala counterpart.
         // This method is required since implicit conversion won't be applied here.
-        grid$.run$(for (w <- "Hello World!".split(" ")) yield () => println(w), null)
+        ignite.run$(for (w <- "Hello World!".split(" ")) yield () => println(w), null)
     }
 
     /**
      * Obligatory example - cloud enabled Hello World!
      */
     def helloWorld() {
-        grid$.run$("HELLO WORLD!".split(" ") map (w => () => println(w)), null)
+        ignite.run$("HELLO WORLD!".split(" ") map (w => () => println(w)), null)
     }
 
     /**
      * One way to execute closures on the grid.
      */
     def broadcast() {
-        grid$.bcastRun(() => println("Broadcasting!!!"), null)
+        ignite.bcastRun(() => println("Broadcasting!!!"), null)
     }
 
     /**
      *  Greats all remote nodes only.
      */
     def greetRemotes() {
-        val me = grid$.cluster().localNode.id
+        val me = ignite.cluster().localNode.id
 
         // Note that usage Java-based closure.
-        grid$.cluster().forRemotes() match {
+        ignite.cluster().forRemotes() match {
             case p if p.isEmpty => println("No remote nodes!")
             case p => p.bcastRun(() => println("Greetings from: " + me), null)
         }
@@ -85,11 +85,11 @@ object ScalarClosureExample extends App {
      * Same as previous greetings for all remote nodes but remote projection is created manually.
      */
     def greetRemotesAgain() {
-        val me = grid$.cluster().localNode.id
+        val me = ignite.cluster().localNode.id
 
         // Just show that we can create any projections we like...
         // Note that usage of Java-based closure via 'F' typedef.
-        grid$.cluster().forPredicate((n: ClusterNode) => n.id != me) match {
+        ignite.cluster().forPredicate((n: ClusterNode) => n.id != me) match {
             case p if p.isEmpty => println("No remote nodes!")
             case p => p.bcastRun(() => println("Greetings again from: " + me), null)
         }

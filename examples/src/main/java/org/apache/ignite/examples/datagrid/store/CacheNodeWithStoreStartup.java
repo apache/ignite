@@ -46,9 +46,9 @@ public class CacheNodeWithStoreStartup {
     }
 
     /**
-     * Configure grid.
+     * Configure ignite.
      *
-     * @return Grid configuration.
+     * @return Ignite configuration.
      * @throws IgniteCheckedException If failed.
      */
     public static IgniteConfiguration configure() throws IgniteCheckedException {

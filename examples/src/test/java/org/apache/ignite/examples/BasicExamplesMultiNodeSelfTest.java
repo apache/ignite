@@ -18,9 +18,9 @@
 package org.apache.ignite.examples;
 
 /**
- * Continuation example multi-node self test.
+ * Closure examples multi-node self test.
  */
-public class GridContinuationExamplesMultiNodeSelfTest extends GridContinuationExamplesSelfTest {
+public class BasicExamplesMultiNodeSelfTest extends BasicExamplesSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startRemoteNodes();

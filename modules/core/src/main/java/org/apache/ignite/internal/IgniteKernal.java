@@ -816,7 +816,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             registerExecutorMBeans();
 
             // Lifecycle bean notifications.
-            notifyLifecycleBeans(AFTER_GRID_START);
+            notifyLifecycleBeans(AFTER_IGNITE_START);
         }
         catch (Throwable e) {
             IgniteSpiVersionCheckException verCheckErr = X.cause(e, IgniteSpiVersionCheckException.class);
@@ -1989,7 +1989,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             U.stopLifecycleAware(log, lifecycleAwares(cfg));
 
             // Lifecycle notification.
-            notifyLifecycleBeansEx(LifecycleEventType.AFTER_GRID_STOP);
+            notifyLifecycleBeansEx(LifecycleEventType.AFTER_IGNITE_STOP);
 
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
             IgniteOptimizedMarshaller.clearCache();

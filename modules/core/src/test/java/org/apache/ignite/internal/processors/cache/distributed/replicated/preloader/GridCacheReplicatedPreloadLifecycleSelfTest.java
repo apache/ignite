@@ -84,7 +84,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
 
             @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
                 switch (evt) {
-                    case AFTER_GRID_START: {
+                    case AFTER_IGNITE_START: {
                         GridCache<Object, MyValue> c1 = ignite.cache("one");
                         GridCache<Object, MyValue> c2 = ignite.cache("two");
 
@@ -123,7 +123,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
 
                     case BEFORE_GRID_START:
                     case BEFORE_GRID_STOP:
-                    case AFTER_GRID_STOP: {
+                    case AFTER_IGNITE_STOP: {
                         info("Lifecycle event: " + evt);
 
                         break;

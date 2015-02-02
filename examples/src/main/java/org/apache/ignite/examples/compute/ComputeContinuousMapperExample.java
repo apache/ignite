@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.*;
  * initial {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method completes.
  * <p>
  * String "Hello Continuous Mapper" is passed as an argument for execution
- * of {@link GridContinuousMapperTask}. As an outcome, participating
+ * of {@link org.apache.ignite.examples.compute.ComputeContinuousMapperExample.ContinuousMapperTask}. As an outcome, participating
  * nodes will print out a single word from the passed in string and return
  * number of characters in that word. However, to demonstrate continuous
  * mapping, next word will be mapped to a node only after the result from
@@ -57,7 +57,7 @@ public class ComputeContinuousMapperExample {
         System.out.println(">>> Compute continuous mapper example started.");
 
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
-            int phraseLen = ignite.compute().execute(GridContinuousMapperTask.class, "Hello Continuous Mapper");
+            int phraseLen = ignite.compute().execute(ContinuousMapperTask.class, "Hello Continuous Mapper");
 
             System.out.println();
             System.out.println(">>> Total number of characters in the phrase is '" + phraseLen + "'.");
@@ -75,7 +75,7 @@ public class ComputeContinuousMapperExample {
      * and therefore don't need to accumulate them be be processed at reduction step.
      */
     @ComputeTaskNoResultCache
-    private static class GridContinuousMapperTask extends ComputeTaskAdapter<String, Integer> {
+    private static class ContinuousMapperTask extends ComputeTaskAdapter<String, Integer> {
         /** This field will be injected with task continuous mapper. */
         @IgniteTaskContinuousMapperResource
         private ComputeTaskContinuousMapper mapper;
@@ -87,7 +87,7 @@ public class ComputeContinuousMapperExample {
         private final AtomicInteger totalChrCnt = new AtomicInteger(0);
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> grid, String phrase)
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> nodes, String phrase)
             throws IgniteCheckedException {
             if (phrase == null || phrase.isEmpty())
                 throw new IgniteCheckedException("Phrase is empty.");
@@ -140,7 +140,7 @@ public class ComputeContinuousMapperExample {
                         String word = argument(0);
 
                         System.out.println();
-                        System.out.println(">>> Printing '" + word + "' from grid job at time: " + new Date());
+                        System.out.println(">>> Printing '" + word + "' from igntie job at time: " + new Date());
 
                         int cnt = word.length();
 

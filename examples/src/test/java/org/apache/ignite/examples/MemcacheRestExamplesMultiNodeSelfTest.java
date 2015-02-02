@@ -17,17 +17,15 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.misc.lifecycle.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.examples.misc.client.memcache.*;
 
 /**
- * GridLifecycleExample self test.
+ * GridMemcacheRestExample multi-node self test.
  */
-public class GridLifecycleExamplesSelfTest extends GridAbstractExamplesTest {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGridLifecycleExample() throws Exception {
-        LifecycleExample.main(EMPTY_ARGS);
+public class MemcacheRestExamplesMultiNodeSelfTest extends MemcacheRestExamplesSelfTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        for (int i = 0; i < RMT_NODES_CNT; i++)
+            startGrid("memcache-rest-examples-" + i, MemcacheRestExampleNodeStartup.configuration());
     }
 }

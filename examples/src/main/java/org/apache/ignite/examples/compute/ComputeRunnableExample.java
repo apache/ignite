@@ -56,7 +56,7 @@ public class ComputeRunnableExample {
                 compute.run(new IgniteRunnable() {
                     @Override public void run() {
                         System.out.println();
-                        System.out.println(">>> Printing '" + word + "' on this node from grid job.");
+                        System.out.println(">>> Printing '" + word + "' on this node from igntie job.");
                     }
                 });
 
@@ -69,7 +69,7 @@ public class ComputeRunnableExample {
 
             System.out.println();
             System.out.println(">>> Finished printing words using runnable execution.");
-            System.out.println(">>> Check all nodes for output (this node is also part of the grid).");
+            System.out.println(">>> Check all nodes for output (this node is also part of the cluster).");
         }
     }
 }

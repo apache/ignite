@@ -25,7 +25,7 @@ import org.apache.ignite.lang.*;
 import java.util.*;
 
 /**
- * Grid cache distributed queue example. This example demonstrates {@code FIFO} unbounded
+ * Ignite cache distributed queue example. This example demonstrates {@code FIFO} unbounded
  * cache queue.
  * <p>
  * Remote nodes should always be started with special configuration file which

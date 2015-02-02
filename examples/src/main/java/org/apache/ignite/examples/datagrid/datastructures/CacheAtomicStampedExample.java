@@ -63,10 +63,10 @@ public final class CacheAtomicStampedExample {
 
             System.out.println("Atomic stamped initial [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');
 
-            // Make closure for checking atomic stamped on grid.
+            // Make closure for checking atomic stamped on ignite.
             Runnable c = new StampedUpdateClosure(CACHE_NAME, stampedName);
 
-            // Check atomic stamped on all grid nodes.
+            // Check atomic stamped on all cluster nodes.
             ignite.compute().run(c);
 
             // Make new value of atomic stamped.
@@ -79,7 +79,7 @@ public final class CacheAtomicStampedExample {
 
             stamped.compareAndSet("WRONG EXPECTED VALUE", newVal, "WRONG EXPECTED STAMP", newStamp);
 
-            // Check atomic stamped on all grid nodes.
+            // Check atomic stamped on all cluster nodes.
             // Atomic stamped value and stamp shouldn't be changed.
             ignite.compute().run(c);
 
@@ -87,14 +87,14 @@ public final class CacheAtomicStampedExample {
 
             stamped.compareAndSet(val, newVal, stamp, newStamp);
 
-            // Check atomic stamped on all grid nodes.
+            // Check atomic stamped on all cluster nodes.
             // Atomic stamped value and stamp should be changed.
             ignite.compute().run(c);
         }
 
         System.out.println();
         System.out.println("Finished atomic stamped example...");
-        System.out.println("Check all nodes for output (this node is also part of the grid).");
+        System.out.println("Check all nodes for output (this node is also part of the cluster).");
     }
 
     /**

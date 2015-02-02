@@ -54,16 +54,16 @@ public final class CacheAtomicReferenceExample {
             // Make value of atomic reference.
             String val = UUID.randomUUID().toString();
 
-            // Initialize atomic reference in grid.
+            // Initialize atomic reference in cluster.
             CacheAtomicReference<String> ref = ignite.cache(CACHE_NAME).dataStructures().
                 atomicReference(refName, val, true);
 
             System.out.println("Atomic reference initial value : " + ref.get() + '.');
 
-            // Make closure for checking atomic reference value on grid.
+            // Make closure for checking atomic reference value on cluster.
             Runnable c = new ReferenceClosure(CACHE_NAME, refName);
 
-            // Check atomic reference on all grid nodes.
+            // Check atomic reference on all clsuter nodes.
             ignite.compute().run(c);
 
             // Make new value of atomic reference.
@@ -73,7 +73,7 @@ public final class CacheAtomicReferenceExample {
 
             ref.compareAndSet("WRONG EXPECTED VALUE", newVal); // Won't change.
 
-            // Check atomic reference on all grid nodes.
+            // Check atomic reference on all cluster nodes.
             // Atomic reference value shouldn't be changed.
             ignite.compute().run(c);
 
@@ -81,14 +81,14 @@ public final class CacheAtomicReferenceExample {
 
             ref.compareAndSet(val, newVal);
 
-            // Check atomic reference on all grid nodes.
+            // Check atomic reference on all cluster nodes.
             // Atomic reference value should be changed.
             ignite.compute().run(c);
         }
 
         System.out.println();
         System.out.println("Finished atomic reference example...");
-        System.out.println("Check all nodes for output (this node is also part of the grid).");
+        System.out.println("Check all nodes for output (this node is also part of the cluster).");
     }
 
     /**

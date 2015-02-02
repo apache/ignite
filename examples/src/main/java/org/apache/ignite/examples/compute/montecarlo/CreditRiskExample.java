@@ -72,9 +72,9 @@ public final class CreditRiskExample {
             long start = System.currentTimeMillis();
 
             // Calculate credit risk and print it out.
-            // As you can see the grid enabling is completely hidden from the caller
+            // As you can see the ignite enabling is completely hidden from the caller
             // and it is fully transparent to him. In fact, the caller is never directly
-            // aware if method was executed just locally or on the 100s of grid nodes.
+            // aware if method was executed just locally or on the 100s of cluster nodes.
             // Credit risk crdRisk is the minimal amount that creditor has to have
             // available to cover possible defaults.
 
@@ -112,22 +112,22 @@ public final class CreditRiskExample {
     /**
      * Creates closures for calculating credit risks.
      *
-     * @param gridSize Size of the grid.
+     * @param clusterSize Size of the cluster.
      * @param portfolio Portfolio.
      * @param horizon Forecast horizon in days.
      * @param iter Number of Monte-Carlo iterations.
      * @param percentile Percentile.
      * @return Collection of closures.
      */
-    private static Collection<IgniteCallable<Double>> jobs(int gridSize, final Credit[] portfolio,
+    private static Collection<IgniteCallable<Double>> jobs(int clusterSize, final Credit[] portfolio,
         final int horizon, int iter, final double percentile) {
         // Number of iterations should be done by each node.
-        int iterPerNode = Math.round(iter / (float)gridSize);
+        int iterPerNode = Math.round(iter / (float)clusterSize);
 
         // Number of iterations for the last/the only node.
-        int lastNodeIter = iter - (gridSize - 1) * iterPerNode;
+        int lastNodeIter = iter - (clusterSize - 1) * iterPerNode;
 
-        Collection<IgniteCallable<Double>> clos = new ArrayList<>(gridSize);
+        Collection<IgniteCallable<Double>> clos = new ArrayList<>(clusterSize);
 
         // Note that for the purpose of this example we perform a simple homogeneous
         // (non weighted) split assuming that all computing resources in this split
@@ -136,8 +136,8 @@ public final class CreditRiskExample {
         // node in the split will be more efficient. It is fairly easy addition and
         // Ignite comes with convenient Spring-compatible benchmark that can be
         // used for weighted splits.
-        for (int i = 0; i < gridSize; i++) {
-            final int nodeIter = i == gridSize - 1 ? lastNodeIter : iterPerNode;
+        for (int i = 0; i < clusterSize; i++) {
+            final int nodeIter = i == clusterSize - 1 ? lastNodeIter : iterPerNode;
 
             clos.add(new IgniteCallable<Double>() {
                 /** {@inheritDoc} */

@@ -54,7 +54,7 @@ public final class ComputeExecutorServiceExample {
                 exec.submit(new IgniteRunnable() {
                     @Override public void run() {
                         System.out.println();
-                        System.out.println(">>> Printing '" + word + "' on this node from grid job.");
+                        System.out.println(">>> Printing '" + word + "' on this node from igntie job.");
                     }
                 });
             }
@@ -65,7 +65,7 @@ public final class ComputeExecutorServiceExample {
             exec.awaitTermination(0, TimeUnit.MILLISECONDS);
 
             System.out.println();
-            System.out.println(">>> Check all nodes for output (this node is also part of the grid).");
+            System.out.println(">>> Check all nodes for output (this node is also part of the cluster).");
         }
     }
 }

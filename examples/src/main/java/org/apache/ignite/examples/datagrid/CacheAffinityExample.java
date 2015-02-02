@@ -61,10 +61,10 @@ public final class CacheAffinityExample {
             for (int i = 0; i < KEY_CNT; i++)
                 cache.put(i, Integer.toString(i));
 
-            // Co-locates jobs with data using GridCompute.affinityRun(...) method.
+            // Co-locates jobs with data using IgniteCompute.affinityRun(...) method.
             visitUsingAffinityRun();
 
-            // Co-locates jobs with data using Grid.mapKeysToNodes(...) method.
+            // Co-locates jobs with data using IgniteCluster.mapKeysToNodes(...) method.
             visitUsingMapKeysToNodes();
         }
     }

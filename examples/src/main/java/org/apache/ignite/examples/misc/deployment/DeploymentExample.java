@@ -104,10 +104,10 @@ public final class DeploymentExample {
     @ComputeTaskName(TASK_NAME)
     public static class ExampleTask extends ComputeTaskSplitAdapter<String, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
-            Collection<ComputeJob> jobs = new ArrayList<>(gridSize);
+        @Override protected Collection<? extends ComputeJob> split(int clusterSize, String arg) throws IgniteCheckedException {
+            Collection<ComputeJob> jobs = new ArrayList<>(clusterSize);
 
-            for (int i = 0; i < gridSize; i++) {
+            for (int i = 0; i < clusterSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
                     @Nullable @Override public Serializable execute() {
                         System.out.println(">>> Executing deployment example job on this node.");

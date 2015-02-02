@@ -17,23 +17,17 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.compute.*;
+import org.apache.ignite.examples.events.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
- *
+ * Events examples self test.
  */
-public class GridProjectionExampleSelfTest extends GridAbstractExamplesTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        // Start up a grid node.
-        startGrid("grid-projection-example", DFLT_CFG);
-    }
-
+public class EventsExamplesSelfTest extends AbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGridProjectionExample() throws Exception {
-        ComputeProjectionExample.main(EMPTY_ARGS);
+    public void testGridEventsExample() throws Exception {
+        EventsExample.main(EMPTY_ARGS);
     }
 }

@@ -24,16 +24,16 @@ import org.springframework.context.support.*;
 import java.util.concurrent.*;
 
 /**
- * Demonstrates a simple use of Ignite grid configured with Spring.
+ * Demonstrates a simple use of Ignite configured with Spring.
  * <p>
  * String "Hello World." is printed out by Callable passed into
  * the executor service provided by Grid. This statement could be printed
- * out on any node in the grid.
+ * out on any node in the cluster.
  * <p>
- * The major point of this example is to show grid injection by Spring
+ * The major point of this example is to show ignite injection by Spring
  * framework. Grid bean is described in {@code spring-bean.xml} file and instantiated
  * by Spring context. Once application completed its execution Spring will
- * apply grid bean destructor and stop the grid.
+ * apply ignite bean destructor and stop the ignite.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
@@ -57,7 +57,7 @@ public final class SpringBeanExample {
             new ClassPathXmlApplicationContext("org/apache/ignite/examples/misc/springbean/spring-bean.xml");
 
         try {
-            // Get grid from Spring (note that local grid node is already started).
+            // Get grid from Spring (note that local cluster node is already started).
             Ignite ignite = (Ignite)ctx.getBean("mySpringBean");
 
             // Execute any method on the retrieved grid instance.
@@ -77,11 +77,11 @@ public final class SpringBeanExample {
             System.out.println(">>>");
             System.out.println(">>> Finished executing Grid \"Spring bean\" example.");
             System.out.println(">>> You should see printed out of 'Hello world' on one of the nodes.");
-            System.out.println(">>> Check all nodes for output (this node is also part of the grid).");
+            System.out.println(">>> Check all nodes for output (this node is also part of the cluster).");
             System.out.println(">>>");
         }
         finally {
-            // Stop local grid node.
+            // Stop local cluster node.
             ctx.destroy();
         }
     }

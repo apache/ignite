@@ -45,7 +45,7 @@ object ScalarCacheQueryExample {
      */
     def main(args: Array[String]) {
         scalar("examples/config/example-cache.xml") {
-            example(grid$)
+            example(ignite)
         }
     }
 

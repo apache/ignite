@@ -48,7 +48,7 @@ public class ComputeProjectionExample {
 
             IgniteCluster cluster = ignite.cluster();
 
-            // Say hello to all nodes in the grid, including local node.
+            // Say hello to all nodes in the cluster, including local node.
             sayHello(ignite, cluster);
 
             // Say hello to all remote nodes.

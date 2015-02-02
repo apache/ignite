@@ -39,7 +39,7 @@ import scala.util.control.Breaks._
  * output).
  *
  * Note that when running this example on a multi-core box, simply
- * starting additional grid node on the same box will speed up
+ * starting additional cluster node on the same box will speed up
  * prime number calculation by a factor of 2.
  */
 object ScalarPrimeExample {
@@ -58,7 +58,7 @@ object ScalarPrimeExample {
             println(">>>")
             println(">>> Starting to check the following numbers for primes: " + util.Arrays.toString(checkVals))
 
-            val g = grid$
+            val g = ignite
 
             checkVals.foreach(checkVal => {
                 val divisor = g.reduce$[Option[Long], Option[Option[Long]]](

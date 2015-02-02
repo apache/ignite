@@ -41,7 +41,7 @@ object ScalarPingPongExample extends App {
      * Implements Ping Pong example between local and remote node.
      */
     def pingPong() {
-        val g = grid$
+        val g = ignite
 
         if (g.cluster().nodes().size < 2) {
             println(">>>")
@@ -71,7 +71,7 @@ object ScalarPingPongExample extends App {
 
             // Set up local player: configure local node 'loc'
             // to listen for messages from remote node 'rmt'.
-            grid$.message().localListen(null, new MessagingListenActor[String]() {
+            ignite.message().localListen(null, new MessagingListenActor[String]() {
                 def receive(nodeId: UUID, msg: String) {
                     println(msg)
 
@@ -96,7 +96,7 @@ object ScalarPingPongExample extends App {
      * Implements Ping Pong example between two remote nodes.
      */
     def pingPong2() {
-        val g = grid$
+        val g = ignite
 
         if (g.cluster().forRemotes().nodes().size() < 2) {
             println(">>>")

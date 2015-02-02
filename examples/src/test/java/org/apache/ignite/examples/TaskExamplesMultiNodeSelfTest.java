@@ -17,17 +17,12 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.events.*;
-import org.apache.ignite.testframework.junits.common.*;
-
 /**
- * Events examples self test.
+ * Hello world examples multi-node self test.
  */
-public class GridEventsExamplesSelfTest extends GridAbstractExamplesTest {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGridEventsExample() throws Exception {
-        EventsExample.main(EMPTY_ARGS);
+public class TaskExamplesMultiNodeSelfTest extends TaskExamplesSelfTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        startRemoteNodes();
     }
 }

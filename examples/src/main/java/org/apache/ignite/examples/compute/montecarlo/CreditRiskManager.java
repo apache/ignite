@@ -26,7 +26,7 @@ import java.util.*;
 public class CreditRiskManager {
     /**
      * Default randomizer with normal distribution.
-     * Note that since every JVM on the grid will have its own random
+     * Note that since every JVM on the cluster will have its own random
      * generator (independently initialized) the Monte-Carlo simulation
      * will be slightly skewed when performed on the grid due to skewed
      * normal distribution of the sub-jobs comparing to execution on the

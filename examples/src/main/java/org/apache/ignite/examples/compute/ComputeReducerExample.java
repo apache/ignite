@@ -25,7 +25,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Demonstrates a simple use of Ignite grid with reduce closure.
+ * Demonstrates a simple use of Ignite with reduce closure.
  * <p>
  * Phrase is split into words and distributed across nodes where length of each word is
  * calculated. Then total phrase length is calculated using reducer.
@@ -52,7 +52,7 @@ public class ComputeReducerExample {
                 new IgniteClosure<String, Integer>() {
                     @Override public Integer apply(String word) {
                         System.out.println();
-                        System.out.println(">>> Printing '" + word + "' on this node from grid job.");
+                        System.out.println(">>> Printing '" + word + "' on this node from igntie job.");
 
                         // Return number of letters in the word.
                         return word.length();
@@ -83,7 +83,7 @@ public class ComputeReducerExample {
 
             System.out.println();
             System.out.println(">>> Total number of characters in the phrase is '" + sum + "'.");
-            System.out.println(">>> Check all nodes for output (this node is also part of the grid).");
+            System.out.println(">>> Check all nodes for output (this node is also part of the cluster).");
         }
     }
 }

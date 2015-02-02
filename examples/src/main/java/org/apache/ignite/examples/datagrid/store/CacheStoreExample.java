@@ -44,7 +44,7 @@ public class CacheStoreExample {
     public static void main(String[] args) throws Exception {
         IgniteConfiguration cfg = CacheNodeWithStoreStartup.configure();
 
-        // To start grid with desired configuration uncomment the appropriate line.
+        // To start ignite with desired configuration uncomment the appropriate line.
         try (Ignite ignite = Ignition.start(cfg)) {
             System.out.println();
             System.out.println(">>> Cache store example started.");

@@ -62,10 +62,10 @@ object ScalarCreditRiskExample {
             // Calculate credit risk and print it out.
             // As you can see the grid enabling is completely hidden from the caller
             // and it is fully transparent to him. In fact, the caller is never directly
-            // aware if method was executed just locally or on the 100s of grid nodes.
+            // aware if method was executed just locally or on the 100s of cluster nodes.
             // Credit risk crdRisk is the minimal amount that creditor has to have
             // available to cover possible defaults.
-            val crdRisk = grid$ @< (closures(grid$.cluster().nodes().size(), portfolio, horizon, iter, percentile),
+            val crdRisk = ignite @< (closures(ignite.cluster().nodes().size(), portfolio, horizon, iter, percentile),
                 (s: Seq[Double]) => s.sum / s.size, null)
 
             println("Credit risk [crdRisk=" + crdRisk + ", duration=" +

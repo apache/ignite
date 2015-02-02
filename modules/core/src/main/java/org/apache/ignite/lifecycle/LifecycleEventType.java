@@ -37,7 +37,7 @@ public enum LifecycleEventType {
      * Invoked after grid startup is complete. Grid is fully
      * initialized and fully functional.
      */
-    AFTER_GRID_START,
+    AFTER_IGNITE_START,
 
     /**
      * Invoked before grid stopping routine. Grid is fully functional
@@ -49,7 +49,7 @@ public enum LifecycleEventType {
      * Invoked after grid had stopped. Grid is stopped and
      * cannot be used.
      */
-    AFTER_GRID_STOP;
+    AFTER_IGNITE_STOP;
 
     /** Enumerated values. */
     private static final LifecycleEventType[] VALS = values();

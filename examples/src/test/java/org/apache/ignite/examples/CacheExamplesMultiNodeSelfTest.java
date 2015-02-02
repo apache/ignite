@@ -17,29 +17,32 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.compute.failover.*;
-import org.apache.ignite.testframework.junits.common.*;
-
 /**
- * Checkpoint examples self test.
+ * Cache examples multi-node self test.
  */
-public class GridCheckpointExamplesSelfTest extends GridAbstractExamplesTest {
-    /**
-     * Starts remote nodes before each test.
-     *
-     * Note: using beforeTestsStarted() to start nodes only once won't work.
-     *
-     * @throws Exception If remote nodes start failed.
-     */
-    @Override protected void beforeTest() throws Exception {
-        for (int i = 0; i < RMT_NODES_CNT; i++)
-            startGrid("node-" + i, ComputeFailoverNodeStartup.configuration());
+public class CacheExamplesMultiNodeSelfTest extends CacheExamplesSelfTest {
+    /** {@inheritDoc} */
+    @Override protected String defaultConfig() {
+        return "examples/config/example-cache.xml";
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGridCheckpointExample() throws Exception {
-        ComputeFailoverExample.main(EMPTY_ARGS);
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        startRemoteNodes();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 10 * 60 * 1000;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testCacheStoreExample() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testCacheStoreLoaderExample() throws Exception {
+        // No-op.
     }
 }

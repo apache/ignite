@@ -27,7 +27,7 @@ import java.util.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
- * This examples demonstrates events API. Note that grid events are disabled by default and
+ * This examples demonstrates events API. Note that ignite events are disabled by default and
  * must be specifically enabled, just like in {@code examples/config/example-cache.xml} file.
  * <p>
  * Remote nodes should always be started with special configuration file which

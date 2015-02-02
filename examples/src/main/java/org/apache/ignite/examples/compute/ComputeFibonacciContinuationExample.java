@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * This example demonstrates how to use continuation feature of Ignite by
  * performing the distributed recursive calculation of {@code 'Fibonacci'}
- * numbers on the grid. Continuations
+ * numbers on the cluster. Continuations
  * functionality is exposed via {@link org.apache.ignite.compute.ComputeJobContext#holdcc()} and
  * {@link org.apache.ignite.compute.ComputeJobContext#callcc()} method calls in {@link FibonacciClosure} class.
  * <p>
@@ -77,7 +77,7 @@ public final class ComputeFibonacciContinuationExample {
             System.out.println(">>> Fibonacci sequence for input number '" + N + "' is '" + fib + "'.");
             System.out.println(">>> If you re-run this example w/o stopping remote nodes - the performance will");
             System.out.println(">>> increase since intermediate results are pre-cache on remote nodes.");
-            System.out.println(">>> You should see prints out every recursive Fibonacci execution on grid nodes.");
+            System.out.println(">>> You should see prints out every recursive Fibonacci execution on cluster nodes.");
             System.out.println(">>> Check remote nodes for output.");
         }
     }

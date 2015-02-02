@@ -17,15 +17,12 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.misc.client.memcache.*;
-
 /**
- * GridMemcacheRestExample multi-node self test.
+ * GridContinuousMapperExample multi-node self test.
  */
-public class GridMemcacheRestExamplesMultiNodeSelfTest extends GridMemcacheRestExamplesSelfTest {
+public class ContinuousMapperExamplesMultiNodeSelfTest extends ContinuationExamplesSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        for (int i = 0; i < RMT_NODES_CNT; i++)
-            startGrid("memcache-rest-examples-" + i, MemcacheRestExampleNodeStartup.configuration());
+        startRemoteNodes();
     }
 }

@@ -64,7 +64,7 @@ import org.apache.ignite.testframework.junits.common.*;
  *      Classpath should contain the {@code ${IGNITE_HOME}/modules/tests/config/aop/aspectj} folder.
  * </li>
  */
-public class GridMonteCarloExamplesSelfTest extends GridAbstractExamplesTest {
+public class MonteCarloExamplesSelfTest extends AbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */

@@ -24,7 +24,7 @@ import org.apache.ignite.lang.*;
 import java.util.*;
 
 /**
- * Demonstrates a simple use of Ignite grid with reduce closure.
+ * Demonstrates a simple use of Ignite with reduce closure.
  * <p>
  * This example splits a phrase into collection of words, computes their length on different
  * nodes and then computes total amount of non-whitespaces characters in the phrase.
@@ -47,12 +47,12 @@ public class ComputeClosureExample {
             System.out.println();
             System.out.println(">>> Compute closure example started.");
 
-            // Execute closure on all grid nodes.
+            // Execute closure on all cluster nodes.
             Collection<Integer> res = ignite.compute().apply(
                 new IgniteClosure<String, Integer>() {
                     @Override public Integer apply(String word) {
                         System.out.println();
-                        System.out.println(">>> Printing '" + word + "' on this node from grid job.");
+                        System.out.println(">>> Printing '" + word + "' on this node from igntie job.");
 
                         // Return number of letters in the word.
                         return word.length();
@@ -71,7 +71,7 @@ public class ComputeClosureExample {
 
             System.out.println();
             System.out.println(">>> Total number of characters in the phrase is '" + sum + "'.");
-            System.out.println(">>> Check all nodes for output (this node is also part of the grid).");
+            System.out.println(">>> Check all nodes for output (this node is also part of the cluster).");
         }
     }
 }

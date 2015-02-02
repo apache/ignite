@@ -17,17 +17,12 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.compute.*;
-import org.apache.ignite.testframework.junits.common.*;
-
 /**
- * Continuation example self test.
+ * GridPrimeExample multi-node self test.
  */
-public class GridContinuationExamplesSelfTest extends GridAbstractExamplesTest {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGridContinuationExample() throws Exception {
-        ComputeFibonacciContinuationExample.main(EMPTY_ARGS);
+public class MonteCarloExamplesMultiNodeSelfTest extends MonteCarloExamplesSelfTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        startRemoteNodes();
     }
 }

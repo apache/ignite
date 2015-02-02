@@ -26,7 +26,7 @@ import java.util.concurrent.*;
 
 /**
  * Demonstrates a cron-based {@link Runnable} execution scheduling.
- * Test runnable object broadcasts a phrase to all grid nodes every minute
+ * Test runnable object broadcasts a phrase to all cluster nodes every minute
  * three times with initial scheduling delay equal to five seconds.
  * <p>
  * Remote nodes should always be started with special configuration file which

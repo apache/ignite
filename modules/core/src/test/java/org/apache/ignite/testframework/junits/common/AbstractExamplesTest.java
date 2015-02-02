@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * Base class for examples test.
  */
-public abstract class GridAbstractExamplesTest extends GridCommonAbstractTest {
+public abstract class AbstractExamplesTest extends GridCommonAbstractTest {
     /** */
     protected static final String[] EMPTY_ARGS = new String[0];
 

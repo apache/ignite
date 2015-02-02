@@ -54,13 +54,13 @@ public class CacheCountDownLatchExample {
             // Make name of count down latch.
             final String latchName = UUID.randomUUID().toString();
 
-            // Initialize count down latch in grid.
+            // Initialize count down latch in ignite.
             CacheCountDownLatch latch = ignite.cache(CACHE_NAME).dataStructures().
                 countDownLatch(latchName, INITIAL_COUNT, false, true);
 
             System.out.println("Latch initial value: " + latch.count());
 
-            // Start waiting on the latch on all grid nodes.
+            // Start waiting on the latch on all cluster nodes.
             for (int i = 0; i < INITIAL_COUNT; i++)
                 ignite.compute().run(new LatchClosure(CACHE_NAME, latchName));
 
@@ -72,7 +72,7 @@ public class CacheCountDownLatchExample {
 
         System.out.println();
         System.out.println("Finished count down latch example...");
-        System.out.println("Check all nodes for output (this node is also part of the grid).");
+        System.out.println("Check all nodes for output (this node is also part of the cluster).");
     }
 
     /**

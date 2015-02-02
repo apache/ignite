@@ -36,7 +36,7 @@ import scala.collection.JavaConversions._
  */
 object ScalarTaskExample extends App {
     scalar("examples/config/example-compute.xml") {
-        grid$.compute().execute(classOf[GridHelloWorld], "Hello Cloud World!")
+        ignite.compute().execute(classOf[GridHelloWorld], "Hello Cloud World!")
     }
 
     /**

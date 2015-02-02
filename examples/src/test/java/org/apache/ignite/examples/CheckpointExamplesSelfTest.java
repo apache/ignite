@@ -17,25 +17,29 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.misc.client.memcache.*;
+import org.apache.ignite.examples.compute.failover.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
- * GridMemcacheRestExample self test.
+ * Checkpoint examples self test.
  */
-public class GridMemcacheRestExamplesSelfTest extends GridAbstractExamplesTest {
+public class CheckpointExamplesSelfTest extends AbstractExamplesTest {
     /**
-     * @throws Exception If failed.
+     * Starts remote nodes before each test.
+     *
+     * Note: using beforeTestsStarted() to start nodes only once won't work.
+     *
+     * @throws Exception If remote nodes start failed.
      */
     @Override protected void beforeTest() throws Exception {
-        // Start up a grid node.
-        startGrid("memcache-rest-examples", MemcacheRestExampleNodeStartup.configuration());
+        for (int i = 0; i < RMT_NODES_CNT; i++)
+            startGrid("node-" + i, ComputeFailoverNodeStartup.configuration());
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridMemcacheRestExample() throws Exception {
-        MemcacheRestExample.main(EMPTY_ARGS);
+    public void testGridCheckpointExample() throws Exception {
+        ComputeFailoverExample.main(EMPTY_ARGS);
     }
 }

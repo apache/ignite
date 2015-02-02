@@ -26,130 +26,130 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  * Cache examples self test.
  */
-public class GridCacheExamplesSelfTest extends GridAbstractExamplesTest {
+public class CacheExamplesSelfTest extends AbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGridCacheAffinityExample() throws Exception {
+    public void testCacheAffinityExample() throws Exception {
         CacheAffinityExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridCacheAtomicLongExample() throws Exception {
+    public void testCacheAtomicLongExample() throws Exception {
         CacheAtomicLongExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridCacheAtomicReferenceExample() throws Exception {
+    public void testCacheAtomicReferenceExample() throws Exception {
         CacheAtomicReferenceExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridCacheAtomicSequenceExample() throws Exception {
+    public void testCacheAtomicSequenceExample() throws Exception {
         CacheAtomicSequenceExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridCacheAtomicStampedExample() throws Exception {
+    public void testCacheAtomicStampedExample() throws Exception {
         CacheAtomicStampedExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridCacheCountDownLatchExample() throws Exception {
+    public void testCacheCountDownLatchExample() throws Exception {
         CacheCountDownLatchExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridCacheQueueExample() throws Exception {
+    public void testCacheQueueExample() throws Exception {
         CacheQueueExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridCacheSetExample() throws Exception {
+    public void testCacheSetExample() throws Exception {
         CacheSetExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridCacheStoreExample() throws Exception {
+    public void testCacheStoreExample() throws Exception {
         CacheStoreExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridCacheQueryExample() throws Exception {
+    public void testCacheQueryExample() throws Exception {
         CacheQueryExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridCacheApiExample() throws Exception {
+    public void testCacheApiExample() throws Exception {
         CacheApiExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridCacheTransactionExample() throws Exception {
+    public void testCacheTransactionExample() throws Exception {
         CacheTransactionExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridCacheDataLoaderExample() throws Exception {
+    public void testCacheDataLoaderExample() throws Exception {
         CacheDataLoaderExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridPopularNumbersRealTimeExample() throws Exception {
+    public void testPopularNumbersRealTimeExample() throws Exception {
         CachePopularNumbersExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridCacheStoreLoaderExample() throws Exception {
+    public void testCacheStoreLoaderExample() throws Exception {
         CacheStoreLoadDataExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridCachePutGetExample() throws Exception {
+    public void testCachePutGetExample() throws Exception {
         CachePutGetExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridSnowflakeSchemaExample() throws Exception {
+    public void testSnowflakeSchemaExample() throws Exception {
         CacheStarSchemaExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridCacheContinuousQueryExample() throws Exception {
+    public void testCacheContinuousQueryExample() throws Exception {
         CacheContinuousQueryExample.main(EMPTY_ARGS);
     }
 }

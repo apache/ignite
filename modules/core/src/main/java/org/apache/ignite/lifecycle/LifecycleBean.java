@@ -33,7 +33,7 @@ import org.apache.ignite.*;
  *   annotation, you cannot use it yet.
  * </li>
  * <li>
- *   {@link LifecycleEventType#AFTER_GRID_START} invoked right after grid
+ *   {@link LifecycleEventType#AFTER_IGNITE_START} invoked right after grid
  *   has started. At this point, if you injected a grid instance via
  *   {@link org.apache.ignite.resources.IgniteInstanceResource} annotation, you can start using it. Note that
  *   you should not be using {@link org.apache.ignite.Ignition} to get grid instance from
@@ -46,7 +46,7 @@ import org.apache.ignite.*;
  *   you can use it.
  * </li>
  * <li>
- *   {@link LifecycleEventType#AFTER_GRID_STOP} invoked right after grid
+ *   {@link LifecycleEventType#AFTER_IGNITE_STOP} invoked right after grid
  *   has stopped. Note that grid is not available during this event.
  * </li>
  * </ul>

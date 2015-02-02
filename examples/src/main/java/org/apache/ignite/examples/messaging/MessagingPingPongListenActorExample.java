@@ -44,7 +44,7 @@ public class MessagingPingPongListenActorExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        // Game is played over the default grid.
+        // Game is played over the default ignite.
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2))
                 return;

@@ -18,7 +18,7 @@
   -->
 
 <!--
-    Command line (default) grid configuration.
+    Command line (default) ignite configuration.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -26,7 +26,7 @@
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
-    <description>Main Spring file for grid configuration.</description>
+    <description>Main Spring file for ignite configuration.</description>
 
     <!-- Example of bean definition with given configuration. -->
     <bean id="mySpringBean" class="org.apache.ignite.IgniteSpringBean">

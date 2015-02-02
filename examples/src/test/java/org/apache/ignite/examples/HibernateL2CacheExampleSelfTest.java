@@ -17,12 +17,17 @@
 
 package org.apache.ignite.examples;
 
+import org.apache.ignite.examples.datagrid.hibernate.*;
+import org.apache.ignite.testframework.junits.common.*;
+
 /**
- * Closure examples multi-node self test.
+ * Tests the {@link HibernateL2CacheExample}.
  */
-public class GridBasicExamplesMultiNodeSelfTest extends GridBasicExamplesSelfTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        startRemoteNodes();
+public class HibernateL2CacheExampleSelfTest extends AbstractExamplesTest {
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGridHibernateL2CacheExample() throws Exception {
+        HibernateL2CacheExample.main(EMPTY_ARGS);
     }
 }

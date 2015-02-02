@@ -17,12 +17,23 @@
 
 package org.apache.ignite.examples;
 
+import org.apache.ignite.examples.datagrid.store.*;
+import org.apache.ignite.testframework.junits.common.*;
+
 /**
- * Events examples multi-node self test.
+ *
  */
-public class GridEventsExamplesMultiNodeSelfTest extends GridEventsExamplesSelfTest {
+public class CacheStoreLoadDataExampleMultiNodeSelfTest extends AbstractExamplesTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startRemoteNodes();
+        for (int i = 0; i < RMT_NODES_CNT; i++)
+            startGrid("node-" + i, CacheNodeWithStoreStartup.configure());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGridCacheStoreLoaderExample() throws Exception {
+        CacheStoreLoadDataExample.main(EMPTY_ARGS);
     }
 }

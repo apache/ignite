@@ -17,14 +17,15 @@
 
 package org.apache.ignite.examples;
 
-/**
- * Deployment examples multi-node self test.
- */
-public class GridDeploymentExamplesMultiNodeSelfTest extends GridDeploymentExamplesSelfTest {
-    /** {@inheritDoc} */
-    @Override public void testGridDeploymentExample() throws Exception {
-        startRemoteNodes();
+import org.apache.ignite.examples.datagrid.hibernate.*;
 
-        super.testGridDeploymentExample();
+/**
+ * Multi-node test for {@link HibernateL2CacheExample}.
+ */
+public class HibernateL2CacheExampleMultiNodeSelfTest extends HibernateL2CacheExampleSelfTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        for (int i = 0; i < RMT_NODES_CNT; i++)
+            startGrid("node-" + i, HibernateL2CacheExampleNodeStartup.configuration());
     }
 }

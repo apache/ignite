@@ -54,7 +54,7 @@ public final class CacheAtomicSequenceExample {
             // Make name of sequence.
             final String seqName = UUID.randomUUID().toString();
 
-            // Initialize atomic sequence in grid.
+            // Initialize atomic sequence in ignite.
             CacheAtomicSequence seq = ignite.cache(CACHE_NAME).dataStructures().atomicSequence(seqName, 0, true);
 
             // First value of atomic sequence on this node.
@@ -62,7 +62,7 @@ public final class CacheAtomicSequenceExample {
 
             System.out.println("Sequence initial value: " + firstVal);
 
-            // Try increment atomic sequence on all grid nodes. Note that this node is also part of the grid.
+            // Try increment atomic sequence on all cluster nodes. Note that this node is also part of the cluster.
             ignite.compute().run(new SequenceClosure(CACHE_NAME, seqName));
 
             System.out.println("Sequence after incrementing [expected=" + (firstVal + RETRIES) + ", actual=" +
@@ -71,7 +71,7 @@ public final class CacheAtomicSequenceExample {
 
         System.out.println();
         System.out.println("Finished atomic sequence example...");
-        System.out.println("Check all nodes for output (this node is also part of the grid).");
+        System.out.println("Check all nodes for output (this node is also part of the cluster).");
     }
 
     /**

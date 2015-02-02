@@ -30,7 +30,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Demonstrates event consume API that allows to register event listeners on remote nodes.
- * Note that grid events are disabled by default and must be specifically enabled,
+ * Note that ignite events are disabled by default and must be specifically enabled,
  * just like in {@code examples/config/example-compute.xml} file.
  * <p>
  * Remote nodes should always be started with configuration: {@code 'ignite.sh examples/config/example-compute.xml'}.
@@ -53,7 +53,7 @@ public class EventsExample {
             // Listen to events happening on local node.
             localListen();
 
-            // Listen to events happening on all grid nodes.
+            // Listen to events happening on all cluster nodes.
             remoteListen();
 
             // Wait for a while while callback is notified about remaining puts.
@@ -95,7 +95,7 @@ public class EventsExample {
     }
 
     /**
-     * Listen to events coming from all grid nodes.
+     * Listen to events coming from all cluster nodes.
      *
      * @throws IgniteCheckedException If failed.
      */

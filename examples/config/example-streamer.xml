@@ -18,7 +18,7 @@
   -->
 
 <!--
-    Ignite Spring configuration file to startup grid with streamers.
+    Ignite Spring configuration file to startup ignite with streamers.
 
     When starting a standalone node, you need to execute the following command:
     {IGNITE_HOME}/bin/ignite.{bat|sh} examples/config/example-streamer.xml
@@ -43,7 +43,7 @@
     </description>
 
     <!--
-        Configuration below demonstrates how to setup caches within grid nodes.
+        Configuration below demonstrates how to setup caches within cluster nodes.
     -->
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="marshaller">

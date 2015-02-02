@@ -17,17 +17,12 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.misc.springbean.*;
-import org.apache.ignite.testframework.junits.common.*;
-
 /**
- * Spring bean examples self test.
+ * Events examples multi-node self test.
  */
-public class GridSpringBeanExamplesSelfTest extends GridAbstractExamplesTest {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGridSpringBeanHelloWorldExample() throws Exception {
-        SpringBeanExample.main(EMPTY_ARGS);
+public class EventsExamplesMultiNodeSelfTest extends EventsExamplesSelfTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        startRemoteNodes();
     }
 }

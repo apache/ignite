@@ -17,12 +17,23 @@
 
 package org.apache.ignite.examples;
 
+import org.apache.ignite.examples.compute.*;
+import org.apache.ignite.testframework.junits.common.*;
+
 /**
- * GridPrimeExample multi-node self test.
+ *
  */
-public class GridMonteCarloExamplesMultiNodeSelfTest extends GridMonteCarloExamplesSelfTest {
+public class ProjectionExampleSelfTest extends AbstractExamplesTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startRemoteNodes();
+        // Start up a cluster node.
+        startGrid("grid-projection-example", DFLT_CFG);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGridProjectionExample() throws Exception {
+        ComputeProjectionExample.main(EMPTY_ARGS);
     }
 }

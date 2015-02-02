@@ -17,23 +17,17 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.datagrid.store.*;
+import org.apache.ignite.examples.compute.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
- *
+ * Continuation example self test.
  */
-public class GridCacheStoreLoadDataExampleMultiNodeSelfTest extends GridAbstractExamplesTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        for (int i = 0; i < RMT_NODES_CNT; i++)
-            startGrid("node-" + i, CacheNodeWithStoreStartup.configure());
-    }
-
+public class ContinuationExamplesSelfTest extends AbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGridCacheStoreLoaderExample() throws Exception {
-        CacheStoreLoadDataExample.main(EMPTY_ARGS);
+    public void testGridContinuationExample() throws Exception {
+        ComputeFibonacciContinuationExample.main(EMPTY_ARGS);
     }
 }

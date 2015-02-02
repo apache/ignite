@@ -18,7 +18,7 @@
   -->
 
 <!--
-    Ignite Spring configuration file to startup grid cache.
+    Ignite Spring configuration file to startup ignite cache.
 
     When starting a standalone node, you need to execute the following command:
     {IGNITE_HOME}/bin/ignite.{bat|sh} examples/config/filesystem/example-ggfs.xml

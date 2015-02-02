@@ -26,10 +26,10 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Demonstrates a simple use of Ignite grid with
+ * Demonstrates a simple use of Ignite with
  * {@link org.apache.ignite.compute.ComputeTaskAdapter}.
  * <p>
- * Phrase passed as task argument is split into words on map stage and distributed among grid nodes.
+ * Phrase passed as task argument is split into words on map stage and distributed among cluster nodes.
  * Each node computes word length and returns result to master node where total phrase length is
  * calculated on reduce stage.
  * <p>
@@ -51,12 +51,12 @@ public class ComputeTaskMapExample {
             System.out.println();
             System.out.println("Compute task map example started.");
 
-            // Execute task on the grid and wait for its completion.
+            // Execute task on the cluster and wait for its completion.
             int cnt = ignite.compute().execute(CharacterCountTask.class, "Hello Grid Enabled World!");
 
             System.out.println();
             System.out.println(">>> Total number of characters in the phrase is '" + cnt + "'.");
-            System.out.println(">>> Check all nodes for output (this node is also part of the grid).");
+            System.out.println(">>> Check all nodes for output (this node is also part of the cluster).");
         }
     }
 
@@ -89,7 +89,7 @@ public class ComputeTaskMapExample {
                 map.put(new ComputeJobAdapter() {
                     @Nullable @Override public Object execute() {
                         System.out.println();
-                        System.out.println(">>> Printing '" + word + "' on this node from grid job.");
+                        System.out.println(">>> Printing '" + word + "' on this node from igntie job.");
 
                         // Return number of letters in the word.
                         return word.length();

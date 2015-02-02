@@ -17,17 +17,25 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.datagrid.hibernate.*;
+import org.apache.ignite.examples.misc.client.memcache.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
- * Tests the {@link HibernateL2CacheExample}.
+ * GridMemcacheRestExample self test.
  */
-public class GridHibernateL2CacheExampleSelfTest extends GridAbstractExamplesTest {
+public class MemcacheRestExamplesSelfTest extends AbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGridHibernateL2CacheExample() throws Exception {
-        HibernateL2CacheExample.main(EMPTY_ARGS);
+    @Override protected void beforeTest() throws Exception {
+        // Start up a cluster node.
+        startGrid("memcache-rest-examples", MemcacheRestExampleNodeStartup.configuration());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGridMemcacheRestExample() throws Exception {
+        MemcacheRestExample.main(EMPTY_ARGS);
     }
 }

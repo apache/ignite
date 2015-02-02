@@ -17,36 +17,17 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.messaging.*;
+import org.apache.ignite.examples.misc.lifecycle.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
- * Messaging examples self test.
+ * GridLifecycleExample self test.
  */
-public class GridMessagingExamplesSelfTest extends GridAbstractExamplesTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        startGrid("companion", DFLT_CFG);
-    }
-
+public class LifecycleExamplesSelfTest extends AbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGridMessagingExample() throws Exception {
-        MessagingExample.main(EMPTY_ARGS);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGridMessagingPingPongExample() throws Exception {
-        MessagingPingPongExample.main(EMPTY_ARGS);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGridMessagingPingPongListenActorExample() throws Exception {
-        MessagingPingPongListenActorExample.main(EMPTY_ARGS);
+    public void testGridLifecycleExample() throws Exception {
+        LifecycleExample.main(EMPTY_ARGS);
     }
 }

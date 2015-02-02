@@ -17,12 +17,17 @@
 
 package org.apache.ignite.examples;
 
+import org.apache.ignite.examples.misc.springbean.*;
+import org.apache.ignite.testframework.junits.common.*;
+
 /**
- * GridContinuousMapperExample multi-node self test.
+ * Spring bean examples self test.
  */
-public class GridContinuousMapperExamplesMultiNodeSelfTest extends GridContinuationExamplesSelfTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        startRemoteNodes();
+public class SpringBeanExamplesSelfTest extends AbstractExamplesTest {
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGridSpringBeanHelloWorldExample() throws Exception {
+        SpringBeanExample.main(EMPTY_ARGS);
     }
 }

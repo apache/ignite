@@ -36,7 +36,7 @@ import scala.util.Random
  * start node with `examples/config/example-cache.xml` configuration.
  * <p>
  * The counts are kept in cache on all remote nodes. Top `10` counts from each node are then grabbed to produce
- * an overall top `10` list within the grid.
+ * an overall top `10` list within the ignite.
  */
 object ScalarCachePopularNumbersExample extends App {
     /** Cache name. */
@@ -58,7 +58,7 @@ object ScalarCachePopularNumbersExample extends App {
         println()
         println(">>> Cache popular numbers example started.")
 
-        val prj = grid$.cluster().forCache(CACHE_NAME)
+        val prj = ignite.cluster().forCache(CACHE_NAME)
 
         if (prj.nodes().isEmpty)
             println("Grid does not have cache configured: " + CACHE_NAME);
@@ -75,7 +75,7 @@ object ScalarCachePopularNumbersExample extends App {
                 query(POPULAR_NUMBERS_CNT)
 
                 // Clean up caches on all nodes after run.
-                grid$.cluster().forCache(CACHE_NAME).bcastRun(() => grid$.cache(CACHE_NAME).clearAll(), null)
+                ignite.cluster().forCache(CACHE_NAME).bcastRun(() => ignite.cache(CACHE_NAME).clearAll(), null)
             }
             finally {
                 popularNumbersQryTimer.cancel()

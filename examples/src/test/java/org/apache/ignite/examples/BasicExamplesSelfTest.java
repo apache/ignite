@@ -23,60 +23,60 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  * Closure examples self test.
  */
-public class GridBasicExamplesSelfTest extends GridAbstractExamplesTest {
+public class BasicExamplesSelfTest extends AbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGridBroadcastExample() throws Exception {
+    public void testBroadcastExample() throws Exception {
         ComputeBroadcastExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridCallableExample() throws Exception {
+    public void testCallableExample() throws Exception {
         ComputeCallableExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridClosureExample() throws Exception {
+    public void testClosureExample() throws Exception {
         ComputeClosureExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridExecutorExample() throws Exception {
+    public void testExecutorExample() throws Exception {
         ComputeExecutorServiceExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridReducerExample() throws Exception {
+    public void testReducerExample() throws Exception {
         ComputeReducerExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridRunnableExample() throws Exception {
+    public void testRunnableExample() throws Exception {
         ComputeRunnableExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridTaskMapExample() throws Exception {
+    public void testTaskMapExample() throws Exception {
         ComputeTaskMapExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridTaskSplitExample() throws Exception {
+    public void testTaskSplitExample() throws Exception {
         ComputeTaskSplitExample.main(EMPTY_ARGS);
     }
 }

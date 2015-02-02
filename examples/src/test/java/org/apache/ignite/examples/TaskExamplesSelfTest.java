@@ -17,32 +17,24 @@
 
 package org.apache.ignite.examples;
 
+import org.apache.ignite.examples.compute.*;
+import org.apache.ignite.testframework.junits.common.*;
+
 /**
- * Cache examples multi-node self test.
+ * Hello world examples self test.
  */
-public class GridCacheExamplesMultiNodeSelfTest extends GridCacheExamplesSelfTest {
-    /** {@inheritDoc} */
-    @Override protected String defaultConfig() {
-        return "examples/config/example-cache.xml";
+public class TaskExamplesSelfTest extends AbstractExamplesTest {
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTaskSplitExample() throws Exception {
+        ComputeTaskSplitExample.main(EMPTY_ARGS);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        startRemoteNodes();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 10 * 60 * 1000;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testGridCacheStoreExample() throws Exception {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testGridCacheStoreLoaderExample() throws Exception {
-        // No-op.
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTaskMapExample() throws Exception {
+        ComputeTaskMapExample.main(EMPTY_ARGS);
     }
 }

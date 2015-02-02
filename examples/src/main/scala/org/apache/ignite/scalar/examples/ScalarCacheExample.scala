@@ -126,7 +126,7 @@ object ScalarCacheExample extends App {
      * so we can actually see what happens underneath locally and remotely.
      */
     def registerListener() {
-        val g = grid$
+        val g = ignite
 
         g *< (() => {
             val lsnr = new IgnitePredicate[IgniteEvent] {

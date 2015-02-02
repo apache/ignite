@@ -63,7 +63,7 @@ public final class LifecycleExample {
      * Simple {@link org.apache.ignite.lifecycle.LifecycleBean} implementation that outputs event type when it is occurred.
      */
     public static class LifecycleExampleBean implements LifecycleBean {
-        /** Auto-inject grid instance. */
+        /** Auto-inject ignite instance. */
         @IgniteInstanceResource
         private Ignite ignite;
 
@@ -76,14 +76,14 @@ public final class LifecycleExample {
             System.out.println(">>> Grid lifecycle event occurred: " + evt);
             System.out.println(">>> Grid name: " + ignite.name());
 
-            if (evt == AFTER_GRID_START)
+            if (evt == AFTER_IGNITE_START)
                 isStarted = true;
-            else if (evt == AFTER_GRID_STOP)
+            else if (evt == AFTER_IGNITE_STOP)
                 isStarted = false;
         }
 
         /**
-         * @return {@code True} if grid has been started.
+         * @return {@code True} if ignite has been started.
          */
         public boolean isStarted() {
             return isStarted;

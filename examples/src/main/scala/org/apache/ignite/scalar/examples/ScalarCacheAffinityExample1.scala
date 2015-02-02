@@ -59,12 +59,12 @@ object ScalarCacheAffinityExample1 {
 
             ('A' to 'Z').foreach(keys :+= _.toString)
 
-            populateCache(grid$, keys)
+            populateCache(ignite, keys)
 
             var results = Map.empty[String, String]
 
             keys.foreach(key => {
-                val res = grid$.call$(
+                val res = ignite.call$(
                     new Callable[String] {
                         @CacheAffinityKeyMapped
                         def affinityKey(): String = key
@@ -78,7 +78,7 @@ object ScalarCacheAffinityExample1 {
                             val cache = cache$[String, String](NAME)
 
                             if (!cache.isDefined) {
-                                println(">>> Cache not found [nodeId=" + grid$.cluster().localNode.id +
+                                println(">>> Cache not found [nodeId=" + ignite.cluster().localNode.id +
                                     ", cacheName=" + NAME + ']')
 
                                 "Error"

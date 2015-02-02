@@ -51,17 +51,17 @@ public final class CacheAtomicLongExample {
             System.out.println();
             System.out.println(">>> Cache atomic long example started.");
 
-            // Make name for atomic long (by which it will be known in the grid).
+            // Make name for atomic long (by which it will be known in the cluster).
             String atomicName = UUID.randomUUID().toString();
 
-            // Initialize atomic long in grid.
+            // Initialize atomic long in ignite.
             final CacheAtomicLong atomicLong = ignite.cache(CACHE_NAME).dataStructures().atomicLong(atomicName, 0, true);
 
             System.out.println();
             System.out.println("Atomic long initial value : " + atomicLong.get() + '.');
 
-            // Try increment atomic long from all grid nodes.
-            // Note that this node is also part of the grid.
+            // Try increment atomic long from all cluster nodes.
+            // Note that this node is also part of the cluster.
             ignite.compute(ignite.cluster().forCache(CACHE_NAME)).call(new IgniteCallable<Object>() {
                 @Override
                 public Object call() throws Exception {

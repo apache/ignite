@@ -17,24 +17,14 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.compute.*;
-import org.apache.ignite.testframework.junits.common.*;
-
 /**
- * Hello world examples self test.
+ * Deployment examples multi-node self test.
  */
-public class GridTaskExamplesSelfTest extends GridAbstractExamplesTest {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTaskSplitExample() throws Exception {
-        ComputeTaskSplitExample.main(EMPTY_ARGS);
-    }
+public class DeploymentExamplesMultiNodeSelfTest extends DeploymentExamplesSelfTest {
+    /** {@inheritDoc} */
+    @Override public void testGridDeploymentExample() throws Exception {
+        startRemoteNodes();
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTaskMapExample() throws Exception {
-        ComputeTaskMapExample.main(EMPTY_ARGS);
+        super.testGridDeploymentExample();
     }
 }

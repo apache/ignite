@@ -19,13 +19,13 @@ package org.apache.ignite.scalar.tests.examples
 
 import org.apache.ignite.scalar.examples._
 import org.apache.ignite.scalar.scalar
-import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest
+import org.apache.ignite.testframework.junits.common.AbstractExamplesTest
 import org.scalatest.junit.JUnitSuiteLike
 
 /**
  * Scalar examples self test.
  */
-class ScalarExamplesSelfTest extends GridAbstractExamplesTest with JUnitSuiteLike {
+class ScalarExamplesSelfTest extends AbstractExamplesTest with JUnitSuiteLike {
     /** */
     private def EMPTY_ARGS = Array.empty[String]
 

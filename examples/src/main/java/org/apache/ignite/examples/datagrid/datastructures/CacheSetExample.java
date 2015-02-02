@@ -25,7 +25,7 @@ import org.apache.ignite.lang.*;
 import java.util.*;
 
 /**
- * Grid cache distributed set example.
+ * Ignite cache distributed set example.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
