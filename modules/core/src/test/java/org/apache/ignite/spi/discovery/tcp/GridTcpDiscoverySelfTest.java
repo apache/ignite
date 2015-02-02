@@ -851,7 +851,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                         return null;
                     }
                 },
-                IgniteCheckedException.class,
+                IgniteException.class,
                 null);
         }
         finally {
@@ -880,7 +880,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                         return null;
                     }
                 },
-                IgniteCheckedException.class,
+                IgniteException.class,
                 null);
         }
         finally {

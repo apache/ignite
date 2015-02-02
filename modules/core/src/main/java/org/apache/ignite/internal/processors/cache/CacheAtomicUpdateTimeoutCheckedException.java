@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
+package org.apache.ignite.internal.processors.cache;
 
-import javax.cache.*;
+import org.apache.ignite.*;
 
 /**
  * Exception thrown when atomic operation timeout occurs.
  */
-public class CacheAtomicUpdateTimeoutException extends CacheException {
+public class CacheAtomicUpdateTimeoutCheckedException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -31,7 +31,7 @@ public class CacheAtomicUpdateTimeoutException extends CacheException {
      *
      * @param msg Error message.
      */
-    public CacheAtomicUpdateTimeoutException(String msg) {
+    public CacheAtomicUpdateTimeoutCheckedException(String msg) {
         super(msg);
     }
 
@@ -41,7 +41,7 @@ public class CacheAtomicUpdateTimeoutException extends CacheException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be <tt>null</tt>).
      */
-    public CacheAtomicUpdateTimeoutException(String msg, Throwable cause) {
+    public CacheAtomicUpdateTimeoutCheckedException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

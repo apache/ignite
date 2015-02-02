@@ -305,7 +305,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         long mapTime0 = mapTime;
 
         if (mapTime0 > 0 && U.currentTimeMillis() > mapTime0 + timeout)
-            onDone(new CacheAtomicUpdateTimeoutException("Cache update timeout out " +
+            onDone(new CacheAtomicUpdateTimeoutCheckedException("Cache update timeout out " +
                 "(consider increasing networkTimeout configuration property)."));
     }
 

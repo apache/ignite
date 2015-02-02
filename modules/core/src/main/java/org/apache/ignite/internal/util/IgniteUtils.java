@@ -658,6 +658,8 @@ public abstract class IgniteUtils {
     @Nullable public static CacheException convertToCacheException(IgniteCheckedException e) {
         if (e instanceof CachePartialUpdateCheckedException)
             return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
+        else if (e instanceof CacheAtomicUpdateTimeoutCheckedException)
+            return new CacheAtomicUpdateTimeoutException(e.getMessage(), e);
 
         if (e.getCause() instanceof CacheException)
             return (CacheException)e.getCause();

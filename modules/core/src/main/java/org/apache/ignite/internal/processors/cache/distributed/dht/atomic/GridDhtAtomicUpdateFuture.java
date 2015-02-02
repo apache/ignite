@@ -169,7 +169,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
         long mapTime0 = mapTime;
 
         if (mapTime0 > 0 && U.currentTimeMillis() > mapTime0 + timeout) {
-            IgniteCheckedException ex = new CacheAtomicUpdateTimeoutException("Cache update timeout out " +
+            IgniteCheckedException ex = new CacheAtomicUpdateTimeoutCheckedException("Cache update timeout out " +
                 "(consider increasing networkTimeout configuration property).");
 
             updateRes.addFailedKeys(keys, ex);

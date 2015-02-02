@@ -201,7 +201,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             },
-            ComputeTaskTimeoutCheckedException.class,
+            ComputeTaskTimeoutException.class,
             null
         );
 
