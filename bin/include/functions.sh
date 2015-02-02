@@ -17,12 +17,12 @@
 #
 # This is a collection of utility functions to be used in other GridGain scripts.
 # Before calling any function from this file you have to import it:
-#   if [ "${GRIDGAIN_HOME}" = "" ];
-#       then GRIDGAIN_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
-#       else GRIDGAIN_HOME_TMP=${GRIDGAIN_HOME};
+#   if [ "${IGNITE_HOME}" = "" ];
+#       then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
+#       else IGNITE_HOME_TMP=${IGNITE_HOME};
 #   fi
 #
-#   source "${GRIDGAIN_HOME_TMP}"/bin/include/functions.sh
+#   source "${IGNITE_HOME_TMP}"/bin/include/functions.sh
 #
 
 #
@@ -74,35 +74,35 @@ checkJava() {
 }
 
 #
-# Discovers GRIDGAIN_HOME environment variable.
-# The function expects GRIDGAIN_HOME_TMP variable is set and points to the directory where the callee script resides.
-# The function exports GRIDGAIN_HOME variable with path to GridGain home directory.
+# Discovers IGNITE_HOME environment variable.
+# The function expects IGNITE_HOME_TMP variable is set and points to the directory where the callee script resides.
+# The function exports IGNITE_HOME variable with path to GridGain home directory.
 #
 setGridGainHome() {
     #
-    # Set GRIDGAIN_HOME, if needed.
+    # Set IGNITE_HOME, if needed.
     #
-    if [ "${GRIDGAIN_HOME}" = "" ]; then
-        export GRIDGAIN_HOME=${GRIDGAIN_HOME_TMP}
+    if [ "${IGNITE_HOME}" = "" ]; then
+        export IGNITE_HOME=${IGNITE_HOME_TMP}
     fi
 
     #
-    # Check GRIDGAIN_HOME is valid.
+    # Check IGNITE_HOME is valid.
     #
-    if [ ! -d "${GRIDGAIN_HOME}/config" ]; then
+    if [ ! -d "${IGNITE_HOME}/config" ]; then
         echo $0", ERROR:"
-        echo "GridGain installation folder is not found or GRIDGAIN_HOME environment variable is not valid."
-        echo "Please create GRIDGAIN_HOME environment variable pointing to location of GridGain installation folder."
+        echo "GridGain installation folder is not found or IGNITE_HOME environment variable is not valid."
+        echo "Please create IGNITE_HOME environment variable pointing to location of GridGain installation folder."
 
         exit 1
     fi
 
     #
-    # Check GRIDGAIN_HOME points to current installation.
+    # Check IGNITE_HOME points to current installation.
     #
-    if [ "${GRIDGAIN_HOME}" != "${GRIDGAIN_HOME_TMP}" ] &&
-       [ "${GRIDGAIN_HOME}" != "${GRIDGAIN_HOME_TMP}/" ]; then
-        echo $0", WARN: GRIDGAIN_HOME environment variable may be pointing to wrong folder: $GRIDGAIN_HOME"
+    if [ "${IGNITE_HOME}" != "${IGNITE_HOME_TMP}" ] &&
+       [ "${IGNITE_HOME}" != "${IGNITE_HOME_TMP}/" ]; then
+        echo $0", WARN: IGNITE_HOME environment variable may be pointing to wrong folder: $IGNITE_HOME"
     fi
 }
 
@@ -111,7 +111,7 @@ setGridGainHome() {
 # The function exports JMX_MON variable with Java JMX options.
 #
 findAvailableJmxPort() {
-    JMX_PORT=`"$JAVA" -cp "${GRIDGAIN_LIBS}" org.gridgain.grid.util.portscanner.GridJmxPortFinder`
+    JMX_PORT=`"$JAVA" -cp "${IGNITE_LIBS}" org.gridgain.grid.util.portscanner.GridJmxPortFinder`
 
     #
     # This variable defines necessary parameters for JMX
@@ -141,11 +141,11 @@ getClassPathSeparator() {
     case "`uname`" in
         MINGW*)
             SEP=";";
-            export GRIDGAIN_HOME=`echo $GRIDGAIN_HOME | sed -e 's/^\/\([a-zA-Z]\)/\1:/'`
+            export IGNITE_HOME=`echo $IGNITE_HOME | sed -e 's/^\/\([a-zA-Z]\)/\1:/'`
             ;;
         CYGWIN*)
             SEP=";";
-            export GRIDGAIN_HOME=`echo $GRIDGAIN_HOME | sed -e 's/^\/\([a-zA-Z]\)/\1:/'`
+            export IGNITE_HOME=`echo $IGNITE_HOME | sed -e 's/^\/\([a-zA-Z]\)/\1:/'`
             ;;
     esac
 }

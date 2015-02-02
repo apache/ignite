@@ -115,7 +115,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         };
 
     /** */
-    protected boolean keyCheck = !Boolean.getBoolean(GG_CACHE_KEY_VALIDATION_DISABLED);
+    protected boolean keyCheck = !Boolean.getBoolean(IGNITE_CACHE_KEY_VALIDATION_DISABLED);
 
     /** */
     private boolean valCheck = true;

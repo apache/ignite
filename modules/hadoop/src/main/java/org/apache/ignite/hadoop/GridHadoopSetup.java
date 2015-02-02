@@ -36,9 +36,9 @@ public class GridHadoopSetup {
     public static final String WINUTILS_EXE = "winutils.exe";
 
     /** */
-    private static final FilenameFilter GRIDGAIN_JARS = new FilenameFilter() {
+    private static final FilenameFilter IGNITE_JARS = new FilenameFilter() {
         @Override public boolean accept(File dir, String name) {
-            return name.startsWith("gridgain-") && name.endsWith(".jar");
+            return name.startsWith("ignite-") && name.endsWith(".jar");
         }
     };
 
@@ -75,7 +75,7 @@ public class GridHadoopSetup {
     private static void configureHadoop() {
         String gridgainHome = U.getGridGainHome();
 
-        println("GRIDGAIN_HOME is set to '" + gridgainHome + "'.");
+        println("IGNITE_HOME is set to '" + gridgainHome + "'.");
 
         checkGridGainHome(gridgainHome);
 
@@ -195,7 +195,7 @@ public class GridHadoopSetup {
         if (!jarsLinksCorrect) {
             if (ask("GridGain JAR files are not found in Hadoop 'lib' directory. " +
                 "Create appropriate symbolic links?")) {
-                File[] oldGridGainJarFiles = hadoopCommonLibDir.listFiles(GRIDGAIN_JARS);
+                File[] oldGridGainJarFiles = hadoopCommonLibDir.listFiles(IGNITE_JARS);
 
                 if (oldGridGainJarFiles.length > 0 && ask("The Hadoop 'lib' directory contains JARs from other GridGain " +
                     "installation. They must be deleted to continue. Continue?")) {
@@ -271,7 +271,7 @@ public class GridHadoopSetup {
         if (!folder.exists())
             exit("Folder '" + folder.getAbsolutePath() + "' is not found.", null);
 
-        jarFiles.addAll(Arrays.asList(folder.listFiles(GRIDGAIN_JARS)));
+        jarFiles.addAll(Arrays.asList(folder.listFiles(IGNITE_JARS)));
     }
 
     /**
@@ -300,7 +300,7 @@ public class GridHadoopSetup {
             Path gg = Paths.get(ggHome);
 
             if (!jar.startsWith(gg))
-                exit("GridGain JAR files are not under GRIDGAIN_HOME.", null);
+                exit("GridGain JAR files are not under IGNITE_HOME.", null);
         }
         catch (Exception e) {
             exit(e.getMessage(), e);
@@ -377,7 +377,7 @@ public class GridHadoopSetup {
 
         String answer = null;
 
-        if (!F.isEmpty(System.getenv("GRIDGAIN_HADOOP_SETUP_YES")))
+        if (!F.isEmpty(System.getenv("IGNITE_HADOOP_SETUP_YES")))
             answer = "Y";
         else {
             BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -412,7 +412,7 @@ public class GridHadoopSetup {
         X.println("  # " + msg);
         X.println("  # Setup failed, exiting... ");
 
-        if (e != null && !F.isEmpty(System.getenv("GRIDGAIN_HADOOP_SETUP_DEBUG")))
+        if (e != null && !F.isEmpty(System.getenv("IGNITE_HADOOP_SETUP_DEBUG")))
             e.printStackTrace();
 
         System.exit(1);

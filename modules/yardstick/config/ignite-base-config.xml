@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!--
+    Ignite Spring configuration file to startup grid.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+    <bean id="base-ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" abstract="true">
+        <property name="peerClassLoadingEnabled" value="false"/>
+
+        <!--property name="marshaller">
+            <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
+                <property name="requireSerializable" value="true"/>
+                <property name="classNames">
+                    <list>
+                        <value>org.apache.ignite.yardstick.cache.model.SampleValue</value>
+                        <value>org.apache.ignite.yardstick.cache.model.Person</value>
+                        <value>org.apache.ignite.yardstick.cache.model.Organization</value>
+                        <value>org.apache.ignite.yardstick.compute.model.NoopTask$NoopJob</value>
+                        <value>org.apache.ignite.yardstick.compute.model.NoopCallable</value>
+                        <value>org.apache.ignite.yardstick.compute.IgniteRunBenchmark$NoopRunnable</value>
+                        <value>org.apache.ignite.yardstick.compute.IgniteApplyBenchmark$NoopClosure</value>
+                    </list>
+                </property>
+            </bean>
+        </property-->
+
+        <property name="cacheConfiguration">
+            <list>
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                    <property name="name" value="atomic"/>
+
+                    <property name="cacheMode" value="PARTITIONED"/>
+
+                    <property name="atomicityMode" value="ATOMIC"/>
+
+                    <property name="swapEnabled" value="false"/>
+
+                    <property name="queryIndexEnabled" value="false"/>
+                </bean>
+
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                    <property name="name" value="tx"/>
+
+                    <property name="cacheMode" value="PARTITIONED"/>
+
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+
+                    <property name="swapEnabled" value="false"/>
+
+                    <property name="queryIndexEnabled" value="false"/>
+                </bean>
+
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                    <property name="name" value="query"/>
+
+                    <property name="cacheMode" value="PARTITIONED"/>
+
+                    <property name="atomicityMode" value="ATOMIC"/>
+
+                    <property name="swapEnabled" value="false"/>
+
+                    <!-- Enable query indexing for query cache. -->
+                    <property name="queryIndexEnabled" value="true"/>
+                </bean>
+
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                    <property name="name" value="compute"/>
+
+                    <property name="cacheMode" value="PARTITIONED"/>
+
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+
+                    <property name="swapEnabled" value="false"/>
+
+                    <property name="queryIndexEnabled" value="false"/>
+                </bean>
+            </list>
+        </property>
+
+        <property name="restEnabled" value="false"/>
+
+        <property name="includeEventTypes">
+            <list/>
+        </property>
+
+        <property name="loadBalancingSpi">
+            <bean class="org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi">
+                <property name="perTask" value="false"/>
+            </bean>
+        </property>
+
+        <property name="communicationSpi">
+            <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
+                <property name="sharedMemoryPort" value="-1"/>
+            </bean>
+        </property>
+    </bean>
+</beans>

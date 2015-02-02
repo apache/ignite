@@ -105,7 +105,7 @@ private case class VisorCopier(
                 val ggh = ggHome()
 
                 if (ggh == "")
-                    warn("GRIDGAIN_HOME is not set on " + host.name)
+                    warn("IGNITE_HOME is not set on " + host.name)
                 else {
                     ch = ses.openChannel("sftp").asInstanceOf[ChannelSftp]
 
@@ -138,9 +138,9 @@ private case class VisorCopier(
     }
 
     /**
-     * Gets `GRIDGAIN_HOME` from remote host.
+     * Gets `IGNITE_HOME` from remote host.
      *
-     * @return `GRIDGAIN_HOME` value.
+     * @return `IGNITE_HOME` value.
      */
     private def ggHome(): String = {
         /**
@@ -226,9 +226,9 @@ private case class VisorCopier(
         }
 
         if (windows)
-            exec("echo %GRIDGAIN_HOME%")
+            exec("echo %IGNITE_HOME%")
         else
-            shell("echo $GRIDGAIN_HOME") // Use interactive shell under nix because need read env from .profile and etc.
+            shell("echo $IGNITE_HOME") // Use interactive shell under nix because need read env from .profile and etc.
     }
 
     /**
@@ -315,8 +315,8 @@ private case class VisorCopier(
  *     -s=<path>
  *         Source path.
  *     -d=<path>
- *         Destination path (relative to GRIDGAIN_HOME).
- *         If not provided, files will be copied to the root of GRIDGAIN_HOME.
+ *         Destination path (relative to IGNITE_HOME).
+ *         If not provided, files will be copied to the root of IGNITE_HOME.
  * }}}
  *
  * ====Examples====
@@ -582,8 +582,8 @@ object VisorDeployCommand {
             ),
             "-s=<path>" -> "Source path.",
             "-d=<path>" -> List(
-                "Destination path (relative to $GRIDGAIN_HOME).",
-                "If not provided, files will be copied to the root of $GRIDGAIN_HOME."
+                "Destination path (relative to $IGNITE_HOME).",
+                "If not provided, files will be copied to the root of $IGNITE_HOME."
             )
         ),
         examples = List(

@@ -61,7 +61,7 @@ import java.util.*;
  * <p>
  * Note: this example uses {@link AccessType#READ_ONLY} L2 cache access type, but you
  * can experiment with other access types by modifying the Hibernate configuration file
- * {@code GRIDGAIN_HOME/examples/config/hibernate/example-hibernate-L2-cache.xml}, used by the example.
+ * {@code IGNITE_HOME/examples/config/hibernate/example-hibernate-L2-cache.xml}, used by the example.
  * <p>
  * Remote nodes should always be started using {@link HibernateL2CacheExampleNodeStartup}
  */
