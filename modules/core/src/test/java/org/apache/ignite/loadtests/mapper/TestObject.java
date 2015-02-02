@@ -18,6 +18,7 @@
 package org.apache.ignite.loadtests.mapper;
 
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 
 import java.io.*;
 
@@ -26,11 +27,11 @@ import java.io.*;
  */
 public class TestObject implements Serializable {
     /** ID. */
-    @CacheQuerySqlField(unique = true)
+    @QuerySqlField(index = true)
     private int id;
 
     /** Text. */
-    @CacheQuerySqlField
+    @QuerySqlField
     private String txt;
 
     /**

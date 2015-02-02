@@ -22,11 +22,12 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cache.eviction.lru.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
@@ -729,21 +730,21 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @CacheQueryGroupIndex(name = "msg_tx", unique = true)
+    @QueryGroupIndex(name = "msg_tx")
     @SuppressWarnings({"UnusedDeclaration"})
     private static class Request implements Serializable {
         /** */
-        @CacheQuerySqlField(unique = true)
+        @QuerySqlField(index = true)
         private Long id;
 
         /** */
-        @CacheQuerySqlField(name = "messageId")
-        @CacheQuerySqlField.Group(name = "msg_tx", order = 3)
+        @QuerySqlField(name = "messageId")
+        @QuerySqlField.Group(name = "msg_tx", order = 3)
         private long msgId;
 
         /** */
-        @CacheQuerySqlField(name = "transactionId")
-        @CacheQuerySqlField.Group(name = "msg_tx", order = 1)
+        @QuerySqlField(name = "transactionId")
+        @QuerySqlField.Group(name = "msg_tx", order = 1)
         private long txId;
 
         /**
@@ -774,15 +775,15 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     @SuppressWarnings({"UnusedDeclaration"})
     private static class Response implements Serializable {
         /** */
-        @CacheQuerySqlField(unique = true)
+        @QuerySqlField
         private Long id;
 
         /** */
-        @CacheQuerySqlField(name = "messageId")
+        @QuerySqlField(name = "messageId")
         private long msgId;
 
         /** */
-        @CacheQuerySqlField(name = "transactionId")
+        @QuerySqlField(name = "transactionId")
         private long txId;
 
         /**
@@ -805,7 +806,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
      */
     private static class Session implements Serializable {
         /** */
-        @CacheQuerySqlField(unique = true)
+        @QuerySqlField(index = true)
         private String terminalId;
 
         /**

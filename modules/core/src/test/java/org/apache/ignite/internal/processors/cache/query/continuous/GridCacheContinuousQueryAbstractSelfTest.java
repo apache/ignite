@@ -53,7 +53,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.cache.query.CacheQueryType.*;
+import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**

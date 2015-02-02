@@ -391,7 +391,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         return execute(null, rmtTransform, args);
     }
 
-    @Override public CacheQueryMetrics metrics() {
+    @Override public QueryMetrics metrics() {
         return metrics.copy();
     }
 

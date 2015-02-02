@@ -21,8 +21,8 @@ import java.lang.annotation.*;
 
 /**
  * Annotates fields for SQL queries. All fields that will be involved in SQL clauses must have
- * this annotation. For more information about cache queries see {@link org.apache.ignite.cache.query.CacheQuery} documentation.
- * @see org.apache.ignite.cache.query.CacheQuery
+ * this annotation. For more information about cache queries see {@link org.apache.ignite.internal.processors.cache.query.CacheQuery} documentation.
+ * @see org.apache.ignite.internal.processors.cache.query.CacheQuery
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
@@ -40,16 +40,6 @@ public @interface QuerySqlField {
      * @return {@code True} if index must be created for this field in database.
      */
     boolean index() default false;
-
-    /**
-     * Specifies whether index should be unique or not. This property only
-     * makes sense if {@link #index()} property is set to {@code true}.
-     *
-     * @return {@code True} if field index should be unique.
-     * @deprecated No longer supported, will be ignored.
-     */
-    @Deprecated
-    boolean unique() default false;
 
     /**
      * Specifies whether index should be in descending order or not. This property only

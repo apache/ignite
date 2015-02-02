@@ -20,7 +20,8 @@ package org.apache.ignite.examples.datagrid;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.lang.*;
 
 import java.io.*;
@@ -374,27 +375,27 @@ public class CacheQueryExample {
      */
     private static class Person implements Serializable {
         /** Person ID (indexed). */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private UUID id;
 
         /** Organization ID (indexed). */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private UUID orgId;
 
         /** First name (not-indexed). */
-        @CacheQuerySqlField
+        @QuerySqlField
         private String firstName;
 
         /** Last name (not indexed). */
-        @CacheQuerySqlField
+        @QuerySqlField
         private String lastName;
 
         /** Resume text (create LUCENE-based TEXT index for this field). */
-        @CacheQueryTextField
+        @QueryTextField
         private String resume;
 
         /** Salary (indexed). */
-        @CacheQuerySqlField
+        @QuerySqlField
         private double salary;
 
         /** Custom cache key to guarantee that person is always collocated with its organization. */
@@ -450,11 +451,11 @@ public class CacheQueryExample {
      */
     private static class Organization implements Serializable {
         /** Organization ID (indexed). */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private UUID id;
 
         /** Organization name (indexed). */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private String name;
 
         /**

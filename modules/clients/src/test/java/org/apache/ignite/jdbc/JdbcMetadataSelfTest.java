@@ -20,6 +20,7 @@ package org.apache.ignite.jdbc;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -284,15 +285,15 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** Name. */
-        @CacheQuerySqlField(index = false)
+        @QuerySqlField(index = false)
         private final String name;
 
         /** Age. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private final int age;
 
         /** Organization ID. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private final int orgId;
 
         /**
@@ -317,11 +318,11 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** ID. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private final int id;
 
         /** Name. */
-        @CacheQuerySqlField(index = false)
+        @QuerySqlField(index = false)
         private final String name;
 
         /**

@@ -27,10 +27,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 
 import java.util.*;
 
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 
 /**
  * Starts up an empty node with cache configuration that contains default cache.
@@ -75,7 +75,7 @@ public class MemcacheRestExampleNodeStartup {
         cacheCfg.setPreloadMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        CacheQueryConfiguration qryCfg = new CacheQueryConfiguration();
+        QueryConfiguration qryCfg = new QueryConfiguration();
 
         qryCfg.setIndexPrimitiveKey(true);
         qryCfg.setIndexFixedTyping(false);

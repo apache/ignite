@@ -106,7 +106,7 @@ import java.util.*;
  * qry.cancel();
  * </pre>
  * Note that one query instance can be executed only once. After it's cancelled, it's non-operational.
- * If you need to repeat execution, use {@link CacheQueries#createContinuousQuery()} method to create
+ * If you need to repeat execution, use {@link org.apache.ignite.internal.processors.cache.query.CacheQueries#createContinuousQuery()} method to create
  * new query.
  */
 public interface CacheContinuousQuery<K, V> extends AutoCloseable {
@@ -332,7 +332,7 @@ public interface CacheContinuousQuery<K, V> extends AutoCloseable {
      * <p>
      * Note that one query instance can be executed only once.
      * After it's cancelled, it's non-operational.
-     * If you need to repeat execution, use {@link CacheQueries#createContinuousQuery()}
+     * If you need to repeat execution, use {@link org.apache.ignite.internal.processors.cache.query.CacheQueries#createContinuousQuery()}
      * method to create new query.
      *
      * @throws IgniteCheckedException In case of error.

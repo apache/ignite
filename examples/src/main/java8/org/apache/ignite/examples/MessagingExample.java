@@ -19,7 +19,6 @@ package org.apache.ignite.examples;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.examples.*;
 
 import java.util.concurrent.*;
 

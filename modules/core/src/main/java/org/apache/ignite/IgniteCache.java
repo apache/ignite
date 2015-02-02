@@ -215,6 +215,13 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException;
 
+    /**
+     * Gets query metrics.
+     *
+     * @return Metrics.
+     */
+    public QueryMetrics queryMetrics();
+
     public Map<K, V> localPartition(int part) throws CacheException;
 
     /**

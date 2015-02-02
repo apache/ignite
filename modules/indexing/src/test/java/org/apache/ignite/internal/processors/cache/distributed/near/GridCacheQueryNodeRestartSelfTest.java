@@ -24,12 +24,13 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -80,7 +81,7 @@ public class GridCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);
 
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
+        QueryConfiguration qcfg = new QueryConfiguration();
 
         qcfg.setIndexPrimitiveKey(true);
 

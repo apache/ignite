@@ -21,18 +21,19 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.query.*;
+import org.apache.ignite.internal.processors.query.h2.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.processors.query.*;
-import org.apache.ignite.internal.processors.query.h2.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -94,7 +95,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         cacheCfg.setBackups(1);
         cacheCfg.setEvictionPolicy(evictsEnabled() ? new CacheLruEvictionPolicy(100) : null);
 
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
+        QueryConfiguration qcfg = new QueryConfiguration();
 
         qcfg.setIndexPrimitiveKey(true);
 
@@ -839,7 +840,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
      */
     private static class TestValue implements Serializable {
         /** Value. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private int val;
 
         /**

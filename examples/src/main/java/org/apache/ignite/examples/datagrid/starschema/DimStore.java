@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples.datagrid.starschema;
 
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 
 /**
  * Represents a physical store location. In our {@code snowflake} schema a {@code store}
@@ -26,11 +26,11 @@ import org.apache.ignite.cache.query.*;
  */
 public class DimStore {
     /** Primary key. */
-    @CacheQuerySqlField(index = true)
+    @QuerySqlField(index = true)
     private int id;
 
     /** Store name. */
-    @CacheQuerySqlField
+    @QuerySqlField
     private String name;
 
     /** Zip code. */

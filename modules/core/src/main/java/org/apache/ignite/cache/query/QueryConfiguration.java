@@ -23,15 +23,15 @@ import java.util.*;
 /**
  * Query configuration object.
  */
-public class CacheQueryConfiguration implements Serializable {
+public class QueryConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Collection of query type metadata. */
-    private Collection<CacheQueryTypeMetadata> typeMeta;
+    private Collection<QueryTypeMetadata> typeMeta;
 
     /** Query type resolver. */
-    private CacheQueryTypeResolver typeRslvr;
+    private QueryTypeResolver typeRslvr;
 
     /** */
     private boolean idxPrimitiveKey;
@@ -48,14 +48,14 @@ public class CacheQueryConfiguration implements Serializable {
     /**
      * Default constructor.
      */
-    public CacheQueryConfiguration() {
+    public QueryConfiguration() {
         // No-op.
     }
 
     /**
      * @param cfg Configuration to copy.
      */
-    public CacheQueryConfiguration(CacheQueryConfiguration cfg) {
+    public QueryConfiguration(QueryConfiguration cfg) {
         typeMeta = cfg.getTypeMetadata();
         typeRslvr = cfg.getTypeResolver();
         idxPrimitiveKey = cfg.isIndexPrimitiveKey();
@@ -69,7 +69,7 @@ public class CacheQueryConfiguration implements Serializable {
      *
      * @return Collection of query type metadata.
      */
-    public Collection<CacheQueryTypeMetadata> getTypeMetadata() {
+    public Collection<QueryTypeMetadata> getTypeMetadata() {
         return typeMeta;
     }
 
@@ -78,7 +78,7 @@ public class CacheQueryConfiguration implements Serializable {
      *
      * @param typeMeta Collection of query type metadata.
      */
-    public void setTypeMetadata(Collection<CacheQueryTypeMetadata> typeMeta) {
+    public void setTypeMetadata(Collection<QueryTypeMetadata> typeMeta) {
         this.typeMeta = typeMeta;
     }
 
@@ -87,7 +87,7 @@ public class CacheQueryConfiguration implements Serializable {
      *
      * @return Query type resolver.
      */
-    public CacheQueryTypeResolver getTypeResolver() {
+    public QueryTypeResolver getTypeResolver() {
         return typeRslvr;
     }
 
@@ -96,7 +96,7 @@ public class CacheQueryConfiguration implements Serializable {
      *
      * @param typeRslvr Query type resolver.
      */
-    public void setTypeResolver(CacheQueryTypeResolver typeRslvr) {
+    public void setTypeResolver(QueryTypeResolver typeRslvr) {
         this.typeRslvr = typeRslvr;
     }
 

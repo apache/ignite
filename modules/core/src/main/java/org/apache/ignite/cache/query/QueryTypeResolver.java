@@ -18,30 +18,15 @@
 package org.apache.ignite.cache.query;
 
 /**
- * Cache query type.
- * <p>
- * Used in {@link org.apache.ignite.events.IgniteCacheQueryExecutedEvent} and {@link org.apache.ignite.events.IgniteCacheQueryReadEvent}
- * to identify the type of query for which an event was fired.
- *
- * @see org.apache.ignite.events.IgniteCacheQueryExecutedEvent#queryType()
- * @see org.apache.ignite.events.IgniteCacheQueryReadEvent#queryType()
+ * Interface allowing to override table name for portable objects stored in cache.
  */
-public enum CacheQueryType {
-    /** SQL query. */
-    SQL,
-
-    /** SQL fields query. */
-    SQL_FIELDS,
-
-    /** Full text query. */
-    FULL_TEXT,
-
-    /** Scan query. */
-    SCAN,
-
-    /** Continuous query. */
-    CONTINUOUS,
-
-    /** SPI query. */
-    SPI
+public interface QueryTypeResolver {
+    /**
+     * Allows to override type name for portable objects being stored in cache.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @return Type name.
+     */
+    public String resolveTypeName(Object key, Object val);
 }

@@ -21,8 +21,9 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.marshaller.optimized.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -68,7 +69,7 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
         cfg.setBackups(1);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
+        QueryConfiguration qcfg = new QueryConfiguration();
 
         qcfg.setIndexPrimitiveKey(true);
 

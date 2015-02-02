@@ -485,7 +485,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             cctx.localNode(),
                             "SQL query executed.",
                             EVT_CACHE_QUERY_EXECUTED,
-                            org.apache.ignite.cache.query.CacheQueryType.SQL,
+                            CacheQueryType.SQL,
                             cctx.namex(),
                             qry.queryClassName(),
                             qry.clause(),
@@ -507,7 +507,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             cctx.localNode(),
                             "Scan query executed.",
                             EVT_CACHE_QUERY_EXECUTED,
-                            org.apache.ignite.cache.query.CacheQueryType.SCAN,
+                            CacheQueryType.SCAN,
                             cctx.namex(),
                             null,
                             null,
@@ -528,7 +528,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             cctx.localNode(),
                             "Full text query executed.",
                             EVT_CACHE_QUERY_EXECUTED,
-                            org.apache.ignite.cache.query.CacheQueryType.FULL_TEXT,
+                            CacheQueryType.FULL_TEXT,
                             cctx.namex(),
                             qry.queryClassName(),
                             qry.clause(),
@@ -602,7 +602,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     cctx.localNode(),
                     "SQL fields query executed.",
                     EVT_CACHE_QUERY_EXECUTED,
-                    org.apache.ignite.cache.query.CacheQueryType.SQL_FIELDS,
+                    CacheQueryType.SQL_FIELDS,
                     cctx.namex(),
                     null,
                     qry.clause(),
@@ -634,7 +634,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     cctx.localNode(),
                     "SPI query executed.",
                     EVT_CACHE_QUERY_EXECUTED,
-                    org.apache.ignite.cache.query.CacheQueryType.SPI,
+                    CacheQueryType.SPI,
                     cctx.namex(),
                     null,
                     null,
@@ -1067,7 +1067,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             cctx.localNode(),
                             "SQL fields query result set row read.",
                             EVT_CACHE_QUERY_OBJECT_READ,
-                            org.apache.ignite.cache.query.CacheQueryType.SQL_FIELDS,
+                            CacheQueryType.SQL_FIELDS,
                             cctx.namex(),
                             null,
                             qry.clause(),
@@ -1254,7 +1254,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     cctx.localNode(),
                                     "SQL query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
-                                    org.apache.ignite.cache.query.CacheQueryType.SQL,
+                                    CacheQueryType.SQL,
                                     cctx.namex(),
                                     qry.queryClassName(),
                                     qry.clause(),
@@ -1277,7 +1277,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     cctx.localNode(),
                                     "Full text query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
-                                    org.apache.ignite.cache.query.CacheQueryType.FULL_TEXT,
+                                    CacheQueryType.FULL_TEXT,
                                     cctx.namex(),
                                     qry.queryClassName(),
                                     qry.clause(),
@@ -1300,7 +1300,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     cctx.localNode(),
                                     "Scan query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
-                                    org.apache.ignite.cache.query.CacheQueryType.SCAN,
+                                    CacheQueryType.SCAN,
                                     cctx.namex(),
                                     null,
                                     null,
@@ -1660,7 +1660,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      * @return Cache queries metrics.
      */
-    public CacheQueryMetrics metrics() {
+    public QueryMetrics metrics() {
         return metrics.copy();
     }
 

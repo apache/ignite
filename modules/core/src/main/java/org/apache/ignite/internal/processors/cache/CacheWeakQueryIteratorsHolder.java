@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
@@ -34,7 +34,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
     private final ReferenceQueue<WeakQueryFutureIterator> refQueue = new ReferenceQueue<>();
 
     /** Iterators futures. */
-    private final Map<WeakReference<WeakQueryFutureIterator>, CacheQueryFuture<V>> futs =
+    private final Map<WeakReference<WeakQueryFutureIterator>,CacheQueryFuture<V>> futs =
         new ConcurrentHashMap8<>();
 
     /** Logger. */

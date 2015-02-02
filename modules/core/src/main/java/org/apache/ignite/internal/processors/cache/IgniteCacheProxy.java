@@ -987,6 +987,12 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
     }
 
     /** {@inheritDoc} */
+    @Override public QueryMetrics queryMetrics() {
+        // TODO IGNITE-1.
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteCache<K, V> createAsyncInstance() {
         return new IgniteCacheProxy<>(ctx, delegate, prj, true);
     }

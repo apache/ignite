@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query;
+package org.apache.ignite.internal.processors.cache.query;
 
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
@@ -94,10 +95,10 @@ public interface CacheQueries<K, V> {
     /**
      * Creates new continuous query.
      * <p>
-     * For more information refer to {@link CacheContinuousQuery} documentation.
+     * For more information refer to {@link org.apache.ignite.cache.query.CacheContinuousQuery} documentation.
      *
      * @return Created continuous query.
-     * @see CacheContinuousQuery
+     * @see org.apache.ignite.cache.query.CacheContinuousQuery
      */
     public CacheContinuousQuery<K, V> createContinuousQuery();
 
@@ -143,7 +144,7 @@ public interface CacheQueries<K, V> {
      *
      * @return Cache query metrics.
      */
-    public CacheQueryMetrics metrics();
+    public QueryMetrics metrics();
 
     /**
      * Resets accumulated metrics.

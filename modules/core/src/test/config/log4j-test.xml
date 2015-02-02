@@ -84,6 +84,10 @@
     </category>
     -->
 
+    <category name="org.apache.ignite.internal.processors.query">
+        <level value="DEBUG"/>
+    </category>
+
     <!-- Enable Gridgain debugging.
      <category name="org.gridgain">
          <level value="DEBUG"/>

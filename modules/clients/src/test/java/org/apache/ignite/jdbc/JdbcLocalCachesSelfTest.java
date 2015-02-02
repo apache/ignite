@@ -55,7 +55,7 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
         cache.setCacheMode(LOCAL);
         cache.setWriteSynchronizationMode(FULL_SYNC);
 
-        CacheQueryConfiguration qryCfg = new CacheQueryConfiguration();
+        QueryConfiguration qryCfg = new QueryConfiguration();
 
         qryCfg.setIndexPrimitiveKey(true);
 

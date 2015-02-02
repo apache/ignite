@@ -18,8 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -120,7 +121,7 @@ public class GridCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstractTe
      */
     private static class Person implements Serializable {
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private int age;
 
         /**

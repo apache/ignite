@@ -18,13 +18,24 @@
 package org.apache.ignite.cache.query;
 
 /**
- * TODO: Add class description.
- *
- * @author @java.author
- * @version @java.version
+ * Remote query result reducer. Collects data entries and can produce multiple
+ * results.
  */
 public interface QueryReducer<T, R> {
+    /**
+     * Collect next data entry.
+     *
+     * @param entry Data entry.
+     * @return {@code -1} If iteration over data set must be stopped and no result must be asked from the reducer,
+     *  {@code 0} if one of intermediate result is ready but iteration must continue if more data available,
+     *  {@code 1} if result is not ready and iteration must continue if more data available.
+     */
     public int collect(T entry);
 
+    /**
+     * Get reduce result (possibly intermediate).
+     *
+     * @return Result of reduction.
+     */
     public R reduce();
 }

@@ -22,11 +22,12 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractQuerySelfTest.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.noop.*;
-import org.apache.ignite.internal.processors.cache.GridCacheAbstractQuerySelfTest.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -69,7 +70,7 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
 
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
+        QueryConfiguration qcfg = new QueryConfiguration();
 
         qcfg.setIndexPrimitiveKey(true);
 

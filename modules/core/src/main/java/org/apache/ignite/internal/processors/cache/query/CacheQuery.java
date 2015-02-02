@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query;
+package org.apache.ignite.internal.processors.cache.query;
 
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
@@ -29,13 +30,13 @@ import org.jetbrains.annotations.*;
  * <h1 class="header">SQL Queries</h1>
  * {@code SQL} query allows to execute distributed cache
  * queries using standard SQL syntax. All values participating in where clauses
- * or joins must be annotated with {@link CacheQuerySqlField} annotation. Query can be created
+ * or joins must be annotated with {@link QuerySqlField} annotation. Query can be created
  * with {@link CacheQueries#createSqlQuery(Class, String)} method.
  * <h2 class="header">Field Queries</h2>
  * By default {@code select} clause is ignored as query result contains full objects.
  * If it is needed to select individual fields, use {@link CacheQueries#createSqlFieldsQuery(String)} method.
  * This type of query replaces full objects with individual fields. Note that selected fields
- * must be annotated with {@link CacheQuerySqlField} annotation.
+ * must be annotated with {@link QuerySqlField} annotation.
  * <h2 class="header">Cross-Cache Queries</h2>
  * You are allowed to query data from several caches. Cache that this query was created on is
  * treated as default schema in this case. Other caches can be referenced by their names.
@@ -50,12 +51,12 @@ import org.jetbrains.annotations.*;
  * </pre>
  * <h2 class="header">Custom functions in SQL queries.</h2>
  * It is possible to write custom Java methods and call then form SQL queries. These methods must be public static
- * and annotated with {@link CacheQuerySqlFunction}. Classes containing these methods must be registered in
+ * and annotated with {@link QuerySqlFunction}. Classes containing these methods must be registered in
  * {@link org.apache.ignite.configuration.IgniteQueryConfiguration#setIndexCustomFunctionClasses(Class[])}.
  * <h1 class="header">Full Text Queries</h1>
  * GridGain supports full text queries based on Apache Lucene engine. This queries are created by
  * {@link CacheQueries#createFullTextQuery(Class, String)} method. Note that all fields that
- * are expected to show up in text query results must be annotated with {@link CacheQueryTextField}
+ * are expected to show up in text query results must be annotated with {@link QueryTextField}
  * annotation.
  * <h1 class="header">Scan Queries</h1>
  * Sometimes when it is known in advance that SQL query will cause a full data scan, or whenever data set
@@ -285,7 +286,7 @@ public interface CacheQuery<T> {
      *
      * @return Query metrics.
      */
-    public CacheQueryMetrics metrics();
+    public QueryMetrics metrics();
 
     /**
      * Resets metrics for this query.

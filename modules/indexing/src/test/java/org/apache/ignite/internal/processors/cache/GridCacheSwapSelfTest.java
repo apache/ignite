@@ -19,9 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -29,7 +30,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.noop.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -37,11 +37,11 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePeekMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.GridCachePeekMode.*;
+import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Test for cache swap.
@@ -655,7 +655,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
      */
     private static class CacheValue {
         /** Value. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private final int val;
 
         /**

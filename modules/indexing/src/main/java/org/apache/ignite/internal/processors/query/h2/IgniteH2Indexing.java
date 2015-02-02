@@ -19,28 +19,28 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.query.*;
+import org.apache.ignite.internal.processors.query.h2.opt.*;
 import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.future.GridFinishedFutureEx;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.offheap.unsafe.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
-import org.apache.ignite.internal.processors.query.*;
-import org.apache.ignite.internal.processors.query.h2.opt.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.offheap.unsafe.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.h2.api.*;
 import org.h2.command.*;
 import org.h2.constant.*;
@@ -1251,7 +1251,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         for (Class<?> cls : idxCustomFuncClss) {
             for (Method m : cls.getDeclaredMethods()) {
-                CacheQuerySqlFunction ann = m.getAnnotation(CacheQuerySqlFunction.class);
+                QuerySqlFunction ann = m.getAnnotation(QuerySqlFunction.class);
 
                 if (ann != null) {
                     int modifiers = m.getModifiers();
@@ -1334,7 +1334,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return {@code true} If primitive keys must be indexed.
      */
     public boolean isIndexPrimitiveKey(@Nullable String spaceName) {
-        CacheQueryConfiguration cfg = cacheQueryConfiguration(spaceName);
+        QueryConfiguration cfg = cacheQueryConfiguration(spaceName);
 
         return cfg != null && cfg.isIndexPrimitiveKey();
     }
@@ -1344,21 +1344,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return {@code true} If primitive values must be indexed.
      */
     public boolean isIndexPrimitiveValue(String spaceName) {
-        CacheQueryConfiguration cfg = cacheQueryConfiguration(spaceName);
+        QueryConfiguration cfg = cacheQueryConfiguration(spaceName);
 
         return cfg != null && cfg.isIndexPrimitiveValue();
     }
 
     /** {@inheritDoc} */
     public boolean isIndexFixedTyping(String spaceName) {
-        CacheQueryConfiguration cfg = cacheQueryConfiguration(spaceName);
+        QueryConfiguration cfg = cacheQueryConfiguration(spaceName);
 
         return cfg != null && cfg.isIndexFixedTyping();
     }
 
     /** {@inheritDoc} */
     public boolean isEscapeAll(String spaceName) {
-        CacheQueryConfiguration cfg = cacheQueryConfiguration(spaceName);
+        QueryConfiguration cfg = cacheQueryConfiguration(spaceName);
 
         return cfg != null && cfg.isEscapeAll();
     }
@@ -1367,7 +1367,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param spaceName Space name.
      * @return Cache query configuration.
      */
-    @Nullable private CacheQueryConfiguration cacheQueryConfiguration(String spaceName) {
+    @Nullable private QueryConfiguration cacheQueryConfiguration(String spaceName) {
         return ctx == null ? null : ctx.cache().internalCache(spaceName).configuration().getQueryConfiguration();
     }
 

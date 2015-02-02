@@ -23,9 +23,9 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Adapter for {@link org.apache.ignite.cache.query.CacheQueryMetrics}.
+ * Adapter for {@link org.apache.ignite.cache.query.QueryMetrics}.
  */
-public class GridCacheQueryMetricsAdapter implements CacheQueryMetrics, Externalizable {
+public class GridCacheQueryMetricsAdapter implements QueryMetrics, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

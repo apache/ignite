@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples.datagrid.starschema;
 
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 
 /**
  * Represents a purchase record. In our {@code snowflake} schema purchase
@@ -26,19 +26,19 @@ import org.apache.ignite.cache.query.*;
  */
 public class FactPurchase {
     /** Primary key. */
-    @CacheQuerySqlField(index = true)
+    @QuerySqlField(index = true)
     private int id;
 
     /** Foreign key to store at which purchase occurred. */
-    @CacheQuerySqlField
+    @QuerySqlField
     private int storeId;
 
     /** Foreign key to purchased product. */
-    @CacheQuerySqlField
+    @QuerySqlField
     private int productId;
 
     /** Purchase price. */
-    @CacheQuerySqlField
+    @QuerySqlField
     private float purchasePrice;
 
     /**

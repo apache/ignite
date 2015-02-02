@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.query.*;
@@ -66,16 +67,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final GridQueryIndexing idx;
 
     /** Configuration-declared types. */
-    private final Map<TypeName, CacheQueryTypeMetadata> declaredTypesByName = new HashMap<>();
+    private final Map<TypeName,QueryTypeMetadata> declaredTypesByName = new HashMap<>();
 
     /** Configuration-declared types. */
-    private Map<TypeId, CacheQueryTypeMetadata> declaredTypesById;
+    private Map<TypeId,QueryTypeMetadata> declaredTypesById;
 
     /** Portable IDs. */
     private Map<Integer, String> portableIds;
 
     /** Type resolvers per space name. */
-    private Map<String, CacheQueryTypeResolver> typeResolvers = new HashMap<>();
+    private Map<String,QueryTypeResolver> typeResolvers = new HashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -102,11 +103,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             idx.start(ctx);
 
             for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
-                CacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
+                QueryConfiguration qryCfg = ccfg.getQueryConfiguration();
 
                 if (qryCfg != null) {
                     if (!F.isEmpty(qryCfg.getTypeMetadata())) {
-                        for (CacheQueryTypeMetadata meta : qryCfg.getTypeMetadata())
+                        for (QueryTypeMetadata meta : qryCfg.getTypeMetadata())
                             declaredTypesByName.put(new TypeName(ccfg.getName(), meta.getType()), meta);
                     }
 
@@ -279,7 +280,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             TypeId id = null;
 
-            CacheQueryTypeResolver rslvr = typeResolvers.get(space);
+            QueryTypeResolver rslvr = typeResolvers.get(space);
 
             if (rslvr != null) {
                 String typeName = rslvr.resolveTypeName(key, val);
@@ -330,14 +331,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             String typeName = portableName(portableKey.typeId());
 
                             if (typeName != null) {
-                                CacheQueryTypeMetadata keyMeta = declaredType(space, portableKey.typeId());
+                                QueryTypeMetadata keyMeta = declaredType(space, portableKey.typeId());
 
                                 if (keyMeta != null)
                                     processPortableMeta(true, keyMeta, d);
                             }
                         }
                         else {
-                            CacheQueryTypeMetadata keyMeta = declaredType(space, keyCls.getName());
+                            QueryTypeMetadata keyMeta = declaredType(space, keyCls.getName());
 
                             if (keyMeta == null)
                                 processAnnotationsInClass(true, d.keyCls, d, null);
@@ -351,7 +352,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             String typeName = portableName(portableVal.typeId());
 
                             if (typeName != null) {
-                                CacheQueryTypeMetadata valMeta = declaredType(space, portableVal.typeId());
+                                QueryTypeMetadata valMeta = declaredType(space, portableVal.typeId());
 
                                 d.name(typeName);
 
@@ -364,7 +365,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                             d.name(valTypeName);
 
-                            CacheQueryTypeMetadata typeMeta = declaredType(space, valCls.getName());
+                            QueryTypeMetadata typeMeta = declaredType(space, valCls.getName());
 
                             if (typeMeta == null)
                                 processAnnotationsInClass(false, d.valCls, d, null);
@@ -533,10 +534,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             portableIds = new HashMap<>();
 
             for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
-                CacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
+                QueryConfiguration qryCfg = ccfg.getQueryConfiguration();
 
                 if (qryCfg != null) {
-                    for (CacheQueryTypeMetadata meta : qryCfg.getTypeMetadata())
+                    for (QueryTypeMetadata meta : qryCfg.getTypeMetadata())
                         portableIds.put(ctx.portable().typeId(meta.getType()), meta.getType());
                 }
             }
@@ -552,17 +553,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param typeId Type ID.
      * @return Type meta data if it was declared in configuration.
      */
-    @Nullable private CacheQueryTypeMetadata declaredType(String space, int typeId) {
-        Map<TypeId, CacheQueryTypeMetadata> declaredTypesById = this.declaredTypesById;
+    @Nullable private QueryTypeMetadata declaredType(String space, int typeId) {
+        Map<TypeId,QueryTypeMetadata> declaredTypesById = this.declaredTypesById;
 
         if (declaredTypesById == null) {
             declaredTypesById = new HashMap<>();
 
             for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
-                CacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
+                QueryConfiguration qryCfg = ccfg.getQueryConfiguration();
 
                 if (qryCfg != null) {
-                    for (CacheQueryTypeMetadata meta : qryCfg.getTypeMetadata())
+                    for (QueryTypeMetadata meta : qryCfg.getTypeMetadata())
                         declaredTypesById.put(new TypeId(ccfg.getName(), ctx.portable().typeId(meta.getType())), meta);
                 }
             }
@@ -578,7 +579,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param typeName Type name.
      * @return Type meta data if it was declared in configuration.
      */
-    @Nullable private CacheQueryTypeMetadata declaredType(String space, String typeName) {
+    @Nullable private QueryTypeMetadata declaredType(String space, String typeName) {
         return declaredTypesByName.get(new TypeName(space, typeName));
     }
 
@@ -742,28 +743,28 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException("Recursive reference found in type: " + cls.getName());
 
         if (parent == null) { // Check class annotation at top level only.
-            CacheQueryTextField txtAnnCls = cls.getAnnotation(CacheQueryTextField.class);
+            QueryTextField txtAnnCls = cls.getAnnotation(QueryTextField.class);
 
             if (txtAnnCls != null)
                 type.valueTextIndex(true);
 
-            CacheQueryGroupIndex grpIdx = cls.getAnnotation(CacheQueryGroupIndex.class);
+            QueryGroupIndex grpIdx = cls.getAnnotation(QueryGroupIndex.class);
 
             if (grpIdx != null)
                 type.addIndex(grpIdx.name(), SORTED);
 
-            CacheQueryGroupIndex.List grpIdxList = cls.getAnnotation(CacheQueryGroupIndex.List.class);
+            QueryGroupIndex.List grpIdxList = cls.getAnnotation(QueryGroupIndex.List.class);
 
             if (grpIdxList != null && !F.isEmpty(grpIdxList.value())) {
-                for (CacheQueryGroupIndex idx : grpIdxList.value())
+                for (QueryGroupIndex idx : grpIdxList.value())
                     type.addIndex(idx.name(), SORTED);
             }
         }
 
         for (Class<?> c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
             for (Field field : c.getDeclaredFields()) {
-                CacheQuerySqlField sqlAnn = field.getAnnotation(CacheQuerySqlField.class);
-                CacheQueryTextField txtAnn = field.getAnnotation(CacheQueryTextField.class);
+                QuerySqlField sqlAnn = field.getAnnotation(QuerySqlField.class);
+                QueryTextField txtAnn = field.getAnnotation(QueryTextField.class);
 
                 if (sqlAnn != null || txtAnn != null) {
                     ClassProperty prop = new ClassProperty(field);
@@ -777,8 +778,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             for (Method mtd : c.getDeclaredMethods()) {
-                CacheQuerySqlField sqlAnn = mtd.getAnnotation(CacheQuerySqlField.class);
-                CacheQueryTextField txtAnn = mtd.getAnnotation(CacheQueryTextField.class);
+                QuerySqlField sqlAnn = mtd.getAnnotation(QuerySqlField.class);
+                QueryTextField txtAnn = mtd.getAnnotation(QueryTextField.class);
 
                 if (sqlAnn != null || txtAnn != null) {
                     if (mtd.getParameterTypes().length != 0)
@@ -808,7 +809,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param desc Class description.
      * @throws IgniteCheckedException In case of error.
      */
-    static void processAnnotation(boolean key, CacheQuerySqlField sqlAnn, CacheQueryTextField txtAnn,
+    static void processAnnotation(boolean key, QuerySqlField sqlAnn, QueryTextField txtAnn,
         Class<?> cls, ClassProperty prop, TypeDescriptor desc) throws IgniteCheckedException {
         if (sqlAnn != null) {
             processAnnotationsInClass(key, cls, desc, prop);
@@ -816,7 +817,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (!sqlAnn.name().isEmpty())
                 prop.name(sqlAnn.name());
 
-            if (sqlAnn.index() || sqlAnn.unique()) {
+            if (sqlAnn.index()) {
                 String idxName = prop.name() + "_idx";
 
                 desc.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
@@ -830,7 +831,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             if (!F.isEmpty(sqlAnn.orderedGroups())) {
-                for (CacheQuerySqlField.Group idx : sqlAnn.orderedGroups())
+                for (QuerySqlField.Group idx : sqlAnn.orderedGroups())
                     desc.addFieldToIndex(idx.name(), prop.name(), idx.order(), idx.descending());
             }
         }
@@ -848,7 +849,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param d Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    static void processClassMeta(boolean key, Class<?> cls, CacheQueryTypeMetadata meta, TypeDescriptor d)
+    static void processClassMeta(boolean key, Class<?> cls, QueryTypeMetadata meta, TypeDescriptor d)
         throws IgniteCheckedException {
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
             ClassProperty prop = buildClassProperty(cls, entry.getKey(), entry.getValue());
@@ -921,7 +922,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param d Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    static void processPortableMeta(boolean key, CacheQueryTypeMetadata meta, TypeDescriptor d)
+    static void processPortableMeta(boolean key, QueryTypeMetadata meta, TypeDescriptor d)
         throws IgniteCheckedException {
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
             PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue());

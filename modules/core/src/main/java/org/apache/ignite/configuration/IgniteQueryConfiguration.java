@@ -123,7 +123,7 @@ public class IgniteQueryConfiguration {
     }
 
     /**
-     * Sets classes with methods annotated by {@link org.apache.ignite.cache.query.CacheQuerySqlFunction}
+     * Sets classes with methods annotated by {@link org.apache.ignite.cache.query.QuerySqlFunction}
      * to be used as user-defined functions from SQL queries.
      *
      * @param idxCustomFuncClss List of classes.

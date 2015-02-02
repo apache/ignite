@@ -336,7 +336,7 @@ public class CacheConfiguration extends MutableConfiguration {
     private boolean keepPortableInStore = true;
 
     /** Query configuration. */
-    private CacheQueryConfiguration qryCfg;
+    private QueryConfiguration qryCfg;
 
     /**
      * Flag indicating whether data can be read from backup.
@@ -1756,7 +1756,7 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @return Cache query configuration.
      */
-    public CacheQueryConfiguration getQueryConfiguration() {
+    public QueryConfiguration getQueryConfiguration() {
         return qryCfg;
     }
 
@@ -1764,9 +1764,9 @@ public class CacheConfiguration extends MutableConfiguration {
      * Sets query configuration.
      *
      * @param qryCfg Query configuration.
-     * @see org.apache.ignite.cache.query.CacheQueryConfiguration
+     * @see org.apache.ignite.cache.query.QueryConfiguration
      */
-    public void setQueryConfiguration(CacheQueryConfiguration qryCfg) {
+    public void setQueryConfiguration(QueryConfiguration qryCfg) {
         this.qryCfg = qryCfg;
     }
 

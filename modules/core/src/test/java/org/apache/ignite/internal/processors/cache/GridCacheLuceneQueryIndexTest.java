@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -376,7 +376,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
      */
     private static class ObjectValue implements Serializable {
         /** String value. */
-        @CacheQueryTextField
+        @QueryTextField
         private String strVal;
 
         /**
@@ -422,7 +422,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
      */
     private static class ObjectKey implements Serializable {
         /** String key. */
-        @CacheQueryTextField
+        @QueryTextField
         private String strKey;
 
         /**

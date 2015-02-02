@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples.datagrid.starschema;
 
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 
 /**
  * Represents a product available for purchase. In our {@code snowflake} schema a {@code product}
@@ -26,14 +26,14 @@ import org.apache.ignite.cache.query.*;
  */
 public class DimProduct {
     /** Primary key. */
-    @CacheQuerySqlField(index = true)
+    @QuerySqlField(index = true)
     private int id;
 
     /** Product name. */
     private String name;
 
     /** Product list price. */
-    @CacheQuerySqlField
+    @QuerySqlField
     private float price;
 
     /** Available product quantity. */

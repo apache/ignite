@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Cache query type metadata.
  */
-public class CacheQueryTypeMetadata {
+public class QueryTypeMetadata {
     /** Type name, e.g. class name. */
     @GridToStringInclude
     private String type;
@@ -54,14 +54,14 @@ public class CacheQueryTypeMetadata {
     /**
      * Default constructor.
      */
-    public CacheQueryTypeMetadata() {
+    public QueryTypeMetadata() {
         // No-op.
     }
 
     /**
      *
      */
-    public CacheQueryTypeMetadata(CacheQueryTypeMetadata src) {
+    public QueryTypeMetadata(QueryTypeMetadata src) {
         type = src.getType();
 
         qryFlds = new HashMap<>(src.getQueryFields());
@@ -191,6 +191,6 @@ public class CacheQueryTypeMetadata {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheQueryTypeMetadata.class, this);
+        return S.toString(QueryTypeMetadata.class, this);
     }
 }

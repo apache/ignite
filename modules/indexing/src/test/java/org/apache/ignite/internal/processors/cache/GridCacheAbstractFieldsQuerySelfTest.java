@@ -21,16 +21,17 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.query.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.processors.query.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -93,7 +94,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         cache.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cache.setPreloadMode(SYNC);
 
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
+        QueryConfiguration qcfg = new QueryConfiguration();
 
         qcfg.setIndexPrimitiveKey(true);
         qcfg.setIndexPrimitiveValue(true);
@@ -1167,7 +1168,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     @SuppressWarnings("UnusedDeclaration")
     private static class PersonKey implements Serializable {
         /** ID. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private final UUID id;
 
         /** @param id ID. */
@@ -1203,15 +1204,15 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** Name. */
-        @CacheQuerySqlField(index = false)
+        @QuerySqlField(index = false)
         private final String name;
 
         /** Age. */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private final int age;
 
         /** Organization ID. */
-        @CacheQuerySqlField(index = true)
+        @QuerySqlField(index = true)
         private final int orgId;
 
         /**
@@ -1260,11 +1261,11 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** ID. */
-        @CacheQuerySqlField
+        @QuerySqlField
         private final int id;
 
         /** Name. */
-        @CacheQuerySqlField(index = false)
+        @QuerySqlField(index = false)
         private final String name;
 
         /**

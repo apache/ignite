@@ -19,6 +19,7 @@ package org.apache.ignite.jdbc;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -657,63 +658,63 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class TestObject implements Serializable {
         /** */
-        @CacheQuerySqlField(index = false)
+        @QuerySqlField(index = false)
         private final int id;
 
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private Boolean boolVal;
 
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private Byte byteVal;
 
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private Short shortVal;
 
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private Integer intVal;
 
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private Long longVal;
 
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private Float floatVal;
 
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private Double doubleVal;
 
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private BigDecimal bigVal;
 
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private String strVal;
 
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private byte[] arrVal;
 
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private Date dateVal;
 
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private Time timeVal;
 
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private Timestamp tsVal;
 
         /** */
-        @CacheQuerySqlField
+        @QuerySqlField
         private URL urlVal;
 
         /**

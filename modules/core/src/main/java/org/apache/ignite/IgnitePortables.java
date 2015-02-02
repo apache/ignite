@@ -254,7 +254,7 @@ import java.util.Date;
  * or for a specific type via {@link org.apache.ignite.portables.PortableTypeConfiguration} instance.
  * <h1 class="header">Query Indexing</h1>
  * Portable objects can be indexed for querying by specifying index fields in
- * {@link org.apache.ignite.cache.query.CacheQueryTypeMetadata} inside of specific {@link CacheConfiguration} instance,
+ * {@link org.apache.ignite.cache.query.QueryTypeMetadata} inside of specific {@link CacheConfiguration} instance,
  * like so:
  * <pre name=code class=xml>
  * ...

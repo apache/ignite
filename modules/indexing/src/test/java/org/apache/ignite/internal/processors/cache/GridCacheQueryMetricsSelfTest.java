@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -68,7 +69,7 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(CACHE_MODE);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
+        QueryConfiguration qcfg = new QueryConfiguration();
 
         qcfg.setIndexPrimitiveKey(true);
 
@@ -93,7 +94,7 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
         // Execute query.
         qry.execute().get();
 
-        CacheQueryMetrics m = cache.queries().metrics();
+        QueryMetrics m = cache.queries().metrics();
 
         assert m != null;
 
@@ -135,7 +136,7 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
         // Execute.
         qry.execute().get();
 
-        CacheQueryMetrics m = qry.metrics();
+        QueryMetrics m = qry.metrics();
 
         info("Metrics: " + m);
 

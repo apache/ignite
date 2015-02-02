@@ -22,8 +22,8 @@ import java.lang.annotation.*;
 /**
  * Annotation for fields or getters to be indexed for full text
  * search using {@code H2 TEXT} indexing. For more information
- * refer to {@link org.apache.ignite.cache.query.CacheQuery} documentation.
- * @see org.apache.ignite.cache.query.CacheQuery
+ * refer to {@link org.apache.ignite.internal.processors.cache.query.CacheQuery} documentation.
+ * @see org.apache.ignite.internal.processors.cache.query.CacheQuery
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
