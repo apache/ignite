@@ -72,7 +72,7 @@ import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
  */
 public class IgniteConfiguration {
     /** Courtesy notice log category. */
-    public static final String COURTESY_LOGGER_NAME = "org.gridgain.grid.CourtesyConfigNotice";
+    public static final String COURTESY_LOGGER_NAME = "org.apache.ignite.CourtesyConfigNotice";
 
     /**
      * Default flag for peer class loading. By default the value is {@code false}

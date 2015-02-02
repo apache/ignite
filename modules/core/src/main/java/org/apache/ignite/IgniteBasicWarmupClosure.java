@@ -210,7 +210,7 @@ public class IgniteBasicWarmupClosure implements IgniteInClosure<IgniteConfigura
 
                 cfg0.setGridLogger(new IgniteNullLogger());
 
-                cfg0.setGridName("gridgain-warmup-grid-" + i);
+                cfg0.setGridName("ignite-warmup-grid-" + i);
 
                 ignites.add(Ignition.start(cfg0));
             }
