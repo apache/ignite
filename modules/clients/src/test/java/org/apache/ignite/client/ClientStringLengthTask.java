@@ -63,8 +63,7 @@ public class ClientStringLengthTask extends ComputeTaskSplitAdapter<String, Inte
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
-        {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         if (res.getException() != null)
             return FAILOVER;
 

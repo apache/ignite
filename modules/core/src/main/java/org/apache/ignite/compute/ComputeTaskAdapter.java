@@ -19,7 +19,6 @@ package org.apache.ignite.compute;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.cluster.*;
 
 import java.util.*;
 
@@ -77,7 +76,7 @@ public abstract class ComputeTaskAdapter<T, R> implements ComputeTask<T, R> {
      * <p>
      * If remote job resulted in exception ({@link ComputeJobResult#getException()} is not {@code null}),
      * then {@link ComputeJobResultPolicy#FAILOVER} policy will be returned if the exception is instance
-     * of {@link org.apache.ignite.internal.cluster.ClusterTopologyCheckedException} or {@link ComputeExecutionRejectedException}, which means that
+     * of {@link org.apache.ignite.cluster.ClusterTopologyException} or {@link ComputeExecutionRejectedException}, which means that
      * remote node either failed or job execution was rejected before it got a chance to start. In all
      * other cases the exception will be rethrown which will ultimately cause task to fail.
      *

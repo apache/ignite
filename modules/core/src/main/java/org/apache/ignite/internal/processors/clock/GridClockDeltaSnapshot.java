@@ -94,7 +94,7 @@ public class GridClockDeltaSnapshot {
      * Awaits either until snapshot is ready or timeout elapses.
      *
      * @param timeout Timeout to wait.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If wait was interrupted.
+     * @throws IgniteInterruptedCheckedException If wait was interrupted.
      */
     public synchronized void awaitReady(long timeout) throws IgniteInterruptedCheckedException {
         long start = System.currentTimeMillis();

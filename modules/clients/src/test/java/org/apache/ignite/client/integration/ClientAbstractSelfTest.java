@@ -1454,8 +1454,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
      */
     private static class TestTask extends ComputeTaskSplitAdapter<List<Object>, Integer> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list)
-            {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list) {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>();
 
             if (list != null)

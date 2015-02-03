@@ -837,7 +837,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         /**
          * @param newEntries Infos.
          * @param lsnr Listener for the operation future.
-         * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If failed.
+         * @throws IgniteInterruptedCheckedException If failed.
          * @return Future for operation.
          */
         @Nullable GridFutureAdapter<?> update(Iterable<Map.Entry<K, V>> newEntries,
@@ -882,10 +882,9 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         /**
          * @return Future if any submitted.
          *
-         * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread has been interrupted.
+         * @throws IgniteInterruptedCheckedException If thread has been interrupted.
          */
-        @Nullable
-        IgniteInternalFuture<?> flush() throws IgniteInterruptedCheckedException {
+        @Nullable IgniteInternalFuture<?> flush() throws IgniteInterruptedCheckedException {
             List<Map.Entry<K, V>> entries0 = null;
             GridFutureAdapter<Object> curFut0 = null;
 
@@ -929,7 +928,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         /**
          * Increments active tasks count.
          *
-         * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread has been interrupted.
+         * @throws IgniteInterruptedCheckedException If thread has been interrupted.
          */
         private void incrementActiveTasks() throws IgniteInterruptedCheckedException {
             U.acquire(sem);
@@ -947,7 +946,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         /**
          * @param entries Entries to submit.
          * @param curFut Current future.
-         * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
+         * @throws IgniteInterruptedCheckedException If interrupted.
          */
         private void submit(final Collection<Map.Entry<K, V>> entries, final GridFutureAdapter<Object> curFut)
             throws IgniteInterruptedCheckedException {

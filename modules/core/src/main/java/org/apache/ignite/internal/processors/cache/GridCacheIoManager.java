@@ -335,7 +335,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param node Node to send the message to.
      * @param msg Message to send.
      * @throws IgniteCheckedException If sending failed.
-     * @throws org.apache.ignite.internal.cluster.ClusterTopologyCheckedException If receiver left.
+     * @throws ClusterTopologyCheckedException If receiver left.
      */
     public void send(ClusterNode node, GridCacheMessage<K, V> msg) throws IgniteCheckedException {
         send(node, msg, SYSTEM_POOL);
@@ -347,7 +347,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param node Node to send the message to.
      * @param msg Message to send.
      * @throws IgniteCheckedException If sending failed.
-     * @throws org.apache.ignite.internal.cluster.ClusterTopologyCheckedException If receiver left.
+     * @throws ClusterTopologyCheckedException If receiver left.
      */
     public void send(ClusterNode node, GridCacheMessage<K, V> msg, GridIoPolicy plc) throws IgniteCheckedException {
         assert !node.isLocal();
@@ -808,6 +808,9 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         }
     }
 
+    /**
+     *
+     */
     private static class ListenerKey {
         /** Cache ID. */
         private int cacheId;

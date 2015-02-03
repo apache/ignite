@@ -22,7 +22,7 @@ import org.jetbrains.annotations.*;
 
 /**
  * This exception indicates that task execution timed out. It is thrown from
- * {@link org.apache.ignite.compute.ComputeTaskFuture#get()} method.
+ * {@link ComputeTaskFuture#get()} method.
  */
 public class ComputeTaskTimeoutException extends IgniteException {
     /** */

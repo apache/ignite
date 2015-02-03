@@ -193,7 +193,7 @@ public abstract class GridWorker implements Runnable {
      * The implementation should provide the execution body for this runnable.
      *
      * @throws InterruptedException Thrown in case of interruption.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
+     * @throws IgniteInterruptedCheckedException If interrupted.
      */
     protected abstract void body() throws InterruptedException, IgniteInterruptedCheckedException;
 

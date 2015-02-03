@@ -479,7 +479,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @param entry Preloaded entry.
          * @param topVer Topology version.
          * @return {@code False} if partition has become invalid during preloading.
-         * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
+         * @throws IgniteInterruptedCheckedException If interrupted.
          */
         private boolean preloadEntry(ClusterNode pick, int p, GridCacheEntryInfo<K, V> entry, long topVer)
             throws IgniteCheckedException {
@@ -566,7 +566,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @param exchFut Exchange future.
          * @return Missed partitions.
          * @throws InterruptedException If interrupted.
-         * @throws org.apache.ignite.internal.cluster.ClusterTopologyCheckedException If node left.
+         * @throws ClusterTopologyCheckedException If node left.
          * @throws IgniteCheckedException If failed to send message.
          */
         private Set<Integer> demandFromNode(ClusterNode node, final long topVer, GridDhtPartitionDemandMessage<K, V> d,

@@ -705,8 +705,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         private int gridSize;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg)
-            {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             this.gridSize = gridSize;

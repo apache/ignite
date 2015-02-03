@@ -18,7 +18,7 @@
 package org.apache.ignite.compute;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;

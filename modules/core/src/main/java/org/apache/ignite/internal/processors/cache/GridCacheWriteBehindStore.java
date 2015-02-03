@@ -958,7 +958,7 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
         /**
          * Awaits a signal on flush condition
          *
-         * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread was interrupted.
+         * @throws IgniteInterruptedCheckedException If thread was interrupted.
          */
         private void waitForFlush() throws IgniteInterruptedCheckedException {
             U.await(flushCond);

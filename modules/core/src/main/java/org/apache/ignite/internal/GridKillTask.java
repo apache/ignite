@@ -89,14 +89,14 @@ class GridKillTask extends ComputeTaskAdapter<Boolean, Void> {
                         G.restart(true);
                     }
                 },
-                "grid-restarter").start();
+                "ignite-restarter").start();
             else
                 new Thread(new Runnable() {
                     @Override public void run() {
                         G.kill(true);
                     }
                 },
-                "grid-stopper").start();
+                "ignite-stopper").start();
 
             return null;
         }

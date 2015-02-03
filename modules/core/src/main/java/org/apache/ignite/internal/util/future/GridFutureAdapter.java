@@ -242,7 +242,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * @param nanosTimeout Timeout (nanoseconds).
      * @return Result.
      * @throws InterruptedException If interrupted.
-     * @throws org.apache.ignite.internal.IgniteFutureTimeoutCheckedException If timeout reached before computation completed.
+     * @throws IgniteFutureTimeoutCheckedException If timeout reached before computation completed.
      * @throws IgniteCheckedException If error occurred.
      */
     @Nullable protected R get0(long nanosTimeout) throws InterruptedException, IgniteCheckedException {

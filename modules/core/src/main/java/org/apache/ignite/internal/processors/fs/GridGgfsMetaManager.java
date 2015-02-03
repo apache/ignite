@@ -1768,7 +1768,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             GridGgfsFileInfo info = infos.get(path);
 
                             if (info.isDirectory())
-                                throw new IgniteCheckedException("Failed to open output stream to the file in the " +
+                                throw fsException("Failed to open output stream to the file in the " +
                                     "secondary file system because the path points to a directory: " + path);
 
                             out = fs.append(path, bufSize, false, null);
@@ -2067,7 +2067,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         else {
                             // Move.
                             if (destInfo.isFile())
-                                throw new IgniteCheckedException("Failed to rename the path in the local file system " +
+                                throw fsException("Failed to rename the path in the local file system " +
                                     "because destination path already exists and it is a file: " + dest);
                             else
                                 moveNonTx(srcInfo.id(), src.name(), srcParentInfo.id(), src.name(), destInfo.id());

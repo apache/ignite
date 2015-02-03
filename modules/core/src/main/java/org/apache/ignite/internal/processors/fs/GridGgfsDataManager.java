@@ -1846,7 +1846,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
             // If waiting for ack from this node.
             if (reqIds != null && !reqIds.isEmpty()) {
-                if (e.getCause() instanceof IgniteFsOutOfSpaceException)
+                if (e.hasCause(IgniteFsOutOfSpaceException.class))
                     onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " + nodeId, e));
                 else
                     onDone(new IgniteCheckedException(

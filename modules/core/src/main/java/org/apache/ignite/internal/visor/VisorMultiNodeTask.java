@@ -76,7 +76,7 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
      * @param arg Task execution argument.
      * @param subgrid Nodes available for this task execution.
      * @return Map of grid jobs assigned to subgrid node.
-     * @throws IgniteCheckedException If mapping could not complete successfully.
+     * @throws IgniteException If mapping could not complete successfully.
      */
     protected Map<? extends ComputeJob, ClusterNode> map0(List<ClusterNode> subgrid, VisorTaskArgument<A> arg) {
         Collection<UUID> nodeIds = arg.nodes();

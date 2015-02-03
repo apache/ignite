@@ -661,7 +661,7 @@ public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject
      * Gets allowed remaining time for this transaction.
      *
      * @return Remaining time.
-     * @throws org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException If transaction timed out.
+     * @throws IgniteTxTimeoutCheckedException If transaction timed out.
      */
     public long remainingTime() throws IgniteTxTimeoutCheckedException;
 

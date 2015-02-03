@@ -93,7 +93,7 @@ public class GridAtomicInitializer<T> {
      * Await for completion.
      *
      * @return {@code true} If initialization was completed successfully.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread was interrupted.
+     * @throws IgniteInterruptedCheckedException If thread was interrupted.
      */
     public boolean await() throws IgniteInterruptedCheckedException {
         if (!finished) {

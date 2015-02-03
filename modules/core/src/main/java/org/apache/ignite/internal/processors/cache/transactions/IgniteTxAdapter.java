@@ -1885,7 +1885,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         /** {@inheritDoc} */
         @Override public void writeVersion(GridCacheVersion ver) {
-
+            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -1898,14 +1898,14 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
             return false;
         }
 
-        @Override
-        public void invalidate(boolean invalidate) {
-
+        /** {@inheritDoc} */
+        @Override public void invalidate(boolean invalidate) {
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public void systemInvalidate(boolean sysInvalidate) {
-
+            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -1933,8 +1933,8 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
             return false;
         }
 
-        @Override
-        public boolean done() {
+        /** {@inheritDoc} */
+        @Override public boolean done() {
             return false;
         }
 
@@ -1985,7 +1985,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         /** {@inheritDoc} */
         @Override public void completedVersions(GridCacheVersion base, Collection committed, Collection rolledback) {
-
+            // No-op.
         }
 
         /** {@inheritDoc} */
@@ -2020,7 +2020,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-
+            // No-op.
         }
 
         /** {@inheritDoc} */

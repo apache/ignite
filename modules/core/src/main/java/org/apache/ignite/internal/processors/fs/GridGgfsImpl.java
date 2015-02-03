@@ -520,7 +520,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 IgniteFsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
-                    throw new IgniteCheckedException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
 
                 GridGgfsFileInfo info = resolveFileInfo(path, mode);
 
@@ -644,7 +644,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 Set<IgniteFsMode> childrenModes = modeRslvr.resolveChildrenModes(src);
 
                 if (mode == PROXY)
-                    throw new IgniteCheckedException("PROXY mode cannot be used in GGFS directly: " + src);
+                    throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + src);
 
                 if (src.equals(dest))
                     return; // Rename to itself is a no-op.
@@ -1097,7 +1097,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 IgniteFsMode mode = modeRslvr.resolveMode(path);
 
                 if (mode == PROXY)
-                    throw new IgniteCheckedException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
                 else if (mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 

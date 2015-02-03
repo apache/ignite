@@ -5773,7 +5773,7 @@ public abstract class IgniteUtils {
      * Converts {@link InterruptedException} to {@link IgniteCheckedException}.
      *
      * @param mux Mux to wait on.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
+     * @throws IgniteInterruptedCheckedException If interrupted.
      */
     @SuppressWarnings({"WaitNotInLoop", "WaitWhileNotSynced"})
     public static void wait(Object mux) throws IgniteInterruptedCheckedException {
@@ -7002,7 +7002,7 @@ public abstract class IgniteUtils {
      * Awaits for condition.
      *
      * @param cond Condition to await for.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}
      */
     public static void await(Condition cond) throws IgniteInterruptedCheckedException {
         try {
@@ -7022,7 +7022,7 @@ public abstract class IgniteUtils {
      * @param time The maximum time to wait,
      * @param unit The unit of the {@code time} argument.
      * @return {@code false} if the waiting time detectably elapsed before return from the method, else {@code true}
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}
      */
     public static boolean await(Condition cond, long time, TimeUnit unit) throws IgniteInterruptedCheckedException {
         try {
@@ -7039,7 +7039,7 @@ public abstract class IgniteUtils {
      * Awaits for the latch.
      *
      * @param latch Latch to wait for.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
     public static void await(CountDownLatch latch) throws IgniteInterruptedCheckedException {
         try {
@@ -7061,7 +7061,7 @@ public abstract class IgniteUtils {
      * @param unit Time unit for timeout.
      * @return {@code True} if the count reached zero and {@code false}
      *      if the waiting time elapsed before the count reached zero.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
     public static boolean await(CountDownLatch latch, long timeout, TimeUnit unit)
         throws IgniteInterruptedCheckedException {
@@ -7135,7 +7135,7 @@ public abstract class IgniteUtils {
      * Sleeps for given number of milliseconds.
      *
      * @param ms Time to sleep.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
     public static void sleep(long ms) throws IgniteInterruptedCheckedException {
         try {
@@ -7152,7 +7152,7 @@ public abstract class IgniteUtils {
      * Joins worker.
      *
      * @param w Worker.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
     public static void join(GridWorker w) throws IgniteInterruptedCheckedException {
         try {
@@ -8344,10 +8344,10 @@ public abstract class IgniteUtils {
 
     /**
      * For each object provided by the given {@link Iterable} checks if it implements
-     * {@link org.apache.ignite.lifecycle.LifecycleAware} interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#start} method.
+     * {@link LifecycleAware} interface and executes {@link LifecycleAware#start} method.
      *
      * @param objs Objects.
-     * @throws IgniteCheckedException If {@link org.apache.ignite.lifecycle.LifecycleAware#start} fails.
+     * @throws IgniteCheckedException If {@link LifecycleAware#start} fails.
      */
     public static void startLifecycleAware(Iterable<?> objs) throws IgniteCheckedException {
         try {
@@ -8357,7 +8357,7 @@ public abstract class IgniteUtils {
             }
         }
         catch (Exception e) {
-            throw new IgniteCheckedException(e);
+            throw new IgniteCheckedException("Failed to start component: " + e, e);
         }
     }
 

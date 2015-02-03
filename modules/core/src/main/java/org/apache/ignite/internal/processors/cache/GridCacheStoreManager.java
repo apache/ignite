@@ -184,9 +184,8 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         boolean convertPortable = !cctx.config().isKeepPortableInStore();
 
-        if (cctx.config().isPortableEnabled()) {
+        if (cctx.config().isPortableEnabled())
             this.convertPortable = convertPortable;
-        }
         else if (convertPortable)
             U.warn(log, "CacheConfiguration.isKeepPortableInStore() configuration property will " +
                 "be ignored because portable mode is not enabled for cache: " + cctx.namex());

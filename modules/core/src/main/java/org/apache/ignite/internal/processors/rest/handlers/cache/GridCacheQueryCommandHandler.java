@@ -131,8 +131,6 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
-            ctx.closure().callAsync(BALANCE, c, ctx.grid().forNodeId(destId).nodes());
-
             return ctx.closure().callAsync(BALANCE, c, ctx.grid().forNodeId(destId).nodes());
         }
     }

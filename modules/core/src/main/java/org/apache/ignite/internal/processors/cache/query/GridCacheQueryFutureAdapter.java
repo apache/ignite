@@ -497,7 +497,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /**
      * Loads all left pages.
      *
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread is interrupted.
+     * @throws IgniteInterruptedCheckedException If thread is interrupted.
      */
     protected abstract void loadAllPages() throws IgniteInterruptedCheckedException;
 

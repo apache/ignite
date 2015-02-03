@@ -572,7 +572,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
      * @param stageName Stage name.
      * @param evts Events.
      * @return Future.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If failed.
+     * @throws IgniteInterruptedCheckedException If failed.
      */
     private GridStreamerStageExecutionFuture addEvents0(
         @Nullable IgniteUuid execId,

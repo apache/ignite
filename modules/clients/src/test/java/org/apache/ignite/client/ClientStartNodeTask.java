@@ -83,8 +83,7 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
-        {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         if (res.getException() != null)
             return FAILOVER;
 
