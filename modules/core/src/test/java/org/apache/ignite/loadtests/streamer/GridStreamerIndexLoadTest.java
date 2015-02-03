@@ -19,12 +19,12 @@ package org.apache.ignite.loadtests.streamer;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.streamer.index.*;
 import org.apache.ignite.streamer.index.hash.*;
 import org.apache.ignite.streamer.index.tree.*;
 import org.apache.ignite.streamer.window.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -101,7 +101,7 @@ public class GridStreamerIndexLoadTest {
     public static void runBenchmark(IndexConfiguration idxCfg) throws Exception {
         int thrCnt = getIntProperty(THREADS_CNT, 1);
         int dur = getIntProperty(TEST_DUR_SEC, 60);
-        int winSize = getIntProperty("GG_WIN_SIZE", 5000);
+        int winSize = getIntProperty("IGNITE_WIN_SIZE", 5000);
 
         dumpProperties(System.out);
 
@@ -159,7 +159,7 @@ public class GridStreamerIndexLoadTest {
                         prevEvict = curEvict;
                     }
                 }
-                catch (IgniteInterruptedException ignored) {
+                catch (IgniteInterruptedCheckedException ignored) {
                     // No-op.
                 }
 

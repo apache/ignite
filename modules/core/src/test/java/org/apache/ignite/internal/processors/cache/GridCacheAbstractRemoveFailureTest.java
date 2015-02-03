@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.testframework.*;
 import org.jdk8.backport.*;
 
@@ -78,16 +78,16 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         // Need to increase value set in GridAbstractTest
-        sizePropVal = System.getProperty(GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE);
+        sizePropVal = System.getProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE);
 
-        System.setProperty(GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "100000");
+        System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "100000");
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        System.setProperty(GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE, sizePropVal != null ? sizePropVal : "");
+        System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, sizePropVal != null ? sizePropVal : "");
     }
 
     /** {@inheritDoc} */

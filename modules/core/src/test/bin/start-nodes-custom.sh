@@ -18,4 +18,4 @@ SCRIPT_DIR=$(cd $(dirname "$0"); pwd)
 
 BIN_DIR="${SCRIPT_DIR}"/../../../../..
 
-"${BIN_DIR}"/bin/ggstart.sh -v modules/core/src/test/config/spring-start-nodes-attr.xml
+"${BIN_DIR}"/bin/ignite.sh -v modules/core/src/test/config/spring-start-nodes-attr.xml

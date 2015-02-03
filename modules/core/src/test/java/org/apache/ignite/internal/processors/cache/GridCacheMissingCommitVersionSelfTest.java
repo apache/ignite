@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
@@ -51,9 +50,9 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        maxCompletedTxCount = System.getProperty(GG_MAX_COMPLETED_TX_COUNT);
+        maxCompletedTxCount = System.getProperty(IGNITE_MAX_COMPLETED_TX_COUNT);
 
-        System.setProperty(GG_MAX_COMPLETED_TX_COUNT, String.valueOf(5));
+        System.setProperty(IGNITE_MAX_COMPLETED_TX_COUNT, String.valueOf(5));
 
         IgniteConfiguration cfg = super.getConfiguration();
 
@@ -75,7 +74,7 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        System.setProperty(GG_MAX_COMPLETED_TX_COUNT, maxCompletedTxCount != null ? maxCompletedTxCount : "");
+        System.setProperty(IGNITE_MAX_COMPLETED_TX_COUNT, maxCompletedTxCount != null ? maxCompletedTxCount : "");
 
         super.afterTest();
     }
@@ -121,7 +120,7 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
         try {
             fut.get(5000);
         }
-        catch (IgniteFutureTimeoutException ignore) {
+        catch (IgniteFutureTimeoutCheckedException ignore) {
             fail("Put failed to finish in 5s.");
         }
     }

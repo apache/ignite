@@ -36,7 +36,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 public class ClientTopologyCacheSelfTest extends GridCommonAbstractTest {
     static {
         // Override default port.
-        System.setProperty(GG_JETTY_PORT, Integer.toString(8081));
+        System.setProperty(IGNITE_JETTY_PORT, Integer.toString(8081));
     }
 
     /** Host. */

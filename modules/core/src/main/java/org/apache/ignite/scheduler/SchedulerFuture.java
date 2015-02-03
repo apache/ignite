@@ -18,16 +18,16 @@
 package org.apache.ignite.scheduler;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.lang.*;
 
 import java.util.concurrent.*;
 
 /**
  * Future for cron-based scheduled execution. This future is returned
- * when calling {@link org.apache.ignite.IgniteScheduler#scheduleLocal(Callable, String)} or
- * {@link org.apache.ignite.IgniteScheduler#scheduleLocal(Runnable, String)} methods.
+ * when calling {@link IgniteScheduler#scheduleLocal(Callable, String)} or
+ * {@link IgniteScheduler#scheduleLocal(Runnable, String)} methods.
  */
-public interface SchedulerFuture<R> extends IgniteInternalFuture<R> {
+public interface SchedulerFuture<R> extends IgniteFuture<R> {
     /**
      * Gets scheduled task ID.
      *
@@ -91,9 +91,9 @@ public interface SchedulerFuture<R> extends IgniteInternalFuture<R> {
      * @param cnt Array length.
      * @param start Start timestamp.
      * @return Array of the next execution times in milliseconds.
-     * @throws IgniteCheckedException Thrown in case of any errors.
+     * @throws IgniteException Thrown in case of any errors.
      */
-    public long[] nextExecutionTimes(int cnt, long start) throws IgniteCheckedException;
+    public long[] nextExecutionTimes(int cnt, long start) throws IgniteException;
 
     /**
      * Gets total count of executions this task has already completed.
@@ -113,9 +113,9 @@ public interface SchedulerFuture<R> extends IgniteInternalFuture<R> {
      * Gets next execution time of scheduled task.
      *
      * @return Next execution time in milliseconds.
-     * @throws IgniteCheckedException Thrown in case of any errors.
+     * @throws IgniteException Thrown in case of any errors.
      */
-    public long nextExecutionTime() throws IgniteCheckedException;
+    public long nextExecutionTime() throws IgniteException;
 
     /**
      * Gets result of the last execution of scheduled task, or
@@ -124,33 +124,19 @@ public interface SchedulerFuture<R> extends IgniteInternalFuture<R> {
      *
      * @return Result of the last execution, or {@code null} if
      *      there isn't one yet.
-     * @throws IgniteCheckedException If last execution resulted in exception.
+     * @throws IgniteException If last execution resulted in exception.
      */
-    public R last() throws IgniteCheckedException;
+    public R last() throws IgniteException;
 
     /**
      * Waits for the completion of the next scheduled execution and returns its result.
      *
      * @return Result of the next execution.
      * @throws CancellationException {@inheritDoc}
-     * @throws org.apache.ignite.IgniteInterruptedException {@inheritDoc}
-     * @throws IgniteCheckedException {@inheritDoc}
+     * @throws IgniteInterruptedException {@inheritDoc}
+     * @throws IgniteException {@inheritDoc}
      */
-    @Override public R get() throws IgniteCheckedException;
-
-    /**
-     * Waits for the completion of the next scheduled execution for
-     * specified amount of time and returns its result. This method
-     * is equivalent to {@link #get(long, TimeUnit) get(long, TimeUnit.MILLISECONDS)}.
-     *
-     * @param timeout {@inheritDoc}
-     * @return The computed result of the next execution.
-     * @throws CancellationException {@inheritDoc}
-     * @throws org.apache.ignite.IgniteInterruptedException {@inheritDoc}
-     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException {@inheritDoc}
-     * @throws IgniteCheckedException {@inheritDoc}
-     */
-    @Override public R get(long timeout) throws IgniteCheckedException;
+    @Override public R get();
 
     /**
      * Waits for the completion of the next scheduled execution for
@@ -160,9 +146,9 @@ public interface SchedulerFuture<R> extends IgniteInternalFuture<R> {
      * @param unit {@inheritDoc}
      * @return The computed result of the next execution.
      * @throws CancellationException {@inheritDoc}
-     * @throws org.apache.ignite.IgniteInterruptedException {@inheritDoc}
-     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException {@inheritDoc}
-     * @throws IgniteCheckedException {@inheritDoc}
+     * @throws IgniteInterruptedException {@inheritDoc}
+     * @throws IgniteFutureTimeoutException {@inheritDoc}
+     * @throws IgniteException {@inheritDoc}
      */
-    @Override public R get(long timeout, TimeUnit unit) throws IgniteCheckedException;
+    @Override public R get(long timeout, TimeUnit unit);
 }

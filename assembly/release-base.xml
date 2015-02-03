@@ -28,7 +28,7 @@
         </file>
 
         <file>
-            <source>config/gridgain-log4j.xml</source>
+            <source>config/ignite-log4j.xml</source>
             <outputDirectory>/config</outputDirectory>
         </file>
 
@@ -55,7 +55,7 @@
             </includes>
             <excludes>
                 <exclude>**/*hadoop*.bat</exclude>
-                <exclude>ggrouter.bat</exclude>
+                <exclude>igniterouter.bat</exclude>
                 <exclude>**/target-classpath.bat</exclude>
             </excludes>
         </fileSet>
@@ -69,14 +69,14 @@
             </includes>
             <excludes>
                 <exclude>**/*hadoop*.sh</exclude>
-                <exclude>ggrouter.sh</exclude>
+                <exclude>igniterouter.sh</exclude>
                 <exclude>**/target-classpath.sh</exclude>
                 <exclude>**/service.sh</exclude>
             </excludes>
         </fileSet>
 
         <fileSet>
-            <directory>config/${gridgain.edition}</directory>
+            <directory>config/${ignite.edition}</directory>
             <outputDirectory>/config</outputDirectory>
         </fileSet>
 

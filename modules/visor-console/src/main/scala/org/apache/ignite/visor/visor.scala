@@ -24,12 +24,13 @@ import java.util.concurrent._
 import java.util.{HashSet => JHashSet, _}
 
 import org.apache.ignite.IgniteSystemProperties._
-import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterMetrics, ClusterNode}
+import org.apache.ignite.cluster.{ClusterGroup, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.events.IgniteEventType._
 import org.apache.ignite.events.{IgniteDiscoveryEvent, IgniteEvent}
 import org.apache.ignite.internal.IgniteComponentType._
 import org.apache.ignite.internal.GridNodeAttributes._
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
 import org.apache.ignite.internal.processors.spring.IgniteSpringProcessor
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
@@ -42,7 +43,6 @@ import org.apache.ignite.lang.{IgniteNotPeerDeployable, IgnitePredicate}
 import org.apache.ignite.lifecycle.IgniteListener
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
-import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.{IgniteState, IgniteSystemProperties, Ignition, _}
 import org.jetbrains.annotations.Nullable
@@ -116,7 +116,7 @@ trait VisorTag
  * Visor console provides monitoring capabilities for GridGain.
  *
  * ==Usage==
- * GridGain ships with `GRIDGAIN_HOME/bin/ggvisorcmd.{sh|bat}` script that starts Visor console.
+ * GridGain ships with `IGNITE_HOME/bin/ignitevisorcmd.{sh|bat}` script that starts Visor console.
  *
  * Just type:<ex>help</ex> in Visor console to get help and get started.
  */
@@ -200,8 +200,8 @@ object visor extends VisorTag {
 
     /** Default log file path. */
     /**
-     * Default log file path. Note that this path is relative to `GRIDGAIN_HOME/work` folder
-     * if `GRIDGAIN_HOME` system or environment variable specified, otherwise it is relative to
+     * Default log file path. Note that this path is relative to `IGNITE_HOME/work` folder
+     * if `IGNITE_HOME` system or environment variable specified, otherwise it is relative to
      * `work` folder under system `java.io.tmpdir` folder.
      */
     private final val DFLT_LOG_PATH = "visor/visor-log"
@@ -235,18 +235,18 @@ object visor extends VisorTag {
      *
      * @param nid Node ID.
      * @return GridNode instance.
-     * @throws IgniteCheckedException if Visor is disconnected or node not found.
+     * @throws IgniteException if Visor is disconnected or node not found.
      */
     def node(nid: UUID): ClusterNode = {
         val g = grid
 
         if (g == null)
-            throw new IgniteCheckedException("Visor disconnected")
+            throw new IgniteException("Visor disconnected")
         else {
             val node = g.node(nid)
 
             if (node == null)
-                throw new IgniteCheckedException("Node is gone: " + nid)
+                throw new IgniteException("Node is gone: " + nid)
 
             node
         }
@@ -1478,7 +1478,7 @@ object visor extends VisorTag {
                             val url = IgniteUtils.resolveGridGainUrl(path)
 
                             if (url == null)
-                                throw new IgniteCheckedException("GridGain configuration path is invalid: " + path, e)
+                                throw new IgniteException("Ignite configuration path is invalid: " + path, e)
 
                             url
                     }
@@ -1503,15 +1503,15 @@ object visor extends VisorTag {
                     }
 
                 if (cfgs == null || cfgs.isEmpty)
-                    throw new IgniteCheckedException("Can't find grid configuration in: " + url)
+                    throw new IgniteException("Can't find grid configuration in: " + url)
 
                 if (cfgs.size > 1)
-                    throw new IgniteCheckedException("More than one grid configuration found in: " + url)
+                    throw new IgniteException("More than one grid configuration found in: " + url)
 
                 val cfg = cfgs.iterator().next()
 
                 // Setting up 'Config URL' for properly print in console.
-                System.setProperty(IgniteSystemProperties.GG_CONFIG_URL, url.getPath)
+                System.setProperty(IgniteSystemProperties.IGNITE_CONFIG_URL, url.getPath)
 
                 var cpuCnt = Runtime.getRuntime.availableProcessors
 
@@ -1565,7 +1565,7 @@ object visor extends VisorTag {
             open(cfg, cfgPath)
         }
         catch {
-            case e: IgniteCheckedException =>
+            case e: IgniteException =>
                 warn(e.getMessage)
                 warn("Type 'help open' to see how to use this command.")
 
@@ -1582,13 +1582,13 @@ object visor extends VisorTag {
     def open(cfg: IgniteConfiguration, cfgPath: String) {
         val daemon = Ignition.isDaemon
 
-        val shutdownHook = IgniteSystemProperties.getString(GG_NO_SHUTDOWN_HOOK, "false")
+        val shutdownHook = IgniteSystemProperties.getString(IGNITE_NO_SHUTDOWN_HOOK, "false")
 
         // Make sure Visor console starts as daemon node.
         Ignition.setDaemon(true)
 
         // Make sure visor starts without shutdown hook.
-        System.setProperty(GG_NO_SHUTDOWN_HOOK, "true")
+        System.setProperty(IGNITE_NO_SHUTDOWN_HOOK, "true")
 
         val startedGridName = try {
              Ignition.start(cfg).name
@@ -1596,7 +1596,7 @@ object visor extends VisorTag {
         finally {
             Ignition.setDaemon(daemon)
 
-            System.setProperty(GG_NO_SHUTDOWN_HOOK, shutdownHook)
+            System.setProperty(IGNITE_NO_SHUTDOWN_HOOK, shutdownHook)
         }
 
         this.cfgPath = cfgPath
@@ -1608,7 +1608,7 @@ object visor extends VisorTag {
                 case _: IllegalStateException =>
                     this.cfgPath = null
 
-                    throw new IgniteCheckedException("Named grid unavailable: " + startedGridName)
+                    throw new IgniteException("Named grid unavailable: " + startedGridName)
             }
 
         assert(cfgPath != null)
@@ -2462,7 +2462,7 @@ object visor extends VisorTag {
                         }
                     }
                     catch {
-                        case _: ClusterGroupEmptyException => // Ignore.
+                        case _: ClusterGroupEmptyCheckedException => // Ignore.
                         case e: Exception => logText("Failed to collect log.")
                     }
                 }
@@ -2494,7 +2494,7 @@ object visor extends VisorTag {
             try
                 drawBar(g.metrics())
             catch {
-                case e: ClusterGroupEmptyException => logText("Topology is empty.")
+                case e: ClusterGroupEmptyCheckedException => logText("Topology is empty.")
                 case e: Exception => ()
             }
     }

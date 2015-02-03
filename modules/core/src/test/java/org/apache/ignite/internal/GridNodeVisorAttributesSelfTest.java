@@ -37,7 +37,7 @@ public class GridNodeVisorAttributesSelfTest extends GridCommonAbstractTest {
     };
 
     /** GridGain-specific properties required by Visor. */
-    private static final String[] GG_PROPS = new String[] {
+    private static final String[] IGNITE_PROPS = new String[] {
         "org.gridgain.jvm.pid"
     };
 
@@ -74,7 +74,7 @@ public class GridNodeVisorAttributesSelfTest extends GridCommonAbstractTest {
             assertEquals(System.getProperty(prop), attrs.get(prop));
         }
 
-        for (String prop : GG_PROPS)
+        for (String prop : IGNITE_PROPS)
             assert attrs.containsKey(prop);
     }
 

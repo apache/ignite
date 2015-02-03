@@ -22,7 +22,11 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
+import org.apache.ignite.internal.processors.resource.*;
+import org.apache.ignite.internal.processors.spring.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.logger.*;
@@ -31,15 +35,10 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.mxbean.*;
+import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.authentication.noop.*;
-import org.apache.ignite.spi.indexing.*;
-import org.apache.ignite.streamer.*;
-import org.apache.ignite.thread.*;
-import org.apache.ignite.internal.processors.resource.*;
-import org.apache.ignite.internal.processors.spring.*;
-import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.checkpoint.noop.*;
 import org.apache.ignite.spi.collision.*;
@@ -55,6 +54,7 @@ import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.spi.eventstorage.memory.*;
 import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.failover.always.*;
+import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.loadbalancing.roundrobin.*;
 import org.apache.ignite.spi.securesession.*;
@@ -62,8 +62,8 @@ import org.apache.ignite.spi.securesession.noop.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.spi.swapspace.noop.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.streamer.*;
+import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -78,7 +78,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.logging.*;
 
-import static org.apache.ignite.configuration.IgniteConfiguration.*;
 import static org.apache.ignite.IgniteState.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -86,6 +85,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.configuration.IgniteConfiguration.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
@@ -336,7 +336,7 @@ public class IgnitionEx {
      * should be responsible for stopping it.
      * <p>
      * Note also that restarting functionality only works with the tools that specifically
-     * support GridGain's protocol for restarting. Currently only standard <tt>ggstart.{sh|bat}</tt>
+     * support GridGain's protocol for restarting. Currently only standard <tt>ignite.{sh|bat}</tt>
      * scripts support restarting of JVM GridGain's process.
      *
      * @param cancel If {@code true} then all jobs currently executing on
@@ -346,7 +346,7 @@ public class IgnitionEx {
      * @see org.apache.ignite.Ignition#RESTART_EXIT_CODE
      */
     public static void restart(boolean cancel) {
-        String file = System.getProperty(GG_SUCCESS_FILE);
+        String file = System.getProperty(IGNITE_SUCCESS_FILE);
 
         if (file == null)
             U.warn(null, "Cannot restart node when restart not enabled.");
@@ -364,7 +364,7 @@ public class IgnitionEx {
 
             // Set the exit code so that shell process can recognize it and loop
             // the start up sequence again.
-            System.setProperty(GG_RESTART_CODE, Integer.toString(Ignition.RESTART_EXIT_CODE));
+            System.setProperty(IGNITE_RESTART_CODE, Integer.toString(Ignition.RESTART_EXIT_CODE));
 
             stopAll(cancel);
 
@@ -401,7 +401,7 @@ public class IgnitionEx {
 
     /**
      * Starts grid with default configuration. By default this method will
-     * use grid configuration defined in {@code GRIDGAIN_HOME/config/default-config.xml}
+     * use grid configuration defined in {@code IGNITE_HOME/config/default-config.xml}
      * configuration file. If such file is not found, then all system defaults will be used.
      *
      * @return Started grid.
@@ -414,7 +414,7 @@ public class IgnitionEx {
 
     /**
      * Starts grid with default configuration. By default this method will
-     * use grid configuration defined in {@code GRIDGAIN_HOME/config/default-config.xml}
+     * use grid configuration defined in {@code IGNITE_HOME/config/default-config.xml}
      * configuration file. If such file is not found, then all system defaults will be used.
      *
      * @param springCtx Optional Spring application context, possibly {@code null}.
@@ -431,7 +431,7 @@ public class IgnitionEx {
         if (url != null)
             return start(DFLT_CFG, null, springCtx);
 
-        U.warn(null, "Default Spring XML file not found (is GRIDGAIN_HOME set?): " + DFLT_CFG);
+        U.warn(null, "Default Spring XML file not found (is IGNITE_HOME set?): " + DFLT_CFG);
 
         return start0(new GridStartContext(new IgniteConfiguration(), null, springCtx)).grid();
     }
@@ -582,7 +582,7 @@ public class IgnitionEx {
             if (url == null)
                 throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
                     ". Note that this path should be either absolute or a relative local file system path, " +
-                    "relative to META-INF in classpath or valid URL to GRIDGAIN_HOME.", e);
+                    "relative to META-INF in classpath or valid URL to IGNITE_HOME.", e);
         }
 
         return loadConfigurations(url);
@@ -713,7 +713,7 @@ public class IgnitionEx {
      * @return Started grid.
      * @throws IgniteCheckedException If failed.
      */
-    private static Ignite start(URL springCfgUrl, @Nullable String gridName,
+    private static Ignite start(final URL springCfgUrl, @Nullable String gridName,
         @Nullable GridSpringResourceContext springCtx,
         @Nullable IgniteClosure<IgniteConfiguration, IgniteConfiguration> cfgClo)
         throws IgniteCheckedException {
@@ -725,9 +725,16 @@ public class IgnitionEx {
 
         Collection<Handler> savedHnds = null;
 
-        if (isLog4jUsed)
-            t = U.addLog4jNoOpLogger();
-        else
+        if (isLog4jUsed) {
+            try {
+                t = U.addLog4jNoOpLogger();
+            }
+            catch (IgniteCheckedException e) {
+                isLog4jUsed = false;
+            }
+        }
+
+        if (!isLog4jUsed)
             savedHnds = U.addJavaNoOpLogger();
 
         IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap;
@@ -808,7 +815,7 @@ public class IgnitionEx {
             if (url == null)
                 throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
                     ". Note that this path should be either absolute or a relative local file system path, " +
-                    "relative to META-INF in classpath or valid URL to GRIDGAIN_HOME.", e);
+                    "relative to META-INF in classpath or valid URL to IGNITE_HOME.", e);
         }
 
         return url;
@@ -1350,7 +1357,7 @@ public class IgnitionEx {
             if (ggHome == null)
                 ggHome = U.getGridGainHome();
             else
-                // If user provided GRIDGAIN_HOME - set it as a system property.
+                // If user provided IGNITE_HOME - set it as a system property.
                 U.setGridGainHome(ggHome);
 
             U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
@@ -1366,7 +1373,7 @@ public class IgnitionEx {
 
             // Set configuration URL, if any, into system property.
             if (startCtx.configUrl() != null)
-                System.setProperty(GG_CONFIG_URL, startCtx.configUrl().toString());
+                System.setProperty(IGNITE_CONFIG_URL, startCtx.configUrl().toString());
 
             myCfg.setGridName(cfg.getGridName());
 
@@ -1418,7 +1425,6 @@ public class IgnitionEx {
             myCfg.setSecurityCredentialsProvider(cfg.getSecurityCredentialsProvider());
             myCfg.setServiceConfiguration(cfg.getServiceConfiguration());
             myCfg.setWarmupClosure(cfg.getWarmupClosure());
-            myCfg.setInteropConfiguration(cfg.getInteropConfiguration());
             myCfg.setPluginConfigurations(cfg.getPluginConfigurations());
             myCfg.setTransactionsConfiguration(new TransactionsConfiguration(cfg.getTransactionsConfiguration()));
             myCfg.setQueryConfiguration(cfg.getQueryConfiguration());
@@ -1455,13 +1461,13 @@ public class IgnitionEx {
                 clientCfg = new ClientConnectionConfiguration(clientCfg);
 
 
-            String ntfStr = IgniteSystemProperties.getString(GG_LIFECYCLE_EMAIL_NOTIFY);
+            String ntfStr = IgniteSystemProperties.getString(IGNITE_LIFECYCLE_EMAIL_NOTIFY);
 
             if (ntfStr != null)
                 myCfg.setLifeCycleEmailNotification(Boolean.parseBoolean(ntfStr));
 
             // Local host.
-            String locHost = IgniteSystemProperties.getString(GG_LOCAL_HOST);
+            String locHost = IgniteSystemProperties.getString(IGNITE_LOCAL_HOST);
 
             myCfg.setLocalHost(F.isEmpty(locHost) ? cfg.getLocalHost() : locHost);
 
@@ -1470,7 +1476,7 @@ public class IgnitionEx {
                 myCfg.setDaemon(true);
 
             // Check for deployment mode override.
-            String depModeName = IgniteSystemProperties.getString(GG_DEP_MODE_OVERRIDE);
+            String depModeName = IgniteSystemProperties.getString(IGNITE_DEP_MODE_OVERRIDE);
 
             if (!F.isEmpty(depModeName)) {
                 if (!F.isEmpty(cfg.getCacheConfiguration())) {
@@ -1487,7 +1493,7 @@ public class IgnitionEx {
                     catch (IllegalArgumentException e) {
                         throw new IgniteCheckedException("Failed to override deployment mode using system property " +
                             "(are there any misspellings?)" +
-                            "[name=" + GG_DEP_MODE_OVERRIDE + ", value=" + depModeName + ']', e);
+                            "[name=" + IGNITE_DEP_MODE_OVERRIDE + ", value=" + depModeName + ']', e);
                     }
                 }
             }
@@ -1815,34 +1821,34 @@ public class IgnitionEx {
 
             // Override SMTP configuration from system properties
             // and environment variables, if specified.
-            String fromEmail = IgniteSystemProperties.getString(GG_SMTP_FROM);
+            String fromEmail = IgniteSystemProperties.getString(IGNITE_SMTP_FROM);
 
             if (fromEmail != null)
                 myCfg.setSmtpFromEmail(fromEmail);
 
-            String smtpHost = IgniteSystemProperties.getString(GG_SMTP_HOST);
+            String smtpHost = IgniteSystemProperties.getString(IGNITE_SMTP_HOST);
 
             if (smtpHost != null)
                 myCfg.setSmtpHost(smtpHost);
 
-            String smtpUsername = IgniteSystemProperties.getString(GG_SMTP_USERNAME);
+            String smtpUsername = IgniteSystemProperties.getString(IGNITE_SMTP_USERNAME);
 
             if (smtpUsername != null)
                 myCfg.setSmtpUsername(smtpUsername);
 
-            String smtpPwd = IgniteSystemProperties.getString(GG_SMTP_PWD);
+            String smtpPwd = IgniteSystemProperties.getString(IGNITE_SMTP_PWD);
 
             if (smtpPwd != null)
                 myCfg.setSmtpPassword(smtpPwd);
 
-            int smtpPort = IgniteSystemProperties.getInteger(GG_SMTP_PORT, -1);
+            int smtpPort = IgniteSystemProperties.getInteger(IGNITE_SMTP_PORT, -1);
 
             if(smtpPort != -1)
                 myCfg.setSmtpPort(smtpPort);
 
-            myCfg.setSmtpSsl(IgniteSystemProperties.getBoolean(GG_SMTP_SSL));
+            myCfg.setSmtpSsl(IgniteSystemProperties.getBoolean(IGNITE_SMTP_SSL));
 
-            String adminEmails = IgniteSystemProperties.getString(GG_ADMIN_EMAILS);
+            String adminEmails = IgniteSystemProperties.getString(IGNITE_ADMIN_EMAILS);
 
             if (adminEmails != null)
                 myCfg.setAdminEmails(adminEmails.split(","));
@@ -1962,8 +1968,8 @@ public class IgnitionEx {
                     grid = null;
             }
 
-            // Do NOT set it up only if GRIDGAIN_NO_SHUTDOWN_HOOK=TRUE is provided.
-            if (!IgniteSystemProperties.getBoolean(GG_NO_SHUTDOWN_HOOK, false)) {
+            // Do NOT set it up only if IGNITE_NO_SHUTDOWN_HOOK=TRUE is provided.
+            if (!IgniteSystemProperties.getBoolean(IGNITE_NO_SHUTDOWN_HOOK, false)) {
                 try {
                     Runtime.getRuntime().addShutdownHook(shutdownHook = new Thread() {
                         @Override public void run() {
@@ -1986,7 +1992,7 @@ public class IgnitionEx {
             else {
                 if (log.isDebugEnabled())
                     log.debug("Shutdown hook has not been installed because environment " +
-                        "or system property " + GG_NO_SHUTDOWN_HOOK + " is set.");
+                        "or system property " + IGNITE_NO_SHUTDOWN_HOOK + " is set.");
             }
         }
 
@@ -1998,57 +2004,69 @@ public class IgnitionEx {
          */
         private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId) throws IgniteCheckedException {
             try {
+                Exception log4jInitErr = null;
+
                 if (cfgLog == null) {
                     Class<?> log4jCls;
 
                     try {
-                        log4jCls = Class.forName("org.gridgain.grid.logger.log4j.GridLog4jLogger");
+                        log4jCls = Class.forName("org.apache.ignite.logger.log4j.IgniteLog4jLogger");
                     }
                     catch (ClassNotFoundException | NoClassDefFoundError ignored) {
                         log4jCls = null;
                     }
 
                     if (log4jCls != null) {
-                        URL url = U.resolveGridGainUrl("config/gridgain-log4j.xml");
+                        try {
+                            URL url = U.resolveGridGainUrl("config/ignite-log4j.xml");
 
-                        if (url == null) {
-                            File cfgFile = new File("config/gridgain-log4j.xml");
+                            if (url == null) {
+                                File cfgFile = new File("config/ignite-log4j.xml");
 
-                            if (!cfgFile.exists())
-                                cfgFile = new File("../config/gridgain-log4j.xml");
+                                if (!cfgFile.exists())
+                                    cfgFile = new File("../config/ignite-log4j.xml");
 
-                            if (cfgFile.exists()) {
-                                try {
-                                    url = cfgFile.toURI().toURL();
-                                }
-                                catch (MalformedURLException ignore) {
-                                    // No-op.
+                                if (cfgFile.exists()) {
+                                    try {
+                                        url = cfgFile.toURI().toURL();
+                                    }
+                                    catch (MalformedURLException ignore) {
+                                        // No-op.
+                                    }
                                 }
                             }
+
+                            if (url != null) {
+                                boolean configured = (Boolean)log4jCls.getMethod("isConfigured").invoke(null);
+
+                                if (configured)
+                                    url = null;
+                            }
+
+                            if (url != null) {
+                                Constructor<?> ctor = log4jCls.getConstructor(URL.class);
+
+                                cfgLog = (IgniteLogger)ctor.newInstance(url);
+                            }
+                            else
+                                cfgLog = (IgniteLogger)log4jCls.newInstance();
                         }
-
-                        if (url != null) {
-                            boolean configured = (Boolean)log4jCls.getMethod("isConfigured").invoke(null);
-
-                            if (configured)
-                                url = null;
+                        catch (Exception e) {
+                            log4jInitErr = e;
                         }
-
-                        if (url != null) {
-                            Constructor<?> ctor = log4jCls.getConstructor(URL.class);
-
-                            cfgLog = (IgniteLogger)ctor.newInstance(url);
-                        }
-                        else
-                            cfgLog = (IgniteLogger)log4jCls.newInstance();
                     }
-                    else
+
+                    if (log4jCls == null || log4jInitErr != null)
                         cfgLog = new IgniteJavaLogger();
                 }
 
                 // Set node IDs for all file appenders.
                 if (cfgLog instanceof IgniteLoggerNodeIdAware)
                     ((IgniteLoggerNodeIdAware)cfgLog).setNodeId(nodeId);
+
+                if (log4jInitErr != null)
+                    U.warn(cfgLog, "Failed to initialize IgniteLog4jLogger (falling back to standard java logging): "
+                        + log4jInitErr.getCause());
 
                 return cfgLog;
             }

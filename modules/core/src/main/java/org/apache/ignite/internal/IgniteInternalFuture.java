@@ -35,8 +35,8 @@ public interface IgniteInternalFuture<R> {
      * returns computation result.
      *
      * @return Computation result.
-     * @throws IgniteInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
-     * @throws IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
+     * @throws IgniteInterruptedCheckedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws IgniteFutureCancelledCheckedException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
      * @throws IgniteCheckedException If computation failed.
      */
     public R get() throws IgniteCheckedException;
@@ -48,9 +48,9 @@ public interface IgniteInternalFuture<R> {
      *
      * @param timeout The maximum time to wait in milliseconds.
      * @return Computation result.
-     * @throws IgniteInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
-     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
-     * @throws IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
+     * @throws IgniteInterruptedCheckedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws IgniteFutureTimeoutCheckedException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
+     * @throws IgniteFutureCancelledCheckedException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
      * @throws IgniteCheckedException If computation failed.
      */
     public R get(long timeout) throws IgniteCheckedException;
@@ -62,9 +62,9 @@ public interface IgniteInternalFuture<R> {
      * @param timeout The maximum time to wait.
      * @param unit The time unit of the {@code timeout} argument.
      * @return Computation result.
-     * @throws IgniteInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
-     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
-     * @throws IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
+     * @throws IgniteInterruptedCheckedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws IgniteFutureTimeoutCheckedException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
+     * @throws IgniteFutureCancelledCheckedException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
      * @throws IgniteCheckedException If computation failed.
      */
     public R get(long timeout, TimeUnit unit) throws IgniteCheckedException;
@@ -114,7 +114,7 @@ public interface IgniteInternalFuture<R> {
      * immediately notified within the same thread.
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link IgniteSystemProperties#GG_FUT_SYNC_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#IGNITE_FUT_SYNC_NOTIFICATION} system property to {@code true}.
      *
      * @param syncNotify Flag to turn on or off synchronous listener notification.
      */
@@ -128,7 +128,7 @@ public interface IgniteInternalFuture<R> {
      * immediately notified within the same thread.
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link IgniteSystemProperties#GG_FUT_SYNC_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#IGNITE_FUT_SYNC_NOTIFICATION} system property to {@code true}.
      *
      * @return Synchronous listener notification flag.
      */
@@ -143,7 +143,7 @@ public interface IgniteInternalFuture<R> {
      * started the future, or in a different thread).
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link IgniteSystemProperties#GG_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#IGNITE_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
      *
      * @param concurNotify Flag to turn on or off concurrent listener notification.
      */
@@ -158,7 +158,7 @@ public interface IgniteInternalFuture<R> {
      * started the future, or in a different thread).
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link IgniteSystemProperties#GG_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#IGNITE_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
      *
      * @return Concurrent listener notification flag
      */

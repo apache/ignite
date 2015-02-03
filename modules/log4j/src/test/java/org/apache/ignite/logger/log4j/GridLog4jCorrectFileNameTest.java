@@ -20,12 +20,11 @@ package org.apache.ignite.logger.log4j;
 import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.logger.log4j.*;
-import org.apache.log4j.*;
-import org.apache.log4j.varia.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.log4j.*;
+import org.apache.log4j.varia.*;
 
 import java.io.*;
 import java.util.*;
@@ -81,7 +80,7 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
     private void checkOneNode(int id) throws Exception {
         try (Ignite ignite = G.start(getConfiguration("grid" + id))) {
             String id8 = U.id8(ignite.cluster().localNode().id());
-            String logPath = "work/log/gridgain-" + id8 + ".log";
+            String logPath = "work/log/ignite-" + id8 + ".log";
             File logFile = U.resolveGridGainPath(logPath);
 
             assertNotNull("Failed to resolve path: " + logPath, logFile);
@@ -121,7 +120,7 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
         IgniteLog4jRollingFileAppender appender = new IgniteLog4jRollingFileAppender();
 
         appender.setLayout(new PatternLayout("[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"));
-        appender.setFile("work/log/gridgain.log");
+        appender.setFile("work/log/ignite.log");
         appender.setName(IgniteLog4jRollingFileAppender.class.getSimpleName());
 
         LevelRangeFilter lvlFilter = new LevelRangeFilter();

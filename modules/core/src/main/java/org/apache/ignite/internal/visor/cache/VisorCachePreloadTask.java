@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
 
 import java.util.*;
 
@@ -55,18 +55,23 @@ public class VisorCachePreloadTask extends VisorOneNodeTask<Set<String>, Void> {
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Set<String> cacheNames) throws IgniteCheckedException {
-            Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
+        @Override protected Void run(Set<String> cacheNames) {
+            try {
+                Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-            for(GridCache c : g.cachesx()) {
-                if (cacheNames.contains(c.name()))
-                    futs.add(c.forceRepartition());
+                for(GridCache c : g.cachesx()) {
+                    if (cacheNames.contains(c.name()))
+                        futs.add(c.forceRepartition());
+                }
+
+                for (IgniteInternalFuture f: futs)
+                    f.get();
+
+                return null;
             }
-
-            for (IgniteInternalFuture f: futs)
-                f.get();
-
-            return null;
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
         }
 
         /** {@inheritDoc} */

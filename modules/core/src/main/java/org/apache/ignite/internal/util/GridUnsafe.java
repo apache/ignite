@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
-import sun.misc.Unsafe;
+import sun.misc.*;
 
 import java.lang.reflect.*;
 import java.security.*;

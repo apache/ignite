@@ -18,9 +18,9 @@
 package org.apache.ignite.logger.log4j;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 import java.io.*;
 import java.util.*;
@@ -46,16 +46,16 @@ class IgniteLog4jNodeIdFilePath implements IgniteClosure<String, String> {
 
     /** {@inheritDoc} */
     @Override public String apply(String oldPath) {
-        if (!F.isEmpty(U.GRIDGAIN_LOG_DIR))
-            return U.nodeIdLogFileName(nodeId, new File(U.GRIDGAIN_LOG_DIR, "gridgain.log").getAbsolutePath());
+        if (!F.isEmpty(U.IGNITE_LOG_DIR))
+            return U.nodeIdLogFileName(nodeId, new File(U.IGNITE_LOG_DIR, "ignite.log").getAbsolutePath());
 
-        if (oldPath != null) // fileName could be null if GRIDGAIN_HOME is not defined.
+        if (oldPath != null) // fileName could be null if IGNITE_HOME is not defined.
             return U.nodeIdLogFileName(nodeId, oldPath);
 
         String tmpDir = IgniteSystemProperties.getString("java.io.tmpdir");
 
         if (tmpDir != null)
-            return U.nodeIdLogFileName(nodeId, new File(tmpDir, "gridgain.log").getAbsolutePath());
+            return U.nodeIdLogFileName(nodeId, new File(tmpDir, "ignite.log").getAbsolutePath());
 
         System.err.println("Failed to get tmp directory for log file.");
 

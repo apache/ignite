@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external.child;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.logger.log4j.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.logger.log4j.*;
+import org.apache.ignite.marshaller.optimized.*;
 
 import java.io.*;
 import java.net.*;
@@ -35,7 +35,7 @@ import java.util.concurrent.*;
  */
 public class GridHadoopExternalProcessStarter {
     /** Path to Log4j configuration file. */
-    public static final String DFLT_LOG4J_CONFIG = "config/gridgain-log4j.xml";
+    public static final String DFLT_LOG4J_CONFIG = "config/ignite-log4j.xml";
 
     /** Arguments. */
     private Args args;

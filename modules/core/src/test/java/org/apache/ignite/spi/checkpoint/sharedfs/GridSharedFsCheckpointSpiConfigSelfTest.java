@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.checkpoint.sharedfs;
 
 import org.apache.ignite.testframework.junits.spi.*;
+
 import java.util.*;
 
 /**

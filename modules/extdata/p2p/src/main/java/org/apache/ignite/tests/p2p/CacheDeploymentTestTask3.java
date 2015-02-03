@@ -20,8 +20,8 @@ package org.apache.ignite.tests.p2p;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -32,7 +32,7 @@ import java.util.*;
 public class CacheDeploymentTestTask3 extends ComputeTaskAdapter<T2<ClusterNode, String>, Object> {
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable T2<ClusterNode, String> tup) throws IgniteCheckedException {
+        @Nullable T2<ClusterNode, String> tup) {
         final String val = tup.getValue();
 
         return F.asMap(
@@ -40,11 +40,11 @@ public class CacheDeploymentTestTask3 extends ComputeTaskAdapter<T2<ClusterNode,
                     @IgniteInstanceResource
                     private Ignite ignite;
 
-                    @Override public Object execute() throws IgniteCheckedException {
+                    @Override public Object execute() {
                         X.println("Executing CacheDeploymentTestTask3 job on node " +
                                 ignite.cluster().localNode().id());
 
-                        ignite.<String, CacheDeploymentTestValue>cache(null).putx(val,
+                        ignite.<String, CacheDeploymentTestValue>jcache(null).put(val,
                                 new CacheDeploymentTestValue());
 
                         return null;
@@ -55,7 +55,7 @@ public class CacheDeploymentTestTask3 extends ComputeTaskAdapter<T2<ClusterNode,
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
         return null;
     }
 }

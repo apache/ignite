@@ -17,11 +17,10 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.spi.*;
 
@@ -31,8 +30,8 @@ import java.util.*;
 /**
  *
  */
-@GridSpiTest(spi = GridUriDeploymentSpi.class, group = "Deployment SPI")
-public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUriDeploymentSpi> {
+@GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
+public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<UriDeploymentSpi> {
     /**
      * @return List of URI to use as deployment source.
      */
@@ -47,7 +46,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
      * @throws Exception If failed.
      */
     public void testSimpleDeploy() throws Exception {
-        GridUriDeploymentSpi spi = getSpi();
+        UriDeploymentSpi spi = getSpi();
 
         spi.register(TestTask.class.getClassLoader(), TestTask.class);
 
@@ -74,7 +73,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
      * @throws Exception If failed.
      */
     public void testSimpleDeployWithName() throws Exception {
-        GridUriDeploymentSpi spi = getSpi();
+        UriDeploymentSpi spi = getSpi();
 
         spi.register(TestTaskWithName.class.getClassLoader(), TestTaskWithName.class);
 
@@ -101,7 +100,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
      * @throws Exception If failed.
      */
     public void testSimpleDeployTwoTasks() throws Exception {
-        GridUriDeploymentSpi spi = getSpi();
+        UriDeploymentSpi spi = getSpi();
 
         spi.register(TestTask.class.getClassLoader(), TestTask.class);
         spi.register(TestTaskWithName.class.getClassLoader(), TestTaskWithName.class);
@@ -139,7 +138,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
      */
     private static class TestTask extends ComputeTaskAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             assert subgrid.size() == 1;
 
             return Collections.singletonMap(new ComputeJobAdapter() {
@@ -148,7 +147,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             assert results.size() == 1;
 
             return results.get(0).getData();
@@ -161,7 +160,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
     @ComputeTaskName("TestTaskWithName")
     private static class TestTaskWithName extends ComputeTaskAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             assert subgrid.size() == 1;
 
             return Collections.singletonMap(new ComputeJobAdapter() {
@@ -170,7 +169,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             assert results.size() == 1;
 
             return results.get(0).getData();

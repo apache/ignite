@@ -21,14 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.managed.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -146,11 +146,11 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         svcs1.deployClusterSingleton(name, new DummyService());
 
-        IgniteInternalFuture<?> fut1 = svcs1.future();
+        IgniteFuture<?> fut1 = svcs1.future();
 
         svcs2.deployClusterSingleton(name, new DummyService());
 
-        IgniteInternalFuture<?> fut2 = svcs2.future();
+        IgniteFuture<?> fut2 = svcs2.future();
 
         info("Deployed service: " + name);
 
@@ -175,11 +175,11 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         svcs1.deployClusterSingleton(name, new DummyService());
 
-        IgniteInternalFuture<?> fut1 = svcs1.future();
+        IgniteFuture<?> fut1 = svcs1.future();
 
         svcs2.deployNodeSingleton(name, new DummyService());
 
-        IgniteInternalFuture<?> fut2 = svcs2.future();
+        IgniteFuture<?> fut2 = svcs2.future();
 
         info("Deployed service: " + name);
 
@@ -192,7 +192,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
             fail("Failed to receive mismatching configuration exception.");
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Received mismatching configuration exception: " + e.getMessage());
         }
     }
@@ -259,7 +259,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         svcs.deployNodeSingleton(name, new DummyService());
 
-        IgniteInternalFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -291,7 +291,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         svcs.deployClusterSingleton(name, new DummyService());
 
-        IgniteInternalFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -325,7 +325,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
                 CACHE_NAME, affKey);
 
-        IgniteInternalFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -352,7 +352,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         svcs.deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
 
-        IgniteInternalFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -386,7 +386,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         svcs.deployMultiple(name, new DummyService(), cnt, 3);
 
-        IgniteInternalFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 

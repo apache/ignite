@@ -20,6 +20,7 @@ package org.apache.ignite.lang;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
+
 import java.io.*;
 import java.nio.*;
 import java.util.*;

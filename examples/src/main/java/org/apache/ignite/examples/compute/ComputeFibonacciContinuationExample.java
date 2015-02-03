@@ -37,7 +37,7 @@ import java.util.*;
  * {@link org.apache.ignite.compute.ComputeJobContext#callcc()} method calls in {@link FibonacciClosure} class.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-compute.xml} configuration.
@@ -87,10 +87,10 @@ public final class ComputeFibonacciContinuationExample {
      */
     private static class FibonacciClosure implements IgniteClosure<Long, BigInteger> {
         /** Future for spawned task. */
-        private IgniteInternalFuture<BigInteger> fut1;
+        private IgniteFuture<BigInteger> fut1;
 
         /** Future for spawned task. */
-        private IgniteInternalFuture<BigInteger> fut2;
+        private IgniteFuture<BigInteger> fut2;
 
         /** Auto-inject job context. */
         @IgniteJobContextResource
@@ -112,78 +112,73 @@ public final class ComputeFibonacciContinuationExample {
 
         /** {@inheritDoc} */
         @Nullable @Override public BigInteger apply(Long n) {
-            try {
-                if (fut1 == null || fut2 == null) {
-                    System.out.println();
-                    System.out.println(">>> Starting fibonacci execution for number: " + n);
+            if (fut1 == null || fut2 == null) {
+                System.out.println();
+                System.out.println(">>> Starting fibonacci execution for number: " + n);
 
-                    // Make sure n is not negative.
-                    n = Math.abs(n);
+                // Make sure n is not negative.
+                n = Math.abs(n);
 
-                    if (n <= 2)
-                        return n == 0 ? BigInteger.ZERO : BigInteger.ONE;
+                if (n <= 2)
+                    return n == 0 ? BigInteger.ZERO : BigInteger.ONE;
 
-                    // Node-local storage.
-                    ClusterNodeLocalMap<Long, IgniteInternalFuture<BigInteger>> locMap = g.cluster().nodeLocalMap();
+                // Node-local storage.
+                ClusterNodeLocalMap<Long, IgniteFuture<BigInteger>> locMap = g.cluster().nodeLocalMap();
 
-                    // Check if value is cached in node-local-map first.
-                    fut1 = locMap.get(n - 1);
-                    fut2 = locMap.get(n - 2);
+                // Check if value is cached in node-local-map first.
+                fut1 = locMap.get(n - 1);
+                fut2 = locMap.get(n - 2);
 
-                    ClusterGroup p = g.cluster().forPredicate(nodeFilter);
+                ClusterGroup p = g.cluster().forPredicate(nodeFilter);
 
-                    IgniteCompute compute = g.compute(p).withAsync();
+                IgniteCompute compute = g.compute(p).withAsync();
 
-                    // If future is not cached in node-local-map, cache it.
-                    if (fut1 == null) {
-                        compute.apply(new FibonacciClosure(nodeFilter), n - 1);
+                // If future is not cached in node-local-map, cache it.
+                if (fut1 == null) {
+                    compute.apply(new FibonacciClosure(nodeFilter), n - 1);
 
-                        fut1 = locMap.addIfAbsent(n - 1, compute.<BigInteger>future());
-                    }
-
-                    // If future is not cached in node-local-map, cache it.
-                    if (fut2 == null) {
-                        compute.apply(new FibonacciClosure(nodeFilter), n - 2);
-
-                        fut2 = locMap.addIfAbsent(n - 2, compute.<BigInteger>future());
-                    }
-
-                    // If futures are not done, then wait asynchronously for the result
-                    if (!fut1.isDone() || !fut2.isDone()) {
-                        IgniteInClosure<IgniteInternalFuture<BigInteger>> lsnr = new IgniteInClosure<IgniteInternalFuture<BigInteger>>() {
-                            @Override public void apply(IgniteInternalFuture<BigInteger> f) {
-                                // If both futures are done, resume the continuation.
-                                if (fut1.isDone() && fut2.isDone())
-                                    // CONTINUATION:
-                                    // =============
-                                    // Resume suspended job execution.
-                                    jobCtx.callcc();
-                            }
-                        };
-
-                        // CONTINUATION:
-                        // =============
-                        // Hold (suspend) job execution.
-                        // It will be resumed in listener above via 'callcc()' call
-                        // once both futures are done.
-                        jobCtx.holdcc();
-
-                        // Attach the same listener to both futures.
-                        fut1.listenAsync(lsnr);
-                        fut2.listenAsync(lsnr);
-
-                        return null;
-                    }
+                    fut1 = locMap.addIfAbsent(n - 1, compute.<BigInteger>future());
                 }
 
-                assert fut1.isDone() && fut2.isDone();
+                // If future is not cached in node-local-map, cache it.
+                if (fut2 == null) {
+                    compute.apply(new FibonacciClosure(nodeFilter), n - 2);
 
-                // Return cached results.
-                return fut1.get().add(fut2.get());
+                    fut2 = locMap.addIfAbsent(n - 2, compute.<BigInteger>future());
+                }
+
+                // If futures are not done, then wait asynchronously for the result
+                if (!fut1.isDone() || !fut2.isDone()) {
+                    IgniteInClosure<IgniteFuture<BigInteger>> lsnr = new IgniteInClosure<IgniteFuture<BigInteger>>() {
+                        @Override public void apply(IgniteFuture<BigInteger> f) {
+                            // If both futures are done, resume the continuation.
+                            if (fut1.isDone() && fut2.isDone())
+                                // CONTINUATION:
+                                // =============
+                                // Resume suspended job execution.
+                                jobCtx.callcc();
+                        }
+                    };
+
+                    // CONTINUATION:
+                    // =============
+                    // Hold (suspend) job execution.
+                    // It will be resumed in listener above via 'callcc()' call
+                    // once both futures are done.
+                    jobCtx.holdcc();
+
+                    // Attach the same listener to both futures.
+                    fut1.listenAsync(lsnr);
+                    fut2.listenAsync(lsnr);
+
+                    return null;
+                }
             }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+
+            assert fut1.isDone() && fut2.isDone();
+
+            // Return cached results.
+            return fut1.get().add(fut2.get());
         }
     }
 }

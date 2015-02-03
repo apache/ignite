@@ -18,12 +18,12 @@
 package org.apache.ignite.spi.checkpoint.sharedfs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.checkpoint.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -103,8 +103,8 @@ import java.util.*;
 public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi,
     SharedFsCheckpointSpiMBean {
     /**
-     * Default checkpoint directory. Note that this path is relative to {@code GRIDGAIN_HOME/work} folder
-     * if {@code GRIDGAIN_HOME} system or environment variable specified, otherwise it is relative to
+     * Default checkpoint directory. Note that this path is relative to {@code IGNITE_HOME/work} folder
+     * if {@code IGNITE_HOME} system or environment variable specified, otherwise it is relative to
      * {@code work} folder under system {@code java.io.tmpdir} folder.
      *
      * @see org.apache.ignite.configuration.IgniteConfiguration#getWorkDirectory()
@@ -168,7 +168,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
 
     /**
      * Sets path to a shared directory where checkpoints will be stored. The
-     * path can either be absolute or relative to {@code GRIDGAIN_HOME} system
+     * path can either be absolute or relative to {@code IGNITE_HOME} system
      * or environment variable.
      * <p>
      * If not provided, default value is {@link #DFLT_DIR_PATH}.

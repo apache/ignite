@@ -18,9 +18,9 @@
 package org.apache.ignite.lang.utils;
 
 import com.romix.scala.collection.concurrent.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;

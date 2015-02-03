@@ -19,30 +19,36 @@ package org.apache.ignite.internal.util;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.compute.*;
+import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.streamer.*;
-import org.apache.ignite.spi.discovery.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.portables.*;
+import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.discovery.*;
+import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
+import javax.cache.*;
 import javax.management.*;
 import javax.naming.*;
 import javax.net.ssl.*;
@@ -237,7 +243,7 @@ public abstract class IgniteUtils {
         indexOf('.', IgniteUtils.class.getName().indexOf('.') + 1));
 
     /** Network packet header. */
-    public static final byte[] GG_HEADER = U.intToBytes(0x00004747);
+    public static final byte[] IGNITE_HEADER = U.intToBytes(0x00004747);
 
     /** Default buffer size = 4K. */
     private static final int BUF_SIZE = 4096;
@@ -286,10 +292,10 @@ public abstract class IgniteUtils {
     private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
 
     /** GridGain Logging Directory. */
-    public static final String GRIDGAIN_LOG_DIR = System.getenv(GG_LOG_DIR);
+    public static final String IGNITE_LOG_DIR = System.getenv(IgniteSystemProperties.IGNITE_LOG_DIR);
 
     /** GridGain Work Directory. */
-    public static final String GRIDGAIN_WORK_DIR = System.getenv(GG_WORK_DIR);
+    public static final String IGNITE_WORK_DIR = System.getenv(IgniteSystemProperties.IGNITE_WORK_DIR);
 
     /** Clock timer. */
     private static Thread timer;
@@ -299,6 +305,10 @@ public abstract class IgniteUtils {
 
     /** Mutex. */
     private static final Object mux = new Object();
+
+    /** Exception converters. */
+    private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
+        exceptionConverters;
 
     /**
      * Initializes enterprise check.
@@ -442,7 +452,7 @@ public abstract class IgniteUtils {
         SUN_REFLECT_FACTORY = refFac;
 
         // Disable hostname SSL verification for development and testing with self-signed certificates.
-        if (Boolean.parseBoolean(System.getProperty(GG_DISABLE_HOSTNAME_VERIFIER))) {
+        if (Boolean.parseBoolean(System.getProperty(IGNITE_DISABLE_HOSTNAME_VERIFIER))) {
             HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
                 @Override public boolean verify(String hostname, SSLSession sslSes) {
                     return true;
@@ -538,6 +548,127 @@ public abstract class IgniteUtils {
         PORTABLE_CLS.add(UUID[].class);
         PORTABLE_CLS.add(Date[].class);
         PORTABLE_CLS.add(Timestamp[].class);
+
+        exceptionConverters = Collections.unmodifiableMap(exceptionConverters());
+    }
+
+
+    /**
+     * Gets map with converters to convert internal checked exceptions to public API unchecked exceptions.
+     *
+     * @return Exception converters.
+     */
+    private static Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
+        exceptionConverters() {
+        Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>> m = new HashMap<>();
+
+        m.put(IgniteInterruptedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteInterruptedException(e.getMessage(), (InterruptedException)e.getCause());
+            }
+        });
+
+        m.put(IgniteFutureCancelledCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteFutureCancelledException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteFutureTimeoutCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteFutureTimeoutException(e.getMessage(), e);
+            }
+        });
+
+        m.put(ClusterGroupEmptyCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new ClusterGroupEmptyException(e.getMessage(), e);
+            }
+        });
+
+        m.put(ClusterTopologyCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new ClusterTopologyException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteDeploymentCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteDeploymentException(e.getMessage(), e);
+            }
+        });
+
+        m.put(ComputeTaskTimeoutCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new ComputeTaskTimeoutException(e.getMessage(), e);
+            }
+        });
+
+        m.put(ComputeTaskCancelledCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new ComputeTaskCancelledException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteTxRollbackCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteTxRollbackException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteTxHeuristicCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteTxHeuristicException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteTxTimeoutCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteTxTimeoutException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteTxOptimisticCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteTxOptimisticException(e.getMessage(), e);
+            }
+        });
+
+        return m;
+    }
+
+    /**
+     * @param e Ignite checked exception.
+     * @return Ignite runtime exception.
+     */
+    public static IgniteException convertException(IgniteCheckedException e) {
+        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
+
+        if (converter != null)
+            return converter.apply(e);
+
+        if (e.getCause() instanceof IgniteException)
+            return (IgniteException)e.getCause();
+
+        return new IgniteException(e.getMessage(), e);
+    }
+
+    /**
+     * @param e Ignite checked exception.
+     * @return Ignite runtime exception.
+     */
+    @Nullable public static CacheException convertToCacheException(IgniteCheckedException e) {
+        if (e instanceof CachePartialUpdateCheckedException)
+            return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
+        else if (e instanceof CacheAtomicUpdateTimeoutCheckedException)
+            return new CacheAtomicUpdateTimeoutException(e.getMessage(), e);
+
+        if (e.getCause() instanceof CacheException)
+            return (CacheException)e.getCause();
+
+        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
+
+        return converter != null ? new CacheException(converter.apply(e)) : new CacheException(e);
     }
 
     /**
@@ -651,7 +782,7 @@ public abstract class IgniteUtils {
      * @return Checks if disco ordering should be enforced.
      */
     public static boolean relaxDiscoveryOrdered() {
-        return "true".equalsIgnoreCase(System.getProperty(GG_NO_DISCO_ORDER));
+        return "true".equalsIgnoreCase(System.getProperty(IGNITE_NO_DISCO_ORDER));
     }
 
     /**
@@ -1497,7 +1628,7 @@ public abstract class IgniteUtils {
     private static synchronized InetAddress resetLocalHost() throws IOException {
         locHost = null;
 
-        String sysLocHost = IgniteSystemProperties.getString(GG_LOCAL_HOST);
+        String sysLocHost = IgniteSystemProperties.getString(IGNITE_LOCAL_HOST);
 
         if (sysLocHost != null)
             sysLocHost = sysLocHost.trim();
@@ -2269,7 +2400,7 @@ public abstract class IgniteUtils {
         assert Thread.holdsLock(IgniteUtils.class);
 
         // Resolve GridGain home via environment variables.
-        String ggHome0 = IgniteSystemProperties.getString(GG_HOME);
+        String ggHome0 = IgniteSystemProperties.getString(IGNITE_HOME);
 
         if (!F.isEmpty(ggHome0))
             return ggHome0;
@@ -2338,15 +2469,15 @@ public abstract class IgniteUtils {
      * @param e Exception.
      */
     private static void logResolveFailed(Class cls, Exception e) {
-        warn(null, "Failed to resolve GRIDGAIN_HOME automatically for class codebase " +
+        warn(null, "Failed to resolve IGNITE_HOME automatically for class codebase " +
             "[class=" + cls + (e == null ? "" : ", e=" + e.getMessage()) + ']');
     }
 
     /**
-     * Retrieves {@code GRIDGAIN_HOME} property. The property is retrieved from system
+     * Retrieves {@code IGNITE_HOME} property. The property is retrieved from system
      * properties or from environment in that order.
      *
-     * @return {@code GRIDGAIN_HOME} property.
+     * @return {@code IGNITE_HOME} property.
      */
     @Nullable public static String getGridGainHome() {
         GridTuple<String> ggHomeTup = ggHome;
@@ -2363,7 +2494,7 @@ public abstract class IgniteUtils {
                     ggHome = F.t(ggHome0 = resolveProjectHome());
 
                     if (ggHome0 != null)
-                        System.setProperty(GG_HOME, ggHome0);
+                        System.setProperty(IGNITE_HOME, ggHome0);
                 }
                 else
                     ggHome0 = ggHomeTup.get();
@@ -2390,9 +2521,9 @@ public abstract class IgniteUtils {
 
                 if (ggHomeTup == null) {
                     if (F.isEmpty(path))
-                        System.clearProperty(GG_HOME);
+                        System.clearProperty(IGNITE_HOME);
                     else
-                        System.setProperty(GG_HOME, path);
+                        System.setProperty(IGNITE_HOME, path);
 
                     ggHome = F.t(path);
 
@@ -2406,18 +2537,18 @@ public abstract class IgniteUtils {
             ggHome0 = ggHomeTup.get();
 
         if (ggHome0 != null && !ggHome0.equals(path))
-            throw new IgniteException("Failed to set GRIDGAIN_HOME after it has been already resolved " +
+            throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
                 "[ggHome=" + ggHome0 + ", newGgHome=" + path + ']');
     }
 
     /**
      * Gets file associated with path.
      * <p>
-     * First check if path is relative to {@code GRIDGAIN_HOME}.
+     * First check if path is relative to {@code IGNITE_HOME}.
      * If not, check if path is absolute.
      * If all checks fail, then {@code null} is returned.
      * <p>
-     * See {@link #getGridGainHome()} for information on how {@code GRIDGAIN_HOME} is retrieved.
+     * See {@link #getGridGainHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
      * @param path Path to resolve.
      * @return Resolved path as file, or {@code null} if path cannot be resolved.
@@ -2426,7 +2557,7 @@ public abstract class IgniteUtils {
         assert path != null;
 
         /*
-         * 1. Check relative to GRIDGAIN_HOME specified in configuration, if any.
+         * 1. Check relative to IGNITE_HOME specified in configuration, if any.
          */
 
         String home = getGridGainHome();
@@ -2460,11 +2591,11 @@ public abstract class IgniteUtils {
     /**
      * Gets URL representing the path passed in. First the check is made if path is absolute.
      * If not, then the check is made if path is relative to {@code META-INF} folder in classpath.
-     * If not, then the check is made if path is relative to ${GRIDGAIN_HOME}.
+     * If not, then the check is made if path is relative to ${IGNITE_HOME}.
      * If all checks fail,
      * then {@code null} is returned, otherwise URL representing path is returned.
      * <p>
-     * See {@link #getGridGainHome()} for information on how {@code GRIDGAIN_HOME} is retrieved.
+     * See {@link #getGridGainHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
      * @param path Path to resolve.
      * @return Resolved path as URL, or {@code null} if path cannot be resolved.
@@ -2477,11 +2608,11 @@ public abstract class IgniteUtils {
     /**
      * Gets URL representing the path passed in. First the check is made if path is absolute.
      * If not, then the check is made if path is relative to {@code META-INF} folder in classpath.
-     * If not, then the check is made if path is relative to ${GRIDGAIN_HOME}.
+     * If not, then the check is made if path is relative to ${IGNITE_HOME}.
      * If all checks fail,
      * then {@code null} is returned, otherwise URL representing path is returned.
      * <p>
-     * See {@link #getGridGainHome()} for information on how {@code GRIDGAIN_HOME} is retrieved.
+     * See {@link #getGridGainHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
      * @param path Path to resolve.
      * @param metaInf Flag to indicate whether META-INF folder should be checked or class path root.
@@ -3581,7 +3712,7 @@ public abstract class IgniteUtils {
 
     /**
      * Depending on whether or not log is provided and quiet mode is enabled logs given messages as
-     * quiet message or normal log WARN message in {@code org.gridgain.grid.CourtesyConfigNotice}
+     * quiet message or normal log WARN message in {@code org.apache.ignite.CourtesyConfigNotice}
      * category. If {@code log} is {@code null} or in QUIET mode it will add {@code (courtesy)}
      * prefix to the message.
      *
@@ -3598,7 +3729,7 @@ public abstract class IgniteUtils {
 
     /**
      * Depending on whether or not log is provided and quiet mode is enabled logs given messages as
-     * quiet message or normal log WARN message in {@code org.gridgain.grid.CourtesyConfigNotice}
+     * quiet message or normal log WARN message in {@code org.apache.ignite.CourtesyConfigNotice}
      * category. If {@code log} is {@code null} or in QUIET mode it will add {@code (courtesy)}
      * prefix to the message.
      *
@@ -3873,7 +4004,7 @@ public abstract class IgniteUtils {
      * @param sb Sb.
      */
     private static void appendJvmId(SB sb) {
-        if (getBoolean(GG_MBEAN_APPEND_JVM_ID)) {
+        if (getBoolean(IGNITE_MBEAN_APPEND_JVM_ID)) {
             String gridId = Integer.toHexString(Ignite.class.getClassLoader().hashCode()) + "_"
                 + ManagementFactory.getRuntimeMXBean().getName();
 
@@ -4172,9 +4303,9 @@ public abstract class IgniteUtils {
      *
      * @return Empty projection exception.
      */
-    public static ClusterGroupEmptyException emptyTopologyException() {
-        return new ClusterGroupEmptyException("Topology projection is empty. Note that predicate based " +
-            "projection can be empty from call to call.");
+    public static ClusterGroupEmptyCheckedException emptyTopologyException() {
+        return new ClusterGroupEmptyCheckedException("Clouster group is empty. Note that predicate based " +
+            "cluster group can be empty from call to call.");
     }
 
     /**
@@ -5644,17 +5775,17 @@ public abstract class IgniteUtils {
      * Converts {@link InterruptedException} to {@link IgniteCheckedException}.
      *
      * @param mux Mux to wait on.
-     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+     * @throws IgniteInterruptedCheckedException If interrupted.
      */
     @SuppressWarnings({"WaitNotInLoop", "WaitWhileNotSynced"})
-    public static void wait(Object mux) throws IgniteInterruptedException {
+    public static void wait(Object mux) throws IgniteInterruptedCheckedException {
         try {
             mux.wait();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -6873,16 +7004,16 @@ public abstract class IgniteUtils {
      * Awaits for condition.
      *
      * @param cond Condition to await for.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}
      */
-    public static void await(Condition cond) throws IgniteInterruptedException {
+    public static void await(Condition cond) throws IgniteInterruptedCheckedException {
         try {
             cond.await();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -6893,16 +7024,16 @@ public abstract class IgniteUtils {
      * @param time The maximum time to wait,
      * @param unit The unit of the {@code time} argument.
      * @return {@code false} if the waiting time detectably elapsed before return from the method, else {@code true}
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}
      */
-    public static boolean await(Condition cond, long time, TimeUnit unit) throws IgniteInterruptedException {
+    public static boolean await(Condition cond, long time, TimeUnit unit) throws IgniteInterruptedCheckedException {
         try {
             return cond.await(time, unit);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -6910,9 +7041,9 @@ public abstract class IgniteUtils {
      * Awaits for the latch.
      *
      * @param latch Latch to wait for.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}.
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
-    public static void await(CountDownLatch latch) throws IgniteInterruptedException {
+    public static void await(CountDownLatch latch) throws IgniteInterruptedCheckedException {
         try {
             if (latch.getCount() > 0)
                 latch.await();
@@ -6920,7 +7051,7 @@ public abstract class IgniteUtils {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -6932,17 +7063,17 @@ public abstract class IgniteUtils {
      * @param unit Time unit for timeout.
      * @return {@code True} if the count reached zero and {@code false}
      *      if the waiting time elapsed before the count reached zero.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}.
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
     public static boolean await(CountDownLatch latch, long timeout, TimeUnit unit)
-        throws IgniteInterruptedException {
+        throws IgniteInterruptedCheckedException {
         try {
             return latch.await(timeout, unit);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -7006,16 +7137,16 @@ public abstract class IgniteUtils {
      * Sleeps for given number of milliseconds.
      *
      * @param ms Time to sleep.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}.
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
-    public static void sleep(long ms) throws IgniteInterruptedException {
+    public static void sleep(long ms) throws IgniteInterruptedCheckedException {
         try {
             Thread.sleep(ms);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -7023,9 +7154,9 @@ public abstract class IgniteUtils {
      * Joins worker.
      *
      * @param w Worker.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}.
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
-    public static void join(GridWorker w) throws IgniteInterruptedException {
+    public static void join(GridWorker w) throws IgniteInterruptedCheckedException {
         try {
             if (w != null)
                 w.join();
@@ -7033,7 +7164,7 @@ public abstract class IgniteUtils {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -7054,7 +7185,7 @@ public abstract class IgniteUtils {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
         catch (CancellationException e) {
             throw new IgniteCheckedException(e);
@@ -7065,16 +7196,16 @@ public abstract class IgniteUtils {
      * Joins thread.
      *
      * @param t Thread.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
-    public static void join(Thread t) throws IgniteInterruptedException {
+    public static void join(Thread t) throws IgniteInterruptedCheckedException {
         try {
             t.join();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -7082,16 +7213,16 @@ public abstract class IgniteUtils {
      * Acquires a permit from provided semaphore.
      *
      * @param sem Semaphore.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
-    public static void acquire(Semaphore sem) throws IgniteInterruptedException {
+    public static void acquire(Semaphore sem) throws IgniteInterruptedCheckedException {
         try {
             sem.acquire();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -7755,7 +7886,7 @@ public abstract class IgniteUtils {
      * @return {@code True} if property is Visor node startup property, {@code false} otherwise.
      */
     public static boolean isVisorNodeStartProperty(String name) {
-        return GG_SSH_HOST.equals(name) || GG_SSH_USER_NAME.equals(name);
+        return IGNITE_SSH_HOST.equals(name) || IGNITE_SSH_USER_NAME.equals(name);
     }
 
     /**
@@ -8215,15 +8346,20 @@ public abstract class IgniteUtils {
 
     /**
      * For each object provided by the given {@link Iterable} checks if it implements
-     * {@link org.apache.ignite.lifecycle.LifecycleAware} interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#start} method.
+     * {@link LifecycleAware} interface and executes {@link LifecycleAware#start} method.
      *
      * @param objs Objects.
-     * @throws IgniteCheckedException If {@link org.apache.ignite.lifecycle.LifecycleAware#start} fails.
+     * @throws IgniteCheckedException If {@link LifecycleAware#start} fails.
      */
     public static void startLifecycleAware(Iterable<?> objs) throws IgniteCheckedException {
-        for (Object obj : objs) {
-            if (obj instanceof LifecycleAware)
-                ((LifecycleAware)obj).start();
+        try {
+            for (Object obj : objs) {
+                if (obj instanceof LifecycleAware)
+                    ((LifecycleAware)obj).start();
+            }
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to start component: " + e, e);
         }
     }
 
@@ -8240,7 +8376,7 @@ public abstract class IgniteUtils {
                 try {
                     ((LifecycleAware)obj).stop();
                 }
-                catch (IgniteCheckedException e) {
+                catch (Exception e) {
                     U.error(log, "Failed to stop component (ignoring): " + obj, e);
                 }
             }
@@ -8487,8 +8623,8 @@ public abstract class IgniteUtils {
 
                 if (!F.isEmpty(userWorkDir))
                     workDir = new File(userWorkDir);
-                else if (!F.isEmpty(GRIDGAIN_WORK_DIR))
-                    workDir = new File(GRIDGAIN_WORK_DIR);
+                else if (!F.isEmpty(IGNITE_WORK_DIR))
+                    workDir = new File(IGNITE_WORK_DIR);
                 else if (!F.isEmpty(userGgHome))
                     workDir = new File(userGgHome, "work");
                 else {

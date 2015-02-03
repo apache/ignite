@@ -30,7 +30,7 @@ import scala.util.Random
  * Real time popular number counter.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `ggstart.sh examples/config/example-cache.xml`
+ * enables P2P class loading: `ignite.sh examples/config/example-cache.xml`
  * <p>
  * Alternatively you can run [[CacheNodeStartup]] in another JVM which will
  * start GridGain node with `examples/config/example-cache.xml` configuration.
@@ -58,7 +58,7 @@ object ScalarCachePopularNumbersExample extends App {
         println()
         println(">>> Cache popular numbers example started.")
 
-        val prj = grid$.cluster().forCache(CACHE_NAME)
+        val prj = grid$.cluster().forCacheNodes(CACHE_NAME)
 
         if (prj.nodes().isEmpty)
             println("Grid does not have cache configured: " + CACHE_NAME);
@@ -75,7 +75,7 @@ object ScalarCachePopularNumbersExample extends App {
                 query(POPULAR_NUMBERS_CNT)
 
                 // Clean up caches on all nodes after run.
-                grid$.cluster().forCache(CACHE_NAME).bcastRun(() => grid$.cache(CACHE_NAME).clearAll(), null)
+                grid$.cluster().forCacheNodes(CACHE_NAME).bcastRun(() => grid$.cache(CACHE_NAME).clearAll(), null)
             }
             finally {
                 popularNumbersQryTimer.cancel()

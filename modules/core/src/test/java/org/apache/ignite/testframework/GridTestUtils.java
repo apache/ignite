@@ -21,18 +21,18 @@ import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.config.*;
 import org.jetbrains.annotations.*;
 
@@ -644,13 +644,13 @@ public final class GridTestUtils {
      */
     @SuppressWarnings({"ProhibitedExceptionThrown"})
     public static String getGridGainHome() throws Exception {
-        String ggHome = System.getProperty("GRIDGAIN_HOME");
+        String ggHome = System.getProperty("IGNITE_HOME");
 
         if (ggHome == null)
-            ggHome = System.getenv("GRIDGAIN_HOME");
+            ggHome = System.getenv("IGNITE_HOME");
 
         if (ggHome == null)
-            throw new Exception("GRIDGAIN_HOME parameter must be set either as system or environment variable.");
+            throw new Exception("IGNITE_HOME parameter must be set either as system or environment variable.");
 
         File dir = new File(ggHome);
 
@@ -792,10 +792,10 @@ public final class GridTestUtils {
 
     /**
      * Gets file representing the path passed in. First the check is made if path is absolute.
-     * If not, then the check is made if path is relative to ${GRIDGAIN_HOME}. If both checks fail,
+     * If not, then the check is made if path is relative to ${IGNITE_HOME}. If both checks fail,
      * then {@code null} is returned, otherwise file representing path is returned.
      * <p>
-     * See {@link #getGridGainHome()} for information on how {@code GRIDGAIN_HOME} is retrieved.
+     * See {@link #getGridGainHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
      * @param path Path to resolve.
      * @return Resolved path, or {@code null} if file cannot be resolved.
@@ -1215,11 +1215,11 @@ public final class GridTestUtils {
      * @param retryInterval Interval between retries in milliseconds.
      * @param c Closure with assertion. All {@link AssertionError}s thrown
      *      from this closure will be ignored {@code retries} times.
-     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
     @SuppressWarnings("ErrorNotRethrown")
     public static void retryAssert(@Nullable IgniteLogger log, int retries, long retryInterval, GridAbsClosure c)
-        throws IgniteInterruptedException {
+        throws IgniteInterruptedCheckedException {
         for (int i = 0; i < retries; i++) {
             try {
                 c.apply();
@@ -1272,9 +1272,9 @@ public final class GridTestUtils {
      * @param sleepDur Sleep duration in milliseconds.
      * @param i Integer to increment.
      * @return Incremented value.
-     * @throws org.apache.ignite.IgniteInterruptedException If sleep was interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If sleep was interrupted.
      */
-    public static int sleepAndIncrement(int sleepDur, int i) throws IgniteInterruptedException {
+    public static int sleepAndIncrement(int sleepDur, int i) throws IgniteInterruptedCheckedException {
         U.sleep(sleepDur);
 
         return i + 1;
@@ -1286,9 +1286,9 @@ public final class GridTestUtils {
      * @param cond Condition to wait for.
      * @param timeout Max time to wait in milliseconds.
      * @return {@code true} if condition was achieved, {@code false} otherwise.
-     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
-    public static boolean waitForCondition(GridAbsPredicate cond, long timeout) throws IgniteInterruptedException {
+    public static boolean waitForCondition(GridAbsPredicate cond, long timeout) throws IgniteInterruptedCheckedException {
         long curTime = U.currentTimeMillis();
         long endTime = curTime + timeout;
 

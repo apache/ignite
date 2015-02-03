@@ -55,7 +55,7 @@ public class GridContinuousOperationsLoadTest {
         final Integer threadsCnt = getIntProperty(THREADS_CNT, 8);
         final Integer testDurSec = getIntProperty(TEST_DUR_SEC, 180);
 
-        final Integer filterSkipProb = getIntProperty("GG_FILTER_SKIP_PROBABILITY", 10, new C1<Integer, String>() {
+        final Integer filterSkipProb = getIntProperty("FILTER_SKIP_PROBABILITY", 10, new C1<Integer, String>() {
             @Nullable @Override public String apply(Integer val) {
                 if (val < 0 || val > 100)
                     return "The value should be between 1 and 100.";
@@ -64,14 +64,14 @@ public class GridContinuousOperationsLoadTest {
             }
         });
 
-        final boolean useQry = getBooleanProperty("GG_USE_QUERIES", true);
-        final int bufSize = getIntProperty("GG_BUFFER_SIZE", 1);
-        final long timeInterval = getLongProperty("GG_TIME_INTERVAL", 0);
-        final int parallelCnt = getIntProperty("GG_PARALLEL_COUNT", 8);
-        final int keyRange = getIntProperty("GG_KEY_RANGE", 100000);
-        final long updSleepMs = getLongProperty("GG_UPDATE_SLEEP_MS", 0);
-        final long filterSleepMs = getLongProperty("GG_FILTER_SLEEP_MS", 0);
-        final long cbSleepMs = getLongProperty("GG_CALLBACK_SLEEP_MS", 0);
+        final boolean useQry = getBooleanProperty("IGNITE_USE_QUERIES", true);
+        final int bufSize = getIntProperty("IGNITE_BUFFER_SIZE", 1);
+        final long timeInterval = getLongProperty("IGNITE_TIME_INTERVAL", 0);
+        final int parallelCnt = getIntProperty("IGNITE_PARALLEL_COUNT", 8);
+        final int keyRange = getIntProperty("IGNITE_KEY_RANGE", 100000);
+        final long updSleepMs = getLongProperty("IGNITE_UPDATE_SLEEP_MS", 0);
+        final long filterSleepMs = getLongProperty("IGNITE_FILTER_SLEEP_MS", 0);
+        final long cbSleepMs = getLongProperty("IGNITE_CALLBACK_SLEEP_MS", 0);
 
         X.println("The test will start with the following parameters:");
 
@@ -100,7 +100,7 @@ public class GridContinuousOperationsLoadTest {
 
                     qry.callback(new PX2<UUID, Collection<Map.Entry<Object, Object>>>() {
                         @Override public boolean applyx(UUID uuid, Collection<Map.Entry<Object, Object>> entries)
-                            throws IgniteInterruptedException {
+                            throws IgniteInterruptedCheckedException {
                             if (cbSleepMs > 0)
                                 U.sleep(cbSleepMs);
 
@@ -111,7 +111,7 @@ public class GridContinuousOperationsLoadTest {
                     });
 
                     qry.filter(new PX2<Object, Object>() {
-                        @Override public boolean applyx(Object key, Object val) throws IgniteInterruptedException {
+                        @Override public boolean applyx(Object key, Object val) throws IgniteInterruptedCheckedException {
                             if (filterSleepMs > 0)
                                 U.sleep(filterSleepMs);
 
@@ -130,9 +130,8 @@ public class GridContinuousOperationsLoadTest {
                         timeInterval,
                         true,
                         new PX2<UUID, IgniteEvent>() {
-                            @Override
-                            public boolean applyx(UUID uuid, IgniteEvent evt)
-                                throws IgniteInterruptedException {
+                            @Override public boolean applyx(UUID uuid, IgniteEvent evt)
+                                throws IgniteInterruptedCheckedException {
                                 if (cbSleepMs > 0)
                                     U.sleep(cbSleepMs);
 
@@ -142,8 +141,7 @@ public class GridContinuousOperationsLoadTest {
                             }
                         },
                         new PX1<IgniteEvent>() {
-                            @Override
-                            public boolean applyx(IgniteEvent evt) throws IgniteInterruptedException {
+                            @Override public boolean applyx(IgniteEvent evt) throws IgniteInterruptedCheckedException {
                                 if (filterSleepMs > 0)
                                     U.sleep(filterSleepMs);
 
@@ -172,7 +170,7 @@ public class GridContinuousOperationsLoadTest {
                                 ", updatesPerSec=" + updDelta + ']');
                         }
                     }
-                    catch (IgniteInterruptedException ignored) {
+                    catch (IgniteInterruptedCheckedException ignored) {
                         // No-op.
                     }
                 }

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.rest.handlers.cache;
 
 import org.apache.ignite.portables.*;
 
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
 
 /**

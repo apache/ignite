@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testframework.config;
 
-import org.apache.log4j.xml.*;
 import org.apache.ignite.testframework.*;
+import org.apache.log4j.xml.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -32,12 +32,12 @@ import java.util.regex.*;
  * <ul>
  * <li>
  *     Default properties and log4j.xml configuration is loaded directly from
- *     {@code ${GRIDGAIN_HOME}/modules/tests/config} folder. Default properties can be
+ *     {@code ${IGNITE_HOME}/modules/tests/config} folder. Default properties can be
  *     accessed via {@link #getDefaultProperties()} and {@link #getDefaultProperty(String)} methods.
  *   </li>
  * <li>
  *     User is able to override any default property and log4j configuration in
- *     {@code ${GRIDGAIN_HOME}/modules/tests/config/${username}} folder, where {@code username}
+ *     {@code ${IGNITE_HOME}/modules/tests/config/${username}} folder, where {@code username}
  *     is the system user name. User properties can be accessed via {@link #getProperties()} and
  *     {@link #getProperties(String)} methods.
  *   </li>
@@ -65,14 +65,14 @@ public final class GridTestProperties {
 
     /** */
     static {
-        // Initialize GRIDGAIN_HOME system property.
-        String ggHome = System.getProperty("GRIDGAIN_HOME");
+        // Initialize IGNITE_HOME system property.
+        String ggHome = System.getProperty("IGNITE_HOME");
 
         if (ggHome == null || ggHome.isEmpty()) {
-            ggHome = System.getenv("GRIDGAIN_HOME");
+            ggHome = System.getenv("IGNITE_HOME");
 
             if (ggHome != null && !ggHome.isEmpty())
-                System.setProperty("GRIDGAIN_HOME", ggHome);
+                System.setProperty("IGNITE_HOME", ggHome);
         }
 
         // Load default properties.
@@ -83,7 +83,7 @@ public final class GridTestProperties {
 
         dfltProps = Collections.unmodifiableMap(loadFromFile(new HashMap<String, String>(), cfgFile));
 
-        if ("false".equals(System.getProperty("GRIDGAIN_TEST_PROP_DISABLE_LOG4J", "false"))) {
+        if ("false".equals(System.getProperty("IGNITE_TEST_PROP_DISABLE_LOG4J", "false"))) {
             String user = System.getProperty("user.name");
 
             assert user != null;
@@ -104,7 +104,7 @@ public final class GridTestProperties {
      * @param user User name.
      */
     private static void configureLog4j(String user) {
-        String cfgFile = System.getProperty("GG_TEST_PROP_LOG4J_FILE");
+        String cfgFile = System.getProperty("IGNITE_TEST_PROP_LOG4J_FILE");
 
         if (cfgFile == null)
             cfgFile = "log4j-test.xml";

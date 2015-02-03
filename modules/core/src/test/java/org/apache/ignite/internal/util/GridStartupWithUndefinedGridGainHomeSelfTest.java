@@ -20,19 +20,19 @@ package org.apache.ignite.internal.util;
 import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.logger.java.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.internal.util.IgniteUtils.*;
 
 /**
- * Checks that node can be started without operations with undefined GRIDGAIN_HOME.
+ * Checks that node can be started without operations with undefined IGNITE_HOME.
  * <p>
  * Notes:
  * 1. The test intentionally extends JUnit {@link TestCase} class to make the test
@@ -62,7 +62,7 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
 
         // We can't use U.getGridGainHome() here because
         // it will initialize cached value which is forbidden to override.
-        String ggHome = IgniteSystemProperties.getString(GG_HOME);
+        String ggHome = IgniteSystemProperties.getString(IGNITE_HOME);
 
         assert ggHome != null;
 
@@ -84,7 +84,7 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
 
             IgniteConfiguration cfg = new IgniteConfiguration();
 
-            // We have to explicitly configure path to license config because of undefined GRIDGAIN_HOME.
+            // We have to explicitly configure path to license config because of undefined IGNITE_HOME.
             cfg.setLicenseUrl("file:///" + ggHome + "/" + Ignition.DFLT_LIC_FILE_NAME);
 
             // Default console logger is used

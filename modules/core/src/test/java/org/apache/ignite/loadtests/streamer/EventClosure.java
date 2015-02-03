@@ -18,8 +18,8 @@
 package org.apache.ignite.loadtests.streamer;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 
 import java.util.*;
 
@@ -38,7 +38,7 @@ class EventClosure implements IgniteInClosure<IgniteStreamer> {
             try {
                 streamer.addEvent(rnd.nextInt(rndRange));
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 X.println("Failed to add streamer event: " + e);
             }
         }

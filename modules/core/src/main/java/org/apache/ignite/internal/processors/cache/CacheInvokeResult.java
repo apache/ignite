@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.optimized.*;
 
 import javax.cache.processor.*;
 import java.io.*;
@@ -53,8 +53,6 @@ public class CacheInvokeResult<T> implements EntryProcessorResult<T>, Externaliz
      * @param res Computed result.
      */
     public CacheInvokeResult(T res) {
-        assert res != null;
-
         this.res = res;
     }
 

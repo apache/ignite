@@ -86,14 +86,14 @@ private case class Result(
  *         If current count of nodes is equal to this number and '-r' flag is not set, then nothing will happen.
  *     -g=<path>
  *         Path to GridGain installation folder.
- *         If not defined, GRIDGAIN_HOME environment variable must be set on remote hosts.
+ *         If not defined, IGNITE_HOME environment variable must be set on remote hosts.
  *     -c=<path>
  *         Path to configuration file (relative to GridGain home).
  *         If not provided, default GridGain configuration is used.
  *     -s=<path>
  *         Path to start script (relative to GridGain home).
- *         Default is "bin/ggstart.sh" for Unix or
- *         "bin\ggstart.bat" for Windows.
+ *         Default is "bin/ignite.sh" for Unix or
+ *         "bin\ignite.bat" for Windows.
  *     -m=<num>
  *         Defines maximum number of nodes that can be started in parallel on one host.
  *         This actually means number of parallel SSH connections to each SSH server.
@@ -233,7 +233,7 @@ class VisorStartCommand {
                         Result(t.get1, t.get2, t.get3)
                     }).toSeq
                 catch {
-                    case e: IgniteCheckedException => scold(e.getMessage).^^
+                    case e: IgniteException => scold(e.getMessage).^^
                     case _: RejectedExecutionException => scold("Failed due to system error.").^^
                 }
             }
@@ -288,7 +288,7 @@ class VisorStartCommand {
                     res = grid.startNodes(asJavaCollection(Seq(params)), null, restart, timeout, maxConn).
                         map(t => Result(t.get1, t.get2, t.get3)).toSeq
                 catch {
-                    case e: IgniteCheckedException => scold(e.getMessage).^^
+                    case e: IgniteException => scold(e.getMessage).^^
                     case _: RejectedExecutionException => scold("Failed due to system error.").^^
                 }
             }
@@ -376,7 +376,7 @@ object VisorStartCommand {
             ),
             "-g=<path>" -> List(
                 "Path to GridGain installation folder.",
-                "If not defined, GRIDGAIN_HOME environment variable must be set on remote hosts."
+                "If not defined, IGNITE_HOME environment variable must be set on remote hosts."
             ),
             "-c=<path>" -> List(
                 "Path to configuration file (relative to GridGain home).",
@@ -384,8 +384,8 @@ object VisorStartCommand {
             ),
             "-s=<path>" -> List(
                 "Path to start script (relative to GridGain home).",
-                "Default is \"bin/ggstart.sh\" for Unix or",
-                "\"bin\\ggstart.bat\" for Windows."
+                "Default is \"bin/ignite.sh\" for Unix or",
+                "\"bin\\ignite.bat\" for Windows."
             ),
             "-m=<num>" -> List(
                 "Defines maximum number of nodes that can be started in parallel on one host.",

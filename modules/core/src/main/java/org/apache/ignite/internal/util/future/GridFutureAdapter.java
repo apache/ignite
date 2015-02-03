@@ -19,9 +19,9 @@ package org.apache.ignite.internal.util.future;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -46,10 +46,10 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     protected static IgniteLogger log;
 
     /** Synchronous notification flag. */
-    private static final boolean SYNC_NOTIFY = IgniteSystemProperties.getBoolean(GG_FUT_SYNC_NOTIFICATION, true);
+    private static final boolean SYNC_NOTIFY = IgniteSystemProperties.getBoolean(IGNITE_FUT_SYNC_NOTIFICATION, true);
 
     /** Concurrent notification flag. */
-    private static final boolean CONCUR_NOTIFY = IgniteSystemProperties.getBoolean(GG_FUT_CONCURRENT_NOTIFICATION, false);
+    private static final boolean CONCUR_NOTIFY = IgniteSystemProperties.getBoolean(IGNITE_FUT_CONCURRENT_NOTIFICATION, false);
 
     /** Initial state. */
     private static final int INIT = 0;
@@ -201,7 +201,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
                 acquireSharedInterruptibly(0);
 
             if (getState() == CANCELLED)
-                throw new IgniteFutureCancelledException("Future was cancelled: " + this);
+                throw new IgniteFutureCancelledCheckedException("Future was cancelled: " + this);
 
             if (err != null)
                 throw U.cast(err);
@@ -211,7 +211,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -234,7 +234,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException("Got interrupted while waiting for future to complete.", e);
+            throw new IgniteInterruptedCheckedException("Got interrupted while waiting for future to complete.", e);
         }
     }
 
@@ -242,15 +242,15 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * @param nanosTimeout Timeout (nanoseconds).
      * @return Result.
      * @throws InterruptedException If interrupted.
-     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException If timeout reached before computation completed.
+     * @throws IgniteFutureTimeoutCheckedException If timeout reached before computation completed.
      * @throws IgniteCheckedException If error occurred.
      */
     @Nullable protected R get0(long nanosTimeout) throws InterruptedException, IgniteCheckedException {
         if (endTime == 0 && !tryAcquireSharedNanos(0, nanosTimeout))
-            throw new IgniteFutureTimeoutException("Timeout was reached before computation completed.");
+            throw new IgniteFutureTimeoutCheckedException("Timeout was reached before computation completed.");
 
         if (getState() == CANCELLED)
-            throw new IgniteFutureCancelledException("Future was cancelled: " + this);
+            throw new IgniteFutureCancelledCheckedException("Future was cancelled: " + this);
 
         if (err != null)
             throw U.cast(err);
@@ -333,7 +333,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
         synchronized (mux) {
             lsnrs0 = lsnrs;
 
-            if (lsnrs0 == null)
+            if (lsnrs0 == null || lsnrs0.isEmpty())
                 return;
 
             lsnrs = null;

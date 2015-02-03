@@ -34,7 +34,7 @@ import java.util.concurrent.Callable
  * keys.
  *
  * Remote nodes should always be started with configuration file which includes
- * cache: `'ggstart.sh examples/config/example-cache.xml'`. Local node can
+ * cache: `'ignite.sh examples/config/example-cache.xml'`. Local node can
  * be started with or without cache.
  */
 object ScalarCacheAffinityExample1 {
@@ -106,7 +106,7 @@ object ScalarCacheAffinityExample1 {
      * @param keys Keys to populate.
      */
     private def populateCache(g: Ignite, keys: Seq[String]) {
-        var prj = g.cluster().forCache(NAME)
+        var prj = g.cluster().forCacheNodes(NAME)
 
         // Give preference to local node.
         if (prj.nodes().contains(g.cluster().localNode))

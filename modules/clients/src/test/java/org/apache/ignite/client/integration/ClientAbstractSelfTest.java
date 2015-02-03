@@ -19,22 +19,20 @@ package org.apache.ignite.client.integration;
 
 import junit.framework.*;
 import net.sf.json.*;
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.client.*;
+import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.client.*;
-import org.apache.ignite.client.ssl.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -79,7 +77,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     private static final Map<String, HashMapStore> cacheStores = new HashMap<>();
 
     /** Path to test log. */
-    private static final String TEST_LOG_PATH = "modules/core/src/test/resources/log/gridgain.log.tst";
+    private static final String TEST_LOG_PATH = "modules/core/src/test/resources/log/ignite.log.tst";
 
     /** */
     public static final String ROUTER_LOG_CFG = "modules/core/src/test/config/log4j-test.xml";
@@ -101,11 +99,11 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(GG_JETTY_PORT, Integer.toString(JETTY_PORT));
+        System.setProperty(IGNITE_JETTY_PORT, Integer.toString(JETTY_PORT));
 
         startGrid();
 
-        System.clearProperty(GG_JETTY_PORT);
+        System.clearProperty(IGNITE_JETTY_PORT);
     }
 
     /** {@inheritDoc} */
@@ -1454,8 +1452,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
      */
     private static class TestTask extends ComputeTaskSplitAdapter<List<Object>, Integer> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list)
-            throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list) {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>();
 
             if (list != null)
@@ -1477,7 +1474,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             int sum = 0;
 
             for (ComputeJobResult res : results)
@@ -1493,7 +1490,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     private static class SleepTestTask extends ComputeTaskSplitAdapter<List<Object>, Integer> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list)
-            throws IgniteCheckedException {
+            {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>();
 
             if (list != null)
@@ -1515,7 +1512,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             int sum = 0;
 
             for (ComputeJobResult res : results)
@@ -1533,7 +1530,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
             if (arg.endsWith("intercepted"))
                 arg = arg.substring(0, arg.length() - 11);
 
@@ -1545,7 +1542,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             return delegate.reduce(results);
         }
     }
@@ -1558,7 +1555,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
             JSON json = JSONSerializer.toJSON(arg);
 
             List list = json.isArray() ? JSONArray.toList((JSONArray)json, String.class, new JsonConfig()) : null;
@@ -1567,7 +1564,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             return delegate.reduce(results);
         }
     }

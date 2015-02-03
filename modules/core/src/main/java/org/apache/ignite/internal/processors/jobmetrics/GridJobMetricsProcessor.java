@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.jobmetrics;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 
 import java.util.concurrent.atomic.*;
@@ -34,7 +34,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  */
 public class GridJobMetricsProcessor extends GridProcessorAdapter {
     /** */
-    private static final int CONCURRENCY_LEVEL = Integer.getInteger(GG_JOBS_METRICS_CONCURRENCY_LEVEL, 64);
+    private static final int CONCURRENCY_LEVEL = Integer.getInteger(IGNITE_JOBS_METRICS_CONCURRENCY_LEVEL, 64);
 
     /** Time to live. */
     private final long expireTime;
@@ -128,7 +128,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
 
         if (metrics.snapshotsQueues == null)
             throw new IgniteCheckedException("Invalid concurrency level configured " +
-                "(is 'GRIDGAIN_JOBS_METRICS_CONCURRENCY_LEVEL' system property properly set?).");
+                "(is 'IGNITE_JOBS_METRICS_CONCURRENCY_LEVEL' system property properly set?).");
 
         if (log.isDebugEnabled())
             log.debug("Job metrics processor started [histSize=" + histSize +

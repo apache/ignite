@@ -27,8 +27,8 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
@@ -70,9 +70,9 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         // Need to increase value set in GridAbstractTest
-        sizePropVal = System.getProperty(GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE);
+        sizePropVal = System.getProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE);
 
-        System.setProperty(GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "100000");
+        System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "100000");
 
         super.beforeTestsStarted();
     }
@@ -81,7 +81,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        System.setProperty(GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE, sizePropVal != null ? sizePropVal : "");
+        System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, sizePropVal != null ? sizePropVal : "");
     }
 
     /**

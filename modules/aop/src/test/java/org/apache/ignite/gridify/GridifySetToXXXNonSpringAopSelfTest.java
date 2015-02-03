@@ -18,31 +18,32 @@
 package org.apache.ignite.gridify;
 
 import org.apache.ignite.testframework.junits.common.*;
+
 import java.util.*;
 
 /**
  * To run this test with JBoss AOP make sure of the following:
  *
  * 1. The JVM is started with following parameters to enable jboss online weaving
- *      (replace ${GRIDGAIN_HOME} to you $GRIDGAIN_HOME):
- *      -javaagent:${GRIDGAIN_HOME}libs/jboss-aop-jdk50-4.0.4.jar
+ *      (replace ${IGNITE_HOME} to you $IGNITE_HOME):
+ *      -javaagent:${IGNITE_HOME}libs/jboss-aop-jdk50-4.0.4.jar
  *      -Djboss.aop.class.path=[path to grid compiled classes (Idea out folder) or path to gridgain.jar]
  *      -Djboss.aop.exclude=org,com -Djboss.aop.include=org.gridgain
  *
  * 2. The following jars should be in a classpath:
- *      ${GRIDGAIN_HOME}libs/javassist-3.x.x.jar
- *      ${GRIDGAIN_HOME}libs/jboss-aop-jdk50-4.0.4.jar
- *      ${GRIDGAIN_HOME}libs/jboss-aspect-library-jdk50-4.0.4.jar
- *      ${GRIDGAIN_HOME}libs/jboss-common-4.2.2.jar
- *      ${GRIDGAIN_HOME}libs/trove-1.0.2.jar
+ *      ${IGNITE_HOME}libs/javassist-3.x.x.jar
+ *      ${IGNITE_HOME}libs/jboss-aop-jdk50-4.0.4.jar
+ *      ${IGNITE_HOME}libs/jboss-aspect-library-jdk50-4.0.4.jar
+ *      ${IGNITE_HOME}libs/jboss-common-4.2.2.jar
+ *      ${IGNITE_HOME}libs/trove-1.0.2.jar
  *
  * To run this test with AspectJ APO make sure of the following:
  *
  * 1. The JVM is started with following parameters for enable AspectJ online weaving
- *      (replace ${GRIDGAIN_HOME} to you $GRIDGAIN_HOME):
- *      -javaagent:${GRIDGAIN_HOME}/libs/aspectjweaver-1.7.2.jar
+ *      (replace ${IGNITE_HOME} to you $IGNITE_HOME):
+ *      -javaagent:${IGNITE_HOME}/libs/aspectjweaver-1.7.2.jar
  *
- * 2. Classpath should contains the ${GRIDGAIN_HOME}/modules/tests/config/aop/aspectj folder.
+ * 2. Classpath should contains the ${IGNITE_HOME}/modules/tests/config/aop/aspectj folder.
  */
 @GridCommonTest(group="AOP")
 public class GridifySetToXXXNonSpringAopSelfTest extends GridCommonAbstractTest {

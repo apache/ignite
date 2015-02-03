@@ -23,14 +23,16 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.resources.*;
+import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.resources.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -88,7 +90,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     private final GridTaskSessionImpl ses;
 
     /** */
-    private final GridTaskFutureImpl<R> fut;
+    private final ComputeTaskInternalFuture<R> fut;
 
     /** */
     private final T arg;
@@ -138,41 +140,56 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /** Continuous mapper. */
     private final ComputeTaskContinuousMapper mapper = new ComputeTaskContinuousMapper() {
         /** {@inheritDoc} */
-        @Override public void send(ComputeJob job, ClusterNode node) throws IgniteCheckedException {
-            A.notNull(job, "job");
-            A.notNull(node, "node");
+        @Override public void send(ComputeJob job, ClusterNode node) {
+            try {
+                A.notNull(job, "job");
+                A.notNull(node, "node");
 
-            processMappedJobs(Collections.singletonMap(job, node));
+                processMappedJobs(Collections.singletonMap(job, node));
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
         }
 
         /** {@inheritDoc} */
-        @Override public void send(Map<? extends ComputeJob, ClusterNode> mappedJobs) throws IgniteCheckedException {
-            A.notNull(mappedJobs, "mappedJobs");
+        @Override public void send(Map<? extends ComputeJob, ClusterNode> mappedJobs) {
+            try {
+                A.notNull(mappedJobs, "mappedJobs");
 
-            processMappedJobs(mappedJobs);
+                processMappedJobs(mappedJobs);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
         }
 
         /** {@inheritDoc} */
-        @Override public void send(ComputeJob job) throws IgniteCheckedException {
+        @Override public void send(ComputeJob job) {
             A.notNull(job, "job");
 
             send(Collections.singleton(job));
         }
 
         /** {@inheritDoc} */
-        @Override public void send(Collection<? extends ComputeJob> jobs) throws IgniteCheckedException {
-            A.notNull(jobs, "jobs");
+        @Override public void send(Collection<? extends ComputeJob> jobs) {
+            try {
+                A.notNull(jobs, "jobs");
 
-            if (jobs.isEmpty())
-                throw new IgniteCheckedException("Empty jobs collection passed to send(...) method.");
+                if (jobs.isEmpty())
+                    throw new IgniteException("Empty jobs collection passed to send(...) method.");
 
-            ComputeLoadBalancer balancer = ctx.loadBalancing().getLoadBalancer(ses, getTaskTopology());
+                ComputeLoadBalancer balancer = ctx.loadBalancing().getLoadBalancer(ses, getTaskTopology());
 
-            for (ComputeJob job : jobs) {
-                if (job == null)
-                    throw new IgniteCheckedException("Null job passed to send(...) method.");
+                for (ComputeJob job : jobs) {
+                    if (job == null)
+                        throw new IgniteException("Null job passed to send(...) method.");
 
-                processMappedJobs(Collections.singletonMap(job, balancer.getBalancedNode(job, null)));
+                    processMappedJobs(Collections.singletonMap(job, balancer.getBalancedNode(job, null)));
+                }
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
             }
         }
     };
@@ -193,7 +210,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         GridKernalContext ctx,
         @Nullable T arg,
         GridTaskSessionImpl ses,
-        GridTaskFutureImpl<R> fut,
+        ComputeTaskInternalFuture<R> fut,
         @Nullable Class<?> taskCls,
         @Nullable ComputeTask<T, R> task,
         GridDeployment dep,
@@ -257,7 +274,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /**
      * @return Task future.
      */
-    GridTaskFutureImpl<R> getTaskFuture() {
+    ComputeTaskInternalFuture<R> getTaskFuture() {
         return fut;
     }
 
@@ -307,7 +324,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
         recordTaskEvent(EVT_TASK_TIMEDOUT, "Task has timed out.");
 
-        Throwable e = new ComputeTaskTimeoutException("Task timed out (check logs for error messages): " + ses);
+        Throwable e = new ComputeTaskTimeoutCheckedException("Task timed out (check logs for error messages): " + ses);
 
         finishTask(null, e);
     }
@@ -419,12 +436,12 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             processDelayedResponses();
         }
-        catch (ClusterGroupEmptyException e) {
+        catch (ClusterGroupEmptyCheckedException e) {
             U.warn(log, "Failed to map task jobs to nodes (topology projection is empty): " + ses);
 
             finishTask(null, e);
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException | IgniteCheckedException e) {
             if (!fut.isCancelled()) {
                 U.error(log, "Failed to map task jobs to nodes: " + ses, e);
 
@@ -540,7 +557,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         int size = subgrid.size();
 
         if (size == 0)
-            throw new ClusterGroupEmptyException("Topology projection is empty.");
+            throw new ClusterGroupEmptyCheckedException("Topology projection is empty.");
 
         List<ClusterNode> shuffledNodes = new ArrayList<>(size);
 
@@ -670,8 +687,8 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
                         Object res0 = loc ? res.getJobResult() : marsh.unmarshal(res.getJobResultBytes(), clsLdr);
 
-                        IgniteCheckedException ex = loc ? res.getException() :
-                            marsh.<IgniteCheckedException>unmarshal(res.getExceptionBytes(), clsLdr);
+                        IgniteException ex = loc ? res.getException() :
+                            marsh.<IgniteException>unmarshal(res.getExceptionBytes(), clsLdr);
 
                         Map<Object, Object> attrs = loc ? res.getJobAttributes() :
                             marsh.<Map<Object, Object>>unmarshal(res.getJobAttributesBytes(), clsLdr);
@@ -812,7 +829,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         plc = task.result(jobRes, results);
 
                         if (plc == FAILOVER && noFailover) {
-                            IgniteCheckedException e = jobRes.getException();
+                            IgniteException e = jobRes.getException();
 
                             if (e != null)
                                 throw e;
@@ -830,18 +847,18 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
                     return plc;
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     if (X.hasCause(e, GridInternalException.class) ||
                         X.hasCause(e, IgniteFsOutOfSpaceException.class)) {
                         // Print internal exceptions only if debug is enabled.
                         if (log.isDebugEnabled())
                             U.error(log, "Failed to obtain remote job result policy for result from " +
-                                "GridComputeTask.result(..) method (will fail the whole task): " + jobRes, e);
+                                "ComputeTask.result(..) method (will fail the whole task): " + jobRes, e);
                     }
                     else if (X.hasCause(e, ComputeJobFailoverException.class)) {
                         IgniteCheckedException e0 = new IgniteCheckedException(" Job was not failed over because " +
-                            "GridComputeJobResultPolicy.FAILOVER was not returned from " +
-                            "GridTask.result(...) method for job result with GridComputeJobFailoverException.", e);
+                            "ComputeJobResultPolicy.FAILOVER was not returned from " +
+                            "ComputeTask.result(...) method for job result with GridComputeJobFailoverException.", e);
 
                         finishTask(null, e0);
 
@@ -849,32 +866,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     }
                     else
                         U.error(log, "Failed to obtain remote job result policy for result from " +
-                            "GridComputeTask.result(..) method (will fail the whole task): " + jobRes, e);
-
-                    finishTask(null, e);
-
-                    return null;
-                }
-                catch (IgniteException e) {
-                    if (X.hasCause(e, GridInternalException.class) ||
-                        X.hasCause(e, IgniteFsOutOfSpaceException.class)) {
-                        // Print internal exceptions only if debug is enabled.
-                        if (log.isDebugEnabled())
-                            U.error(log, "Failed to obtain remote job result policy for result from " +
-                                "GridComputeTask.result(..) method (will fail the whole task): " + jobRes, e);
-                    }
-                    else if (X.hasCause(e, ComputeJobFailoverException.class)) {
-                        IgniteCheckedException e0 = new IgniteCheckedException(" Job was not failed over because " +
-                            "GridComputeJobResultPolicy.FAILOVER was not returned from " +
-                            "GridTask.result(...) method for job result with GridComputeJobFailoverException.", e);
-
-                        finishTask(null, e0);
-
-                        return null;
-                    }
-                    else
-                        U.error(log, "Failed to obtain remote job result policy for result from" +
-                            "GridComputeTask.result(..) method (will fail the whole task): " + jobRes, e);
+                            "ComputeTask.result(..) method (will fail the whole task): " + jobRes, e);
 
                     finishTask(null, e);
 
@@ -928,7 +920,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             recordTaskEvent(EVT_TASK_REDUCED, "Task reduced.");
         }
-        catch (ClusterTopologyException e) {
+        catch (ClusterTopologyCheckedException e) {
             U.warn(log, "Failed to reduce job results for task (any nodes from task topology left grid?): " + task);
 
             userE = e;
@@ -974,7 +966,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 if (log.isDebugEnabled())
                     log.debug(msg);
 
-                Throwable e = new ClusterTopologyException(msg, jobRes.getException());
+                Throwable e = new ClusterTopologyCheckedException(msg, jobRes.getException());
 
                 finishTask(null, e);
 
@@ -1180,7 +1172,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 fakeRes.setFakeException(new ClusterTopologyException("Failed to send job due to node failure: " +
                     node, e));
             else
-                fakeRes.setFakeException(e);
+                fakeRes.setFakeException(U.convertException(e));
 
             onResponse(fakeRes);
         }

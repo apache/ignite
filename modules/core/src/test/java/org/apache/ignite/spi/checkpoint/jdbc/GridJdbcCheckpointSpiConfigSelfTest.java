@@ -19,6 +19,7 @@ package org.apache.ignite.spi.checkpoint.jdbc;
 
 import org.apache.ignite.testframework.junits.spi.*;
 import org.hsqldb.jdbc.*;
+
 import javax.sql.*;
 
 import static org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi.*;

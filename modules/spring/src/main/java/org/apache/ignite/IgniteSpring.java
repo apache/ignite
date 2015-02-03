@@ -26,7 +26,7 @@ import org.springframework.context.*;
 import java.net.*;
 
 /**
- * Factory methods to start GridGain with optional Spring application context, this context can be injected into
+ * Factory methods to start Ignite with optional Spring application context, this context can be injected into
  * grid tasks and grid jobs using {@link org.apache.ignite.resources.IgniteSpringApplicationContextResource @IgniteSpringApplicationContextResource}
  * annotation.
  * <p>
@@ -36,7 +36,7 @@ import java.net.*;
 public class IgniteSpring {
     /**
      * Starts grid with default configuration. By default this method will
-     * use grid configuration defined in {@code GRIDGAIN_HOME/config/default-config.xml}
+     * use grid configuration defined in {@code IGNITE_HOME/config/default-config.xml}
      * configuration file. If such file is not found, then all system defaults will be used.
      *
      * @param springCtx Optional Spring application context, possibly {@code null}.

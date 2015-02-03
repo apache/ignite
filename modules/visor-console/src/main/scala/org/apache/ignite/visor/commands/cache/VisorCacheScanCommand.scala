@@ -139,8 +139,8 @@ class VisorCacheScanCommand {
         }
 
         val cachePrj = node match {
-            case Some(n) => grid.forNode(n).forCache(cacheName)
-            case _ => grid.forCache(cacheName)
+            case Some(n) => grid.forNode(n).forCacheNodes(cacheName)
+            case _ => grid.forCacheNodes(cacheName)
         }
 
         if (cachePrj.nodes().isEmpty) {

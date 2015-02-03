@@ -18,11 +18,11 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -129,7 +129,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         GridDeployment dep = ctx.deploy().deploy(pda.deployClass(), pda.classLoader());
 
         if (dep == null)
-            throw new IgniteDeploymentException("Failed to deploy message listener.");
+            throw new IgniteDeploymentCheckedException("Failed to deploy message listener.");
 
         depInfo = new GridDeploymentInfoBean(dep);
 
@@ -146,7 +146,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
             depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
 
         if (dep == null)
-            throw new IgniteDeploymentException("Failed to obtain deployment for class: " + clsName);
+            throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
 
         ClassLoader ldr = dep.classLoader();
 

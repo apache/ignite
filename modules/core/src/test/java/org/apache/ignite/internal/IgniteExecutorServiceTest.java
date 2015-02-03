@@ -18,10 +18,8 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.executor.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -265,7 +263,7 @@ public class IgniteExecutorServiceTest extends GridCommonAbstractTest {
     private ExecutorService createExecutorService(Ignite ignite) {
         assert ignite != null;
 
-        return new GridExecutorService((ClusterGroupAdapter) ignite, log());
+        return ignite.executorService();
     }
 
     /**

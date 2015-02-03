@@ -28,7 +28,7 @@ import java.util.*;
  * Demonstrates a simple usage of distributed atomic long.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
@@ -62,7 +62,7 @@ public final class CacheAtomicLongExample {
 
             // Try increment atomic long from all grid nodes.
             // Note that this node is also part of the grid.
-            g.compute(g.cluster().forCache(CACHE_NAME)).call(new IgniteCallable<Object>() {
+            g.compute(g.cluster().forCacheNodes(CACHE_NAME)).call(new IgniteCallable<Object>() {
                 @Override public Object call() throws  Exception {
                     for (int i = 0; i < RETRIES; i++)
                         System.out.println("AtomicLong value has been incremented: " + atomicLong.incrementAndGet());
