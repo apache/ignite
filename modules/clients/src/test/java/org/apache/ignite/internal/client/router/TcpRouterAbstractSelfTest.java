@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.client.router;
 
 import org.apache.ignite.*;
-import org.apache.ignite.client.*;
 import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.client.integration.*;
 import org.apache.ignite.internal.client.router.impl.*;

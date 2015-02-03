@@ -24,7 +24,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.store.*;
-import org.apache.ignite.client.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.client.*;

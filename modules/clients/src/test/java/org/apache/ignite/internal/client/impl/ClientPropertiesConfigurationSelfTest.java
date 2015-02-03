@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.client.impl;
 
 import org.apache.commons.io.*;
-import org.apache.ignite.client.*;
 import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.client.balancer.*;
 import org.apache.ignite.internal.util.*;
@@ -30,7 +29,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-import static org.apache.ignite.client.GridClientConfiguration.*;
+import static org.apache.ignite.internal.client.GridClientConfiguration.*;
 
 /**
  * Properties-based configuration self test.

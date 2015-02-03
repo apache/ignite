@@ -22,7 +22,7 @@ package org.apache.ignite.internal.client;
  * <p>
  * Since the topology refresh is performed in background, the listeners will not be notified
  * immediately after the node leaves grid, but the maximum time window between remote grid detects
- * node leaving and client receives topology update is {@link org.apache.ignite.client.GridClientConfiguration#getTopologyRefreshFrequency()}.
+ * node leaving and client receives topology update is {@link GridClientConfiguration#getTopologyRefreshFrequency()}.
  */
 public interface GridClientTopologyListener {
     /**

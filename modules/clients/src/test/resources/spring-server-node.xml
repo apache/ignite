@@ -83,10 +83,10 @@
                             <property name="className" value="org.apache.ignite.internal.client.ClientTestPortable"/>
                         </bean>
                         <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.apache.ignite.client.model.GridPortablePerson"/>
+                            <property name="className" value="org.apache.ignite.internal.client.model.GridPortablePerson"/>
                         </bean>
                         <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.apache.ignite.client.model.GridImplicitPortablePerson"/>
+                            <property name="className" value="org.apache.ignite.internal.client.model.GridImplicitPortablePerson"/>
                         </bean>
                         <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
                             <property name="className" value="GridNoDefPortablePerson"/>

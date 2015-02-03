@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.client.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.client.balancer.*;
 import org.apache.ignite.internal.client.impl.*;
 import org.apache.ignite.internal.client.ssl.*;

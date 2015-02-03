@@ -350,7 +350,7 @@ public interface GridClientData {
      * Tries to get metrics from local cache.
      * <p>
      * Local cache is updated on every {@link #metrics()} or {@link #metricsAsync()} call
-     * if {@link org.apache.ignite.client.GridClientConfiguration#isEnableMetricsCache()} is enabled. If it is
+     * if {@link GridClientConfiguration#isEnableMetricsCache()} is enabled. If it is
      * disabled then this method will always return {@code null}.
      *
      * @return Cached metrics or {@code null} if no cached metrics available.

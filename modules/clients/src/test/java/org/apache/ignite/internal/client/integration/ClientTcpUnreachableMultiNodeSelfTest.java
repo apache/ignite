@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.client.integration;
 
-import org.apache.ignite.client.*;
 import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.client.balancer.*;
 import org.apache.ignite.internal.util.typedef.*;

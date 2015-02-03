@@ -39,7 +39,7 @@
     <!--
         Configuration below demonstrates how to setup caches within grid nodes.
     -->
-    <bean id="grid.client.cfg" class="org.apache.ignite.client.GridClientConfiguration">
+    <bean id="grid.client.cfg" class="org.apache.ignite.internal.client.GridClientConfiguration">
         <!-- Data configurations. -->
         <property name="dataConfigurations">
             <list>
