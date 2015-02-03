@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.spring;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
 import org.springframework.beans.factory.*;
@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.*;
  */
 public class IgniteSpringProcessorImpl implements IgniteSpringProcessor {
     /** Path to {@code gridgain.xml} file. */
-    public static final String GRIDGAIN_XML_PATH = "META-INF/gridgain.xml";
+    public static final String IGNITE_XML_PATH = "META-INF/gridgain.xml";
 
     /** System class loader user version. */
     private static final AtomicReference<String> SYS_LDR_VER = new AtomicReference<>(null);
@@ -151,7 +151,7 @@ public class IgniteSpringProcessorImpl implements IgniteSpringProcessor {
 
         String usrVer = U.DFLT_USER_VERSION;
 
-        InputStream in = ldr.getResourceAsStream(GRIDGAIN_XML_PATH);
+        InputStream in = ldr.getResourceAsStream(IGNITE_XML_PATH);
 
         if (in != null) {
             // Note: use ByteArrayResource instead of InputStreamResource because
@@ -174,19 +174,19 @@ public class IgniteSpringProcessorImpl implements IgniteSpringProcessor {
             catch (NoSuchBeanDefinitionException ignored) {
                 if (log.isInfoEnabled())
                     log.info("User version is not explicitly defined (will use default version) [file=" +
-                        GRIDGAIN_XML_PATH + ", clsLdr=" + ldr + ']');
+                        IGNITE_XML_PATH + ", clsLdr=" + ldr + ']');
 
                 usrVer = U.DFLT_USER_VERSION;
             }
             catch (BeansException e) {
                 U.error(log, "Failed to parse Spring XML file (will use default user version) [file=" +
-                    GRIDGAIN_XML_PATH + ", clsLdr=" + ldr + ']', e);
+                    IGNITE_XML_PATH + ", clsLdr=" + ldr + ']', e);
 
                 usrVer = U.DFLT_USER_VERSION;
             }
             catch (IOException e) {
                 U.error(log, "Failed to read Spring XML file (will use default user version) [file=" +
-                    GRIDGAIN_XML_PATH + ", clsLdr=" + ldr + ']', e);
+                    IGNITE_XML_PATH + ", clsLdr=" + ldr + ']', e);
 
                 usrVer = U.DFLT_USER_VERSION;
             }

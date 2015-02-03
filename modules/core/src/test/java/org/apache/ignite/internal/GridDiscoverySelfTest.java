@@ -22,13 +22,13 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -37,8 +37,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.lang.IgniteProductVersion.*;
 import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.lang.IgniteProductVersion.*;
 
 /**
  *  GridDiscovery self test.
@@ -127,7 +127,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
                 nodes.add(new GridDiscoveryTestNode());
 
             @SuppressWarnings("deprecation")
-            long hash = ((GridKernal) ignite).context().discovery().topologyHash(nodes);
+            long hash = ((IgniteKernal) ignite).context().discovery().topologyHash(nodes);
 
             boolean isHashed = hashes.add(hash);
 
@@ -236,7 +236,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testCacheNodes() throws Exception {
         // Validate only original node is available.
-        GridDiscoveryManager discoMgr = ((GridKernal) ignite).context().discovery();
+        GridDiscoveryManager discoMgr = ((IgniteKernal) ignite).context().discovery();
 
         Collection<ClusterNode> nodes = discoMgr.allNodes();
 

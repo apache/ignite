@@ -20,10 +20,11 @@ package org.apache.ignite.internal.processors.cache.query;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -166,7 +167,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheSqlResult> execute(String space, GridCacheTwoStepQuery qry) {
+    @Override public IgniteInternalFuture<GridCacheSqlResult> execute(String space, GridCacheTwoStepQuery qry) {
         return ctx.kernalContext().query().queryTwoStep(space, qry);
     }
 
@@ -176,7 +177,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
      * @param params Parameters.
      * @return Result.
      */
-    public IgniteFuture<GridCacheSqlResult> executeTwoStepQuery(String space, String sqlQry, Object[] params) {
+    public IgniteInternalFuture<GridCacheSqlResult> executeTwoStepQuery(String space, String sqlQry, Object[] params) {
         return ctx.kernalContext().query().queryTwoStep(space, sqlQry, params);
     }
 
@@ -186,21 +187,21 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> rebuildIndexes(Class<?> cls) {
+    @Override public IgniteInternalFuture<?> rebuildIndexes(Class<?> cls) {
         A.notNull(cls, "cls");
 
         return ctx.queries().rebuildIndexes(cls);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> rebuildIndexes(String typeName) {
+    @Override public IgniteInternalFuture<?> rebuildIndexes(String typeName) {
         A.notNull("typeName", typeName);
 
         return ctx.queries().rebuildIndexes(typeName);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> rebuildAllIndexes() {
+    @Override public IgniteInternalFuture<?> rebuildAllIndexes() {
         return ctx.queries().rebuildAllIndexes();
     }
 

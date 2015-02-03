@@ -23,14 +23,14 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.fs.*;
-import org.apache.ignite.streamer.*;
+import org.apache.ignite.internal.util.ipc.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.visor.cache.*;
 import org.apache.ignite.internal.visor.compute.*;
 import org.apache.ignite.internal.visor.ggfs.*;
 import org.apache.ignite.internal.visor.streamer.*;
-import org.apache.ignite.internal.util.ipc.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.streamer.*;
 
 import java.util.*;
 
@@ -123,16 +123,16 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     /** Collect GGFS. */
     private void ggfs(VisorNodeDataCollectorJobResult res) {
         try {
-            IgniteFsProcessorAdapter ggfsProc = ((GridKernal)g).context().ggfs();
+            IgniteFsProcessorAdapter ggfsProc = ((IgniteKernal)g).context().ggfs();
 
             for (IgniteFs ggfs : ggfsProc.ggfss()) {
                 long start0 = U.currentTimeMillis();
 
                 try {
-                    Collection<GridIpcServerEndpoint> endPoints = ggfsProc.endpoints(ggfs.name());
+                    Collection<IpcServerEndpoint> endPoints = ggfsProc.endpoints(ggfs.name());
 
                     if (endPoints != null) {
-                        for (GridIpcServerEndpoint ep : endPoints)
+                        for (IpcServerEndpoint ep : endPoints)
                             if (ep.isManagement())
                                 res.ggfsEndpoints().add(new VisorGgfsEndpoint(ggfs.name(), g.name(),
                                     ep.getHost(), ep.getPort()));
@@ -176,12 +176,12 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     }
 
     /** {@inheritDoc} */
-    @Override protected VisorNodeDataCollectorJobResult run(VisorNodeDataCollectorTaskArg arg) throws IgniteCheckedException {
+    @Override protected VisorNodeDataCollectorJobResult run(VisorNodeDataCollectorTaskArg arg) {
         return run(new VisorNodeDataCollectorJobResult(), arg);
     }
 
     protected VisorNodeDataCollectorJobResult run(VisorNodeDataCollectorJobResult res,
-        VisorNodeDataCollectorTaskArg arg) throws IgniteCheckedException {
+        VisorNodeDataCollectorTaskArg arg) {
         res.gridName(g.name());
 
         res.topologyVersion(g.topologyVersion());

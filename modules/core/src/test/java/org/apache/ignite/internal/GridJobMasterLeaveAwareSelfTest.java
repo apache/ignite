@@ -23,18 +23,18 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -144,7 +144,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
                 try {
                     U.sleep(500);
                 }
-                catch (IgniteInterruptedException ignore) {
+                catch (IgniteInterruptedCheckedException ignore) {
                     // No-op.
                 }
 
@@ -523,7 +523,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         try {
             fut.get();
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             log.debug("Task failed: " + e);
         }
     }
@@ -598,7 +598,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteCheckedException {
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) {
             masterLeaveAware.onMasterLeave(log, this);
         }
     }
@@ -620,7 +620,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteCheckedException {
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) {
             masterLeaveAware.onMasterLeave(log, this);
         }
     }
@@ -644,7 +644,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteCheckedException {
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) {
             masterLeaveAware.onMasterLeave(log, this);
         }
     }
@@ -670,7 +670,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(jobCnt);
 
             for (int i = 0; i < jobCnt; i++)
@@ -680,7 +680,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -704,14 +704,14 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object execute() throws IgniteCheckedException {
+        @Override public Object execute() {
             masterLeaveAware.execute(log);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteCheckedException {
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) {
             masterLeaveAware.onMasterLeave(log, this);
         }
     }
@@ -757,7 +757,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
                         try {
                             U.await(waitLatch);
                         }
-                        catch (IgniteInterruptedException ignore) {
+                        catch (IgniteInterruptedCheckedException ignore) {
                             // No-op.
                         }
                     }
@@ -792,9 +792,9 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         /**
          * Await for job execution response to come.
          *
-         * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+         * @throws IgniteInterruptedCheckedException If interrupted.
          */
-        private void awaitResponse() throws IgniteInterruptedException {
+        private void awaitResponse() throws IgniteInterruptedCheckedException {
             U.await(respLatch);
         }
     }

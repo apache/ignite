@@ -26,7 +26,7 @@ import org.apache.ignite.scalar.scalar._
  * on thousands requiring no special configuration or deployment.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
+ * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
  */
 object ScalarWorldShortestMapReduce extends App {
     scalar("examples/config/example-compute.xml") {

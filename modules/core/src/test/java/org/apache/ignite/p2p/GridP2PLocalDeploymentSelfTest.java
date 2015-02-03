@@ -207,8 +207,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      */
     public static class TestTask extends ComputeTaskAdapter<UUID, Serializable> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(final List<ClusterNode> subgrid, UUID arg)
-            throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(final List<ClusterNode> subgrid, UUID arg) {
             taskLdr = getClass().getClassLoader();
 
             for (ClusterNode node : subgrid) {
@@ -216,11 +215,11 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
                     return Collections.singletonMap(new TestJob(arg), node);
             }
 
-            throw new IgniteCheckedException("Failed to find target node: " + arg);
+            throw new IgniteException("Failed to find target node: " + arg);
         }
 
         /** {@inheritDoc} */
-        @Override public int[] reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public int[] reduce(List<ComputeJobResult> results) {
             assert results.size() == 1;
 
             assert taskLdr == getClass().getClassLoader();
@@ -242,7 +241,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             public TestJob(UUID nodeId) { super(nodeId); }
 
             /** {@inheritDoc} */
-            @Override public Serializable execute() throws IgniteCheckedException {
+            @Override public Serializable execute() {
                 assert ignite.configuration().getNodeId().equals(argument(0));
 
                 jobLdr = getClass().getClassLoader();

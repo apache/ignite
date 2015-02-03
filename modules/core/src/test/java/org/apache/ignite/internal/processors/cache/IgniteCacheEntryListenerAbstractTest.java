@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -32,7 +31,6 @@ import javax.cache.event.*;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
-
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -78,7 +76,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         super.afterTest();
 
         for (int i = 0; i < gridCount(); i++) {
-            GridContinuousProcessor proc = ((GridKernal)grid(i)).context().continuous();
+            GridContinuousProcessor proc = ((IgniteKernal)grid(i)).context().continuous();
 
             ConcurrentMap<?, ?> syncMsgFuts = GridTestUtils.getFieldValue(proc, "syncMsgFuts");
 
@@ -246,7 +244,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
             final AtomicBoolean done = new AtomicBoolean();
 
-            IgniteFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
                     U.sleep(500);
 
@@ -289,7 +287,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        IgniteFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 assertFalse(done.get());
 

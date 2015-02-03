@@ -20,7 +20,6 @@ package org.apache.ignite.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
-
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -28,7 +27,7 @@ import java.util.*;
 /**
  * Grid cache transaction. Cache transactions have a default 2PC (two-phase-commit) behavior and
  * can be plugged into ongoing {@code JTA} transaction by properly implementing
- * {@gglink org.gridgain.grid.cache.jta.GridCacheTmLookup}
+ * {@ignitelink org.apache.ignite.cache.jta.CacheTmLookup}
  * interface. Cache transactions can also be started explicitly directly from {@link org.apache.ignite.cache.CacheProjection} API
  * via any of the {@code 'CacheProjection.txStart(..)'} methods.
  * <p>
@@ -55,7 +54,7 @@ import java.util.*;
  *  Read access with this level happens the same way as with {@link IgniteTxIsolation#REPEATABLE_READ} level.
  *  However, in {@link IgniteTxConcurrency#OPTIMISTIC} mode, if some transactions cannot be serially isolated
  *  from each other, then one winner will be picked and the other transactions in conflict will result in
- * {@link IgniteTxOptimisticException} being thrown.
+ * {@link org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException} being thrown.
  * </li>
  * </ul>
  * <p>
@@ -190,7 +189,7 @@ public interface IgniteTx extends AutoCloseable, IgniteAsyncSupport {
 
     /**
      * Gets timeout value in milliseconds for this transaction. If transaction times
-     * out prior to it's completion, {@link IgniteTxTimeoutException} will be thrown.
+     * out prior to it's completion, {@link org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException} will be thrown.
      *
      * @return Transaction timeout value.
      */
@@ -226,25 +225,25 @@ public interface IgniteTx extends AutoCloseable, IgniteAsyncSupport {
     /**
      * Commits this transaction by initiating {@code two-phase-commit} process.
      *
-     * @throws IgniteCheckedException If commit failed.
+     * @throws IgniteException If commit failed.
      */
     @IgniteAsyncSupported
-    public void commit() throws IgniteCheckedException;
+    public void commit() throws IgniteException;
 
     /**
      * Ends the transaction. Transaction will be rolled back if it has not been committed.
      *
-     * @throws IgniteCheckedException If transaction could not be gracefully ended.
+     * @throws IgniteException If transaction could not be gracefully ended.
      */
-    @Override public void close() throws IgniteCheckedException;
+    @Override public void close() throws IgniteException;
 
     /**
      * Rolls back this transaction.
      *
-     * @throws IgniteCheckedException If rollback failed.
+     * @throws IgniteException If rollback failed.
      */
     @IgniteAsyncSupported
-    public void rollback() throws IgniteCheckedException;
+    public void rollback() throws IgniteException;
 
     /**
      * Removes metadata by name.

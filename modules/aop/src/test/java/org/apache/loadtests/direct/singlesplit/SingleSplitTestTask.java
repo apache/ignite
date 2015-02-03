@@ -17,7 +17,6 @@
 
 package org.apache.loadtests.direct.singlesplit;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;
@@ -37,7 +36,7 @@ public class SingleSplitTestTask extends ComputeTaskAdapter<Integer, Integer> {
     private ComputeLoadBalancer balancer;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) throws IgniteCheckedException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) {
         assert !subgrid.isEmpty() : "Subgrid cannot be empty.";
 
         Map<ComputeJobAdapter, ClusterNode> jobs = new HashMap<>(subgrid.size());
@@ -54,7 +53,7 @@ public class SingleSplitTestTask extends ComputeTaskAdapter<Integer, Integer> {
                 private ComputeTaskSession jobSes;
 
                 /** {@inheritDoc} */
-                @Override public Object execute() throws IgniteCheckedException {
+                @Override public Object execute() {
                     assert jobSes != null;
 
                     Integer arg = this.<Integer>argument(0);
@@ -80,7 +79,7 @@ public class SingleSplitTestTask extends ComputeTaskAdapter<Integer, Integer> {
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Integer reduce(List<ComputeJobResult> results) {
         int retVal = 0;
 
         for (ComputeJobResult res : results) {

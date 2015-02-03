@@ -41,7 +41,7 @@ public class GridStealingLoadTestJob extends ComputeJobAdapter {
     private ComputeJobContext ctx;
 
     /** {@inheritDoc} */
-    @Override public Serializable execute() throws IgniteCheckedException {
+    @Override public Serializable execute() {
         UUID nodeId = ignite.configuration().getNodeId();
 
         if (log.isDebugEnabled())

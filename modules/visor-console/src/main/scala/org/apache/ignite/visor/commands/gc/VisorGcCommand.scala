@@ -17,17 +17,17 @@
 
 package org.apache.ignite.visor.commands.gc
 
-import org.apache.ignite.internal.visor.node.VisorNodeGcTask
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
 
 import org.apache.ignite._
+
 import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
-
-import java.lang.{Boolean => JavaBoolean}
-import java.util.{UUID, HashSet => JavaHashSet}
-
+import org.apache.ignite.internal.visor.node.VisorNodeGcTask
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor.visor._
+import org.apache.ignite.visor.visor._
+
+import java.util.UUID
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -167,7 +167,7 @@ class VisorGcCommand {
             }
             catch {
                 case e: ClusterGroupEmptyException => scold("Topology is empty.")
-                case e: IgniteCheckedException => scold(e.getMessage)
+                case e: IgniteException => scold(e.getMessage)
             }
         }
     }
@@ -240,5 +240,5 @@ object VisorGcCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromGc2Visor(vs: VisorTag) = cmd
+    implicit def fromGc2Visor(vs: VisorTag): VisorGcCommand = cmd
 }

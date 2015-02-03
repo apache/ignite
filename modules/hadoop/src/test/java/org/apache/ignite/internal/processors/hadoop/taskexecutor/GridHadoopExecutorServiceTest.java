@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.hadoop.taskexecutor;
 
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jdk8.backport.LongAdder;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.testframework.junits.common.*;
+import org.jdk8.backport.*;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 /**
  *
@@ -83,7 +83,7 @@ public class GridHadoopExecutorServiceTest extends GridCommonAbstractTest {
 
             final AtomicBoolean finish = new AtomicBoolean();
 
-            IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     while (!finish.get()) {
                         exec.submit(new Callable<Void>() {

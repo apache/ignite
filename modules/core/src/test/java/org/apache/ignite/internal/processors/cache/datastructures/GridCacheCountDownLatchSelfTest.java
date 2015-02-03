@@ -22,12 +22,12 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -38,8 +38,8 @@ import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
@@ -152,7 +152,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
 
         assert latch.count() == 2;
 
-        IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     CacheCountDownLatch latch = grid(0).cache("local").dataStructures()
@@ -219,7 +219,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
 
             @Nullable @Override public Object call() throws Exception {
                 // Test latch in multiple threads on each node.
-                IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
+                IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
                     new Callable<Object>() {
                         @Nullable @Override public Object call() throws Exception {
                             CacheCountDownLatch latch = ignite.cache(cacheName).dataStructures()
@@ -392,7 +392,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
 
         // Ensure latch is removed on all nodes.
         for (Ignite g : G.allGrids())
-            assert ((GridKernal)g).internalCache(cacheName).context().dataStructures().
+            assert ((IgniteKernal)g).internalCache(cacheName).context().dataStructures().
                 countDownLatch(latchName, 10, true, false) == null;
 
         checkRemovedLatch(latch);

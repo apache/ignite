@@ -23,8 +23,8 @@ import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 
 import java.util.*;
@@ -113,7 +113,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
 
         AtomicBoolean stop = new AtomicBoolean();
 
-        IgniteFuture<?> killFut = startNodeKiller(stop);
+        IgniteInternalFuture<?> killFut = startNodeKiller(stop);
 
         long stopTime = System.currentTimeMillis() + TEST_DURATION;
 
@@ -189,7 +189,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
 
             for (int i = 0; i < gridCount(); i++) {
                 Iterator<GridCacheEntryEx<Object, Object>> entries =
-                    ((GridKernal)grid(i)).context().cache().internalCache().map().allEntries0().iterator();
+                    ((IgniteKernal)grid(i)).context().cache().internalCache().map().allEntries0().iterator();
 
                 while (entries.hasNext()) {
                     GridCacheEntryEx<Object, Object> entry = entries.next();
@@ -219,7 +219,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
      * @param stop Stop flag.
      * @return Future completing when thread finishes.
      */
-    private IgniteFuture<?> startNodeKiller(final AtomicBoolean stop) {
+    private IgniteInternalFuture<?> startNodeKiller(final AtomicBoolean stop) {
         return GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();

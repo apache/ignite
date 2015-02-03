@@ -49,7 +49,7 @@ public interface IgniteScheduler {
     /**
      * Executes given closure on internal system thread pool asynchronously.
      * <p>
-     * Note that class {@link org.apache.ignite.lang.IgniteRunnable} implements {@link Runnable} and class {@link org.apache.ignite.lang.IgniteOutClosure}
+     * Note that class {@link IgniteRunnable} implements {@link Runnable} and class {@link IgniteOutClosure}
      * implements {@link Callable} interface.
      *
      * @param r Runnable to execute. If {@code null} - this method is no-op.
@@ -62,14 +62,14 @@ public interface IgniteScheduler {
     /**
      * Executes given callable on internal system thread pool asynchronously.
      * <p>
-     * Note that class {@link org.apache.ignite.lang.IgniteRunnable} implements {@link Runnable} and class {@link org.apache.ignite.lang.IgniteOutClosure}
+     * Note that class {@link IgniteRunnable} implements {@link Runnable} and class {@link IgniteOutClosure}
      * implements {@link Callable} interface.
      *
      * @param c Callable to execute. If {@code null} - this method is no-op.
      * @return Future for this execution.
      * @param <R> Type of the return value for the closure.
      * @see #runLocal(Runnable)
-     * @see org.apache.ignite.lang.IgniteOutClosure
+     * @see IgniteOutClosure
      */
     public <R> IgniteFuture<R> callLocal(@Nullable Callable<R> c);
 

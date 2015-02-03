@@ -20,13 +20,14 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -244,18 +245,18 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
         /**
          * Awaits for a given count of items to be taken.
          *
-         * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+         * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
          */
-        private void awaitItems() throws IgniteInterruptedException {
+        private void awaitItems() throws IgniteInterruptedCheckedException {
             U.await(takeLatch);
         }
 
         /**
          * Awaits for a given count of items to be taken.
          *
-         * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+         * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
          */
-        private void awaitDone() throws IgniteInterruptedException {
+        private void awaitDone() throws IgniteInterruptedCheckedException {
             U.await(doneLatch);
         }
 
@@ -280,7 +281,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
                 }
             }
             catch (IgniteException e) {
-                if (e.getCause() instanceof IgniteInterruptedException || e.getCause() instanceof InterruptedException)
+                if (e.getCause() instanceof IgniteInterruptedCheckedException || e.getCause() instanceof InterruptedException)
                     log.info("Cancelling job due to interruption: " + e.getMessage());
                 else
                     fail("Unexpected error: " + e);

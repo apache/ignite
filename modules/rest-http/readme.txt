@@ -1,11 +1,11 @@
-GridGain REST-HTTP Module
--------------------------
+Apache Ignite REST-HTTP Module
+------------------------------
 
-GridGain REST-HTTP module provides Jetty-based server which can be used to execute tasks and/or cache commands
+Apache Ignite REST-HTTP module provides Jetty-based server which can be used to execute tasks and/or cache commands
 in grid using REST approach via HTTP protocol.
 
-To enable REST-HTTP module when starting a standalone node, move 'optional/gridgain-rest-http' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+To enable REST-HTTP module when starting a standalone node, move 'optional/ignite-rest-http' folder to
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing REST-HTTP Module In Maven Project
@@ -23,8 +23,8 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-rest-http</artifactId>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-rest-http</artifactId>
             <version>${ignite.version}</version>
         </dependency>
         ...

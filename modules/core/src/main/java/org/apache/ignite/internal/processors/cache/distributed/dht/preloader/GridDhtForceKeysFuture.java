@@ -20,13 +20,15 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -131,7 +133,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      * @param f Future.
      * @return {@code True} if mini-future.
      */
-    private boolean isMini(IgniteFuture<?> f) {
+    private boolean isMini(IgniteInternalFuture<?> f) {
         return f.getClass().equals(MiniFuture.class);
     }
 
@@ -156,7 +158,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
         int type = evt.type();
 
-        for (IgniteFuture<?> f : futures()) {
+        for (IgniteInternalFuture<?> f : futures()) {
             if (isMini(f)) {
                 MiniFuture mini = (MiniFuture)f;
 
@@ -164,7 +166,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
                 if (type == EVT_NODE_LEFT || type == EVT_NODE_FAILED) {
                     if (mini.node().id().equals(evt.eventNode().id())) {
-                        mini.onResult(new ClusterTopologyException("Node left grid (will retry): " +
+                        mini.onResult(new ClusterTopologyCheckedException("Node left grid (will retry): " +
                             evt.eventNode().id()));
 
                         break;
@@ -180,7 +182,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
      */
     @SuppressWarnings( {"unchecked"})
     public void onResult(UUID nodeId, GridDhtForceKeysResponse<K, V> res) {
-        for (IgniteFuture<Object> f : futures())
+        for (IgniteInternalFuture<Object> f : futures())
             if (isMini(f)) {
                 MiniFuture mini = (MiniFuture)f;
 
@@ -263,8 +265,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                     }
                     catch (IgniteCheckedException e) {
                         // Fail the whole thing.
-                        if (e instanceof ClusterTopologyException)
-                            fut.onResult((ClusterTopologyException)e);
+                        if (e instanceof ClusterTopologyCheckedException)
+                            fut.onResult((ClusterTopologyCheckedException)e);
                         else
                             fut.onResult(e);
                     }
@@ -450,7 +452,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
         /**
          * @param e Node failure.
          */
-        void onResult(ClusterTopologyException e) {
+        void onResult(ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
 
@@ -549,7 +551,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
                 return true;
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 // Fail.
                 onDone(e);
 

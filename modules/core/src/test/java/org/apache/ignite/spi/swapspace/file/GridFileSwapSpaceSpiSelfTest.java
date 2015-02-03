@@ -17,11 +17,12 @@
 
 package org.apache.ignite.spi.swapspace.file;
 
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -57,7 +58,7 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        IgniteFuture<?> wFut = multithreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> wFut = multithreadedAsync(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
                 while (!done.get()) {
                     long val = valCntr.incrementAndGet();
@@ -74,7 +75,7 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
 
         wLatch.await();
 
-        IgniteFuture<?> rFut = multithreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> rFut = multithreadedAsync(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
                 while (valCntr.get() < 1000) {
                     byte[] val = spi.read(null, key, context());
@@ -139,7 +140,7 @@ public class GridFileSwapSpaceSpiSelfTest extends GridSwapSpaceSpiAbstractSelfTe
 
         final AtomicBoolean fin = new AtomicBoolean();
 
-        final IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+        final IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Random rnd = new Random();
 

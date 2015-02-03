@@ -62,7 +62,7 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
      * @throws Exception If failed.
      */
     public void testTxFromPrimary() throws Exception {
-        GridCacheAdapter<Integer, String> cache = ((GridKernal)grid(originatingNode())).internalCache();
+        GridCacheAdapter<Integer, String> cache = ((IgniteKernal)grid(originatingNode())).internalCache();
 
         ClusterNode txNode = grid(originatingNode()).localNode();
 
@@ -85,7 +85,7 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
      * @throws Exception If failed.
      */
     public void testTxFromBackup() throws Exception {
-        GridCacheAdapter<Integer, String> cache = ((GridKernal)grid(originatingNode())).internalCache();
+        GridCacheAdapter<Integer, String> cache = ((IgniteKernal)grid(originatingNode())).internalCache();
 
         ClusterNode txNode = grid(originatingNode()).localNode();
 
@@ -108,7 +108,7 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
      * @throws Exception If failed.
      */
     public void testTxFromNotColocated() throws Exception {
-        GridCacheAdapter<Integer, String> cache = ((GridKernal)grid(originatingNode())).internalCache();
+        GridCacheAdapter<Integer, String> cache = ((IgniteKernal)grid(originatingNode())).internalCache();
 
         ClusterNode txNode = grid(originatingNode()).localNode();
 
@@ -131,7 +131,7 @@ public class GridCachePartitionedTxOriginatingNodeFailureSelfTest extends
      * @throws Exception If failed.
      */
     public void testTxAllNodes() throws Exception {
-        GridCacheAdapter<Integer, String> cache = ((GridKernal)grid(originatingNode())).internalCache();
+        GridCacheAdapter<Integer, String> cache = ((IgniteKernal)grid(originatingNode())).internalCache();
 
         List<ClusterNode> allNodes = new ArrayList<>(GRID_CNT);
 

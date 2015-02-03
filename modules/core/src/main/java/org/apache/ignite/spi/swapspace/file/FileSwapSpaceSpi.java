@@ -18,13 +18,14 @@
 package org.apache.ignite.spi.swapspace.file;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -102,8 +103,8 @@ import static org.apache.ignite.events.IgniteEventType.*;
 @SuppressWarnings({"PackageVisibleInnerClass", "PackageVisibleField"})
 public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, FileSwapSpaceSpiMBean {
     /**
-     * Default base directory. Note that this path is relative to {@code GRIDGAIN_HOME/work} folder
-     * if {@code GRIDGAIN_HOME} system or environment variable specified, otherwise it is relative to
+     * Default base directory. Note that this path is relative to {@code IGNITE_HOME/work} folder
+     * if {@code IGNITE_HOME} system or environment variable specified, otherwise it is relative to
      * {@code work} folder under system {@code java.io.tmpdir} folder.
      *
      * @see org.apache.ignite.configuration.IgniteConfiguration#getWorkDirectory()
@@ -279,7 +280,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
             try {
                 space.stop();
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 U.error(log, "Interrupted.", e);
             }
         }
@@ -1542,9 +1543,9 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
         /**
          * Stops space.
          *
-         * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+         * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
          */
-        public void stop() throws IgniteInterruptedException {
+        public void stop() throws IgniteInterruptedCheckedException {
             U.interrupt(writer);
             U.interrupt(compactor);
 

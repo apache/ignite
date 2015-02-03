@@ -23,8 +23,8 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.fs.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -84,28 +84,28 @@ public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<IgniteFsTask
 
     /** {@inheritDoc} */
     @Nullable @Override public final Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable IgniteFsTaskArgs<T> args) throws IgniteCheckedException {
+        @Nullable IgniteFsTaskArgs<T> args) {
         assert ignite != null;
         assert args != null;
 
-        IgniteFs ggfs = ignite.fileSystem(args.ggfsName());
-        IgniteFsProcessorAdapter ggfsProc = ((GridKernal) ignite).context().ggfs();
+        IgniteFs fs = ignite.fileSystem(args.ggfsName());
+        IgniteFsProcessorAdapter ggfsProc = ((IgniteKernal) ignite).context().ggfs();
 
         Map<ComputeJob, ClusterNode> splitMap = new HashMap<>();
 
         Map<UUID, ClusterNode> nodes = mapSubgrid(subgrid);
 
         for (IgniteFsPath path : args.paths()) {
-            IgniteFsFile file = ggfs.info(path);
+            IgniteFsFile file = fs.info(path);
 
             if (file == null) {
                 if (args.skipNonExistentFiles())
                     continue;
                 else
-                    throw new IgniteCheckedException("Failed to process GGFS file because it doesn't exist: " + path);
+                    throw new IgniteException("Failed to process IgniteFs file because it doesn't exist: " + path);
             }
 
-            Collection<IgniteFsBlockLocation> aff = ggfs.affinity(path, 0, file.length(), args.maxRangeLength());
+            Collection<IgniteFsBlockLocation> aff = fs.affinity(path, 0, file.length(), args.maxRangeLength());
 
             long totalLen = 0;
 
@@ -120,13 +120,13 @@ public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<IgniteFsTask
                 }
 
                 if (node == null)
-                    throw new IgniteCheckedException("Failed to find any of block affinity nodes in subgrid [loc=" + loc +
+                    throw new IgniteException("Failed to find any of block affinity nodes in subgrid [loc=" + loc +
                         ", subgrid=" + subgrid + ']');
 
                 IgniteFsJob job = createJob(path, new IgniteFsFileRange(file.path(), loc.start(), loc.length()), args);
 
                 if (job != null) {
-                    ComputeJob jobImpl = ggfsProc.createJob(job, ggfs.name(), file.path(), loc.start(),
+                    ComputeJob jobImpl = ggfsProc.createJob(job, fs.name(), file.path(), loc.start(),
                         loc.length(), args.recordResolver());
 
                     splitMap.put(jobImpl, node);
@@ -150,10 +150,10 @@ public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<IgniteFsTask
      *      realigned to record boundaries on destination node.
      * @param args Task argument.
      * @return GGFS job. If {@code null} is returned, the passed in file range will be skipped.
-     * @throws IgniteCheckedException If job creation failed.
+     * @throws IgniteException If job creation failed.
      */
     @Nullable public abstract IgniteFsJob createJob(IgniteFsPath path, IgniteFsFileRange range,
-        IgniteFsTaskArgs<T> args) throws IgniteCheckedException;
+        IgniteFsTaskArgs<T> args) throws IgniteException;
 
     /**
      * Maps list by node ID.

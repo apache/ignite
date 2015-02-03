@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.lang.*;
 
 import java.util.*;
 
@@ -57,7 +56,7 @@ public class VisorCacheClearTask extends VisorOneNodeTask<Set<String>, Map<Strin
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, IgniteBiTuple<Integer, Integer>> run(Set<String> arg) throws IgniteCheckedException {
+        @Override protected Map<String, IgniteBiTuple<Integer, Integer>> run(Set<String> arg) {
             Map<String, IgniteBiTuple<Integer, Integer>> res = new HashMap<>();
 
             for(GridCache cache : g.cachesx()) {

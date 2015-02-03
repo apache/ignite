@@ -30,7 +30,7 @@ import java.util.*;
  * example is to provide the simplest code example of this logic.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
@@ -70,12 +70,10 @@ public final class CacheAffinityExample {
     }
 
     /**
-     * Collocates jobs with keys they need to work on using {@link org.apache.ignite.IgniteCompute#affinityRun(String, Object, Runnable)}
+     * Collocates jobs with keys they need to work on using {@link IgniteCompute#affinityRun(String, Object, Runnable)}
      * method.
-     *
-     * @throws IgniteCheckedException If failed.
      */
-    private static void visitUsingAffinityRun() throws IgniteCheckedException {
+    private static void visitUsingAffinityRun() {
         Ignite g = Ignition.ignite();
 
         final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
@@ -97,13 +95,11 @@ public final class CacheAffinityExample {
     }
 
     /**
-     * Collocates jobs with keys they need to work on using {@link org.apache.ignite.IgniteCluster#mapKeysToNodes(String, Collection)}
+     * Collocates jobs with keys they need to work on using {@link IgniteCluster#mapKeysToNodes(String, Collection)}
      * method. The difference from {@code affinityRun(...)} method is that here we process multiple keys
      * in a single job.
-     *
-     * @throws IgniteCheckedException If failed.
      */
-    private static void visitUsingMapKeysToNodes() throws IgniteCheckedException {
+    private static void visitUsingMapKeysToNodes() {
         final Ignite g = Ignition.ignite();
 
         Collection<Integer> keys = new ArrayList<>(KEY_CNT);

@@ -20,18 +20,20 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.timeout.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -234,8 +236,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @return Participating nodes.
      */
     @Override public Collection<? extends ClusterNode> nodes() {
-        return F.viewReadOnly(futures(), new IgniteClosure<IgniteFuture<?>, ClusterNode>() {
-            @Nullable @Override public ClusterNode apply(IgniteFuture<?> f) {
+        return F.viewReadOnly(futures(), new IgniteClosure<IgniteInternalFuture<?>, ClusterNode>() {
+            @Nullable @Override public ClusterNode apply(IgniteInternalFuture<?> f) {
                 if (isMini(f))
                     return ((MiniFuture)f).node();
 
@@ -470,12 +472,12 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     @Override public boolean onNodeLeft(UUID nodeId) {
         boolean found = false;
 
-        for (IgniteFuture<?> fut : futures()) {
+        for (IgniteInternalFuture<?> fut : futures()) {
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new ClusterTopologyException("Remote node left grid (will ignore): " + nodeId));
+                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will ignore): " + nodeId));
 
                     found = true;
                 }
@@ -496,7 +498,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
             boolean found = false;
 
-            for (IgniteFuture<Boolean> fut : pending()) {
+            for (IgniteInternalFuture<Boolean> fut : pending()) {
                 if (isMini(fut)) {
                     MiniFuture mini = (MiniFuture)fut;
 
@@ -712,7 +714,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @param f Future.
      * @return {@code True} if mini-future.
      */
-    private boolean isMini(IgniteFuture<?> f) {
+    private boolean isMini(IgniteInternalFuture<?> f) {
         return f.getClass().equals(MiniFuture.class);
     }
 
@@ -886,8 +888,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                     }
                     catch (IgniteCheckedException e) {
                         // Fail the whole thing.
-                        if (e instanceof ClusterTopologyException)
-                            fut.onResult((ClusterTopologyException)e);
+                        if (e instanceof ClusterTopologyCheckedException)
+                            fut.onResult((ClusterTopologyCheckedException)e);
                         else
                             fut.onResult(e);
                     }
@@ -947,7 +949,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
                         cctx.io().send(n, req, cctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
                     }
-                    catch (ClusterTopologyException e) {
+                    catch (ClusterTopologyCheckedException e) {
                         fut.onResult(e);
                     }
                     catch (IgniteCheckedException e) {
@@ -1105,7 +1107,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         /**
          * @param e Node failure.
          */
-        void onResult(ClusterTopologyException e) {
+        void onResult(ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will ignore): " + this);
 

@@ -18,12 +18,13 @@
 package org.apache.ignite.internal.processors.schedule;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.scheduler.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
+
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -232,18 +233,18 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             try {
                 fut.get();
 
-                fail("IgniteCheckedException must have been thrown");
+                fail("IgniteException must have been thrown");
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 info("Caught expected exception: " + e);
             }
 
             try {
                 fut.get(500, SECONDS);
 
-                fail("IgniteCheckedException must have been thrown");
+                fail("IgniteException must have been thrown");
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 info("Caught expected exception: " + e);
             }
         }
@@ -269,9 +270,9 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             // Invalid delay.
             grid(0).scheduler().scheduleLocal(run, "{sdf, *} * * * * *").get();
 
-            fail("IgniteCheckedException must have been thrown");
+            fail("IgniteException must have been thrown");
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -279,9 +280,9 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             // Invalid delay.
             grid(0).scheduler().scheduleLocal(run, "{**, *} * * * * *").get();
 
-            fail("IgniteCheckedException must have been thrown");
+            fail("IgniteException must have been thrown");
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -289,9 +290,9 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             // Invalid number of executions.
             grid(0).scheduler().scheduleLocal(run, "{1, ghd} * * * * *").get();
 
-            fail("IgniteCheckedException must have been thrown");
+            fail("IgniteException must have been thrown");
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -299,9 +300,9 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             // Number of executions in pattern must be greater than zero or equal to "*".
             grid(0).scheduler().scheduleLocal(run, "{*, 0} * * * * *").get();
 
-            fail("IgniteCheckedException must have been thrown");
+            fail("IgniteException must have been thrown");
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -309,9 +310,9 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             // Invalid cron expression.
             grid(0).scheduler().scheduleLocal(run, "{2, 6} * * * * * * * * * *").get();
 
-            fail("IgniteCheckedException must have been thrown");
+            fail("IgniteException must have been thrown");
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -319,9 +320,9 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
             // Invalid both delay and number of calls.
             grid(0).scheduler().scheduleLocal(run, "{-2, -6} * * * * *").get();
 
-            fail("IgniteCheckedException must have been thrown");
+            fail("IgniteException must have been thrown");
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
     }

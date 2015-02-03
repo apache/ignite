@@ -14,11 +14,11 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
+import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
 import org.jdk8.backport.*;
 
 import java.sql.*;
@@ -110,7 +110,7 @@ public class GridReduceQueryExecutor {
      * @param qry Query.
      * @return Future.
      */
-    public IgniteFuture<GridCacheSqlResult> query(String space, GridCacheTwoStepQuery qry) {
+    public IgniteInternalFuture<GridCacheSqlResult> query(String space, GridCacheTwoStepQuery qry) {
         long qryReqId = reqIdGen.incrementAndGet();
 
         QueryRun r = new QueryRun();

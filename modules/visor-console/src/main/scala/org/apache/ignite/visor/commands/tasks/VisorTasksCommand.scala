@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.commands.tasks
 
-import org.apache.ignite.internal.util.GridUtils
+import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite.internal.util.typedef.internal.U
 import org.apache.ignite.internal.visor.event.{VisorGridEvent, VisorGridJobEvent, VisorGridTaskEvent}
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
@@ -76,7 +76,7 @@ private case class VisorExecution(
      * ID8 form of task execution ID.
      */
     lazy val id8: String =
-        GridUtils.id8(id)
+        IgniteUtils.id8(id)
 
     /**
      * ID8 of the task execution + its associated variable.
@@ -785,7 +785,7 @@ class VisorTasksCommand {
                 taskFootnote()
             }
             catch {
-                case e: IgniteCheckedException =>
+                case e: IgniteException =>
                     scold(e.getMessage)
 
                     break()
@@ -978,7 +978,7 @@ class VisorTasksCommand {
                 }
             }
             catch {
-                case e: IgniteCheckedException =>
+                case e: IgniteException =>
                     scold(e.getMessage)
 
                     break()
@@ -1110,7 +1110,7 @@ class VisorTasksCommand {
                 evtsT.render()
             }
             catch {
-                case e: IgniteCheckedException =>
+                case e: IgniteException =>
                     scold(e.getMessage)
 
                     break()
@@ -1222,7 +1222,7 @@ class VisorTasksCommand {
                 taskFootnote()
             }
             catch {
-                case e: IgniteCheckedException =>
+                case e: IgniteException =>
                     scold(e.getMessage)
 
                     break()
@@ -1338,7 +1338,7 @@ class VisorTasksCommand {
                 taskFootnote()
             }
             catch {
-                case e: IgniteCheckedException =>
+                case e: IgniteException =>
                     scold(e.getMessage)
 
                     break()

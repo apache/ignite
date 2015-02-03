@@ -21,21 +21,22 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import javax.cache.expiry.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Simple cache test.
@@ -183,7 +184,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
             ignite2.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
             ignite3.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
 
-            IgniteFuture<String> f1 = cache1.getAsync("async1");
+            IgniteInternalFuture<String> f1 = cache1.getAsync("async1");
 
             assert f1.get() == null;
 
@@ -200,8 +201,8 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
 
             assert latch.await(5, SECONDS);
 
-            IgniteFuture<String> f2 = cache2.getAsync("async1");
-            IgniteFuture<String> f3 = cache3.getAsync("async1");
+            IgniteInternalFuture<String> f2 = cache2.getAsync("async1");
+            IgniteInternalFuture<String> f3 = cache3.getAsync("async1");
 
             String v2 = f2.get();
             String v3 = f3.get();

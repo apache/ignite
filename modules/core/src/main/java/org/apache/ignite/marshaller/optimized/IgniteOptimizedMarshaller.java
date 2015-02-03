@@ -19,9 +19,9 @@ package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
@@ -163,7 +163,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
 
     /**
      * Specifies a name of the file which lists all class names to be optimized.
-     * The file path can either be absolute path, relative to {@code GRIDGAIN_HOME},
+     * The file path can either be absolute path, relative to {@code IGNITE_HOME},
      * or specify a resource file on the class path.
      * <p>
      * The format of the file is class name per line, like this:
@@ -183,7 +183,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
         if (path == null)
             return;
 
-        URL url = GridUtils.resolveGridGainUrl(path, false);
+        URL url = IgniteUtils.resolveGridGainUrl(path, false);
 
         if (url == null)
             throw new IgniteCheckedException("Failed to find resource for name: " + path);

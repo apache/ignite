@@ -20,15 +20,15 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.lang.ref.*;
 import java.util.*;
@@ -390,7 +390,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
-                    Collection<IgniteFuture<?>> futs = new ArrayList<>(1000);
+                    Collection<IgniteInternalFuture<?>> futs = new ArrayList<>(1000);
 
                     for (int i = 0; i < 1000; i++) {
                         TestValue val = new TestValue(i);
@@ -400,7 +400,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                         futs.add(cache.putxAsync(i, val));
                     }
 
-                    for (IgniteFuture<?> fut : futs)
+                    for (IgniteInternalFuture<?> fut : futs)
                         fut.get();
                 }
                 finally {

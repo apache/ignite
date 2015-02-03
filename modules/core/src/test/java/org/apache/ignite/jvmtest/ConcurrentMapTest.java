@@ -17,10 +17,10 @@
 
 package org.apache.ignite.jvmtest;
 
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.jdk8.backport.*;
 
@@ -84,7 +84,7 @@ public class ConcurrentMapTest {
 
         final AtomicInteger writes = new AtomicInteger();
 
-        IgniteFuture fut1 = GridTestUtils.runMultiThreadedAsync(
+        IgniteInternalFuture fut1 = GridTestUtils.runMultiThreadedAsync(
                 new Runnable() {
                     @Override public void run() {
                         while (!done.get()) {

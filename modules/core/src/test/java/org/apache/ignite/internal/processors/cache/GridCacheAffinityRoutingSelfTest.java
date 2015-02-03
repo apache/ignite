@@ -23,15 +23,15 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -233,7 +233,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
     }
@@ -569,7 +569,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Integer arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Integer arg) {
             return F.asList(new ComputeJobAdapter() {
                 @Override public Object execute() {
                     CacheAffinity<Object> aff = ignite.cache(null).affinity();
@@ -585,7 +585,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Boolean reduce(List<ComputeJobResult> results) {
             return results.get(0).getData();
         }
     }

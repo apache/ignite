@@ -29,7 +29,7 @@
 :: DEFAULT_CONFIG
 ::
 :: Can be used like:
-:: call "%GRIDGAIN_HOME%\bin\include\parseargs.bat" %*
+:: call "%IGNITE_HOME%\bin\include\parseargs.bat" %*
 :: if %ERRORLEVEL% neq 0 (
 ::     echo Arguments parsing failed
 ::     exit /b %ERRORLEVEL%

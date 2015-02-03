@@ -20,16 +20,15 @@ package org.apache.ignite.internal.processors.dataload;
 import org.apache.ignite.*;
 import org.apache.ignite.dataload.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.thread.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.thread.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -80,7 +79,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
             return;
 
         flusher = new IgniteThread(new GridWorker(ctx.gridName(), "grid-data-loader-flusher", log) {
-            @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+            @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
                 while (!isCancelled()) {
                     IgniteDataLoaderImpl<K, V> ldr = flushQ.take();
 
@@ -120,14 +119,14 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
         U.interrupt(flusher);
         U.join(flusher, log);
 
-        for (IgniteDataLoader<?, ?> ldr : ldrs) {
+        for (IgniteDataLoaderImpl<?, ?> ldr : ldrs) {
             if (log.isDebugEnabled())
                 log.debug("Closing active data loader on grid stop [ldr=" + ldr + ", cancel=" + cancel + ']');
 
             try {
-                ldr.close(cancel);
+                ldr.closeEx(cancel);
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 U.warn(log, "Interrupted while waiting for completion of the data loader: " + ldr, e);
             }
             catch (IgniteCheckedException e) {
@@ -144,7 +143,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
      * @param compact {@code true} if data loader should transfer data in compact format.
      * @return Data loader.
      */
-    public IgniteDataLoader<K, V> dataLoader(@Nullable String cacheName, boolean compact) {
+    public IgniteDataLoaderImpl<K, V> dataLoader(@Nullable String cacheName, boolean compact) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to create data loader (grid is stopping).");
 
@@ -153,8 +152,8 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
 
             ldrs.add(ldr);
 
-            ldr.future().listenAsync(new CI1<IgniteFuture<?>>() {
-                @Override public void apply(IgniteFuture<?> f) {
+            ldr.internalFuture().listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> f) {
                     boolean b = ldrs.remove(ldr);
 
                     assert b : "Loader has not been added to set: " + ldr;

@@ -19,22 +19,21 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 
 import javax.cache.*;
@@ -44,9 +43,9 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -393,7 +392,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         final CountDownLatch unlockLatch = new CountDownLatch(1);
         final CountDownLatch lockLatch = new CountDownLatch(1);
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     Lock lock = cache.lock(key1);
@@ -461,7 +460,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     private void checkSanityCheckDisabled(final IgniteTxConcurrency concurrency) throws Exception {
         assert !sanityCheckEnabled();
 
-        GridEx grid = grid(0);
+        IgniteEx grid = grid(0);
 
         final UUID affinityKey = primaryKeyForCache(grid);
 
@@ -545,7 +544,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
             assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0,
                 unlocks.affectedKeys().size());
 
-            GridCacheAdapter<Object, Object> cacheAdapter = ((GridKernal)grid(0)).internalCache();
+            GridCacheAdapter<Object, Object> cacheAdapter = ((IgniteKernal)grid(0)).internalCache();
 
             GridCacheAffinityManager<Object, Object> affMgr = cacheAdapter.context().affinity();
 

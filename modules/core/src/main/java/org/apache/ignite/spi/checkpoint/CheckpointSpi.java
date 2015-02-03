@@ -45,7 +45,7 @@ import org.jetbrains.annotations.*;
  * <ul>
  * <li>{@link org.apache.ignite.spi.checkpoint.noop.NoopCheckpointSpi} - default</li>
  * <li>{@link org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi}</li>
- * <li>{@gglink org.gridgain.grid.spi.checkpoint.s3.GridS3CheckpointSpi}</li>
+ * <li>{@ignitelink org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpi}</li>
  * <li>{@link org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi}</li>
  * <li>{@link org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpi}</li>
  * </ul>

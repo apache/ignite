@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.testframework.*;
 import org.jdk8.backport.*;
 
@@ -78,16 +78,16 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         // Need to increase value set in GridAbstractTest
-        sizePropVal = System.getProperty(GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE);
+        sizePropVal = System.getProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE);
 
-        System.setProperty(GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "100000");
+        System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "100000");
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        System.setProperty(GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE, sizePropVal != null ? sizePropVal : "");
+        System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, sizePropVal != null ? sizePropVal : "");
     }
 
     /** {@inheritDoc} */
@@ -120,7 +120,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
         // Expected values in cache.
         final Map<Integer, GridTuple<Integer>> expVals = new ConcurrentHashMap8<>();
 
-        IgniteFuture<?> updateFut = GridTestUtils.runAsync(new Callable<Void>() {
+        IgniteInternalFuture<?> updateFut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -169,7 +169,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
             }
         });
 
-        IgniteFuture<?> killFut = GridTestUtils.runAsync(new Callable<Void>() {
+        IgniteInternalFuture<?> killFut = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 while (!stop.get()) {
                     U.sleep(random(KILL_DELAY.get1(), KILL_DELAY.get2()));

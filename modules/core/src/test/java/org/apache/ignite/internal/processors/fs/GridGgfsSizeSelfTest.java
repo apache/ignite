@@ -25,14 +25,14 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 
 import java.io.*;
@@ -44,10 +44,10 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.processors.fs.GridGgfsFileInfo.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * {@link org.apache.ignite.internal.processors.fs.GridGgfsAttributes} test case.
@@ -307,7 +307,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
 
         // Ensure that cache was marked as GGFS data cache.
         for (int i = 0; i < GRID_CNT; i++) {
-            GridEx g = grid(i);
+            IgniteEx g = grid(i);
 
             GridCacheProjectionEx cache = (GridCacheProjectionEx)g.cachex(DATA_CACHE_NAME).cache();
 
@@ -688,7 +688,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
      * @return Node ID.
      */
     private UUID primary(GridGgfsBlockKey key) {
-        GridEx grid = grid(0);
+        IgniteEx grid = grid(0);
 
         for (ClusterNode node : grid.nodes()) {
             if (grid.cachex(DATA_CACHE_NAME).affinity().isPrimary(node, key))
@@ -705,7 +705,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
      * @return Collection of node IDs.
      */
     private Collection<UUID> primaryOrBackups(GridGgfsBlockKey key) {
-        GridEx grid = grid(0);
+        IgniteEx grid = grid(0);
 
         Collection<UUID> ids = new HashSet<>();
 
@@ -746,7 +746,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
      * @return Data cache.
      */
     private GridCacheAdapter<GridGgfsBlockKey, byte[]> cache(UUID nodeId) {
-        return (GridCacheAdapter<GridGgfsBlockKey, byte[]>)((GridEx)G.ignite(nodeId)).cachex(DATA_CACHE_NAME)
+        return (GridCacheAdapter<GridGgfsBlockKey, byte[]>)((IgniteEx)G.ignite(nodeId)).cachex(DATA_CACHE_NAME)
             .<GridGgfsBlockKey, byte[]>cache();
     }
 

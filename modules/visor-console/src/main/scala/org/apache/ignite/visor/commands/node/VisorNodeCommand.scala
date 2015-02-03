@@ -18,7 +18,7 @@
 package org.apache.ignite.visor.commands.node
 
 import org.apache.ignite.internal.GridNodeAttributes
-import org.apache.ignite.internal.util.GridUtils
+import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite.internal.util.typedef.internal.U
 import GridNodeAttributes._
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
@@ -175,7 +175,7 @@ class VisorNodeCommand {
 
                         val gridName: String = node.attribute(ATTR_GRID_NAME)
 
-                        val ver = GridUtils.productVersion(node)
+                        val ver = IgniteUtils.productVersion(node)
                         val verStr = ver.major() + "." + ver.minor() + "." + ver.maintenance() +
                             (if (F.isEmpty(ver.stage())) "" else "-" + ver.stage())
 

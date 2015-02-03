@@ -20,13 +20,13 @@ package org.apache.ignite.startup;
 import org.apache.commons.cli.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.log4j.*;
-import org.apache.log4j.varia.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.logger.*;
+import org.apache.log4j.*;
+import org.apache.log4j.varia.*;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
 import org.springframework.context.*;
@@ -47,10 +47,10 @@ import static org.apache.ignite.IgniteState.*;
  */
 public final class GridRandomCommandLineLoader {
     /** Name of the system property defining name of command line program. */
-    private static final String GRIDGAIN_PROG_NAME = "GRIDGAIN_PROG_NAME";
+    private static final String IGNITE_PROG_NAME = "IGNITE_PROG_NAME";
 
     /** Copyright text. Ant processed. */
-    private static final String COPYRIGHT = "Copyright (C) 2014 GridGain Systems.";
+    private static final String COPYRIGHT = "2015 Copyright(C) Apache Software Foundation.";
 
     /** Version. Ant processed. */
     private static final String VER = "x.x.x";
@@ -125,7 +125,7 @@ public final class GridRandomCommandLineLoader {
         if (errMsg != null)
             echo("ERROR: " + errMsg);
 
-        String runner = System.getProperty(GRIDGAIN_PROG_NAME, "randggstart.{sh|bat}");
+        String runner = System.getProperty(IGNITE_PROG_NAME, "randignite.{sh|bat}");
 
         int space = runner.indexOf(' ');
 
@@ -156,7 +156,7 @@ public final class GridRandomCommandLineLoader {
      */
     @SuppressWarnings({"BusyWait"})
     public static void main(String[] args) {
-        System.setProperty(IgniteSystemProperties.GG_UPDATE_NOTIFIER, "false");
+        System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
 
         logo();
 
@@ -297,7 +297,7 @@ public final class GridRandomCommandLineLoader {
 
         if (path == null)
             throw new IgniteCheckedException("Spring XML configuration file path is invalid: " + new File(springCfgPath) +
-                ". Note that this path should be either absolute path or a relative path to GRIDGAIN_HOME.");
+                ". Note that this path should be either absolute path or a relative path to IGNITE_HOME.");
 
         if (!path.isFile())
             throw new IgniteCheckedException("Provided file path is not a file: " + path);

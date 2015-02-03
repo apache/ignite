@@ -19,28 +19,27 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.query.*;
+import org.apache.ignite.internal.processors.query.h2.opt.*;
 import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.future.GridFinishedFutureEx;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.offheap.unsafe.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
-import org.apache.ignite.internal.processors.query.*;
-import org.apache.ignite.internal.processors.query.h2.opt.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.offheap.unsafe.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.h2.api.*;
 import org.h2.command.*;
 import org.h2.constant.*;
@@ -226,7 +225,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     };
 
     /** */
-    private volatile GridQueryConfiguration cfg = new GridQueryConfiguration();
+    private volatile IgniteQueryConfiguration cfg = new IgniteQueryConfiguration();
 
     /** */
     private volatile GridKernalContext ctx;
@@ -587,7 +586,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * @return Configuration.
      */
-    public GridQueryConfiguration configuration() {
+    public IgniteQueryConfiguration configuration() {
         return cfg;
     }
 
@@ -753,12 +752,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheSqlResult> queryTwoStep(String space, GridCacheTwoStepQuery qry) {
+    @Override public IgniteInternalFuture<GridCacheSqlResult> queryTwoStep(String space, GridCacheTwoStepQuery qry) {
         return rdcQryExec.query(space, qry);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheSqlResult> queryTwoStep(String space, String sqlQry, Object[] params) {
+    @Override public IgniteInternalFuture<GridCacheSqlResult> queryTwoStep(String space, String sqlQry, Object[] params) {
         Connection c;
 
         try {
@@ -1119,7 +1118,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             nodeId = ctx.localNodeId();
             marshaller = ctx.config().getMarshaller();
 
-            GridQueryConfiguration cfg0 = ctx.config().getQueryConfiguration();
+            IgniteQueryConfiguration cfg0 = ctx.config().getQueryConfiguration();
 
             if (cfg0 != null)
                 cfg = cfg0;
@@ -1175,7 +1174,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             createSqlFunctions();
             runInitScript();
 
-            if (getString(GG_H2_DEBUG_CONSOLE) != null) {
+            if (getString(IGNITE_H2_DEBUG_CONSOLE) != null) {
                 Connection c = DriverManager.getConnection(dbUrl);
 
                 WebServer webSrv = new WebServer();

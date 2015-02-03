@@ -23,7 +23,7 @@
        http://www.springframework.org/schema/beans
        http://www.springframework.org/schema/beans/spring-beans.xsd">
     <!--
-        Configuration below demonstrates how to setup a GridGain node with three
+        Configuration below demonstrates how to setup a Ignite node with three
         preconfigured caches.
 
         If you need to add streaming functionality, add your streamers

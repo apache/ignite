@@ -1,11 +1,11 @@
-GridGain Hadoop Module
-----------------------
+Apache Ignite Hadoop Module
+---------------------------
 
-GridGain Hadoop module provides In-Memory MapReduce engine and driver to use GGFS as Hadoop file system
+Apache Ignite Hadoop module provides In-Memory MapReduce engine and driver to use GGFS as Hadoop file system
 which are 100% compatible with HDFS and YARN.
 
-To enable Hadoop module when starting a standalone node, move 'optional/gridgain-hadoop' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+To enable Hadoop module when starting a standalone node, move 'optional/ignite-hadoop' folder to
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing Hadoop Module In Maven Project
@@ -23,8 +23,8 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-hadoop</artifactId>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-hadoop</artifactId>
             <version>${ignite.version}</version>
         </dependency>
         ...

@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 import java.io.*;
 

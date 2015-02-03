@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
@@ -65,7 +64,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
                 try {
                     U.sleep(Long.MAX_VALUE);
                 }
-                catch (IgniteInterruptedException ignored) {
+                catch (IgniteInterruptedCheckedException ignored) {
                     interrupted = true;
                 }
             }
@@ -207,13 +206,13 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
 
         spi.sleepInRebuild = false;
 
-        final IgniteFuture<?> fut1 = grid(0).cache(null).queries().rebuildIndexes(TestValue1.class);
+        final IgniteInternalFuture<?> fut1 = grid(0).cache(null).queries().rebuildIndexes(TestValue1.class);
 
         assertFalse(fut1.isCancelled());
 
         fut1.get();
 
-        final IgniteFuture<?> fut2 = grid(0).cache(null).queries().rebuildAllIndexes();
+        final IgniteInternalFuture<?> fut2 = grid(0).cache(null).queries().rebuildAllIndexes();
 
         assertFalse(fut2.isCancelled());
 
@@ -223,7 +222,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception if failed.
      */
-    private void checkCancel(final IgniteFuture<?> fut) throws Exception {
+    private void checkCancel(final IgniteInternalFuture<?> fut) throws Exception {
         assertTrue(fut.cancel());
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
@@ -232,7 +231,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
                 fut.get();
                 return null;
             }
-        }, IgniteFutureCancelledException.class, null);
+        }, IgniteFutureCancelledCheckedException.class, null);
 
         assertTrue(spi.interrupted);
 

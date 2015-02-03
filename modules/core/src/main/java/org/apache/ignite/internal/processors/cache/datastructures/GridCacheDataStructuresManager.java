@@ -22,16 +22,17 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.task.*;
+import org.apache.ignite.internal.transactions.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -41,12 +42,12 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.internal.GridClosureCallMode.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.internal.GridClosureCallMode.*;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 
 /**
  * Manager of data structures.
@@ -197,9 +198,8 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 return val;
 
             return CU.outTx(new Callable<CacheAtomicSequence>() {
-                @Override
-                public CacheAtomicSequence call() throws Exception {
-                    try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                @Override public CacheAtomicSequence call() throws Exception {
+                    try (IgniteInternalTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicSequenceValue seqVal = cast(dsView.get(key),
                             GridCacheAtomicSequenceValue.class);
 
@@ -317,7 +317,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             return CU.outTx(new Callable<CacheAtomicLong>() {
                 @Override
                 public CacheAtomicLong call() throws Exception {
-                    try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteInternalTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicLongValue val = cast(dsView.get(key),
                             GridCacheAtomicLongValue.class);
 
@@ -413,7 +413,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             return CU.outTx(new Callable<CacheAtomicReference<T>>() {
                 @Override
                 public CacheAtomicReference<T> call() throws Exception {
-                    try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteInternalTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicReferenceValue val = cast(dsView.get(key),
                             GridCacheAtomicReferenceValue.class);
 
@@ -512,7 +512,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             return CU.outTx(new Callable<CacheAtomicStamped<T, S>>() {
                 @Override
                 public CacheAtomicStamped<T, S> call() throws Exception {
-                    try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteInternalTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicStampedValue val = cast(dsView.get(key),
                             GridCacheAtomicStampedValue.class);
 
@@ -747,7 +747,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         if (hdr.empty())
             return true;
 
-        GridCacheQueueAdapter.removeKeys(cctx.kernalContext().cache().jcache(cctx.cache().name()),
+        GridCacheQueueAdapter.removeKeys(cctx.cache(),
             hdr.id(),
             name,
             hdr.collocated(),
@@ -792,7 +792,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
             return CU.outTx(new Callable<CacheCountDownLatch>() {
                     @Override public CacheCountDownLatch call() throws Exception {
-                        try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                        try (IgniteInternalTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                             GridCacheCountDownLatchValue val = cast(dsView.get(key),
                                 GridCacheCountDownLatchValue.class);
 
@@ -856,7 +856,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                     @Override public Boolean call() throws Exception {
                         GridCacheInternal key = new GridCacheInternalKeyImpl(name);
 
-                        try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                        try (IgniteInternalTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                             // Check correctness type of removable object.
                             GridCacheCountDownLatchValue val =
                                 cast(dsView.get(key), GridCacheCountDownLatchValue.class);
@@ -903,7 +903,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         return CU.outTx(
             new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
-                    try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteInternalTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         // Check correctness type of removable object.
                         R val = cast(dsView.get(key), cls);
 
@@ -933,7 +933,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      *
      * @param tx Committed transaction.
      */
-    public void onTxCommitted(IgniteTxEx<K, V> tx) {
+    public void onTxCommitted(IgniteInternalTx<K, V> tx) {
         if (!cctx.isDht() && tx.internal() && (!cctx.isColocated() || cctx.isReplicated())) {
             try {
                 waitInitialization();
@@ -1225,7 +1225,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                         nodes,
                         true).get();
                 }
-                catch (ClusterTopologyException e) {
+                catch (ClusterTopologyCheckedException e) {
                     if (log.isDebugEnabled())
                         log.debug("BlockSet job failed, will retry: " + e);
 
@@ -1238,7 +1238,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                         nodes,
                         true).get();
                 }
-                catch (ClusterTopologyException e) {
+                catch (ClusterTopologyCheckedException e) {
                     if (log.isDebugEnabled())
                         log.debug("RemoveSetData job failed, will retry: " + e);
 
@@ -1329,10 +1329,10 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 try {
                     return call.call();
                 }
-                catch (ClusterGroupEmptyException e) {
+                catch (ClusterGroupEmptyCheckedException e) {
                     throw new IgniteException(e);
                 }
-                catch (IgniteTxRollbackException | CachePartialUpdateCheckedException | ClusterTopologyException e) {
+                catch (IgniteTxRollbackCheckedException | CachePartialUpdateCheckedException | ClusterTopologyCheckedException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else {
@@ -1493,7 +1493,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
         /** {@inheritDoc} */
         @Override public Void call() throws IgniteCheckedException {
-            GridCacheAdapter cache = ((GridKernal) ignite).context().cache().internalCache(cacheName);
+            GridCacheAdapter cache = ((IgniteKernal) ignite).context().cache().internalCache(cacheName);
 
             assert cache != null;
 
@@ -1561,7 +1561,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
         /** {@inheritDoc} */
         @Override public Void call() throws IgniteCheckedException {
-            GridCacheAdapter cache = ((GridKernal) ignite).context().cache().internalCache(cacheName);
+            GridCacheAdapter cache = ((IgniteKernal) ignite).context().cache().internalCache(cacheName);
 
             assert cache != null;
 

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -414,7 +414,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
 
-        IgniteFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     info("Before lock for keys.");
 
@@ -459,7 +459,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                 }
             }, 1, "TEST-THREAD-1");
 
-        IgniteFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     info("Waiting for latch1...");
 

@@ -17,7 +17,6 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
@@ -172,31 +171,30 @@ public class GridTestTaskSession implements ComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @Override public void saveCheckpoint(String key, Object state) throws IgniteCheckedException {
+    @Override public void saveCheckpoint(String key, Object state) {
         assert false : "Not implemented";
     }
 
     /** {@inheritDoc} */
-    @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout)
-        throws IgniteCheckedException {
+    @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout) {
         assert false : "Not implemented";
     }
 
     /** {@inheritDoc} */
     @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout,
-        boolean overwrite) throws IgniteCheckedException {
+        boolean overwrite) {
         assert false : "Not implemented";
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T loadCheckpoint(String key) throws IgniteCheckedException {
+    @Override public <T> T loadCheckpoint(String key) {
         assert false : "Not implemented";
 
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeCheckpoint(String key) throws IgniteCheckedException {
+    @Override public boolean removeCheckpoint(String key) {
         assert false : "Not implemented";
 
         return false;

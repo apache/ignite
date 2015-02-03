@@ -30,7 +30,7 @@ import scala.util.Random
  * Real time popular number counter.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `ggstart.sh examples/config/example-cache.xml`
+ * enables P2P class loading: `ignite.sh examples/config/example-cache.xml`
  * <p>
  * Alternatively you can run [[CacheNodeStartup]] in another JVM which will
  * start GridGain node with `examples/config/example-cache.xml` configuration.

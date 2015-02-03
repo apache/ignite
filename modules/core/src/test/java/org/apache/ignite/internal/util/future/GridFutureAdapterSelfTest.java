@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.util.future;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -96,7 +96,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
                 return fut.get();
             }
-        }, IgniteFutureCancelledException.class, null);
+        }, IgniteFutureCancelledCheckedException.class, null);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -108,7 +108,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
                 return fut.get();
             }
-        }, IgniteFutureCancelledException.class, null);
+        }, IgniteFutureCancelledCheckedException.class, null);
     }
 
     /**
@@ -126,8 +126,8 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
         final AtomicReference<Exception> err = new AtomicReference<>();
 
         for (int i = 0; i < lsnrCnt; i++) {
-            fut.listenAsync(new CI1<IgniteFuture<String>>() {
-                @Override public void apply(IgniteFuture<String> t) {
+            fut.listenAsync(new CI1<IgniteInternalFuture<String>>() {
+                @Override public void apply(IgniteInternalFuture<String> t) {
                     if (Thread.currentThread() != runThread)
                         err.compareAndSet(null, new Exception("Wrong notification thread: " + Thread.currentThread()));
 
@@ -147,8 +147,8 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
         err.set(null);
 
-        fut.listenAsync(new CI1<IgniteFuture<String>>() {
-            @Override public void apply(IgniteFuture<String> t) {
+        fut.listenAsync(new CI1<IgniteInternalFuture<String>>() {
+            @Override public void apply(IgniteInternalFuture<String> t) {
                 if (Thread.currentThread() != runThread)
                     err.compareAndSet(null, new Exception("Wrong notification thread: " + Thread.currentThread()));
 
@@ -187,8 +187,8 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
             final AtomicReference<Exception> err = new AtomicReference<>();
 
             for (int i = 0; i < lsnrCnt; i++) {
-                fut.listenAsync(new CI1<IgniteFuture<String>>() {
-                    @Override public void apply(IgniteFuture<String> t) {
+                fut.listenAsync(new CI1<IgniteInternalFuture<String>>() {
+                    @Override public void apply(IgniteInternalFuture<String> t) {
                         if (Thread.currentThread() == runThread)
                             err.compareAndSet(null, new Exception("Wrong notification thread: " +
                                 Thread.currentThread()));
@@ -209,8 +209,8 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
             err.set(null);
 
-            fut.listenAsync(new CI1<IgniteFuture<String>>() {
-                @Override public void apply(IgniteFuture<String> t) {
+            fut.listenAsync(new CI1<IgniteInternalFuture<String>>() {
+                @Override public void apply(IgniteInternalFuture<String> t) {
                     if (Thread.currentThread() == runThread)
                         err.compareAndSet(null, new Exception("Wrong notification thread: " + Thread.currentThread()));
 
@@ -235,8 +235,8 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("ErrorNotRethrown")
     public void testChaining() throws Exception {
-        final CX1<IgniteFuture<Object>, Object> passThrough = new CX1<IgniteFuture<Object>, Object>() {
-            @Override public Object applyx(IgniteFuture<Object> f) throws IgniteCheckedException {
+        final CX1<IgniteInternalFuture<Object>, Object> passThrough = new CX1<IgniteInternalFuture<Object>, Object>() {
+            @Override public Object applyx(IgniteInternalFuture<Object> f) throws IgniteCheckedException {
                 return f.get();
             }
         };
@@ -254,7 +254,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
             // Test result returned.
 
             GridFutureAdapter<Object> fut = new GridFutureAdapter<>(ctx);
-            IgniteFuture<Object> chain = fut.chain(passThrough);
+            IgniteInternalFuture<Object> chain = fut.chain(passThrough);
 
             assertFalse(fut.isDone());
             assertFalse(chain.isDone());
@@ -264,7 +264,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
                 fail("Expects timeout exception.");
             }
-            catch (IgniteFutureTimeoutException e) {
+            catch (IgniteFutureTimeoutCheckedException e) {
                 info("Expected timeout exception: " + e.getMessage());
             }
 
@@ -277,14 +277,14 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
             fut = new GridFutureAdapter<>(ctx);
             chain = fut.chain(passThrough);
 
-            fut.onDone(new ClusterGroupEmptyException("test exception"));
+            fut.onDone(new ClusterGroupEmptyCheckedException("test exception"));
 
             try {
                 chain.get();
 
                 fail("Expects failed with exception.");
             }
-            catch (ClusterGroupEmptyException e) {
+            catch (ClusterGroupEmptyCheckedException e) {
                 info("Expected exception: " + e.getMessage());
             }
 
@@ -333,7 +333,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (IgniteFutureTimeoutException e) {
+        catch (IgniteFutureTimeoutCheckedException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -350,7 +350,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (IgniteFutureCancelledException e) {
+        catch (IgniteFutureCancelledCheckedException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -359,7 +359,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (IgniteFutureCancelledException e) {
+        catch (IgniteFutureCancelledCheckedException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -425,7 +425,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (IgniteFutureCancelledException e) {
+        catch (IgniteFutureCancelledCheckedException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -434,7 +434,7 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (IgniteFutureCancelledException e) {
+        catch (IgniteFutureCancelledCheckedException e) {
             info("Caught expected exception: " + e);
         }
     }

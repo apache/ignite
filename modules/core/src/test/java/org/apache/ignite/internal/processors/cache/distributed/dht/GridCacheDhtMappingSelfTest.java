@@ -28,8 +28,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
@@ -90,7 +90,7 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
             Ignite g = grid(i);
 
             GridDhtCacheAdapter<Integer, Integer> dht = ((GridNearCacheAdapter<Integer, Integer>)
-                ((GridKernal)g).<Integer, Integer>internalCache()).dht();
+                ((IgniteKernal)g).<Integer, Integer>internalCache()).dht();
 
             if (dht.peek(kv) != null) {
                 info("Key found on node: " + g.cluster().localNode().id());

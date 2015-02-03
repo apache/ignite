@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -199,12 +199,12 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
      */
     private static class GridEventTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return Collections.singleton(new GridEventTestJob());
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) {
             assert results != null;
             assert results.size() == 1;
 
@@ -217,7 +217,7 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
      */
     private static class GridEventTestJob extends ComputeJobAdapter {
         /** {@inheritDoc} */
-        @Override public String execute() throws IgniteCheckedException {
+        @Override public String execute() {
             return "GridEventTestJob-test-event.";
         }
     }

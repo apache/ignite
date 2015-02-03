@@ -232,14 +232,14 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
         private boolean startCalled;
 
         /** {@inheritDoc} */
-        @Override public void start() throws IgniteCheckedException {
+        @Override public void start() {
             startCalled = true;
 
             assertNotNull(ignite);
         }
 
         /** {@inheritDoc} */
-        @Override public void stop() throws IgniteCheckedException {
+        @Override public void stop() {
             // No-op.
         }
 
@@ -291,14 +291,14 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
         private boolean startCalled;
 
         /** {@inheritDoc} */
-        @Override public void start() throws IgniteCheckedException {
+        @Override public void start() {
             startCalled = true;
 
             assertNotNull(ignite);
         }
 
         /** {@inheritDoc} */
-        @Override public void stop() throws IgniteCheckedException {
+        @Override public void stop() {
             // No-op.
         }
 

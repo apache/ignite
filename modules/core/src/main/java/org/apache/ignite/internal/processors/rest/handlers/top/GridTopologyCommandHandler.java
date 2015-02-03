@@ -22,8 +22,6 @@ import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.processors.port.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
@@ -32,6 +30,7 @@ import org.apache.ignite.internal.processors.rest.request.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.*;
 
 import java.net.*;
 import java.util.*;
@@ -59,7 +58,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
         assert req instanceof GridRestTopologyRequest : "Invalid command for topology handler: " + req;
 
         assert SUPPORTED_COMMANDS.contains(req.command());

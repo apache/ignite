@@ -68,7 +68,7 @@ public class GridTaskInstantiationSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable String arg) throws IgniteCheckedException {
+            @Nullable String arg) {
             for (ClusterNode node : subgrid)
                 if (node.id().equals(ignite.configuration().getNodeId()))
                     return Collections.singletonMap(new ComputeJobAdapter() {
@@ -77,7 +77,7 @@ public class GridTaskInstantiationSelfTest extends GridCommonAbstractTest {
                         }
                     }, node);
 
-            throw new IgniteCheckedException("Local node not found.");
+            throw new IgniteException("Local node not found.");
         }
 
         /** {@inheritDoc} */

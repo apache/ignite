@@ -21,12 +21,12 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -109,7 +109,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
 
         final int keyCnt = 10000;
 
-        final IgniteFuture<?> fut = multithreadedAsync(
+        final IgniteInternalFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     int threadIdx = threadIdxGen.getAndIncrement() % 2;
@@ -129,7 +129,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
             },
             10);
 
-        IgniteFuture<?> fut1 = multithreadedAsync(
+        IgniteInternalFuture<?> fut1 = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     while (!fut.isDone()) {
@@ -166,7 +166,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
 
         final int keyCnt = 10000;
 
-        final IgniteFuture<?> fut = multithreadedAsync(
+        final IgniteInternalFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     int threadIdx = threadIdxGen.getAndIncrement() % 2;
@@ -200,7 +200,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
             },
             10);
 
-        IgniteFuture<?> fut1 = multithreadedAsync(
+        IgniteInternalFuture<?> fut1 = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     while (!fut.isDone()) {
@@ -239,7 +239,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
 
         final ObjectValue val = new ObjectValue("String value");
 
-        final IgniteFuture<?> fut = multithreadedAsync(
+        final IgniteInternalFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     int threadIdx = threadIdxGen.getAndIncrement() % 2;
@@ -273,7 +273,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
             },
             10);
 
-        IgniteFuture<?> fut1 = multithreadedAsync(
+        IgniteInternalFuture<?> fut1 = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     while (!fut.isDone()) {
@@ -315,7 +315,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
         for (int i = 0; i < vals.length; i++)
             vals[i] = new ObjectValue("Object value " + i);
 
-        final IgniteFuture<?> fut = multithreadedAsync(
+        final IgniteInternalFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     int threadIdx = threadIdxGen.getAndIncrement() % 2;
@@ -349,7 +349,7 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
             },
             1);
 
-        IgniteFuture<?> fut1 = multithreadedAsync(
+        IgniteInternalFuture<?> fut1 = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     while (!fut.isDone()) {

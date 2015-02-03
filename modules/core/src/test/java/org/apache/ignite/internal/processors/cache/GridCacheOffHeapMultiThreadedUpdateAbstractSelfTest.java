@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 
@@ -272,7 +273,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
         final int THREADS = 5;
         final int ITERATIONS_PER_THREAD = iterations();
 
-        IgniteFuture<Long> putFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+        IgniteInternalFuture<Long> putFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 for (int i = 0; i < ITERATIONS_PER_THREAD; i++) {
                     if (i % 1000 == 0)
@@ -287,7 +288,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        IgniteFuture<Long> getFut;
+        IgniteInternalFuture<Long> getFut;
 
         try {
             getFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {

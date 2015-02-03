@@ -24,18 +24,18 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -129,7 +129,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         Ignite g = G.ignite(nodeId);
 
         GridDhtCacheAdapter<Object, Integer> dht =
-            ((GridKernal)g).<Object, Integer>internalCache().context().near().dht();
+            ((IgniteKernal)g).<Object, Integer>internalCache().context().near().dht();
 
         return dht.peekEx(key);
     }
@@ -142,7 +142,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
     @Nullable private static GridCacheEntryEx<Object, Integer> nearEntry(UUID nodeId, Object key) {
         Ignite g = G.ignite(nodeId);
 
-        GridNearCacheAdapter<Object, Integer> near = ((GridKernal)g).<Object, Integer>internalCache().context().near();
+        GridNearCacheAdapter<Object, Integer> near = ((IgniteKernal)g).<Object, Integer>internalCache().context().near();
 
         return near.peekEx(key);
     }
@@ -460,7 +460,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
             onRemoveItemQueried(putCntr, ignite, i);
 
             if (i % 50 == 0)
-                ((GridKernal) ignite).internalCache().context().tm().printMemoryStats();
+                ((IgniteKernal) ignite).internalCache().context().tm().printMemoryStats();
         }
     }
 

@@ -21,17 +21,17 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Test to check slow TX warning timeout defined by
- * {@link org.apache.ignite.IgniteSystemProperties#GG_SLOW_TX_WARN_TIMEOUT}
+ * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_SLOW_TX_WARN_TIMEOUT}
  * system property.
  */
 public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
@@ -74,7 +74,7 @@ public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
      */
     public void testWarningOutput() throws Exception {
         try {
-            GridKernal g = (GridKernal)startGrid(1);
+            IgniteKernal g = (IgniteKernal)startGrid(1);
 
             info(">>> Slow tx timeout is not set, long-live txs simulated.");
 
@@ -109,7 +109,7 @@ public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
     private void checkCache(Ignite g, String cacheName, boolean simulateTimeout,
         boolean configureTimeout) throws Exception {
         if (configureTimeout) {
-            GridCacheAdapter<Integer, Integer> cache = ((GridKernal)g).internalCache(cacheName);
+            GridCacheAdapter<Integer, Integer> cache = ((IgniteKernal)g).internalCache(cacheName);
 
             cache.context().tm().slowTxWarnTimeout(500);
         }

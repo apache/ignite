@@ -21,25 +21,24 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.checkpoint.noop.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests multi-update locks.
@@ -108,7 +107,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
         startGrids(3);
 
         try {
-            GridKernal g = (GridKernal)grid(0);
+            IgniteKernal g = (IgniteKernal)grid(0);
 
             GridCacheContext<Object, Object> cctx = g.internalCache().context();
 
@@ -116,7 +115,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
 
             long topVer = cache.beginMultiUpdate();
 
-            IgniteFuture<?> startFut;
+            IgniteInternalFuture<?> startFut;
 
             try {
                 assertEquals(3, topVer);

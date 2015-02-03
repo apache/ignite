@@ -21,14 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.managed.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -192,7 +192,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
             fail("Failed to receive mismatching configuration exception.");
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Received mismatching configuration exception: " + e.getMessage());
         }
     }

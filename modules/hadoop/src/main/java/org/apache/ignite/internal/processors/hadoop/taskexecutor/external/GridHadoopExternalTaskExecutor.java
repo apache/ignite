@@ -18,20 +18,20 @@
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.*;
 import org.apache.ignite.internal.processors.hadoop.message.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.child.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -157,8 +157,8 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                         "[jobId=" + meta.jobId() + ", meta=" + meta + ']');
             }
             else {
-                proc.initFut.listenAsync(new CI1<IgniteFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>>>() {
-                    @Override public void apply(IgniteFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>> f) {
+                proc.initFut.listenAsync(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>>>() {
+                    @Override public void apply(IgniteInternalFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>> f) {
                         try {
                             f.get();
 
@@ -224,9 +224,9 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
             final HadoopProcess proc0 = proc;
 
-            proc.initFut.listenAsync(new CI1<IgniteFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>>>() {
+            proc.initFut.listenAsync(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>>>() {
                 @Override public void apply(
-                    IgniteFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>> f) {
+                    IgniteInternalFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>> f) {
                     if (!busyLock.tryReadLock())
                         return;
 
@@ -303,7 +303,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
         meta.classpath(Arrays.asList(System.getProperty("java.class.path").split(File.pathSeparator)));
         meta.jvmOptions(Arrays.asList("-Xmx1g", "-ea", "-XX:+UseConcMarkSweepGC", "-XX:+CMSClassUnloadingEnabled",
-            "-DGRIDGAIN_HOME=" + U.getGridGainHome()));
+            "-DIGNITE_HOME=" + U.getGridGainHome()));
 
         return meta;
     }
@@ -405,8 +405,8 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
             }
         }, true);
 
-        fut.listenAsync(new CI1<IgniteFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>>>() {
-            @Override public void apply(IgniteFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>> f) {
+        fut.listenAsync(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>>>() {
+            @Override public void apply(IgniteInternalFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>> f) {
                 try {
                     // Make sure there were no exceptions.
                     f.get();
@@ -790,9 +790,9 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
                 terminated = true;
 
                 if (!initFut.isDone())
-                    initFut.listenAsync(new CI1<IgniteFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>>>() {
+                    initFut.listenAsync(new CI1<IgniteInternalFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>>>() {
                         @Override public void apply(
-                            IgniteFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>> f) {
+                            IgniteInternalFuture<IgniteBiTuple<Process, GridHadoopProcessDescriptor>> f) {
                             proc.destroy();
                         }
                     });

@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.cache.eviction;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
@@ -124,7 +124,7 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
 
         info("Finished load cache.");
 
-        IgniteFuture<?> evictFut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> evictFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 Collection<Long> keys = new ArrayList<>(batchSize);
 
@@ -151,7 +151,7 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
 
         final AtomicInteger unswappedKeys = new AtomicInteger();
 
-        IgniteFuture<?> unswapFut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> unswapFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     Collection<Long> keys = new ArrayList<>(batchSize);

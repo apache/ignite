@@ -18,6 +18,7 @@
 package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
@@ -128,7 +129,7 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      *
      * @return See {@link CacheProjection#reloadAsync(Object)}.
      */
-    public IgniteFuture<V> reloadAsync();
+    public IgniteInternalFuture<V> reloadAsync();
 
     /**
      * This method has the same semantic as
@@ -228,7 +229,7 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      *
      * @return See {@link CacheProjection#getAsync(Object)}.
      */
-    public IgniteFuture<V> getAsync();
+    public IgniteInternalFuture<V> getAsync();
 
     /**
      * This method has the same semantic as {@link #set(Object, org.apache.ignite.lang.IgnitePredicate[])} method, however it
@@ -258,7 +259,7 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      * @param filter See {@link CacheProjection#putAsync(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
      * @return See {@link CacheProjection#putAsync(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
-    public IgniteFuture<V> setAsync(V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
+    public IgniteInternalFuture<V> setAsync(V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
 
     /**
      * This method has the same semantic as
@@ -277,7 +278,7 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      * @param val See {@link CacheProjection#putIfAbsentAsync(Object, Object)}
      * @return See {@link CacheProjection#putIfAbsentAsync(Object, Object)}.
      */
-    public IgniteFuture<V> setIfAbsentAsync(V val);
+    public IgniteInternalFuture<V> setIfAbsentAsync(V val);
 
     /**
      * This method has the same semantic as
@@ -299,7 +300,7 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      * @param filter See {@link CacheProjection#putxAsync(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
      * @return See {@link CacheProjection#putxAsync(Object, Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
-    public IgniteFuture<Boolean> setxAsync(V val,
+    public IgniteInternalFuture<Boolean> setxAsync(V val,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
 
     /**
@@ -319,7 +320,7 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      * @param val See {@link CacheProjection#putxIfAbsentAsync(Object, Object)}
      * @return See {@link CacheProjection#putxIfAbsentAsync(Object, Object)}.
      */
-    public IgniteFuture<Boolean> setxIfAbsentAsync(V val);
+    public IgniteInternalFuture<Boolean> setxIfAbsentAsync(V val);
 
     /**
      * This method has the same semantic as
@@ -338,7 +339,7 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      * @param val See {@link CacheProjection#replaceAsync(Object, Object)}
      * @return See {@link CacheProjection#replaceAsync(Object, Object)}.
      */
-    public IgniteFuture<V> replaceAsync(V val);
+    public IgniteInternalFuture<V> replaceAsync(V val);
 
     /**
      * This method has the same semantic as
@@ -357,7 +358,7 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      * @param val See {@link CacheProjection#replacexAsync(Object, Object)}
      * @return See {@link CacheProjection#replacexAsync(Object, Object)}.
      */
-    public IgniteFuture<Boolean> replacexAsync(V val);
+    public IgniteInternalFuture<Boolean> replacexAsync(V val);
 
     /**
      * This method has the same semantic as
@@ -378,7 +379,7 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      * @param newVal See {@link CacheProjection#replaceAsync(Object, Object, Object)}
      * @return See {@link CacheProjection#replaceAsync(Object, Object)}.
      */
-    public IgniteFuture<Boolean> replaceAsync(V oldVal, V newVal);
+    public IgniteInternalFuture<Boolean> replaceAsync(V oldVal, V newVal);
 
     /**
      * This method has the same semantic as
@@ -397,7 +398,7 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      * @param filter See {@link CacheProjection#removeAsync(Object, org.apache.ignite.lang.IgnitePredicate[])}.
      * @return See {@link CacheProjection#removeAsync(Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
-    public IgniteFuture<V> removeAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
+    public IgniteInternalFuture<V> removeAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
 
     /**
      * This method has the same semantic as
@@ -416,7 +417,7 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      * @param filter See {@link CacheProjection#removexAsync(Object, org.apache.ignite.lang.IgnitePredicate[])}.
      * @return See {@link CacheProjection#removexAsync(Object, org.apache.ignite.lang.IgnitePredicate[])}.
      */
-    public IgniteFuture<Boolean> removexAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
+    public IgniteInternalFuture<Boolean> removexAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
 
     /**
      * This method has the same semantic as
@@ -435,7 +436,7 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      * @param val See {@link CacheProjection#removeAsync(Object, Object)}.
      * @return See {@link CacheProjection#removeAsync(Object, Object)}.
      */
-    public IgniteFuture<Boolean> removeAsync(V val);
+    public IgniteInternalFuture<Boolean> removeAsync(V val);
 
     /**
      * This method has the same semantic as
@@ -507,7 +508,7 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      *      {@code false} otherwise.
      * @throws org.apache.ignite.internal.processors.cache.CacheFlagException If flags validation failed.
      */
-    public IgniteFuture<Boolean> lockAsync(long timeout,
+    public IgniteInternalFuture<Boolean> lockAsync(long timeout,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
 
     /**
@@ -539,7 +540,7 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
     public boolean isCached();
 
     /**
-     * Gets size of serialized key and value in addition to any overhead added by {@code GridGain} itself.
+     * Gets size of serialized key and value in addition to any overhead added by {@code Ignite} itself.
      *
      * @return size in bytes.
      * @throws IgniteCheckedException If failed to evaluate entry size.

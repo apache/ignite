@@ -20,17 +20,19 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -200,7 +202,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
                 }
             }
 
-            for (IgniteFuture<?> fut : atomicFuts.values()) {
+            for (IgniteInternalFuture<?> fut : atomicFuts.values()) {
                 if (fut instanceof GridCacheFuture) {
                     GridCacheFuture cacheFut = (GridCacheFuture)fut;
 
@@ -298,7 +300,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
      * @param fut Future.
      */
     public void addAtomicFuture(GridCacheVersion futVer, GridCacheAtomicFuture<K, ?> fut) {
-        IgniteFuture<?> old = atomicFuts.put(futVer, fut);
+        IgniteInternalFuture<?> old = atomicFuts.put(futVer, fut);
 
         assert old == null;
     }
@@ -316,7 +318,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
      * @param futVer Future ID.
      * @return Future.
      */
-    @Nullable public IgniteFuture<?> atomicFuture(GridCacheVersion futVer) {
+    @Nullable public IgniteInternalFuture<?> atomicFuture(GridCacheVersion futVer) {
         return atomicFuts.get(futVer);
     }
 
@@ -324,7 +326,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
      * @param futVer Future ID.
      * @return Removed future.
      */
-    @Nullable public IgniteFuture<?> removeAtomicFuture(GridCacheVersion futVer) {
+    @Nullable public IgniteInternalFuture<?> removeAtomicFuture(GridCacheVersion futVer) {
         return atomicFuts.remove(futVer);
     }
 
@@ -496,10 +498,10 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
      * @param ver Version.
      * @return All futures for given lock version.
      */
-    public <T> Collection<? extends IgniteFuture<T>> futures(GridCacheVersion ver) {
+    public <T> Collection<? extends IgniteInternalFuture<T>> futures(GridCacheVersion ver) {
         Collection c = futs.get(ver);
 
-        return c == null ? Collections.<IgniteFuture<T>>emptyList() : (Collection<IgniteFuture<T>>)c;
+        return c == null ? Collections.<IgniteInternalFuture<T>>emptyList() : (Collection<IgniteInternalFuture<T>>)c;
     }
 
     /**
@@ -902,7 +904,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
      * @return Future that signals when all locks for given partitions are released.
      */
     @SuppressWarnings({"unchecked"})
-    public IgniteFuture<?> finishLocks(long topVer) {
+    public IgniteInternalFuture<?> finishLocks(long topVer) {
         assert topVer > 0;
         return finishLocks(null, topVer);
     }
@@ -914,7 +916,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
      * @param topVer Topology version to wait for.
      * @return Explicit locks release future.
      */
-    public IgniteFuture<?> finishExplicitLocks(long topVer) {
+    public IgniteInternalFuture<?> finishExplicitLocks(long topVer) {
         GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>(cctx.kernalContext());
 
         for (GridCacheExplicitLockSpan<K> span : pendingExplicit.values()) {
@@ -934,14 +936,14 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
      *
      * @return Finish update future.
      */
-    public IgniteFuture<?> finishAtomicUpdates(long topVer) {
+    public IgniteInternalFuture<?> finishAtomicUpdates(long topVer) {
         GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>(cctx.kernalContext());
 
-        res.ignoreChildFailures(ClusterTopologyException.class, CachePartialUpdateCheckedException.class);
+        res.ignoreChildFailures(ClusterTopologyCheckedException.class, CachePartialUpdateCheckedException.class);
 
         for (GridCacheAtomicFuture<K, ?> fut : atomicFuts.values()) {
             if (fut.waitForPartitionExchange() && fut.topologyVersion() < topVer)
-                res.add((IgniteFuture<Object>)fut);
+                res.add((IgniteInternalFuture<Object>)fut);
         }
 
         res.markInitialized();
@@ -955,7 +957,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
      * @return Future that signals when all locks for given keys are released.
      */
     @SuppressWarnings("unchecked")
-    public IgniteFuture<?> finishKeys(Collection<K> keys, long topVer) {
+    public IgniteInternalFuture<?> finishKeys(Collection<K> keys, long topVer) {
         if (!(keys instanceof Set))
             keys = new HashSet<>(keys);
 
@@ -973,7 +975,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
      * @param topVer Topology version.
      * @return Future that signals when all locks for given partitions will be released.
      */
-    private IgniteFuture<?> finishLocks(@Nullable final IgnitePredicate<K> keyFilter, long topVer) {
+    private IgniteInternalFuture<?> finishLocks(@Nullable final IgnitePredicate<K> keyFilter, long topVer) {
         assert topVer != 0;
 
         if (topVer < 0)
@@ -993,8 +995,8 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
         finishFuts.add(finishFut);
 
-        finishFut.listenAsync(new CI1<IgniteFuture<?>>() {
-            @Override public void apply(IgniteFuture<?> e) {
+        finishFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> e) {
                 finishFuts.remove(finishFut);
 
                 // This call is required to make sure that the concurrent queue
@@ -1164,11 +1166,11 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
         /** {@inheritDoc} */
         @Override public String toString() {
             if (!pendingLocks.isEmpty()) {
-                Map<GridCacheVersion, IgniteTxEx> txs = new HashMap<>(1, 1.0f);
+                Map<GridCacheVersion, IgniteInternalTx> txs = new HashMap<>(1, 1.0f);
 
                 for (Collection<GridCacheMvccCandidate<K>> cands : pendingLocks.values())
                     for (GridCacheMvccCandidate<K> c : cands)
-                        txs.put(c.version(), cctx.tm().<IgniteTxEx>tx(c.version()));
+                        txs.put(c.version(), cctx.tm().<IgniteInternalTx>tx(c.version()));
 
                 return S.toString(FinishLockFuture.class, this, "txs=" + txs + ", super=" + super.toString());
             }

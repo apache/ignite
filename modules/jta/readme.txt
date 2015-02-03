@@ -1,10 +1,10 @@
-GridGain JTA Module
--------------------
+Apache Ignite JTA Module
+------------------------
 
-GridGain JTA module provides capabilities to integrate GridGain cache transactions with JTA.
+Apache Ignite JTA module provides capabilities to integrate Apache Ignite cache transactions with JTA.
 
-To enable JTA module when starting a standalone node, move 'optional/gridgain-jta' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+To enable JTA module when starting a standalone node, move 'optional/ignite-jta' folder to
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing JTA Module In Maven Project
@@ -22,8 +22,8 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-jta</artifactId>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-jta</artifactId>
             <version>${ignite.version}</version>
         </dependency>
         ...

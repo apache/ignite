@@ -20,13 +20,13 @@ package org.apache.ignite.testframework.junits.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -531,12 +531,12 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
 
         /** {@inheritDoc} */
-        @Override public void commit() throws IgniteCheckedException {
+        @Override public void commit() {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws IgniteCheckedException {
+        @Override public void close() {
             // No-op.
         }
 
@@ -556,7 +556,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
 
         /** {@inheritDoc} */
-        @Override public void rollback() throws IgniteCheckedException {
+        @Override public void rollback() {
             // No-op.
         }
     }

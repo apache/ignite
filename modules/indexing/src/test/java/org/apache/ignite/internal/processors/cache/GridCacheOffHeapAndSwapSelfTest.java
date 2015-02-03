@@ -23,25 +23,25 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCachePeekMode.*;
+import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Tests off heap storage when both offheaped and swapped entries exists.
@@ -285,7 +285,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
     public void testPartitionIterators() throws Exception {
         populate();
 
-        GridCacheAdapter<Long, Object> cacheAdapter = ((GridKernal)grid(0)).internalCache();
+        GridCacheAdapter<Long, Object> cacheAdapter = ((IgniteKernal)grid(0)).internalCache();
         GridNearCacheAdapter<Long, Object> cache = (GridNearCacheAdapter<Long, Object>)cacheAdapter;
 
         Map<Integer, Collection<Long>> grouped = new HashMap<>();
@@ -512,7 +512,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
     public void testIteratorsCleanup() throws Exception {
         final GridCache<Long, Long> cache = populate();
 
-        IgniteFuture<?> offHeapFut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> offHeapFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     Iterator<Map.Entry<Long, Long>> ohIt = cache.offHeapIterator();
@@ -535,7 +535,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
             }
         }, 20);
 
-        IgniteFuture<?> swapFut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> swapFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     Iterator<Map.Entry<Long, Long>> ohIt = cache.swapIterator();
@@ -566,6 +566,6 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
         // Runs iterator queue cleanup in GridCacheSwapManager.read method.
         cache.get(1L + ENTRY_CNT);
 
-        assertEquals(0, ((GridKernal)grid(0)).internalCache().context().swap().iteratorSetSize());
+        assertEquals(0, ((IgniteKernal)grid(0)).internalCache().context().swap().iteratorSetSize());
     }
 }

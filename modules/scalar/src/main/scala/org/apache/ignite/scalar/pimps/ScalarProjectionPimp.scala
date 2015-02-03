@@ -17,9 +17,8 @@
 
 package org.apache.ignite.scalar.pimps
 
-import org.apache.ignite._
-import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterNode}
-import org.apache.ignite.lang.{IgniteFuture, IgniteFutureCancelledException, IgnitePredicate}
+import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterGroup, ClusterNode}
+import org.apache.ignite.lang.{IgniteFuture, IgnitePredicate}
 import org.jetbrains.annotations._
 
 /**
@@ -599,8 +598,8 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *      Note that in case of dynamic projection this method will take a snapshot of all the
      *      nodes at the time of this call, apply all filtering predicates, if any, and if the
      *      resulting collection of nodes is empty - the exception will be thrown.
-     * @throws IgniteInterruptedException Subclass of `IgniteCheckedException` thrown if the wait was interrupted.
-     * @throws IgniteFutureCancelledException Subclass of `IgniteCheckedException` thrown if computation was cancelled.
+     * @throws IgniteInterruptedException Subclass of `IgniteException` thrown if the wait was interrupted.
+     * @throws IgniteFutureCancelledException Subclass of `IgniteException` thrown if computation was cancelled.
      */
     def affinityRun$(cacheName: String, @Nullable affKey: Any, @Nullable r: Run, @Nullable p: NF) {
         affinityRunAsync$(cacheName, affKey, r, p).get
@@ -639,13 +638,13 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *      If `null` - this method is no-op.
      * @param p Optional filtering predicate. If `null` provided - all nodes in this projection will be used for topology.
      * @throws IgniteCheckedException Thrown in case of any error.
-     * @throws ClusterGroupEmptyException Thrown in case when this projection is empty.
+     * @throws ClusterGroupEmptyCheckedException Thrown in case when this projection is empty.
      *      Note that in case of dynamic projection this method will take a snapshot of all the
      *      nodes at the time of this call, apply all filtering predicates, if any, and if the
      *      resulting collection of nodes is empty - the exception will be thrown.
      * @return Non-cancellable future of this execution.
-     * @throws IgniteInterruptedException Subclass of `IgniteCheckedException` thrown if the wait was interrupted.
-     * @throws IgniteFutureCancelledException Subclass of `IgniteCheckedException` thrown if computation was cancelled.
+     * @throws IgniteInterruptedException Subclass of `IgniteException` thrown if the wait was interrupted.
+     * @throws IgniteFutureCancelledException Subclass of `IgniteException` thrown if computation was cancelled.
      */
     def affinityRunAsync$(cacheName: String, @Nullable affKey: Any, @Nullable r: Run,
         @Nullable p: NF): IgniteFuture[_] = {

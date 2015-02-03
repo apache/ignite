@@ -22,7 +22,7 @@
  * To execute this script simply start up an instance of GridGain with cache enabled.
  * You can use any cache configuration from examples/config folder as follows:
  * ----
- * ${GRIDGAIN_HOME}/bin/ggstart.sh examples/config/example-cache.xml
+ * ${IGNITE_HOME}/bin/ignite.sh examples/config/example-cache.xml
  * ----
  *
  * Make sure you have correctly specified $CACHE_NAME script global variable

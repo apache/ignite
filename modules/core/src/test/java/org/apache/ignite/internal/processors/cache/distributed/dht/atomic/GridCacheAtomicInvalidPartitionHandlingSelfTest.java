@@ -17,22 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
 
@@ -177,7 +175,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
             System.err.println("FINISHED PUTS");
 
             // Start put threads.
-            IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     Random rnd = new Random();
 
@@ -242,7 +240,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                 for (int i = 0; i < gridCnt; i++) {
                     ClusterNode locNode = grid(i).localNode();
 
-                    GridCacheAdapter<Object, Object> c = ((GridKernal)grid(i)).internalCache();
+                    GridCacheAdapter<Object, Object> c = ((IgniteKernal)grid(i)).internalCache();
 
                     GridCacheEntryEx<Object, Object> entry = c.peekEx(k);
 
@@ -304,7 +302,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                 if (delayMessage((GridIoMessage)msg))
                     U.sleep(ThreadLocalRandom8.current().nextInt(250) + 1);
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 throw new IgniteSpiException(e);
             }
 

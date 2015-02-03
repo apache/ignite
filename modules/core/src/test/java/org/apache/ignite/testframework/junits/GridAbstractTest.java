@@ -24,22 +24,22 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.license.*;
+import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.log4j.*;
-import org.apache.ignite.internal.processors.license.*;
-import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.spi.checkpoint.sharedfs.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
+import org.apache.log4j.*;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
 import org.springframework.context.*;
@@ -94,7 +94,7 @@ public abstract class GridAbstractTest extends TestCase {
     private static long ts = System.currentTimeMillis();
 
     static {
-        System.setProperty(IgniteSystemProperties.GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
+        System.setProperty(IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
 
         Thread timer = new Thread(new GridTestClockTimer(), "gridgain-clock-for-tests");
 
@@ -231,7 +231,7 @@ public abstract class GridAbstractTest extends TestCase {
 
             file.setName("FILE");
             file.setThreshold(log4jLevel);
-            file.setFile(home() + "/work/log/gridgain.log");
+            file.setFile(home() + "/work/log/ignite.log");
             file.setAppend(false);
             file.setMaxFileSize("10MB");
             file.setMaxBackupIndex(10);
@@ -297,7 +297,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      * @return Future.
      */
-    protected IgniteFuture<?> multithreadedAsync(Runnable r, int threadNum) throws Exception {
+    protected IgniteInternalFuture<?> multithreadedAsync(Runnable r, int threadNum) throws Exception {
         return multithreadedAsync(r, threadNum, getTestGridName());
     }
 
@@ -312,7 +312,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      * @return Future.
      */
-    protected IgniteFuture<?> multithreadedAsync(Runnable r, int threadNum, String threadName) throws Exception {
+    protected IgniteInternalFuture<?> multithreadedAsync(Runnable r, int threadNum, String threadName) throws Exception {
         return GridTestUtils.runMultiThreadedAsync(r, threadNum, threadName);
     }
 
@@ -350,7 +350,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      * @return Future.
      */
-    protected IgniteFuture<?> multithreadedAsync(Callable<?> c, int threadNum) throws Exception {
+    protected IgniteInternalFuture<?> multithreadedAsync(Callable<?> c, int threadNum) throws Exception {
         return multithreadedAsync(c, threadNum, getTestGridName());
     }
 
@@ -364,7 +364,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      * @return Future.
      */
-    protected IgniteFuture<?> multithreadedAsync(Callable<?> c, int threadNum, String threadName) throws Exception {
+    protected IgniteInternalFuture<?> multithreadedAsync(Callable<?> c, int threadNum, String threadName) throws Exception {
         return GridTestUtils.runMultiThreadedAsync(c, threadNum, threadName);
     }
 
@@ -653,7 +653,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
-        return GridGainEx.start(optimize(getConfiguration(gridName)), ctx);
+        return IgnitionEx.start(optimize(getConfiguration(gridName)), ctx);
     }
 
     /**
@@ -794,8 +794,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @param name Name.
      * @return Grid instance.
      */
-    protected GridEx grid(String name) {
-        return (GridEx)G.ignite(name);
+    protected IgniteEx grid(String name) {
+        return (IgniteEx)G.ignite(name);
     }
 
     /**
@@ -804,8 +804,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @param idx Index.
      * @return Grid instance.
      */
-    protected GridEx grid(int idx) {
-        return (GridEx)G.ignite(getTestGridName(idx));
+    protected IgniteEx grid(int idx) {
+        return (IgniteEx)G.ignite(getTestGridName(idx));
     }
 
     /**
@@ -821,8 +821,8 @@ public abstract class GridAbstractTest extends TestCase {
      *
      * @return Grid for given test.
      */
-    protected GridEx grid() {
-        return (GridEx)G.ignite(getTestGridName());
+    protected IgniteEx grid() {
+        return (IgniteEx)G.ignite(getTestGridName());
     }
 
     /**

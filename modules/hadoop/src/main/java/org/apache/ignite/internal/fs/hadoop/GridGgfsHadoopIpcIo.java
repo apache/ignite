@@ -20,8 +20,8 @@ package org.apache.ignite.internal.fs.hadoop;
 import org.apache.commons.logging.*;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.fs.common.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -51,7 +51,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
     private AtomicLong reqIdCnt = new AtomicLong();
 
     /** Endpoint. */
-    private GridIpcEndpoint endpoint;
+    private IpcEndpoint endpoint;
 
     /** Endpoint output stream. */
     private GridGgfsDataOutputStream out;
@@ -236,8 +236,8 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
         boolean success = false;
 
         try {
-            endpoint = GridIpcEndpointFactory.connectEndpoint(
-                endpointAddr, new GridLoggerProxy(new GridGgfsHadoopJclLogger(log), null, null, ""));
+            endpoint = IpcEndpointFactory.connectEndpoint(
+                    endpointAddr, new GridLoggerProxy(new GridGgfsHadoopJclLogger(log), null, null, ""));
 
             out = new GridGgfsDataOutputStream(new BufferedOutputStream(endpoint.outputStream()));
 
@@ -251,10 +251,10 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
             success = true;
         }
         catch (IgniteCheckedException e) {
-            GridIpcOutOfSystemResourcesException resEx = e.getCause(GridIpcOutOfSystemResourcesException.class);
+            IpcOutOfSystemResourcesException resEx = e.getCause(IpcOutOfSystemResourcesException.class);
 
             if (resEx != null)
-                throw new IgniteCheckedException(GridIpcSharedMemoryServerEndpoint.OUT_OF_RESOURCES_MSG, resEx);
+                throw new IgniteCheckedException(IpcSharedMemoryServerEndpoint.OUT_OF_RESOURCES_MSG, resEx);
 
             throw e;
         }
@@ -278,7 +278,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
 
                 reader = null;
             }
-            catch (IgniteInterruptedException ignored) {
+            catch (IgniteInterruptedCheckedException ignored) {
                 Thread.currentThread().interrupt();
 
                 log.warn("Got interrupted while waiting for reader thread to shut down (will return).");

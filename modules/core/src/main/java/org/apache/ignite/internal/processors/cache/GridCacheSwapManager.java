@@ -18,18 +18,18 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.processors.offheap.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.swapspace.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -38,8 +38,8 @@ import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
 
 /**
@@ -1435,11 +1435,10 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /**
-     * @param leftNodeId Left Node ID.
      * @param ldr Undeployed class loader.
      * @return Undeploy count.
      */
-    public int onUndeploy(UUID leftNodeId, ClassLoader ldr) {
+    public int onUndeploy(ClassLoader ldr) {
         if (cctx.portableEnabled())
             return 0;
 

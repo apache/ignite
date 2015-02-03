@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.util.future;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -57,7 +57,7 @@ public class GridCompoundIdentityFuture<T> extends GridCompoundFuture<T, T> {
      * @param futs Futures to add.
      */
     public GridCompoundIdentityFuture(GridKernalContext ctx, @Nullable IgniteReducer<T, T> rdc,
-        @Nullable Iterable<IgniteFuture<T>> futs) {
+        @Nullable Iterable<IgniteInternalFuture<T>> futs) {
         super(ctx, rdc, futs);
     }
 

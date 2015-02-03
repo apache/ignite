@@ -20,10 +20,9 @@ package org.apache.ignite.spi.discovery.tcp;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.concurrent.*;
@@ -125,7 +124,7 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
         long prev = 0;
 
         for (Ignite g : G.allGrids()) {
-            GridKernal kernal = (GridKernal)g;
+            IgniteKernal kernal = (IgniteKernal)g;
 
             long ver = kernal.context().discovery().topologyVersion();
 
@@ -154,7 +153,7 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
         final AtomicInteger clientIdx = new AtomicInteger(GRID_CNT);
 
-        IgniteFuture<?> fut1 = multithreadedAsync(
+        IgniteInternalFuture<?> fut1 = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     clientFlagPerThread.set(true);
@@ -177,7 +176,7 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++)
             srvIdx.add(i);
 
-        IgniteFuture<?> fut2 = multithreadedAsync(
+        IgniteInternalFuture<?> fut2 = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     clientFlagPerThread.set(false);

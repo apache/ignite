@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.plugin.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
@@ -132,8 +132,9 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
      * @param name Plugin name.
      * @return Plugin provider.
      */
-    @Nullable public PluginProvider pluginProvider(String name) {
-        return plugins.get(name);
+    @SuppressWarnings("unchecked")
+    @Nullable public <T extends PluginProvider> T pluginProvider(String name) {
+        return (T)plugins.get(name);
     }
 
     /**
@@ -147,8 +148,9 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
      * @param provider Plugin context.
      * @return Plugin context.
      */
-    public PluginContext pluginContextForProvider(PluginProvider provider) {
-        return pluginCtxMap.get(provider);
+    @SuppressWarnings("unchecked")
+    public <T extends PluginContext> T pluginContextForProvider(PluginProvider provider) {
+        return (T)pluginCtxMap.get(provider);
     }
 
     /**

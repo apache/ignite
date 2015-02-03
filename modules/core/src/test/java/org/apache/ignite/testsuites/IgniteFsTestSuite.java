@@ -18,11 +18,11 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
+import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.fs.split.*;
-import org.apache.ignite.fs.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.ipc.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Test suite for Hadoop file system over GridGain cache.
@@ -52,7 +52,7 @@ public class IgniteFsTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(GridGgfsStreamsSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsModesSelfTest.class));
-        suite.addTest(new TestSuite(GridIpcServerEndpointDeserializerSelfTest.class));
+        suite.addTest(new TestSuite(IpcServerEndpointDeserializerSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsMetricsSelfTest.class));
 
         suite.addTest(new TestSuite(GridGgfsPrimarySelfTest.class));

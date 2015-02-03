@@ -20,14 +20,15 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.transactions.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -116,7 +117,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CAX() {
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CAX() {
             /** */
             private int cnt;
 
@@ -137,7 +138,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
 
                         tx.commit();
                     }
-                    catch (IgniteTxOptimisticException e) {
+                    catch (IgniteTxOptimisticCheckedException e) {
                         info("Caught cache optimistic exception: " + e);
                     }
 

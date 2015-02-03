@@ -20,8 +20,8 @@ package org.apache.ignite.marshaller.optimized;
 import org.apache.ignite.compute.gridify.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.concurrent.atomic.*;
@@ -36,10 +36,10 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * <ul>
  * <li>
  *      JVM configuration should include:
- *      <tt>-javaagent:[GRIDGAIN_HOME]/libs/aspectjweaver-1.7.2.jar</tt>
+ *      <tt>-javaagent:[IGNITE_HOME]/libs/aspectjweaver-1.7.2.jar</tt>
  * </li>
  * <li>
- *      Classpath should contain the <tt>[GRIDGAIN_HOME]/modules/tests/config/aop/aspectj</tt> folder.
+ *      Classpath should contain the <tt>[IGNITE_HOME]/modules/tests/config/aop/aspectj</tt> folder.
  * </li>
  * </ul>
  */

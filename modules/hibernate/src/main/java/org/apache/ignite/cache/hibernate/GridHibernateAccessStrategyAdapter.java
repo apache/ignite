@@ -19,8 +19,8 @@ package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
 import org.hibernate.cache.*;
 import org.hibernate.cache.spi.access.*;
 import org.jetbrains.annotations.*;
@@ -286,7 +286,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
         try {
             ignite.compute(cache.gridProjection()).call(new ClearKeyCallable(key, cache.name()));
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             throw new CacheException(e);
         }
     }

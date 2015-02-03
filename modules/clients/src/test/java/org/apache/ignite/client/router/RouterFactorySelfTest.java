@@ -58,13 +58,13 @@ public class RouterFactorySelfTest extends GridCommonAbstractTest {
      */
     public void testRouterFactory() throws Exception {
         try {
-            System.setProperty(GG_JETTY_PORT, String.valueOf(GRID_HTTP_PORT));
+            System.setProperty(IGNITE_JETTY_PORT, String.valueOf(GRID_HTTP_PORT));
 
             try {
                 startGrid();
             }
             finally {
-                System.clearProperty(GG_JETTY_PORT);
+                System.clearProperty(IGNITE_JETTY_PORT);
             }
 
             final int size = 20;

@@ -19,13 +19,13 @@ package org.apache.ignite.internal.processors.affinity;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.task.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -64,7 +64,7 @@ class GridAffinityUtils {
         GridDeployment dep = ctx.deploy().deploy(cls, cls.getClassLoader());
 
         if (dep == null)
-            throw new IgniteDeploymentException("Failed to deploy affinity object with class: " + cls.getName());
+            throw new IgniteDeploymentCheckedException("Failed to deploy affinity object with class: " + cls.getName());
 
         return new GridAffinityMessage(
             ctx.config().getMarshaller().marshal(o),
@@ -97,7 +97,7 @@ class GridAffinityUtils {
             null);
 
         if (dep == null)
-            throw new IgniteDeploymentException("Failed to obtain affinity object (is peer class loading turned on?): " +
+            throw new IgniteDeploymentCheckedException("Failed to obtain affinity object (is peer class loading turned on?): " +
                 msg);
 
         Object src = ctx.config().getMarshaller().unmarshal(msg.source(), dep.classLoader());
@@ -158,7 +158,7 @@ class GridAffinityUtils {
             assert ignite != null;
             assert log != null;
 
-            GridKernal kernal = ((GridKernal) ignite);
+            IgniteKernal kernal = ((IgniteKernal) ignite);
 
             GridCacheContext<Object, Object> cctx = kernal.internalCache(cacheName).context();
 

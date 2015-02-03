@@ -31,16 +31,16 @@ import java.util.*;
  */
 public class GridLoadTestArgs {
     /** Cache name. */
-    public static final String CACHE_NAME = "GG_CACHE_NAME";
+    public static final String CACHE_NAME = "IGNITE_CACHE_NAME";
 
     /** Threads count. */
-    public static final String THREADS_CNT = "GG_THREADS_COUNT";
+    public static final String THREADS_CNT = "IGNITE_THREADS_COUNT";
 
     /** Test duration in seconds. */
-    public static final String TEST_DUR_SEC = "GG_TEST_DUR_SEC";
+    public static final String TEST_DUR_SEC = "IGNITE_TEST_DUR_SEC";
 
     /** Value size. */
-    public static final String VALUE_SIZE = "GG_VALUE_SIZE";
+    public static final String VALUE_SIZE = "IGNITE_VALUE_SIZE";
 
     /** Properties map for dumping. */
     private static ThreadLocal<Map<String, String>> props = new ThreadLocal<Map<String, String>>() {

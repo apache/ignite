@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -806,7 +806,7 @@ public final class GridCacheMvcc<K> {
                 // Only Near and DHT remote candidates should be released.
                 assert !rmt.nearLocal();
 
-                IgniteTxEx tx = cctx.tm().tx(rmt.version());
+                IgniteInternalTx tx = cctx.tm().tx(rmt.version());
 
                 if (tx != null) {
                     tx.systemInvalidate(true);

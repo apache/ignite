@@ -23,13 +23,12 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 
 import javax.cache.configuration.*;
@@ -38,8 +37,8 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.testframework.GridTestUtils.*;
 
@@ -113,7 +112,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testMultithreadedPut() throws Exception {
-        IgniteFuture<?> fut1 = runMultiThreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> fut1 = runMultiThreadedAsync(new Callable<Object>() {
             private final Random rnd = new Random();
 
             @Override public Object call() throws Exception {
@@ -127,7 +126,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
             }
         }, 4, "put");
 
-        IgniteFuture<?> fut2 = runMultiThreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> fut2 = runMultiThreadedAsync(new Callable<Object>() {
             private final Random rnd = new Random();
 
             @Override public Object call() throws Exception {
@@ -233,7 +232,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
         assertEquals(GRID_CNT, Ignition.allGrids().size());
 
         for (Ignite ignite : Ignition.allGrids()) {
-            GridCacheContext cctx = ((GridKernal)ignite).internalCache().context();
+            GridCacheContext cctx = ((IgniteKernal)ignite).internalCache().context();
 
             CacheStore store = cctx.store().configuredStore();
 

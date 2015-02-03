@@ -18,9 +18,10 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -92,8 +93,7 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
             comp.call(closures, new R1<Long, Long>() {
                 private long sum;
 
-                @Override
-                public boolean collect(Long e) {
+                @Override public boolean collect(Long e) {
                     info("Got result from closure: " + e);
 
                     sum += e;
@@ -102,13 +102,12 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
                     return e != 1;
                 }
 
-                @Override
-                public Long reduce() {
+                @Override public Long reduce() {
                     return sum;
                 }
             });
 
-            IgniteFuture<Long> fut = comp.future();
+            ComputeTaskFuture<Long> fut = comp.future();
 
             assertEquals((Long)1L, fut.get());
 

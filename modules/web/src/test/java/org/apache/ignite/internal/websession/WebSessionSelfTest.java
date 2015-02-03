@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.websession;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
-import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.servlet.*;
-import org.eclipse.jetty.webapp.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.servlet.*;
+import org.eclipse.jetty.webapp.*;
 import org.jetbrains.annotations.*;
 
 import javax.servlet.*;
@@ -118,7 +118,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        IgniteFuture<?> restarterFut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> restarterFut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @SuppressWarnings("BusyWait")
             @Override public Object call() throws Exception {
                 Random rnd = new Random();
@@ -224,10 +224,10 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         WebAppContext ctx = new WebAppContext(U.resolveGridGainPath("modules/core/src/test/webapp").getAbsolutePath(),
             "/ggtest");
 
-        ctx.setInitParameter("GridGainConfigurationFilePath", cfg);
-        ctx.setInitParameter("GridGainWebSessionsGridName", gridName);
-        ctx.setInitParameter("GridGainWebSessionsCacheName", getCacheName());
-        ctx.setInitParameter("GridGainWebSessionsMaximumRetriesOnFail", "100");
+        ctx.setInitParameter("IgniteConfigurationFilePath", cfg);
+        ctx.setInitParameter("IgniteWebSessionsGridName", gridName);
+        ctx.setInitParameter("IgniteWebSessionsCacheName", getCacheName());
+        ctx.setInitParameter("IgniteWebSessionsMaximumRetriesOnFail", "100");
 
         ctx.addServlet(new ServletHolder(servlet), "/*");
 

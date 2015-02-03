@@ -27,12 +27,12 @@ import org.apache.ignite.fs.*;
 import org.apache.ignite.fs.mapreduce.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -148,7 +148,7 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        if (!getBoolean(GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+        if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
             for (ClusterNode n : ctx.discovery().remoteNodes())
                 checkGgfsOnRemoteNode(n);
         }
@@ -222,16 +222,16 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Collection<GridIpcServerEndpoint> endpoints(@Nullable String name) {
+    @Override @Nullable public Collection<IpcServerEndpoint> endpoints(@Nullable String name) {
         GridGgfsContext ggfsCtx = ggfsCache.get(maskName(name));
 
-        return ggfsCtx == null ? Collections.<GridIpcServerEndpoint>emptyList() : ggfsCtx.server().endpoints();
+        return ggfsCtx == null ? Collections.<IpcServerEndpoint>emptyList() : ggfsCtx.server().endpoints();
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public ComputeJob createJob(IgniteFsJob job, @Nullable String ggfsName, IgniteFsPath path,
-        long start, long length, IgniteFsRecordResolver recRslv) {
-        return new GridGgfsJobImpl(job, ggfsName, path, start, length, recRslv);
+        long start, long len, IgniteFsRecordResolver recRslv) {
+        return new GridGgfsJobImpl(job, ggfsName, path, start, len, recRslv);
     }
 
     /** {@inheritDoc} */
@@ -405,7 +405,7 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
                     if (F.eq(rmtAttr.metaCacheName(), locAttr.metaCacheName()))
                         throw new IgniteCheckedException("Meta cache names should be different for different GGFS instances " +
                             "configuration (fix configuration or set " +
-                            "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
+                            "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
                             "property) [metaCacheName=" + rmtAttr.metaCacheName() +
                             ", locNodeId=" + ctx.localNodeId() +
                             ", rmtNodeId=" + rmtNode.id() +
@@ -415,7 +415,7 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
                     if (F.eq(rmtAttr.dataCacheName(), locAttr.dataCacheName()))
                         throw new IgniteCheckedException("Data cache names should be different for different GGFS instances " +
                             "configuration (fix configuration or set " +
-                            "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
+                            "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
                             "property)[dataCacheName=" + rmtAttr.dataCacheName() +
                             ", locNodeId=" + ctx.localNodeId() +
                             ", rmtNodeId=" + rmtNode.id() +
@@ -454,7 +454,7 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
         if (!F.eq(rmtVal, locVal))
             throw new IgniteCheckedException(name + " should be the same on all nodes in grid for GGFS configuration " +
                 "(fix configuration or set " +
-                "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
+                "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
                 "property ) [rmtNodeId=" + rmtNodeId +
                 ", rmt" + propName + "=" + rmtVal +
                 ", loc" + propName + "=" + locVal +

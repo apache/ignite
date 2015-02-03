@@ -85,7 +85,7 @@ public final class IgniteJavaLoggerFileHandler extends StreamHandler {
         String ptrn = manager.getProperty(clsName + ".pattern");
 
         if (ptrn == null)
-            ptrn = "gridgain-%{id8}.%g.log";
+            ptrn = "ignite-%{id8}.%g.log";
 
         ptrn = new File(logDirectory(), ptrn.replace("%{id8}", U.id8(nodeId))).getAbsolutePath();
 
@@ -132,7 +132,7 @@ public final class IgniteJavaLoggerFileHandler extends StreamHandler {
      * @return Logging directory.
      */
     private static File logDirectory() throws IgniteCheckedException {
-        return !F.isEmpty(U.GRIDGAIN_LOG_DIR) ? new File(U.GRIDGAIN_LOG_DIR) : U.resolveWorkDirectory("log", false);
+        return !F.isEmpty(U.IGNITE_LOG_DIR) ? new File(U.IGNITE_LOG_DIR) : U.resolveWorkDirectory("log", false);
     }
 
     /**
