@@ -598,8 +598,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
      */
     private static class TestTask extends ComputeTaskSplitAdapter<List<Object>, Integer> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> args)
-            {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> args) {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(args.size());
 
             for (final Object arg : args) {
