@@ -188,7 +188,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
 
     /** {@inheritDoc} */
     @Override public String load(Integer key) {
-        checkTx(session());
+        checkTx(session(), true);
 
         lastMtd = "load";
 
@@ -218,7 +218,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
 
     /** {@inheritDoc} */
     @Override public Map<Integer, String> loadAll(Iterable<? extends Integer> keys) {
-        checkTx(session());
+        checkTx(session(), true);
 
         lastMtd = "loadAll";
 
@@ -239,7 +239,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
     /** {@inheritDoc} */
     @Override public void write(Cache.Entry<? extends Integer, ? extends String> e)
         throws CacheWriterException {
-        checkTx(session());
+        checkTx(session(), false);
 
         lastMtd = "put";
 
@@ -253,7 +253,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
     /** {@inheritDoc} */
     @Override public void writeAll(Collection<Cache.Entry<? extends Integer, ? extends String>> entries)
         throws CacheWriterException {
-        checkTx(session());
+        checkTx(session(), false);
 
         lastMtd = "putAll";
 
@@ -267,7 +267,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
 
     /** {@inheritDoc} */
     @Override public void delete(Object key) throws CacheWriterException {
-        checkTx(session());
+        checkTx(session(), false);
 
         lastMtd = "remove";
 
@@ -279,7 +279,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
     /** {@inheritDoc} */
     @Override public void deleteAll(Collection<?> keys)
         throws CacheWriterException {
-        checkTx(session());
+        checkTx(session(), false);
 
         lastMtd = "removeAll";
 
@@ -315,7 +315,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
     /**
      * @param ses Session.
      */
-    private void checkTx(@Nullable CacheStoreSession ses) {
+    private void checkTx(@Nullable CacheStoreSession ses, boolean load) {
         IgniteTx tx = ses != null ? ses.transaction() : null;
 
         if (tx == null)
@@ -328,7 +328,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
         if (!tx0.local())
             throw new IgniteException("Tx is not local: " + tx);
 
-        if (tx0.dht())
+        if (tx0.dht() && !load)
             throw new IgniteException("Tx is DHT: " + tx);
     }
 }

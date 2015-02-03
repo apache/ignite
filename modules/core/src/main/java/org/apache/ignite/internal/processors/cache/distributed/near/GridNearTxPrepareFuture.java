@@ -132,7 +132,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         if (log.isDebugEnabled())
             log.debug("Transaction future received owner changed callback: " + entry);
 
-        if (entry.context().isNear() && owner != null && tx.hasWriteKey(entry.txKey())) {
+        if ((entry.context().isNear() || entry.context().isLocal()) && owner != null && tx.hasWriteKey(entry.txKey())) {
             lockKeys.remove(entry.txKey());
 
             // This will check for locks.
@@ -773,8 +773,11 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             entry.cached(cacheCtx.nearTx().entryExx(entry.key(), topVer), entry.keyBytes());
         else if (!cacheCtx.isLocal())
             entry.cached(cacheCtx.colocated().entryExx(entry.key(), topVer, true), entry.keyBytes());
-        else
+        else {
             entry.cached(cacheCtx.local().entryEx(entry.key(), topVer), entry.keyBytes());
+
+            lockKeys.add(entry.txKey());
+        }
 
         if (cur == null || !cur.node().id().equals(primary.id()) || cur.near() != cacheCtx.isNear()) {
             cur = new GridDistributedTxMapping<>(primary);
