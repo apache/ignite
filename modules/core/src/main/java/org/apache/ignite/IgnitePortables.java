@@ -196,7 +196,7 @@ import java.util.Date;
  *         ...
  *         &lt;property name="typeConfigurations"&gt;
  *             &lt;list&gt;
- *                 &lt;bean class="org.gridgain.grid.portables.GridPortableTypeConfiguration"&gt;
+ *                 &lt;bean class="org.apache.ignite.portables.PortableTypeConfiguration"&gt;
  *                     &lt;property name="className" value="org.gridgain.examples.client.portable.EmployeeKey"/&gt;
  *                     &lt;property name="affinityKeyFieldName" value="organizationId"/&gt;
  *                 &lt;/bean&gt;
