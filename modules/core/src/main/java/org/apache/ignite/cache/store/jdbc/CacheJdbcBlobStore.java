@@ -73,7 +73,7 @@ import java.util.concurrent.atomic.*;
  * <pre name="code" class="xml">
  *     ...
  *     &lt;bean id=&quot;cache.jdbc.store&quot;
- *         class=&quot;org.gridgain.grid.cache.store.jdbc.GridCacheJdbcBlobStore&quot;&gt;
+ *         class=&quot;org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStore&quot;&gt;
  *         &lt;property name=&quot;connectionUrl&quot; value=&quot;jdbc:h2:mem:&quot;/&gt;
  *         &lt;property name=&quot;createTableQuery&quot;
  *             value=&quot;create table if not exists ENTRIES (key other, val other)&quot;/&gt;

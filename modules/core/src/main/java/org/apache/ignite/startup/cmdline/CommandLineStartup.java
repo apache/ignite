@@ -167,7 +167,7 @@ public final class CommandLineStartup {
                     "                      Path can be absolute or relative to IGNITE_HOME.",
                     " ",
                     "Spring file should contain one bean definition of Java type",
-                    "'org.gridgain.grid.GridConfiguration'. Note that bean will be",
+                    "'org.apache.ignite.configuration.IgniteConfiguration'. Note that bean will be",
                     "fetched by the type and its ID is not used.");
             }
         }

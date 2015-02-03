@@ -81,7 +81,7 @@ import java.util.*;
  *     &lt;-- Provide configuration bean. --&gt;
  *     &lt;bean id="cacheManager" class="org.apache.ignite.cache.spring.GridSpringCacheManager"&gt;
  *         &lt;property name="configuration"&gt;
- *             &lt;bean id="gridCfg" class="org.gridgain.grid.GridConfiguration"&gt;
+ *             &lt;bean id="gridCfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *                 ...
  *             &lt;/bean&gt;
  *         &lt;/property&gt;

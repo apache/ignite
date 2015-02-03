@@ -56,7 +56,7 @@ import java.util.*;
  * example below configures a grid instance with additional user attributes
  * (see {@link org.apache.ignite.cluster.ClusterNode#attributes()}) and specifies a grid name:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration"&gt;
+ * &lt;bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *     ...
  *     &lt;property name="gridName" value="grid"/&gt;
  *     &lt;property name="userAttributes"&gt;

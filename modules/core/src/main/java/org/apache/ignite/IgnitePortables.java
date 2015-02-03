@@ -258,7 +258,7 @@ import java.util.Date;
  * like so:
  * <pre name=code class=xml>
  * ...
- * &lt;bean class="org.gridgain.grid.cache.GridCacheConfiguration"&gt;
+ * &lt;bean class="org.apache.ignite.cache.CacheConfiguration"&gt;
  *     ...
  *     &lt;property name="queryConfiguration"&gt;
  *         &lt;bean class="CacheQueryConfiguration"&gt;

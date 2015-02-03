@@ -84,7 +84,7 @@ import org.apache.ignite.*;
  * </pre>
  * or from Spring XML configuration file as follows:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration"&gt;
+ * &lt;bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *    ...
  *    &lt;property name="lifecycleBeans"&gt;
  *       &lt;list&gt;

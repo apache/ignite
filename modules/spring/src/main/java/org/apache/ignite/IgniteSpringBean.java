@@ -51,7 +51,7 @@ import java.util.concurrent.*;
  * <pre name="code" class="xml">
  * &lt;bean id="mySpringBean" class="org.apache.ignite.GridSpringBean"&gt;
  *     &lt;property name="configuration"&gt;
- *         &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration"&gt;
+ *         &lt;bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *             &lt;property name="gridName" value="mySpringGrid"/&gt;
  *         &lt;/bean&gt;
  *     &lt;/property&gt;

@@ -76,7 +76,7 @@ import java.util.*;
  * <h2 class="header">Spring Example</h2>
  * {@link SharedFsCheckpointSpi} can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
+ * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *     &lt;property name="checkpointSpi"&gt;
  *         &lt;bean class="org.gridgain.grid.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpi"&gt;
