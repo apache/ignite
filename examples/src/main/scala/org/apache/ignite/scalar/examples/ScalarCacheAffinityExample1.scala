@@ -102,15 +102,15 @@ object ScalarCacheAffinityExample1 {
      * cache is not started on local node. In that case a job which populates
      * the cache will be sent to the node where cache is started.
      *
-     * @param g Grid.
+     * @param ignite Ignite.
      * @param keys Keys to populate.
      */
-    private def populateCache(g: Ignite, keys: Seq[String]) {
-        var prj = g.cluster().forCacheNodes(NAME)
+    private def populateCache(ignite: Ignite, keys: Seq[String]) {
+        var prj = ignite.cluster().forCacheNodes(NAME)
 
         // Give preference to local node.
-        if (prj.nodes().contains(g.cluster().localNode))
-            prj = g.cluster().forLocal()
+        if (prj.nodes().contains(ignite.cluster().localNode))
+            prj = ignite.cluster().forLocal()
 
         // Populate cache on some node (possibly this node) which has cache with given name started.
         prj.run$(() => {
