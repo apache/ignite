@@ -45,7 +45,7 @@
     <!--
         Configuration below demonstrates how to setup caches within cluster nodes.
     -->
-    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="marshaller">
             <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
                 <!-- Set to false to allow non-serializable objects in examples, default is true. -->
