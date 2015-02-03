@@ -454,7 +454,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
             }
         }, CacheException.class, null);
 
-        assertTrue("Unexpected cause: " + e, e.getCause() instanceof IgniteTxRollbackCheckedException);
+        assertTrue("Unexpected cause: " + e, e.getCause() instanceof IgniteTxRollbackException);
 
         checkValue(key, putBefore);
     }

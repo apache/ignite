@@ -445,7 +445,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
             }
         }, CacheException.class, null);
 
-        assertTrue("Unexpected cause: "  +e, e.getCause() instanceof IgniteTxHeuristicCheckedException);
+        assertTrue("Unexpected cause: "  +e, e.getCause() instanceof IgniteTxHeuristicException);
 
         checkEmpty(key);
     }
