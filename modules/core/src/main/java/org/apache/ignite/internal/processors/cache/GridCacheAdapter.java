@@ -3398,7 +3398,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 topVer = ctx.affinity().affinityTopologyVersion();
 
                 // Send job to all nodes.
-                Collection<ClusterNode> nodes = ctx.grid().forCache(name()).nodes();
+                Collection<ClusterNode> nodes = ctx.grid().forCacheNodes(name()).nodes();
 
                 IgniteInternalFuture<Object> fut = null;
 
