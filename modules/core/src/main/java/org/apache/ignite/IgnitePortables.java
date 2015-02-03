@@ -157,7 +157,7 @@ import java.util.Date;
  * ...
  * &lt;!-- Portable objects configuration. --&gt;
  * &lt;property name="portableConfiguration"&gt;
- *     &lt;bean class="org.gridgain.grid.portables.GridPortableConfiguration"&gt;
+ *     &lt;bean class="org.apache.ignite.portables.PortableConfiguration"&gt;
  *         &lt;property name="classNames"&gt;
  *             &lt;list&gt;
  *                 &lt;value&gt;my.package.for.portable.objects.*&lt;/value&gt;
@@ -192,7 +192,7 @@ import java.util.Date;
  * With portable objects you would have to do it as following:
  * <pre name=code class=xml>
  * &lt;property name="portableConfiguration"&gt;
- *     &lt;bean class="org.gridgain.grid.portables.GridPortableConfiguration"&gt;
+ *     &lt;bean class="org.apache.ignite.portables.PortableConfiguration"&gt;
  *         ...
  *         &lt;property name="typeConfigurations"&gt;
  *             &lt;list&gt;
