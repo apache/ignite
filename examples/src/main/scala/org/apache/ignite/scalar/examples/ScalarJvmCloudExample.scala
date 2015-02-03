@@ -81,7 +81,7 @@ object ScalarJvmCloudExample {
                 null,
                 Array[JComponent](
                     new JLabel("Ignite JVM cloud started."),
-                    new JLabel("Number of nodes in the cluster: " + scalar.grid$(NODES(1)).get.cluster().nodes().size()),
+                    new JLabel("Number of nodes in the cluster: " + scalar.ignite$(NODES(1)).get.cluster().nodes().size()),
                     new JLabel("Click OK to stop.")
                 ),
                 "Ignite",

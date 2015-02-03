@@ -285,7 +285,7 @@ object scalar extends ScalarConversions {
      * @param cacheName Name of the cache to get.
      */
     @inline def cache$[K, V](@Nullable gridName: String, @Nullable cacheName: String): Option[GridCache[K, V]] =
-        grid$(gridName) match {
+        ignite$(gridName) match {
             case Some(g) => Option(g.cache(cacheName))
             case None => None
         }
@@ -322,7 +322,7 @@ object scalar extends ScalarConversions {
      *
      * @param name Grid name.
      */
-    @inline def grid$(@Nullable name: String): Option[Ignite] =
+    @inline def ignite$(@Nullable name: String): Option[Ignite] =
         try {
             Option(Ignition.ignite(name))
         }
