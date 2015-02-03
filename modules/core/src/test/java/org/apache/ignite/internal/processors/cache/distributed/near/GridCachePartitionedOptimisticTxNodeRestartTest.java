@@ -24,8 +24,8 @@ import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.transactions.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 
 /**
  * Test node restart.

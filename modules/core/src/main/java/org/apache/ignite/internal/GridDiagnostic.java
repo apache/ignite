@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 
 import java.io.*;
-import java.lang.management.ManagementFactory;
+import java.lang.management.*;
 import java.net.*;
 import java.util.concurrent.*;
 

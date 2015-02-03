@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.checkpoint.sharedfs;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
+
 import java.io.*;
 
 /**

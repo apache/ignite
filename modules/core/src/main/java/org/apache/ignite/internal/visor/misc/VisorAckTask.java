@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.visor.misc;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -40,7 +39,7 @@ public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) {
         return null;
     }
 
@@ -62,7 +61,7 @@ public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(String arg) throws IgniteCheckedException {
+        @Override protected Void run(String arg) {
             System.out.println("<visor>: ack: " + (arg == null ? g.localNode().id() : arg));
 
             return null;

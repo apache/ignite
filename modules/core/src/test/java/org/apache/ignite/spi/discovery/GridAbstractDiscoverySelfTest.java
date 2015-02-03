@@ -19,11 +19,11 @@ package org.apache.ignite.spi.discovery;
 
 import mx4j.tools.adaptor.http.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.security.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.*;
 import org.apache.ignite.testframework.junits.spi.*;

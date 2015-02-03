@@ -23,6 +23,7 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
@@ -127,7 +128,7 @@ import java.util.concurrent.*;
  * state of transaction. See {@link IgniteTx} documentation for more information
  * about transactions.
  * <h1 class="header">Group Locking</h1>
- * <i>Group Locking</i> is a feature where instead of acquiring individual locks, GridGain will lock
+ * <i>Group Locking</i> is a feature where instead of acquiring individual locks, Ignite will lock
  * multiple keys with one lock to save on locking overhead. There are 2 types of <i>Group Locking</i>:
  * <i>affinity-based</i>, and <i>partitioned-based</i>.
  * <p>
@@ -156,12 +157,12 @@ import java.util.concurrent.*;
  * all entries will be removed. This behavior is useful during development, but should not be
  * used in production.
  * <h1 class="header">Portable Objects</h1>
- * If an object is defined as portable GridGain cache will automatically store it in portable (i.e. binary)
+ * If an object is defined as portable Ignite cache will automatically store it in portable (i.e. binary)
  * format. User can choose to work either with the portable format or with the deserialized form (assuming
  * that class definitions are present in the classpath). By default, cache works with deserialized form
  * (example shows the case when {@link Integer} is used as a key for a portable object):
  * <pre>
- * CacheProjection<Integer, Value> prj = GridGain.grid().cache(null);
+ * CacheProjection<Integer, Value> prj = Ignition.grid().cache(null);
  *
  * // Value will be serialized and stored in cache in portable format.
  * prj.put(1, new Value());
@@ -174,7 +175,7 @@ import java.util.concurrent.*;
  * needed for performance reasons. To work with portable format directly you should create special projection
  * using {@link #keepPortable()} method:
  * <pre>
- * CacheProjection<Integer, GridPortableObject> prj = GridGain.grid().cache(null).keepPortable();
+ * CacheProjection<Integer, GridPortableObject> prj = Ignition.grid().cache(null).keepPortable();
  *
  * // Value is not deserialized and returned in portable format.
  * GridPortableObject po = prj.get(1);
@@ -1166,6 +1167,13 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
     public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation);
 
     /**
+     * @param concurrency Concurrency.
+     * @param isolation Isolation.
+     * @return New transaction.
+     */
+    public IgniteInternalTx txStartEx(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation);
+
+    /**
      * Starts transaction with specified isolation, concurrency, timeout, invalidation flag,
      * and number of participating entries.
      *
@@ -1365,7 +1373,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * nodes and local node, as opposed to {@link CacheProjection#clearAll()} method which only
      * clears local node's cache.
      * <p>
-     * GridGain will make the best attempt to clear caches on all nodes. If some caches
+     * Ignite will make the best attempt to clear caches on all nodes. If some caches
      * could not be cleared, then exception will be thrown.
      * <p>
      * This method is identical to calling {@link #globalClearAll(long) globalClearAll(0)}.

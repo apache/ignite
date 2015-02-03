@@ -44,7 +44,7 @@ public interface CacheTmLookup {
      * Gets Transaction Manager (TM).
      *
      * @return TM or {@code null} if TM cannot be looked up.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    @Nullable public TransactionManager getTm() throws IgniteCheckedException;
+    @Nullable public TransactionManager getTm() throws IgniteException;
 }

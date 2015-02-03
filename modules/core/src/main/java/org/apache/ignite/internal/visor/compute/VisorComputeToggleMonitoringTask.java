@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.visor.compute;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -41,7 +40,7 @@ public class VisorComputeToggleMonitoringTask extends
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Boolean reduce0(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override protected Boolean reduce0(List<ComputeJobResult> results) {
         Collection<Boolean> toggles = new HashSet<>();
 
         for (ComputeJobResult res: results)
@@ -72,7 +71,7 @@ public class VisorComputeToggleMonitoringTask extends
         }
 
         /** {@inheritDoc} */
-        @Override protected Boolean run(IgniteBiTuple<String, Boolean> arg) throws IgniteCheckedException {
+        @Override protected Boolean run(IgniteBiTuple<String, Boolean> arg) {
             if (checkExplicitTaskMonitoring(g))
                 return true;
             else {

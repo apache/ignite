@@ -19,8 +19,8 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -47,8 +47,8 @@ public class GridTaskListenerSelfTest extends GridCommonAbstractTest {
     public void testGridTaskListener() throws Exception {
         final AtomicInteger cnt = new AtomicInteger(0);
 
-        IgniteInClosure<IgniteInternalFuture<?>> lsnr = new CI1<IgniteInternalFuture<?>>() {
-            @Override public void apply(IgniteInternalFuture<?> fut) {
+        IgniteInClosure<IgniteFuture<?>> lsnr = new CI1<IgniteFuture<?>>() {
+            @Override public void apply(IgniteFuture<?> fut) {
                 assert fut != null;
 
                 cnt.incrementAndGet();
@@ -84,7 +84,7 @@ public class GridTaskListenerSelfTest extends GridCommonAbstractTest {
     /** Test task. */
     private static class TestTask extends ComputeTaskSplitAdapter<Serializable, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>();
 
             for (int i = 0; i < 5; i++) {

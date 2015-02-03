@@ -20,9 +20,9 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -83,7 +83,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
         try {
             fut.get();
 
-            assert false : "GridComputeTaskTimeoutException was not thrown (synchronous apply)";
+            assert false : "ComputeTaskTimeoutException was not thrown (synchronous apply)";
         }
         catch (ComputeTaskTimeoutException e) {
             info("Received expected timeout exception (synchronous apply): " + e);
@@ -180,7 +180,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
      */
     private static class GridTaskTimeoutTestTask extends ComputeTaskSplitAdapter<Serializable, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) {
             Collection<GridTaskTimeoutTestJob> jobs = new ArrayList<>(SPLIT_COUNT);
 
             for (int i = 0; i < SPLIT_COUNT; i++) {
@@ -195,7 +195,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

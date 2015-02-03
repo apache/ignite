@@ -17,7 +17,6 @@
 
 package org.apache.ignite.client;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 
 import java.util.*;
@@ -30,8 +29,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
  */
 public class SleepTestTask extends ComputeTaskSplitAdapter<String, Integer> {
     /** {@inheritDoc} */
-    @Override public Collection<? extends ComputeJob> split(int gridSize, String arg)
-        throws IgniteCheckedException {
+    @Override public Collection<? extends ComputeJob> split(int gridSize, String arg) {
         return Collections.singleton(new ComputeJobAdapter(arg) {
             @Override public Object execute() {
                 try {
@@ -49,7 +47,7 @@ public class SleepTestTask extends ComputeTaskSplitAdapter<String, Integer> {
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Integer reduce(List<ComputeJobResult> results) {
         int sum = 0;
 
         for (ComputeJobResult res : results)
@@ -59,7 +57,7 @@ public class SleepTestTask extends ComputeTaskSplitAdapter<String, Integer> {
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         if (res.getException() != null)
             return FAILOVER;
 

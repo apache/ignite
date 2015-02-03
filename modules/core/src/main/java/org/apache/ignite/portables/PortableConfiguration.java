@@ -19,7 +19,7 @@ package org.apache.ignite.portables;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.sql.Timestamp;
+import java.sql.*;
 import java.util.*;
 
 /**

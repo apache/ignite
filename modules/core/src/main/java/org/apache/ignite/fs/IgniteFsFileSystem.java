@@ -48,9 +48,9 @@ public interface IgniteFsFileSystem {
      *
      * @param path Path to check for existence in the file system.
      * @return {@code True} if such file exists, otherwise - {@code false}.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    public boolean exists(IgniteFsPath path) throws IgniteCheckedException;
+    public boolean exists(IgniteFsPath path);
 
     /**
      * Updates file information for the specified path. Existent properties, not listed in the passed collection,
@@ -68,9 +68,9 @@ public interface IgniteFsFileSystem {
      * @param path File path to set properties for.
      * @param props Properties to update.
      * @return File information for specified path or {@code null} if such path does not exist.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    @Nullable public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws IgniteCheckedException;
+    @Nullable public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws IgniteException;
 
     /**
      * Renames/moves a file.
@@ -88,10 +88,10 @@ public interface IgniteFsFileSystem {
      * @param src Source file path to rename.
      * @param dest Destination file path. If destination path is a directory, then source file will be placed
      *     into destination directory with original name.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      * @throws IgniteFsFileNotFoundException If source file doesn't exist.
      */
-    public void rename(IgniteFsPath src, IgniteFsPath dest) throws IgniteCheckedException;
+    public void rename(IgniteFsPath src, IgniteFsPath dest) throws IgniteException;
 
     /**
      * Deletes file.
@@ -99,46 +99,46 @@ public interface IgniteFsFileSystem {
      * @param path File path to delete.
      * @param recursive Delete non-empty directories recursively.
      * @return {@code True} in case of success, {@code false} otherwise.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    boolean delete(IgniteFsPath path, boolean recursive) throws IgniteCheckedException;
+    public boolean delete(IgniteFsPath path, boolean recursive) throws IgniteException;
 
     /**
      * Creates directories under specified path.
      *
      * @param path Path of directories chain to create.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    public void mkdirs(IgniteFsPath path) throws IgniteCheckedException;
+    public void mkdirs(IgniteFsPath path) throws IgniteException;
 
     /**
      * Creates directories under specified path with the specified properties.
      *
      * @param path Path of directories chain to create.
      * @param props Metadata properties to set on created directories.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) throws IgniteCheckedException;
+    public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) throws IgniteException;
 
     /**
      * Lists file paths under the specified path.
      *
      * @param path Path to list files under.
      * @return List of files under the specified path.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      * @throws IgniteFsFileNotFoundException If path doesn't exist.
      */
-    public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws IgniteCheckedException;
+    public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws IgniteException;
 
     /**
      * Lists files under the specified path.
      *
      * @param path Path to list files under.
      * @return List of files under the specified path.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      * @throws IgniteFsFileNotFoundException If path doesn't exist.
      */
-    public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws IgniteCheckedException;
+    public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws IgniteException;
 
     /**
      * Opens a file for reading.
@@ -146,10 +146,10 @@ public interface IgniteFsFileSystem {
      * @param path File path to read.
      * @param bufSize Read buffer size (bytes) or {@code zero} to use default value.
      * @return File input stream to read data from.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      * @throws IgniteFsFileNotFoundException If path doesn't exist.
      */
-    public IgniteFsReader open(IgniteFsPath path, int bufSize) throws IgniteCheckedException;
+    public IgniteFsReader open(IgniteFsPath path, int bufSize) throws IgniteException;
 
     /**
      * Creates a file and opens it for writing.
@@ -157,9 +157,9 @@ public interface IgniteFsFileSystem {
      * @param path File path to create.
      * @param overwrite Overwrite file if it already exists. Note: you cannot overwrite an existent directory.
      * @return File output stream to write data to.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    public OutputStream create(IgniteFsPath path, boolean overwrite) throws IgniteCheckedException;
+    public OutputStream create(IgniteFsPath path, boolean overwrite) throws IgniteException;
 
     /**
      * Creates a file and opens it for writing.
@@ -171,10 +171,10 @@ public interface IgniteFsFileSystem {
      * @param blockSize Block size.
      * @param props File properties to set.
      * @return File output stream to write data to.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
     public OutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication, long blockSize,
-       @Nullable Map<String, String> props) throws IgniteCheckedException;
+       @Nullable Map<String, String> props) throws IgniteException;
 
     /**
      * Opens an output stream to an existing file for appending data.
@@ -184,28 +184,28 @@ public interface IgniteFsFileSystem {
      * @param create Create file if it doesn't exist yet.
      * @param props File properties to set only in case it file was just created.
      * @return File output stream to append data to.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      * @throws IgniteFsFileNotFoundException If path doesn't exist and create flag is {@code false}.
      */
     public OutputStream append(IgniteFsPath path, int bufSize, boolean create, @Nullable Map<String, String> props)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Gets file information for the specified path.
      *
      * @param path Path to get information for.
      * @return File information for specified path or {@code null} if such path does not exist.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    @Nullable public IgniteFsFile info(IgniteFsPath path) throws IgniteCheckedException;
+    @Nullable public IgniteFsFile info(IgniteFsPath path) throws IgniteException;
 
     /**
      * Gets used space in bytes.
      *
      * @return Used space in bytes.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    public long usedSpaceSize() throws IgniteCheckedException;
+    public long usedSpaceSize() throws IgniteException;
 
     /**
      * Gets the implementation specific properties of file system.

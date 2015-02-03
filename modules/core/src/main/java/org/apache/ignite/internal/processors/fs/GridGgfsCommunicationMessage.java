@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
