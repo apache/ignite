@@ -45,6 +45,9 @@ public class QueryConfiguration implements Serializable {
     /** */
     private boolean escapeAll;
 
+    /** */
+    private int pageSize = 1000;
+
     /**
      * Default constructor.
      */
@@ -199,5 +202,23 @@ public class QueryConfiguration implements Serializable {
      */
     public void setEscapeAll(boolean escapeAll) {
         this.escapeAll = escapeAll;
+    }
+
+    /**
+     * Gets default query result page size.
+     *
+     * @return Page size.
+     */
+    public int getPageSize() {
+        return pageSize;
+    }
+
+    /**
+     * Sets default query result page size.
+     *
+     * @param pageSize Page size.
+     */
+    public void setPageSize(int pageSize) {
+        this.pageSize = pageSize;
     }
 }

@@ -19,7 +19,6 @@ package org.apache.ignite.cache.query;
 
 import org.apache.ignite.*;
 
-import javax.cache.*;
 import javax.cache.event.*;
 
 /**
@@ -107,8 +106,7 @@ import javax.cache.event.*;
  * If you need to repeat execution, use {@link org.apache.ignite.internal.processors.cache.query.CacheQueries#createContinuousQuery()} method to create
  * new query.
  */
-// TODO: make class.
-public final class QueryContinuousPredicate<K, V> extends QueryPredicate<K, V> implements AutoCloseable {
+public final class QueryContinuousPredicate<K, V> extends QueryPredicate implements AutoCloseable {
     /**
      * Default buffer size. Size of {@code 1} means that all entries
      * will be sent to master node immediately (buffering is disabled).
@@ -124,7 +122,7 @@ public final class QueryContinuousPredicate<K, V> extends QueryPredicate<K, V> i
      */
     public static final boolean DFLT_AUTO_UNSUBSCRIBE = true;
 
-    public void setInitialPredicate(QueryPredicate<K, V> filter) {
+    public void setInitialPredicate(QueryPredicate filter) {
         // TODO: implement.
     }
 
@@ -203,10 +201,5 @@ public final class QueryContinuousPredicate<K, V> extends QueryPredicate<K, V> i
      */
     @Override public void close() throws IgniteCheckedException {
         // TODO: implement.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean apply(Cache.Entry<K, V> entry) {
-        return false; // TODO: CODE: implement.
     }
 }

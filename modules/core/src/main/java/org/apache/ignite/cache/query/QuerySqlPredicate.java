@@ -19,16 +19,14 @@ package org.apache.ignite.cache.query;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import javax.cache.*;
-
 /**
  * Query SQL predicate to use with any of the {@code JCache.query(...)} and
  * {@code JCache.queryFields(...)} methods.
- *
- * @author @java.author
- * @version @java.version
  */
-public final class QuerySqlPredicate<K, V> extends QueryPredicate<K, V> {
+public final class QuerySqlPredicate extends QueryPredicate {
+    /** */
+    private Class<?> type;
+
     /** SQL clause. */
     private String sql;
 
@@ -43,28 +41,26 @@ public final class QuerySqlPredicate<K, V> extends QueryPredicate<K, V> {
     }
 
     /**
+     * Constructs SQL predicate with given type, SQL clause and arguments.
+     *
+     * @param type Class.
+     * @param sql SQL clause.
+     * @param args Arguments.
+     */
+    public QuerySqlPredicate(Class<?> type, String sql, Object... args) {
+        this.type = type;
+        this.sql = sql;
+        this.args = args;
+    }
+
+    /**
      * Constructs SQL predicate with given SQL clause and arguments.
      *
      * @param sql SQL clause.
      * @param args Arguments.
      */
     public QuerySqlPredicate(String sql, Object... args) {
-        this.sql = sql;
-        this.args = args;
-    }
-
-    /**
-     * Constructs SQL predicate with given SQL clause, page size, and arguments.
-     *
-     * @param sql SQL clause.
-     * @param pageSize Optional page size, if {@code 0}, then {@link QueryConfiguration#getPageSize()} is used.
-     * @param args Arguments.
-     */
-    public QuerySqlPredicate(String sql, int pageSize, Object[] args) {
-        super(pageSize);
-
-        this.sql = sql;
-        this.args = args;
+        this(null, sql, args);
     }
 
     /**
@@ -103,9 +99,22 @@ public final class QuerySqlPredicate<K, V> extends QueryPredicate<K, V> {
         this.args = args;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean apply(Cache.Entry<K, V> entry) {
-        return false; // Not used.
+    /**
+     * Gets type for query.
+     *
+     * @return Type.
+     */
+    public Class<?> getType() {
+        return type;
+    }
+
+    /**
+     * Sets type for query.
+     *
+     * @param type Type.
+     */
+    public void setType(Class<?> type) {
+        this.type = type;
     }
 
     /** {@inheritDoc} */

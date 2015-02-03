@@ -56,9 +56,13 @@ public class QueryCursorImpl<T> implements QueryCursor<T> {
     @Override public List<T> getAll() {
         ArrayList<T> all = new ArrayList<>();
 
-        for (T t : this) all.add(t); // Implicitly calls iterator() to do all checks.
-
-        close();
+        try {
+            for (T t : this) // Implicitly calls iterator() to do all checks.
+                all.add(t);
+        }
+        finally {
+            close();
+        }
 
         return all;
     }

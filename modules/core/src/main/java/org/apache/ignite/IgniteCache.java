@@ -201,18 +201,62 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     public boolean isLocalLocked(K key, boolean byCurrThread);
 
-    public QueryCursor<Entry<K, V>> query(QueryPredicate<K, V> filter);
+    /**
+     * Queries cache with given predicate.
+     *
+     * @param filter Filter.
+     * @return Cursor.
+     */
+    public QueryCursor<Entry<K, V>> query(QueryPredicate filter);
 
-    public <R> QueryCursor<R> query(QueryReducer<Entry<K, V>, R> rmtRdc, QueryPredicate<K, V> filter);
+    /**
+     * Queries configured indexing SPI with given predicate.
+     *
+     * @param filter Filter.
+     * @return Cursor.
+     */
+    public <Z> QueryCursor<Z> querySpi(QuerySpiPredicate filter);
 
-    public QueryCursor<List<?>> queryFields(QuerySqlPredicate<K, V> filter);
+    /**
+     * Queries cache with given predicate with remote reducer.
+     *
+     * @param rmtRdc Remote reducer.
+     * @param filter Filter.
+     * @return Cursor.
+     */
+    public <R> QueryCursor<R> query(IgniteReducer<Entry<K, V>, R> rmtRdc, QueryPredicate filter);
 
-    public <R> QueryCursor<R> queryFields(QueryReducer<List<?>, R> rmtRdc, QuerySqlPredicate<K, V> filter);
+    /**
+     * Queries separate entry fields with given SQL predicate.
+     *
+     * @param filter SQL Filter.
+     * @return Cursor.
+     */
+    public QueryCursor<List<?>> queryFields(QuerySqlPredicate filter);
 
-    public QueryCursor<Entry<K, V>> localQuery(QueryPredicate<K, V> filter);
+    /**
+     * Queries cache with given predicate only locally.
+     *
+     * @param filter Filter.
+     * @return Cursor.
+     */
+    public QueryCursor<Entry<K, V>> localQuery(QueryPredicate filter);
 
-    public QueryCursor<List<?>> localQueryFields(QuerySqlPredicate<K, V> filter);
+    /**
+     * Queries separate entry fields with given SQL predicate only locally.
+     *
+     * @param filter Filter.
+     * @return Cursor.
+     */
+    public QueryCursor<List<?>> localQueryFields(QuerySqlPredicate filter);
 
+    /**
+     * Allows for iteration over local cache entries.
+     *
+     * @param peekModes Peek modes.
+     * @return Iterable over local cache entries.
+     * @throws CacheException If failed.
+     */
     public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException;
 
     /**

@@ -17,20 +17,16 @@
 
 package org.apache.ignite.cache.query;
 
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import javax.cache.*;
+import java.io.*;
 
 /**
  * Query predicate to pass into any of {@code Cache.query(...)} methods.
  * Use {@link QuerySqlPredicate} and {@link QueryTextPredicate} for SQL and
  * text queries accordingly.
- *
- * @author @java.author
- * @version @java.version
  */
-public abstract class QueryPredicate<K, V> implements IgnitePredicate<Cache.Entry<K, V>> {
+public abstract class QueryPredicate implements Serializable {
     /** Page size. */
     private int pageSize;
 

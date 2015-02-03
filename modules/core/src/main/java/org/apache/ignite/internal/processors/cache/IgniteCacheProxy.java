@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -232,9 +233,115 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
     }
 
     /** {@inheritDoc} */
+    @Override public QueryCursor<Entry<K,V>> query(QueryPredicate filter) {
+        A.notNull(filter, "filter");
+
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            if (filter instanceof QuerySqlPredicate) {
+                // TODO query over entries on indexing
+
+                return null;
+            }
+
+            if (filter instanceof QueryScanPredicate) {
+                CacheQuery<Map.Entry<K,V>> res = delegate.queries().createScanQuery((IgniteBiPredicate<K,V>)filter);
+
+                // TODO convert to QueryCursor.
+                return null;
+            }
+
+            if (filter instanceof QueryTextPredicate) {
+                QueryTextPredicate p = (QueryTextPredicate)filter;
+
+                CacheQueryFuture<Map.Entry<K,V>> res = delegate.queries().createFullTextQuery(p.getType(), p.getText()).execute();
+
+                // TODO convert to QueryCursor.
+                return null;
+            }
+
+            throw new IgniteException("Unsupported query predicate: " + filter);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <Z> QueryCursor<Z> querySpi(QuerySpiPredicate filter) {
+        A.notNull(filter, "filter");
+
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            CacheQueryFuture<Object> res = ((GridCacheQueriesEx)delegate.queries()).createSpiQuery()
+                .execute(filter.getArgs());
+
+            // TODO convert to QueryCursor.
+            return null;
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> QueryCursor<R> query(IgniteReducer<Entry<K,V>,R> rmtRdc, QueryPredicate filter) {
+        A.notNull(filter, "filter");
+        A.notNull(rmtRdc, "rmtRdc");
+
+        // TODO implement
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public QueryCursor<List<?>> queryFields(QuerySqlPredicate filter) {
+        A.notNull(filter, "filter");
+
+        // TODO implement
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public QueryCursor<Entry<K,V>> localQuery(QueryPredicate filter) {
+        A.notNull(filter, "filter");
+
+        // TODO implement
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public QueryCursor<List<?>> localQueryFields(QuerySqlPredicate filter) {
+        A.notNull(filter, "filter");
+
+        // TODO implement
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            // TODO IGNITE-1.
+            throw new UnsupportedOperationException();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public QueryMetrics queryMetrics() {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.queries().metrics();
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -948,48 +1055,6 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
         finally {
             gate.leave(prev);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryCursor<Entry<K, V>> query(QueryPredicate<K, V> filter) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> QueryCursor<R> query(QueryReducer<Entry<K, V>, R> rmtRdc, QueryPredicate<K, V> filter) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> queryFields(QuerySqlPredicate<K, V> filter) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> QueryCursor<R> queryFields(QueryReducer<List<?>, R> rmtRdc, QuerySqlPredicate<K, V> filter) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryCursor<Entry<K, V>> localQuery(QueryPredicate<K, V> filter) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> localQueryFields(QuerySqlPredicate<K, V> filter) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryMetrics queryMetrics() {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

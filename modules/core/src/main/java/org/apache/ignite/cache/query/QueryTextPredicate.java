@@ -19,24 +19,40 @@ package org.apache.ignite.cache.query;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import javax.cache.*;
-
 /**
- * TODO: Add class description.
- *
- * @author @java.author
- * @version @java.version
+ * Predicate for Lucene based fulltext search.
  */
-public final class QueryTextPredicate<K, V> extends QueryPredicate<K, V> {
+public final class QueryTextPredicate extends QueryPredicate {
+    /** */
+    private Class<?> type;
+
     /** SQL clause. */
     private String txt;
 
-    /** Arguments. */
-    private Object[] args;
-
-    public QueryTextPredicate(String txt, Object... args) {
+    /**
+     * @param txt Search string.
+     */
+    public QueryTextPredicate(Class<?> type, String txt) {
+        this.type = type;
         this.txt = txt;
-        this.args = args;
+    }
+
+    /**
+     * Gets type for query.
+     *
+     * @return Type.
+     */
+    public Class<?> getType() {
+        return type;
+    }
+
+    /**
+     * Sets type for query.
+     *
+     * @param type Type.
+     */
+    public void setType(Class<?> type) {
+        this.type = type;
     }
 
     /**
@@ -55,29 +71,6 @@ public final class QueryTextPredicate<K, V> extends QueryPredicate<K, V> {
      */
     public void setText(String txt) {
         this.txt = txt;
-    }
-
-    /**
-     * Gets text search arguments.
-     *
-     * @return Text search arguments.
-     */
-    public Object[] getArgs() {
-        return args;
-    }
-
-    /**
-     * Sets text search arguments.
-     *
-     * @param args Text search arguments.
-     */
-    public void setArgs(Object... args) {
-        this.args = args;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean apply(Cache.Entry<K, V> entry) {
-        return false; // Not used.
     }
 
     /** {@inheritDoc} */
