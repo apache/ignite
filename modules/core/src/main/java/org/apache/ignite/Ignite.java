@@ -308,10 +308,10 @@ public interface Ignite extends AutoCloseable {
      * @param initVal Initial value for sequence. If sequence already cached, {@code initVal} will be ignored.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
      * @return Sequence for the given name.
-     * @throws IgniteCheckedException If sequence could not be fetched or created.
+     * @throws IgniteException If sequence could not be fetched or created.
      */
     @Nullable public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Will get a atomic long from cache and create one if it has not been created yet and {@code create} flag
@@ -322,10 +322,10 @@ public interface Ignite extends AutoCloseable {
      *        will be ignored.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
      * @return Atomic long.
-     * @throws IgniteCheckedException If atomic long could not be fetched or created.
+     * @throws IgniteException If atomic long could not be fetched or created.
      */
     @Nullable public IgniteAtomicLong atomicLong(String name, long initVal, boolean create)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Will get a atomic reference from cache and create one if it has not been created yet and {@code create} flag
@@ -336,10 +336,10 @@ public interface Ignite extends AutoCloseable {
      *      {@code initVal} will be ignored.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
      * @return Atomic reference for the given name.
-     * @throws IgniteCheckedException If atomic reference could not be fetched or created.
+     * @throws IgniteException If atomic reference could not be fetched or created.
      */
     @Nullable public <T> IgniteAtomicReference<T> atomicReference(String name, @Nullable T initVal, boolean create)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Will get a atomic stamped from cache and create one if it has not been created yet and {@code create} flag
@@ -352,10 +352,10 @@ public interface Ignite extends AutoCloseable {
      *      {@code initStamp} will be ignored.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
      * @return Atomic stamped for the given name.
-     * @throws IgniteCheckedException If atomic stamped could not be fetched or created.
+     * @throws IgniteException If atomic stamped could not be fetched or created.
      */
     @Nullable public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, @Nullable T initVal,
-        @Nullable S initStamp, boolean create) throws IgniteCheckedException;
+        @Nullable S initStamp, boolean create) throws IgniteException;
 
     /**
      * Gets or creates count down latch. If count down latch is not found in cache and {@code create} flag
@@ -367,10 +367,10 @@ public interface Ignite extends AutoCloseable {
      *      when its count reaches zero.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
      * @return Count down latch for the given name.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If latch could not be fetched or created.
      */
     @Nullable public IgniteCountDownLatch countDownLatch(String name, int cnt, boolean autoDel, boolean create)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Will get a named queue from cache and create one if it has not been created yet and {@code create} flag
@@ -387,13 +387,13 @@ public interface Ignite extends AutoCloseable {
      * @param cap Capacity of queue, {@code 0} for unbounded queue.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
      * @return Queue with given properties.
-     * @throws IgniteCheckedException If remove failed.
+     * @throws IgniteException If queue could not be fetched or created.
      */
     @Nullable public <T> IgniteQueue<T> queue(String name,
         IgniteCollectionConfiguration cfg,
         int cap,
         boolean create)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Will get a named set from cache and create one if it has not been created yet and {@code create} flag
@@ -403,12 +403,12 @@ public interface Ignite extends AutoCloseable {
      * @param cfg Set configuration.
      * @param create Flag indicating whether set should be created if does not exist.
      * @return Set with given properties.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If set could not be fetched or created.
      */
     @Nullable public <T> IgniteSet<T> set(String name,
         IgniteCollectionConfiguration cfg,
         boolean create)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Gets an instance of deployed Ignite plugin.

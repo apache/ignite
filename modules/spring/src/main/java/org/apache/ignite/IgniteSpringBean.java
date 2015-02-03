@@ -320,16 +320,14 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)
-        throws IgniteCheckedException {
+    @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {
         assert g != null;
 
         return g.atomicSequence(name, initVal, create);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create)
-        throws IgniteCheckedException {
+    @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
         assert g != null;
 
         return g.atomicLong(name, initVal, create);
@@ -339,7 +337,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     @Nullable @Override public <T> IgniteAtomicReference<T> atomicReference(String name,
         @Nullable T initVal,
         boolean create)
-        throws IgniteCheckedException
     {
         assert g != null;
 
@@ -351,7 +348,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         @Nullable T initVal,
         @Nullable S initStamp,
         boolean create)
-        throws IgniteCheckedException
     {
         assert g != null;
 
@@ -363,7 +359,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         int cnt,
         boolean autoDel,
         boolean create)
-        throws IgniteCheckedException
     {
         assert g != null;
 
@@ -375,7 +370,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         IgniteCollectionConfiguration cfg,
         int cap,
         boolean create)
-        throws IgniteCheckedException
     {
         assert g != null;
 
@@ -386,7 +380,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     @Nullable @Override public <T> IgniteSet<T> set(String name,
         IgniteCollectionConfiguration cfg,
         boolean create)
-        throws IgniteCheckedException {
+    {
         assert g != null;
 
         return g.set(name, cfg, create);

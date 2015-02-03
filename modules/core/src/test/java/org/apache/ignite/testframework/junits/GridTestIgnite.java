@@ -261,7 +261,6 @@ public class GridTestIgnite implements Ignite {
         IgniteCollectionConfiguration cfg,
         int cap,
         boolean create)
-        throws IgniteCheckedException
     {
         return null;
     }
@@ -270,7 +269,6 @@ public class GridTestIgnite implements Ignite {
     @Nullable @Override public <T> IgniteSet<T> set(String name,
         IgniteCollectionConfiguration cfg,
         boolean create)
-        throws IgniteCheckedException
     {
         return null;
     }

@@ -31,6 +31,8 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -83,6 +85,9 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
     /** Atomic data structures configuration. */
     private final IgniteAtomicConfiguration atomicCfg;
 
+    /** */
+    private GridCache<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> utilityCache;
+
     /**
      * @param ctx Context.
      */
@@ -99,6 +104,10 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
     @Override public void start() throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
+
+        utilityCache = ctx.cache().utilityCache();
+
+        assert utilityCache != null;
 
         if (atomicCfg != null) {
             GridCache atomicsCache = ctx.cache().atomicsCache();
@@ -596,11 +605,74 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
 
             if (cap <= 0)
                 cap = Integer.MAX_VALUE;
+
+            if (ctx.cache().publicCache(cfg.getCacheName()) == null)
+                throw new IgniteCheckedException("Cache for collection is not configured: " + cfg.getCacheName());
+        }
+
+        Map<String, DataStructureInfo> dsMap = utilityCache.get(DATA_STRUCTURES_KEY);
+
+        if (!create && (dsMap == null || !dsMap.containsKey(name)))
+            return null;
+
+        DataStructureInfo dsInfo = new DataStructureInfo(name,
+            DataStructureType.QUEUE,
+            create ? new QueueInfo(cfg.isCollocated(), cap, cfg.getCacheName()) : null);
+
+        IgniteCheckedException err = validateDataStructure(utilityCache.get(DATA_STRUCTURES_KEY), dsInfo, create);
+
+        if (err != null)
+            throw err;
+
+        try (IgniteInternalTx tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+            dsMap = utilityCache.get(DATA_STRUCTURES_KEY);
+
+            validateDataStructure(dsMap, dsInfo, create);
+
+            String cacheName;
+
+            if (create) {
+                if (dsMap == null)  {
+                    dsMap = new HashMap<>();
+
+                    dsMap.put(name, dsInfo);
+                }
+
+                DataStructureInfo info = dsMap.get(name);
+
+                if (info == null)
+                    dsMap.put(name, info);
+            }
+            else if (dsMap == null || !dsMap.containsKey(name))
+                return null;
+
+            tx.commit();
         }
 
         GridCacheAdapter cache = cacheForCollection(cfg);
 
         return cache.context().dataStructures().queue(name, cap, create && cfg.isCollocated(), create);
+    }
+
+    /**
+     * @param dsMap Map with data structure information.
+     * @param info New data structure information.
+     * @return {@link IgniteException} if validation failed.
+     */
+    @Nullable private static IgniteCheckedException validateDataStructure(
+        @Nullable Map<String, DataStructureInfo> dsMap,
+        DataStructureInfo info,
+        boolean create)
+    {
+        if (dsMap == null)
+            return null;
+
+        DataStructureInfo oldInfo = dsMap.get(info.name);
+
+        if (oldInfo != null)
+            return oldInfo.validateConfiguration(info, create);
+
+        return null;
     }
 
     /**
@@ -625,7 +697,8 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
     {
         A.notNull(name, "name");
 
-        A.ensure(cnt >= 0, "count can not be negative");
+        if (create)
+            A.ensure(cnt >= 0, "count can not be negative");
 
         checkAtomicsConfiguration();
 
@@ -954,5 +1027,305 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
         if (atomicCfg == null)
             throw new IgniteException("Atomic data structure can not be created, " +
                 "need to provide IgniteAtomicConfiguration.");
+    }
+
+    /**
+     *
+     */
+    static enum DataStructureType {
+        /** */
+        ATOMIC_LONG(IgniteAtomicLong.class.getSimpleName()),
+
+        /** */
+        ATOMIC_REF(IgniteAtomicReference.class.getSimpleName()),
+
+        /** */
+        ATOMIC_SEQ(IgniteAtomicSequence.class.getSimpleName()),
+
+        /** */
+        ATOMIC_STAMPED(IgniteAtomicStamped.class.getSimpleName()),
+
+        /** */
+        QUEUE(IgniteQueue.class.getSimpleName()),
+
+        /** */
+        SET(IgniteSet.class.getSimpleName());
+
+        /** */
+        private static final DataStructureType[] VALS = values();
+
+        /** */
+        private String name;
+
+        /**
+         * @param name Name.
+         */
+        DataStructureType(String name) {
+            this.name = name;
+        }
+
+        /**
+         * @return Data structure public class name.
+         */
+        public String className() {
+            return name;
+        }
+
+        /**
+         * @param ord Ordinal value.
+         * @return Enumerated value or {@code null} if ordinal out of range.
+         */
+        @Nullable public static DataStructureType fromOrdinal(int ord) {
+            return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+        }
+    }
+
+    /**
+     *
+     */
+    static class SetInfo implements Externalizable {
+        /** */
+        private boolean collocated;
+
+        /** */
+        private String cacheName;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public SetInfo() {
+            // No-op.
+        }
+
+        /**
+         * @param collocated Collocated flag.
+         */
+        public SetInfo(boolean collocated) {
+            this.collocated = collocated;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            collocated = in.readBoolean();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeBoolean(collocated);
+        }
+    }
+
+    /**
+     *
+     */
+    static class QueueInfo implements Externalizable {
+        /** */
+        private boolean collocated;
+
+        /** */
+        private int cap;
+
+        /** */
+        private String cacheName;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public QueueInfo() {
+            // No-op.
+        }
+
+        /**
+         * @param collocated Collocated flag.
+         * @param cap Queue capacity.
+         * @param cacheName Cache name.
+         */
+        public QueueInfo(boolean collocated, int cap, String cacheName) {
+            this.collocated = collocated;
+            this.cap = cap;
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            collocated = in.readBoolean();
+            cap = in.readInt();
+            cacheName = U.readString(in);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeBoolean(collocated);
+            out.writeInt(cap);
+            U.writeString(out, cacheName);
+        }
+    }
+
+    /**
+     *
+     */
+    static class DataStructureInfo implements Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private String name;
+
+        /** */
+        private DataStructureType type;
+
+        /** */
+        private Object info;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public DataStructureInfo() {
+            // No-op.
+        }
+
+        /**
+         * @param name Data structure name.
+         * @param type Data structure type.
+         * @param info Data structure information.
+         */
+        DataStructureInfo(String name, DataStructureType type, Externalizable info) {
+            this.name = name;
+            this.type = type;
+            this.info = info;
+        }
+
+        /**
+         * @param dsInfo New data structure info.
+         * @param create Create flag.
+         * @return Exception if validation failed.
+         */
+        @Nullable IgniteCheckedException validateConfiguration(DataStructureInfo dsInfo, boolean create) {
+            if (type != dsInfo.type) {
+                return new IgniteCheckedException("Another data structure with the same name already created " +
+                    "[name= " + name +
+                    ", new= " + dsInfo.type.className() +
+                    ", existing=" + type.className() + ']');
+            }
+
+            if (create) {
+                if (type == DataStructureType.QUEUE ) {
+                    QueueInfo oldInfo = (QueueInfo)info;
+                    QueueInfo newInfo = (QueueInfo)dsInfo.info;
+
+                    if (oldInfo.collocated != newInfo.collocated) {
+                        return new IgniteCheckedException("Another queue with the same name but different " +
+                            "configuration already created [name= " + name +
+                            ", newCollocated= " + newInfo.collocated +
+                            ", existingCollocated=" + newInfo.collocated + ']');
+                    }
+
+                    if (oldInfo.cap != newInfo.cap) {
+                        return new IgniteCheckedException("Another queue with the same name but different " +
+                            "configuration already created [name= " + name +
+                            ", newCapacity= " + newInfo.cap+
+                            ", existingCapacity=" + newInfo.cap + ']');
+                    }
+                }
+                else if (type == DataStructureType.SET ) {
+                    SetInfo oldInfo = (SetInfo)info;
+                    SetInfo newInfo = (SetInfo)dsInfo.info;
+
+                    if (oldInfo.collocated != newInfo.collocated) {
+                        return new IgniteCheckedException("Another set with the same name but different " +
+                            "configuration already created [name= " + name +
+                            ", newCollocated= " + newInfo.collocated +
+                            ", existingCollocated=" + newInfo.collocated + ']');
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeString(out, name);
+            U.writeEnum(out, type);
+            out.writeObject(info);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            name = U.readString(in);
+            type = DataStructureType.fromOrdinal(in.readByte());
+            info = in.readObject();
+        }
+    }
+    /**
+     *
+     */
+    static class AddAtomicProcessor implements
+        EntryProcessor<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>, IgniteException>,
+        Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private DataStructureInfo info;
+
+        /**
+         * @param info Data structure information.
+         */
+        AddAtomicProcessor(DataStructureInfo info) {
+            this.info = info;
+        }
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public AddAtomicProcessor() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteException process(
+            MutableEntry<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> entry,
+            Object... args)
+            throws EntryProcessorException
+        {
+            Map<String, DataStructureInfo> map = entry.getValue();
+
+            if (map == null) {
+                map = new HashMap<>();
+
+                map.put(info.name, info);
+
+                entry.setValue(map);
+
+                return null;
+            }
+
+            DataStructureInfo oldInfo = map.get(info.name);
+
+            if (oldInfo == null) {
+                map = new HashMap<>(map);
+
+                map.put(info.name, info);
+
+                entry.setValue(map);
+
+                return null;
+            }
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            info.writeExternal(out);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            info = new DataStructureInfo();
+
+            info.readExternal(in);
+        }
     }
 }

@@ -3278,15 +3278,14 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)
-        throws IgniteCheckedException {
+    @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {
         guard();
 
         try {
             return ctx.dataStructures().sequence(name, initVal, create);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -3294,15 +3293,14 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create)
-        throws IgniteCheckedException {
+    @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
         guard();
 
         try {
             return ctx.dataStructures().atomicLong(name, initVal, create);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -3313,14 +3311,14 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     @Nullable @Override public <T> IgniteAtomicReference<T> atomicReference(String name,
         @Nullable T initVal,
         boolean create)
-        throws IgniteCheckedException {
+    {
         guard();
 
         try {
             return ctx.dataStructures().atomicReference(name, initVal, create);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -3331,14 +3329,15 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     @Nullable @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
         @Nullable T initVal,
         @Nullable S initStamp,
-        boolean create) throws IgniteCheckedException {
+        boolean create)
+    {
         guard();
 
         try {
             return ctx.dataStructures().atomicStamped(name, initVal, initStamp, create);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -3349,14 +3348,15 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     @Nullable @Override public IgniteCountDownLatch countDownLatch(String name,
         int cnt,
         boolean autoDel,
-        boolean create) throws IgniteCheckedException {
+        boolean create)
+    {
         guard();
 
         try {
             return ctx.dataStructures().countDownLatch(name, cnt, autoDel, create);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -3367,7 +3367,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     @Nullable @Override public <T> IgniteQueue<T> queue(String name,
         IgniteCollectionConfiguration cfg,
         int cap,
-        boolean create) throws IgniteCheckedException
+        boolean create)
     {
         guard();
 
@@ -3375,7 +3375,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             return ctx.dataStructures().queue(name, cfg, cap, create);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -3386,7 +3386,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     @Nullable @Override public <T> IgniteSet<T> set(String name,
         IgniteCollectionConfiguration cfg,
         boolean create)
-        throws IgniteCheckedException
     {
         guard();
 
@@ -3394,7 +3393,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             return ctx.dataStructures().set(name, cfg, create);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
         finally {
             unguard();
