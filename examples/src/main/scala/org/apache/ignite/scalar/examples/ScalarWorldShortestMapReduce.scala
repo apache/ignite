@@ -33,7 +33,7 @@ object ScalarWorldShortestMapReduce extends App {
         val input = "World shortest mapreduce application"
 
         println("Non-space characters count: " +
-            ignite.reduce$[Int, Int](for (w <- input.split(" ")) yield () => w.length, _.sum, null)
+            ignite$.reduce$[Int, Int](for (w <- input.split(" ")) yield () => w.length, _.sum, null)
         )
     }
 }

@@ -17,16 +17,15 @@
 
 package org.apache.ignite.scalar.examples
 
+import java.math._
+import java.util
+
 import org.apache.ignite.compute.ComputeJobContext
-import org.apache.ignite.internal.IgniteInternalFuture
-import org.apache.ignite.lang.{IgniteFuture, IgniteClosure}
+import org.apache.ignite.lang.{IgniteClosure, IgniteFuture}
 import org.apache.ignite.resources.IgniteJobContextResource
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 import org.jetbrains.annotations.Nullable
-
-import java.math._
-import java.util
 
 /**
  * This example recursively calculates `Fibonacci` numbers on the grid. This is
@@ -48,14 +47,14 @@ object ScalarContinuationExample {
             // Calculate fibonacci for N.
             val N: Long = 100
 
-            val thisNode = ignite.cluster().localNode
+            val thisNode = ignite$.cluster().localNode
 
             val start = System.currentTimeMillis
 
             // Projection that excludes this node if others exists.
-            val prj = if (ignite.cluster().nodes().size() > 1) ignite.cluster().forOthers(thisNode) else ignite.cluster().forNode(thisNode)
+            val prj = if (ignite$.cluster().nodes().size() > 1) ignite$.cluster().forOthers(thisNode) else ignite$.cluster().forNode(thisNode)
 
-            val fib = ignite.compute(prj).apply(new FibonacciClosure(thisNode.id()), N)
+            val fib = ignite$.compute(prj).apply(new FibonacciClosure(thisNode.id()), N)
 
             val duration = System.currentTimeMillis - start
 
@@ -95,7 +94,7 @@ class FibonacciClosure (
             // Make sure n is not negative.
             val n = math.abs(num)
 
-            val g = ignite
+            val g = ignite$
 
             if (n <= 2)
                 return if (n == 0)
@@ -110,12 +109,12 @@ class FibonacciClosure (
             fut1 = store.get(n - 1)
             fut2 = store.get(n - 2)
 
-            val excludeNode = ignite.cluster().node(excludeNodeId)
+            val excludeNode = ignite$.cluster().node(excludeNodeId)
 
             // Projection that excludes node with id passed in constructor if others exists.
-            val prj = if (ignite.cluster().nodes().size() > 1) ignite.cluster().forOthers(excludeNode) else ignite.cluster().forNode(excludeNode)
+            val prj = if (ignite$.cluster().nodes().size() > 1) ignite$.cluster().forOthers(excludeNode) else ignite$.cluster().forNode(excludeNode)
 
-            val comp = ignite.compute(prj).withAsync()
+            val comp = ignite$.compute(prj).withAsync()
 
             // If future is not cached in node-local store, cache it.
             // Note recursive grid execution!

@@ -17,13 +17,13 @@
 
 package org.apache.ignite.scalar.examples
 
+import java.util
+import java.util.ConcurrentModificationException
+
 import org.apache.ignite.cache.CacheProjection
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 import org.jdk8.backport.ThreadLocalRandom8
-
-import java.util
-import java.util.ConcurrentModificationException
 
 import scala.collection.JavaConversions._
 
@@ -56,6 +56,12 @@ object ScalarSnowflakeSchemaExample {
     /** ID generator. */
     private[this] val idGen = Stream.from(0).iterator
 
+    /** DimStore data. */
+    private[this] val dataStore = scala.collection.mutable.Map[Integer, DimStore]()
+
+    /** DimProduct data. */
+    private[this] val dataProduct = scala.collection.mutable.Map[Integer, DimProduct]()
+
     /**
      * Example entry point. No arguments required.
      */
@@ -66,6 +72,7 @@ object ScalarSnowflakeSchemaExample {
             cache$(PART_CACHE_NAME).get.globalClearAll(0)
 
             populateDimensions()
+            populateFacts()
 
             queryStorePurchases()
             queryProductPurchases()
@@ -77,7 +84,7 @@ object ScalarSnowflakeSchemaExample {
      * `DimStore` and `DimProduct` instances.
      */
     def populateDimensions() {
-        val dimCache = ignite.jcache[Int, Object](REPL_CACHE_NAME)
+        val dimCache = ignite$.jcache[Int, Object](REPL_CACHE_NAME)
 
         val store1 = new DimStore(idGen.next(), "Store1", "12345", "321 Chilly Dr, NY")
         val store2 = new DimStore(idGen.next(), "Store2", "54321", "123 Windy Dr, San Francisco")
@@ -86,10 +93,31 @@ object ScalarSnowflakeSchemaExample {
         dimCache.put(store1.id, store1)
         dimCache.put(store2.id, store2)
 
+        dataStore.put(store1.id, store1)
+        dataStore.put(store2.id, store2)
+
         for (i <- 1 to 20) {
             val product = new DimProduct(idGen.next(), "Product" + i, i + 1, (i + 1) * 10)
 
             dimCache.put(product.id, product)
+
+            dataProduct.put(product.id, product)
+        }
+    }
+
+    /**
+     * Populate cache with `facts`, which in our case are `FactPurchase` objects.
+     */
+    def populateFacts() {
+        val dimCache = ignite$.jcache[Int, Object](REPL_CACHE_NAME)
+        val factCache = ignite$.jcache[Int, FactPurchase](PART_CACHE_NAME)
+
+        for (i <- 1 to 100) {
+            val store: DimStore = rand(dataStore.values)
+            val prod: DimProduct = rand(dataProduct.values)
+            val purchase: FactPurchase = new FactPurchase(idGen.next(), prod.id, store.id, i + 1)
+
+            factCache.put(purchase.id, purchase)
         }
     }
 
@@ -99,7 +127,7 @@ object ScalarSnowflakeSchemaExample {
      * `FactPurchase` objects stored in `partitioned` cache.
      */
     def queryStorePurchases() {
-        val factCache = ignite.cache[Int, FactPurchase](PART_CACHE_NAME)
+        val factCache = ignite$.cache[Int, FactPurchase](PART_CACHE_NAME)
 
         val storePurchases = factCache.sql(
             "from \"replicated\".DimStore, \"partitioned\".FactPurchase " +
@@ -115,8 +143,8 @@ object ScalarSnowflakeSchemaExample {
      * stored in `partitioned` cache.
      */
     private def queryProductPurchases() {
-        val dimCache = ignite.cache[Int, Object](REPL_CACHE_NAME)
-        val factCache = ignite.cache[Int, FactPurchase](PART_CACHE_NAME)
+        val dimCache = ignite$.cache[Int, Object](REPL_CACHE_NAME)
+        val factCache = ignite$.cache[Int, FactPurchase](PART_CACHE_NAME)
 
         val prods: CacheProjection[Int, DimProduct] = dimCache.viewByType(classOf[Int], classOf[DimProduct])
 

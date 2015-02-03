@@ -53,17 +53,17 @@ object ScalarCacheAffinityExample2 {
 
             ('A' to 'Z').foreach(keys :+= _.toString)
 
-            populateCache(ignite, keys)
+            populateCache(ignite$, keys)
 
             // Map all keys to nodes.
-            val mappings = ignite.cluster().mapKeysToNodes(NAME, keys)
+            val mappings = ignite$.cluster().mapKeysToNodes(NAME, keys)
 
             mappings.foreach(mapping => {
                 val node = mapping._1
                 val mappedKeys = mapping._2
 
                 if (node != null) {
-                    ignite.cluster().forNode(node) *< (() => {
+                    ignite$.cluster().forNode(node) *< (() => {
                         breakable {
                             println(">>> Executing affinity job for keys: " + mappedKeys)
 
@@ -73,7 +73,7 @@ object ScalarCacheAffinityExample2 {
                             // If cache is not defined at this point then it means that
                             // job was not routed by affinity.
                             if (!cache.isDefined)
-                                println(">>> Cache not found [nodeId=" + ignite.cluster().localNode().id() +
+                                println(">>> Cache not found [nodeId=" + ignite$.cluster().localNode().id() +
                                     ", cacheName=" + NAME + ']').^^
 
                             // Check cache without loading the value.

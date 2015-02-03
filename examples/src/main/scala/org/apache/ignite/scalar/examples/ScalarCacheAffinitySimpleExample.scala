@@ -53,7 +53,7 @@ object ScalarCacheAffinitySimpleExample extends App {
         // Clean up caches on all nodes before run.
         cache$(NAME).get.globalClearAll(0)
 
-        val c = ignite.cache[Int, String](NAME)
+        val c = ignite$.cache[Int, String](NAME)
 
         populate(c)
         visit(c)
@@ -67,7 +67,7 @@ object ScalarCacheAffinitySimpleExample extends App {
      */
     private def visit(c: Cache) {
         (0 until KEY_CNT).foreach(i =>
-            ignite.compute().affinityRun(NAME, i,
+            ignite$.compute().affinityRun(NAME, i,
                 () => println("Co-located [key= " + i + ", value=" + c.peek(i) + ']'))
         )
     }

@@ -33,7 +33,7 @@
     </property>
 
     <property>
-        <name>fs.AbstractFileSystem.ggfs.impl</name>
+        <name>fs.AbstractFileSystem.ignitefs.impl</name>
         <value>org.apache.ignite.fs.hadoop.v2.GridGgfsHadoopFileSystem</value>
     </property>
 </configuration>

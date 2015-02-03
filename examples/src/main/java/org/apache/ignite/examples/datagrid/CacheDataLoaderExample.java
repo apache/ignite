@@ -46,7 +46,7 @@ public class CacheDataLoaderExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         ExamplesUtils.checkMinMemory(MIN_MEMORY);

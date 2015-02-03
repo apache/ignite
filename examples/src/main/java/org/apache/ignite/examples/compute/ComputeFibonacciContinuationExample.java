@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.examples.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
@@ -47,9 +46,9 @@ public final class ComputeFibonacciContinuationExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) throws IgniteException {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println("Compute Fibonacci continuation example started.");

@@ -17,14 +17,14 @@
 
 package org.apache.ignite.scalar.examples
 
+import java.util.concurrent.Callable
+
 import org.apache.ignite._
 import org.apache.ignite.cache.CacheName
 import org.apache.ignite.cache.affinity.CacheAffinityKeyMapped
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 import org.jetbrains.annotations.Nullable
-
-import java.util.concurrent.Callable
 
 /**
  * Example of how to collocate computations and data in Ignite using
@@ -59,12 +59,12 @@ object ScalarCacheAffinityExample1 {
 
             ('A' to 'Z').foreach(keys :+= _.toString)
 
-            populateCache(ignite, keys)
+            populateCache(ignite$, keys)
 
             var results = Map.empty[String, String]
 
             keys.foreach(key => {
-                val res = ignite.call$(
+                val res = ignite$.call$(
                     new Callable[String] {
                         @CacheAffinityKeyMapped
                         def affinityKey(): String = key
@@ -78,7 +78,7 @@ object ScalarCacheAffinityExample1 {
                             val cache = cache$[String, String](NAME)
 
                             if (!cache.isDefined) {
-                                println(">>> Cache not found [nodeId=" + ignite.cluster().localNode.id +
+                                println(">>> Cache not found [nodeId=" + ignite$.cluster().localNode.id +
                                     ", cacheName=" + NAME + ']')
 
                                 "Error"

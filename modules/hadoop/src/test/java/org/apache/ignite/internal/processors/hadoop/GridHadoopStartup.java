@@ -42,7 +42,7 @@ public class GridHadoopStartup {
         cfg.set("fs.defaultFS", "ggfs://ggfs@localhost");
 
         cfg.set("fs.ggfs.impl", org.apache.ignite.fs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
-        cfg.set("fs.AbstractFileSystem.ggfs.impl", org.apache.ignite.fs.hadoop.v2.GridGgfsHadoopFileSystem.class.getName());
+        cfg.set("fs.AbstractFileSystem.ignitefs.impl", org.apache.ignite.fs.hadoop.v2.GridGgfsHadoopFileSystem.class.getName());
 
         cfg.set("dfs.client.block.write.replace-datanode-on-failure.policy", "NEVER");
 

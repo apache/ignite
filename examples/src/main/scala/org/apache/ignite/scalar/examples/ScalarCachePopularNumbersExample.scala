@@ -17,12 +17,12 @@
 
 package org.apache.ignite.scalar.examples
 
-import org.apache.ignite.IgniteCheckedException
+import java.util.Timer
+
+import org.apache.ignite.IgniteException
 import org.apache.ignite.examples.datagrid.CacheNodeStartup
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
-
-import java.util.Timer
 
 import scala.util.Random
 
@@ -58,7 +58,7 @@ object ScalarCachePopularNumbersExample extends App {
         println()
         println(">>> Cache popular numbers example started.")
 
-        val grp = ignite.cluster().forCache(CACHE_NAME)
+        val grp = ignite$.cluster().forCache(CACHE_NAME)
 
         if (grp.nodes().isEmpty)
             println("Ignite does not have cache configured: " + CACHE_NAME);
@@ -75,7 +75,7 @@ object ScalarCachePopularNumbersExample extends App {
                 query(POPULAR_NUMBERS_CNT)
 
                 // Clean up caches on all nodes after run.
-                ignite.cluster().forCache(CACHE_NAME).bcastRun(() => ignite.cache(CACHE_NAME).clearAll(), null)
+                ignite$.cluster().forCache(CACHE_NAME).bcastRun(() => ignite$.cache(CACHE_NAME).clearAll(), null)
             }
             finally {
                 popularNumbersQryTimer.cancel()
@@ -85,9 +85,9 @@ object ScalarCachePopularNumbersExample extends App {
 
     /**
      * Populates cache in real time with numbers and keeps count for every number.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    @throws[IgniteCheckedException]
+    @throws[IgniteException]
     def streamData() {
         // Set larger per-node buffer size since our state is relatively small.
         // Reduce parallel operations since we running the whole grid locally under heavy load.

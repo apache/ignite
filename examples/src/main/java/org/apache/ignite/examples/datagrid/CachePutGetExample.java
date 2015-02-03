@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 
 import java.util.*;
 
@@ -39,7 +38,7 @@ public class CachePutGetExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
@@ -57,9 +56,9 @@ public class CachePutGetExample {
     /**
      * Execute individual puts and gets.
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void putGet() throws IgniteCheckedException {
+    private static void putGet() throws IgniteException {
         System.out.println();
         System.out.println(">>> Cache put-get example started.");
 
@@ -82,9 +81,9 @@ public class CachePutGetExample {
     /**
      * Execute bulk {@code putAll(...)} and {@code getAll(...)} operations.
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void putAllGetAll() throws IgniteCheckedException {
+    private static void putAllGetAll() throws IgniteException {
         System.out.println();
         System.out.println(">>> Starting putAll-getAll example.");
 

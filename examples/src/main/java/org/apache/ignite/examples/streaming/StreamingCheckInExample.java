@@ -101,7 +101,7 @@ public class StreamingCheckInExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         Timer timer = new Timer("check-in-query-worker");
@@ -235,10 +235,10 @@ public class StreamingCheckInExample {
      * Streams check-in events into the system.
      *
      * @param streamer Streamer.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
     @SuppressWarnings("BusyWait")
-    private static void streamData(IgniteStreamer streamer) throws IgniteCheckedException {
+    private static void streamData(IgniteStreamer streamer) throws IgniteException {
         try {
             for (int i = 0; i < CNT; i++) {
                 CheckInEvent evt = new CheckInEvent(

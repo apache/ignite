@@ -17,6 +17,8 @@
 
 package org.apache.ignite.scalar.examples
 
+import java.util._
+
 import org.apache.ignite.Ignite
 import org.apache.ignite.cache.CacheMode._
 import org.apache.ignite.cache.CacheProjection
@@ -24,8 +26,6 @@ import org.apache.ignite.cache.affinity.CacheAffinityKey
 import org.apache.ignite.internal.processors.cache.CacheFlag
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
-
-import java.util._
 
 /**
  * Demonstrates cache ad-hoc queries with Scalar.
@@ -45,7 +45,7 @@ object ScalarCacheQueryExample {
      */
     def main(args: Array[String]) {
         scalar("examples/config/example-cache.xml") {
-            example(ignite)
+            example(ignite$)
         }
     }
 

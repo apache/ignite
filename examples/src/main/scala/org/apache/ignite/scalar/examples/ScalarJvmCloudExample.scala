@@ -17,15 +17,15 @@
 
 package org.apache.ignite.scalar.examples
 
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit._
+import javax.swing.{JComponent, JLabel, JOptionPane}
+
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
-
-import javax.swing.{JComponent, JLabel, JOptionPane}
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit._
 
 /**
  * This example demonstrates how you can easily startup multiple nodes

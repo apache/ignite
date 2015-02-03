@@ -40,9 +40,9 @@ public class ComputeScheduleExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) throws IgniteException {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println("Compute schedule example started.");

@@ -96,9 +96,9 @@ public class CacheQueueExample {
      * Read items from head and tail of queue.
      *
      * @param ignite Ignite.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void readFromQueue(Ignite ignite) throws IgniteCheckedException {
+    private static void readFromQueue(Ignite ignite) throws IgniteException {
         final String queueName = queue.name();
 
         // Read queue items on each node.
@@ -111,9 +111,9 @@ public class CacheQueueExample {
      * Write items into queue.
      *
      * @param ignite Ignite.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void writeToQueue(Ignite ignite) throws IgniteCheckedException {
+    private static void writeToQueue(Ignite ignite) throws IgniteException {
         final String queueName = queue.name();
 
         // Write queue items on each node.

@@ -33,12 +33,12 @@ object ScalarScheduleExample extends App {
         println()
         println("Compute schedule example started.")
 
-        val g = ignite
+        val g = ignite$
 
         var invocations = 0
 
         // Schedule callable that returns incremented value each time.
-        val fut = ignite.scheduleLocalCall(
+        val fut = ignite$.scheduleLocalCall(
             () => {
                 invocations += 1
 

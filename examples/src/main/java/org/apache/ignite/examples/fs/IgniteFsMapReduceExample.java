@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ggfs;
+package org.apache.ignite.examples.fs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
@@ -31,12 +31,12 @@ import java.util.*;
  * the same way as {@code grep} command does.
  * <p>
  * Remote nodes should always be started with configuration file which includes
- * GGFS: {@code 'ignite.sh examples/config/filesystem/example-ggfs.xml'}.
+ * IgniteFs: {@code 'ignite.sh examples/config/filesystem/example-ignitefs.xml'}.
  * <p>
- * Alternatively you can run {@link GgfsNodeStartup} in another JVM which will start
- * node with {@code examples/config/filesystem/example-ggfs.xml} configuration.
+ * Alternatively you can run {@link IgniteFsNodeStartup} in another JVM which will start
+ * node with {@code examples/config/filesystem/example-ignitefs.xml} configuration.
  */
-public class GgfsMapReduceExample {
+public class IgniteFsMapReduceExample {
     /**
      * Executes example.
      *
@@ -49,9 +49,9 @@ public class GgfsMapReduceExample {
         else if (args.length == 1)
             System.out.println("Please provide regular expression.");
         else {
-            try (Ignite ignite = Ignition.start("examples/config/filesystem/example-ggfs.xml")) {
+            try (Ignite ignite = Ignition.start("examples/config/filesystem/example-ignitefs.xml")) {
                 System.out.println();
-                System.out.println(">>> GGFS map reduce example started.");
+                System.out.println(">>> IgniteFs map reduce example started.");
 
                 // Prepare arguments.
                 String fileName = args[0];
@@ -61,10 +61,10 @@ public class GgfsMapReduceExample {
                 String regexStr = args[1];
 
                 // Get an instance of Ignite File System.
-                IgniteFs fs = ignite.fileSystem("ggfs");
+                IgniteFs fs = ignite.fileSystem("ignitefs");
 
                 // Working directory path.
-                IgniteFsPath workDir = new IgniteFsPath("/examples/ggfs");
+                IgniteFsPath workDir = new IgniteFsPath("/examples/fs");
 
                 // Write file to GGFS.
                 IgniteFsPath fsPath = new IgniteFsPath(workDir, file.getName());
@@ -96,7 +96,7 @@ public class GgfsMapReduceExample {
      */
     private static void writeFile(IgniteFs fs, IgniteFsPath fsPath, File file) throws Exception {
         System.out.println();
-        System.out.println("Copying file to GGFS: " + file);
+        System.out.println("Copying file to IgniteFs: " + file);
 
         try (
             IgniteFsOutputStream os = fs.create(fsPath, true);
@@ -173,7 +173,7 @@ public class GgfsMapReduceExample {
         }
 
         /**  {@inheritDoc} */
-        @Override public Object execute(IgniteFs ggfs, IgniteFsRangeInputStream in) throws IgniteException, IOException {
+        @Override public Object execute(IgniteFs igniteFs, IgniteFsRangeInputStream in) throws IgniteException, IOException {
             Collection<Line> res = null;
 
             long start = in.startOffset();

@@ -80,9 +80,9 @@ public class HibernateL2CacheExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) throws IgniteException {
         // Start the node, run the example, and stop the node when finished.
         try (Ignite ignite = Ignition.start(HibernateL2CacheExampleNodeStartup.configuration())) {
             // We use a single session factory, but create a dedicated session

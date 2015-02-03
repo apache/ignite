@@ -54,7 +54,7 @@ class ScalarCacheSpec extends FlatSpec with ShouldMatchers {
      * so we can actually see what happens underneath locally and remotely.
      */
     def registerListener() {
-        val g = ignite
+        val g = ignite$
 
         g *< (() => {
             val lsnr = new IgnitePredicate[IgniteEvent]() {

@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.datagrid.store;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 
@@ -42,7 +41,7 @@ public class CacheStoreLoadDataExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         ExamplesUtils.checkMinMemory(MIN_MEMORY);

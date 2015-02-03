@@ -57,11 +57,17 @@ public class CacheStarSchemaExample {
     /** ID generator. */
     private static int idGen = (int)System.currentTimeMillis();
 
+    /** DimStore data. */
+    private static Map<Integer, DimStore> dataStore = new HashMap<>();
+
+    /** DimProduct data. */
+    private static Map<Integer, DimProduct> dataProduct = new HashMap<>();
+
     /**
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         Ignite ignite = Ignition.start("examples/config/example-cache.xml");
@@ -75,6 +81,7 @@ public class CacheStarSchemaExample {
 
         try {
             populateDimensions();
+            populateFacts();
 
             queryStorePurchases();
             queryProductPurchases();
@@ -88,9 +95,9 @@ public class CacheStarSchemaExample {
      * Populate cache with {@code 'dimensions'} which in our case are
      * {@link DimStore} and {@link DimProduct} instances.
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void populateDimensions() throws IgniteCheckedException {
+    private static void populateDimensions() throws IgniteException {
         IgniteCache<Integer, Object> cache = Ignition.ignite().jcache(REPLICATED_CACHE_NAME);
 
         DimStore store1 = new DimStore(idGen++, "Store1", "12345", "321 Chilly Dr, NY");
@@ -100,11 +107,36 @@ public class CacheStarSchemaExample {
         cache.put(store1.getId(), store1);
         cache.put(store2.getId(), store2);
 
+        dataStore.put(store1.getId(), store1);
+        dataStore.put(store2.getId(), store2);
+
         // Populate products
         for (int i = 0; i < 20; i++) {
             int id = idGen++;
 
-            cache.put(id, new DimProduct(id, "Product" + i, i + 1, (i + 1) * 10));
+            DimProduct product = new DimProduct(id, "Product" + i, i + 1, (i + 1) * 10);
+
+            cache.put(id, product);
+
+            dataProduct.put(id, product);
+        }
+    }
+
+    /**
+     * Populate cache with {@code 'facts'}, which in our case are {@link FactPurchase} objects.
+     *
+     * @throws IgniteException If failed.
+     */
+    private static void populateFacts() throws IgniteException {
+        IgniteCache<Integer, Object> factCache = Ignition.ignite().jcache(PARTITIONED_CACHE_NAME);
+
+        for (int i = 0; i < 100; i++) {
+            int id = idGen++;
+
+            DimStore store = rand(dataStore.values());
+            DimProduct prod = rand(dataProduct.values());
+
+            factCache.put(id, new FactPurchase(id, prod.getId(), store.getId(), (i + 1)));
         }
     }
 
@@ -113,7 +145,7 @@ public class CacheStarSchemaExample {
      * between {@link DimStore} objects stored in {@code 'replicated'} cache and
      * {@link FactPurchase} objects stored in {@code 'partitioned'} cache.
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
     private static void queryStorePurchases() throws IgniteCheckedException {
         GridCache<Integer, FactPurchase> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
@@ -137,7 +169,7 @@ public class CacheStarSchemaExample {
      * objects stored in {@code 'replicated'} cache and {@link FactPurchase} objects
      * stored in {@code 'partitioned'} cache.
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
     private static void queryProductPurchases() throws IgniteCheckedException {
         GridCache<Integer, Object> dimCache = Ignition.ignite().cache(REPLICATED_CACHE_NAME);

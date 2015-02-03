@@ -18,6 +18,7 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
 
 import javax.cache.processor.*;
 import java.util.concurrent.*;
@@ -39,9 +40,9 @@ public class CacheApiExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) throws IgniteException {
         try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache API example started.");
@@ -58,13 +59,13 @@ public class CacheApiExample {
      * Demonstrates cache operations similar to {@link ConcurrentMap} API. Note that
      * cache API is a lot richer than the JDK {@link ConcurrentMap}.
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void atomicMapOperations() throws IgniteCheckedException {
+    private static void atomicMapOperations() throws IgniteException {
         System.out.println();
         System.out.println(">>> Cache atomic map operation examples.");
 
-        IgniteCache<Integer, String> cache = Ignition.ignite().jcache(CACHE_NAME);
+        final IgniteCache<Integer, String> cache = Ignition.ignite().jcache(CACHE_NAME);
 
         // Put and return previous value.
         String v = cache.getAndPut(1, "1");
@@ -75,21 +76,25 @@ public class CacheApiExample {
         cache.put(2, "2");
 
 
-        // Put asynchronously (every cache operation has async counterpart).
-        // TODO IGNITE-60: uncomment when implemented.
-//        IgniteFuture<String> fut = cache.putAsync(3, "3");
-//
-//        // Asynchronously wait for result.
-//        fut.listenAsync(new IgniteInClosure<IgniteFuture<String>>() {
-//            @Override public void apply(IgniteFuture<String> fut) {
-//                try {
-//                    System.out.println("Put operation completed [previous-value=" + fut.get() + ']');
-//                }
-//                catch (IgniteCheckedException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//        });
+        // Put asynchronously.
+        final IgniteCache<Integer, String> asyncCache = cache.withAsync();
+
+        asyncCache.put(3, "3");
+
+        IgniteFuture<String> fut = asyncCache.future();
+
+        //Asynchronously wait for result.
+        fut.listenAsync(new IgniteInClosure<IgniteFuture<String>>() {
+            @Override
+            public void apply(IgniteFuture<String> fut) {
+                try {
+                    System.out.println("Put operation completed [previous-value=" + fut.get(3) + ']');
+                }
+                catch (IgniteException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 
         // Put-if-absent.
         boolean b1 = cache.putIfAbsent(4, "4");

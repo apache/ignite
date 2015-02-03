@@ -18,10 +18,6 @@
 package org.apache.ignite.examples;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.examples.*;
-
-import java.util.concurrent.*;
 
 /**
  * Example that demonstrates how to exchange messages between nodes. Use such
@@ -47,7 +43,7 @@ public final class MessagingExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
@@ -101,9 +97,9 @@ public final class MessagingExample {
      * Start listening to messages on all cluster nodes within passed in projection.
      *
      * @param prj Grid projection.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void startListening(ClusterGroup prj) throws IgniteCheckedException {
+    private static void startListening(ClusterGroup prj) throws IgniteException {
         // Add ordered message listener.
         prj.message().remoteListen(TOPIC.ORDERED, (nodeId, msg) -> {
             System.out.println("Received ordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
@@ -113,7 +109,7 @@ public final class MessagingExample {
                 // So, need to get projection for sender node through entire grid.
                 prj.ignite().forNodeId(nodeId).message().send(TOPIC.ORDERED, msg);
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 e.printStackTrace();
             }
 
@@ -129,7 +125,7 @@ public final class MessagingExample {
                 // So, need to get projection for sender node through entire grid.
                 prj.ignite().forNodeId(nodeId).message().send(TOPIC.UNORDERED, msg);
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 e.printStackTrace();
             }
 

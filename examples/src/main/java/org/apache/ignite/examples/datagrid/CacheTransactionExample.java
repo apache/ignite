@@ -18,12 +18,10 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.transactions.*;
 
 import java.io.*;
 
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -44,9 +42,9 @@ public class CacheTransactionExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) throws IgniteException {
         try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache transaction example started.");
@@ -83,9 +81,9 @@ public class CacheTransactionExample {
      *
      * @param acctId Account ID.
      * @param amount Amount to deposit.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void deposit(int acctId, double amount) throws IgniteCheckedException {
+    private static void deposit(int acctId, double amount) throws IgniteException {
         // Clone every object we get from cache, so we can freely update it.
         IgniteCache<Integer, Account> cache = Ignition.ignite().jcache(CACHE_NAME);
 

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.scalar.examples
 
+import java.util
+
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
-
-import java.util
 
 import scala.util.control.Breaks._
 
@@ -58,7 +58,7 @@ object ScalarPrimeExample {
             println(">>>")
             println(">>> Starting to check the following numbers for primes: " + util.Arrays.toString(checkVals))
 
-            val g = ignite
+            val g = ignite$
 
             checkVals.foreach(checkVal => {
                 val divisor = g.reduce$[Option[Long], Option[Option[Long]]](

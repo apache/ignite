@@ -17,11 +17,11 @@
 
 package org.apache.ignite.scalar.examples
 
+import java.util
+
 import org.apache.ignite.compute.{ComputeJob, ComputeJobResult, ComputeTaskSplitAdapter}
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
-
-import java.util
 
 import scala.collection.JavaConversions._
 
@@ -36,7 +36,7 @@ import scala.collection.JavaConversions._
  */
 object ScalarTaskExample extends App {
     scalar("examples/config/example-compute.xml") {
-        ignite.compute().execute(classOf[GridHelloWorld], "Hello Cloud World!")
+        ignite$.compute().execute(classOf[GridHelloWorld], "Hello Cloud World!")
     }
 
     /**

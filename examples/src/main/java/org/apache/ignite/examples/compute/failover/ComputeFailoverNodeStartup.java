@@ -36,9 +36,9 @@ public class ComputeFailoverNodeStartup {
      * Start up an empty node with specified configuration.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) throws IgniteException {
         Ignition.start(configuration());
     }
 
@@ -46,9 +46,9 @@ public class ComputeFailoverNodeStartup {
      * Create Ignite configuration with configured checkpoints.
      *
      * @return Ignite configuration.
-     * @throws IgniteCheckedException If configuration creation failed.
+     * @throws IgniteException If configuration creation failed.
      */
-    public static IgniteConfiguration configuration() throws IgniteCheckedException {
+    public static IgniteConfiguration configuration() throws IgniteException {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setLocalHost("127.0.0.1");

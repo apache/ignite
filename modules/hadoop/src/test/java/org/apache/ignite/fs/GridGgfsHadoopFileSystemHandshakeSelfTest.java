@@ -298,7 +298,7 @@ public class GridGgfsHadoopFileSystemHandshakeSelfTest extends GridGgfsCommonAbs
 
         cfg.set("fs.defaultFS", "ggfs://" + authority + "/");
         cfg.set("fs.ggfs.impl", org.apache.ignite.fs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
-        cfg.set("fs.AbstractFileSystem.ggfs.impl",
+        cfg.set("fs.AbstractFileSystem.ignitefs.impl",
             org.apache.ignite.fs.hadoop.v2.GridGgfsHadoopFileSystem.class.getName());
 
         cfg.setBoolean("fs.ggfs.impl.disable.cache", true);

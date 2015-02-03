@@ -91,7 +91,7 @@ public class StreamingPopularNumbersExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         Timer popularNumbersQryTimer = new Timer("numbers-query-worker");
@@ -139,9 +139,9 @@ public class StreamingPopularNumbersExample {
      * Streams random numbers into the system.
      *
      * @param ignite Ignite.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void streamData(final Ignite ignite) throws IgniteCheckedException {
+    private static void streamData(final Ignite ignite) throws IgniteException {
         final IgniteStreamer streamer = ignite.streamer("popular-numbers");
 
         // Use gaussian distribution to ensure that

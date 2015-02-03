@@ -15,20 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ggfs;
+package org.apache.ignite.examples.fs;
 
 import org.apache.ignite.*;
 
 /**
- * Starts up an empty node with GGFS configuration.
+ * Starts up an empty node with IgniteFs configuration.
  * You can also start a stand-alone Ignite instance by passing the path
  * to configuration file to {@code 'ignite.{sh|bat}'} script, like so:
- * {@code 'ignite.sh examples/config/filesystem/example-ggfs.xml'}.
+ * {@code 'ignite.sh examples/config/filesystem/example-ignitefs.xml'}.
  * <p>
  * The difference is that running this class from IDE adds all example classes to classpath
  * but running from command line doesn't.
  */
-public class GgfsNodeStartup {
+public class IgniteFsNodeStartup {
     /**
      * Start up an empty node with specified cache configuration.
      *
@@ -36,6 +36,6 @@ public class GgfsNodeStartup {
      * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws IgniteException {
-        Ignition.start("examples/config/filesystem/example-ggfs.xml");
+        Ignition.start("examples/config/filesystem/example-ignitefs.xml");
     }
 }

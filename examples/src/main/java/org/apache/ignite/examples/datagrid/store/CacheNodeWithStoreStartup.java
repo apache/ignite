@@ -39,9 +39,9 @@ public class CacheNodeWithStoreStartup {
      * Start up an empty node with specified cache configuration.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) throws IgniteException {
         Ignition.start(configure());
     }
 
@@ -49,9 +49,9 @@ public class CacheNodeWithStoreStartup {
      * Configure ignite.
      *
      * @return Ignite configuration.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    public static IgniteConfiguration configure() throws IgniteCheckedException {
+    public static IgniteConfiguration configure() throws IgniteException {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setLocalHost("127.0.0.1");

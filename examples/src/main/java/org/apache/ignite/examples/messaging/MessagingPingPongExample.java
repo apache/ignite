@@ -20,9 +20,9 @@ package org.apache.ignite.examples.messaging;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.examples.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.lang.*;
 
 import java.util.*;
 import java.util.concurrent.*;

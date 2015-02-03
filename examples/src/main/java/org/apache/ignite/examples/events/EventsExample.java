@@ -43,7 +43,7 @@ public class EventsExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
@@ -64,7 +64,7 @@ public class EventsExample {
     /**
      * Listen to events that happen only on local node.
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
     private static void localListen() throws Exception {
         System.out.println();

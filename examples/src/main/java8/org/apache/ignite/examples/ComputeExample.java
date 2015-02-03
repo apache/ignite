@@ -19,7 +19,6 @@ package org.apache.ignite.examples;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.lang.IgniteCallable;
 
 /**
  * Demonstrates broadcasting and unicasting computations within cluster.
@@ -32,7 +31,7 @@ public class ComputeExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {

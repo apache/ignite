@@ -70,7 +70,7 @@ public class CacheSetExample {
      * @param ignite Ignite.
      * @param setName Name of set.
      * @return Set.
-     * @throws IgniteCheckedException If execution failed.
+     * @throws IgniteException If execution failed.
      */
     private static CacheSet<String> initializeSet(Ignite ignite, String setName) throws IgniteCheckedException {
         // Initialize new set.
@@ -89,9 +89,9 @@ public class CacheSetExample {
      * Write items into set.
      *
      * @param ignite Ignite.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void writeToSet(Ignite ignite) throws IgniteCheckedException {
+    private static void writeToSet(Ignite ignite) throws IgniteException {
         final String setName = set.name();
 
         // Write set items on each node.
