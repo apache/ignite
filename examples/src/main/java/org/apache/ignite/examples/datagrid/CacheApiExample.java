@@ -81,6 +81,8 @@ public class CacheApiExample {
 
         asyncCache.put(3, "3");
 
+        asyncCache.get(3);
+
         IgniteFuture<String> fut = asyncCache.future();
 
         //Asynchronously wait for result.
@@ -88,7 +90,7 @@ public class CacheApiExample {
             @Override
             public void apply(IgniteFuture<String> fut) {
                 try {
-                    System.out.println("Put operation completed [previous-value=" + fut.get(3) + ']');
+                    System.out.println("Put operation completed [previous-value=" + fut.get() + ']');
                 }
                 catch (IgniteException e) {
                     e.printStackTrace();

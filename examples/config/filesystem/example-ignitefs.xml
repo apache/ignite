@@ -27,9 +27,12 @@
     Ignition.start("examples/config/filesystem/example-ignitefs.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans
-       http://www.springframework.org/schema/beans/spring-beans.xsd">
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/util
+       http://www.springframework.org/schema/util/spring-util.xsd">
 
     <!--
         Optional description.
@@ -60,7 +63,7 @@
             </bean>
         </property>
 
-        <property name="igniteFsConfiguration">
+        <property name="ggfsConfiguration">
             <list>
                 <bean class="org.apache.ignite.fs.IgniteFsConfiguration">
                     <property name="name" value="ignitefs"/>
