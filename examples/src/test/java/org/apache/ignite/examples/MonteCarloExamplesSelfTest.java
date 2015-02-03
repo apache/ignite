@@ -36,8 +36,8 @@ import org.apache.ignite.testframework.junits.common.*;
  *      The following JVM configuration must be present:
  *      <ul>
  *      <li>{@code -javaagent:[path to jboss-aop-jdk50-4.x.x.jar]}</li>
- *      <li>{@code -Djboss.aop.class.path=[path to gridgain.jar]}</li>
- *      <li>{@code -Djboss.aop.exclude=org,com -Djboss.aop.include=org.gridgain.examples}</li>
+ *      <li>{@code -Djboss.aop.class.path=[path to ignite.jar]}</li>
+ *      <li>{@code -Djboss.aop.exclude=org,com -Djboss.aop.include=org.apache.ignite.examples}</li>
  *      </ul>
  * </li>
  * <li>

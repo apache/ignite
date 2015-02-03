@@ -39,7 +39,7 @@ if (!function_exists('curl_init'))
 if (!function_exists('json_decode'))
     die('JSON not supported. (introduced in PHP 5.2.0)');
 
-$URL = 'http://localhost:8080/gridgain?';
+$URL = 'http://localhost:8080/ignite?';
 
 // Cache name to use.
 // Null or empty string for default cache.
