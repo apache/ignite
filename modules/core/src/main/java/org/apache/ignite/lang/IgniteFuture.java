@@ -49,7 +49,7 @@ public interface IgniteFuture<V> extends Future<V> {
      * @return Computation result.
      * @throws IgniteInterruptedException Subclass of {@link IgniteException} thrown if the wait was interrupted.
      * @throws IgniteFutureCancelledException Subclass of {@link IgniteException} throws if computation was cancelled.
-     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException Subclass of {@link IgniteException} thrown if the wait was timed out.
+     * @throws IgniteFutureTimeoutException Subclass of {@link IgniteException} thrown if the wait was timed out.
      * @throws IgniteException If computation failed.
      */
     public V get(long timeout)throws IgniteException;
@@ -63,7 +63,7 @@ public interface IgniteFuture<V> extends Future<V> {
      * @return Computation result.
      * @throws IgniteInterruptedException Subclass of {@link IgniteException} thrown if the wait was interrupted.
      * @throws IgniteFutureCancelledException Subclass of {@link IgniteException} throws if computation was cancelled.
-     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException Subclass of {@link IgniteException} thrown if the wait was timed out.
+     * @throws IgniteFutureTimeoutException Subclass of {@link IgniteException} thrown if the wait was timed out.
      * @throws IgniteException If computation failed.
      */
     @Override public V get(long timeout, TimeUnit unit) throws IgniteException;

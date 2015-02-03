@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.commands.ack
 
-import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
+import org.apache.ignite.cluster.ClusterGroupEmptyException
 import org.apache.ignite.internal.visor.misc.VisorAckTask
 
 import java.util.{HashSet => JavaHashSet}
@@ -113,7 +113,7 @@ class VisorAckCommand {
                     .execute(classOf[VisorAckTask], toTaskArgument(nodeIds, msg))
             }
             catch {
-                case _: ClusterGroupEmptyCheckedException => scold("Topology is empty.")
+                case _: ClusterGroupEmptyException => scold("Topology is empty.")
                 case e: Exception => scold("System error: " + e.getMessage)
             }
     }
