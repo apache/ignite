@@ -21,7 +21,7 @@ import org.apache.ignite.examples.misc.lifecycle.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
- * GridLifecycleExample self test.
+ * LifecycleExample self test.
  */
 public class LifecycleExamplesSelfTest extends GridAbstractExamplesTest {
     /**

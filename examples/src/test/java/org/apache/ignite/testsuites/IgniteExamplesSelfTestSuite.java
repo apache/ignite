@@ -26,7 +26,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 /**
  * Examples test suite.
  * <p>
- * Contains only Spring gridify examples tests.
+ * Contains only Spring ignite examples tests.
  */
 public class IgniteExamplesSelfTestSuite extends TestSuite {
     /**

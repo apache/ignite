@@ -29,7 +29,7 @@ import java.net.*;
 import java.util.*;
 
 /**
- * This example demonstrates the use of Ignite In-Memory Data Grid as a Hibernate
+ * This example demonstrates the use of Ignite In-Memory Data Ignite cluster as a Hibernate
  * Second-Level cache provider.
  * <p>
  * The Hibernate Second-Level cache (or "L2 cache" shortly) lets you significantly
@@ -49,7 +49,7 @@ import java.util.*;
  * When running example, it's easy to notice that when an object is first
  * put into a database, the L2 cache is not used and it's contents is empty.
  * However, when an object is first read from the database, it is immediately
- * stored in L2 cache (which is Ignite In-Memory Data Grid in fact), which can
+ * stored in L2 cache (which is Ignite In-Memory Data Ignite cluster in fact), which can
  * be seen in stats output. Further requests of the same object only read the data
  * from L2 cache and do not hit the database.
  * <p>

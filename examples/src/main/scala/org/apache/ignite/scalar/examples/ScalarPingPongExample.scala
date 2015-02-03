@@ -26,7 +26,7 @@ import org.apache.ignite.scalar.scalar._
 
 /**
  * Demonstrates simple protocol-based exchange in playing a ping-pong between
- * two nodes. It is analogous to `GridMessagingPingPongExample` on Java side.
+ * two nodes. It is analogous to `MessagingPingPongExample` on Java side.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.

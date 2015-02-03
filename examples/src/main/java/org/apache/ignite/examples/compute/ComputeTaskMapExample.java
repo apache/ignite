@@ -68,21 +68,21 @@ public class ComputeTaskMapExample {
          * Splits the received string to words, creates a child job for each word, and sends
          * these jobs to other nodes for processing. Each such job simply prints out the received word.
          *
-         * @param subgrid Nodes available for this task execution.
+         * @param nodes Nodes available for this task execution.
          * @param arg String to split into words for processing.
          * @return Map of jobs to nodes.
          */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> nodes, String arg) {
             String[] words = arg.split(" ");
 
             Map<ComputeJob, ClusterNode> map = new HashMap<>();
 
-            Iterator<ClusterNode> it = subgrid.iterator();
+            Iterator<ClusterNode> it = nodes.iterator();
 
             for (final String word : arg.split(" ")) {
                 // If we used all nodes, restart the iterator.
                 if (!it.hasNext())
-                    it = subgrid.iterator();
+                    it = nodes.iterator();
 
                 ClusterNode node = it.next();
 

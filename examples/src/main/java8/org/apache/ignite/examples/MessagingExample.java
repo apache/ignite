@@ -96,7 +96,7 @@ public final class MessagingExample {
     /**
      * Start listening to messages on all cluster nodes within passed in projection.
      *
-     * @param prj Grid projection.
+     * @param prj Cluster group.
      * @throws IgniteException If failed.
      */
     private static void startListening(ClusterGroup prj) throws IgniteException {
@@ -105,8 +105,8 @@ public final class MessagingExample {
             System.out.println("Received ordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
             try {
-                // Projection does not contain local node: GridProjection rmtPrj = g.forRemotes();
-                // So, need to get projection for sender node through entire grid.
+                // Projection does not contain local node: ClusterGroup rmtPrj = g.forRemotes();
+                // So, need to get projection for sender node through entire cluster.
                 prj.ignite().forNodeId(nodeId).message().send(TOPIC.ORDERED, msg);
             }
             catch (IgniteException e) {
@@ -121,8 +121,8 @@ public final class MessagingExample {
             System.out.println("Received unordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
             try {
-                // Projection does not contain local node: GridProjection rmtPrj = g.forRemotes();
-                // So, need to get projection for sender node through entire grid.
+                // Projection does not contain local node: ClusterGroup rmtPrj = g.forRemotes();
+                // So, need to get projection for sender node through entire cluster.
                 prj.ignite().forNodeId(nodeId).message().send(TOPIC.UNORDERED, msg);
             }
             catch (IgniteException e) {

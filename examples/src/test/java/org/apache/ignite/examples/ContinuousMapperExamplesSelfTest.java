@@ -21,7 +21,7 @@ import org.apache.ignite.examples.compute.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
- * GridContinuousMapperExample self test.
+ * ContinuousMapperExample self test.
  */
 public class ContinuousMapperExamplesSelfTest extends GridAbstractExamplesTest {
     /**

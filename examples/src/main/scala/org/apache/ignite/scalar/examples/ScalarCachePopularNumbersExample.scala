@@ -90,7 +90,7 @@ object ScalarCachePopularNumbersExample extends App {
     @throws[IgniteException]
     def streamData() {
         // Set larger per-node buffer size since our state is relatively small.
-        // Reduce parallel operations since we running the whole grid locally under heavy load.
+        // Reduce parallel operations since we running the whole ignite cluster locally under heavy load.
         val ldr = dataLoader$[Int, Long](CACHE_NAME, 2048)
 
         // TODO IGNITE-44: restore invoke.
@@ -101,7 +101,7 @@ object ScalarCachePopularNumbersExample extends App {
     }
 
     /**
-     * Queries a subset of most popular numbers from in-memory data grid.
+     * Queries a subset of most popular numbers from in-memory data ignite cluster.
      *
      * @param cnt Number of most popular numbers to return.
      */

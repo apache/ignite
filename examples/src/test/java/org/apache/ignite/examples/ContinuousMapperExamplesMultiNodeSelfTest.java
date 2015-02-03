@@ -18,7 +18,7 @@
 package org.apache.ignite.examples;
 
 /**
- * GridContinuousMapperExample multi-node self test.
+ * ContinuousMapperExample multi-node self test.
  */
 public class ContinuousMapperExamplesMultiNodeSelfTest extends ContinuationExamplesSelfTest {
     /** {@inheritDoc} */

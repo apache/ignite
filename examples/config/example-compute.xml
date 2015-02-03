@@ -18,7 +18,7 @@
   -->
 
 <!--
-    Grid configuration with all defaults and enabled p2p deployment and enabled events.
+    Ignite configuration with all defaults and enabled p2p deployment and enabled events.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -29,7 +29,7 @@
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <!-- Set to true to enable grid-aware class loading for examples, default is false. -->
+        <!-- Set to true to enable distributed class loading for examples, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>
 
         <property name="marshaller">

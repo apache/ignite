@@ -27,7 +27,7 @@ import org.apache.ignite.scalar.scalar._
 import scala.collection.JavaConversions._
 
 /**
- * Demonstrates basic In-Memory Data Grid operations with Scalar.
+ * Demonstrates basic In-Memory Data Ignite Cluster operations with Scalar.
  * <p>
  * Remote nodes should always be started with configuration file which includes
  * cache: `'ignite.sh examples/config/example-cache.xml'`. Local node can

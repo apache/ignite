@@ -60,7 +60,7 @@ object ScalarCacheAffinitySimpleExample extends App {
     }
 
     /**
-     * Visits every in-memory data grid entry on the remote node it resides by co-locating visiting
+     * Visits every in-memory data ignite entry on the remote node it resides by co-locating visiting
      * closure with the cache key.
      *
      * @param c Cache to use.

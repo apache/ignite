@@ -29,7 +29,7 @@ import java.util.*;
  * Demonstrates how to explicitly deploy a task. Note that
  * it is very rare when you would need such functionality as tasks are
  * auto-deployed on demand first time you execute them. So in most cases
- * you would just apply any of the {@code Grid.execute(...)} methods directly.
+ * you would just apply any of the {@code Ignite.execute(...)} methods directly.
  * However, sometimes a task is not in local class path, so you may not even
  * know the code it will execute, but you still need to execute it. For example,
  * you have two independent components in the system, and one loads the task
@@ -64,8 +64,8 @@ public final class DeploymentExample {
             // onto remote nodes on demand. For this example this task is
             // available on the classpath, however in real life that may not
             // always be the case. In those cases you should use explicit
-            // 'GridCompute.localDeployTask(Class, ClassLoader) apply and
-            // then use 'GridCompute.execute(String, Object)' method
+            // 'IgniteCompute.localDeployTask(Class, ClassLoader) apply and
+            // then use 'IgniteCompute.execute(String, Object)' method
             // passing your task name as first parameter.
             ignite.compute().localDeployTask(ExampleTask.class, ExampleTask.class.getClassLoader());
 

@@ -35,7 +35,7 @@ import java.util.concurrent.*;
  * such architecture is supported via cross-cache queries. By storing <i>dimensions</i> in
  * {@link org.apache.ignite.cache.CacheMode#REPLICATED REPLICATED} caches and <i>facts</i> in much larger
  * {@link org.apache.ignite.cache.CacheMode#PARTITIONED PARTITIONED} caches you can freely execute distributed joins across
- * your whole in-memory data grid, thus querying your in memory data without any limitations.
+ * your whole in-memory data ignite cluster, thus querying your in memory data without any limitations.
  * <p>
  * In this example we have two <i>dimensions</i>, {@link DimProduct} and {@link DimStore} and
  * one <i>fact</i> - {@link FactPurchase}. Queries are executed by joining dimensions and facts

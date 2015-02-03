@@ -21,7 +21,7 @@ import org.apache.ignite.examples.compute.montecarlo.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
- * Gridify examples self test. Excludes Gridify Spring tests.
+ * Ignite examples self test. Excludes Ignite Spring tests.
  *
  * <h1 class="header">AOP Configuration</h1>
  * In order for this test to execute, any of the following

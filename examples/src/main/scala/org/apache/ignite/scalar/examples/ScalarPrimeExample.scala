@@ -28,7 +28,7 @@ import scala.util.control.Breaks._
  * Prime Number calculation example based on Scalar.
  *
  * ==Starting Remote Nodes==
- * To try this example you should (but don't have to) start remote grid instances.
+ * To try this example you should (but don't have to) start remote ignite instances.
  * You can start as many as you like by executing the following script:
  * `{IGNITE_HOME}/bin/ignite.{bat|sh} examples/config/example-compute.xml`
  *

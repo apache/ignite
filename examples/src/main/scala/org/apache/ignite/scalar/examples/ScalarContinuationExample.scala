@@ -28,13 +28,13 @@ import org.apache.ignite.scalar.scalar._
 import org.jetbrains.annotations.Nullable
 
 /**
- * This example recursively calculates `Fibonacci` numbers on the grid. This is
+ * This example recursively calculates `Fibonacci` numbers on the ignite cluster. This is
  * a powerful design pattern which allows for creation of fully distributively recursive
  * (a.k.a. nested) tasks or closures with continuations. This example also shows
  * usage of `continuations`, which allows us to wait for results from remote nodes
  * without blocking threads.
  * <p>
- * Note that because this example utilizes local node storage via `GridNodeLocal`,
+ * Note that because this example utilizes local node storage via `NodeLocal`,
  * it gets faster if you execute it multiple times, as the more you execute it,
  * the more values it will be cached on remote nodes.
  * <p>
@@ -71,7 +71,7 @@ object ScalarContinuationExample {
 /**
  * Closure to execute.
  *
- * @param excludeNodeId Node to exclude from execution if there are more then 1 node in grid.
+ * @param excludeNodeId Node to exclude from execution if there are more then 1 node in cluster.
  */
 class FibonacciClosure (
     private[this] val excludeNodeId: util.UUID
@@ -117,7 +117,7 @@ class FibonacciClosure (
             val comp = ignite$.compute(prj).withAsync()
 
             // If future is not cached in node-local store, cache it.
-            // Note recursive grid execution!
+            // Note recursive execution!
             if (fut1 == null) {
                 comp.apply(new FibonacciClosure(excludeNodeId), n - 1)
 

@@ -60,7 +60,7 @@
             -->
             <list>
                 <!--
-                    Streamer for GridStreamingRunningAverageExample.
+                    Streamer for StreamingRunningAverageExample.
                 -->
                 <bean class="org.apache.ignite.streamer.StreamerConfiguration">
                     <property name="name" value="running-average"/>
@@ -88,7 +88,7 @@
                         -->
                         <bean class="org.apache.ignite.streamer.router.StreamerRandomEventRouter"/>
                         <!--
-                        <bean class="org.apache.ignite.streamer.router.GridStreamerLocalEventRouter"/>
+                        <bean class="org.apache.ignite.streamer.router.StreamerLocalEventRouter"/>
                         -->
                     </property>
 
@@ -103,7 +103,7 @@
                 </bean>
 
                 <!--
-                    Streamer for GridStreamingPopularNumbersExample.
+                    Streamer for StreamingPopularNumbersExample.
                 -->
                 <bean class="org.apache.ignite.streamer.StreamerConfiguration">
                     <property name="name" value="popular-numbers"/>
@@ -158,7 +158,7 @@
                 </bean>
 
                 <!--
-                    Streamer for GridStreamingOpenHighLowCloseExample.
+                    Streamer for StreamingOpenHighLowCloseExample.
                 -->
                 <bean class="org.apache.ignite.streamer.StreamerConfiguration">
                     <property name="name" value="priceBars"/>
@@ -206,7 +206,7 @@
                 </bean>
 
                 <!--
-                    Streamer for GridStreamingCheckInExample.
+                    Streamer for StreamingCheckInExample.
                 -->
                 <bean class="org.apache.ignite.streamer.StreamerConfiguration">
                     <property name="name" value="check-in"/>

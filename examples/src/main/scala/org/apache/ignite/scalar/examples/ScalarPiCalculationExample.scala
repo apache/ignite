@@ -23,7 +23,7 @@ import org.apache.ignite.scalar.scalar._
 import scala.math._
 
 /**
- * This example calculates Pi number in parallel on the grid. Note that these few
+ * This example calculates Pi number in parallel on the ignite cluster. Note that these few
  * lines of code work on one node, two nodes or hundreds of nodes without any changes
  * or any explicit deployment.
  * <p>

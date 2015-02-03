@@ -26,8 +26,8 @@ import org.apache.ignite.scalar.scalar._
 import scala.collection.JavaConversions._
 
 /**
- * Demonstrates use of full grid task API using Scalar. Note that using task-based
- * grid enabling gives you all the advanced features of Ignite such as custom topology
+ * Demonstrates use of full ignite task API using Scalar. Note that using task-based
+ * ignite enabling gives you all the advanced features of Ignite such as custom topology
  * and collision resolution, custom failover, mapping, reduction, load balancing, etc.
  * As a trade off in such cases the more code needs to be written vs. simple closure execution.
  * <p>

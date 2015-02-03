@@ -27,11 +27,11 @@ import java.util.concurrent.*;
  * Demonstrates a simple use of Ignite configured with Spring.
  * <p>
  * String "Hello World." is printed out by Callable passed into
- * the executor service provided by Grid. This statement could be printed
+ * the executor service provided by Ignite. This statement could be printed
  * out on any node in the cluster.
  * <p>
  * The major point of this example is to show ignite injection by Spring
- * framework. Grid bean is described in {@code spring-bean.xml} file and instantiated
+ * framework. Ignite bean is described in {@code spring-bean.xml} file and instantiated
  * by Spring context. Once application completed its execution Spring will
  * apply ignite bean destructor and stop the ignite.
  * <p>

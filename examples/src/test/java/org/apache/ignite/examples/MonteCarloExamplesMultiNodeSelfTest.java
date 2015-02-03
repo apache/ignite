@@ -18,7 +18,7 @@
 package org.apache.ignite.examples;
 
 /**
- * GridPrimeExample multi-node self test.
+ * PrimeExample multi-node self test.
  */
 public class MonteCarloExamplesMultiNodeSelfTest extends MonteCarloExamplesSelfTest {
     /** {@inheritDoc} */

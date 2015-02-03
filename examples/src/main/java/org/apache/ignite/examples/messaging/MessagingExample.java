@@ -98,7 +98,7 @@ public final class MessagingExample {
     /**
      * Start listening to messages on all cluster nodes within passed in projection.
      *
-     * @param msg Grid messaging.
+     * @param msg Ignite messaging.
      */
     private static void startListening(IgniteMessaging msg) {
         // Add ordered message listener.
@@ -143,7 +143,7 @@ public final class MessagingExample {
     /**
      * Listen for messages from remote nodes.
      *
-     * @param msg Grid messaging.
+     * @param msg Ignite messaging.
      * @param orderedLatch Latch for ordered messages acks.
      * @param unorderedLatch Latch for unordered messages acks.
      */

@@ -20,7 +20,7 @@ package org.apache.ignite.examples;
 import org.apache.ignite.examples.misc.client.memcache.*;
 
 /**
- * GridMemcacheRestExample multi-node self test.
+ * MemcacheRestExample multi-node self test.
  */
 public class MemcacheRestExamplesMultiNodeSelfTest extends MemcacheRestExamplesSelfTest {
     /** {@inheritDoc} */

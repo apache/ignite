@@ -60,7 +60,7 @@ object ScalarCreditRiskExample {
             val start = System.currentTimeMillis
 
             // Calculate credit risk and print it out.
-            // As you can see the grid enabling is completely hidden from the caller
+            // As you can see the ignite cluster enabling is completely hidden from the caller
             // and it is fully transparent to him. In fact, the caller is never directly
             // aware if method was executed just locally or on the 100s of cluster nodes.
             // Credit risk crdRisk is the minimal amount that creditor has to have
@@ -76,7 +76,7 @@ object ScalarCreditRiskExample {
     /**
      * Creates closures for calculating credit risks.
      *
-     * @param clusterSize Size of the grid.
+     * @param clusterSize Size of the cluster.
      * @param portfolio Portfolio.
      * @param horizon Forecast horizon in days.
      * @param iter Number of Monte-Carlo iterations.
@@ -134,9 +134,9 @@ private case class Credit(
 private class CreditRiskManager {
     /**
      * Default randomizer with normal distribution.
-     * Note that since every JVM on the grid will have its own random
+     * Note that since every JVM on the ignite cluster will have its own random
      * generator (independently initialized) the Monte-Carlo simulation
-     * will be slightly skewed when performed on the grid due to skewed
+     * will be slightly skewed when performed on the ignite cluster due to skewed
      * normal distribution of the sub-jobs comparing to execution on the
      * local node only with single random generator. Real-life applications
      * may want to provide its own implementation of distributed random
