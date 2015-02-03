@@ -1515,7 +1515,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * SPI is configured. In majority of the cases default value should be used.
      *
      * @return Name of SPI to use for indexing.
-     * @see GridIndexingSpi
+     * @see IndexingSpi
      */
     public String getIndexingSpiName() {
         return indexingSpiName;
@@ -1529,7 +1529,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * SPI is configured. In majority of the cases default value should be used.
      *
      * @param indexingSpiName Name.
-     * @see GridIndexingSpi
+     * @see IndexingSpi
      */
     public void setIndexingSpiName(String indexingSpiName) {
         this.indexingSpiName = indexingSpiName;

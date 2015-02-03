@@ -35,6 +35,7 @@ import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.authentication.noop.*;
 import org.apache.ignite.spi.indexing.*;
+import org.apache.ignite.spi.indexing.noop.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.thread.*;
 import org.apache.ignite.internal.processors.resource.*;
@@ -1513,7 +1514,7 @@ public class IgnitionEx {
             FailoverSpi[] failSpi = cfg.getFailoverSpi();
             LoadBalancingSpi[] loadBalancingSpi = cfg.getLoadBalancingSpi();
             SwapSpaceSpi swapspaceSpi = cfg.getSwapSpaceSpi();
-            GridIndexingSpi indexingSpi = cfg.getIndexingSpi();
+            IndexingSpi indexingSpi = cfg.getIndexingSpi();
 
             execSvc = cfg.getExecutorService();
             sysExecSvc = cfg.getSystemExecutorService();
@@ -1761,7 +1762,7 @@ public class IgnitionEx {
             }
 
             if (indexingSpi == null)
-                indexingSpi = new GridNoopIndexingSpi();
+                indexingSpi = new NoopIndexingSpi();
 
             myCfg.setCommunicationSpi(commSpi);
             myCfg.setDiscoverySpi(discoSpi);

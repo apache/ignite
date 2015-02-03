@@ -151,7 +151,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /**
-     * Query for {@link GridIndexingSpi}.
+     * Query for {@link IndexingSpi}.
      *
      * @return Query.
      */

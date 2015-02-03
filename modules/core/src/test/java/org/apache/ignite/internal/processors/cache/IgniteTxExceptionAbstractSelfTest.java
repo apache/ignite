@@ -589,7 +589,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
     /**
      * Indexing SPI that can fail on demand.
      */
-    private static class TestIndexingSpi extends IgniteSpiAdapter implements GridIndexingSpi {
+    private static class TestIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
         /** Fail flag. */
         private volatile boolean fail;
 
@@ -602,7 +602,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
         /** {@inheritDoc} */
         @Override public Iterator<Cache.Entry<?,?>> query(@Nullable String spaceName, Collection<Object> params,
-            @Nullable GridIndexingQueryFilter filters) throws IgniteSpiException {
+            @Nullable IndexingQueryFilter filters) throws IgniteSpiException {
             throw new UnsupportedOperationException();
         }
 

@@ -223,7 +223,7 @@ public class GridLuceneIndex implements Closeable {
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(String qry,
-        GridIndexingQueryFilter filters) throws IgniteCheckedException {
+        IndexingQueryFilter filters) throws IgniteCheckedException {
         IndexReader reader;
 
         try {
