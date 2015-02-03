@@ -15,24 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.router.impl;
+package org.apache.ignite.internal.client.ssl;
 
-import org.apache.ignite.*;
+import javax.net.ssl.*;
 
 /**
- * Router NIO listener.
+ * This interface provides creation of SSL context both for server and client use.
+ * <p>
+ * Usually, it is enough to configure context from a particular key and trust stores, this functionality is provided
+ * in {@link org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory}.
  */
-class GridTcpRouterNioListenerOsImpl extends GridTcpRouterNioListenerAdapter {
+public interface GridSslContextFactory {
     /**
-     * @param log Logger.
-     * @param client Client for grid access.
+     * Creates SSL context based on factory settings.
+     *
+     * @return Initialized SSL context.
+     * @throws SSLException If SSL context could not be created.
      */
-    GridTcpRouterNioListenerOsImpl(IgniteLogger log, GridRouterClientImpl client) {
-        super(log, client);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void init() {
-        // No-op.
-    }
+    public SSLContext createSslContext() throws SSLException;
 }

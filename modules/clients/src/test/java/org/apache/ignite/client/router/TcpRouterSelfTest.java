@@ -17,7 +17,7 @@
 
 package org.apache.ignite.client.router;
 
-import org.apache.ignite.client.ssl.*;
+import org.apache.ignite.internal.client.ssl.*;
 
 /**
  * Tests the simplest use case for router: singe router proxies connections to a single node.

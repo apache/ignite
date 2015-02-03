@@ -61,7 +61,7 @@
     </bean>
 
     <!-- Configuration of Tcp router. -->
-    <bean id="tcp.router.cfg" class="org.apache.ignite.client.router.GridTcpRouterConfiguration">
+    <bean id="tcp.router.cfg" class="org.apache.ignite.internal.client.router.GridTcpRouterConfiguration">
 
         <property name="logger" ref="router.log" />
 
@@ -83,7 +83,7 @@
 
         <!-- Provide Ssl context. -->
         <property name="sslContextFactory">
-            <bean class="org.apache.ignite.client.ssl.GridSslBasicContextFactory">
+            <bean class="org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory">
                 <property name="keyStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/server.jks"/>
                 <property name="keyStorePassword" value="123456"/>
                 <property name="trustStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/trust.jks"/>

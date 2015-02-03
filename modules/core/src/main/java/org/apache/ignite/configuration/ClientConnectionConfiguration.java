@@ -17,7 +17,7 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.client.ssl.*;
+import org.apache.ignite.internal.client.ssl.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;

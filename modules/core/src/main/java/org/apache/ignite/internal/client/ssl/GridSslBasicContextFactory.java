@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.ssl;
+package org.apache.ignite.internal.client.ssl;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 

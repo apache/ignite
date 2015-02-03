@@ -15,19 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.router.impl;
+package org.apache.ignite.internal.client.router.impl;
 
 import org.apache.ignite.client.impl.*;
 import org.apache.ignite.client.impl.connection.*;
-import org.apache.ignite.client.router.*;
 import org.apache.ignite.internal.client.*;
+import org.apache.ignite.internal.client.router.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.client.util.GridClientUtils.*;
+import static org.apache.ignite.internal.client.util.GridClientUtils.*;
 
 /**
  * A {@link GridClient} router implementation.

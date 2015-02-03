@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.router;
+package org.apache.ignite.internal.client.router;
 
 import org.apache.ignite.*;
-import org.apache.ignite.client.router.impl.*;
+import org.apache.ignite.internal.client.router.impl.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

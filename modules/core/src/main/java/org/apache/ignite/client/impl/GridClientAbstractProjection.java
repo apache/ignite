@@ -20,15 +20,15 @@ package org.apache.ignite.client.impl;
 import org.apache.ignite.*;
 import org.apache.ignite.client.balancer.*;
 import org.apache.ignite.client.impl.connection.*;
-import org.apache.ignite.client.util.*;
 import org.apache.ignite.internal.client.*;
+import org.apache.ignite.internal.client.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.logging.*;
 
-import static org.apache.ignite.client.util.GridClientUtils.*;
+import static org.apache.ignite.internal.client.util.GridClientUtils.*;
 
 /**
  * Class contains common connection-error handling logic.

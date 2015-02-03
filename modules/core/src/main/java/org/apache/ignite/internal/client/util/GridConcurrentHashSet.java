@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.util;
+package org.apache.ignite.internal.client.util;
 
 import java.util.*;
 import java.util.concurrent.*;

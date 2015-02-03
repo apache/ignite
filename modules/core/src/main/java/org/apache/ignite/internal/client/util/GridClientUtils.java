@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.util;
+package org.apache.ignite.internal.client.util;
 
 import org.apache.ignite.internal.client.*;
 import org.jetbrains.annotations.*;

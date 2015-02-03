@@ -17,8 +17,8 @@
 
 package org.apache.ignite.client;
 
-import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.internal.client.*;
+import org.apache.ignite.internal.client.ssl.*;
 
 /**
  * Runs multi-threaded tests on tcp binary protocol (ssl is disabled).

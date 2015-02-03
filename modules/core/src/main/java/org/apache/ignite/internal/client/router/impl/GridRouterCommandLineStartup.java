@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.router.impl;
+package org.apache.ignite.internal.client.router.impl;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.client.router.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.client.router.*;
 import org.apache.ignite.internal.processors.spring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

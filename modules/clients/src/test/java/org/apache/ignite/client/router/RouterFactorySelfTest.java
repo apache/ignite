@@ -18,6 +18,7 @@
 package org.apache.ignite.client.router;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.client.router.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;

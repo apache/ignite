@@ -39,7 +39,7 @@
     <!--
         Configuration of TCP router.
     -->
-    <bean id="tcp.router.cfg" class="org.apache.ignite.client.router.GridTcpRouterConfiguration">
+    <bean id="tcp.router.cfg" class="org.apache.ignite.internal.client.router.GridTcpRouterConfiguration">
 
         <property name="logger" ref="router.log" />
     </bean>

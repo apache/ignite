@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.router.impl;
+package org.apache.ignite.internal.client.router.impl;
 
 import org.apache.ignite.*;
 import org.apache.ignite.client.marshaller.*;

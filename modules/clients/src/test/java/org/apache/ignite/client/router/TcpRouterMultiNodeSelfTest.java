@@ -19,9 +19,10 @@ package org.apache.ignite.client.router;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.client.*;
+import org.apache.ignite.internal.client.router.*;
+import org.apache.ignite.internal.client.router.impl.*;
 import org.apache.ignite.logger.log4j.*;
 import org.apache.ignite.client.integration.*;
-import org.apache.ignite.client.router.impl.*;
 
 import java.util.*;
 
