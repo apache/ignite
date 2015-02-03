@@ -124,7 +124,7 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
  *         &lt;property name="discoverySpi"&gt;
  *             &lt;bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi"&gt;
  *                 &lt;property name="ipFinder"&gt;
- *                     &lt;bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder" /&gt;
+ *                     &lt;bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder" /&gt;
  *                 &lt;/property&gt;
  *             &lt;/bean&gt;
  *         &lt;/property&gt;
