@@ -93,7 +93,7 @@ public class StreamingPopularNumbersExample {
      * @param args Command line arguments, none required.
      * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws IgniteException {
         Timer popularNumbersQryTimer = new Timer("numbers-query-worker");
 
         // Start ignite.

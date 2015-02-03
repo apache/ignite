@@ -37,7 +37,7 @@ public final class ComputeExecutorServiceExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteException If example execution failed.
+     * @throws Exception If example execution failed.
      */
     @SuppressWarnings({"TooBroadScope"})
     public static void main(String[] args) throws Exception {

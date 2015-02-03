@@ -38,6 +38,12 @@ import java.util.*;
  * cannot be peer-deployed and classes must be on the classpath for every node.
  */
 public class ServicesExample {
+    /**
+     * Executes example.
+     *
+     * @param args Command line arguments, none required.
+     * @throws Exception If example execution failed.
+     */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             ClusterGroup rmts = ignite.cluster().forRemotes();

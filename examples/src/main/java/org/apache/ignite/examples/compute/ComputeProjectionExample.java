@@ -38,7 +38,7 @@ public class ComputeProjectionExample {
      * @param args Command line arguments, none required.
      * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws IgniteException {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2))
                 return;

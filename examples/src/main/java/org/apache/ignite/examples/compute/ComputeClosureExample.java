@@ -40,9 +40,9 @@ public class ComputeClosureExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws Exception If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws IgniteException {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Compute closure example started.");

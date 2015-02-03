@@ -41,9 +41,9 @@ public class CacheContinuousQueryExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws Exception If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException, InterruptedException {
+    public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache continuous query example started.");

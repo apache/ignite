@@ -40,7 +40,7 @@ public final class IgniteFsExamples {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteException If example execution failed.
+     * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         Ignite ignite = Ignition.start("examples/config/filesystem/example-ignitefs.xml");

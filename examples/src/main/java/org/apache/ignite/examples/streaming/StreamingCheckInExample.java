@@ -103,7 +103,7 @@ public class StreamingCheckInExample {
      * @param args Command line arguments, none required.
      * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws IgniteException {
         Timer timer = new Timer("check-in-query-worker");
 
         // Start ignite.

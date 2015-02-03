@@ -67,9 +67,9 @@ public class CacheStarSchemaExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteException If example execution failed.
+     * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws IgniteCheckedException {
         Ignite ignite = Ignition.start("examples/config/example-cache.xml");
 
         System.out.println();

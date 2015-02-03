@@ -43,7 +43,7 @@ public class CacheStoreLoadDataExample {
      * @param args Command line arguments, none required.
      * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws IgniteException {
         ExamplesUtils.checkMinMemory(MIN_MEMORY);
 
         try (Ignite ignite = Ignition.start(CacheNodeWithStoreStartup.configure())) {

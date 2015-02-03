@@ -40,7 +40,7 @@ public class CacheStoreExample {
      * @param args Command line arguments, none required.
      * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws IgniteException {
         IgniteConfiguration cfg = CacheNodeWithStoreStartup.configure();
 
         // To start ignite with desired configuration uncomment the appropriate line.
