@@ -36,13 +36,13 @@ import scala.collection.JavaConversions._
  */
 object ScalarTaskExample extends App {
     scalar("examples/config/example-compute.xml") {
-        ignite$.compute().execute(classOf[GridHelloWorld], "Hello Cloud World!")
+        ignite$.compute().execute(classOf[IgniteHelloWorld], "Hello Cloud World!")
     }
 
     /**
      * This task encapsulates the logic of MapReduce.
      */
-    class GridHelloWorld extends ComputeTaskSplitAdapter[String, Void] {
+    class IgniteHelloWorld extends ComputeTaskSplitAdapter[String, Void] {
         def split(clusterSize: Int, arg: String): java.util.Collection[_ <: ComputeJob] = {
             (for (w <- arg.split(" ")) yield toJob(() => println(w))).toSeq
         }
