@@ -26,14 +26,14 @@ import org.apache.ignite.testframework.junits.common.*;
  * Jcl logger test.
  */
 @GridCommonTest(group = "Logger")
-public class GridJclLoggerTest extends TestCase {
+public class IgniteJclLoggerTest extends TestCase {
     /** */
     @SuppressWarnings({"FieldCanBeLocal"})
     private IgniteLogger log;
 
     /** */
     public void testLogInitialize() {
-        log = new GridJclLogger(LogFactory.getLog(GridJclLoggerTest.class.getName()));
+        log = new IgniteJclLogger(LogFactory.getLog(IgniteJclLoggerTest.class.getName()));
 
         assert log.isInfoEnabled() == true;
 
@@ -43,6 +43,6 @@ public class GridJclLoggerTest extends TestCase {
         log.error("This is 'error' message.");
         log.error("This is 'error' message.", new Exception("It's a test error exception"));
 
-        assert log.getLogger(GridJclLoggerTest.class.getName()) instanceof GridJclLogger;
+        assert log.getLogger(IgniteJclLoggerTest.class.getName()) instanceof IgniteJclLogger;
     }
 }

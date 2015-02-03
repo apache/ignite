@@ -32,7 +32,7 @@ import org.jetbrains.annotations.*;
  * <pre name="code" class="xml">
  *      ...
  *      &lt;property name="gridLogger"&gt;
- *          &lt;bean class="org.apache.ignite.logger.jcl.GridJclLogger"&gt;
+ *          &lt;bean class="org.apache.ignite.logger.jcl.IgniteJclLogger"&gt;
  *              &lt;constructor-arg type="org.apache.commons.logging.Log"&gt;
  *                  &lt;bean class="org.apache.commons.logging.impl.Log4JLogger"&gt;
  *                      &lt;constructor-arg type="java.lang.String" value="config/ignite-log4j.xml"/&gt;
@@ -46,7 +46,7 @@ import org.jetbrains.annotations.*;
  * <pre name="code" class="xml">
  *      ...
  *      &lt;property name="gridLogger"&gt;
- *          &lt;bean class="org.apache.ignite.logger.jcl.GridJclLogger"/&gt;
+ *          &lt;bean class="org.apache.ignite.logger.jcl.IgniteJclLogger"/&gt;
  *      &lt;/property&gt;
  *      ...
  * </pre>
@@ -54,7 +54,7 @@ import org.jetbrains.annotations.*;
  * <pre name="code" class="java">
  *      GridConfiguration cfg = new GridConfiguration();
  *      ...
- *      GridLogger log = new GridJclLogger(new Log4JLogger("config/ignite-log4j.xml"));
+ *      GridLogger log = new IgniteJclLogger(new Log4JLogger("config/ignite-log4j.xml"));
  *      ...
  *      cfg.setGridLogger(log);
  * </pre>
@@ -62,7 +62,7 @@ import org.jetbrains.annotations.*;
  * <pre name="code" class="java">
  *      GridConfiguration cfg = new GridConfiguration();
  *      ...
- *      GridLogger log = new GridJclLogger();
+ *      GridLogger log = new IgniteJclLogger();
  *      ...
  *      cfg.setGridLogger(log);
  * </pre>
@@ -72,7 +72,7 @@ import org.jetbrains.annotations.*;
  * logger in your task/job code. See {@link org.apache.ignite.resources.IgniteLoggerResource} annotation about logger
  * injection.
  */
-public class GridJclLogger implements IgniteLogger {
+public class IgniteJclLogger implements IgniteLogger {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -82,8 +82,8 @@ public class GridJclLogger implements IgniteLogger {
     /**
      * Creates new logger.
      */
-    public GridJclLogger() {
-        this(LogFactory.getLog(GridJclLogger.class.getName()));
+    public IgniteJclLogger() {
+        this(LogFactory.getLog(IgniteJclLogger.class.getName()));
     }
 
     /**
@@ -91,7 +91,7 @@ public class GridJclLogger implements IgniteLogger {
      *
      * @param impl JCL implementation to use.
      */
-    public GridJclLogger(Log impl) {
+    public IgniteJclLogger(Log impl) {
         assert impl != null;
 
         this.impl = impl;
@@ -99,7 +99,7 @@ public class GridJclLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public IgniteLogger getLogger(Object ctgr) {
-        return new GridJclLogger(LogFactory.getLog(
+        return new IgniteJclLogger(LogFactory.getLog(
             ctgr instanceof Class ? ((Class)ctgr).getName() : String.valueOf(ctgr)));
     }
 
@@ -165,6 +165,6 @@ public class GridJclLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "GridJclLogger [impl=" + impl + ']';
+        return "IgniteJclLogger [impl=" + impl + ']';
     }
 }

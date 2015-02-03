@@ -41,7 +41,7 @@ import org.jetbrains.annotations.*;
  * <pre name="code" class="xml">
  *      ...
  *      &lt;property name="gridLogger"&gt;
- *          &lt;bean class="org.gridgain.grid.logger.jcl.GridJclLogger"&gt;
+ *          &lt;bean class="org.apache.ignite.logger.jcl.IgniteJclLogger"&gt;
  *              &lt;constructor-arg type="org.apache.commons.logging.Log"&gt;
  *                  &lt;bean class="org.apache.commons.logging.impl.Log4JLogger"&gt;
  *                      &lt;constructor-arg type="java.lang.String" value="config/ignite-log4j.xml"/&gt;
