@@ -176,7 +176,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
         log = U.logger(ctx, logRef, IgniteDataLoaderImpl.class);
 
-        ClusterNode node = F.first(ctx.grid().forCache(cacheName).nodes());
+        ClusterNode node = F.first(ctx.grid().forCacheNodes(cacheName).nodes());
 
         if (node == null)
             throw new IllegalStateException("Cache doesn't exist: " + cacheName);
@@ -296,7 +296,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         if (isolated())
             return;
 
-        ClusterNode node = F.first(ctx.grid().forCache(cacheName).nodes());
+        ClusterNode node = F.first(ctx.grid().forCacheNodes(cacheName).nodes());
 
         if (node == null)
             throw new IgniteException("Failed to get node for cache: " + cacheName);

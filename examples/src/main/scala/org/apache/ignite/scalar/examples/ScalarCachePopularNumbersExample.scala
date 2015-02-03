@@ -58,9 +58,9 @@ object ScalarCachePopularNumbersExample extends App {
         println()
         println(">>> Cache popular numbers example started.")
 
-        val grp = ignite$.cluster().forCache(CACHE_NAME)
+        val prj = ignite$.cluster().forCacheNodes(CACHE_NAME)
 
-        if (grp.nodes().isEmpty)
+        if (prj.nodes().isEmpty)
             println("Ignite does not have cache configured: " + CACHE_NAME);
         else {
             val popularNumbersQryTimer = new Timer("numbers-query-worker")
@@ -75,7 +75,7 @@ object ScalarCachePopularNumbersExample extends App {
                 query(POPULAR_NUMBERS_CNT)
 
                 // Clean up caches on all nodes after run.
-                ignite$.cluster().forCache(CACHE_NAME).bcastRun(() => ignite$.cache(CACHE_NAME).clearAll(), null)
+                ignite$.cluster().forCacheNodes(CACHE_NAME).bcastRun(() => ignite$.cache(CACHE_NAME).clearAll(), null)
             }
             finally {
                 popularNumbersQryTimer.cancel()

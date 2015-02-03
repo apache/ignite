@@ -67,9 +67,9 @@ public class CachePopularNumbersExample {
             // Clean up caches on all nodes before run.
             ignite.jcache(CACHE_NAME).clear();
 
-            ClusterGroup grp = ignite.cluster().forCache(CACHE_NAME);
+            ClusterGroup prj = ignite.cluster().forCacheNodes(CACHE_NAME);
 
-            if (grp.nodes().isEmpty()) {
+            if (prj.nodes().isEmpty()) {
                 System.out.println("Ignite does not have cache configured: " + CACHE_NAME);
 
                 return;

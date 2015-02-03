@@ -80,7 +80,7 @@ public class CacheEventsExample {
 
             // Subscribe to specified cache events on all nodes that have cache running.
             // Cache events are explicitly enabled in examples/config/example-cache.xml file.
-            ignite.events(ignite.cluster().forCache(CACHE_NAME)).remoteListen(locLsnr, rmtLsnr,
+            ignite.events(ignite.cluster().forCacheNodes(CACHE_NAME)).remoteListen(locLsnr, rmtLsnr,
                 EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
 
             // Generate cache events.

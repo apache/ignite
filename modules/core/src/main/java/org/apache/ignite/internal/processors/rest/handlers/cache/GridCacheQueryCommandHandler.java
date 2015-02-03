@@ -145,7 +145,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
 
         IgniteInternalFuture<Collection<Object>> fut = ctx.closure().callAsync(BROADCAST,
             Arrays.asList(c),
-            ctx.grid().forCache(cacheName).nodes());
+            ctx.grid().forCacheNodes(cacheName).nodes());
 
         return fut.chain(new C1<IgniteInternalFuture<Collection<Object>>, GridRestResponse>() {
             @Override public GridRestResponse apply(IgniteInternalFuture<Collection<Object>> fut) {

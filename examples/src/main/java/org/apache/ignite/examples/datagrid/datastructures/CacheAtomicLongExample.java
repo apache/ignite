@@ -60,10 +60,10 @@ public final class CacheAtomicLongExample {
             System.out.println();
             System.out.println("Atomic long initial value : " + atomicLong.get() + '.');
 
-            // Try increment atomic long from all cluster nodes.
-            // Note that this node is also part of the cluster.
-            ignite.compute(ignite.cluster().forCache(CACHE_NAME)).call(new IgniteCallable<Object>() {
-                @Override public Object call() throws Exception {
+            // Try increment atomic long from all grid nodes.
+            // Note that this node is also part of the grid.
+            ignite.compute(ignite.cluster().forCacheNodes(CACHE_NAME)).call(new IgniteCallable<Object>() {
+                @Override public Object call() throws  Exception {
                     for (int i = 0; i < RETRIES; i++)
                         System.out.println("AtomicLong value has been incremented: " + atomicLong.incrementAndGet());
 
