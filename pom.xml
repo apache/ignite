@@ -267,7 +267,7 @@
             <version>2.8</version>
             <configuration>
                 <headerDefinitions>
-                    <headerDefinition>headerdefinitions.xml</headerDefinition>
+                    <headerDefinition>headercustomisation.xml</headerDefinition>
                 </headerDefinitions>
                 <header>header.txt</header>
                 <properties>

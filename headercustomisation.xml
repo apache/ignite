@@ -5,7 +5,6 @@
         <beforeEachLine> * </beforeEachLine>
         <endLine> */
 </endLine>
-        <!--skipLine></skipLine-->
         <firstLineDetectionPattern>(\s|\t)*/\*.*$</firstLineDetectionPattern>
         <lastLineDetectionPattern>.*\*/(\s|\t)*$</lastLineDetectionPattern>
         <allowBlankLines>true</allowBlankLines>
