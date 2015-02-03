@@ -26,7 +26,7 @@ import java.util.*;
  * data and compute functionality, as well as provide listeners on topology changes.
  * <p>
  * You can obtain an instance of {@code GridClient} through
- * {@link GridClientFactory#start(GridClientConfiguration)}. Note that you
+ * {@link GridClientFactory#start(org.apache.ignite.client.GridClientConfiguration)}. Note that you
  * can have multiple instances of {@code GridClient} running in the same VM. For
  * information on how to start or stop Grid please refer to {@link GridClientFactory} class.
  * <p>
@@ -48,7 +48,7 @@ import java.util.*;
  * <p>
  * If client can't access some of grid nodes directly (for example due to security restrictions)
  * either dedicated Router component could be used or some of Grid nodes could act as routers.
- * See {@link GridClientConfiguration#getRouters()} for more details.
+ * See {@link org.apache.ignite.client.GridClientConfiguration#getRouters()} for more details.
  * @see GridClientCompute
  * @see GridClientData
  */
@@ -96,7 +96,7 @@ public interface GridClient extends AutoCloseable {
 
     /**
      * Adds topology listener. Remote grid topology is refreshed every
-     * {@link GridClientConfiguration#getTopologyRefreshFrequency()} milliseconds. If any node was added or removed,
+     * {@link org.apache.ignite.client.GridClientConfiguration#getTopologyRefreshFrequency()} milliseconds. If any node was added or removed,
      * a listener will be notified.
      *
      * @param lsnr Listener to add.
@@ -124,7 +124,7 @@ public interface GridClient extends AutoCloseable {
      * throw {@link GridClientDisconnectedException}.
      * <p>
      * Connection status is updated in background together with topology update.
-     * See {@link GridClientConfiguration#getTopologyRefreshFrequency()} for more
+     * See {@link org.apache.ignite.client.GridClientConfiguration#getTopologyRefreshFrequency()} for more
      * details on how background topology update works.
      * <p>
      * Note that due to asynchronous nature of topology update and connectivity detection

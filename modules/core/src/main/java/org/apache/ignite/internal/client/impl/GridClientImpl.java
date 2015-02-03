@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.impl;
+package org.apache.ignite.internal.client.impl;
 
 import org.apache.ignite.*;
-import org.apache.ignite.client.impl.connection.*;
+import org.apache.ignite.client.*;
 import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.client.balancer.*;
+import org.apache.ignite.internal.client.impl.connection.*;
 import org.apache.ignite.internal.client.ssl.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

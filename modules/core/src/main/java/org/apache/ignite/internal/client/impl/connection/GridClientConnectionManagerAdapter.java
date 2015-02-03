@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.impl.connection;
+package org.apache.ignite.internal.client.impl.connection;
 
 import org.apache.ignite.*;
+import org.apache.ignite.client.*;
 import org.apache.ignite.internal.client.*;
+import org.apache.ignite.internal.client.impl.*;
 import org.apache.ignite.internal.client.util.*;
 import org.apache.ignite.logger.java.*;
-import org.apache.ignite.client.impl.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.direct.*;
@@ -40,7 +41,7 @@ import java.util.concurrent.*;
 import java.util.logging.*;
 
 import static java.util.logging.Level.*;
-import static org.apache.ignite.client.impl.connection.GridClientConnectionCloseReason.*;
+import static org.apache.ignite.internal.client.impl.connection.GridClientConnectionCloseReason.*;
 import static org.apache.ignite.internal.GridNodeAttributes.*;
 
 /**

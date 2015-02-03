@@ -15,21 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.impl;
-
-import org.apache.ignite.internal.client.*;
+package org.apache.ignite.internal.client.impl.connection;
 
 /**
- * Future callback will be notified, when listened future finishes (both succeed or failed).
- * @param <R> Input parameter type.
- * @param <S> Result type.
+ * Set of reasons why connection closed.
  */
-public interface GridClientFutureCallback<R, S> {
-    /**
-     * Future callback to executed when listened future finishes.
-     *
-     * @param fut Finished future to listen for.
-     * @return Chained future result, if applicable, otherwise - {@code null}.
-     */
-    public S onComplete(GridClientFuture<R> fut) throws GridClientException;
+enum GridClientConnectionCloseReason {
+    /** Connection failed, IO exception or other unexpected result of request execution. */
+    FAILED,
+
+    /** Connection closed as idle. */
+    CONN_IDLE,
+
+    /** Client is closed and connection also shouldn't be used for new requests. */
+    CLIENT_CLOSED
 }

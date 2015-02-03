@@ -27,7 +27,7 @@ import java.io.*;
  * fetched via any of the {@code refreshNode(...)} or {@code refreshTopology(...)}
  * methods on {@link GridClientCompute} API.
  * <p>
- * Also note that if {@link GridClientConfiguration#isEnableMetricsCache()} property
+ * Also note that if {@link org.apache.ignite.client.GridClientConfiguration#isEnableMetricsCache()} property
  * is set to {@code true}, then {@link GridClientNode} will cache the last fetched
  * instance of node metrics.
  */

@@ -15,18 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.impl.connection;
+package org.apache.ignite.internal.client.impl.connection;
 
-import org.apache.ignite.client.impl.*;
 import org.apache.ignite.internal.client.*;
+import org.apache.ignite.internal.client.impl.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
 import java.net.*;
 import java.util.*;
-
-import static org.apache.ignite.client.impl.connection.GridClientConnectionCloseReason.*;
 
 /**
  * Facade for all possible network communications between client and server. Introduced to hide
@@ -475,15 +473,15 @@ public abstract class GridClientConnection {
      */
     protected void checkClosed(GridClientConnectionCloseReason reason)
         throws GridConnectionIdleClosedException, GridClientConnectionResetException, GridClientClosedException {
-        if (reason == CONN_IDLE)
+        if (reason == GridClientConnectionCloseReason.CONN_IDLE)
             throw new GridConnectionIdleClosedException("Connection was closed by idle thread (will " +
                 "reconnect): " + serverAddress());
 
-        if (reason == FAILED)
+        if (reason == GridClientConnectionCloseReason.FAILED)
             throw new GridClientConnectionResetException("Failed to perform request (connection failed before " +
                 "message is sent): " + serverAddress());
 
-        if (reason == CLIENT_CLOSED)
+        if (reason == GridClientConnectionCloseReason.CLIENT_CLOSED)
             throw new GridClientClosedException("Failed to perform request (connection was closed before " +
                 "message is sent): " + serverAddress());
     }
@@ -498,14 +496,14 @@ public abstract class GridClientConnection {
      */
     protected GridClientException getCloseReasonAsException(GridClientConnectionCloseReason reason,
         @Nullable Throwable cause) {
-        if (reason == CONN_IDLE)
+        if (reason == GridClientConnectionCloseReason.CONN_IDLE)
             return new GridConnectionIdleClosedException("Connection was closed by idle thread: " + serverAddress());
 
-        if (reason == FAILED)
+        if (reason == GridClientConnectionCloseReason.FAILED)
             return new GridClientConnectionResetException("Failed to perform request (connection failed): " +
                 serverAddress(), cause);
 
-        if (reason == CLIENT_CLOSED)
+        if (reason == GridClientConnectionCloseReason.CLIENT_CLOSED)
             return new GridClientClosedException("Failed to perform request (client was closed): " + serverAddress());
 
         return null;
@@ -517,13 +515,13 @@ public abstract class GridClientConnection {
      * @return Description of close reason for logging purpose.
      */
     protected String getCloseReasonMessage(GridClientConnectionCloseReason reason, @Nullable Throwable cause) {
-        if (reason == CONN_IDLE)
+        if (reason == GridClientConnectionCloseReason.CONN_IDLE)
             return "Connection was closed by idle thread";
 
-        if (reason == FAILED)
+        if (reason == GridClientConnectionCloseReason.FAILED)
             return cause != null ? "Connection failed, cause: " + cause.getMessage() : "Connection failed";
 
-        if (reason == CLIENT_CLOSED)
+        if (reason == GridClientConnectionCloseReason.CLIENT_CLOSED)
             return "Client was closed";
 
         return null;

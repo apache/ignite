@@ -41,8 +41,8 @@ import java.util.*;
  * You can also use any of the {@code refreshNode(...)} or {@code refreshTopology(...)} methods
  * to eagerly refresh metrics or attributes on remote nodes (note that attributes are static,
  * so it is sufficient to fetch and cache them only once). Metrics and attributes will be
- * cached in {@link GridClientNode} instances automatically if {@link GridClientConfiguration#isEnableMetricsCache()}
- * or {@link GridClientConfiguration#isEnableAttributesCache()} property is set to {@code true}.
+ * cached in {@link GridClientNode} instances automatically if {@link org.apache.ignite.client.GridClientConfiguration#isEnableMetricsCache()}
+ * or {@link org.apache.ignite.client.GridClientConfiguration#isEnableAttributesCache()} property is set to {@code true}.
  * <p>
  * Compute client also allows fetching contents of remote log files (including backwards mode) via any of
  * the provided {@code log(...)} methods.
@@ -145,7 +145,7 @@ public interface GridClientCompute {
 
     /**
      * Gets load balancer used by this projection. By default, the balancer specified
-     * in {@link GridClientConfiguration#getBalancer()} property is used. User can
+     * in {@link org.apache.ignite.client.GridClientConfiguration#getBalancer()} property is used. User can
      * provide custom balancers for different projections via
      * {@link #projection(GridClientPredicate, GridClientLoadBalancer)} method.
      *
@@ -267,12 +267,12 @@ public interface GridClientCompute {
      * metrics.
      * <p>
      * Note that fetched attributes and metrics may or may note be cached in {@link GridClientNode}
-     * based on {@link GridClientConfiguration#isEnableMetricsCache()} and
-     * {@link GridClientConfiguration#isEnableAttributesCache()} parameters. Even though topology
-     * is refreshed automatically every {@link GridClientConfiguration#getTopologyRefreshFrequency()}
+     * based on {@link org.apache.ignite.client.GridClientConfiguration#isEnableMetricsCache()} and
+     * {@link org.apache.ignite.client.GridClientConfiguration#isEnableAttributesCache()} parameters. Even though topology
+     * is refreshed automatically every {@link org.apache.ignite.client.GridClientConfiguration#getTopologyRefreshFrequency()}
      * interval, node metrics and attributes will be fetched in background only if
-     * {@link GridClientConfiguration#isAutoFetchMetrics()} or
-     * {@link GridClientConfiguration#isAutoFetchAttributes()} set to true.
+     * {@link org.apache.ignite.client.GridClientConfiguration#isAutoFetchMetrics()} or
+     * {@link org.apache.ignite.client.GridClientConfiguration#isAutoFetchAttributes()} set to true.
      * <p>
      * Also note that node attributes are static and, if cached, there is no need
      * to refresh them again.
@@ -293,12 +293,12 @@ public interface GridClientCompute {
      * metrics.
      * <p>
      * Note that fetched attributes and metrics may or may note be cached in {@link GridClientNode}
-     * based on {@link GridClientConfiguration#isEnableMetricsCache()} and
-     * {@link GridClientConfiguration#isEnableAttributesCache()} parameters. Even though topology
-     * is refreshed automatically every {@link GridClientConfiguration#getTopologyRefreshFrequency()}
+     * based on {@link org.apache.ignite.client.GridClientConfiguration#isEnableMetricsCache()} and
+     * {@link org.apache.ignite.client.GridClientConfiguration#isEnableAttributesCache()} parameters. Even though topology
+     * is refreshed automatically every {@link org.apache.ignite.client.GridClientConfiguration#getTopologyRefreshFrequency()}
      * interval, node metrics and attributes will be fetched in background only if
-     * {@link GridClientConfiguration#isAutoFetchMetrics()} or
-     * {@link GridClientConfiguration#isAutoFetchAttributes()} set to true.
+     * {@link org.apache.ignite.client.GridClientConfiguration#isAutoFetchMetrics()} or
+     * {@link org.apache.ignite.client.GridClientConfiguration#isAutoFetchAttributes()} set to true.
      * <p>
      * Also note that node attributes are static and, if cached, there is no need
      * to refresh them again.
@@ -318,12 +318,12 @@ public interface GridClientCompute {
      * metrics.
      * <p>
      * Note that fetched attributes and metrics may or may note be cached in {@link GridClientNode}
-     * based on {@link GridClientConfiguration#isEnableMetricsCache()} and
-     * {@link GridClientConfiguration#isEnableAttributesCache()} parameters. Even though topology
-     * is refreshed automatically every {@link GridClientConfiguration#getTopologyRefreshFrequency()}
+     * based on {@link org.apache.ignite.client.GridClientConfiguration#isEnableMetricsCache()} and
+     * {@link org.apache.ignite.client.GridClientConfiguration#isEnableAttributesCache()} parameters. Even though topology
+     * is refreshed automatically every {@link org.apache.ignite.client.GridClientConfiguration#getTopologyRefreshFrequency()}
      * interval, node metrics and attributes will be fetched in background only if
-     * {@link GridClientConfiguration#isAutoFetchMetrics()} or
-     * {@link GridClientConfiguration#isAutoFetchAttributes()} set to true.
+     * {@link org.apache.ignite.client.GridClientConfiguration#isAutoFetchMetrics()} or
+     * {@link org.apache.ignite.client.GridClientConfiguration#isAutoFetchAttributes()} set to true.
      * <p>
      * Also note that node attributes are static and, if cached, there is no need
      * to refresh them again.
@@ -347,12 +347,12 @@ public interface GridClientCompute {
      * metrics.
      * <p>
      * Note that fetched attributes and metrics may or may note be cached in {@link GridClientNode}
-     * based on {@link GridClientConfiguration#isEnableMetricsCache()} and
-     * {@link GridClientConfiguration#isEnableAttributesCache()} parameters. Even though topology
-     * is refreshed automatically every {@link GridClientConfiguration#getTopologyRefreshFrequency()}
+     * based on {@link org.apache.ignite.client.GridClientConfiguration#isEnableMetricsCache()} and
+     * {@link org.apache.ignite.client.GridClientConfiguration#isEnableAttributesCache()} parameters. Even though topology
+     * is refreshed automatically every {@link org.apache.ignite.client.GridClientConfiguration#getTopologyRefreshFrequency()}
      * interval, node metrics and attributes will be fetched in background only if
-     * {@link GridClientConfiguration#isAutoFetchMetrics()} or
-     * {@link GridClientConfiguration#isAutoFetchAttributes()} set to true.
+     * {@link org.apache.ignite.client.GridClientConfiguration#isAutoFetchMetrics()} or
+     * {@link org.apache.ignite.client.GridClientConfiguration#isAutoFetchAttributes()} set to true.
      * <p>
      * Also note that node attributes are static and, if cached, there is no need
      * to refresh them again.
@@ -370,12 +370,12 @@ public interface GridClientCompute {
      * metrics.
      * <p>
      * Note that fetched attributes and metrics may or may note be cached in {@link GridClientNode}
-     * based on {@link GridClientConfiguration#isEnableMetricsCache()} and
-     * {@link GridClientConfiguration#isEnableAttributesCache()} parameters. Even though topology
-     * is refreshed automatically every {@link GridClientConfiguration#getTopologyRefreshFrequency()}
+     * based on {@link org.apache.ignite.client.GridClientConfiguration#isEnableMetricsCache()} and
+     * {@link org.apache.ignite.client.GridClientConfiguration#isEnableAttributesCache()} parameters. Even though topology
+     * is refreshed automatically every {@link org.apache.ignite.client.GridClientConfiguration#getTopologyRefreshFrequency()}
      * interval, node metrics and attributes will be fetched in background only if
-     * {@link GridClientConfiguration#isAutoFetchMetrics()} or
-     * {@link GridClientConfiguration#isAutoFetchAttributes()} set to {@code true}.
+     * {@link org.apache.ignite.client.GridClientConfiguration#isAutoFetchMetrics()} or
+     * {@link org.apache.ignite.client.GridClientConfiguration#isAutoFetchAttributes()} set to {@code true}.
      * <p>
      * Also note that node attributes are static and, if cached, there is no need
      * to refresh them again.
@@ -396,12 +396,12 @@ public interface GridClientCompute {
      * metrics.
      * <p>
      * Note that fetched attributes and metrics may or may note be cached in {@link GridClientNode}
-     * based on {@link GridClientConfiguration#isEnableMetricsCache()} and
-     * {@link GridClientConfiguration#isEnableAttributesCache()}parameters. Even though topology
-     * is refreshed automatically every {@link GridClientConfiguration#getTopologyRefreshFrequency()}
+     * based on {@link org.apache.ignite.client.GridClientConfiguration#isEnableMetricsCache()} and
+     * {@link org.apache.ignite.client.GridClientConfiguration#isEnableAttributesCache()}parameters. Even though topology
+     * is refreshed automatically every {@link org.apache.ignite.client.GridClientConfiguration#getTopologyRefreshFrequency()}
      * interval, node metrics and attributes will be fetched in background only if
-     * {@link GridClientConfiguration#isAutoFetchMetrics()} or
-     * {@link GridClientConfiguration#isAutoFetchAttributes()} set to {@code true}.
+     * {@link org.apache.ignite.client.GridClientConfiguration#isAutoFetchMetrics()} or
+     * {@link org.apache.ignite.client.GridClientConfiguration#isAutoFetchAttributes()} set to {@code true}.
      * <p>
      * Also note that node attributes are static and, if cached, there is no need
      * to refresh them again.

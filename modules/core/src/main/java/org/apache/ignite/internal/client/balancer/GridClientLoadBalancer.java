@@ -24,7 +24,7 @@ import java.util.*;
 /**
  * Interface that defines a selection logic of a server node for a particular operation.
  * Use it to define custom load balancing logic for client. Load balancer is specified via
- * {@link GridClientConfiguration#getBalancer()} configuration property.
+ * {@link org.apache.ignite.client.GridClientConfiguration#getBalancer()} configuration property.
  * <p>
  * The following implementations are provided out of the box:
  * <ul>

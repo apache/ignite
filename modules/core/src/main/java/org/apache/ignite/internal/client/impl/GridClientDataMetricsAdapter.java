@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.impl;
+package org.apache.ignite.internal.client.impl;
 
 import org.apache.ignite.internal.client.*;
 

@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.client.router.impl;
 
-import org.apache.ignite.client.impl.*;
-import org.apache.ignite.client.impl.connection.*;
+import org.apache.ignite.client.*;
 import org.apache.ignite.internal.client.*;
+import org.apache.ignite.internal.client.impl.*;
+import org.apache.ignite.internal.client.impl.connection.*;
 import org.apache.ignite.internal.client.router.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;

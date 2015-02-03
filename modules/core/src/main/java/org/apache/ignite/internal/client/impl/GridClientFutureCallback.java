@@ -15,22 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.impl.connection;
+package org.apache.ignite.internal.client.impl;
+
+import org.apache.ignite.internal.client.*;
 
 /**
- * This exception is thrown if client was closed by idle checker thread. This exception should be
- * handled internally and never rethrown to user.
+ * Future callback will be notified, when listened future finishes (both succeed or failed).
+ * @param <R> Input parameter type.
+ * @param <S> Result type.
  */
-public class GridConnectionIdleClosedException extends GridClientConnectionResetException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public interface GridClientFutureCallback<R, S> {
     /**
-     * Creates exception with error message.
+     * Future callback to executed when listened future finishes.
      *
-     * @param msg Error message.
+     * @param fut Finished future to listen for.
+     * @return Chained future result, if applicable, otherwise - {@code null}.
      */
-    GridConnectionIdleClosedException(String msg) {
-        super(msg);
-    }
+    public S onComplete(GridClientFuture<R> fut) throws GridClientException;
 }

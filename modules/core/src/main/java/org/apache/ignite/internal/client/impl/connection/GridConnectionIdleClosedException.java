@@ -15,18 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.impl.connection;
+package org.apache.ignite.internal.client.impl.connection;
 
 /**
- * Set of reasons why connection closed.
+ * This exception is thrown if client was closed by idle checker thread. This exception should be
+ * handled internally and never rethrown to user.
  */
-enum GridClientConnectionCloseReason {
-    /** Connection failed, IO exception or other unexpected result of request execution. */
-    FAILED,
+public class GridConnectionIdleClosedException extends GridClientConnectionResetException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-    /** Connection closed as idle. */
-    CONN_IDLE,
-
-    /** Client is closed and connection also shouldn't be used for new requests. */
-    CLIENT_CLOSED
+    /**
+     * Creates exception with error message.
+     *
+     * @param msg Error message.
+     */
+    GridConnectionIdleClosedException(String msg) {
+        super(msg);
+    }
 }
