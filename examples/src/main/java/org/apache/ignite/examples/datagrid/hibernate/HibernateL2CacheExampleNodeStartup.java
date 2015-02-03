@@ -52,7 +52,7 @@ public class HibernateL2CacheExampleNodeStartup {
     public static IgniteConfiguration configuration() throws IgniteException {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("ignite-grid");
+        cfg.setGridName("hibernate-ignite");
         cfg.setLocalHost("127.0.0.1");
         cfg.setRestEnabled(false);
 
