@@ -504,7 +504,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         assertNotNull(node);
 
-        return grid((String)node.attribute(GridNodeAttributes.ATTR_GRID_NAME)).jcache(cacheName);
+        return grid((String)node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME)).jcache(cacheName);
     }
 
     /**

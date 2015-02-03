@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.commands.vvm
 
-import org.apache.ignite.internal.GridNodeAttributes
+import org.apache.ignite.internal.IgniteNodeAttributes
 import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite.internal.util.typedef.internal.U
 import GridNodeAttributes._

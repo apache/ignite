@@ -31,7 +31,7 @@ import java.net.*;
 import java.util.*;
 import java.util.Map.*;
 
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
 /**
  * Super class for all communication self tests.

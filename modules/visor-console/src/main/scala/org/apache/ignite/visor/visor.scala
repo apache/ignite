@@ -29,7 +29,7 @@ import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.events.IgniteEventType._
 import org.apache.ignite.events.{IgniteDiscoveryEvent, IgniteEvent}
 import org.apache.ignite.internal.IgniteComponentType._
-import org.apache.ignite.internal.GridNodeAttributes._
+import org.apache.ignite.internal.IgniteNodeAttributes._
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
 import org.apache.ignite.internal.processors.spring.IgniteSpringProcessor
 import org.apache.ignite.internal.util.lang.{GridFunc => F}

@@ -80,7 +80,7 @@ import java.util.zip.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
 /**
  * Collection of utility methods used throughout the system.
@@ -1718,8 +1718,8 @@ public abstract class IgniteUtils {
         assert loc != null;
         assert rmt != null;
 
-        String locMacs = loc.attribute(GridNodeAttributes.ATTR_MACS);
-        String rmtMacs = rmt.attribute(GridNodeAttributes.ATTR_MACS);
+        String locMacs = loc.attribute(IgniteNodeAttributes.ATTR_MACS);
+        String rmtMacs = rmt.attribute(IgniteNodeAttributes.ATTR_MACS);
 
         return locMacs != null && locMacs.equals(rmtMacs);
     }

@@ -424,7 +424,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         if (!enabled)
             return;
 
-        String clsAttr = createSpiAttributeName(GridNodeAttributes.ATTR_SPI_CLASS);
+        String clsAttr = createSpiAttributeName(IgniteNodeAttributes.ATTR_SPI_CLASS);
 
         String name = getName();
 

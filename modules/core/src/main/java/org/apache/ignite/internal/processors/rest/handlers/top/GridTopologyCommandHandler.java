@@ -35,7 +35,7 @@ import org.apache.ignite.spi.*;
 import java.net.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
 
 /**

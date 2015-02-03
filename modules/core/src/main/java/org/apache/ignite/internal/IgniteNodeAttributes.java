@@ -20,7 +20,7 @@ package org.apache.ignite.internal;
 /**
  * This class defines constants (NOT enums) for <b>internally-used</b> node attributes.
  */
-public final class GridNodeAttributes {
+public final class IgniteNodeAttributes {
     /** Prefix for internally reserved attribute names. */
     public static final String ATTR_PREFIX = "org.gridgain";
 
@@ -139,7 +139,7 @@ public final class GridNodeAttributes {
     /**
      * Enforces singleton.
      */
-    private GridNodeAttributes() {
+    private IgniteNodeAttributes() {
         /* No-op. */
     }
 }

@@ -18,7 +18,6 @@
 package org.apache.ignite.cluster;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -130,7 +129,7 @@ public interface ClusterNode {
      * <ul>
      * <li>{@code {@link System#getProperties()}} - All system properties.</li>
      * <li>{@code {@link System#getenv(String)}} - All environment properties.</li>
-     * <li>All attributes defined in {@link GridNodeAttributes}</li>
+     * <li>All attributes defined in {@link org.apache.ignite.internal.IgniteNodeAttributes}</li>
      * </ul>
      * <p>
      * Note that attributes cannot be changed at runtime.
@@ -165,7 +164,7 @@ public interface ClusterNode {
      * <ul>
      * <li>{@code {@link System#getProperties()}} - All system properties.</li>
      * <li>{@code {@link System#getenv(String)}} - All environment properties.</li>
-     * <li>All attributes defined in {@link GridNodeAttributes}</li>
+     * <li>All attributes defined in {@link org.apache.ignite.internal.IgniteNodeAttributes}</li>
      * </ul>
      * <p>
      * Note that attributes cannot be changed at runtime.

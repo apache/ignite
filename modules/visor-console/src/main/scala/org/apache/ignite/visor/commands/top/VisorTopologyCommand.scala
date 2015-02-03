@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.commands.top
 
-import org.apache.ignite.internal.GridNodeAttributes
+import org.apache.ignite.internal.IgniteNodeAttributes
 import org.apache.ignite.internal.util.IgniteUtils
 import GridNodeAttributes._
 import org.apache.ignite.internal.util.typedef._
