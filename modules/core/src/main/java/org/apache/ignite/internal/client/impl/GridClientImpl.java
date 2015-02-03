@@ -42,7 +42,7 @@ import static org.apache.ignite.internal.GridNodeAttributes.*;
 public class GridClientImpl implements GridClient {
     /** Enterprise connection manager class name. */
     private static final String ENT_CONN_MGR_CLS =
-        "org.apache.ignite.client.impl.connection.GridClientConnectionManagerEntImpl";
+        "org.apache.ignite.internal.client.impl.connection.GridClientConnectionManagerEntImpl";
 
     /** Null mask object. */
     private static final Object NULL_MASK = new Object();
