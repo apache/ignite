@@ -29,11 +29,17 @@ import static java.sql.Types.*;
  */
 public class OracleMetadataDialect extends DatabaseMetadataDialect {
     /** SQL to get columns metadata. */
-    private static final String SQL_COLUMNS = "SELECT a.owner, a.table_name, a.column_name, a.nullable, a.data_type" +
-        " FROM all_tab_columns a" +
-        " %s" +
+    private static final String SQL_COLUMNS = "SELECT a.owner, a.table_name, a.column_name, a.nullable," +
+        " a.data_type, a.data_precision, a.data_scale " +
+        "FROM all_tab_columns a %s" +
         " WHERE a.owner = '%s'" +
         " ORDER BY a.owner, a.table_name, a.column_id";
+
+    /** SQL to get list of PRIMARY KEYS columns. */
+    private static final String SQL_PRIMARY_KEYS = "SELECT b.column_name" +
+        " FROM all_constraints a" +
+        "  INNER JOIN all_cons_columns b ON a.owner = b.owner AND a.constraint_name = b.constraint_name" +
+        " WHERE a.table_name = ? AND a.constraint_type = 'P'";
 
     /** Owner index. */
     private static final int OWNER_IDX = 1;
@@ -50,12 +56,19 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
     /** Data type index. */
     private static final int DATA_TYPE_IDX = 5;
 
+    /** Numeric precision index. */
+    private static final int DATA_PRECISION_IDX = 6;
+
+    /** Numeric scale index. */
+    private static final int DATA_SCALE_IDX = 7;
+
     /**
-     * @param type Column type from Oracle database.
+     * @param rs Result set with column type metadata from Oracle database.
      * @return JDBC type.
+     * @throws SQLException If failed to decode type.
      */
-    private static int decodeType(String type) {
-        switch (type) {
+    private static int decodeType(ResultSet rs) throws SQLException {
+        switch (rs.getString(DATA_TYPE_IDX)) {
             case "CHAR":
             case "NCHAR":
                 return CHAR;
@@ -74,7 +87,39 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                 return FLOAT;
 
             case "NUMBER":
-                return NUMERIC;
+                int precision = rs.getInt(DATA_PRECISION_IDX);
+                int scale = rs.getInt(DATA_SCALE_IDX);
+
+                if (scale > 0) {
+                    if (scale < 4 && precision < 19)
+                        return FLOAT;
+
+                    if (scale > 4 || precision > 19)
+                        return DOUBLE;
+
+                    return NUMERIC;
+                }
+                else {
+                    if (precision < 1)
+                        return INTEGER;
+
+                    if (precision < 2)
+                        return BOOLEAN;
+
+                    if (precision < 4)
+                        return TINYINT;
+
+                    if (precision < 6)
+                        return SMALLINT;
+
+                    if (precision < 11)
+                        return INTEGER;
+
+                    if (precision < 20)
+                        return BIGINT;
+
+                    return NUMERIC;
+                }
 
             case "DATE":
                 return DATE;
@@ -107,19 +152,36 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
     @Override public Collection<DbTable> tables(Connection conn, boolean tblsOnly) throws SQLException {
         Collection<DbTable> tbls = new ArrayList<>();
 
-        try (Statement stmt = conn.createStatement()) {
+        PreparedStatement pkStmt = conn.prepareStatement(SQL_PRIMARY_KEYS);
+
+        try (Statement colsStmt = conn.createStatement()) {
             Collection<DbColumn> cols = new ArrayList<>();
 
-            String sql = String.format(SQL_COLUMNS,
-                tblsOnly ? "INNER JOIN all_tables b on a.table_name = b.table_name" : "", "TEST");
+            Set<String> pkCols = new HashSet<>();
 
-            try (ResultSet colsRs = stmt.executeQuery(sql)) {
+            String owner = conn.getMetaData().getUserName().toUpperCase();
+
+            String sql = String.format(SQL_COLUMNS,
+                tblsOnly ? "INNER JOIN all_tables b on a.table_name = b.table_name" : "", owner);
+
+            try (ResultSet colsRs = colsStmt.executeQuery(sql)) {
                 String prevSchema = "";
                 String prevTbl = "";
 
                 while (colsRs.next()) {
                     String schema = colsRs.getString(OWNER_IDX);
                     String tbl = colsRs.getString(TABLE_NAME_IDX);
+
+                    if (!prevSchema.equals(schema) || !prevTbl.equals(tbl)) {
+                        pkCols.clear();
+
+                        pkStmt.setString(1, tbl);
+
+                        try (ResultSet pkRs = pkStmt.executeQuery()) {
+                            while(pkRs.next())
+                                pkCols.add(pkRs.getString(1));
+                        }
+                    }
 
                     if (prevSchema.isEmpty()) {
                         prevSchema = schema;
@@ -135,10 +197,10 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                         cols = new ArrayList<>();
                     }
 
-                    cols.add(new DbColumn(colsRs.getString(COLUMN_NAME_IDX),
-                        decodeType(colsRs.getString(DATA_TYPE_IDX)),
-                        false,
-                        decodeNullable(colsRs.getString(NULLABLE_IDX))));
+                    String colName = colsRs.getString(COLUMN_NAME_IDX);
+
+                    cols.add(new DbColumn(colName, decodeType(colsRs), pkCols.contains(colName),
+                        !"N".equals(colsRs.getString(NULLABLE_IDX))));
                 }
 
                 if (!cols.isEmpty())
