@@ -3400,14 +3400,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 // Send job to all nodes.
                 Collection<ClusterNode> nodes = ctx.grid().forCacheNodes(name()).nodes();
 
-                IgniteInternalFuture<Object> fut = null;
-
-                if (!nodes.isEmpty())
-                    fut = ctx.closures().callAsyncNoFailover(BROADCAST, new GlobalRemoveAllCallable<>(name(), topVer, REMOVE_ALL_BATCH_SIZE), nodes, true);
-
-                if (fut != null)
-                    fut.get();
-
+                if (!nodes.isEmpty()) {
+                    ctx.closures().callAsyncNoFailover(BROADCAST,
+                        new GlobalRemoveAllCallable<>(name(), topVer, REMOVE_ALL_BATCH_SIZE), nodes, true).get();
+                }
             } while (ctx.affinity().affinityTopologyVersion() > topVer);
         }
         catch (ClusterGroupEmptyException ignore) {
@@ -5236,7 +5232,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param cacheName Cache name.
          * @param topVer Topology version.
          * @param rmvBatchSz Remove batch size.
-         * @param filter Filter.
          */
         private GlobalRemoveAllCallable(String cacheName, long topVer, long rmvBatchSz) {
             this.cacheName = cacheName;
@@ -5248,7 +5243,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * {@inheritDoc}
          */
         @Override public Object call() throws Exception {
-            Set<K> keys = new HashSet<>();
+            Collection<K> keys = new ArrayList<>();
 
             final IgniteKernal grid = (IgniteKernal) ignite;
 
@@ -5256,17 +5251,22 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             final GridCacheContext<K, V> ctx = grid.context().cache().<K, V>internalCache(cacheName).context();
 
+            if (ctx.affinity().affinityTopologyVersion() != topVer)
+                return null; // Ignore this remove request because remove request will be sent again.
+
             assert cache != null;
 
             for (K k : cache.keySet()) {
                 if (ctx.affinity().primary(ctx.localNode(), k, topVer))
                     keys.add(k);
+
                 if (keys.size() >= rmvBatchSz) {
                     cache.removeAll(keys);
 
                     keys.clear();
                 }
             }
+
             cache.removeAll(keys);
 
             return null;
