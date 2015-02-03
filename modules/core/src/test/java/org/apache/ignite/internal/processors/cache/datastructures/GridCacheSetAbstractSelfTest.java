@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.datastructures.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -58,8 +58,8 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteCollectionConfiguration collectionConfiguration() {
-        IgniteCollectionConfiguration colCfg = super.collectionConfiguration();
+    @Override protected TestCollectionConfiguration collectionConfiguration() {
+        TestCollectionConfiguration colCfg = super.collectionConfiguration();
 
         if (colCfg.getCacheMode() == PARTITIONED)
             colCfg.setBackups(1);
@@ -177,18 +177,14 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         for (int i = 0; i < gridCount(); i++)
             assertNull(grid(i).set(SET_NAME, null, false));
 
-        IgniteCollectionConfiguration colCfg0 = collectionConfiguration();
-
-        colCfg0.setCollocated(collocated);
+        IgniteCollectionConfiguration colCfg0 = config(collocated);
 
         IgniteSet<Integer> set0 = grid(0).set(SET_NAME, colCfg0, true);
 
         assertNotNull(set0);
 
         for (int i = 0; i < gridCount(); i++) {
-            IgniteCollectionConfiguration colCfg = collectionConfiguration();
-
-            colCfg.setCollocated(collocated);
+            IgniteCollectionConfiguration colCfg = config(collocated);
 
             IgniteSet<Integer> set = grid(i).set(SET_NAME, colCfg, true);
 
@@ -245,9 +241,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * @throws Exception If failed.
      */
     private void testApi(boolean collocated) throws Exception {
-        IgniteCollectionConfiguration colCfg = collectionConfiguration();
-
-        colCfg.setCollocated(collocated);
+        IgniteCollectionConfiguration colCfg = config(collocated);
 
         assertNotNull(grid(0).set(SET_NAME, colCfg, true));
 
@@ -411,9 +405,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      */
     @SuppressWarnings("deprecation")
     private void testIterator(boolean collocated) throws Exception {
-        IgniteCollectionConfiguration colCfg = collectionConfiguration();
-
-        colCfg.setCollocated(collocated);
+        IgniteCollectionConfiguration colCfg = config(collocated);
 
         final IgniteSet<Integer> set0 = grid(0).set(SET_NAME, colCfg, true);
 
@@ -505,9 +497,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      */
     @SuppressWarnings({"BusyWait", "ErrorNotRethrown"})
     private void testIteratorClose(boolean collocated) throws Exception {
-        IgniteCollectionConfiguration colCfg = collectionConfiguration();
-
-        colCfg.setCollocated(collocated);
+        IgniteCollectionConfiguration colCfg = config(collocated);
 
         IgniteSet<Integer> set0 = grid(0).set(SET_NAME, colCfg, true);
 
@@ -598,9 +588,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         if (collectionCacheMode() == LOCAL)
             return;
 
-        IgniteCollectionConfiguration colCfg = collectionConfiguration();
-
-        colCfg.setCollocated(collocated);
+        IgniteCollectionConfiguration colCfg = config(collocated);
 
         Set<Integer> set0 = grid(0).set(SET_NAME, colCfg, true);
 
@@ -657,9 +645,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * @throws Exception If failed.
      */
     private void testMultithreaded(final boolean collocated) throws Exception {
-        IgniteCollectionConfiguration colCfg = collectionConfiguration();
-
-        colCfg.setCollocated(collocated);
+        IgniteCollectionConfiguration colCfg = config(collocated);
 
         Set<Integer> set0 = grid(0).set(SET_NAME, colCfg, true);
 
@@ -743,9 +729,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      */
     @SuppressWarnings("WhileLoopReplaceableByForEach")
     private void testCleanup(boolean collocated) throws Exception {
-        IgniteCollectionConfiguration colCfg = collectionConfiguration();
-
-        colCfg.setCollocated(collocated);
+        IgniteCollectionConfiguration colCfg = config(collocated);
 
         final IgniteSet<Integer> set0 = grid(0).set(SET_NAME, colCfg, true);
 
@@ -837,7 +821,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      * @throws Exception If failed.
      */
     public void testSerialization() throws Exception {
-        final IgniteSet<Integer> set = grid(0).set(SET_NAME, collectionConfiguration(), true);
+        final IgniteSet<Integer> set = grid(0).set(SET_NAME, config(false), true);
 
         assertNotNull(set);
 

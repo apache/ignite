@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.datastructures;
+package org.apache.ignite.datastructures;
 
 import org.apache.ignite.*;
 import org.jetbrains.annotations.*;

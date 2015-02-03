@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.datastructures.local;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
 
@@ -52,7 +52,7 @@ public class IgniteLocalCountDownLatchSelfTest extends IgniteCountDownLatchAbstr
 
         assertEquals(2, latch.count());
 
-        IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     IgniteCountDownLatch latch = grid(0).countDownLatch("latch", 2, false, true);

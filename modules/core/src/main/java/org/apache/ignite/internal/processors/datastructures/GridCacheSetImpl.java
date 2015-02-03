@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.datastructures;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.datastructures.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
@@ -132,7 +132,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             return sum;
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
     }
 
@@ -291,7 +291,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             }
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
     }
 
@@ -318,7 +318,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             }
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
     }
 
@@ -338,7 +338,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             ctx.dataStructures().removeSet(name);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
     }
 
@@ -375,7 +375,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             return it;
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
     }
 
@@ -388,7 +388,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             return CacheDataStructuresProcessor.retry(log, call);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
     }
 
@@ -459,7 +459,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     }
 
     /**
-     * Throws {@link org.apache.ignite.cache.datastructures.DataStructureRemovedException} if set was removed.
+     * Throws {@link org.apache.ignite.datastructures.DataStructureRemovedException} if set was removed.
      */
     private void checkRemoved() {
         if (rmvd)

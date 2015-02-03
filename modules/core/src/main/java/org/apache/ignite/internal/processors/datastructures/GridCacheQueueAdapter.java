@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.datastructures.*;
+import org.apache.ignite.datastructures.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -35,7 +35,7 @@ import java.util.concurrent.*;
 import static java.util.concurrent.TimeUnit.*;
 
 /**
- * Common code for {@link org.apache.ignite.IgniteQueue} implementation.
+ * Common code for {@link IgniteQueue} implementation.
  */
 public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> implements IgniteQueue<T> {
     /** Value returned by closure updating queue header indicating that queue was removed. */
@@ -125,7 +125,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /** {@inheritDoc} */
-    @Override public int capacity() throws IgniteCheckedException {
+    @Override public int capacity() {
         return cap;
     }
 
@@ -198,7 +198,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             return new QueueIterator(hdr);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
     }
 
@@ -221,7 +221,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
-                throw new IgniteException("Queue put interrupted.", e);
+                throw new IgniteInterruptedException("Queue put interrupted.", e);
             }
 
             checkStopping();
@@ -259,7 +259,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
-                throw new IgniteException("Queue put interrupted.", e);
+                throw new IgniteInterruptedException("Queue put interrupted.", e);
             }
 
             if (retVal)
@@ -278,7 +278,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
-                throw new IgniteException("Queue take interrupted.", e);
+                throw new IgniteInterruptedException("Queue take interrupted.", e);
             }
 
             checkStopping();
@@ -309,7 +309,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
-                throw new IgniteException("Queue poll interrupted.", e);
+                throw new IgniteInterruptedException("Queue poll interrupted.", e);
             }
 
             if (retVal != null)
@@ -340,7 +340,8 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         A.ensure(batchSize >= 0, "Batch size cannot be negative: " + batchSize);
 
         try {
-            IgniteBiTuple<Long, Long> t = (IgniteBiTuple<Long, Long>)cache.invoke(queueKey, new ClearProcessor(id)).get();
+            IgniteBiTuple<Long, Long> t =
+                (IgniteBiTuple<Long, Long>)cache.invoke(queueKey, new ClearProcessor(id)).get();
 
             if (t == null)
                 return;
@@ -350,7 +351,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             removeKeys(id, queueName, collocated, t.get1(), t.get2(), batchSize);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
     }
 
@@ -416,7 +417,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /**
-     * Checks result of closure modifying queue header, throws {@link org.apache.ignite.cache.datastructures.DataStructureRemovedException}
+     * Checks result of closure modifying queue header, throws {@link org.apache.ignite.datastructures.DataStructureRemovedException}
      * if queue was removed.
      *
      * @param idx Result of closure execution.
@@ -427,7 +428,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /**
-     * Checks queue state, throws {@link org.apache.ignite.cache.datastructures.DataStructureRemovedException} if queue was removed.
+     * Checks queue state, throws {@link org.apache.ignite.datastructures.DataStructureRemovedException} if queue was removed.
      *
      * @param hdr Queue hdr.
      */
@@ -439,7 +440,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /**
      * Marks queue as removed.
      *
-     * @param throw0 If {@code true} then throws {@link org.apache.ignite.cache.datastructures.DataStructureRemovedException}.
+     * @param throw0 If {@code true} then throws {@link org.apache.ignite.datastructures.DataStructureRemovedException}.
      */
     public void onRemoved(boolean throw0) {
         rmvd = true;
@@ -492,7 +493,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      */
     private void checkStopping() {
         if (cctx.kernalContext().isStopping())
-            throw new IgniteException("Grid is stopping");
+            throw new IgniteException("Ignite is stopping");
     }
 
     /**
@@ -525,19 +526,24 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         if (rmvd)
             return;
 
-        GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.getAndRemove(new GridCacheQueueHeaderKey(queueName));
+        try {
+            GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.remove(new GridCacheQueueHeaderKey(queueName), null);
 
-        rmvd = true;
+            rmvd = true;
 
-        if (hdr == null || hdr.empty())
-            return;
+            if (hdr == null || hdr.empty())
+                return;
 
-        removeKeys(hdr.id(),
-            queueName,
-            hdr.collocated(),
-            hdr.head(),
-            hdr.tail(),
-            0);
+            removeKeys(hdr.id(),
+                queueName,
+                hdr.collocated(),
+                hdr.head(),
+                hdr.tail(),
+                0);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /**
@@ -548,8 +554,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @return Item key.
      */
     private static GridCacheQueueItemKey itemKey(IgniteUuid id, String queueName, boolean collocated, long idx) {
-        return collocated ? new CollocatedItemKey(id, queueName, idx) :
-            new GridCacheQueueItemKey(id, queueName, idx);
+        return collocated ? new CollocatedItemKey(id, queueName, idx) : new GridCacheQueueItemKey(id, queueName, idx);
     }
 
     /**
@@ -641,7 +646,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
                 cur = null;
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                throw U.convertException(e);
             }
         }
     }
@@ -779,7 +784,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
                     hdr.collocated(),
                     hdr.head() + 1,
                     hdr.tail(),
-                    rmvdIdxs);
+                    null);
 
                 e.setValue(newHdr);
 

@@ -19,8 +19,9 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.datastructures.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -135,7 +136,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     }
 
     /** {@inheritDoc} */
-    protected GridEx grid() {
+    protected IgniteEx grid() {
         return grid(0);
     }
 
@@ -316,7 +317,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
 
         locSeq.addAndGet(153);
 
-        GridCacheAdapter cache = ((GridKernal)grid()).internalCache(GridCacheUtils.ATOMICS_CACHE_NAME);
+        GridCacheAdapter cache = ((IgniteKernal)grid()).internalCache(GridCacheUtils.ATOMICS_CACHE_NAME);
 
         assertNotNull(cache);
 
@@ -356,7 +357,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
 
         seq.incrementAndGet();
 
-        GridCacheAdapter cache = ((GridKernal)grid()).internalCache(GridCacheUtils.ATOMICS_CACHE_NAME);
+        GridCacheAdapter cache = ((IgniteKernal)grid()).internalCache(GridCacheUtils.ATOMICS_CACHE_NAME);
 
         assertNotNull(cache);
 

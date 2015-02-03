@@ -84,7 +84,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
 
             @Nullable @Override public Object call() throws Exception {
                 // Test latch in multiple threads on each node.
-                IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
+                IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
                     new Callable<Object>() {
                         @Nullable @Override public Object call() throws Exception {
                             IgniteCountDownLatch latch = ignite.countDownLatch("latch", 2, false, true);
@@ -253,7 +253,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
 
         // Ensure latch is removed on all nodes.
         for (Ignite g : G.allGrids())
-            assertNull(((GridKernal)g).context().dataStructures().countDownLatch(latchName, 10, true, false));
+            assertNull(((IgniteKernal)g).context().dataStructures().countDownLatch(latchName, 10, true, false));
 
         checkRemovedLatch(latch);
     }

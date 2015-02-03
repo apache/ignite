@@ -114,7 +114,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
 
                     info("Creating queue: " + locNodeId);
 
-                    IgniteQueue<String> q = ignite.queue("queue", collocatedCollectionConfiguration(), 1, true);
+                    IgniteQueue<String> q = ignite.queue("queue", config(true), 1, true);
 
                     assert q != null;
 

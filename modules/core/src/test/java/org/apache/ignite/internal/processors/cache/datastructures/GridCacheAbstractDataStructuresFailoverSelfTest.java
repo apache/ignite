@@ -613,7 +613,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testFifoQueueTopologyChange() throws Exception {
         try {
-            grid(0).queue(STRUCTURE_NAME, collectionConfiguration(), 0, true).put(10);
+            grid(0).queue(STRUCTURE_NAME, config(false), 0, true).put(10);
 
             Ignite g = startGrid(NEW_GRID_NAME);
 
@@ -634,7 +634,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testQueueConstantTopologyChange() throws Exception {
-        try (IgniteQueue<Integer> s = grid(0).queue(STRUCTURE_NAME, collectionConfiguration(), 0, true)) {
+        try (IgniteQueue<Integer> s = grid(0).queue(STRUCTURE_NAME, config(false), 0, true)) {
             s.put(1);
 
             IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
@@ -678,7 +678,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testQueueConstantMultipleTopologyChange() throws Exception {
-        try (IgniteQueue<Integer> s = grid(0).queue(STRUCTURE_NAME, collectionConfiguration(), 0, true)) {
+        try (IgniteQueue<Integer> s = grid(0).queue(STRUCTURE_NAME, config(false), 0, true)) {
             s.put(1);
 
             IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {

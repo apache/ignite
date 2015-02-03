@@ -18,6 +18,7 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -148,29 +149,33 @@ public interface IgniteQueue<T> extends BlockingQueue<T>, Closeable {
     public void clear(int batchSize) throws IgniteException;
 
     /**
+     * Removes this queue.
+     *
+     * @throws IgniteException if operation failed.
+     */
+    @Override public void close() throws IgniteException;
+
+    /**
      * Gets maximum number of elements of the queue.
      *
      * @return Maximum number of elements. If queue is unbounded {@code Integer.MAX_SIZE} will return.
-     * @throws IgniteCheckedException If operation failed.
      */
-    public int capacity() throws IgniteCheckedException;
+    public int capacity();
 
     /**
      * Returns {@code true} if this queue is bounded.
      *
      * @return {@code true} if this queue is bounded.
-     * @throws IgniteCheckedException If operation failed.
      */
-    public boolean bounded() throws IgniteCheckedException;
+    public boolean bounded();
 
     /**
      * Returns {@code true} if this queue can be kept on the one node only.
      * Returns {@code false} if this queue can be kept on the many nodes.
      *
      * @return {@code true} if this queue is in {@code collocated} mode {@code false} otherwise.
-     * @throws IgniteCheckedException If operation failed.
      */
-    public boolean collocated() throws IgniteCheckedException;
+    public boolean collocated();
 
     /**
      * Gets status of queue.
@@ -178,9 +183,4 @@ public interface IgniteQueue<T> extends BlockingQueue<T>, Closeable {
      * @return {@code true} if queue was removed from cache {@code false} otherwise.
      */
     public boolean removed();
-
-    /**
-     * Removes this queue.
-     */
-    @Override public void close();
 }

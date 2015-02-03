@@ -85,8 +85,8 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteCollectionConfiguration collectionConfiguration() {
-        IgniteCollectionConfiguration colCfg = super.collectionConfiguration();
+    @Override protected TestCollectionConfiguration collectionConfiguration() {
+        TestCollectionConfiguration colCfg = super.collectionConfiguration();
 
         colCfg.setBackups(1);
 
@@ -112,9 +112,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
      * @throws Exception If failed.
      */
     private void testAddFailover(boolean collocated) throws Exception {
-        IgniteCollectionConfiguration colCfg = collectionConfiguration();
-
-        colCfg.setCollocated(collocated);
+        IgniteCollectionConfiguration colCfg = config(collocated);
 
         IgniteQueue<Integer> queue = grid(0).queue(QUEUE_NAME, colCfg, 0,true);
 
@@ -209,9 +207,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
      * @throws Exception If failed.
      */
     private void testPollFailover(boolean collocated) throws Exception {
-        IgniteCollectionConfiguration colCfg = collectionConfiguration();
-
-        colCfg.setCollocated(collocated);
+        IgniteCollectionConfiguration colCfg = config(collocated);
 
         IgniteQueue<Integer> queue = grid(0).queue(QUEUE_NAME, colCfg, 0, true);
 

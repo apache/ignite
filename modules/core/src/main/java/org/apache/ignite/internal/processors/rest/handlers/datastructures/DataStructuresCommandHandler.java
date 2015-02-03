@@ -55,11 +55,11 @@ public class DataStructuresCommandHandler extends GridRestCommandHandlerAdapter 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
         assert SUPPORTED_COMMANDS.contains(req.command()) : req.command();
 
-        return incrementOrDecrement((DataStructuresRequest)req).chain(new CX1<IgniteFuture<?>, GridRestResponse>() {
-            @Override public GridRestResponse applyx(IgniteFuture<?> fut) throws IgniteCheckedException {
+        return incrementOrDecrement((DataStructuresRequest)req).chain(new CX1<IgniteInternalFuture<?>, GridRestResponse>() {
+            @Override public GridRestResponse applyx(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
                 GridRestResponse res = new GridRestResponse();
 
                 res.setResponse(fut.get());
@@ -74,7 +74,7 @@ public class DataStructuresCommandHandler extends GridRestCommandHandlerAdapter 
      * @param req Request.
      * @return Future of operation result.
      */
-    private IgniteFuture<?> incrementOrDecrement(final DataStructuresRequest req) {
+    private IgniteInternalFuture<?> incrementOrDecrement(final DataStructuresRequest req) {
         assert req != null;
         assert req.command() == CACHE_INCREMENT || req.command() == CACHE_DECREMENT : req.command();
 

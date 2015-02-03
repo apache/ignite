@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.datastructures.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -90,7 +90,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
         String queueName = UUID.randomUUID().toString();
 
         IgniteQueue<Integer> queue =
-            grid(0).queue(queueName, collocatedCollectionConfiguration(), QUEUE_CAPACITY, true);
+            grid(0).queue(queueName, config(true), QUEUE_CAPACITY, true);
 
         assertTrue(queue.isEmpty());
 
@@ -98,7 +98,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
         for (int i = GRID_CNT; i < GRID_CNT * 3; i++) {
             startGrid(i);
 
-            forLocal(grid(i)).call(new PutJob(queueName, collocatedCollectionConfiguration(), RETRIES));
+            forLocal(grid(i)).call(new PutJob(queueName, config(true), RETRIES));
 
             // last node must be alive.
             if (i < (GRID_CNT * 3) - 1)
@@ -119,7 +119,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
         String queueName = UUID.randomUUID().toString();
 
         IgniteQueue<Integer> queue =
-                grid(0).queue(queueName, collocatedCollectionConfiguration(), QUEUE_CAPACITY, true);
+                grid(0).queue(queueName, config(true), QUEUE_CAPACITY, true);
 
         assertTrue(queue.isEmpty());
 
@@ -127,14 +127,14 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
         for (int i = GRID_CNT; i < GRID_CNT * 3; i++) {
             startGrid(i);
 
-            forLocal(grid(i)).call(new PutTakeJob(queueName, collocatedCollectionConfiguration(), RETRIES));
+            forLocal(grid(i)).call(new PutTakeJob(queueName, config(true), RETRIES));
 
             // last node must be alive.
             if (i < (GRID_CNT * 3) - 1)
                 stopGrid(i);
         }
 
-        queue = grid((GRID_CNT * 3) - 1).queue(queueName, collocatedCollectionConfiguration(), QUEUE_CAPACITY, true);
+        queue = grid((GRID_CNT * 3) - 1).queue(queueName, config(true), QUEUE_CAPACITY, true);
 
         assertEquals(0, queue.size());
     }
@@ -150,14 +150,14 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
         final String queueName = UUID.randomUUID().toString();
 
         final IgniteQueue<Integer> queue =
-                grid(0).queue(queueName, collocatedCollectionConfiguration(), QUEUE_CAPACITY, true);
+                grid(0).queue(queueName, config(true), QUEUE_CAPACITY, true);
 
         assertTrue(queue.isEmpty());
 
         Thread th = new Thread(new Runnable() {
             @Override public void run() {
                 try {
-                    assert grid(1).compute().call(new TakeJob(queueName, collocatedCollectionConfiguration()));
+                    assert grid(1).compute().call(new TakeJob(queueName, config(true)));
                 }
                 catch (IgniteException e) {
                     error(e.getMessage(), e);

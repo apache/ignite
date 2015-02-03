@@ -67,8 +67,8 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteCollectionConfiguration collectionConfiguration() {
-        IgniteCollectionConfiguration colCfg = super.collectionConfiguration();
+    @Override protected TestCollectionConfiguration collectionConfiguration() {
+        TestCollectionConfiguration colCfg = super.collectionConfiguration();
 
         colCfg.setBackups(BACKUP_CNT);
 
@@ -108,7 +108,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
                     Ignite ignite = grid(0);
 
                     IgniteQueue<Integer> queue = ignite.queue(queueName,
-                        collocatedCollectionConfiguration(),
+                        config(true),
                         QUEUE_CAP,
                         true);
 
@@ -150,7 +150,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
                     Ignite ignite = grid(GRID_CNT);
 
                     IgniteQueue<Integer> queue = ignite.queue(queueName,
-                        collocatedCollectionConfiguration(),
+                        config(true),
                         Integer.MAX_VALUE,
                         true);
 

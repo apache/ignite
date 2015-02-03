@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 
@@ -68,12 +69,12 @@ public class IgniteDataStructureUniqueNameTest extends IgniteAtomicsAbstractTest
         for (int iter = 0; iter < 10; iter++) {
             log.info("Iteration: " + iter);
 
-            List<IgniteFuture<Object>> futs = new ArrayList<>(THREADS);
+            List<IgniteInternalFuture<Object>> futs = new ArrayList<>(THREADS);
 
             for (int i = 0; i < THREADS; i++) {
                 final int idx = i;
 
-                IgniteFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
+                IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         try {
                             Ignite ignite = singleGrid ? ignite(0) : ignite(idx % gridCount());
@@ -123,7 +124,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteAtomicsAbstractTest
 
             Closeable dataStructure = null;
 
-            for (IgniteFuture<Object> fut : futs) {
+            for (IgniteInternalFuture<Object> fut : futs) {
                 Object res = fut.get();
 
                 if (res instanceof IgniteException)

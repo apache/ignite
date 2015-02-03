@@ -18,6 +18,7 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
@@ -36,6 +37,52 @@ import java.util.*;
  * @see Ignite#set(String, IgniteCollectionConfiguration, boolean)
  */
 public interface IgniteSet<T> extends Set<T>, Closeable {
+    /** {@inheritDoc} */
+    @Override boolean add(T t) throws IgniteException;
+
+    /** {@inheritDoc} */
+    @Override boolean addAll(Collection<? extends T> c) throws IgniteException;
+
+    /** {@inheritDoc} */
+    @Override void clear() throws IgniteException;
+
+    /** {@inheritDoc} */
+    @Override boolean contains(Object o) throws IgniteException;
+
+    /** {@inheritDoc} */
+    @Override boolean containsAll(Collection<?> c) throws IgniteException;
+
+    /** {@inheritDoc} */
+    @Override boolean isEmpty() throws IgniteException;
+
+    /** {@inheritDoc} */
+    @Override Iterator<T> iterator() throws IgniteException;
+
+    /** {@inheritDoc} */
+    @Override boolean remove(Object o) throws IgniteException;
+
+    /** {@inheritDoc} */
+    @Override boolean removeAll(Collection<?> c) throws IgniteException;
+
+    /** {@inheritDoc} */
+    @Override boolean retainAll(Collection<?> c) throws IgniteException;
+
+    /** {@inheritDoc} */
+    @Override int size() throws IgniteException;
+
+    /** {@inheritDoc} */
+    @Override Object[] toArray() throws IgniteException;
+
+    /** {@inheritDoc} */
+    @Override <T1> T1[] toArray(T1[] a) throws IgniteException;
+
+    /**
+     * Removes this set.
+     *
+     * @throws IgniteException If operation failed.
+     */
+    @Override public void close() throws IgniteException;
+
     /**
      * Gets set name.
      *
@@ -48,9 +95,8 @@ public interface IgniteSet<T> extends Set<T>, Closeable {
      * Returns {@code false} if this set can be kept on the many nodes.
      *
      * @return {@code True} if this set is in {@code collocated} mode {@code false} otherwise.
-     * @throws IgniteCheckedException If operation failed.
      */
-    public boolean collocated() throws IgniteCheckedException;
+    public boolean collocated();
 
     /**
      * Gets status of set.
@@ -58,9 +104,4 @@ public interface IgniteSet<T> extends Set<T>, Closeable {
      * @return {@code True} if set was removed from cache {@code false} otherwise.
      */
     public boolean removed();
-
-    /**
-     * Removes this set.
-     */
-    @Override public void close();
 }

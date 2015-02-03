@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.datastructures.*;
+import org.apache.ignite.datastructures.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
@@ -105,7 +105,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
                 return delegate.size();
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                throw U.convertException(e);
             }
             finally {
                 gate.leave();
@@ -134,7 +134,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
                 return delegate.isEmpty();
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                throw U.convertException(e);
             }
             finally {
                 gate.leave();
@@ -163,7 +163,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
                 return delegate.contains(o);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                throw U.convertException(e);
             }
             finally {
                 gate.leave();
@@ -192,7 +192,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
                 return delegate.toArray();
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                throw U.convertException(e);
             }
             finally {
                 gate.leave();
@@ -221,7 +221,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
                 return delegate.toArray(a);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                throw U.convertException(e);
             }
             finally {
                 gate.leave();
@@ -250,7 +250,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
                 return delegate.add(t);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                throw U.convertException(e);
             }
             finally {
                 gate.leave();
@@ -279,7 +279,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
                 return delegate.remove(o);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                throw U.convertException(e);
             }
             finally {
                 gate.leave();
@@ -308,7 +308,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
                 return delegate.containsAll(c);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                throw U.convertException(e);
             }
             finally {
                 gate.leave();
@@ -337,7 +337,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
                 return delegate.addAll(c);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                throw U.convertException(e);
             }
             finally {
                 gate.leave();
@@ -366,7 +366,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
                 return delegate.retainAll(c);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                throw U.convertException(e);
             }
             finally {
                 gate.leave();
@@ -395,7 +395,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
                 return delegate.removeAll(c);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                throw U.convertException(e);
             }
             finally {
                 gate.leave();
@@ -427,7 +427,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
                     delegate.clear();
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                throw U.convertException(e);
             }
             finally {
                 gate.leave();
@@ -456,7 +456,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
                 return delegate.iterator();
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+                throw U.convertException(e);
             }
             finally {
                 gate.leave();
@@ -485,7 +485,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
                 delegate.close();
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
         finally {
             gate.leave();
@@ -498,7 +498,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean collocated() throws IgniteCheckedException {
+    @Override public boolean collocated() {
         return delegate.collocated();
     }
 

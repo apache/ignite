@@ -642,7 +642,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
         @Override public Void call() throws IgniteCheckedException {
             assert ignite != null;
 
-            GridCacheAdapter cache = ((GridKernal)ignite).context().cache().internalCache(cacheName);
+            GridCacheAdapter cache = ((IgniteKernal)ignite).context().cache().internalCache(cacheName);
 
             assert cache != null : cacheName;
 
@@ -712,7 +712,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
         @Override public Void call() throws IgniteCheckedException {
             assert ignite != null;
 
-            GridCacheAdapter cache = ((GridKernal)ignite).context().cache().internalCache(cacheName);
+            GridCacheAdapter cache = ((IgniteKernal)ignite).context().cache().internalCache(cacheName);
 
             assert cache != null;
 

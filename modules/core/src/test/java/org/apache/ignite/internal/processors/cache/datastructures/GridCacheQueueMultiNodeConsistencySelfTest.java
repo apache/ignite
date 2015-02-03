@@ -73,8 +73,8 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteCollectionConfiguration collectionConfiguration() {
-        IgniteCollectionConfiguration colCfg = super.collectionConfiguration();
+    @Override protected TestCollectionConfiguration collectionConfiguration() {
+        TestCollectionConfiguration colCfg = super.collectionConfiguration();
 
         colCfg.setBackups(backups);
 
@@ -137,7 +137,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
 
         final String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<Integer> queue0 = grid(0).queue(queueName, collectionConfiguration(), QUEUE_CAPACITY, true);
+        IgniteQueue<Integer> queue0 = grid(0).queue(queueName, config(false), QUEUE_CAPACITY, true);
 
         assertTrue(queue0.isEmpty());
 
@@ -168,7 +168,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
 
                 grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
 
-                IgniteQueue<Integer> locQueue = grid.queue(queueName, collectionConfiguration(), QUEUE_CAPACITY, true);
+                IgniteQueue<Integer> locQueue = grid.queue(queueName, config(false), QUEUE_CAPACITY, true);
 
                 grid.log().info("Queue size " + locQueue.size());
 

@@ -19,50 +19,12 @@ package org.apache.ignite.configuration;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.cache.CacheMemoryMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
-
 /**
  *
  */
 public class IgniteCollectionConfiguration {
-    /** Default backups number. */
-    public static final int DFLT_BACKUPS = 0;
-
-    /** Default cache mode. */
-    public static final CacheMode DFLT_CACHE_MODE = PARTITIONED;
-
-    /** Default atomicity mode. */
-    public static final CacheAtomicityMode DFLT_ATOMICITY_MODE = ATOMIC;
-
-    /** Default memory mode. */
-    public static final CacheMemoryMode DFLT_MEMORY_MODE = ONHEAP_TIERED;
-
-    /** Default distribution mode. */
-    public static final CacheDistributionMode DFLT_DISTRIBUTION_MODE = PARTITIONED_ONLY;
-
-    /** Default off-heap storage size is {@code -1} which means that off-heap storage is disabled. */
-    public static final long DFLT_OFFHEAP_MEMORY = -1;
-
-    /** Off-heap memory size. */
-    private long offHeapMaxMem = DFLT_OFFHEAP_MEMORY;
-
-    /** Cache mode. */
-    private CacheMode cacheMode = DFLT_CACHE_MODE;
-
-    /** Cache distribution mode. */
-    private CacheDistributionMode distro = DFLT_DISTRIBUTION_MODE;
-
-    /** Number of backups. */
-    private int backups = DFLT_BACKUPS;
-
-    /** Atomicity mode. */
-    private CacheAtomicityMode atomicityMode = DFLT_ATOMICITY_MODE;
-
-    /** Memory mode. */
-    private CacheMemoryMode memMode = DFLT_MEMORY_MODE;
+    /** Cache name. */
+    private String cacheName;
 
     /** */
     private boolean collocated;
@@ -84,86 +46,16 @@ public class IgniteCollectionConfiguration {
     }
 
     /**
-     * @return Number of cache backups.
+     * @return Cache name.
      */
-    public int getBackups() {
-        return backups;
+    public String getCacheName() {
+        return cacheName;
     }
 
     /**
-     * @param backups Number of cache backups.
+     * @param cacheName Cache name.
      */
-    public void setBackups(int backups) {
-        this.backups = backups;
-    }
-
-    /**
-     * @return Cache mode.
-     */
-    public CacheMode getCacheMode() {
-        return cacheMode;
-    }
-
-    /**
-     * @param cacheMode Cache mode.
-     */
-    public void setCacheMode(CacheMode cacheMode) {
-        this.cacheMode = cacheMode;
-    }
-
-    /**
-     * @return Cache atomicity mode.
-     */
-    public CacheAtomicityMode getAtomicityMode() {
-        return atomicityMode;
-    }
-
-    /**
-     * @param atomicityMode Cache atomicity mode.
-     */
-    public void setAtomicityMode(CacheAtomicityMode atomicityMode) {
-        this.atomicityMode = atomicityMode;
-    }
-
-    /**
-     * @return Cache memory mode.
-     */
-    public CacheMemoryMode getMemoryMode() {
-        return memMode;
-    }
-
-    /**
-     * @param memMode Cache memory mode.
-     */
-    public void setMemoryMode(CacheMemoryMode memMode) {
-        this.memMode = memMode;
-    }
-
-    /**
-     * @return Cache distribution mode.
-     */
-    public CacheDistributionMode getDistributionMode() {
-        return distro;
-    }
-
-    /**
-     * @param distro Cache distribution mode.
-     */
-    public void setDistributionMode(CacheDistributionMode distro) {
-        this.distro = distro;
-    }
-
-    /**
-     * @param offHeapMaxMem Maximum memory in bytes available to off-heap memory space.
-     */
-    public void setOffHeapMaxMemory(long offHeapMaxMem) {
-        this.offHeapMaxMem = offHeapMaxMem;
-    }
-
-    /**
-     * @return Maximum memory in bytes available to off-heap memory space.
-     */
-    public long getOffHeapMaxMemory() {
-        return offHeapMaxMem;
+    public void setCacheName(String cacheName) {
+        this.cacheName = cacheName;
     }
 }
