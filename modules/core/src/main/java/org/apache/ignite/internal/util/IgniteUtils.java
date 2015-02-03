@@ -3581,7 +3581,7 @@ public abstract class IgniteUtils {
 
     /**
      * Depending on whether or not log is provided and quiet mode is enabled logs given messages as
-     * quiet message or normal log WARN message in {@code org.gridgain.grid.CourtesyConfigNotice}
+     * quiet message or normal log WARN message in {@code org.apache.ignite.CourtesyConfigNotice}
      * category. If {@code log} is {@code null} or in QUIET mode it will add {@code (courtesy)}
      * prefix to the message.
      *
@@ -3598,7 +3598,7 @@ public abstract class IgniteUtils {
 
     /**
      * Depending on whether or not log is provided and quiet mode is enabled logs given messages as
-     * quiet message or normal log WARN message in {@code org.gridgain.grid.CourtesyConfigNotice}
+     * quiet message or normal log WARN message in {@code org.apache.ignite.CourtesyConfigNotice}
      * category. If {@code log} is {@code null} or in QUIET mode it will add {@code (courtesy)}
      * prefix to the message.
      *
