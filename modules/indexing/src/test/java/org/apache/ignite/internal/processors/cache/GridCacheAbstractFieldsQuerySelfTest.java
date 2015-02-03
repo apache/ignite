@@ -790,7 +790,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         assert qry.execute().get().isEmpty();
 
-        cache.removeAll(F.<CacheEntry<Object, Object>>alwaysTrue());
+        cache.removeAll();
     }
 
     /** @throws Exception If failed. */
@@ -880,7 +880,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
             }
         }
 
-        cache.removeAll(F.<CacheEntry<PersonKey, Person>>alwaysTrue());
+        cache.removeAll();
     }
 
     /** @throws Exception If failed. */

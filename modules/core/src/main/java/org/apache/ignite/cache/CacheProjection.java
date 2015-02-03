@@ -1647,13 +1647,10 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * This method is not available if any of the following flags are set on projection:
      * {@link CacheFlag#LOCAL}, {@link CacheFlag#READ}.
      *
-     * @param filter Filter used to supply keys for remove operation (if {@code null},
-     *      then nothing will be removed).
      * @throws IgniteCheckedException If remove failed.
      * @throws CacheFlagException If flags validation failed.
      */
-    public void removeAll(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
-        throws IgniteCheckedException;
+    public void removeAll() throws IgniteCheckedException;
 
     /**
      * Asynchronously removes mappings from cache for entries for which the optionally passed in filters do

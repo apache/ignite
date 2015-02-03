@@ -3380,11 +3380,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+    @Override public void removeAll() throws IgniteCheckedException {
         try {
-            if (F.isEmptyOrNulls(filter))
-                filter = ctx.trueArray();
-
             long topVer;
 
             do {
@@ -3396,7 +3393,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 IgniteFuture<Object> fut = null;
 
                 if (!nodes.isEmpty())
-                    fut = ctx.closures().callAsyncNoFailover(BROADCAST, new GlobalRemoveAllCallable<>(name(), topVer, REMOVE_ALL_BATCH_SIZE, filter), nodes, true);
+                    fut = ctx.closures().callAsyncNoFailover(BROADCAST, new GlobalRemoveAllCallable<>(name(), topVer, REMOVE_ALL_BATCH_SIZE), nodes, true);
 
                 if (fut != null)
                     fut.get();
@@ -5246,9 +5243,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         /** Remove batch size. */
         private long rmvBatchSz;
 
-        /** Filters. */
-        private IgnitePredicate<CacheEntry<K, V>>[] filter;
-
         /** Injected grid instance. */
         @IgniteInstanceResource
         private Ignite ignite;
@@ -5266,11 +5260,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param rmvBatchSz Remove batch size.
          * @param filter Filter.
          */
-        private GlobalRemoveAllCallable(String cacheName, long topVer, long rmvBatchSz, IgnitePredicate<CacheEntry<K, V>> ... filter) {
+        private GlobalRemoveAllCallable(String cacheName, long topVer, long rmvBatchSz) {
             this.cacheName = cacheName;
             this.topVer = topVer;
             this.rmvBatchSz = rmvBatchSz;
-            this.filter = filter;
         }
 
         /**
@@ -5287,7 +5280,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             assert cache != null;
 
-            for (K k : cache.keySet(filter)) {
+            for (K k : cache.keySet()) {
                 if (ctx.affinity().primary(ctx.localNode(), k, topVer))
                     keys.add(k);
                 if (keys.size() >= rmvBatchSz) {
@@ -5306,8 +5299,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             U.writeString(out, cacheName);
             out.writeLong(topVer);
             out.writeLong(rmvBatchSz);
-            out.writeObject(filter);
-
         }
 
         /** {@inheritDoc} */
@@ -5315,7 +5306,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             cacheName = U.readString(in);
             topVer = in.readLong();
             rmvBatchSz = in.readLong();
-            filter = (IgnitePredicate<CacheEntry<K, V>>[]) in.readObject();
         }
     }
 

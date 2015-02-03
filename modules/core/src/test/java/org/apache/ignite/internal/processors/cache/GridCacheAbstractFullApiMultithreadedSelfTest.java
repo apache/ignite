@@ -343,28 +343,6 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     /**
      * @throws Exception In case of error.
      */
-    public void testRemoveAllFiltered() throws Exception {
-        runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
-                final int rnd = random();
-
-                cache.removeAll(new P1<CacheEntry<String, Integer>>() {
-                    @Override public boolean apply(CacheEntry<String, Integer> e) {
-                        Integer val = e.peek();
-
-                        return val != null && val < rnd;
-                    }
-                });
-
-                for (int i = 0; i < rnd; i++)
-                    assert cache.peek("key" + i) == null;
-            }
-        });
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
     public void testRemoveAllAsync() throws Exception {
         runTest(new CIX1<GridCache<String,Integer>>() {
             @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {

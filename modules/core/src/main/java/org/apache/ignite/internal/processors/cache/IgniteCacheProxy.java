@@ -414,23 +414,6 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
         }
     }
 
-    /**
-     * @param filter Filter.
-     */
-    public void removeAll(IgnitePredicate<CacheEntry<K, V>>... filter) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            delegate.removeAll(filter);
-        }
-        catch (IgniteCheckedException e) {
-            throw cacheException(e);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public boolean containsKey(K key) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);

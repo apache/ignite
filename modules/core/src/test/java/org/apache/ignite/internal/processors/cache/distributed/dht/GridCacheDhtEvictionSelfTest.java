@@ -124,7 +124,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"unchecked"})
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            near(grid(i)).removeAll(new IgnitePredicate[] {F.alwaysTrue()});
+            near(grid(i)).removeAll();
 
             assert near(grid(i)).isEmpty() : "Near cache is not empty [idx=" + i + "]";
             assert dht(grid(i)).isEmpty() : "Dht cache is not empty [idx=" + i + "]";

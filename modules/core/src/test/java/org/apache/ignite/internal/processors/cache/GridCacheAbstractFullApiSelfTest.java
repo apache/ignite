@@ -2551,43 +2551,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception In case of error.
      */
-    public void testRemoveAllFiltered() throws Exception {
-        cache().put("key1", 1);
-        cache().put("key2", 2);
-        cache().put("key3", 100);
-        cache().put("key4", 101);
-        cache().put("key5", 102);
-
-        checkSize(F.asSet("key1", "key2", "key3", "key4", "key5"));
-
-        cache().removeAll(F.asList("key2", "key3", "key4"), gte100);
-
-        checkSize(F.asSet("key1", "key2", "key5"));
-
-        checkContainsKey(true, "key1");
-        checkContainsKey(true, "key2");
-        checkContainsKey(true, "key5");
-
-        checkContainsKey(false, "key3");
-        checkContainsKey(false, "key4");
-
-        cache().put("key6", 200);
-        cache().put("key7", 201);
-
-        checkSize(F.asSet("key1", "key2", "key5", "key6", "key7"));
-
-        for (int i = 0; i < gridCount(); i++)
-            cache(i).removeAll(gte200);
-
-        checkSize(F.asSet("key1", "key2", "key5"));
-
-        checkContainsKey(false, "key6");
-        checkContainsKey(false, "key7");
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
     public void testRemoveAllAsync() throws Exception {
         cache().put("key1", 1);
         cache().put("key2", 2);
@@ -3062,58 +3025,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             Ignite grid0 = grid(g);
 
             grid0.cache(null).projection(Integer.class, Integer.class).removeAll();
-
-            assertTrue(grid0.cache(null).isEmpty());
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRemoveFilteredAfterClear() throws Exception {
-        GridEx grid = grid(0);
-
-        CacheDistributionMode distroMode = grid.cache(null).configuration().getDistributionMode();
-
-        if (distroMode == CacheDistributionMode.NEAR_ONLY || distroMode == CacheDistributionMode.CLIENT_ONLY) {
-            if (gridCount() < 2)
-                return;
-
-            grid = grid(1);
-        }
-
-        CacheProjection<Integer, Integer> cache = grid.cache(null);
-
-        List<Integer> keys = new ArrayList<>();
-
-        int key = 0;
-
-        for (int k = 0; k < 2; k++) {
-            while (!grid.cache(null).affinity().isPrimary(grid.localNode(), key))
-                key++;
-
-            keys.add(key);
-
-            key++;
-        }
-
-        System.out.println(keys);
-
-        for (Integer k : keys)
-            cache.put(k, k + 1);
-
-        cache.clear();
-
-        for (int g = 0; g < gridCount(); g++) {
-            Ignite grid0 = grid(g);
-
-            grid0.cache(null).removeAll(new IgnitePredicate<CacheEntry<Object,Object>>() {
-                @Override public boolean apply(CacheEntry<Object, Object> e) {
-                    Object val = e.peek();
-
-                    return val instanceof Integer && (Integer)val > 0;
-                }
-            });
 
             assertTrue(grid0.cache(null).isEmpty());
         }

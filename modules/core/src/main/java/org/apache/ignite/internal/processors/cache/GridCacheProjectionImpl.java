@@ -1172,9 +1172,9 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
+    @Override public void removeAll()
         throws IgniteCheckedException {
-        cache.removeAll(and(filter, false));
+        cache.removeAll();
     }
 
     /** {@inheritDoc} */

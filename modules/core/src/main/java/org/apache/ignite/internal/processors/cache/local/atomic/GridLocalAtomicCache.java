@@ -464,8 +464,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void removeAll(IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
-        removeAll(keySet(filter));
+    @Override public void removeAll() throws IgniteCheckedException {
+        removeAll(keySet());
     }
 
     /** {@inheritDoc} */

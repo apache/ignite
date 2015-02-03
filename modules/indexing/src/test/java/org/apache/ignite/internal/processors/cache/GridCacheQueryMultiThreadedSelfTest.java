@@ -184,7 +184,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         for (int i = 0; i < GRID_CNT; i++) {
             GridCache<Object, Object> c = grid(i).cache(null);
 
-            c.removeAll(F.<CacheEntry<Object, Object>>alwaysTrue());
+            c.removeAll();
 
             // Fix for tests where mapping was removed at primary node
             // but was not removed at others.
