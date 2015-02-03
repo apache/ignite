@@ -31,7 +31,7 @@ import java.util.concurrent.*;
  * Optimized marshaller self test.
  */
 @GridCommonTest(group = "Marshaller")
-public class GridOptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
+public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteMarshaller createMarshaller() {
         IgniteOptimizedMarshaller m = new IgniteOptimizedMarshaller();

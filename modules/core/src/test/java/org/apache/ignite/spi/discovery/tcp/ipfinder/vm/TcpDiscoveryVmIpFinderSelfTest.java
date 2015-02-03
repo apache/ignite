@@ -25,14 +25,14 @@ import java.util.*;
 /**
  * GridTcpDiscoveryVmIpFinder test.
  */
-public class GridTcpDiscoveryVmIpFinderSelfTest
-    extends GridTcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryVmIpFinder> {
+public class TcpDiscoveryVmIpFinderSelfTest
+    extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryVmIpFinder> {
     /**
      * Constructor.
      *
      * @throws Exception If any error occurs.
      */
-    public GridTcpDiscoveryVmIpFinderSelfTest() throws Exception {
+    public TcpDiscoveryVmIpFinderSelfTest() throws Exception {
         // No-op.
     }
 

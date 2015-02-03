@@ -27,7 +27,7 @@ import org.apache.ignite.testframework.junits.spi.*;
  */
 @SuppressWarnings({"JUnitTestCaseWithNoTests"})
 @GridSpiTest(spi = TcpDiscoverySpi.class, group = "Discovery SPI")
-public class GridTcpDiscoverySpiSelfTest extends GridAbstractDiscoverySelfTest<TcpDiscoverySpi> {
+public class TcpDiscoverySpiSelfTest extends AbstractDiscoverySelfTest<TcpDiscoverySpi> {
     /** */
     private TcpDiscoveryIpFinder ipFinder =  new TcpDiscoveryVmIpFinder(true);
 

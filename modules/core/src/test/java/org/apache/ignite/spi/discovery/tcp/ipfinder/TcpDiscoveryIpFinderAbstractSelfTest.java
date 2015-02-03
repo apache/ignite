@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Abstract test for ip finder.
  */
-public abstract class GridTcpDiscoveryIpFinderAbstractSelfTest<T extends TcpDiscoveryIpFinder>
+public abstract class TcpDiscoveryIpFinderAbstractSelfTest<T extends TcpDiscoveryIpFinder>
     extends GridCommonAbstractTest {
     /** */
     private T finder;
@@ -39,7 +39,7 @@ public abstract class GridTcpDiscoveryIpFinderAbstractSelfTest<T extends TcpDisc
      * @throws Exception If any error occurs.
      */
     @SuppressWarnings({"AbstractMethodCallInConstructor", "OverriddenMethodCallDuringObjectConstruction"})
-    protected GridTcpDiscoveryIpFinderAbstractSelfTest() throws Exception {
+    protected TcpDiscoveryIpFinderAbstractSelfTest() throws Exception {
         super(false);
     }
 

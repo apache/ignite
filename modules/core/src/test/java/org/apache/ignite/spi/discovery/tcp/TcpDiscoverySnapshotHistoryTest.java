@@ -28,9 +28,9 @@ import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.*;
 /**
  * Tests for topology snapshots history.
  */
-public class GridTcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest {
+public class TcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest {
     /** */
-    public GridTcpDiscoverySnapshotHistoryTest() {
+    public TcpDiscoverySnapshotHistoryTest() {
         super(false);
     }
 

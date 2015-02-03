@@ -38,7 +38,7 @@ import static org.junit.Assert.*;
 /**
  * Test for optimized object streams.
  */
-public class GridOptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
+public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */

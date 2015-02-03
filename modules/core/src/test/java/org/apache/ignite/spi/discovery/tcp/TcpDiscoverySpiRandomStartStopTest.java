@@ -17,47 +17,29 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 /**
- *
+ * Random start stop test for {@link TcpDiscoverySpi}.
  */
-public class GridTcpDiscoverySpiWildcardSelfTest extends GridCommonAbstractTest {
+@GridSpiTest(spi = TcpDiscoverySpi.class, group = "Discovery SPI")
+public class TcpDiscoverySpiRandomStartStopTest extends
+        AbstractDiscoveryRandomStartStopTest<TcpDiscoverySpi> {
     /** */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private static final int NODES = 5;
+    private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(spi);
-        cfg.setLocalHost(null);
-
-        return cfg;
+    @Override protected int getMaxInterval() {
+        return 10;
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTopology() throws Exception {
-        try {
-            startGridsMultiThreaded(NODES);
+    /** {@inheritDoc} */
+    @Override protected void spiConfigure(TcpDiscoverySpi spi) throws Exception {
+        super.spiConfigure(spi);
 
-            for (int i = 0; i < NODES; i++)
-                assertEquals(NODES, grid(i).nodes().size());
-        }
-        finally {
-            stopAllGrids();
-        }
+        spi.setIpFinder(ipFinder);
     }
 }

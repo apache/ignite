@@ -32,7 +32,7 @@ import java.util.*;
  * Grid TCP discovery SPI start stop self test.
  */
 @GridSpiTest(spi = TcpDiscoverySpi.class, group = "Discovery SPI")
-public class GridTcpDiscoverySpiStartStopSelfTest extends GridSpiStartStopAbstractTest<TcpDiscoverySpi> {
+public class TcpDiscoverySpiStartStopSelfTest extends GridSpiStartStopAbstractTest<TcpDiscoverySpi> {
     /**
      * @return IP finder.
      */

@@ -26,12 +26,12 @@ import java.util.*;
 /**
  * GridTcpDiscoveryMulticastIpFinder test.
  */
-public class GridTcpDiscoveryMulticastIpFinderSelfTest
-    extends GridTcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryMulticastIpFinder> {
+public class TcpDiscoveryMulticastIpFinderSelfTest
+    extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryMulticastIpFinder> {
     /**
      * @throws Exception In case of error.
      */
-    public GridTcpDiscoveryMulticastIpFinderSelfTest() throws Exception {
+    public TcpDiscoveryMulticastIpFinderSelfTest() throws Exception {
         // No-op.
     }
 

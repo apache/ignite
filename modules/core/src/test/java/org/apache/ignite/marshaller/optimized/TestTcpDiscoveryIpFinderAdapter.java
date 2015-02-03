@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Test TCP discovery IP finder adapter.
  */
-public class GridTestTcpDiscoveryIpFinderAdapter extends TcpDiscoveryIpFinderAdapter {
+public class TestTcpDiscoveryIpFinderAdapter extends TcpDiscoveryIpFinderAdapter {
     /** {@inheritDoc} */
     @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
         return null;

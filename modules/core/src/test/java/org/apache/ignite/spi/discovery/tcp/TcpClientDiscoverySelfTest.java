@@ -42,7 +42,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 /**
  * Client-based discovery tests.
  */
-public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
+public class TcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

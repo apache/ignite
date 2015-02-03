@@ -22,7 +22,7 @@ import junit.framework.*;
 /**
  *
  */
-public class GridOptimizedMarshallerEnumSelfTest extends TestCase {
+public class OptimizedMarshallerEnumSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */

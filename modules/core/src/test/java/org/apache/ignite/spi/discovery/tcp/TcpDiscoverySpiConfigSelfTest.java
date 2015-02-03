@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.junits.spi.*;
  *
  */
 @GridSpiTest(spi = TcpDiscoverySpi.class, group = "Discovery SPI")
-public class GridTcpDiscoverySpiConfigSelfTest extends GridSpiAbstractConfigTest<TcpDiscoverySpi> {
+public class TcpDiscoverySpiConfigSelfTest extends GridSpiAbstractConfigTest<TcpDiscoverySpi> {
     /**
      * @throws Exception If failed.
      */

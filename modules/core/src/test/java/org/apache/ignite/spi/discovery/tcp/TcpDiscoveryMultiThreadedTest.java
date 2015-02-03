@@ -33,7 +33,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 /**
  * Test for {@link TcpDiscoverySpi}.
  */
-public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
+public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 5;
 
@@ -61,7 +61,7 @@ public class GridTcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
-    public GridTcpDiscoveryMultiThreadedTest() throws Exception {
+    public TcpDiscoveryMultiThreadedTest() throws Exception {
         super(false);
     }
 

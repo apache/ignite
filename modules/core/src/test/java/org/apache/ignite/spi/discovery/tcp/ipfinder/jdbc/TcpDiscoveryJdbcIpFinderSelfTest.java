@@ -24,8 +24,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 /**
  * JDBC IP finder self test.
  */
-public class GridTcpDiscoveryJdbcIpFinderSelfTest extends
-    GridTcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryJdbcIpFinder> {
+public class TcpDiscoveryJdbcIpFinderSelfTest extends
+        TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryJdbcIpFinder> {
     /** */
     private ComboPooledDataSource dataSrc;
 
@@ -37,7 +37,7 @@ public class GridTcpDiscoveryJdbcIpFinderSelfTest extends
      *
      * @throws Exception If failed.
      */
-    public GridTcpDiscoveryJdbcIpFinderSelfTest() throws Exception {
+    public TcpDiscoveryJdbcIpFinderSelfTest() throws Exception {
         // No-op.
     }
 

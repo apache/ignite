@@ -25,14 +25,14 @@ import java.util.*;
 /**
  * GridTcpDiscoverySharedFsIpFinder test.
  */
-public class GridTcpDiscoverySharedFsIpFinderSelfTest
-    extends GridTcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoverySharedFsIpFinder> {
+public class TcpDiscoverySharedFsIpFinderSelfTest
+    extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoverySharedFsIpFinder> {
     /**
      * Constructor.
      *
      * @throws Exception If any error occurs.
      */
-    public GridTcpDiscoverySharedFsIpFinderSelfTest() throws Exception {
+    public TcpDiscoverySharedFsIpFinderSelfTest() throws Exception {
         // No-op.
     }
 

@@ -29,7 +29,7 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  * Test for {@link TcpDiscoverySpi}.
  */
-public class GridTcpDiscoveryMarshallerCheckSelfTest extends GridCommonAbstractTest {
+public class TcpDiscoveryMarshallerCheckSelfTest extends GridCommonAbstractTest {
     /** */
     private static boolean sameMarsh;
 

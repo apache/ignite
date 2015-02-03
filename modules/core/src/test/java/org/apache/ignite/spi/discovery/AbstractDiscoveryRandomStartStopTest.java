@@ -30,7 +30,7 @@ import java.util.*;
  * Base discovery random start-stop test class.
  * @param <T> Discovery spi type.
  */
-public abstract class GridAbstractDiscoveryRandomStartStopTest<T extends DiscoverySpi> extends GridSpiAbstractTest<T> {
+public abstract class AbstractDiscoveryRandomStartStopTest<T extends DiscoverySpi> extends GridSpiAbstractTest<T> {
     /** */
     private static final int DFLT_MAX_INTERVAL = 10;
 
@@ -111,7 +111,7 @@ public abstract class GridAbstractDiscoveryRandomStartStopTest<T extends Discove
     }
 
     /** */
-    protected GridAbstractDiscoveryRandomStartStopTest() {
+    protected AbstractDiscoveryRandomStartStopTest() {
         super(false);
     }
 

@@ -36,7 +36,7 @@ import java.util.concurrent.*;
 /**
  *
  */
-public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
+public class OptimizedMarshallerTest extends GridCommonAbstractTest {
     /**
      * Tests ability to marshal non-serializable objects.
      *
@@ -116,7 +116,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
 
         marsh.setRequireSerializable(false);
 
-        byte[] bytes = marsh.marshal(new GridTestTcpDiscoveryIpFinderAdapter());
+        byte[] bytes = marsh.marshal(new TestTcpDiscoveryIpFinderAdapter());
 
         TcpDiscoveryIpFinder ipFinder = marsh.unmarshal(bytes, null);
 
@@ -296,7 +296,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
         marsh.setRequireSerializable(false);
 
         SomeItf inItf = (SomeItf)Proxy.newProxyInstance(
-            GridOptimizedMarshallerTest.class.getClassLoader(), new Class[] {SomeItf.class},
+            OptimizedMarshallerTest.class.getClassLoader(), new Class[] {SomeItf.class},
             new InvocationHandler() {
                 private NonSerializable obj = new NonSerializable(null);
 

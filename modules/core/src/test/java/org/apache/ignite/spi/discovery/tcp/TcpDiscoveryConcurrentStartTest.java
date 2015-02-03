@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Test for {@link TcpDiscoverySpi}.
  */
-public class GridTcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
+public class TcpDiscoveryConcurrentStartTest extends GridCommonAbstractTest {
     /** */
     private static final int TOP_SIZE = 1;
 

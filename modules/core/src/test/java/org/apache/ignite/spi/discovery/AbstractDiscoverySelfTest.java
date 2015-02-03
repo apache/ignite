@@ -41,7 +41,7 @@ import static org.apache.ignite.lang.IgniteProductVersion.*;
  * @param <T> SPI implementation class.
  */
 @SuppressWarnings({"JUnitAbstractTestClassNamingConvention"})
-public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends GridSpiAbstractTest<T> {
+public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends GridSpiAbstractTest<T> {
     /** */
     private static final List<DiscoverySpi> spis = new ArrayList<>();
 
@@ -58,7 +58,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
     private static final String TEST_ATTRIBUTE_NAME = "test.node.prop";
 
     /** */
-    protected GridAbstractDiscoverySelfTest() {
+    protected AbstractDiscoverySelfTest() {
         super(false);
     }
 

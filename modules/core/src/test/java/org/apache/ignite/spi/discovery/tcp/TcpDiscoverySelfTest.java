@@ -48,7 +48,7 @@ import static org.apache.ignite.spi.IgnitePortProtocol.*;
 /**
  * Test for {@link TcpDiscoverySpi}.
  */
-public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
+public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /** */
     private TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -61,7 +61,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fails.
      */
-    public GridTcpDiscoverySelfTest() throws Exception {
+    public TcpDiscoverySelfTest() throws Exception {
         super(false);
     }
 
