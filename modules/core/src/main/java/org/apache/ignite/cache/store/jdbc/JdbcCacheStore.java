@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.dialect.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -132,7 +132,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
      * @param rs ResultSet.
      * @return Constructed object.
      */
-    protected abstract <R> R buildObject(String typeName, Collection<CacheQueryTableColumnMetadata> fields, ResultSet rs)
+    protected abstract <R> R buildObject(String typeName, Collection<CacheTypeFieldMetadata> fields, ResultSet rs)
         throws CacheLoaderException;
 
     /**
@@ -157,7 +157,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
      * @param types Collection of types.
      * @throws CacheException If failed to prepare.
      */
-    protected abstract void prepareBuilders(@Nullable String cacheName, Collection<CacheQueryTypeMetadata> types)
+    protected abstract void prepareBuilders(@Nullable String cacheName, Collection<CacheTypeMetadata> types)
         throws CacheException;
 
     /**
@@ -402,19 +402,19 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
             if (entryMappings != null)
                 return entryMappings;
 
-            Collection<CacheQueryTypeMetadata> typeMetadata =
-                ignite().cache(session().cacheName()).configuration().getQueryConfiguration().getTypeMetadata();
+            Collection<CacheTypeMetadata> types = ignite().cache(session().cacheName()).configuration()
+                .getTypeMetadata();
 
-            entryMappings = U.newHashMap(typeMetadata.size());
+            entryMappings = U.newHashMap(types.size());
 
-            for (CacheQueryTypeMetadata type : typeMetadata)
+            for (CacheTypeMetadata type : types)
                 entryMappings.put(keyTypeId(type.getKeyType()), new EntryMapping(dialect, type));
 
             Map<String, Map<Object, EntryMapping>> mappings = new HashMap<>(cacheMappings);
 
             mappings.put(cacheName, entryMappings);
 
-            prepareBuilders(cacheName, typeMetadata);
+            prepareBuilders(cacheName, types);
 
             cacheMappings = mappings;
 
@@ -632,10 +632,20 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
                     insStmt.executeUpdate();
                 }
                 catch (SQLException e) {
+                    String sqlState = e.getSQLState();
+
+                    SQLException nested = e.getNextException();
+
+                    while (sqlState == null && nested != null) {
+                        sqlState = nested.getSQLState();
+
+                        nested = nested.getNextException();
+                    }
+
                     // The error with code 23505 is thrown when trying to insert a row that
                     // would violate a unique index or primary key.
                     // TODO check with all RDBMS
-                    if (e.getErrorCode() == 23505)
+                    if (sqlState != null && Integer.valueOf(sqlState) == 23505)
                         continue;
 
                     throw e;
@@ -708,7 +718,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
     }
 
     /** {@inheritDoc} */
-    @Override public void writeAll(Collection<Cache.Entry<? extends K, ? extends V>> entries)
+    @Override public void writeAll(final Collection<Cache.Entry<? extends K, ? extends V>> entries)
         throws CacheWriterException {
         assert entries != null;
 
@@ -723,6 +733,12 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
                 PreparedStatement mergeStmt = null;
 
                 try {
+                    LazyValue<Object[]> lazyEntries = new LazyValue<Object[]>() {
+                        @Override public Object[] create() {
+                            return entries.toArray();
+                        }
+                    };
+
                     int fromIdx = 0, prepared = 0;
 
                     for (Cache.Entry<? extends K, ? extends V> entry : entries) {
@@ -734,7 +750,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
 
                         if (currKeyTypeId == null || !currKeyTypeId.equals(keyTypeId)) {
                             if (mergeStmt != null) {
-                                executeBatch(mergeStmt, "writeAll", fromIdx, prepared, entries);
+                                executeBatch(mergeStmt, "writeAll", fromIdx, prepared, lazyEntries);
 
                                 U.closeQuiet(mergeStmt);
                             }
@@ -753,14 +769,14 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
                         mergeStmt.addBatch();
 
                         if (++prepared % batchSz == 0) {
-                            executeBatch(mergeStmt, "writeAll", fromIdx, prepared, entries);
+                            executeBatch(mergeStmt, "writeAll", fromIdx, prepared, lazyEntries);
 
                             prepared = 0;
                         }
                     }
 
                     if (mergeStmt != null && prepared % batchSz != 0)
-                        executeBatch(mergeStmt, "writeAll", fromIdx, prepared, entries);
+                        executeBatch(mergeStmt, "writeAll", fromIdx, prepared, lazyEntries);
                 }
                 finally {
                     U.closeQuiet(mergeStmt);
@@ -845,9 +861,9 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
      * @param stmtType Statement description for error message.
      * @param fromIdx Objects in batch start from index.
      * @param prepared Expected objects in batch.
-     * @param objects All objects.
+     * @param lazyObjs All objects used in batch statement as array.
      */
-    private void executeBatch(Statement stmt, String stmtType, int fromIdx, int prepared, Collection<?> objects)
+    private void executeBatch(Statement stmt, String stmtType, int fromIdx, int prepared, LazyValue<Object[]> lazyObjs)
         throws SQLException {
         int[] rowCounts = stmt.executeBatch();
 
@@ -857,19 +873,16 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
             log.warning("JDBC driver did not return the expected number of updated row counts," +
                 " actual row count: " + numOfRowCnt + " expected: " + prepared);
 
-        Object[] arr = null;
-
         for (int i = 0; i < numOfRowCnt; i++)
             if (rowCounts[i] != 1) {
-                if (arr == null)
-                    arr = objects.toArray();
+                Object[] objs = lazyObjs.value();
 
-                log.warning("Batch " + stmtType + " returned unexpected updated row count for: " + arr[fromIdx + i]);
+                log.warning("Batch " + stmtType + " returned unexpected updated row count for: " + objs[fromIdx + i]);
             }
     }
 
     /** {@inheritDoc} */
-    @Override public void deleteAll(Collection<?> keys) throws CacheWriterException {
+    @Override public void deleteAll(final Collection<?> keys) throws CacheWriterException {
         assert keys != null;
 
         Connection conn = null;
@@ -880,6 +893,12 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
             Object currKeyTypeId  = null;
 
             PreparedStatement delStmt = null;
+
+            LazyValue<Object[]> lazyKeys = new LazyValue<Object[]>() {
+                @Override public Object[] create() {
+                    return keys.toArray();
+                }
+            };
 
             int fromIdx = 0, prepared = 0;
 
@@ -895,7 +914,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
                 }
 
                 if (!currKeyTypeId.equals(keyTypeId)) {
-                    executeBatch(delStmt, "deleteAll", fromIdx, prepared, keys);
+                    executeBatch(delStmt, "deleteAll", fromIdx, prepared, lazyKeys);
 
                     fromIdx += prepared;
 
@@ -909,7 +928,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
                 delStmt.addBatch();
 
                 if (++prepared % batchSz == 0) {
-                    executeBatch(delStmt, "deleteAll", fromIdx, prepared, keys);
+                    executeBatch(delStmt, "deleteAll", fromIdx, prepared, lazyKeys);
 
                     fromIdx += prepared;
 
@@ -918,7 +937,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
             }
 
             if (delStmt != null && prepared % batchSz != 0)
-                executeBatch(delStmt, "deleteAll", fromIdx, prepared, keys);
+                executeBatch(delStmt, "deleteAll", fromIdx, prepared, lazyKeys);
         }
         catch (SQLException e) {
             throw new CacheWriterException("Failed to remove values from database", e);
@@ -937,7 +956,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
      */
     protected int fillKeyParameters(PreparedStatement stmt, int i, EntryMapping type,
         Object key) throws CacheException {
-        for (CacheQueryTableColumnMetadata field : type.keyColumns()) {
+        for (CacheTypeFieldMetadata field : type.keyColumns()) {
             Object fieldVal = extractField(type.keyType(), field.getJavaName(), key);
 
             try {
@@ -973,7 +992,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
      */
     protected int fillValueParameters(PreparedStatement stmt, int i, EntryMapping m, Object val)
         throws CacheWriterException {
-        for (CacheQueryTableColumnMetadata field : m.uniqValFields) {
+        for (CacheTypeFieldMetadata field : m.uniqValFields) {
             Object fieldVal = extractField(m.valueType(), field.getJavaName(), val);
 
             try {
@@ -1117,37 +1136,32 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
         private final Collection<String> cols;
 
         /** Unique value fields. */
-        private final Collection<CacheQueryTableColumnMetadata> uniqValFields;
+        private final Collection<CacheTypeFieldMetadata> uniqValFields;
 
         /** Type metadata. */
-        private final CacheQueryTypeMetadata typeMeta;
-
-        /** Table metadata. */
-        private final CacheQueryTableMetadata tblMeta;
+        private final CacheTypeMetadata typeMeta;
 
         /**
          * @param typeMeta Type metadata.
          */
-        public EntryMapping(JdbcDialect dialect, CacheQueryTypeMetadata typeMeta) {
+        public EntryMapping(JdbcDialect dialect, CacheTypeMetadata typeMeta) {
             this.dialect = dialect;
 
             this.typeMeta = typeMeta;
 
-            tblMeta = typeMeta.getTableMetadata();
+            final Collection<CacheTypeFieldMetadata> keyFields = typeMeta.getKeyFields();
 
-            final Collection<CacheQueryTableColumnMetadata> keyFields = tblMeta.getKeyColumns();
+            Collection<CacheTypeFieldMetadata> valFields = typeMeta.getValueFields();
 
-            Collection<CacheQueryTableColumnMetadata> valFields = tblMeta.getValueColumns();
-
-            uniqValFields = F.view(valFields, new IgnitePredicate<CacheQueryTableColumnMetadata>() {
-                @Override public boolean apply(CacheQueryTableColumnMetadata col) {
+            uniqValFields = F.view(valFields, new IgnitePredicate<CacheTypeFieldMetadata>() {
+                @Override public boolean apply(CacheTypeFieldMetadata col) {
                     return !keyFields.contains(col);
                 }
             });
 
-            String schema = tblMeta.getSchema();
+            String schema = typeMeta.getDatabaseSchema();
 
-            String tblName = tblMeta.getTable();
+            String tblName = typeMeta.getDatabaseTable();
 
             keyCols = databaseColumns(keyFields);
 
@@ -1177,14 +1191,14 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
         }
 
         /**
-         * Extract database column names from {@link CacheQueryTableColumnMetadata}.
+         * Extract database column names from {@link CacheTypeFieldMetadata}.
          *
-         * @param dsc collection of {@link CacheQueryTableColumnMetadata}.
+         * @param dsc collection of {@link CacheTypeFieldMetadata}.
          */
-        private static Collection<String> databaseColumns(Collection<CacheQueryTableColumnMetadata> dsc) {
-            return F.transform(dsc, new C1<CacheQueryTableColumnMetadata, String>() {
+        private static Collection<String> databaseColumns(Collection<CacheTypeFieldMetadata> dsc) {
+            return F.transform(dsc, new C1<CacheTypeFieldMetadata, String>() {
                 /** {@inheritDoc} */
-                @Override public String apply(CacheQueryTableColumnMetadata col) {
+                @Override public String apply(CacheTypeFieldMetadata col) {
                     return col.getDbName();
                 }
             });
@@ -1204,7 +1218,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
             if (keyCnt == 1)
                 return loadQrySingle;
 
-            return dialect.loadQuery(tblMeta.getSchema(), tblMeta.getTable(), keyCols, cols, keyCnt);
+            return dialect.loadQuery(typeMeta.getDatabaseSchema(), typeMeta.getDatabaseTable(), keyCols, cols, keyCnt);
         }
         /**
          * Construct query for select values in range.
@@ -1214,7 +1228,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
          * @return Query with range.
          */
         protected String loadCacheRangeQuery(boolean appendLowerBound, boolean appendUpperBound) {
-            return dialect.loadCacheRangeQuery(tblMeta.getSchema(), tblMeta.getTable(), keyCols, cols,
+            return dialect.loadCacheRangeQuery(typeMeta.getDatabaseSchema(), typeMeta.getDatabaseTable(), keyCols, cols,
                 appendLowerBound, appendUpperBound);
         }
 
@@ -1225,7 +1239,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
 
         /** Value type. */
         protected String valueType() {
-            return typeMeta.getType();
+            return typeMeta.getValueType();
         }
 
         /**
@@ -1233,8 +1247,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
          *
          * @return Key columns.
          */
-        protected Collection<CacheQueryTableColumnMetadata> keyColumns() {
-            return tblMeta.getKeyColumns();
+        protected Collection<CacheTypeFieldMetadata> keyColumns() {
+            return typeMeta.getKeyFields();
         }
 
         /**
@@ -1242,8 +1256,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
          *
          * @return Value columns.
          */
-        protected Collection<CacheQueryTableColumnMetadata> valueColumns() {
-            return tblMeta.getValueColumns();
+        protected Collection<CacheTypeFieldMetadata> valueColumns() {
+            return typeMeta.getValueFields();
         }
     }
 
@@ -1308,6 +1322,31 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
     }
 
     /**
+     * Lazy initialization of value.
+     *
+     * @param <T> Cached object type
+     */
+    private abstract static class LazyValue<T> {
+        /** Cached value. */
+        private T val;
+
+        /**
+         * @return Construct value.
+         */
+        protected abstract T create();
+
+        /**
+         * @return Value.
+         */
+        public T value() {
+            if (val == null)
+                val = create();
+
+            return val;
+        }
+    }
+
+    /**
      * Worker for load by keys.
      *
      * @param <K1> Key type.
@@ -1344,7 +1383,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
                 int i = 1;
 
                 for (Object key : keys)
-                    for (CacheQueryTableColumnMetadata field : m.keyColumns()) {
+                    for (CacheTypeFieldMetadata field : m.keyColumns()) {
                         Object fieldVal = extractField(m.keyType(), field.getJavaName(), key);
 
                         if (fieldVal != null)

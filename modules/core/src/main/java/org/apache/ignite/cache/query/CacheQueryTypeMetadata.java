@@ -17,9 +17,9 @@
 
 package org.apache.ignite.cache.query;
 
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 import java.util.*;
 
@@ -27,15 +27,8 @@ import java.util.*;
  * Cache query type metadata.
  */
 public class CacheQueryTypeMetadata {
-    /** Key class used to store value in cache. */
-    private String keyType;
-
     /** Type name, e.g. class name. */
-    private String valType;
-
-    // TODO MOVE to cache or store config ?
-    /** Database table metadata.*/
-    private CacheQueryTableMetadata tblMeta;
+    private String type;
 
     /** Fields to be queried, in addition to indexed fields. */
     @GridToStringInclude
@@ -61,8 +54,6 @@ public class CacheQueryTypeMetadata {
      * Default constructor.
      */
     public CacheQueryTypeMetadata() {
-        tblMeta = new CacheQueryTableMetadata();
-
         qryFlds = new LinkedHashMap<>();
 
         ascFlds = new LinkedHashMap<>();
@@ -78,11 +69,7 @@ public class CacheQueryTypeMetadata {
      * Copy constructor.
      */
     public CacheQueryTypeMetadata(CacheQueryTypeMetadata src) {
-        keyType = src.getKeyType();
-
-        valType = src.getType();
-
-        tblMeta = new CacheQueryTableMetadata(src.getTableMetadata());
+        type = src.getType();
 
         qryFlds = new LinkedHashMap<>(src.getQueryFields());
 
@@ -96,30 +83,12 @@ public class CacheQueryTypeMetadata {
     }
 
     /**
-     * Gets key type.
-     *
-     * @return Key type.
-     */
-    public String getKeyType() {
-        return keyType;
-    }
-
-    /**
-     * Sets key type.
-     *
-     * @param keyType Key type.
-     */
-    public void setKeyType(String keyType) {
-        this.keyType = keyType;
-    }
-
-    /**
      * Gets type (e.g. class name).
      *
      * @return Type name.
      */
     public String getType() {
-        return valType;
+        return type;
     }
 
     /**
@@ -137,25 +106,7 @@ public class CacheQueryTypeMetadata {
      * @param type Type name.
      */
     public void setType(String type) {
-        valType = type;
-    }
-
-    /**
-     * Gets table metadata.
-     *
-     * @return table metadata.
-     */
-    public CacheQueryTableMetadata getTableMetadata() {
-        return tblMeta;
-    }
-
-    /**
-     * Sets table metadata.
-     *
-     * @param tblMeta New table metadata.
-     */
-    public void setTableMetadata(CacheQueryTableMetadata tblMeta) {
-        this.tblMeta = tblMeta;
+        this.type = type;
     }
 
     /**

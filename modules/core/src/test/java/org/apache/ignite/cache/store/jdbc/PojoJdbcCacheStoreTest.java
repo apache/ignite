@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.dialect.*;
 import org.apache.ignite.cache.store.jdbc.model.*;
@@ -117,8 +117,7 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
 
             springCtx.refresh();
 
-            Collection<CacheQueryTypeMetadata> typeMeta =
-                springCtx.getBeansOfType(CacheQueryTypeMetadata.class).values();
+            Collection<CacheTypeMetadata> typeMeta = springCtx.getBeansOfType(CacheTypeMetadata.class).values();
 
             Map<Integer, Map<Object, JdbcCacheStore.EntryMapping>> cacheMappings = new HashMap<>();
 
@@ -128,7 +127,7 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
 
             Map<Object, JdbcCacheStore.EntryMapping> entryMappings = U.newHashMap(typeMeta.size());
 
-            for (CacheQueryTypeMetadata type : typeMeta)
+            for (CacheTypeMetadata type : typeMeta)
                 entryMappings.put(store.keyTypeId(type.getKeyType()), new JdbcCacheStore.EntryMapping(dialect, type));
 
             store.prepareBuilders(null, typeMeta);

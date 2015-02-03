@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query;
+package org.apache.ignite.cache;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
- * Database table column metadata.
+ * Type field metadata.
  */
-public class CacheQueryTableColumnMetadata {
+public class CacheTypeFieldMetadata {
     /** Column name in database. */
     private String dbName;
 
@@ -38,17 +38,19 @@ public class CacheQueryTableColumnMetadata {
     /**
      * Default constructor.
      */
-    public CacheQueryTableColumnMetadata() {
+    public CacheTypeFieldMetadata() {
         // No-op.
     }
 
     /**
+     * Full constructor.
+     *
      * @param dbName Column name in database.
      * @param dbType Column JDBC type in database.
      * @param javaName Field name in java object.
      * @param javaType Field java type.
      */
-    public CacheQueryTableColumnMetadata(String javaName, Class<?> javaType, String dbName, int dbType) {
+    public CacheTypeFieldMetadata(String javaName, Class<?> javaType, String dbName, int dbType) {
         this.dbName = dbName;
         this.dbType = dbType;
         this.javaName = javaName;
@@ -116,10 +118,10 @@ public class CacheQueryTableColumnMetadata {
         if (this == o)
             return true;
 
-        if (!(o instanceof CacheQueryTableColumnMetadata))
+        if (!(o instanceof CacheTypeFieldMetadata))
             return false;
 
-        CacheQueryTableColumnMetadata that = (CacheQueryTableColumnMetadata)o;
+        CacheTypeFieldMetadata that = (CacheTypeFieldMetadata)o;
 
         return javaName.equals(that.javaName) && dbName.equals(that.dbName) &&
             javaType == that.javaType && dbType == that.dbType;
@@ -138,6 +140,6 @@ public class CacheQueryTableColumnMetadata {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheQueryTableColumnMetadata.class, this);
+        return S.toString(CacheTypeFieldMetadata.class, this);
     }
 }

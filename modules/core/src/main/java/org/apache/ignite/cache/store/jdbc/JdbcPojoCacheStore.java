@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -56,7 +56,7 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
          * @param clsName Class name.
          * @param fields Fields.
          */
-        public PojoMethodsCache(String clsName, Collection<CacheQueryTableColumnMetadata> fields) throws CacheException {
+        public PojoMethodsCache(String clsName, Collection<CacheTypeFieldMetadata> fields) throws CacheException {
             try {
                 cls = Class.forName(clsName);
 
@@ -76,7 +76,7 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
 
             getters = U.newHashMap(fields.size());
 
-            for (CacheQueryTableColumnMetadata field : fields) {
+            for (CacheTypeFieldMetadata field : fields) {
                 String prop = capitalFirst(field.getJavaName());
 
                 try {
@@ -133,16 +133,16 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
     protected volatile Map<String, Map<String, PojoMethodsCache>> mtdsCache = Collections.emptyMap();
 
     /** {@inheritDoc} */
-    @Override protected void prepareBuilders(@Nullable String cacheName, Collection<CacheQueryTypeMetadata> types)
+    @Override protected void prepareBuilders(@Nullable String cacheName, Collection<CacheTypeMetadata> types)
         throws CacheException {
         Map<String, PojoMethodsCache> typeMethods = U.newHashMap(types.size() * 2);
 
-        for (CacheQueryTypeMetadata type : types) {
-            CacheQueryTableMetadata tblMeta = type.getTableMetadata();
+        for (CacheTypeMetadata type : types) {
+            String keyType = type.getKeyType();
+            typeMethods.put(keyType, new PojoMethodsCache(keyType, type.getKeyFields()));
 
-            typeMethods.put(type.getKeyType(), new PojoMethodsCache(type.getKeyType(), tblMeta.getKeyColumns()));
-
-            typeMethods.put(type.getType(), new PojoMethodsCache(type.getType(), tblMeta.getValueColumns()));
+            String valType = type.getValueType();
+            typeMethods.put(valType, new PojoMethodsCache(valType, type.getValueFields()));
         }
 
         HashMap<String, Map<String, PojoMethodsCache>> newMtdsCache = new HashMap<>(mtdsCache);
@@ -153,14 +153,14 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
     }
 
     /** {@inheritDoc} */
-    @Override protected <R> R buildObject(String typeName, Collection<CacheQueryTableColumnMetadata> fields,
+    @Override protected <R> R buildObject(String typeName, Collection<CacheTypeFieldMetadata> fields,
         ResultSet rs) throws CacheLoaderException {
         PojoMethodsCache t = mtdsCache.get(session().cacheName()).get(typeName);
 
         Object obj = t.newInstance();
 
         try {
-            for (CacheQueryTableColumnMetadata field : fields)
+            for (CacheTypeFieldMetadata field : fields)
                 t.setters.get(field.getJavaName()).invoke(obj, rs.getObject(field.getDbName()));
 
             return (R)obj;
