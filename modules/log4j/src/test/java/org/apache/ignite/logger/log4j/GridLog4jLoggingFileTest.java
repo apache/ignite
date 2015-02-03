@@ -19,9 +19,9 @@ package org.apache.ignite.logger.log4j;
 
 import junit.framework.*;
 import org.apache.ignite.*;
-import org.apache.ignite.logger.log4j.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+
 import java.io.*;
 
 /**

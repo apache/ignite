@@ -18,8 +18,8 @@
 package org.apache.ignite.spi.checkpoint.sharedfs;
 
 import org.apache.ignite.*;
-import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.testframework.junits.spi.*;
 
 import java.io.*;
@@ -108,7 +108,7 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
         try {
             getSpi().saveCheckpoint(CHECK_POINT_KEY_PREFIX, GridTestIoUtils.serializeJdk(state), 0, true);
         }
-        catch (IgniteCheckedException ignored) {
+        catch (IgniteException ignored) {
             error = true;
         }
 

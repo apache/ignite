@@ -18,6 +18,7 @@
 package org.apache.ignite.streamer.window;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -83,15 +84,15 @@ public class StreamerBoundedSizeBatchWindow<E> extends StreamerWindowAdapter<E> 
     }
 
     /** {@inheritDoc} */
-    @Override public void checkConfiguration() throws IgniteCheckedException {
+    @Override public void checkConfiguration() {
         if (batchSize <= 0)
-            throw new IgniteCheckedException("Failed to initialize window (batchSize size must be positive) " +
+            throw new IgniteException("Failed to initialize window (batchSize size must be positive) " +
                 "[windowClass=" + getClass().getSimpleName() +
                 ", maximumBatches=" + maxBatches +
                 ", batchSize=" + batchSize + ']');
 
         if (maxBatches < 0)
-            throw new IgniteCheckedException("Failed to initialize window (maximumBatches cannot be negative) " +
+            throw new IgniteException("Failed to initialize window (maximumBatches cannot be negative) " +
                 "[windowClass=" + getClass().getSimpleName() +
                 ", maximumBatches=" + maxBatches +
                 ", batchSize=" + batchSize + ']');
@@ -239,7 +240,7 @@ public class StreamerBoundedSizeBatchWindow<E> extends StreamerWindowAdapter<E> 
         try {
             return enqueueInternal(evt);
         }
-        catch (IgniteInterruptedException ignored) {
+        catch (IgniteInterruptedCheckedException ignored) {
             return false;
         }
     }
@@ -250,10 +251,10 @@ public class StreamerBoundedSizeBatchWindow<E> extends StreamerWindowAdapter<E> 
      * @param evt Event to add.
      * @return {@code True} if event was added.
      *
-     * @throws org.apache.ignite.IgniteInterruptedException If thread was interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread was interrupted.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    private boolean enqueueInternal(E evt) throws IgniteInterruptedException {
+    private boolean enqueueInternal(E evt) throws IgniteInterruptedCheckedException {
         QueueHolder tup = holder;
 
         ConcurrentLinkedDeque8<Batch> evts = tup.batchQueue();
@@ -624,9 +625,9 @@ public class StreamerBoundedSizeBatchWindow<E> extends StreamerWindowAdapter<E> 
         /**
          * Waits for latch count down after last event was added.
          *
-         * @throws org.apache.ignite.IgniteInterruptedException If wait was interrupted.
+         * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If wait was interrupted.
          */
-        public void finish() throws IgniteInterruptedException {
+        public void finish() throws IgniteInterruptedCheckedException {
             writeLock().lock();
 
             try {

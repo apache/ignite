@@ -100,7 +100,7 @@ public class StreamingRunningAverageExample {
 
                         System.out.println("Got streamer query result [avg=" + avg + ", idealAvg=" + (rndRange / 2) + ']');
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         System.out.println("Failed to execute streamer query: " + e);
                     }
                 }
@@ -117,7 +117,7 @@ public class StreamingRunningAverageExample {
                     try {
                         streamer.addEvent(rnd.nextInt(rndRange));
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         System.out.println("Failed to add streamer event: " + e);
                     }
                 }
@@ -155,8 +155,7 @@ public class StreamingRunningAverageExample {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Integer> evts)
-            throws IgniteCheckedException {
+        @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Integer> evts) {
             ConcurrentMap<String, Average> loc = ctx.localSpace();
 
             Average avg = loc.get("avg");

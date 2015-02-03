@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache;
+import javax.cache.*;
 import javax.cache.integration.*;
 import java.util.*;
 
@@ -63,7 +62,7 @@ class GridCacheLoaderWriterStore<K, V> extends CacheStore<K, V> implements Lifec
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start() {
         if (ldr instanceof LifecycleAware)
             ((LifecycleAware)ldr).start();
 
@@ -72,7 +71,7 @@ class GridCacheLoaderWriterStore<K, V> extends CacheStore<K, V> implements Lifec
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() throws IgniteCheckedException {
+    @Override public void stop() {
         if (ldr instanceof LifecycleAware)
             ((LifecycleAware)ldr).stop();
 

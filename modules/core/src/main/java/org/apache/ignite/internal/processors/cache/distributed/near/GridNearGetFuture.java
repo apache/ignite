@@ -21,17 +21,18 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.timeout.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -39,8 +40,8 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  *
@@ -222,7 +223,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new ClusterTopologyException("Remote node left grid (will retry): " + nodeId));
+                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
 
                     return true;
                 }
@@ -284,7 +285,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         if (affNodes.isEmpty()) {
             assert !isAffinityNode(cctx.config());
 
-            onDone(new ClusterTopologyException("Failed to map keys for near-only cache (all partition " +
+            onDone(new ClusterTopologyCheckedException("Failed to map keys for near-only cache (all partition " +
                 "nodes left the grid)."));
 
             return;
@@ -403,8 +404,8 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                 }
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.
-                    if (e instanceof ClusterTopologyException)
-                        fut.onResult((ClusterTopologyException)e);
+                    if (e instanceof ClusterTopologyCheckedException)
+                        fut.onResult((ClusterTopologyCheckedException)e);
                     else
                         fut.onResult(e);
                 }
@@ -528,7 +529,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
                     if (keys != null && keys.containsKey(key)) {
                         if (remapCnt.incrementAndGet() > MAX_REMAP_CNT) {
-                            onDone(new ClusterTopologyException("Failed to remap key to a new node after " + MAX_REMAP_CNT
+                            onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " + MAX_REMAP_CNT
                                 + " attempts (key got remapped to the same node) [key=" + key + ", node=" +
                                 U.toShortString(primary) + ", mappings=" + mapped + ']'));
 
@@ -742,7 +743,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         /**
          * @param e Topology exception.
          */
-        void onResult(ClusterTopologyException e) {
+        void onResult(ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will retry): " + this);
 

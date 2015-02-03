@@ -81,11 +81,11 @@ public class GridHashMapLoadTest extends GridCommonAbstractTest {
 
             map.put(key, new GridCacheMapEntry<Integer, Integer>(ctx, key,
                 key.hashCode(), val, null, 0, 1) {
-                @Override public boolean tmLock(IgniteTxEx<Integer, Integer> tx, long timeout) {
+                @Override public boolean tmLock(IgniteInternalTx<Integer, Integer> tx, long timeout) {
                     return false;
                 }
 
-                @Override public void txUnlock(IgniteTxEx<Integer, Integer> tx) {
+                @Override public void txUnlock(IgniteInternalTx<Integer, Integer> tx) {
                     // No-op.
                 }
 

@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.GridCache;
+import org.apache.ignite.cache.*;
 import org.hibernate.*;
 import org.hibernate.cache.spi.*;
 

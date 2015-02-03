@@ -20,8 +20,8 @@ package org.apache.ignite.internal.fs.hadoop;
 import org.apache.commons.logging.*;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.fs.common.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -278,7 +278,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
 
                 reader = null;
             }
-            catch (IgniteInterruptedException ignored) {
+            catch (IgniteInterruptedCheckedException ignored) {
                 Thread.currentThread().interrupt();
 
                 log.warn("Got interrupted while waiting for reader thread to shut down (will return).");

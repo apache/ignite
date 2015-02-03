@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -74,45 +75,62 @@ public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter<IgniteClus
 
     /** {@inheritDoc} */
     @Override public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
-        @Nullable Collection<? extends K> keys) throws IgniteCheckedException {
+        @Nullable Collection<? extends K> keys) {
         return grid.mapKeysToNodes(cacheName, keys);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws IgniteCheckedException {
+    @Nullable @Override public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) {
         return grid.mapKeyToNode(cacheName, key);
     }
 
     /** {@inheritDoc} */
     @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(File file,
-        boolean restart, int timeout, int maxConn) throws IgniteCheckedException {
-        return saveOrGet(grid.startNodesAsync(file, restart, timeout, maxConn));
+        boolean restart,
+        int timeout,
+        int maxConn)
+    {
+        try {
+            return saveOrGet(grid.startNodesAsync(file, restart, timeout, maxConn));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(
-        Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts, boolean restart, int timeout,
-        int maxConn) throws IgniteCheckedException {
-        return saveOrGet(grid.startNodesAsync(hosts, dflts, restart, timeout, maxConn));
+        Collection<Map<String, Object>> hosts,
+        @Nullable Map<String, Object> dflts,
+        boolean restart,
+        int timeout,
+        int maxConn)
+    {
+        try {
+            return saveOrGet(grid.startNodesAsync(hosts, dflts, restart, timeout, maxConn));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void stopNodes() throws IgniteCheckedException {
+    @Override public void stopNodes() {
         grid.stopNodes();
     }
 
     /** {@inheritDoc} */
-    @Override public void stopNodes(Collection<UUID> ids) throws IgniteCheckedException {
+    @Override public void stopNodes(Collection<UUID> ids) {
         grid.stopNodes(ids);
     }
 
     /** {@inheritDoc} */
-    @Override public void restartNodes() throws IgniteCheckedException {
+    @Override public void restartNodes() {
         grid.restartNodes();
     }
 
     /** {@inheritDoc} */
-    @Override public void restartNodes(Collection<UUID> ids) throws IgniteCheckedException {
+    @Override public void restartNodes(Collection<UUID> ids) {
         grid.restartNodes(ids);
     }
 
@@ -227,7 +245,7 @@ public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter<IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterMetrics metrics() throws IgniteCheckedException {
+    @Override public ClusterMetrics metrics() {
         return grid.metrics();
     }
 }

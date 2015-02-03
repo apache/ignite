@@ -99,9 +99,8 @@ public final class MessagingExample {
      * Start listening to messages on all cluster nodes within passed in projection.
      *
      * @param msg Grid messaging.
-     * @throws IgniteCheckedException If failed.
      */
-    private static void startListening(IgniteMessaging msg) throws IgniteCheckedException {
+    private static void startListening(IgniteMessaging msg) {
         // Add ordered message listener.
         msg.remoteListen(TOPIC.ORDERED, new IgniteBiPredicate<UUID, String>() {
             @IgniteInstanceResource
@@ -113,7 +112,7 @@ public final class MessagingExample {
                 try {
                     ignite.message(ignite.cluster().forNodeId(nodeId)).send(TOPIC.ORDERED, msg);
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     e.printStackTrace();
                 }
 
@@ -132,7 +131,7 @@ public final class MessagingExample {
                 try {
                     ignite.message(ignite.cluster().forNodeId(nodeId)).send(TOPIC.UNORDERED, msg);
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     e.printStackTrace();
                 }
 

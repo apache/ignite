@@ -38,7 +38,7 @@ public class GridLoadTestTask extends ComputeTaskAdapter<Integer, Integer> {
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) throws IgniteCheckedException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) {
         assert arg != null;
         assert arg > 1;
 
@@ -66,7 +66,7 @@ public class GridLoadTestTask extends ComputeTaskAdapter<Integer, Integer> {
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Integer reduce(List<ComputeJobResult> results) {
         assert results != null;
 
         int retVal = 0;

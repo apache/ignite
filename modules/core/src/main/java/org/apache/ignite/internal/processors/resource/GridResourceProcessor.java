@@ -20,14 +20,14 @@ package org.apache.ignite.internal.processors.resource;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.managed.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.internal.managers.deployment.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.annotation.*;

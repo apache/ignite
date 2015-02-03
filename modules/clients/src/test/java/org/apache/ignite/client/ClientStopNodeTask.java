@@ -19,8 +19,8 @@ package org.apache.ignite.client;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.resources.*;
 
 import java.util.*;
 
@@ -43,7 +43,7 @@ public class ClientStopNodeTask extends ComputeTaskSplitAdapter<String, Integer>
     private transient Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
         Collection<ComputeJob> jobs = new ArrayList<>();
 
         for (int i = 0; i < gridSize; i++)
@@ -53,7 +53,7 @@ public class ClientStopNodeTask extends ComputeTaskSplitAdapter<String, Integer>
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         ComputeJobResultPolicy superRes = super.result(res, rcvd);
 
         // Deny failover.
@@ -64,7 +64,7 @@ public class ClientStopNodeTask extends ComputeTaskSplitAdapter<String, Integer>
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Integer reduce(List<ComputeJobResult> results) {
         int stoppedCnt = 0;
 
         for (ComputeJobResult res : results)

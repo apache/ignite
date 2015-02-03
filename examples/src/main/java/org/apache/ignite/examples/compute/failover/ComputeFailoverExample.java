@@ -91,44 +91,39 @@ public class ComputeFailoverExample {
 
             final String cpKey = checkpointKey();
 
-            try {
-                IgniteBiTuple<Integer, Integer> state = jobSes.loadCheckpoint(cpKey);
+            IgniteBiTuple<Integer, Integer> state = jobSes.loadCheckpoint(cpKey);
 
-                int idx = 0;
-                int sum = 0;
+            int idx = 0;
+            int sum = 0;
 
-                if (state != null) {
-                    this.state = state;
+            if (state != null) {
+                this.state = state;
 
-                    // Last processed word index and total length.
-                    idx = state.get1();
-                    sum = state.get2();
-                }
-
-                for (int i = idx; i < words.size(); i++) {
-                    sum += words.get(i).length();
-
-                    this.state = new IgniteBiTuple<>(i + 1, sum);
-
-                    // Save checkpoint with scope of task execution.
-                    // It will be automatically removed when task completes.
-                    jobSes.saveCheckpoint(cpKey, this.state);
-
-                    // For example purposes, we fail on purpose after first stage.
-                    // This exception will cause job to be failed over to another node.
-                    if (i == 0) {
-                        System.out.println();
-                        System.out.println(">>> Job will be failed over to another node.");
-
-                        throw new ComputeJobFailoverException("Expected example job exception.");
-                    }
-                }
-
-                return sum;
+                // Last processed word index and total length.
+                idx = state.get1();
+                sum = state.get2();
             }
-            catch (IgniteCheckedException e) {
-                throw new GridClosureException(e);
+
+            for (int i = idx; i < words.size(); i++) {
+                sum += words.get(i).length();
+
+                this.state = new IgniteBiTuple<>(i + 1, sum);
+
+                // Save checkpoint with scope of task execution.
+                // It will be automatically removed when task completes.
+                jobSes.saveCheckpoint(cpKey, this.state);
+
+                // For example purposes, we fail on purpose after first stage.
+                // This exception will cause job to be failed over to another node.
+                if (i == 0) {
+                    System.out.println();
+                    System.out.println(">>> Job will be failed over to another node.");
+
+                    throw new ComputeJobFailoverException("Expected example job exception.");
+                }
             }
+
+            return sum;
         }
 
         /**

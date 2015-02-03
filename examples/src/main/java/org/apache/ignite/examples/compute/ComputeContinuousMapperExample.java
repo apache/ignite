@@ -87,10 +87,9 @@ public class ComputeContinuousMapperExample {
         private final AtomicInteger totalChrCnt = new AtomicInteger(0);
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> nodes, String phrase)
-            throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> nodes, String phrase) {
             if (phrase == null || phrase.isEmpty())
-                throw new IgniteCheckedException("Phrase is empty.");
+                throw new IgniteException("Phrase is empty.");
 
             // Populate word queue.
             Collections.addAll(words, phrase.split(" "));
@@ -104,8 +103,7 @@ public class ComputeContinuousMapperExample {
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
-            throws IgniteCheckedException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
             // If there is an error, fail-over to another node.
             if (res.getException() != null)
                 return super.result(res, rcvd);
@@ -120,16 +118,14 @@ public class ComputeContinuousMapperExample {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             return totalChrCnt.get();
         }
 
         /**
          * Sends next queued word to the next node implicitly selected by load balancer.
-         *
-         * @throws IgniteCheckedException If sending of a word failed.
          */
-        private void sendWord() throws IgniteCheckedException {
+        private void sendWord() {
             // Remove first word from the queue.
             String word = words.poll();
 

@@ -18,9 +18,9 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 
 import java.io.*;
 import java.lang.reflect.*;

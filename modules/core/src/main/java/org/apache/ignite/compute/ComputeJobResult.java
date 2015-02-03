@@ -57,7 +57,7 @@ public interface ComputeJobResult {
      * Gets exception produced by execution of remote job, or {@code null} if
      * remote execution finished normally and did not produce any exceptions.
      *
-     * @return {@link IgniteCheckedException} produced by execution of remote job or {@code null} if
+     * @return {@link IgniteException} produced by execution of remote job or {@code null} if
      *      no exception was produced.
      *      <p>
      *      Note that if remote job resulted in {@link RuntimeException}
@@ -67,10 +67,10 @@ public interface ComputeJobResult {
      *      If job on remote node was rejected (cancelled while it was on waiting queue), then
      *      {@link ComputeExecutionRejectedException} will be returned.
      *      <p>
-     *      If node on which job was computing failed, then {@link org.apache.ignite.cluster.ClusterTopologyException} is
+     *      If node on which job was computing failed, then {@link ClusterTopologyException} is
      *      returned.
      */
-    public IgniteCheckedException getException();
+    public IgniteException getException();
 
     /**
      * Gets local instance of remote job returned by {@link ComputeTask#map(List, Object)} method.
