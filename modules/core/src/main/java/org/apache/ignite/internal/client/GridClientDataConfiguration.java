@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.client.balancer.*;
+import org.apache.ignite.internal.client.balancer.*;
 
 /**
  * Java client data configuration.

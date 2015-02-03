@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.rest.protocols.tcp;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.client.marshaller.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.client.marshaller.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

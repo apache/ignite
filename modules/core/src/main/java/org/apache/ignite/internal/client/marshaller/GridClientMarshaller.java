@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.marshaller;
+package org.apache.ignite.internal.client.marshaller;
 
 import java.io.*;
 import java.nio.*;

@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.client;
 
+import org.apache.ignite.internal.client.balancer.*;
+import org.apache.ignite.internal.client.marshaller.*;
+import org.apache.ignite.internal.client.marshaller.optimized.*;
 import org.apache.ignite.internal.client.ssl.*;
 import org.apache.ignite.portables.*;
-import org.apache.ignite.client.balancer.*;
-import org.apache.ignite.client.marshaller.*;
-import org.apache.ignite.client.marshaller.jdk.*;
-import org.apache.ignite.client.marshaller.optimized.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -613,7 +612,7 @@ public class GridClientConfiguration {
      * <ul>
      *     <li>{@link GridClientOptimizedMarshaller} (default) - GridGain's optimized marshaller.</li>
      *     <li>{@code GridClientPortableMarshaller} - Marshaller that supports portable objects.</li>
-     *     <li>{@link GridClientJdkMarshaller} - JDK marshaller (not recommended).</li>
+     *     <li>{@link org.apache.ignite.internal.client.marshaller.jdk.GridClientJdkMarshaller} - JDK marshaller (not recommended).</li>
      * </ul>
      *
      * @return A marshaller to use.

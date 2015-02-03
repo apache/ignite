@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.client.balancer.*;
-
 import java.util.*;
 
 /**
@@ -85,7 +83,7 @@ public interface GridClient extends AutoCloseable {
     /**
      * Gets a default compute projection. Default compute projection will include all nodes
      * in remote grid. Selection of node that will be connected to perform operations will be
-     * done according to {@link GridClientLoadBalancer} provided in client configuration or
+     * done according to {@link org.apache.ignite.internal.client.balancer.GridClientLoadBalancer} provided in client configuration or
      * according to affinity if projection call involves affinity key.
      * <p>
      * More restricted projection configurations may be created with {@link GridClientCompute} methods.

@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.marshaller.optimized;
+package org.apache.ignite.internal.client.marshaller.optimized;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.client.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.client.marshaller.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 
 import java.io.*;
@@ -28,7 +28,7 @@ import java.util.*;
 
 /**
  * Wrapper, that adapts {@link org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller} to
- * {@link GridClientMarshaller} interface.
+ * {@link org.apache.ignite.internal.client.marshaller.GridClientMarshaller} interface.
  */
 public class GridClientOptimizedMarshaller implements GridClientMarshaller {
     /** ID. */
