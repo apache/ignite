@@ -52,7 +52,7 @@ setGridGainHome
 #
 # Set utility environment.
 #
-export MAIN_CLASS=org.gridgain.grid.hadoop.GridHadoopSetup
+export MAIN_CLASS=org.apache.ignite.hadoop.GridHadoopSetup
 
 #
 # Start utility.
