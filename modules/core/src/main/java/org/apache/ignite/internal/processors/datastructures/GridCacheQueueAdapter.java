@@ -348,7 +348,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
             checkRemoved(t.get1());
 
-            removeKeys(id, queueName, collocated, t.get1(), t.get2(), batchSize);
+            removeKeys(cache, id, queueName, collocated, t.get1(), t.get2(), batchSize);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -382,6 +382,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /**
+     * @param cache Queue cache.
      * @param id Queue unique ID.
      * @param name Queue name.
      * @param collocated Collocation flag.
@@ -391,7 +392,8 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void removeKeys(
+    static void removeKeys(
+        GridCacheAdapter cache,
         IgniteUuid id,
         String name,
         boolean collocated,
@@ -527,19 +529,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             return;
 
         try {
-            GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.remove(new GridCacheQueueHeaderKey(queueName), null);
-
-            rmvd = true;
-
-            if (hdr == null || hdr.empty())
-                return;
-
-            removeKeys(hdr.id(),
-                queueName,
-                hdr.collocated(),
-                hdr.head(),
-                hdr.tail(),
-                0);
+            cctx.kernalContext().dataStructures().removeQueue(queueName, cctx);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

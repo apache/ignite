@@ -266,7 +266,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends IgniteCol
                 else
                     fail("Unexpected error: " + e);
             }
-            catch (IgniteCheckedException e) {
+            catch (Exception e) {
                 error("Failed to get value from the queue", e);
             }
             finally {

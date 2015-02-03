@@ -35,6 +35,9 @@ import java.util.*;
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheQueueExample {
+    /** Cache name. */
+    private static final String CACHE_NAME = "partitioned_tx";
+
     /** Number of retries */
     private static final int RETRIES = 20;
 
@@ -45,9 +48,9 @@ public class CacheQueueExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws Exception If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) throws Exception {
         try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache queue example started.");
@@ -73,10 +76,12 @@ public class CacheQueueExample {
      * @param g Grid.
      * @param queueName Name of queue.
      * @return Queue.
-     * @throws IgniteCheckedException If execution failed.
+     * @throws IgniteException If execution failed.
      */
-    private static IgniteQueue<String> initializeQueue(Ignite g, String queueName) throws IgniteCheckedException {
+    private static IgniteQueue<String> initializeQueue(Ignite g, String queueName) throws IgniteException {
         IgniteCollectionConfiguration colCfg = new IgniteCollectionConfiguration();
+
+        colCfg.setCacheName(CACHE_NAME);
 
         // Initialize new FIFO queue.
         IgniteQueue<String> queue = g.queue(queueName, colCfg, 0, true);
@@ -95,9 +100,9 @@ public class CacheQueueExample {
      * Read items from head and tail of queue.
      *
      * @param g Grid.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void readFromQueue(Ignite g) throws IgniteCheckedException {
+    private static void readFromQueue(Ignite g) throws IgniteException {
         final String queueName = queue.name();
 
         // Read queue items on each node.
@@ -110,9 +115,9 @@ public class CacheQueueExample {
      * Write items into queue.
      *
      * @param g Grid.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void writeToQueue(Ignite g) throws IgniteCheckedException {
+    private static void writeToQueue(Ignite g) throws IgniteException {
         final String queueName = queue.name();
 
         // Write queue items on each node.
@@ -132,9 +137,9 @@ public class CacheQueueExample {
      * Clear and remove queue.
      *
      * @param g Grid.
-     * @throws IgniteCheckedException If execution failed.
+     * @throws IgniteException If execution failed.
      */
-    private static void clearAndRemoveQueue(Ignite g) throws IgniteCheckedException {
+    private static void clearAndRemoveQueue(Ignite g) throws IgniteException {
         System.out.println("Queue size before clearing: " + queue.size());
 
         // Clear queue.
@@ -175,32 +180,27 @@ public class CacheQueueExample {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            try {
-                IgniteQueue<String> queue = Ignition.ignite().queue(queueName, null, 0, false);
+            IgniteQueue<String> queue = Ignition.ignite().queue(queueName, null, 0, false);
 
-                if (put) {
-                    UUID locId = Ignition.ignite().cluster().localNode().id();
+            if (put) {
+                UUID locId = Ignition.ignite().cluster().localNode().id();
 
-                    for (int i = 0; i < RETRIES; i++) {
-                        String item = locId + "_" + Integer.toString(i);
+                for (int i = 0; i < RETRIES; i++) {
+                    String item = locId + "_" + Integer.toString(i);
 
-                        queue.put(item);
+                    queue.put(item);
 
-                        System.out.println("Queue item has been added: " + item);
-                    }
-                }
-                else {
-                    // Take items from queue head.
-                    for (int i = 0; i < RETRIES; i++)
-                        System.out.println("Queue item has been read from queue head: " + queue.take());
-
-                    // Take items from queue head once again.
-                    for (int i = 0; i < RETRIES; i++)
-                        System.out.println("Queue item has been read from queue head: " + queue.poll());
+                    System.out.println("Queue item has been added: " + item);
                 }
             }
-            catch (IgniteCheckedException e) {
-                throw new RuntimeException(e);
+            else {
+                // Take items from queue head.
+                for (int i = 0; i < RETRIES; i++)
+                    System.out.println("Queue item has been read from queue head: " + queue.take());
+
+                // Take items from queue head once again.
+                for (int i = 0; i < RETRIES; i++)
+                    System.out.println("Queue item has been read from queue head: " + queue.poll());
             }
         }
     }

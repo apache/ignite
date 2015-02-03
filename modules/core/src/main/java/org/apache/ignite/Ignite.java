@@ -305,7 +305,7 @@ public interface Ignite extends AutoCloseable {
      * is {@code true}.
      *
      * @param name Sequence name.
-     * @param initVal Initial value for sequence. If sequence already cached, {@code initVal} will be ignored.
+     * @param initVal Initial value for sequence. Ignored if {@code create} flag is {@code false}.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
      * @return Sequence for the given name.
      * @throws IgniteException If sequence could not be fetched or created.
@@ -318,8 +318,7 @@ public interface Ignite extends AutoCloseable {
      * is {@code true}.
      *
      * @param name Name of atomic long.
-     * @param initVal Initial value for atomic long. If atomic long already cached, {@code initVal}
-     *        will be ignored.
+     * @param initVal Initial value for atomic long. Ignored if {@code create} flag is {@code false}.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
      * @return Atomic long.
      * @throws IgniteException If atomic long could not be fetched or created.
@@ -332,8 +331,7 @@ public interface Ignite extends AutoCloseable {
      * is {@code true}.
      *
      * @param name Atomic reference name.
-     * @param initVal Initial value for atomic reference. If atomic reference already cached,
-     *      {@code initVal} will be ignored.
+     * @param initVal Initial value for atomic reference. Ignored if {@code create} flag is {@code false}.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
      * @return Atomic reference for the given name.
      * @throws IgniteException If atomic reference could not be fetched or created.
@@ -346,10 +344,8 @@ public interface Ignite extends AutoCloseable {
      * is {@code true}.
      *
      * @param name Atomic stamped name.
-     * @param initVal Initial value for atomic stamped. If atomic stamped already cached,
-     *      {@code initVal} will be ignored.
-     * @param initStamp Initial stamp for atomic stamped. If atomic stamped already cached,
-     *      {@code initStamp} will be ignored.
+     * @param initVal Initial value for atomic stamped. Ignored if {@code create} flag is {@code false}.
+     * @param initStamp Initial stamp for atomic stamped. Ignored if {@code create} flag is {@code false}.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
      * @return Atomic stamped for the given name.
      * @throws IgniteException If atomic stamped could not be fetched or created.
@@ -362,9 +358,9 @@ public interface Ignite extends AutoCloseable {
      * is {@code true}, it is created using provided name and count parameter.
      *
      * @param name Name of the latch.
-     * @param cnt Count for new latch creation.
-     * @param autoDel {@code True} to automatically delete latch from cache
-     *      when its count reaches zero.
+     * @param cnt Count for new latch creation. Ignored if {@code create} flag is {@code false}.
+     * @param autoDel {@code True} to automatically delete latch from cache when its count reaches zero.
+     *        Ignored if {@code create} flag is {@code false}.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
      * @return Count down latch for the given name.
      * @throws IgniteException If latch could not be fetched or created.
@@ -383,8 +379,8 @@ public interface Ignite extends AutoCloseable {
      * to get a single element off the queue all nodes may have to be queried.
      *
      * @param name Name of queue.
-     * @param cfg Queue configuration.
-     * @param cap Capacity of queue, {@code 0} for unbounded queue.
+     * @param cfg Queue configuration. Ignored if {@code create} flag is {@code false}.
+     * @param cap Capacity of queue, {@code 0} for unbounded queue. Ignored if {@code create} flag is {@code false}.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
      * @return Queue with given properties.
      * @throws IgniteException If queue could not be fetched or created.
@@ -400,7 +396,7 @@ public interface Ignite extends AutoCloseable {
      * is {@code true}.
      *
      * @param name Set name.
-     * @param cfg Set configuration.
+     * @param cfg Set configuration. Ignored if {@code create} flag is {@code false}.
      * @param create Flag indicating whether set should be created if does not exist.
      * @return Set with given properties.
      * @throws IgniteException If set could not be fetched or created.

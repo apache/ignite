@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.datastructures.*;
@@ -142,14 +143,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
         // Non collocated mode enabled only for PARTITIONED cache.
         final boolean colloc0 = create && (cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc);
 
-        if (cctx.atomic())
-            return queue0(name, cap, colloc0, create);
-
-        return CU.outTx(new Callable<GridCacheQueueProxy<T>>() {
-            @Nullable @Override public GridCacheQueueProxy<T> call() throws Exception {
-                return queue0(name, cap, colloc0, create);
-            }
-        }, cctx);
+        return queue0(name, cap, colloc0, create);
     }
 
     /**
@@ -308,14 +302,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
         final boolean colloc0 =
             create && (cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc);
 
-        if (cctx.atomic())
-            return set0(name, colloc0, create);
-
-        return CU.outTx(new Callable<IgniteSet<T>>() {
-            @Nullable @Override public IgniteSet<T> call() throws Exception {
-                return set0(name, colloc0, create);
-            }
-        }, cctx);
+        return set0(name, colloc0, create);
     }
 
     /**
@@ -427,20 +414,13 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
     }
 
     /**
-     * @param name Set name.
+     * @param id Set ID.
      * @return {@code True} if set was removed.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public boolean removeSet(String name) throws IgniteCheckedException {
-        GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
-
-        GridCache cache = cctx.cache();
-
-        GridCacheSetHeader hdr = retryRemove(cache, key);
-
-        if (hdr == null)
-            return false;
+    public void removeSetData(IgniteUuid id) throws IgniteCheckedException {
+        assert id != null;
 
         if (!cctx.isLocal()) {
             while (true) {
@@ -450,11 +430,11 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
 
                 try {
                     cctx.closures().callAsyncNoFailover(BROADCAST,
-                        new BlockSetCallable(cctx.name(), hdr.id()),
+                        new BlockSetCallable(cctx.name(), id),
                         nodes,
                         true).get();
                 }
-                catch (ClusterTopologyException e) {
+                catch (ClusterTopologyCheckedException e) {
                     if (log.isDebugEnabled())
                         log.debug("BlockSet job failed, will retry: " + e);
 
@@ -463,11 +443,11 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
 
                 try {
                     cctx.closures().callAsyncNoFailover(BROADCAST,
-                        new RemoveSetDataCallable(cctx.name(), hdr.id(), topVer),
+                        new RemoveSetDataCallable(cctx.name(), id, topVer),
                         nodes,
                         true).get();
                 }
-                catch (ClusterTopologyException e) {
+                catch (ClusterTopologyCheckedException e) {
                     if (log.isDebugEnabled())
                         log.debug("RemoveSetData job failed, will retry: " + e);
 
@@ -479,12 +459,10 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
             }
         }
         else {
-            blockSet(hdr.id());
+            blockSet(id);
 
-            cctx.dataStructures().removeSetData(hdr.id(), 0);
+            cctx.dataStructures().removeSetData(id, 0);
         }
-
-        return true;
     }
 
     /**
@@ -549,9 +527,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
     @SuppressWarnings("unchecked")
     @Nullable private <T> T retryRemove(final GridCache cache, final Object key) throws IgniteCheckedException {
         return CacheDataStructuresProcessor.retry(log, new Callable<T>() {
-            @Nullable
-            @Override
-            public T call() throws Exception {
+            @Nullable @Override public T call() throws Exception {
                 return (T) cache.remove(key);
             }
         });

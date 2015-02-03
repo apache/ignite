@@ -34,6 +34,9 @@ import java.util.*;
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheSetExample {
+    /** Cache name. */
+    private static final String CACHE_NAME = "partitioned_tx";
+
     /** Set instance. */
     private static IgniteSet<String> set;
 
@@ -41,9 +44,9 @@ public class CacheSetExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws Exception If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) throws Exception {
         try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache set example started.");
@@ -67,10 +70,12 @@ public class CacheSetExample {
      * @param g Grid.
      * @param setName Name of set.
      * @return Set.
-     * @throws IgniteCheckedException If execution failed.
+     * @throws IgniteException If execution failed.
      */
-    private static IgniteSet<String> initializeSet(Ignite g, String setName) throws IgniteCheckedException {
+    private static IgniteSet<String> initializeSet(Ignite g, String setName) throws IgniteException {
         IgniteCollectionConfiguration setCfg = new IgniteCollectionConfiguration();
+
+        setCfg.setCacheName(CACHE_NAME);
 
         // Initialize new set.
         IgniteSet<String> set = g.set(setName, setCfg, true);
@@ -88,9 +93,9 @@ public class CacheSetExample {
      * Write items into set.
      *
      * @param g Grid.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void writeToSet(Ignite g) throws IgniteCheckedException {
+    private static void writeToSet(Ignite g) throws IgniteException {
         final String setName = set.name();
 
         // Write set items on each node.
@@ -126,9 +131,9 @@ public class CacheSetExample {
      * Clear and remove set.
      *
      * @param g Grid.
-     * @throws IgniteCheckedException If execution failed.
+     * @throws IgniteException If execution failed.
      */
-    private static void clearAndRemoveSet(Ignite g) throws IgniteCheckedException {
+    private static void clearAndRemoveSet(Ignite g) throws IgniteException {
         System.out.println("Set size before clearing: " + set.size());
 
         // Clear set.
@@ -166,21 +171,16 @@ public class CacheSetExample {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            try {
-                IgniteSet<String> set = Ignition.ignite().set(setName, null, false);
+            IgniteSet<String> set = Ignition.ignite().set(setName, null, false);
 
-                UUID locId = Ignition.ignite().cluster().localNode().id();
+            UUID locId = Ignition.ignite().cluster().localNode().id();
 
-                for (int i = 0; i < 5; i++) {
-                    String item = locId + "_" + Integer.toString(i);
+            for (int i = 0; i < 5; i++) {
+                String item = locId + "_" + Integer.toString(i);
 
-                    set.add(item);
+                set.add(item);
 
-                    System.out.println("Set item has been added: " + item);
-                }
-            }
-            catch (IgniteCheckedException e) {
-                throw new RuntimeException(e);
+                System.out.println("Set item has been added: " + item);
             }
         }
     }

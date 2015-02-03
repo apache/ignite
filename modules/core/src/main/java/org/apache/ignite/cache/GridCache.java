@@ -19,7 +19,6 @@ package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;

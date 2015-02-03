@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
@@ -27,20 +28,40 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  *
  */
-public class IgniteDataStructureUniqueNameTest extends IgniteAtomicsAbstractTest {
+public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode atomicsCacheMode() {
+    @Override protected int gridCount() {
+        return 3;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheMode collectionCacheMode() {
         return PARTITIONED;
     }
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 3;
+    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
+        return ATOMIC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+
+        atomicCfg.setBackups(1);
+        atomicCfg.setCacheMode(PARTITIONED);
+
+        cfg.setAtomicConfiguration(atomicCfg);
+
+        return cfg;
     }
 
     /**
@@ -55,6 +76,141 @@ public class IgniteDataStructureUniqueNameTest extends IgniteAtomicsAbstractTest
      */
     public void testUniqueNameMultinode() throws Exception {
         testUniqueName(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateRemove() throws Exception {
+        final String name = IgniteUuid.randomUuid().toString();
+
+        final Ignite ignite = ignite(0);
+
+        assertNull(ignite.atomicLong(name, 0, false));
+
+        IgniteAtomicReference<Integer> ref = ignite.atomicReference(name, 0, true);
+
+        assertNotNull(ref);
+
+        assertSame(ref, ignite.atomicReference(name, 0, true));
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ignite.atomicLong(name, 0, false);
+
+                return null;
+            }
+        }, IgniteException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ignite.atomicLong(name, 0, true);
+
+                return null;
+            }
+        }, IgniteException.class, null);
+
+        ref.close();
+
+        IgniteAtomicLong atomicLong = ignite.atomicLong(name, 0, true);
+
+        assertNotNull(atomicLong);
+
+        assertSame(atomicLong, ignite.atomicLong(name, 0, true));
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ignite.atomicReference(name, 0, false);
+
+                return null;
+            }
+        }, IgniteException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ignite.queue(name, config(false), 0, true);
+
+                return null;
+            }
+        }, IgniteException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ignite.queue(name, null, 0, false);
+
+                return null;
+            }
+        }, IgniteException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ignite.set(name, config(false), true);
+
+                return null;
+            }
+        }, IgniteException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ignite.set(name, null, false);
+
+                return null;
+            }
+        }, IgniteException.class, null);
+
+        atomicLong.close();
+
+        IgniteQueue<Integer> q = ignite.queue(name, config(false), 0, true);
+
+        assertNotNull(q);
+
+        assertSame(q, ignite.queue(name, config(false), 0, true));
+
+        assertSame(q, ignite.queue(name, null, 0, false));
+
+        q.close();
+
+        assertNull(ignite.set(name, null, false));
+
+        IgniteSet<Integer> set = ignite.set(name, config(false), true);
+
+        assertNotNull(set);
+
+        assertSame(set, ignite.set(name, config(false), true));
+
+        assertSame(set, ignite.set(name, null, false));
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ignite.atomicReference(name, 0, false);
+
+                return null;
+            }
+        }, IgniteException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                ignite.queue(name, config(false), 0, true);
+
+                return null;
+            }
+        }, IgniteException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                ignite.queue(name, null, 0, false);
+
+                return null;
+            }
+        }, IgniteException.class, null);
+
+        set.close();
+
+        ref = ignite.atomicReference(name, 0, true);
+
+        assertNotNull(ref);
+
+        assertSame(ref, ignite.atomicReference(name, 0, true));
     }
 
     /**
