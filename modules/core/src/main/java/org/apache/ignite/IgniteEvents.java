@@ -47,7 +47,7 @@ import java.util.*;
  * For example, you can enable all cache events as follows:
  * <pre name="code" class="xml">
  * &lt;property name="includeEventTypes"&gt;
- *     &lt;util:constant static-field="org.gridgain.grid.events.GridEventType.EVTS_CACHE"/&gt;
+ *     &lt;util:constant static-field="org.apache.ignite.events.IgniteEventType.EVTS_CACHE"/&gt;
  * &lt;/property&gt;
  * </pre>
  */
