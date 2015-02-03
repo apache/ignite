@@ -713,7 +713,7 @@ public class IgnitionEx {
      * @return Started grid.
      * @throws IgniteCheckedException If failed.
      */
-    private static Ignite start(URL springCfgUrl, @Nullable String gridName,
+    private static Ignite start(final URL springCfgUrl, @Nullable String gridName,
         @Nullable GridSpringResourceContext springCtx,
         @Nullable IgniteClosure<IgniteConfiguration, IgniteConfiguration> cfgClo)
         throws IgniteCheckedException {
@@ -725,9 +725,16 @@ public class IgnitionEx {
 
         Collection<Handler> savedHnds = null;
 
-        if (isLog4jUsed)
-            t = U.addLog4jNoOpLogger();
-        else
+        if (isLog4jUsed) {
+            try {
+                t = U.addLog4jNoOpLogger();
+            }
+            catch (IgniteCheckedException e) {
+                isLog4jUsed = false;
+            }
+        }
+
+        if (!isLog4jUsed)
             savedHnds = U.addJavaNoOpLogger();
 
         IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap;
@@ -2028,57 +2035,69 @@ public class IgnitionEx {
          */
         private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId) throws IgniteCheckedException {
             try {
+                Exception log4jInitErr = null;
+
                 if (cfgLog == null) {
                     Class<?> log4jCls;
 
                     try {
-                        log4jCls = Class.forName("org.gridgain.grid.logger.log4j.GridLog4jLogger");
+                        log4jCls = Class.forName("org.apache.ignite.logger.log4j.IgniteLog4jLogger");
                     }
                     catch (ClassNotFoundException | NoClassDefFoundError ignored) {
                         log4jCls = null;
                     }
 
                     if (log4jCls != null) {
-                        URL url = U.resolveGridGainUrl("config/ignite-log4j.xml");
+                        try {
+                            URL url = U.resolveGridGainUrl("config/ignite-log4j.xml");
 
-                        if (url == null) {
-                            File cfgFile = new File("config/ignite-log4j.xml");
+                            if (url == null) {
+                                File cfgFile = new File("config/ignite-log4j.xml");
 
-                            if (!cfgFile.exists())
-                                cfgFile = new File("../config/ignite-log4j.xml");
+                                if (!cfgFile.exists())
+                                    cfgFile = new File("../config/ignite-log4j.xml");
 
-                            if (cfgFile.exists()) {
-                                try {
-                                    url = cfgFile.toURI().toURL();
-                                }
-                                catch (MalformedURLException ignore) {
-                                    // No-op.
+                                if (cfgFile.exists()) {
+                                    try {
+                                        url = cfgFile.toURI().toURL();
+                                    }
+                                    catch (MalformedURLException ignore) {
+                                        // No-op.
+                                    }
                                 }
                             }
+
+                            if (url != null) {
+                                boolean configured = (Boolean)log4jCls.getMethod("isConfigured").invoke(null);
+
+                                if (configured)
+                                    url = null;
+                            }
+
+                            if (url != null) {
+                                Constructor<?> ctor = log4jCls.getConstructor(URL.class);
+
+                                cfgLog = (IgniteLogger)ctor.newInstance(url);
+                            }
+                            else
+                                cfgLog = (IgniteLogger)log4jCls.newInstance();
                         }
-
-                        if (url != null) {
-                            boolean configured = (Boolean)log4jCls.getMethod("isConfigured").invoke(null);
-
-                            if (configured)
-                                url = null;
+                        catch (Exception e) {
+                            log4jInitErr = e;
                         }
-
-                        if (url != null) {
-                            Constructor<?> ctor = log4jCls.getConstructor(URL.class);
-
-                            cfgLog = (IgniteLogger)ctor.newInstance(url);
-                        }
-                        else
-                            cfgLog = (IgniteLogger)log4jCls.newInstance();
                     }
-                    else
+
+                    if (log4jCls == null || log4jInitErr != null)
                         cfgLog = new IgniteJavaLogger();
                 }
 
                 // Set node IDs for all file appenders.
                 if (cfgLog instanceof IgniteLoggerNodeIdAware)
                     ((IgniteLoggerNodeIdAware)cfgLog).setNodeId(nodeId);
+
+                if (log4jInitErr != null)
+                    U.warn(cfgLog, "Failed to initialize IgniteLog4jLogger (falling back to standard java logging): "
+                        + log4jInitErr.getCause());
 
                 return cfgLog;
             }
