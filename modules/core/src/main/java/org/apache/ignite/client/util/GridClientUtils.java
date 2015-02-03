@@ -17,7 +17,7 @@
 
 package org.apache.ignite.client.util;
 
-import org.apache.ignite.client.*;
+import org.apache.ignite.internal.client.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

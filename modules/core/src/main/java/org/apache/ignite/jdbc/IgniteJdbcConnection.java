@@ -17,7 +17,7 @@
 
 package org.apache.ignite.jdbc;
 
-import org.apache.ignite.client.*;
+import org.apache.ignite.internal.client.*;
 
 import java.sql.*;
 import java.util.*;

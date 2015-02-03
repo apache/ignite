@@ -15,21 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.internal.client;
 
 /**
- * Exception that represents client authentication failure.
+ * Client future timeout exception is thrown whenever any client waiting is timed out.
  */
-public class GridClientAuthenticationException extends GridClientException {
+public class GridClientFutureTimeoutException extends GridClientException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates authentication exception with given error message.
+     * Creates exception with specified error message.
      *
      * @param msg Error message.
      */
-    public GridClientAuthenticationException(String msg) {
+    public GridClientFutureTimeoutException(String msg) {
         super(msg);
+    }
+
+    /**
+     * Creates exception with specified error message and cause.
+     *
+     * @param msg Error message.
+     * @param cause Error cause.
+     */
+    public GridClientFutureTimeoutException(String msg, Throwable cause) {
+        super(msg, cause);
     }
 }

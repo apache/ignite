@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.client.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.processors.rest.handlers.*;
 import org.apache.ignite.internal.processors.rest.handlers.task.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -36,7 +36,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.client.GridClientProtocol.*;
+import static org.apache.ignite.internal.client.GridClientProtocol.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 

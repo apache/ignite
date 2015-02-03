@@ -15,27 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.internal.client;
 
 /**
- * Listener interface for notifying on nodes joining or leaving remote grid.
- * <p>
- * Since the topology refresh is performed in background, the listeners will not be notified
- * immediately after the node leaves grid, but the maximum time window between remote grid detects
- * node leaving and client receives topology update is {@link GridClientConfiguration#getTopologyRefreshFrequency()}.
+ * Protocol that will be used when client connections are created.
  */
-public interface GridClientTopologyListener {
-    /**
-     * Callback for new nodes joining the remote grid.
-     *
-     * @param node New remote node.
-     */
-    public void onNodeAdded(GridClientNode node);
+public enum GridClientProtocol {
+    /** Communication via HTTP protocol. */
+    @Deprecated
+    HTTP,
 
-    /**
-     * Callback for nodes leaving the remote grid.
-     *
-     * @param node Left node.
-     */
-    public void onNodeRemoved(GridClientNode node);
+    /** Communication via tcp binary protocol. */
+    TCP
 }

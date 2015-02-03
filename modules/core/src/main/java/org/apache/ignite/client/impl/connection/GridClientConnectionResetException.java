@@ -17,7 +17,7 @@
 
 package org.apache.ignite.client.impl.connection;
 
-import org.apache.ignite.client.*;
+import org.apache.ignite.internal.client.*;
 
 /**
  * This exception is thrown when ongoing packet should be sent, but network connection is broken.

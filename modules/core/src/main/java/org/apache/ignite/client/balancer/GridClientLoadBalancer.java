@@ -17,7 +17,7 @@
 
 package org.apache.ignite.client.balancer;
 
-import org.apache.ignite.client.*;
+import org.apache.ignite.internal.client.*;
 
 import java.util.*;
 

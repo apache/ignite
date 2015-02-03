@@ -17,7 +17,7 @@
 
 package org.apache.ignite.client.impl;
 
-import org.apache.ignite.client.*;
+import org.apache.ignite.internal.client.*;
 
 /**
  * AND predicate. Passes if and only if both provided filters accept the node.

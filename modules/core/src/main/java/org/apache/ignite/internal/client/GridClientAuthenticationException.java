@@ -15,34 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.internal.client;
 
 /**
- * This exception is thrown when a client handshake has failed.
+ * Exception that represents client authentication failure.
  */
-public class GridClientHandshakeException extends GridClientException {
+public class GridClientAuthenticationException extends GridClientException {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Status code for handshake error. */
-    private final byte statusCode;
-
     /**
-     * Constructor.
+     * Creates authentication exception with given error message.
      *
-     * @param statusCode Error status code.
      * @param msg Error message.
      */
-    public GridClientHandshakeException(byte statusCode, String msg) {
+    public GridClientAuthenticationException(String msg) {
         super(msg);
-
-        this.statusCode = statusCode;
-    }
-
-    /**
-     * @return Error status code.
-     */
-    public byte getStatusCode() {
-        return statusCode;
     }
 }

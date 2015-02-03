@@ -17,10 +17,10 @@
 
 package org.apache.ignite.client.impl;
 
-import org.apache.ignite.client.*;
 import org.apache.ignite.client.balancer.*;
 import org.apache.ignite.client.impl.connection.*;
 import org.apache.ignite.client.util.*;
+import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;

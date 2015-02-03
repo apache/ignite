@@ -18,10 +18,10 @@
 package org.apache.ignite.client.impl;
 
 import org.apache.ignite.*;
-import org.apache.ignite.client.*;
 import org.apache.ignite.client.balancer.*;
 import org.apache.ignite.client.impl.connection.*;
 import org.apache.ignite.client.ssl.*;
+import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -103,7 +103,7 @@ public class GridClientImpl implements GridClient {
      *
      * @param id Client identifier.
      * @param cfg0 Client configuration.
-     * @throws GridClientException If client configuration is incorrect.
+     * @throws org.apache.ignite.internal.client.GridClientException If client configuration is incorrect.
      * @throws GridServerUnreachableException If none of the servers specified in configuration can
      *      be reached.
      */

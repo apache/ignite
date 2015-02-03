@@ -15,16 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.internal.client;
 
 /**
- * Protocol that will be used when client connections are created.
+ * This exception is thrown whenever an attempt is made to use a closed client.
  */
-public enum GridClientProtocol {
-    /** Communication via HTTP protocol. */
-    @Deprecated
-    HTTP,
+public class GridClientClosedException extends GridClientException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-    /** Communication via tcp binary protocol. */
-    TCP
+    /**
+     * Creates exception with given message.
+     *
+     * @param msg Error message.
+     */
+    public GridClientClosedException(String msg) {
+        super(msg);
+    }
 }

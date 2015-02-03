@@ -18,11 +18,11 @@
 package org.apache.ignite.client.impl.connection;
 
 import org.apache.ignite.*;
-import org.apache.ignite.client.*;
 import org.apache.ignite.client.impl.*;
 import org.apache.ignite.client.marshaller.*;
 import org.apache.ignite.client.marshaller.jdk.*;
 import org.apache.ignite.client.marshaller.optimized.*;
+import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.nio.ssl.*;
@@ -40,7 +40,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.logging.*;
 
-import static org.apache.ignite.client.GridClientCacheFlag.*;
+import static org.apache.ignite.internal.client.GridClientCacheFlag.*;
 import static org.apache.ignite.client.impl.connection.GridClientConnectionCloseReason.*;
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
 

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.client.impl;
 
-import org.apache.ignite.client.*;
+import org.apache.ignite.internal.client.*;
 
 /**
  * Future callback will be notified, when listened future finishes (both succeed or failed).

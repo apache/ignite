@@ -17,8 +17,8 @@
 
 package org.apache.ignite.client.impl.connection;
 
-import org.apache.ignite.client.*;
 import org.apache.ignite.client.impl.*;
+import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
@@ -172,7 +172,7 @@ public abstract class GridClientConnection {
      * @param destNodeId Destination node ID.
      * @return Whether entry was actually removed.
      * @throws GridClientConnectionResetException In case of error.
-     * @throws GridClientClosedException If client was manually closed before request was sent over network.
+     * @throws org.apache.ignite.internal.client.GridClientClosedException If client was manually closed before request was sent over network.
      */
     public abstract <K> GridClientFutureAdapter<Boolean> cacheRemove(String cacheName, K key,
         Set<GridClientCacheFlag> flags, UUID destNodeId)

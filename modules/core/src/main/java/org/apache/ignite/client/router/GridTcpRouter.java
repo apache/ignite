@@ -17,8 +17,6 @@
 
 package org.apache.ignite.client.router;
 
-import org.apache.ignite.client.*;
-
 import java.util.*;
 
 /**
@@ -45,8 +43,8 @@ import java.util.*;
  * </pre>
  * <p>
  * Note that clients should be specifically configured in order to use router.
- * Please refer to {@link GridClientConfiguration#getServers()} and
- * {@link GridClientConfiguration#getRouters()} documentation for more details.
+ * Please refer to {@link org.apache.ignite.internal.client.GridClientConfiguration#getServers()} and
+ * {@link org.apache.ignite.internal.client.GridClientConfiguration#getRouters()} documentation for more details.
  * <p>
  * Instances of this interface are managed through {@link GridRouterFactory}.
  *

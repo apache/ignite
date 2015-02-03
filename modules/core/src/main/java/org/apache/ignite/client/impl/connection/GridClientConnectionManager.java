@@ -17,7 +17,7 @@
 
 package org.apache.ignite.client.impl.connection;
 
-import org.apache.ignite.client.*;
+import org.apache.ignite.internal.client.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
@@ -45,7 +45,7 @@ public interface GridClientConnectionManager {
      * @throws GridServerUnreachableException If connection can't be established.
      * @throws InterruptedException If manager was interrupted while waiting for connection
      * to be established.
-     * @throws GridClientClosedException If connection manager has been closed.
+     * @throws org.apache.ignite.internal.client.GridClientClosedException If connection manager has been closed.
      */
     public GridClientConnection connection(GridClientNode node)
         throws GridServerUnreachableException, GridClientClosedException, InterruptedException;

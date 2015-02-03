@@ -17,7 +17,7 @@
 
 package org.apache.ignite.client.impl;
 
-import org.apache.ignite.client.*;
+import org.apache.ignite.internal.client.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -46,7 +46,7 @@ public class ClientFutureAdapterSelfTest extends GridCommonAbstractTest {
     /**
      * Test chained futures behaviour.
      *
-     * @throws GridClientException On any exception.
+     * @throws org.apache.ignite.internal.client.GridClientException On any exception.
      */
     public void testChains() throws GridClientException {
         // Synchronous notifications.

@@ -15,31 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.internal.client;
 
 /**
- * Thrown when none of the servers from configuration can be connected within a timeout.
+ * This exception is thrown when client has no Grid topology and (probably temporary) can't obtain it.
  */
-public class GridServerUnreachableException extends GridClientException {
+public class GridClientDisconnectedException extends GridClientException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates exception with specified error message.
+     * Creates exception with given message and cause.
      *
      * @param msg Error message.
+     * @param cause Cause exception.
      */
-    public GridServerUnreachableException(String msg) {
-        super(msg);
-    }
-
-    /**
-     * Creates exception with specified error message and cause.
-     *
-     * @param msg Error message.
-     * @param cause Error cause.
-     */
-    public GridServerUnreachableException(String msg, Throwable cause) {
+    public GridClientDisconnectedException(String msg, GridClientException cause) {
         super(msg, cause);
     }
 }

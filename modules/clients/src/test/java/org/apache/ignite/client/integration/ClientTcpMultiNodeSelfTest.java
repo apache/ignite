@@ -17,7 +17,7 @@
 
 package org.apache.ignite.client.integration;
 
-import org.apache.ignite.client.*;
+import org.apache.ignite.internal.client.*;
 
 /**
  * Test for TCP binary rest protocol.

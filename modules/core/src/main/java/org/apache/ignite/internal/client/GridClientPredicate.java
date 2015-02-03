@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.internal.client;
 
 /**
  * Defines predicate construct. Predicate like closure is a first-class function

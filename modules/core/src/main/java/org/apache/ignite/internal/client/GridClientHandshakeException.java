@@ -15,21 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.internal.client;
 
 /**
- * This exception is thrown whenever an attempt is made to use a closed client.
+ * This exception is thrown when a client handshake has failed.
  */
-public class GridClientClosedException extends GridClientException {
+public class GridClientHandshakeException extends GridClientException {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Status code for handshake error. */
+    private final byte statusCode;
+
     /**
-     * Creates exception with given message.
+     * Constructor.
      *
+     * @param statusCode Error status code.
      * @param msg Error message.
      */
-    public GridClientClosedException(String msg) {
+    public GridClientHandshakeException(byte statusCode, String msg) {
         super(msg);
+
+        this.statusCode = statusCode;
+    }
+
+    /**
+     * @return Error status code.
+     */
+    public byte getStatusCode() {
+        return statusCode;
     }
 }

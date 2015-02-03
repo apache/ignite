@@ -15,22 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.internal.client;
 
 /**
- * This exception is thrown when client has no Grid topology and (probably temporary) can't obtain it.
+ * Cache type on remote node.
  */
-public class GridClientDisconnectedException extends GridClientException {
-    /** */
-    private static final long serialVersionUID = 0L;
+public enum GridClientCacheMode {
+    /** Local cache. */
+    LOCAL,
 
-    /**
-     * Creates exception with given message and cause.
-     *
-     * @param msg Error message.
-     * @param cause Cause exception.
-     */
-    public GridClientDisconnectedException(String msg, GridClientException cause) {
-        super(msg, cause);
-    }
+    /** Replicated cache. */
+    REPLICATED,
+
+    /** Partitioned cache. */
+    PARTITIONED
 }

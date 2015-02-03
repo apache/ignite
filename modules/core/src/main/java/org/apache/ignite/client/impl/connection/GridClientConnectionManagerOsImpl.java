@@ -17,7 +17,7 @@
 
 package org.apache.ignite.client.impl.connection;
 
-import org.apache.ignite.client.*;
+import org.apache.ignite.internal.client.*;
 
 import javax.net.ssl.*;
 import java.net.*;

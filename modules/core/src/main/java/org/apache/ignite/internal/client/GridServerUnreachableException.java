@@ -15,18 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.internal.client;
 
 /**
- * Cache type on remote node.
+ * Thrown when none of the servers from configuration can be connected within a timeout.
  */
-public enum GridClientCacheMode {
-    /** Local cache. */
-    LOCAL,
+public class GridServerUnreachableException extends GridClientException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-    /** Replicated cache. */
-    REPLICATED,
+    /**
+     * Creates exception with specified error message.
+     *
+     * @param msg Error message.
+     */
+    public GridServerUnreachableException(String msg) {
+        super(msg);
+    }
 
-    /** Partitioned cache. */
-    PARTITIONED
+    /**
+     * Creates exception with specified error message and cause.
+     *
+     * @param msg Error message.
+     * @param cause Error cause.
+     */
+    public GridServerUnreachableException(String msg, Throwable cause) {
+        super(msg, cause);
+    }
 }

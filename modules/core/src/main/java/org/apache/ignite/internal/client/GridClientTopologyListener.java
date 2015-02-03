@@ -15,31 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.internal.client;
 
 /**
- * Client future timeout exception is thrown whenever any client waiting is timed out.
+ * Listener interface for notifying on nodes joining or leaving remote grid.
+ * <p>
+ * Since the topology refresh is performed in background, the listeners will not be notified
+ * immediately after the node leaves grid, but the maximum time window between remote grid detects
+ * node leaving and client receives topology update is {@link GridClientConfiguration#getTopologyRefreshFrequency()}.
  */
-public class GridClientFutureTimeoutException extends GridClientException {
-    /** */
-    private static final long serialVersionUID = 0L;
+public interface GridClientTopologyListener {
+    /**
+     * Callback for new nodes joining the remote grid.
+     *
+     * @param node New remote node.
+     */
+    public void onNodeAdded(GridClientNode node);
 
     /**
-     * Creates exception with specified error message.
+     * Callback for nodes leaving the remote grid.
      *
-     * @param msg Error message.
+     * @param node Left node.
      */
-    public GridClientFutureTimeoutException(String msg) {
-        super(msg);
-    }
-
-    /**
-     * Creates exception with specified error message and cause.
-     *
-     * @param msg Error message.
-     * @param cause Error cause.
-     */
-    public GridClientFutureTimeoutException(String msg, Throwable cause) {
-        super(msg, cause);
-    }
+    public void onNodeRemoved(GridClientNode node);
 }

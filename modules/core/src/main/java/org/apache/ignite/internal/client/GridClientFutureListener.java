@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.internal.client;
 
 /**
  * Listener interface for {@link GridClientFuture}.
