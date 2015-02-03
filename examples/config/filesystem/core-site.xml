@@ -36,7 +36,7 @@
 
     <property>
         <!-- FS driver class for the 'ignitefs://' URIs in Hadoop2.x -->
-        <name>fs.AbstractFileSystem.ignitefs.impl</name>
+        <name>fs.AbstractFileSystem.ggfs.impl</name>
         <value>org.apache.ignite.fs.hadoop.v2.GridGgfsHadoopFileSystem</value>
     </property>
 </configuration>
