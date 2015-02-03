@@ -25,7 +25,6 @@ import javafx.event.*;
 import javafx.geometry.*;
 import javafx.scene.*;
 import javafx.scene.control.*;
-import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import javafx.stage.*;
 import javafx.util.*;
@@ -53,8 +52,9 @@ public class SchemaLoadApp extends Application {
         "H2 Database",
         "DB2",
         "Oracle",
-        "Microsoft SQL Server",
         "MySQL",
+        "Microsoft SQL Server",
+        "PostgreSQL",
         "Custom server..."};
 
     /** Jdbc drivers. */
@@ -62,8 +62,9 @@ public class SchemaLoadApp extends Application {
         "h2.jar",
         "db2jcc4.jar",
         "ojdbc6.jar",
-        "sqljdbc41.jar",
         "mysql-connector-java-5-bin.jar",
+        "sqljdbc41.jar",
+        "postgresql-9.3.jdbc4.jar",
         "jdbc.jar"};
 
     /** Jdbc drivers. */
@@ -71,17 +72,19 @@ public class SchemaLoadApp extends Application {
         "org.h2.Driver",
         "com.ibm.db2.jcc.DB2Driver",
         "oracle.jdbc.OracleDriver",
-        "com.microsoft.sqlserver.jdbc.SQLServerDriver",
         "com.mysql.jdbc.Driver",
+        "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+        "org.postgresql.Driver",
         "org.custom.Driver"};
 
     /** Jdbc urls. */
     private static final String[] JDBC_URLS = {
-        "jdbc:h2:_path_to_db_",
+        "jdbc:h2:[database]",
         "jdbc:db2://[host]:[port]/[database]",
         "jdbc:oracle:thin:@[host]:[port]:[database]",
-        "jdbc:sqlserver://[host]:[port];databaseName=[database]",
-        "jdbc:mysql://[host][,failoverhost...]:[port]/[database]",
+        "jdbc:mysql://[host]:[port]/[database]",
+        "jdbc:sqlserver://[host]:[port][;databaseName=database]",
+        "jdbc:postgresql://[host]:[port]/[database]",
         "jdbc:custom"};
 
     /** */
@@ -324,7 +327,7 @@ public class SchemaLoadApp extends Application {
      * Generate XML and POJOs.
      */
     private void generate() {
-        final Collection<PojoDescriptor> selPojos = chekedPojos();
+        final Collection<PojoDescriptor> selPojos = checkedPojos();
 
         if (selPojos.isEmpty()) {
             MessageBox.warningDialog(owner, "Please select tables to generate XML and POJOs files!");
@@ -340,13 +343,22 @@ public class SchemaLoadApp extends Application {
 
         final File destFolder = new File(outFolder);
 
+        final boolean constructor = pojoConstructorCh.isSelected();
+
+        final boolean includeKeys = pojoIncludeKeysCh.isSelected();
+
+        final boolean singleXml = xmlSingleFileCh.isSelected();
+
         Runnable task = new Task<Void>() {
-            private void checkEmpty(final PojoDescriptor pojo, Collection<PojoField> fields, String msg) {
-                if (fields.isEmpty()) {
+            private void checkEmpty(final PojoDescriptor pojo, boolean selected, String msg) {
+                if (!selected) {
                     Platform.runLater(new Runnable() {
                         @Override public void run() {
-                            pojosTbl.getSelectionModel().select(pojo);
-                            pojosTbl.scrollTo(pojosTbl.getSelectionModel().getSelectedIndex());
+                            TableView.TableViewSelectionModel<PojoDescriptor> selMdl = pojosTbl.getSelectionModel();
+
+                            selMdl.clearSelection();
+                            selMdl.select(pojo);
+                            pojosTbl.scrollTo(selMdl.getSelectedIndex());
                         }
                     });
 
@@ -363,27 +375,25 @@ public class SchemaLoadApp extends Application {
 
                 Collection<PojoDescriptor> all = new ArrayList<>();
 
-                boolean constructor = pojoConstructorCh.isSelected();
-                boolean includeKeys = pojoIncludeKeysCh.isSelected();
-                boolean singleXml = xmlSingleFileCh.isSelected();
-
                 ConfirmCallable askOverwrite = new ConfirmCallable(owner, "File already exists: %s\nOverwrite?");
 
                 // Generate XML and POJO.
                 for (PojoDescriptor pojo : selPojos) {
                     if (pojo.checked()) {
-                        checkEmpty(pojo, pojo.keyFields(), "No key fields specified for type: ");
-
-                        checkEmpty(pojo, pojo.valueFields(includeKeys), "No value fields specified for type: ");
+                        checkEmpty(pojo, pojo.hasFields(), "No fields selected for type: ");
+                        checkEmpty(pojo, pojo.hasKeyFields(), "No key fields selected for type: ");
+                        checkEmpty(pojo, pojo.hasValueFields(includeKeys), "No value fields selected for type: ");
 
                         all.add(pojo);
-
-                        if (!singleXml)
-                            XmlGenerator.generate(pkg, pojo, includeKeys, new File(destFolder, pojo.table() + ".xml"),
-                                askOverwrite);
-
-                        PojoGenerator.generate(pojo, outFolder, pkg, constructor, includeKeys, askOverwrite);
                     }
+                }
+
+                for (PojoDescriptor pojo : all) {
+                    if (!singleXml)
+                        XmlGenerator.generate(pkg, pojo, includeKeys, new File(destFolder, pojo.table() + ".xml"),
+                            askOverwrite);
+
+                    PojoGenerator.generate(pojo, outFolder, pkg, constructor, includeKeys, askOverwrite);
                 }
 
                 if (singleXml)
@@ -634,7 +644,7 @@ public class SchemaLoadApp extends Application {
             }
         }));
 
-        jdbcDrvClsTf = connPnl.addLabeled("JDBC Driver:", textField("Enter сlass name for JDBC driver"), 2);
+        jdbcDrvClsTf = connPnl.addLabeled("JDBC Driver:", textField("Enter class name for JDBC driver"), 2);
 
         jdbcUrlTf = connPnl.addLabeled("JDBC URL:", textField("JDBC URL of the database connection string"), 2);
 
@@ -740,15 +750,16 @@ public class SchemaLoadApp extends Application {
 
         pojosTbl = tableView("Tables not found in database", useCol, keyClsCol, valClsCol);
 
-        TableColumn<PojoField, Boolean> useFldCol = booleanColumn("Use", "use",
-            "Check to use this field for XML and POJO generation");
+        TableColumn<PojoField, Boolean> useFldCol = customColumn("Use", "use",
+            "Check to use this field for XML and POJO generation\n" +
+            "Note that NOT NULL columns cannot be unchecked", PojoFieldUseCell.cellFactory());
 
         TableColumn<PojoField, Boolean> keyCol = booleanColumn("Key", "key",
-            "Сheck to include this field into key object");
+            "Check to include this field into key object");
 
         TableColumn<PojoField, Boolean> akCol = booleanColumn("AK", "affinityKey",
             "Check to annotate key filed with @CacheAffinityKeyMapped annotation in generated POJO class\n" +
-            "Note that a class can have only one key field annotated with @CacheAffinityKeyMapped annotation");
+            "Note that a class can have only ONE key field annotated with @CacheAffinityKeyMapped annotation");
 
         TableColumn<PojoField, String> dbNameCol = tableColumn("DB Name", "dbName", "Field name in database");
 
@@ -1014,7 +1025,7 @@ public class SchemaLoadApp extends Application {
     /**
      * @return POJOs checked in table-tree-view.
      */
-    private Collection<PojoDescriptor> chekedPojos() {
+    private Collection<PojoDescriptor> checkedPojos() {
         Collection<PojoDescriptor> res = new ArrayList<>();
 
         for (PojoDescriptor pojo : pojos)
@@ -1275,7 +1286,6 @@ public class SchemaLoadApp extends Application {
                         boolean isTbl = pojo.parent() != null;
 
                         CheckBox ch = new CheckBox();
-                        Label lb = new Label(isTbl ? pojo.table() : pojo.schema());
 
                         ch.setAllowIndeterminate(false);
 
@@ -1283,21 +1293,57 @@ public class SchemaLoadApp extends Application {
 
                         ch.selectedProperty().bindBidirectional(pojo.useProperty());
 
-                        ch.setOnMouseClicked(new EventHandler<MouseEvent>() {
-                            @Override public void handle(MouseEvent evt) {
-                                TableView<PojoDescriptor> view = getTableView();
-
-                                view.getSelectionModel().select(getIndex());
-                                view.requestFocus();
-                            }
-                        });
+                        Label lb = new Label(isTbl ? pojo.table() : pojo.schema());
 
                         Pane pnl = new HBox(5);
-
                         pnl.setPadding(new Insets(0, 0, 0, isTbl ? 25 : 5));
                         pnl.getChildren().addAll(ch, lb);
 
                         setGraphic(pnl);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Special table cell to select &quot;used&quot; fields for code generation.
+     */
+    private static class PojoFieldUseCell extends TableCell<PojoField, Boolean> {
+        /** Creates a ComboBox cell factory for use in TableColumn controls. */
+        public static Callback<TableColumn<PojoField, Boolean>, TableCell<PojoField, Boolean>> cellFactory() {
+            return new Callback<TableColumn<PojoField, Boolean>, TableCell<PojoField, Boolean>>() {
+                @Override public TableCell<PojoField, Boolean> call(TableColumn<PojoField, Boolean> col) {
+                    return new PojoFieldUseCell();
+                }
+            };
+        }
+
+        /** Previous POJO field bound to cell. */
+        private PojoField prevField;
+
+        /** {@inheritDoc} */
+        @Override public void updateItem(Boolean item, boolean empty) {
+            super.updateItem(item, empty);
+
+            if (!empty) {
+                TableRow row = getTableRow();
+
+                if (row != null) {
+                    final PojoField field = (PojoField)row.getItem();
+
+                    if (field != prevField) {
+                        prevField = field;
+
+                        setAlignment(Pos.CENTER);
+
+                        CheckBox ch = new CheckBox();
+
+                        ch.setDisable(!field.nullable());
+
+                        ch.selectedProperty().bindBidirectional(field.useProperty());
+
+                        setGraphic(ch);
                     }
                 }
             }

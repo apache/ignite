@@ -151,13 +151,13 @@ public class PojoField {
 
         javaTypeNameProp = new SimpleStringProperty(javaTypeNamePrev);
 
+        useProp = new SimpleBooleanProperty(true);
+
         keyPrev = key;
 
         keyProp = new SimpleBooleanProperty(keyPrev);
 
         this.nullable = nullable;
-
-        useProp = new SimpleBooleanProperty(true);
 
         akProp = new SimpleBooleanProperty(false);
 
@@ -277,6 +277,13 @@ public class PojoField {
      */
     public void owner(PojoDescriptor owner) {
         this.owner = owner;
+    }
+
+    /**
+     * @return {@code true} if filed should be used for code generation.
+     */
+    public boolean use() {
+        return useProp.get();
     }
 
     /**
