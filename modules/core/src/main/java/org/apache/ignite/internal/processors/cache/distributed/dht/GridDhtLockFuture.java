@@ -780,12 +780,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                 }
             }
 
-            if (tx != null) {
-                tx.addDhtNodeEntryMapping(dhtMap);
-                tx.addNearNodeEntryMapping(nearMap);
-
+            if (tx != null)
                 tx.needsCompletedVersions(hasRmtNodes);
-            }
 
             if (isDone()) {
                 if (log.isDebugEnabled())
@@ -877,8 +873,6 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                                 continue;
 
                             boolean invalidateRdr = e.readerId(n.id()) != null;
-
-                            IgniteTxEntry<K, V> entry = tx != null ? tx.entry(e.txKey()) : null;
 
                             req.addDhtKey(
                                 e.key(),

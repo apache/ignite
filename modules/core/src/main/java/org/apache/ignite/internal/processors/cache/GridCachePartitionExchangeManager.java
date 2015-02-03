@@ -272,12 +272,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         U.join(exchWorker, log);
 
-        exchFuts = null;
-
         ResendTimeoutObject resendTimeoutObj = pendingResend.getAndSet(null);
 
         if (resendTimeoutObj != null)
             cctx.time().removeTimeoutObject(resendTimeoutObj);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void stop0(boolean cancel) {
+        super.stop0(cancel);
+
+        exchFuts = null;
     }
 
     public GridDhtPartitionTopology<K, V> clientTopology(int cacheId, GridDhtPartitionExchangeId exchId) {

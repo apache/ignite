@@ -873,9 +873,13 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @return Future that will be completed when locks are acquired.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    public IgniteInternalFuture<IgniteTxEx<K, V>> prepareAsyncLocal(@Nullable Collection<IgniteTxEntry<K, V>> reads,
-        @Nullable Collection<IgniteTxEntry<K, V>> writes, Map<UUID, Collection<UUID>> txNodes, boolean last,
-        Collection<UUID> lastBackups) {
+    public IgniteInternalFuture<IgniteTxEx<K, V>> prepareAsyncLocal(
+        @Nullable Collection<IgniteTxEntry<K, V>> reads,
+        @Nullable Collection<IgniteTxEntry<K, V>> writes,
+        Map<UUID, Collection<UUID>> txNodes, boolean last,
+        Collection<UUID> lastBackups,
+        IgniteInClosure<GridNearTxPrepareResponse<K, V>> completeCb
+    ) {
         if (state() != PREPARING) {
             if (timedOut())
                 return new GridFinishedFuture<>(cctx.kernalContext(),
@@ -889,8 +893,15 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
         init();
 
-        GridDhtTxPrepareFuture<K, V> fut = new GridDhtTxPrepareFuture<>(cctx, this, IgniteUuid.randomUuid(),
-            Collections.<IgniteTxKey<K>, GridCacheVersion>emptyMap(), last, needReturnValue() && implicit(), lastBackups);
+        GridDhtTxPrepareFuture<K, V> fut = new GridDhtTxPrepareFuture<>(
+            cctx,
+            this,
+            IgniteUuid.randomUuid(),
+            Collections.<IgniteTxKey<K>, GridCacheVersion>emptyMap(),
+            last,
+            needReturnValue() && implicit(),
+            lastBackups,
+            completeCb);
 
         try {
             // At this point all the entries passed in must be enlisted in transaction because this is an

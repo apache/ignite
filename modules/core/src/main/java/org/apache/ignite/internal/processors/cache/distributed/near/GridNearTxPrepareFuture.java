@@ -37,6 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -586,7 +587,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 futId,
                 tx.topologyVersion(),
                 tx,
-                tx.optimistic() && tx.serializable() ? m.reads() : null,
+                m.reads(),
                 m.writes(),
                 /*grp lock key*/null,
                 /*part lock*/false,
@@ -605,63 +606,20 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                     req.addDhtVersion(txEntry.txKey(), null);
             }
 
+            final MiniFuture fut = new MiniFuture(m, null);
+
+            req.miniId(fut.futureId());
+
+            add(fut);
+
             if (node.isLocal()) {
-                IgniteInternalFuture<IgniteTxEx<K, V>> fut = cctx.tm().txHandler().prepareTx(node.id(), tx, req);
-
-                // Add new future.
-                add(new GridEmbeddedFuture<>(
-                    cctx.kernalContext(),
-                    fut,
-                    new C2<IgniteTxEx<K, V>, Exception, IgniteTxEx<K, V>>() {
-                        @Override public IgniteTxEx<K, V> apply(IgniteTxEx<K, V> t, Exception ex) {
-                            if (ex != null) {
-                                onError(node.id(), null, ex);
-
-                                return t;
-                            }
-
-                            IgniteTxLocalEx<K, V> dhtTx = (IgniteTxLocalEx<K, V>)t;
-
-                            Collection<Integer> invalidParts = dhtTx.invalidPartitions();
-
-                            assert F.isEmpty(invalidParts);
-
-                            if (!m.empty()) {
-                                for (IgniteTxEntry<K, V> writeEntry : m.entries()) {
-                                    IgniteTxKey<K> key = writeEntry.txKey();
-
-                                    IgniteTxEntry<K, V> dhtTxEntry = dhtTx.entry(key);
-
-                                    assert dhtTxEntry != null;
-
-                                    if (dhtTxEntry.op() == NOOP) {
-                                        IgniteTxEntry<K, V> txEntry = tx.entry(key);
-
-                                        assert txEntry != null;
-
-                                        txEntry.op(NOOP);
-                                    }
-                                }
-
-                                tx.addDhtVersion(m.node().id(), dhtTx.xidVersion());
-
-                                m.dhtVersion(dhtTx.xidVersion());
-                            }
-
-                            tx.implicitSingleResult(dhtTx.implicitSingleResult());
-
-                            return tx;
-                        }
+                cctx.tm().txHandler().prepareTx(node.id(), tx, req, new CI1<GridNearTxPrepareResponse<K, V>>() {
+                    @Override public void apply(GridNearTxPrepareResponse<K, V> res) {
+                        fut.onResult(node.id(), res);
                     }
-                ));
+                });
             }
             else {
-                MiniFuture fut = new MiniFuture(m, null);
-
-                req.miniId(fut.futureId());
-
-                add(fut); // Append new future.
-
                 try {
                     cctx.io().send(node, req);
                 }
@@ -750,75 +708,26 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             }
         }
 
+        final MiniFuture fut = new MiniFuture(m, mappings);
+
+        req.miniId(fut.futureId());
+
+        add(fut); // Append new future.
+
         // If this is the primary node for the keys.
         if (n.isLocal()) {
-            req.miniId(IgniteUuid.randomUuid());
-
             // At this point, if any new node joined, then it is
             // waiting for this transaction to complete, so
             // partition reassignments are not possible here.
-            IgniteInternalFuture<IgniteTxEx<K, V>> fut = cctx.tm().txHandler().prepareTx(n.id(), tx, req);
-
-            // Add new future.
-            add(new GridEmbeddedFuture<>(
-                cctx.kernalContext(),
-                fut,
-                new C2<IgniteTxEx<K, V>, Exception, IgniteTxEx<K, V>>() {
-                    @Override public IgniteTxEx<K, V> apply(IgniteTxEx<K, V> t, Exception ex) {
-                        if (ex != null) {
-                            onError(n.id(), mappings, ex);
-
-                            return t;
-                        }
-
-                        IgniteTxLocalEx<K, V> dhtTx = (IgniteTxLocalEx<K, V>)t;
-
-                        Collection<Integer> invalidParts = dhtTx.invalidPartitions();
-
-                        assert F.isEmpty(invalidParts);
-
-                        tx.implicitSingleResult(dhtTx.implicitSingleResult());
-
-                        if (!m.empty()) {
-                            for (IgniteTxEntry<K, V> writeEntry : m.entries()) {
-                                IgniteTxKey<K> key = writeEntry.txKey();
-
-                                IgniteTxEntry<K, V> dhtTxEntry = dhtTx.entry(key);
-
-                                if (dhtTxEntry.op() == NOOP)
-                                    tx.entry(key).op(NOOP);
-                            }
-
-                            tx.addDhtVersion(m.node().id(), dhtTx.xidVersion());
-
-                            m.dhtVersion(dhtTx.xidVersion());
-
-                            GridCacheVersion min = dhtTx.minVersion();
-
-                            IgniteTxManager<K, V> tm = cctx.tm();
-
-                            if (m.near())
-                                tx.readyNearLocks(m, Collections.<GridCacheVersion>emptyList(),
-                                    tm.committedVersions(min), tm.rolledbackVersions(min));
-                        }
-
-                        // Continue prepare before completing the future.
-                        proceedPrepare(mappings);
-
-                        return tx;
-                    }
+            cctx.tm().txHandler().prepareTx(n.id(), tx, req, new CI1<GridNearTxPrepareResponse<K, V>>() {
+                @Override public void apply(GridNearTxPrepareResponse<K, V> res) {
+                    fut.onResult(n.id(), res);
                 }
-            ));
+            });
         }
         else {
             assert !tx.groupLock() : "Got group lock transaction that is mapped on remote node [tx=" + tx +
                 ", nodeId=" + n.id() + ']';
-
-            MiniFuture fut = new MiniFuture(m, mappings);
-
-            req.miniId(fut.futureId());
-
-            add(fut); // Append new future.
 
             try {
                 cctx.io().send(n, req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
@@ -1054,6 +963,14 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                         assert txEntry != null : "Missing tx entry for write key: " + key;
 
                         txEntry.op(NOOP);
+
+                        ExpiryPolicy expiry = txEntry.expiry();
+
+                        if (expiry == null)
+                            expiry = txEntry.context().expiry();
+
+                        if (expiry != null)
+                            txEntry.ttl(CU.toTtl(expiry.getExpiryForAccess()));
                     }
 
                     if (!m.empty()) {

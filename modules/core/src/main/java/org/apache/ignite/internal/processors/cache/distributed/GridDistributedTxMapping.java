@@ -21,6 +21,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -28,7 +29,6 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Transaction node mapping.
@@ -76,7 +76,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
     public GridDistributedTxMapping(ClusterNode node) {
         this.node = node;
 
-        entries = new ConcurrentLinkedQueue<>();
+        entries = new GridConcurrentLinkedHashSet<>();
     }
 
     /**
@@ -271,7 +271,7 @@ public class GridDistributedTxMapping<K, V> implements Externalizable {
      */
     private void ensureModifiable() {
         if (readOnly) {
-            entries = new ConcurrentLinkedQueue<>(entries);
+            entries = new GridConcurrentLinkedHashSet<>(entries);
 
             readOnly = false;
         }

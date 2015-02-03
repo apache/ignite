@@ -23,7 +23,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -54,7 +54,7 @@ public class IgniteTxHandler<K, V> {
 
     public IgniteInternalFuture<IgniteTxEx<K, V>> processNearTxPrepareRequest(final UUID nearNodeId,
         final GridNearTxPrepareRequest<K, V> req) {
-        return prepareTx(nearNodeId, null, req);
+        return prepareTx(nearNodeId, null, req, null);
     }
 
     /**
@@ -134,23 +134,29 @@ public class IgniteTxHandler<K, V> {
      * @param req Near prepare request.
      * @return Future for transaction.
      */
-    public IgniteInternalFuture<IgniteTxEx<K, V>> prepareTx(final UUID nearNodeId, @Nullable GridNearTxLocal<K, V> locTx,
-        final GridNearTxPrepareRequest<K, V> req) {
+    public IgniteInternalFuture<IgniteTxEx<K, V>> prepareTx(
+        UUID nearNodeId,
+        @Nullable GridNearTxLocal<K, V> locTx,
+        GridNearTxPrepareRequest<K, V> req,
+        @Nullable IgniteInClosure<GridNearTxPrepareResponse<K, V>> completeCb
+    ) {
         assert nearNodeId != null;
         assert req != null;
 
         if (locTx != null) {
+            assert completeCb != null;
+
             if (req.near()) {
                 // Make sure not to provide Near entries to DHT cache.
                 req.cloneEntries();
 
-                return prepareNearTx(nearNodeId, req);
+                return prepareNearTx(nearNodeId, req, completeCb);
             }
             else
-                return prepareColocatedTx(locTx, req);
+                return prepareColocatedTx(locTx, req, completeCb);
         }
         else
-            return prepareNearTx(nearNodeId, req);
+            return prepareNearTx(nearNodeId, req, null);
     }
 
     /**
@@ -160,8 +166,11 @@ public class IgniteTxHandler<K, V> {
      * @param req Near prepare request.
      * @return Prepare future.
      */
-    private IgniteInternalFuture<IgniteTxEx<K, V>> prepareColocatedTx(final GridNearTxLocal<K, V> locTx,
-        final GridNearTxPrepareRequest<K, V> req) {
+    private IgniteInternalFuture<IgniteTxEx<K, V>> prepareColocatedTx(
+        final GridNearTxLocal<K, V> locTx,
+        final GridNearTxPrepareRequest<K, V> req,
+        final IgniteInClosure<GridNearTxPrepareResponse<K, V>> completeCb
+    ) {
 
         IgniteInternalFuture<Object> fut = new GridFinishedFutureEx<>(); // TODO force preload keys.
 
@@ -173,8 +182,13 @@ public class IgniteTxHandler<K, V> {
                     if (ex != null)
                         throw new GridClosureException(ex);
 
-                    IgniteInternalFuture<IgniteTxEx<K, V>> fut = locTx.prepareAsyncLocal(req.reads(), req.writes(),
-                        req.transactionNodes(), req.last(), req.lastBackups());
+                    IgniteInternalFuture<IgniteTxEx<K, V>> fut = locTx.prepareAsyncLocal(
+                        req.reads(),
+                        req.writes(),
+                        req.transactionNodes(),
+                        req.last(),
+                        req.lastBackups(),
+                        completeCb);
 
                     if (locTx.isRollbackOnly())
                         locTx.rollbackAsync();
@@ -206,8 +220,11 @@ public class IgniteTxHandler<K, V> {
      * @param req Near prepare request.
      * @return Prepare future.
      */
-    private IgniteInternalFuture<IgniteTxEx<K, V>> prepareNearTx(final UUID nearNodeId,
-        final GridNearTxPrepareRequest<K, V> req) {
+    private IgniteInternalFuture<IgniteTxEx<K, V>> prepareNearTx(
+        final UUID nearNodeId,
+        final GridNearTxPrepareRequest<K, V> req,
+        IgniteInClosure<GridNearTxPrepareResponse<K, V>> completeCb
+    ) {
         ClusterNode nearNode = ctx.node(nearNodeId);
 
         if (nearNode == null) {
@@ -286,9 +303,16 @@ public class IgniteTxHandler<K, V> {
             if (req.returnValue())
                 tx.needReturnValue(true);
 
-            IgniteInternalFuture<IgniteTxEx<K, V>> fut = tx.prepareAsync(req.reads(), req.writes(),
-                req.dhtVersions(), req.messageId(), req.miniId(), req.transactionNodes(), req.last(),
-                req.lastBackups());
+            IgniteInternalFuture<IgniteTxEx<K, V>> fut = tx.prepareAsync(
+                req.reads(),
+                req.writes(),
+                req.dhtVersions(),
+                req.messageId(),
+                req.miniId(),
+                req.transactionNodes(),
+                req.last(),
+                req.lastBackups(),
+                completeCb);
 
             if (tx.isRollbackOnly()) {
                 try {
@@ -722,10 +746,10 @@ public class IgniteTxHandler<K, V> {
         if (nearTx != null && nearTx.local())
             nearTx = null;
 
-        finish(nodeId, dhtTx, req, req.ttls());
+        finish(nodeId, dhtTx, req);
 
         if (nearTx != null)
-            finish(nodeId, nearTx, req, req.nearTtls());
+            finish(nodeId, nearTx, req);
 
         if (dhtTx != null && !dhtTx.done()) {
             dhtTx.finishFuture().listenAsync(new CI1<IgniteInternalFuture<IgniteTx>>() {
@@ -742,13 +766,11 @@ public class IgniteTxHandler<K, V> {
      * @param nodeId Node ID.
      * @param tx Transaction.
      * @param req Request.
-     * @param ttls TTLs for optimistic transaction.
      */
     protected void finish(
         UUID nodeId,
         IgniteTxRemoteEx<K, V> tx,
-        GridDhtTxFinishRequest<K, V> req,
-        @Nullable GridLongList ttls) {
+        GridDhtTxFinishRequest<K, V> req) {
         // We don't allow explicit locks for transactions and
         // therefore immediately return if transaction is null.
         // However, we may decide to relax this restriction in
@@ -770,20 +792,11 @@ public class IgniteTxHandler<K, V> {
             log.debug("Received finish request for transaction [senderNodeId=" + nodeId + ", req=" + req +
                 ", tx=" + tx + ']');
 
-        assert ttls == null || tx.concurrency() == OPTIMISTIC;
-
         try {
             if (req.commit() || req.isSystemInvalidate()) {
                 if (tx.commitVersion(req.commitVersion())) {
                     tx.invalidate(req.isInvalidate());
                     tx.systemInvalidate(req.isSystemInvalidate());
-
-                    if (tx.concurrency() == OPTIMISTIC && ttls != null) {
-                        int idx = 0;
-
-                        for (IgniteTxEntry<K, V> e : tx.writeEntries())
-                            e.ttl(ttls.get(idx));
-                    }
 
                     // Complete remote candidates.
                     tx.doneRemote(req.baseVersion(), null, null, null);

@@ -124,6 +124,9 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
     /** Locks ready flag. */
     private volatile boolean locksReady;
 
+    /** */
+    private IgniteInClosure<GridNearTxPrepareResponse<K, V>> completeCb;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -146,7 +149,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         Map<IgniteTxKey<K>, GridCacheVersion> dhtVerMap,
         boolean last,
         boolean retVal,
-        Collection<UUID> lastBackups
+        Collection<UUID> lastBackups,
+        IgniteInClosure<GridNearTxPrepareResponse<K, V>> completeCb
     ) {
         super(cctx.kernalContext(), new IgniteReducer<IgniteTxEx<K, V>, IgniteTxEx<K, V>>() {
             @Override public boolean collect(IgniteTxEx<K, V> e) {
@@ -175,6 +179,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         nearMap = tx.nearMap();
 
         this.retVal = retVal;
+
+        this.completeCb = completeCb;
 
         assert dhtMap != null;
         assert nearMap != null;
@@ -273,13 +279,13 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
             GridCacheEntryEx<K, V> cached = txEntry.cached();
 
+            ExpiryPolicy expiry = txEntry.expiry();
+
+            if (expiry == null)
+                expiry = cacheCtx.expiry();
+
             try {
                 if (txEntry.op() == CREATE || txEntry.op() == UPDATE && txEntry.drExpireTime() == -1L) {
-                    ExpiryPolicy expiry = txEntry.expiry();
-
-                    if (expiry == null)
-                        expiry = cacheCtx.expiry();
-
                     if (expiry != null) {
                         Duration duration = cached.hasValue() ?
                             expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
@@ -342,6 +348,9 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     }
 
                     if (hasFilters && !cacheCtx.isAll(cached, txEntry.filters())) {
+                        if (expiry != null)
+                            txEntry.ttl(CU.toTtl(expiry.getExpiryForAccess()));
+
                         txEntry.op(GridCacheOperation.NOOP);
 
                         if (filterFailedKeys == null)
@@ -385,10 +394,9 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 //                U.error(log, "Failed to automatically rollback transaction: " + tx, ex);
 //            }
 //
-            // If not local node.
-            if (!tx.nearNodeId().equals(cctx.localNodeId())) {
+            try {
                 // Send reply back to near node.
-                GridCacheMessage<K, V> res = new GridNearTxPrepareResponse<>(
+                GridNearTxPrepareResponse<K, V> res = new GridNearTxPrepareResponse<>(
                     tx.nearXidVersion(),
                     tx.nearFutureId(),
                     nearMiniId,
@@ -397,14 +405,10 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     ret,
                     t);
 
-                try {
-                    cctx.io().send(tx.nearNodeId(), res, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to send reply to originating near node (will rollback): " + tx.nearNodeId(), e);
-
-                    tx.rollbackAsync();
-                }
+                sendPrepareResponse(res);
+            }
+            catch (IgniteCheckedException ignore) {
+                tx.rollbackAsync();
             }
 
             onComplete();
@@ -521,20 +525,31 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
             onComplete();
 
-            if (!tx.colocated() && tx.markFinalizing(IgniteTxEx.FinalizationStatus.USER_FINISH)) {
-                IgniteInternalFuture<IgniteTx> fut = this.err.get() == null ? tx.commitAsync() : tx.rollbackAsync();
+            if (!tx.near()) {
+                if (tx.markFinalizing(IgniteTxEx.FinalizationStatus.USER_FINISH)) {
+                    IgniteInternalFuture<IgniteTx> fut = this.err.get() == null ? tx.commitAsync() : tx.rollbackAsync();
 
-                fut.listenAsync(new CIX1<IgniteInternalFuture<IgniteTx>>() {
-                    @Override public void applyx(IgniteInternalFuture<IgniteTx> gridCacheTxGridFuture) {
-                        try {
-                            if (replied.compareAndSet(false, true))
-                                sendPrepareResponse(res);
+                    fut.listenAsync(new CIX1<IgniteInternalFuture<IgniteTx>>() {
+                        @Override public void applyx(IgniteInternalFuture<IgniteTx> gridCacheTxGridFuture) {
+                            try {
+                                if (replied.compareAndSet(false, true))
+                                    sendPrepareResponse(res);
+                            }
+                            catch (IgniteCheckedException e) {
+                                U.error(log, "Failed to send prepare response for transaction: " + tx, e);
+                            }
                         }
-                        catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to send prepare response for transaction: " + tx, e);
-                        }
-                    }
-                });
+                    });
+                }
+            }
+            else {
+                try {
+                    if (replied.compareAndSet(false, true))
+                        sendPrepareResponse(res);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to send prepare response for transaction: " + tx, e);
+                }
             }
 
             return true;
@@ -579,6 +594,11 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
     private void sendPrepareResponse(GridNearTxPrepareResponse<K, V> res) throws IgniteCheckedException {
         if (!tx.nearNodeId().equals(cctx.localNodeId()))
             cctx.io().send(tx.nearNodeId(), res);
+        else {
+            assert completeCb != null;
+
+            completeCb.apply(res);
+        }
     }
 
     /**
@@ -778,14 +798,14 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 boolean hasRemoteNodes = false;
 
                 // Assign keys to primary nodes.
-                if (!F.isEmpty(reads)) {
-                    for (IgniteTxEntry<K, V> read : reads)
-                        hasRemoteNodes |= map(tx.entry(read.txKey()), futDhtMap, futNearMap);
-                }
-
                 if (!F.isEmpty(writes)) {
                     for (IgniteTxEntry<K, V> write : writes)
                         hasRemoteNodes |= map(tx.entry(write.txKey()), futDhtMap, futNearMap);
+                }
+
+                if (!F.isEmpty(reads)) {
+                    for (IgniteTxEntry<K, V> read : reads)
+                        hasRemoteNodes |= map(tx.entry(read.txKey()), futDhtMap, futNearMap);
                 }
 
                 tx.needsCompletedVersions(hasRemoteNodes);
@@ -990,11 +1010,22 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
         GridDhtCacheEntry<K, V> cached = (GridDhtCacheEntry<K, V>)entry.cached();
 
-        boolean ret;
-
         GridCacheContext<K, V> cacheCtx = entry.context();
 
         GridDhtCacheAdapter<K, V> dht = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
+
+        ExpiryPolicy expiry = entry.expiry();
+
+        if (expiry == null)
+            expiry = cacheCtx.expiry();
+
+        if (expiry != null && entry.op() == READ) {
+            entry.op(NOOP);
+
+            entry.ttl(CU.toTtl(expiry.getExpiryForAccess()));
+        }
+
+        boolean ret;
 
         while (true) {
             try {
