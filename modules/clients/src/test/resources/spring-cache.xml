@@ -233,7 +233,7 @@
                 <property name="typeConfigurations">
                     <list>
                         <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.apache.ignite.client.ClientTestPortable"/>
+                            <property name="className" value="org.apache.ignite.internal.client.ClientTestPortable"/>
                         </bean>
                     </list>
                 </property>
