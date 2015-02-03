@@ -23,7 +23,8 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
@@ -32,8 +33,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.failover.always.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -259,14 +258,14 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                     resQueue.put(fut); // Blocks if queue is full.
 
-                    fut.listenAsync(new CI1<IgniteInternalFuture<Void>>() {
-                        @Override public void apply(IgniteInternalFuture<Void> f) {
+                    fut.listenAsync(new CI1<IgniteFuture<Void>>() {
+                        @Override public void apply(IgniteFuture<Void> f) {
                             ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
                             try {
                                 taskFut.get(); //if something went wrong - we'll get exception here
                             }
-                            catch (IgniteCheckedException e) {
+                            catch (IgniteException e) {
                                 log.error("Job failed", e);
 
                                 jobFailed.set(true);
@@ -431,14 +430,14 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                     resQueue.put(fut); // Blocks if queue is full.
 
-                    fut.listenAsync(new CI1<IgniteInternalFuture<Void>>() {
-                        @Override public void apply(IgniteInternalFuture<Void> f) {
+                    fut.listenAsync(new CI1<IgniteFuture<Void>>() {
+                        @Override public void apply(IgniteFuture<Void> f) {
                             ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
                             try {
                                 taskFut.get(); //if something went wrong - we'll get exception here
                             }
-                            catch (IgniteCheckedException e) {
+                            catch (IgniteException e) {
                                 log.error("Job failed", e);
 
                                 jobFailed.set(true);
@@ -482,14 +481,14 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                 resQueue.put(fut); // Blocks if queue is full.
 
-                fut.listenAsync(new CI1<IgniteInternalFuture<Void>>() {
-                    @Override public void apply(IgniteInternalFuture<Void> f) {
+                fut.listenAsync(new CI1<IgniteFuture<Void>>() {
+                    @Override public void apply(IgniteFuture<Void> f) {
                         ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
                         try {
                             taskFut.get(); //if something went wrong - we'll get exception here
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (IgniteException e) {
                             log.error("Job failed", e);
 
                             jobFailed.set(true);

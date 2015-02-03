@@ -72,6 +72,10 @@
             <directory>modules/core/licenses</directory>
             <outputDirectory>/licenses</outputDirectory>
         </fileSet>
+        <fileSet>
+            <directory>modules/core/target/libs</directory>
+            <outputDirectory>/</outputDirectory>
+        </fileSet>
     </fileSets>
 
     <files>

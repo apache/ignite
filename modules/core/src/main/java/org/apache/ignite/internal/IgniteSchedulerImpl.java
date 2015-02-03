@@ -18,14 +18,16 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.scheduler.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.scheduler.*;
 
 import java.io.*;
 import java.util.concurrent.*;
 
 /**
- * {@link org.apache.ignite.IgniteScheduler} implementation.
+ * {@link IgniteScheduler} implementation.
  */
 public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     /** */
@@ -49,13 +51,13 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> runLocal(Runnable r) {
+    @Override public IgniteFuture<?> runLocal(Runnable r) {
         A.notNull(r, "r");
 
         guard();
 
         try {
-            return ctx.closure().runLocalSafe(r, false);
+            return new IgniteFutureImpl<>(ctx.closure().runLocalSafe(r, false));
         }
         finally {
             unguard();
@@ -63,13 +65,13 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> IgniteInternalFuture<R> callLocal(Callable<R> c) {
+    @Override public <R> IgniteFuture<R> callLocal(Callable<R> c) {
         A.notNull(c, "c");
 
         guard();
 
         try {
-            return ctx.closure().callLocalSafe(c, false);
+            return new IgniteFutureImpl<>(ctx.closure().callLocalSafe(c, false));
         }
         finally {
             unguard();

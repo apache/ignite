@@ -21,13 +21,13 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.spi.loadbalancing.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -413,8 +413,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNode getBalancedNode(ComputeTaskSession ses, List<ClusterNode> top, ComputeJob job)
-    throws IgniteCheckedException {
+    @Override public ClusterNode getBalancedNode(ComputeTaskSession ses, List<ClusterNode> top, ComputeJob job) {
         A.notNull(ses, "ses");
         A.notNull(top, "top");
         A.notNull(job, "job");
@@ -440,10 +439,10 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
      * @param top List of all nodes.
      * @param node Node to get load for.
      * @return Node load.
-     * @throws IgniteCheckedException If returned load is negative.
+     * @throws IgniteException If returned load is negative.
      */
     @SuppressWarnings({"TooBroadScope"})
-    private double getLoad(Collection<ClusterNode> top, ClusterNode node) throws IgniteCheckedException {
+    private double getLoad(Collection<ClusterNode> top, ClusterNode node) throws IgniteException {
         assert !F.isEmpty(top);
 
         int jobsSentSinceLastUpdate = 0;
@@ -462,7 +461,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
         double load = probe.getLoad(node, jobsSentSinceLastUpdate);
 
         if (load < 0)
-            throw new IgniteCheckedException("Failed to obtain non-negative load from adaptive load probe: " + load);
+            throw new IgniteException("Failed to obtain non-negative load from adaptive load probe: " + load);
 
         return load;
     }
@@ -478,7 +477,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
          * @param top Task topology.
          * @throws IgniteCheckedException If any load was negative.
          */
-        WeightedTopology(List<ClusterNode> top) throws IgniteCheckedException {
+        WeightedTopology(List<ClusterNode> top) throws IgniteException {
             assert !F.isEmpty(top);
 
             double totalLoad = 0;

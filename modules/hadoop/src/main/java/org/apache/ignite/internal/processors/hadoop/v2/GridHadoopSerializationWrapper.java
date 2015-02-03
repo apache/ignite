@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.hadoop.v2;
 import org.apache.hadoop.io.serializer.*;
 import org.apache.ignite.*;
 import org.apache.ignite.hadoop.*;
-import java.io.*;
-
 import org.jetbrains.annotations.*;
+
+import java.io.*;
 
 /**
  * The wrapper around external serializer.

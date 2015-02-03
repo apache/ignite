@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.util.future.*;
@@ -162,7 +163,7 @@ public class GridDhtAssignmentFetchFuture<K, V> extends GridFutureAdapter<List<L
 
                     break;
                 }
-                catch (ClusterTopologyException ignored) {
+                catch (ClusterTopologyCheckedException ignored) {
                     U.warn(log0, "Failed to request affinity assignment from remote node (node left grid, will " +
                         "continue to another node): " + node);
                 }

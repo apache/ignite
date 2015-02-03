@@ -21,17 +21,18 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -42,8 +43,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 
 /**
@@ -275,7 +276,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             if (singleNodeId.equals(nodeId)) {
                 onDone(addFailedKeys(
                     singleReq.keys(),
-                    new ClusterTopologyException("Primary node left grid before response is received: " + nodeId)));
+                    new ClusterTopologyCheckedException("Primary node left grid before response is received: " + nodeId)));
 
                 return true;
             }
@@ -286,7 +287,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         GridNearAtomicUpdateRequest<K, V> req = mappings.get(nodeId);
 
         if (req != null) {
-            addFailedKeys(req.keys(), new ClusterTopologyException("Primary node left grid before response is " +
+            addFailedKeys(req.keys(), new ClusterTopologyCheckedException("Primary node left grid before response is " +
                 "received: " + nodeId));
 
             mappings.remove(nodeId);
@@ -304,7 +305,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         long mapTime0 = mapTime;
 
         if (mapTime0 > 0 && U.currentTimeMillis() > mapTime0 + timeout)
-            onDone(new CacheAtomicUpdateTimeoutException("Cache update timeout out " +
+            onDone(new CacheAtomicUpdateTimeoutCheckedException("Cache update timeout out " +
                 "(consider increasing networkTimeout configuration property)."));
     }
 
@@ -500,7 +501,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 
         if (F.isEmpty(topNodes)) {
-            onDone(new ClusterTopologyException("Failed to map keys for cache (all partition nodes left the grid)."));
+            onDone(new ClusterTopologyCheckedException("Failed to map keys for cache (all partition nodes left the grid)."));
 
             return;
         }

@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

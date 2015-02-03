@@ -21,9 +21,9 @@ import org.apache.commons.codec.binary.*;
 import org.apache.commons.codec.digest.*;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

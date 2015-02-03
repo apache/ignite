@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.hadoop.v2;
 
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.*;
-import org.apache.hadoop.mapreduce.MRJobConfig;
+import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.*;
 import org.apache.ignite.*;
 import org.apache.ignite.hadoop.*;
@@ -30,8 +32,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.net.*;
-import java.nio.file.FileSystemException;
-import java.nio.file.Files;
+import java.nio.file.*;
 import java.util.*;
 
 /**

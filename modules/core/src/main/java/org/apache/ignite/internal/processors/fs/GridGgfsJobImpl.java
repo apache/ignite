@@ -78,14 +78,14 @@ public class GridGgfsJobImpl implements ComputeJob, GridInternalWrapper<IgniteFs
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute() throws IgniteCheckedException {
-        IgniteFs ggfs = ignite.fileSystem(ggfsName);
+    @Override public Object execute() {
+        IgniteFs fs = ignite.fileSystem(ggfsName);
 
-        try (IgniteFsInputStream in = ggfs.open(path)) {
+        try (IgniteFsInputStream in = fs.open(path)) {
             IgniteFsFileRange split = new IgniteFsFileRange(path, start, len);
 
             if (rslvr != null) {
-                split = rslvr.resolveRecords(ggfs, in, split);
+                split = rslvr.resolveRecords(fs, in, split);
 
                 if (split == null) {
                     log.warning("No data found for split on local node after resolver is applied " +
@@ -97,10 +97,10 @@ public class GridGgfsJobImpl implements ComputeJob, GridInternalWrapper<IgniteFs
 
             in.seek(split.start());
 
-            return job.execute(ggfs, new IgniteFsFileRange(path, split.start(), split.length()), in);
+            return job.execute(fs, new IgniteFsFileRange(path, split.start(), split.length()), in);
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Failed to execute GGFS job for file split [ggfsName=" + ggfsName +
+            throw new IgniteException("Failed to execute GGFS job for file split [ggfsName=" + ggfsName +
                 ", path=" + path + ", start=" + start + ", len=" + len + ']', e);
         }
     }

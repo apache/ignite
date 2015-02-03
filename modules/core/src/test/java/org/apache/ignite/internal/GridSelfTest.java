@@ -19,8 +19,8 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.messaging.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.messaging.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;

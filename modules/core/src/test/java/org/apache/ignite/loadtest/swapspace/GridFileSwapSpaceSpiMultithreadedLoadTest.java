@@ -19,11 +19,11 @@ package org.apache.ignite.loadtest.swapspace;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.loadtests.util.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.loadtests.util.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
@@ -230,7 +230,7 @@ public class GridFileSwapSpaceSpiMultithreadedLoadTest extends GridCommonAbstrac
                         }
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     e.printStackTrace();
                 }
             }

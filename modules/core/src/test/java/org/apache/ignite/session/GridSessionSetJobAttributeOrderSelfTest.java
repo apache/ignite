@@ -85,7 +85,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) {
             assert subgrid.size() == 2;
             assert arg != null;
 
@@ -100,7 +100,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) {
             try {
                 if (taskSes.waitForAttribute(TEST_ATTR_KEY, SETS_ATTR_COUNT, 20000)) {
                     log.info("Successfully waited for attribute [key=" + TEST_ATTR_KEY +
@@ -108,7 +108,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
                 }
             }
             catch (InterruptedException e) {
-                throw new IgniteCheckedException("Got interrupted while waiting for attribute to be set.", e);
+                throw new IgniteException("Got interrupted while waiting for attribute to be set.", e);
             }
 
             return taskSes.getAttribute(TEST_ATTR_KEY);
@@ -126,7 +126,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Serializable execute() throws IgniteCheckedException {
+        @Override public Serializable execute() {
             assert taskSes != null;
 
             try {
@@ -135,7 +135,7 @@ public class GridSessionSetJobAttributeOrderSelfTest extends GridCommonAbstractT
                 assert attr : "Failed to wait for attribute value.";
             }
             catch (InterruptedException e) {
-                throw new IgniteCheckedException("Got interrupted while waiting for attribute to be set.", e);
+                throw new IgniteException("Got interrupted while waiting for attribute to be set.", e);
             }
 
             Integer res = taskSes.getAttribute(TEST_ATTR_KEY);

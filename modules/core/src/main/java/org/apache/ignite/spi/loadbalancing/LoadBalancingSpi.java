@@ -115,8 +115,8 @@ public interface LoadBalancingSpi extends IgniteSpi {
      * @param ses Grid task session for currently executing task.
      * @param top Topology of task nodes from which to pick the best balanced node for given job.
      * @param job Job for which to pick the best balanced node.
-     * @throws IgniteCheckedException If failed to get next balanced node.
+     * @throws IgniteException If failed to get next balanced node.
      * @return Best balanced node for the given job within given task session.
      */
-    public ClusterNode getBalancedNode(ComputeTaskSession ses, List<ClusterNode> top, ComputeJob job) throws IgniteCheckedException;
+    public ClusterNode getBalancedNode(ComputeTaskSession ses, List<ClusterNode> top, ComputeJob job) throws IgniteException;
 }

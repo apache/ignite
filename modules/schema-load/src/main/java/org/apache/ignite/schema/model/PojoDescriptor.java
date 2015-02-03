@@ -83,7 +83,28 @@ public class PojoDescriptor {
         keyClsNamePrev = valClsNamePrev.isEmpty() ? "" : valClsNamePrev + "Key";
         keyClsNameProp = new SimpleStringProperty(keyClsNamePrev);
 
-        useProp = new SimpleBooleanProperty(true);
+        Collection<DbColumn> cols = tbl.columns();
+
+        List<PojoField> flds = new ArrayList<>(cols.size());
+
+        for (DbColumn col : cols) {
+            PojoField fld = new PojoField(col.name(), col.type(),
+                toJavaFieldName(col.name()), toJavaType(col.type(), col.nullable()).getName(),
+                col.key(), col.nullable());
+
+            fld.owner(this);
+
+            flds.add(fld);
+        }
+
+        fields = FXCollections.observableList(flds);
+
+        boolean hasKeys = !keyFields().isEmpty();
+
+        useProp = new SimpleBooleanProperty(hasKeys);
+
+        if (parent != null)
+            parent.indeterminate().set(true);
 
         useProp.addListener(new ChangeListener<Boolean>() {
             @Override public void changed(ObservableValue<? extends Boolean> val, Boolean oldVal, Boolean newVal) {
@@ -111,22 +132,6 @@ public class PojoDescriptor {
                 }
             }
         });
-
-        Collection<DbColumn> cols = tbl.columns();
-
-        List<PojoField> flds = new ArrayList<>(cols.size());
-
-        for (DbColumn col : cols) {
-            PojoField fld = new PojoField(col.name(), col.type(),
-                toJavaFieldName(col.name()), toJavaType(col.type(), col.nullable()).getName(),
-                col.key(), col.nullable());
-
-            fld.owner(this);
-
-            flds.add(fld);
-        }
-
-        fields = FXCollections.observableList(flds);
     }
 
     /**
@@ -193,13 +198,50 @@ public class PojoDescriptor {
     }
 
     /**
+     * @return {@code true} if at least one field checked as &quot;used&quot;.
+     */
+    public boolean hasFields() {
+        for (PojoField field : fields)
+            if (field.use())
+                return true;
+
+        return false;
+    }
+
+    /**
+     * @return {@code true} if at least one field checked as &quot;used&quot; and checked as &quot;key&quot;.
+     */
+    public boolean hasKeyFields() {
+        for (PojoField field : fields)
+            if (field.use() && field.key())
+                return true;
+
+        return false;
+    }
+
+    /**
+     * @param includeKeys {@code true} if key fields should be included into value class.
+     * @return {@code true} if at least one field checked as &quot;used&quot; and not checked as &quot;key&quot;.
+     */
+    public boolean hasValueFields(boolean includeKeys) {
+        if (includeKeys)
+            return hasKeyFields();
+
+        for (PojoField field : fields)
+            if (field.use() && !field.key())
+                return true;
+
+        return false;
+    }
+
+    /**
      * @return Collection of key fields.
      */
     public Collection<PojoField> keyFields() {
         Collection<PojoField> keys = new ArrayList<>();
 
         for (PojoField field : fields)
-            if (field.key())
+            if (field.use() && field.key() )
                 keys.add(field);
 
         return keys;
@@ -210,13 +252,10 @@ public class PojoDescriptor {
      * @return Collection of value fields.
      */
     public Collection<PojoField> valueFields(boolean includeKeys) {
-        if (includeKeys)
-            return fields;
-
         Collection<PojoField> vals = new ArrayList<>();
 
         for (PojoField field : fields)
-            if (!field.key())
+            if (field.use() && (includeKeys || !field.key()))
                 vals.add(field);
 
         return vals;

@@ -22,13 +22,14 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.transactions.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -249,7 +250,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                 try {
                     tx.rollback();
                 }
-                catch (IgniteCheckedException ex) {
+                catch (IgniteException ex) {
                     error("Failed to rollback optimistic failure: " + tx, ex);
 
                     throw ex;
@@ -360,7 +361,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
 
                 debug("Rolled back transaction: " + tx);
             }
-            catch (IgniteTxOptimisticException e) {
+            catch (IgniteTxOptimisticCheckedException e) {
                 tx.rollback();
 
                 log.warning("Rolled back transaction due to optimistic exception [tx=" + tx + ", e=" + e + ']');
