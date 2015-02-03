@@ -117,7 +117,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
     private CheckpointListener lsnr;
 
     /** Prefix to use in bucket name generation. */
-    public static final String BUCKET_NAME_PREFIX = "gridgain-checkpoint-";
+    public static final String BUCKET_NAME_PREFIX = "ignite-checkpoint-";
 
     /** Suffix to use in bucket name generation. */
     public static final String DFLT_BUCKET_NAME_SUFFIX = "default-bucket";
