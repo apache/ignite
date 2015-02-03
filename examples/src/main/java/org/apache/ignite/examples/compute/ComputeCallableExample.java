@@ -24,7 +24,7 @@ import org.apache.ignite.lang.*;
 import java.util.*;
 
 /**
- * Demonstrates using of {@link org.apache.ignite.lang.IgniteCallable} job execution on the cluster.
+ * Demonstrates using of {@link IgniteCallable} job execution on the cluster.
  * <p>
  * This example takes a sentence composed of multiple words and counts number of non-space
  * characters in the sentence by having each compute job count characters in each individual

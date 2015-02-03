@@ -25,7 +25,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Demonstrates a simple use of Ignite with {@link org.apache.ignite.compute.ComputeTaskSplitAdapter}.
+ * Demonstrates a simple use of Ignite with {@link ComputeTaskSplitAdapter}.
  * <p>
  * Phrase passed as task argument is split into jobs each taking one word. Then jobs are distributed among
  * cluster nodes. Each node computes word length and returns result to master node where total phrase length

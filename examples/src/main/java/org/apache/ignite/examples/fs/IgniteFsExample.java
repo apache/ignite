@@ -25,7 +25,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Example that shows usage of {@link org.apache.ignite.IgniteFs} API. It starts a node with {@code IgniteFs}
+ * Example that shows usage of {@link IgniteFs} API. It starts a node with {@code IgniteFs}
  * configured and performs several file system operations (create, write, append, read and delete
  * files, create, list and delete directories).
  * <p>

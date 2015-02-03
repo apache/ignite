@@ -25,7 +25,7 @@ import org.apache.ignite.resources.*;
 import static org.apache.ignite.lifecycle.LifecycleEventType.*;
 
 /**
- * This example shows how to provide your own {@link org.apache.ignite.lifecycle.LifecycleBean} implementation
+ * This example shows how to provide your own {@link LifecycleBean} implementation
  * to be able to hook into Ignite lifecycle. The {@link LifecycleExampleBean} bean
  * will output occurred lifecycle events to the console.
  * <p>
@@ -60,7 +60,7 @@ public final class LifecycleExample {
     }
 
     /**
-     * Simple {@link org.apache.ignite.lifecycle.LifecycleBean} implementation that outputs event type when it is occurred.
+     * Simple {@link LifecycleBean} implementation that outputs event type when it is occurred.
      */
     public static class LifecycleExampleBean implements LifecycleBean {
         /** Auto-inject ignite instance. */

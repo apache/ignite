@@ -27,7 +27,7 @@ import java.util.*;
 
 /**
  * Demonstrates a simple use of Ignite with
- * {@link org.apache.ignite.compute.ComputeTaskAdapter}.
+ * {@link ComputeTaskAdapter}.
  * <p>
  * Phrase passed as task argument is split into words on map stage and distributed among cluster nodes.
  * Each node computes word length and returns result to master node where total phrase length is

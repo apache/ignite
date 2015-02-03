@@ -32,8 +32,8 @@ import java.util.*;
  * This example demonstrates how to use continuation feature of Ignite by
  * performing the distributed recursive calculation of {@code 'Fibonacci'}
  * numbers on the cluster. Continuations
- * functionality is exposed via {@link org.apache.ignite.compute.ComputeJobContext#holdcc()} and
- * {@link org.apache.ignite.compute.ComputeJobContext#callcc()} method calls in {@link FibonacciClosure} class.
+ * functionality is exposed via {@link ComputeJobContext#holdcc()} and
+ * {@link ComputeJobContext#callcc()} method calls in {@link FibonacciClosure} class.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.

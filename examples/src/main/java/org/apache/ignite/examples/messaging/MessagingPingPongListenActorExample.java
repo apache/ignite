@@ -26,7 +26,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Demonstrates messaging with {@link org.apache.ignite.messaging.MessagingListenActor} convenience adapter.
+ * Demonstrates messaging with {@link MessagingListenActor} convenience adapter.
  * <p>
  * To run this example you must have at least one remote node started.
  * <p>
