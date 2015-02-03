@@ -25,13 +25,13 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.*;
 import org.jetbrains.annotations.*;
@@ -40,9 +40,9 @@ import javax.cache.*;
 import javax.net.ssl.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
  * Super class for all common tests.
@@ -625,7 +625,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Future.
      * @throws IgniteCheckedException If failed.
      */
-    protected <T extends IgniteEvent> IgniteInternalFuture<T> waitForLocalEvent(IgniteEvents evts,
+    protected <T extends IgniteEvent> IgniteFuture<T> waitForLocalEvent(IgniteEvents evts,
         @Nullable IgnitePredicate<T> filter, @Nullable int... types) throws IgniteCheckedException {
         evts = evts.withAsync();
 
@@ -633,7 +633,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         assertNull(evts.waitForLocal(filter, types));
 
-        IgniteInternalFuture<T> fut = evts.future();
+        IgniteFuture<T> fut = evts.future();
 
         assertNotNull(fut);
 

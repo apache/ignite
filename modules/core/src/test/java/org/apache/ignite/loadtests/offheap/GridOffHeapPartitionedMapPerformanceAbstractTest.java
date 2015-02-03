@@ -20,9 +20,9 @@ package org.apache.ignite.loadtests.offheap;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.offheap.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.offheap.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
 

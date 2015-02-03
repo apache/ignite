@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import com.vividsolutions.jts.geom.*;
 import org.h2.engine.*;
-import org.h2.index.*;
 import org.h2.index.Cursor;
+import org.h2.index.*;
 import org.h2.message.*;
 import org.h2.mvstore.*;
 import org.h2.mvstore.rtree.*;

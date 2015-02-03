@@ -19,7 +19,7 @@ package org.apache.ignite.scalar.examples
 
 import org.apache.ignite.compute.ComputeJobContext
 import org.apache.ignite.internal.IgniteInternalFuture
-import org.apache.ignite.lang.IgniteClosure
+import org.apache.ignite.lang.{IgniteFuture, IgniteClosure}
 import org.apache.ignite.resources.IgniteJobContextResource
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
@@ -82,7 +82,7 @@ class FibonacciClosure (
     // However, these fields will be preserved locally while
     // this closure is being "held", i.e. while it is suspended
     // and is waiting to be continued.
-    @transient private var fut1, fut2: IgniteInternalFuture[BigInteger] = null
+    @transient private var fut1, fut2: IgniteFuture[BigInteger] = null
 
     // Auto-inject job context.
     @IgniteJobContextResource
@@ -104,7 +104,7 @@ class FibonacciClosure (
                     BigInteger.ONE
 
             // Get properly typed node-local storage.
-            val store = g.cluster().nodeLocalMap[Long, IgniteInternalFuture[BigInteger]]()
+            val store = g.cluster().nodeLocalMap[Long, IgniteFuture[BigInteger]]()
 
             // Check if value is cached in node-local store first.
             fut1 = store.get(n - 1)
@@ -134,7 +134,7 @@ class FibonacciClosure (
 
             // If futures are not done, then wait asynchronously for the result
             if (!fut1.isDone || !fut2.isDone) {
-                val lsnr = (fut: IgniteInternalFuture[BigInteger]) => {
+                val lsnr = (fut: IgniteFuture[BigInteger]) => {
                     // This method will be called twice, once for each future.
                     // On the second call - we have to have both futures to be done
                     // - therefore we can call the continuation.

@@ -22,12 +22,13 @@ import com.amazonaws.auth.*;
 import com.amazonaws.services.s3.*;
 import com.amazonaws.services.s3.model.*;
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.checkpoint.*;
-import org.apache.ignite.testsuites.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.testsuites.*;
 
 /**
  * Grid S3 checkpoint SPI self test.
@@ -206,9 +207,9 @@ public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi
      * Wrapper around {@link GridTestUtils#retryAssert(org.apache.ignite.IgniteLogger, int, long, GridAbsClosure)}.
      * Provides s3-specific timeouts.
      * @param assertion Closure with assertion inside.
-     * @throws org.apache.ignite.IgniteInterruptedException If was interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If was interrupted.
      */
-    private void assertWithRetries(GridAbsClosureX assertion) throws IgniteInterruptedException {
+    private void assertWithRetries(GridAbsClosureX assertion) throws IgniteInterruptedCheckedException {
         GridTestUtils.retryAssert(log, 6, 5000, assertion);
     }
 }

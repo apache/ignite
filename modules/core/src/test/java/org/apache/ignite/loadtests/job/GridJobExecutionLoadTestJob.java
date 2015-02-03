@@ -17,7 +17,6 @@
 
 package org.apache.ignite.loadtests.job;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 
 import java.io.*;
@@ -27,7 +26,7 @@ import java.io.*;
  */
 public class GridJobExecutionLoadTestJob implements ComputeJob, Externalizable {
     /** {@inheritDoc} */
-    @Override public Object execute() throws IgniteCheckedException {
+    @Override public Object execute() {
         return null;
     }
 

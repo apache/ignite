@@ -67,7 +67,7 @@ public class CachePopularNumbersExample {
             // Clean up caches on all nodes before run.
             g.cache(CACHE_NAME).globalClearAll(0);
 
-            ClusterGroup prj = g.cluster().forCache(CACHE_NAME);
+            ClusterGroup prj = g.cluster().forCacheNodes(CACHE_NAME);
 
             if (prj.nodes().isEmpty()) {
                 System.out.println("Grid does not have cache configured: " + CACHE_NAME);
@@ -90,9 +90,9 @@ public class CachePopularNumbersExample {
      * Populates cache in real time with numbers and keeps count for every number.
      *
      * @param g Grid.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void streamData(final Ignite g) throws IgniteCheckedException {
+    private static void streamData(final Ignite g) throws IgniteException {
         try (IgniteDataLoader<Integer, Long> ldr = g.dataLoader(CACHE_NAME)) {
             // Set larger per-node buffer size since our state is relatively small.
             ldr.perNodeBufferSize(2048);

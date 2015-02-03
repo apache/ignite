@@ -24,12 +24,13 @@ import java.util.concurrent._
 import java.util.{HashSet => JHashSet, _}
 
 import org.apache.ignite.IgniteSystemProperties._
-import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterMetrics, ClusterNode}
+import org.apache.ignite.cluster.{ClusterGroup, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.events.IgniteEventType._
 import org.apache.ignite.events.{IgniteDiscoveryEvent, IgniteEvent}
 import org.apache.ignite.internal.IgniteComponentType._
 import org.apache.ignite.internal.GridNodeAttributes._
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
 import org.apache.ignite.internal.processors.spring.IgniteSpringProcessor
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
@@ -234,18 +235,18 @@ object visor extends VisorTag {
      *
      * @param nid Node ID.
      * @return GridNode instance.
-     * @throws IgniteCheckedException if Visor is disconnected or node not found.
+     * @throws IgniteException if Visor is disconnected or node not found.
      */
     def node(nid: UUID): ClusterNode = {
         val g = grid
 
         if (g == null)
-            throw new IgniteCheckedException("Visor disconnected")
+            throw new IgniteException("Visor disconnected")
         else {
             val node = g.node(nid)
 
             if (node == null)
-                throw new IgniteCheckedException("Node is gone: " + nid)
+                throw new IgniteException("Node is gone: " + nid)
 
             node
         }
@@ -1477,7 +1478,7 @@ object visor extends VisorTag {
                             val url = IgniteUtils.resolveGridGainUrl(path)
 
                             if (url == null)
-                                throw new IgniteCheckedException("GridGain configuration path is invalid: " + path, e)
+                                throw new IgniteException("Ignite configuration path is invalid: " + path, e)
 
                             url
                     }
@@ -1502,10 +1503,10 @@ object visor extends VisorTag {
                     }
 
                 if (cfgs == null || cfgs.isEmpty)
-                    throw new IgniteCheckedException("Can't find grid configuration in: " + url)
+                    throw new IgniteException("Can't find grid configuration in: " + url)
 
                 if (cfgs.size > 1)
-                    throw new IgniteCheckedException("More than one grid configuration found in: " + url)
+                    throw new IgniteException("More than one grid configuration found in: " + url)
 
                 val cfg = cfgs.iterator().next()
 
@@ -1564,7 +1565,7 @@ object visor extends VisorTag {
             open(cfg, cfgPath)
         }
         catch {
-            case e: IgniteCheckedException =>
+            case e: IgniteException =>
                 warn(e.getMessage)
                 warn("Type 'help open' to see how to use this command.")
 
@@ -1607,7 +1608,7 @@ object visor extends VisorTag {
                 case _: IllegalStateException =>
                     this.cfgPath = null
 
-                    throw new IgniteCheckedException("Named grid unavailable: " + startedGridName)
+                    throw new IgniteException("Named grid unavailable: " + startedGridName)
             }
 
         assert(cfgPath != null)
@@ -2461,7 +2462,7 @@ object visor extends VisorTag {
                         }
                     }
                     catch {
-                        case _: ClusterGroupEmptyException => // Ignore.
+                        case _: ClusterGroupEmptyCheckedException => // Ignore.
                         case e: Exception => logText("Failed to collect log.")
                     }
                 }
@@ -2493,7 +2494,7 @@ object visor extends VisorTag {
             try
                 drawBar(g.metrics())
             catch {
-                case e: ClusterGroupEmptyException => logText("Topology is empty.")
+                case e: ClusterGroupEmptyCheckedException => logText("Topology is empty.")
                 case e: Exception => ()
             }
     }

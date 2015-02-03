@@ -111,7 +111,7 @@
         Uncomment to disable courtesy notice.
     -->
     <!--
-    <category name="org.gridgain.grid.CourtesyConfigNotice">
+    <category name="org.apache.ignite.CourtesyConfigNotice">
         <level value="OFF"/>
     </category>
     -->

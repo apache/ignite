@@ -45,7 +45,7 @@ public class ComputeRunnableExample {
             System.out.println();
             System.out.println("Compute runnable example started.");
 
-            Collection<IgniteInternalFuture> futs = new ArrayList<>();
+            Collection<IgniteFuture> futs = new ArrayList<>();
 
             // Enable asynchronous mode.
             IgniteCompute compute = g.compute().withAsync();
@@ -64,7 +64,7 @@ public class ComputeRunnableExample {
             }
 
             // Wait for all futures to complete.
-            for (IgniteInternalFuture<?> f : futs)
+            for (IgniteFuture<?> f : futs)
                 f.get();
 
             System.out.println();

@@ -27,12 +27,12 @@ import org.apache.ignite.fs.*;
 import org.apache.ignite.fs.mapreduce.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -230,8 +230,8 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
 
     /** {@inheritDoc} */
     @Nullable @Override public ComputeJob createJob(IgniteFsJob job, @Nullable String ggfsName, IgniteFsPath path,
-        long start, long length, IgniteFsRecordResolver recRslv) {
-        return new GridGgfsJobImpl(job, ggfsName, path, start, length, recRslv);
+        long start, long len, IgniteFsRecordResolver recRslv) {
+        return new GridGgfsJobImpl(job, ggfsName, path, start, len, recRslv);
     }
 
     /** {@inheritDoc} */

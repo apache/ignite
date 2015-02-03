@@ -23,11 +23,11 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -523,7 +523,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             assert false : "Exception was not thrown.";
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             assertTrue(e.getMessage().startsWith(
                 "Failed to register remote continuous listener (projection is empty)."));
         }
@@ -1043,7 +1043,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
                         comp.future().get(3000);
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         // Ignore all job execution related errors.
                     }
                 }

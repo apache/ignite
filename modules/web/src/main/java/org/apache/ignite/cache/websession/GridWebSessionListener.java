@@ -19,6 +19,7 @@ package org.apache.ignite.cache.websession;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -121,7 +122,7 @@ class GridWebSessionListener {
                 }
             }
         }
-        catch (CacheException | IgniteCheckedException e) {
+        catch (CacheException | IgniteInterruptedCheckedException e) {
             U.error(log, "Failed to update session attributes [id=" + sesId + ']', e);
         }
     }

@@ -44,7 +44,7 @@ public class GridTestTask extends ComputeTaskSplitAdapter<Object, Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Object reduce(List<ComputeJobResult> results) {
         if (log.isDebugEnabled())
             log.debug("Reducing task [task=" + this + ", results=" + results + ']');
 

@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.*;
 import org.h2.message.*;
 import org.h2.result.*;
 import org.h2.value.*;

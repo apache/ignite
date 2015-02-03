@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.visor.compute;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
 
 /**
  * Reset compute grid metrics task.
@@ -51,7 +50,7 @@ public class VisorComputeResetMetricsTask extends VisorOneNodeTask<Void, Void> {
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Void arg) throws IgniteCheckedException {
+        @Override protected Void run(Void arg) {
             g.resetMetrics();
 
             return null;
