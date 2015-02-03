@@ -241,7 +241,7 @@ public class PojoDescriptor {
         Collection<PojoField> keys = new ArrayList<>();
 
         for (PojoField field : fields)
-            if (field.key())
+            if (field.use() && field.key() )
                 keys.add(field);
 
         return keys;
@@ -252,13 +252,10 @@ public class PojoDescriptor {
      * @return Collection of value fields.
      */
     public Collection<PojoField> valueFields(boolean includeKeys) {
-        if (includeKeys)
-            return fields;
-
         Collection<PojoField> vals = new ArrayList<>();
 
         for (PojoField field : fields)
-            if (!field.key())
+            if (field.use() && (includeKeys || !field.key()))
                 vals.add(field);
 
         return vals;
