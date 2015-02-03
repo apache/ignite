@@ -48,8 +48,8 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.plugin.security.GridSecuritySubjectType.*;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.*;
+import static org.apache.ignite.plugin.security.GridSecuritySubjectType.*;
 
 /**
  * Rest processor implementation.
@@ -80,7 +80,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             return handleAsync(req).get();
         }
 
-        @Override public IgniteFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+        @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
             return handleAsync0(req);
         }
     };
@@ -89,7 +89,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @param req Request.
      * @return Future.
      */
-    private IgniteFuture<GridRestResponse> handleAsync0(final GridRestRequest req) {
+    private IgniteInternalFuture<GridRestResponse> handleAsync0(final GridRestRequest req) {
         if (!busyLock.tryReadLock())
             return new GridFinishedFuture<>(ctx,
                 new IgniteCheckedException("Failed to handle request (received request while stopping grid)."));
@@ -102,10 +102,10 @@ public class GridRestProcessor extends GridProcessorAdapter {
             GridWorker w = new GridWorker(ctx.gridName(), "rest-proc-worker", log) {
                 @Override protected void body() {
                     try {
-                        IgniteFuture<GridRestResponse> res = handleRequest(req);
+                        IgniteInternalFuture<GridRestResponse> res = handleRequest(req);
 
-                        res.listenAsync(new IgniteInClosure<IgniteFuture<GridRestResponse>>() {
-                            @Override public void apply(IgniteFuture<GridRestResponse> f) {
+                        res.listenAsync(new IgniteInClosure<IgniteInternalFuture<GridRestResponse>>() {
+                            @Override public void apply(IgniteInternalFuture<GridRestResponse> f) {
                                 try {
                                     fut.onDone(f.get());
                                 }
@@ -151,7 +151,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @param req Request.
      * @return Future.
      */
-    private IgniteFuture<GridRestResponse> handleRequest(final GridRestRequest req) {
+    private IgniteInternalFuture<GridRestResponse> handleRequest(final GridRestRequest req) {
         if (startLatch.getCount() > 0) {
             try {
                 startLatch.await();
@@ -196,7 +196,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         GridRestCommandHandler hnd = handlers.get(req.command());
 
-        IgniteFuture<GridRestResponse> res = hnd == null ? null : hnd.handleAsync(req);
+        IgniteInternalFuture<GridRestResponse> res = hnd == null ? null : hnd.handleAsync(req);
 
         if (res == null)
             return new GridFinishedFuture<>(ctx,
@@ -204,8 +204,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         final GridSecurityContext subjCtx0 = subjCtx;
 
-        return res.chain(new C1<IgniteFuture<GridRestResponse>, GridRestResponse>() {
-            @Override public GridRestResponse apply(IgniteFuture<GridRestResponse> f) {
+        return res.chain(new C1<IgniteInternalFuture<GridRestResponse>, GridRestResponse>() {
+            @Override public GridRestResponse apply(IgniteInternalFuture<GridRestResponse> f) {
                 GridRestResponse res;
 
                 try {

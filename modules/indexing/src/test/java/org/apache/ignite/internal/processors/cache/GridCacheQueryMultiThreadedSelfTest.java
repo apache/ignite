@@ -23,16 +23,16 @@ import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.query.*;
+import org.apache.ignite.internal.processors.query.h2.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.processors.query.*;
-import org.apache.ignite.internal.processors.query.h2.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -105,7 +105,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        GridQueryConfiguration indexing = new GridQueryConfiguration();
+        IgniteQueryConfiguration indexing = new IgniteQueryConfiguration();
 
         indexing.setMaxOffheapRowsCacheSize(128);
 
@@ -259,7 +259,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        IgniteFuture<?> fut = multithreadedAsync(new CAX() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 Random rnd = new Random();
 
@@ -339,7 +339,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        IgniteFuture<?> fut = multithreadedAsync(new CAX() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 Random rnd = new Random();
 
@@ -423,7 +423,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        IgniteFuture<?> fut = multithreadedAsync(new CAX() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 Random rnd = new Random();
 
@@ -504,7 +504,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        IgniteFuture<?> fut = multithreadedAsync(new CAX() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 Random rnd = new Random();
 
@@ -584,7 +584,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         final CacheQuery<Map.Entry<Integer, Integer>> qry = c.queries().createSqlQuery(Integer.class, "_val >= 0");
 
-        IgniteFuture<?> fut = multithreadedAsync(
+        IgniteInternalFuture<?> fut = multithreadedAsync(
             new CAX() {
                 @Override public void applyx() throws IgniteCheckedException {
                     int iter = 0;
@@ -603,7 +603,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
                         if (cnt.incrementAndGet() % logMod == 0) {
                             GridCacheQueryManager<Object, Object> qryMgr =
-                                ((GridKernal)g).internalCache().context().queries();
+                                ((IgniteKernal)g).internalCache().context().queries();
 
                             assert qryMgr != null;
 
@@ -648,7 +648,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        IgniteFuture<?> fut = multithreadedAsync(new CAX() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 int iter = 0;
 
@@ -668,7 +668,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
                     if (cnt.incrementAndGet() % logMod == 0) {
                         GridCacheQueryManager<Object, Object> qryMgr =
-                            ((GridKernal)g).internalCache().context().queries();
+                            ((IgniteKernal)g).internalCache().context().queries();
 
                         assert qryMgr != null;
 
@@ -730,7 +730,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        IgniteFuture<?> fut = multithreadedAsync(new CAX() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 while (!stop.get()) {
                     Collection<Integer> rmtVals = rdcQry.execute(rmtRdc).get();
@@ -757,7 +757,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
                     if (cnt.incrementAndGet() % logMod == 0) {
                         GridCacheQueryManager<Object, Object> qryMgr =
-                            ((GridKernal)g).internalCache().context().queries();
+                            ((IgniteKernal)g).internalCache().context().queries();
 
                         assert qryMgr != null;
 
@@ -799,7 +799,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         final CacheQuery<Map.Entry<Integer, Integer>> qry = c.queries().createScanQuery(null);
 
-        IgniteFuture<?> fut = multithreadedAsync(
+        IgniteInternalFuture<?> fut = multithreadedAsync(
             new CAX() {
                 @Override public void applyx() throws IgniteCheckedException {
                     int iter = 0;
@@ -817,7 +817,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
                         if (cnt.incrementAndGet() % logMod == 0) {
                             GridCacheQueryManager<Object, Object> qryMgr =
-                                ((GridKernal)g).internalCache().context().queries();
+                                ((IgniteKernal)g).internalCache().context().queries();
 
                             assert qryMgr != null;
 

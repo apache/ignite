@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
 /**
  * {@code GGFS} exception thrown by file system components.
  */
-public class IgniteFsException extends IgniteCheckedException {
+public class IgniteFsException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 

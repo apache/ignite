@@ -19,7 +19,8 @@ package org.apache.ignite.loadtests.ggfs;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
-import org.apache.ignite.lang.*;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
@@ -86,7 +87,7 @@ public class GridGgfsPerformanceBenchmark {
 
         long start = System.currentTimeMillis();
 
-        IgniteFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
                 String fileIdx = op == OP_READ ? String.valueOf(idx.getAndIncrement()) : UUID.randomUUID().toString();
 

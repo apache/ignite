@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import org.apache.ignite.cache.affinity.CacheAffinityKeyMapped;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 

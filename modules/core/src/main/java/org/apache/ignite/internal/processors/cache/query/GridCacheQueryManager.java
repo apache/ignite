@@ -55,8 +55,8 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.GridClosureCallMode.*;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
 
@@ -107,8 +107,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     for (Map.Entry<Long, GridFutureAdapter<QueryResult<K, V>>> entry : futs.entrySet()) {
                         final Object recipient = recipient(nodeId, entry.getKey());
 
-                        entry.getValue().listenAsync(new CIX1<IgniteFuture<QueryResult<K, V>>>() {
-                            @Override public void applyx(IgniteFuture<QueryResult<K, V>> f) throws IgniteCheckedException {
+                        entry.getValue().listenAsync(new CIX1<IgniteInternalFuture<QueryResult<K, V>>>() {
+                            @Override public void applyx(IgniteInternalFuture<QueryResult<K, V>> f) throws IgniteCheckedException {
                                 f.get().closeIfNotShared(recipient);
                             }
                         });
@@ -121,8 +121,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     for (Map.Entry<Long, GridFutureAdapter<FieldsResult>> entry : fieldsFuts.entrySet()) {
                         final Object recipient = recipient(nodeId, entry.getKey());
 
-                        entry.getValue().listenAsync(new CIX1<IgniteFuture<FieldsResult>>() {
-                            @Override public void applyx(IgniteFuture<FieldsResult> f)
+                        entry.getValue().listenAsync(new CIX1<IgniteInternalFuture<FieldsResult>>() {
+                            @Override public void applyx(IgniteInternalFuture<FieldsResult> f)
                                 throws IgniteCheckedException {
                                 f.get().closeIfNotShared(recipient);
                             }
@@ -193,7 +193,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param valType Value type.
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    public IgniteFuture<?> rebuildIndexes(Class<?> valType) {
+    public IgniteInternalFuture<?> rebuildIndexes(Class<?> valType) {
         return rebuildIndexes(valType.getName());
     }
 
@@ -203,7 +203,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param typeName Value type name.
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    public IgniteFuture<?> rebuildIndexes(String typeName) {
+    public IgniteInternalFuture<?> rebuildIndexes(String typeName) {
         if (!enterBusy())
             throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
 
@@ -220,7 +220,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      *
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    public IgniteFuture<?> rebuildAllIndexes() {
+    public IgniteInternalFuture<?> rebuildAllIndexes() {
         if (!enterBusy())
             throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
 
@@ -1488,7 +1488,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         Map<Long, GridFutureAdapter<QueryResult<K, V>>> futs = qryIters.get(sndId);
 
         if (futs != null) {
-            IgniteFuture<QueryResult<K, V>> fut;
+            IgniteInternalFuture<QueryResult<K, V>> fut;
 
             synchronized (futs) {
                 fut = futs.remove(reqId);
@@ -1614,7 +1614,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         Map<Long, GridFutureAdapter<FieldsResult>> futs = fieldsQryRes.get(sndId);
 
         if (futs != null) {
-            IgniteFuture<FieldsResult> fut;
+            IgniteInternalFuture<FieldsResult> fut;
 
             synchronized (futs) {
                 fut = futs.remove(reqId);
@@ -1708,14 +1708,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             Collection<Collection<CacheSqlMetadata>> res = new ArrayList<>(nodes.size() + 1);
 
-            IgniteFuture<Collection<Collection<CacheSqlMetadata>>> rmtFut = null;
+            IgniteInternalFuture<Collection<Collection<CacheSqlMetadata>>> rmtFut = null;
 
             // Get metadata from remote nodes.
             if (!nodes.isEmpty())
                 rmtFut = cctx.closures().callAsyncNoFailover(BROADCAST, F.asSet(job), nodes, true);
 
             // Get local metadata.
-            IgniteFuture<Collection<CacheSqlMetadata>> locFut = cctx.closures().callLocalSafe(job, true);
+            IgniteInternalFuture<Collection<CacheSqlMetadata>> locFut = cctx.closures().callLocalSafe(job, true);
 
             if (rmtFut != null)
                 res.addAll(rmtFut.get());
@@ -1889,7 +1889,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** {@inheritDoc} */
         @Override public Collection<CacheSqlMetadata> call() {
-            final GridKernalContext ctx = ((GridKernal) ignite).context();
+            final GridKernalContext ctx = ((IgniteKernal) ignite).context();
 
             Collection<String> cacheNames = F.viewReadOnly(ctx.cache().caches(),
                 new C1<GridCache<?, ?>, String>() {
@@ -2617,7 +2617,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<V> reloadAsync() {
+        @Override public IgniteInternalFuture<V> reloadAsync() {
             throw new UnsupportedOperationException();
         }
 
@@ -2659,7 +2659,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<V> getAsync() {
+        @Override public IgniteInternalFuture<V> getAsync() {
             return new GridFinishedFuture<V>(cctx.kernalContext(), getValue());
         }
 
@@ -2674,7 +2674,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<V> setAsync(V val, IgnitePredicate<CacheEntry<K, V>>... filter) {
+        @Override public IgniteInternalFuture<V> setAsync(V val, IgnitePredicate<CacheEntry<K, V>>... filter) {
             throw new UnsupportedOperationException();
         }
 
@@ -2684,7 +2684,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<V> setIfAbsentAsync(V val) {
+        @Override public IgniteInternalFuture<V> setIfAbsentAsync(V val) {
             throw new UnsupportedOperationException();
         }
 
@@ -2694,7 +2694,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<Boolean> setxAsync(V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        @Override public IgniteInternalFuture<Boolean> setxAsync(V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
             throw new UnsupportedOperationException();
         }
 
@@ -2704,7 +2704,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<Boolean> setxIfAbsentAsync(V val) {
+        @Override public IgniteInternalFuture<Boolean> setxIfAbsentAsync(V val) {
             throw new UnsupportedOperationException();
         }
 
@@ -2714,7 +2714,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<V> replaceAsync(V val) {
+        @Override public IgniteInternalFuture<V> replaceAsync(V val) {
             throw new UnsupportedOperationException();
         }
 
@@ -2724,7 +2724,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<Boolean> replacexAsync(V val) {
+        @Override public IgniteInternalFuture<Boolean> replacexAsync(V val) {
             throw new UnsupportedOperationException();
         }
 
@@ -2734,7 +2734,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<Boolean> replaceAsync(V oldVal, V newVal) {
+        @Override public IgniteInternalFuture<Boolean> replaceAsync(V oldVal, V newVal) {
             throw new UnsupportedOperationException();
         }
 
@@ -2744,7 +2744,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<V> removeAsync(IgnitePredicate<CacheEntry<K, V>>... filter) {
+        @Override public IgniteInternalFuture<V> removeAsync(IgnitePredicate<CacheEntry<K, V>>... filter) {
             throw new UnsupportedOperationException();
         }
 
@@ -2754,7 +2754,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<Boolean> removexAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        @Override public IgniteInternalFuture<Boolean> removexAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
             throw new UnsupportedOperationException();
         }
 
@@ -2764,7 +2764,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<Boolean> removeAsync(V val) {
+        @Override public IgniteInternalFuture<Boolean> removeAsync(V val) {
             throw new UnsupportedOperationException();
         }
 
@@ -2789,7 +2789,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<Boolean> lockAsync(long timeout,
+        @Override public IgniteInternalFuture<Boolean> lockAsync(long timeout,
             @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
             throw new UnsupportedOperationException();
         }

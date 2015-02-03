@@ -17,9 +17,8 @@
 
 package org.apache.ignite.visor.commands.ack
 
-import org.apache.ignite.internal.visor.misc.VisorAckTask
-
 import org.apache.ignite.cluster.ClusterGroupEmptyException
+import org.apache.ignite.internal.visor.misc.VisorAckTask
 
 import java.util.{HashSet => JavaHashSet}
 

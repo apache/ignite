@@ -20,10 +20,11 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 
 import java.util.*;
@@ -131,8 +132,9 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testAtomicLongConstantTopologyChange() throws Exception {
         try (IgniteAtomicLong s = grid(0).atomicLong(STRUCTURE_NAME, 1, true)) {
-            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
-                @Override public void apply() {
+            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+                @Override
+                public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {
                             String name = UUID.randomUUID().toString();
@@ -176,7 +178,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testAtomicLongConstantMultipleTopologyChange() throws Exception {
         try (IgniteAtomicLong s = grid(0).atomicLong(STRUCTURE_NAME, 1, true)) {
-            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {
@@ -245,8 +247,9 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testAtomicReferenceConstantTopologyChange() throws Exception {
         try (IgniteAtomicReference<Integer> s = grid(0).atomicReference(STRUCTURE_NAME, 1, true)) {
-            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
-                @Override public void apply() {
+            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+                @Override
+                public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {
                             String name = UUID.randomUUID().toString();
@@ -288,7 +291,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testAtomicReferenceConstantMultipleTopologyChange() throws Exception {
         try (IgniteAtomicReference<Integer> s = grid(0).atomicReference(STRUCTURE_NAME, 1, true)) {
-            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {
@@ -361,8 +364,9 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testAtomicStampedConstantTopologyChange() throws Exception {
         try (IgniteAtomicStamped<Integer, Integer> s = grid(0).atomicStamped(STRUCTURE_NAME, 1, 1, true)) {
-            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
-                @Override public void apply() {
+            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+                @Override
+                public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {
                             String name = UUID.randomUUID().toString();
@@ -417,7 +421,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testAtomicStampedConstantMultipleTopologyChange() throws Exception {
         try (IgniteAtomicStamped<Integer, Integer> s = grid(0).atomicStamped(STRUCTURE_NAME, 1, 1, true)) {
-            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {
@@ -503,7 +507,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     public void testCountDownLatchConstantTopologyChange() throws Exception {
         try (IgniteCountDownLatch s = grid(0).countDownLatch(STRUCTURE_NAME, Integer.MAX_VALUE, false, true)) {
             try {
-                IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+                IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                     @Override public void apply() {
                         try {
                             for (int i = 0; i < TOP_CHANGE_CNT; i++) {
@@ -553,7 +557,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     public void testCountDownLatchConstantMultipleTopologyChange() throws Exception {
         try (IgniteCountDownLatch s = grid(0).countDownLatch(STRUCTURE_NAME, Integer.MAX_VALUE, false, true)) {
             try {
-                IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+                IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                     @Override public void apply() {
                         try {
                             for (int i = 0; i < TOP_CHANGE_CNT; i++) {
@@ -633,7 +637,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         try (IgniteQueue<Integer> s = grid(0).queue(STRUCTURE_NAME, collectionConfiguration(), 0, true)) {
             s.put(1);
 
-            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {
@@ -677,7 +681,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         try (IgniteQueue<Integer> s = grid(0).queue(STRUCTURE_NAME, collectionConfiguration(), 0, true)) {
             s.put(1);
 
-            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {
@@ -741,7 +745,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testAtomicSequenceConstantTopologyChange() throws Exception {
         try (IgniteAtomicSequence s = grid(0).atomicSequence(STRUCTURE_NAME, 1, true)) {
-            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
                         String name = UUID.randomUUID().toString();
@@ -788,7 +792,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
         final AtomicInteger idx = new AtomicInteger(gridCount());
 
-        IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
             @Override public void apply() {
                 int id = idx.getAndIncrement();
 
@@ -836,7 +840,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testAtomicSequenceConstantMultipleTopologyChange() throws Exception {
         try (IgniteAtomicSequence s = grid(0).atomicSequence(STRUCTURE_NAME, 1, true)) {
-            IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
                         for (int i = 0; i < TOP_CHANGE_CNT; i++) {

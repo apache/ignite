@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -32,8 +31,8 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -45,7 +44,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
     private static final int GRID_CNT = 1;
 
     /** Grid kernal. */
-    private GridKernal grid;
+    private IgniteKernal grid;
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -54,7 +53,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid = (GridKernal)grid(0);
+        grid = (IgniteKernal)grid(0);
     }
 
     /** {@inheritDoc} */
@@ -134,10 +133,10 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
                 cache.get(key);
 
-                IgniteFuture<?> fut = grid.context().cache().context().partitionReleaseFuture(GRID_CNT + 1);
+                IgniteInternalFuture<?> fut = grid.context().cache().context().partitionReleaseFuture(GRID_CNT + 1);
 
-                fut.listenAsync(new CI1<IgniteFuture<?>>() {
-                    @Override public void apply(IgniteFuture<?> e) {
+                fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> e) {
                         latch.countDown();
                     }
                 });
@@ -197,9 +196,9 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
             GridCacheAdapter<String, Integer> internal = grid.internalCache();
 
-            IgniteFuture<?> nearFut = internal.context().mvcc().finishKeys(Collections.singletonList(key), 2);
+            IgniteInternalFuture<?> nearFut = internal.context().mvcc().finishKeys(Collections.singletonList(key), 2);
 
-            IgniteFuture<?> dhtFut = internal.context().near().dht().context().mvcc().finishKeys(
+            IgniteInternalFuture<?> dhtFut = internal.context().near().dht().context().mvcc().finishKeys(
                 Collections.singletonList(key), 2);
 
             assert !nearFut.isDone();
@@ -233,12 +232,12 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
         info("Start time: " + start);
 
-        IgniteFuture<?> fut = ctx.partitionReleaseFuture(GRID_CNT + 1);
+        IgniteInternalFuture<?> fut = ctx.partitionReleaseFuture(GRID_CNT + 1);
 
         assert fut != null;
 
-        fut.listenAsync(new CI1<IgniteFuture<?>>() {
-            @Override public void apply(IgniteFuture<?> e) {
+        fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> e) {
                 end.set(System.currentTimeMillis());
 
                 latch.countDown();
@@ -293,12 +292,12 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
             info("Start time: " + start);
 
-            IgniteFuture<?> fut = ctx.partitionReleaseFuture(GRID_CNT + 1);
+            IgniteInternalFuture<?> fut = ctx.partitionReleaseFuture(GRID_CNT + 1);
 
             assert fut != null;
 
-            fut.listenAsync(new CI1<IgniteFuture<?>>() {
-                @Override public void apply(IgniteFuture<?> e) {
+            fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> e) {
                     end.set(System.currentTimeMillis());
 
                     latch.countDown();

@@ -19,14 +19,14 @@ package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
 import net.sf.json.*;
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.server.handler.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.rest.request.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.security.*;
+import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.server.handler.*;
 import org.jetbrains.annotations.*;
 
 import javax.servlet.*;
@@ -35,8 +35,8 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.processors.rest.GridRestResponse.*;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
+import static org.apache.ignite.internal.processors.rest.GridRestResponse.*;
 
 /**
  * Jetty REST handler. The following URL format is supported:

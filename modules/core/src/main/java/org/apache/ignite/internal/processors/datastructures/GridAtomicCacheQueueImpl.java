@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -63,7 +62,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
                     break;
                 }
-                catch (CachePartialUpdateException e) {
+                catch (CachePartialUpdateCheckedException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else {
@@ -101,7 +100,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
                 while (true) {
                     try {
-                        T data = (T)cache.getAndRemove(key);
+                        T data = (T)cache.remove(key, null);
 
                         if (data != null)
                             return data;
@@ -110,7 +109,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
                             stop = U.currentTimeMillis() + RETRY_TIMEOUT;
 
                         while (U.currentTimeMillis() < stop ) {
-                            data = (T)cache.getAndRemove(key);
+                            data = (T)cache.remove(key, null);
 
                             if (data != null)
                                 return data;
@@ -118,7 +117,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
                         break;
                     }
-                    catch (CachePartialUpdateException e) {
+                    catch (CachePartialUpdateCheckedException e) {
                         if (cnt++ == MAX_UPDATE_RETRIES)
                             throw e;
                         else {
@@ -133,7 +132,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
             }
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
     }
 
@@ -162,11 +161,11 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
             while (true) {
                 try {
-                    cache.putAll(putMap);
+                    cache.putAll(putMap, null);
 
                     break;
                 }
-                catch (CachePartialUpdateException e) {
+                catch (CachePartialUpdateCheckedException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else {
@@ -180,14 +179,14 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
             return true;
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void removeItem(long rmvIdx) throws IgniteCheckedException {
-        Long idx = (Long)cache.invoke(queueKey, new RemoveProcessor(id, rmvIdx));
+        Long idx = (Long)cache.invoke(queueKey, new RemoveProcessor(id, rmvIdx)).get();
 
         if (idx != null) {
             checkRemoved(idx);
@@ -200,20 +199,20 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
             while (true) {
                 try {
-                    if (cache.remove(key))
+                    if (cache.removex(key, null))
                         return;
 
                     if (stop == 0)
                         stop = U.currentTimeMillis() + RETRY_TIMEOUT;
 
                     while (U.currentTimeMillis() < stop ) {
-                        if (cache.remove(key))
+                        if (cache.removex(key, null))
                             return;
                     }
 
                     break;
                 }
-                catch (CachePartialUpdateException e) {
+                catch (CachePartialUpdateCheckedException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else {
@@ -240,9 +239,9 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
         while (true) {
             try {
-                return (Long)cache.invoke(queueKey, c);
+                return (Long)cache.invoke(queueKey, c).get();
             }
-            catch (CachePartialUpdateException e) {
+            catch (CachePartialUpdateCheckedException e) {
                 if (cnt++ == MAX_UPDATE_RETRIES)
                     throw e;
                 else {

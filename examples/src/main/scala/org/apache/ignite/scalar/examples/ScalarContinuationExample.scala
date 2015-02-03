@@ -18,7 +18,8 @@
 package org.apache.ignite.scalar.examples
 
 import org.apache.ignite.compute.ComputeJobContext
-import org.apache.ignite.lang.{IgniteClosure, IgniteFuture}
+import org.apache.ignite.internal.IgniteInternalFuture
+import org.apache.ignite.lang.{IgniteFuture, IgniteClosure}
 import org.apache.ignite.resources.IgniteJobContextResource
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
@@ -39,7 +40,7 @@ import java.util
  * the more values it will be cached on remote nodes.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
+ * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
  */
 object ScalarContinuationExample {
     def main(args: Array[String]) {

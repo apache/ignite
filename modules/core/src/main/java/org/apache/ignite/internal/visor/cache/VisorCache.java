@@ -103,7 +103,7 @@ public class VisorCache implements Serializable {
 
         String cacheName = c.name();
 
-        GridCacheAdapter ca = ((GridKernal)g).internalCache(cacheName);
+        GridCacheAdapter ca = ((IgniteKernal)g).internalCache(cacheName);
 
         long swapSize;
         long swapKeys;

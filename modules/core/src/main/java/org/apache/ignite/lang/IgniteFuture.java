@@ -26,19 +26,19 @@ import java.util.concurrent.*;
  * Extension for standard {@link Future} interface. It adds simplified exception handling,
  * functional programming support and ability to listen for future completion via functional
  * callback.
- * @param <R> Type of the result for the future.
+ * @param <V> Type of the result for the future.
  */
-public interface IgniteFuture<R> {
+public interface IgniteFuture<V> extends Future<V> {
     /**
      * Synchronously waits for completion of the computation and
      * returns computation result.
      *
      * @return Computation result.
-     * @throws org.apache.ignite.IgniteInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
-     * @throws IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
-     * @throws IgniteCheckedException If computation failed.
+     * @throws IgniteInterruptedException Subclass of {@link IgniteException} thrown if the wait was interrupted.
+     * @throws IgniteFutureCancelledException Subclass of {@link IgniteException} throws if computation was cancelled.
+     * @throws IgniteException If computation failed.
      */
-    public R get() throws IgniteCheckedException;
+    @Override public V get() throws IgniteException;
 
     /**
      * Synchronously waits for completion of the computation for
@@ -47,12 +47,12 @@ public interface IgniteFuture<R> {
      *
      * @param timeout The maximum time to wait in milliseconds.
      * @return Computation result.
-     * @throws org.apache.ignite.IgniteInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
-     * @throws IgniteFutureTimeoutException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
-     * @throws IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
-     * @throws IgniteCheckedException If computation failed.
+     * @throws IgniteInterruptedException Subclass of {@link IgniteException} thrown if the wait was interrupted.
+     * @throws IgniteFutureCancelledException Subclass of {@link IgniteException} throws if computation was cancelled.
+     * @throws IgniteFutureTimeoutException Subclass of {@link IgniteException} thrown if the wait was timed out.
+     * @throws IgniteException If computation failed.
      */
-    public R get(long timeout) throws IgniteCheckedException;
+    public V get(long timeout)throws IgniteException;
 
     /**
      * Synchronously waits for completion of the computation for
@@ -61,34 +61,20 @@ public interface IgniteFuture<R> {
      * @param timeout The maximum time to wait.
      * @param unit The time unit of the {@code timeout} argument.
      * @return Computation result.
-     * @throws org.apache.ignite.IgniteInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
-     * @throws IgniteFutureTimeoutException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
-     * @throws IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
-     * @throws IgniteCheckedException If computation failed.
+     * @throws IgniteInterruptedException Subclass of {@link IgniteException} thrown if the wait was interrupted.
+     * @throws IgniteFutureCancelledException Subclass of {@link IgniteException} throws if computation was cancelled.
+     * @throws IgniteFutureTimeoutException Subclass of {@link IgniteException} thrown if the wait was timed out.
+     * @throws IgniteException If computation failed.
      */
-    public R get(long timeout, TimeUnit unit) throws IgniteCheckedException;
+    @Override public V get(long timeout, TimeUnit unit) throws IgniteException;
 
     /**
      * Cancels this future.
      *
      * @return {@code True} if future was canceled (i.e. was not finished prior to this call).
-     * @throws IgniteCheckedException If cancellation failed.
+     * @throws IgniteException If cancellation failed.
      */
-    public boolean cancel() throws IgniteCheckedException;
-
-    /**
-     * Checks if computation is done.
-     *
-     * @return {@code True} if computation is done, {@code false} otherwise.
-     */
-    public boolean isDone();
-
-    /**
-     * Returns {@code true} if this computation was cancelled before it completed normally.
-     *
-     * @return {@code True} if this computation was cancelled before it completed normally.
-     */
-    public boolean isCancelled();
+    public boolean cancel() throws IgniteException;
 
     /**
      * Gets start time for this future.
@@ -113,7 +99,7 @@ public interface IgniteFuture<R> {
      * immediately notified within the same thread.
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link IgniteSystemProperties#GG_FUT_SYNC_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#IGNITE_FUT_SYNC_NOTIFICATION} system property to {@code true}.
      *
      * @param syncNotify Flag to turn on or off synchronous listener notification.
      */
@@ -127,7 +113,7 @@ public interface IgniteFuture<R> {
      * immediately notified within the same thread.
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link IgniteSystemProperties#GG_FUT_SYNC_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#IGNITE_FUT_SYNC_NOTIFICATION} system property to {@code true}.
      *
      * @return Synchronous listener notification flag.
      */
@@ -142,7 +128,7 @@ public interface IgniteFuture<R> {
      * started the future, or in a different thread).
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link IgniteSystemProperties#GG_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#IGNITE_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
      *
      * @param concurNotify Flag to turn on or off concurrent listener notification.
      */
@@ -157,7 +143,7 @@ public interface IgniteFuture<R> {
      * started the future, or in a different thread).
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link IgniteSystemProperties#GG_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#IGNITE_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
      *
      * @return Concurrent listener notification flag
      */
@@ -168,7 +154,7 @@ public interface IgniteFuture<R> {
      *
      * @param lsnr Listener closure to register. If not provided - this method is no-op.
      */
-    public void listenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr);
+    public void listenAsync(@Nullable IgniteInClosure<? super IgniteFuture<V>> lsnr);
 
     /**
      * Removes given listeners from the future. If no listener is passed in, then all listeners
@@ -176,7 +162,7 @@ public interface IgniteFuture<R> {
      *
      * @param lsnr Listeners to remove.
      */
-    public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>>... lsnr);
+    public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<V>>... lsnr);
 
     /**
      * Make a chained future to convert result of this future (when complete) into a new format.
@@ -185,5 +171,6 @@ public interface IgniteFuture<R> {
      * @param doneCb Done callback that is applied to this future when it finishes to produce chained future result.
      * @return Chained future that finishes after this future completes and done callback is called.
      */
-    public <T> IgniteFuture<T> chain(IgniteClosure<? super IgniteFuture<R>, T> doneCb);
+    public <T> IgniteFuture<T> chain(IgniteClosure<? super IgniteFuture<V>, T> doneCb);
+
 }

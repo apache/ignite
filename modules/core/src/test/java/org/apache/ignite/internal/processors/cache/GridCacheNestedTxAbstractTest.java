@@ -24,8 +24,8 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -108,7 +108,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
     public void testTwoTx() throws Exception {
         final GridCache<String, Integer> c = grid(0).cache(null);
 
-        GridKernalContext ctx = ((GridKernal)grid(0)).context();
+        GridKernalContext ctx = ((IgniteKernal)grid(0)).context();
 
         c.put(CNTR_KEY, 0);
 
@@ -159,7 +159,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
 
                         tx.commit();
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         error("Failed tx thread", e);
                     }
                 }
@@ -252,7 +252,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
 
                             tx.commit();
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (IgniteException e) {
                             error("Failed tx thread", e);
                         }
 

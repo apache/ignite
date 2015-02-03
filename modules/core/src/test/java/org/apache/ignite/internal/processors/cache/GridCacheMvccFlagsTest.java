@@ -32,7 +32,7 @@ import static org.apache.ignite.cache.CacheMode.*;
  */
 public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
     /** Grid. */
-    private GridKernal grid;
+    private IgniteKernal grid;
 
     /**
      *
@@ -43,7 +43,7 @@ public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid = (GridKernal)grid();
+        grid = (IgniteKernal)grid();
     }
 
     /** {@inheritDoc} */

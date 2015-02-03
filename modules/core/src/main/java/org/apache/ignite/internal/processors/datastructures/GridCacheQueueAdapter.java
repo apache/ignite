@@ -21,10 +21,10 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;
@@ -57,7 +57,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     protected final GridCacheContext<?, ?> cctx;
 
     /** Cache. */
-    protected final IgniteCache cache;
+    protected final GridCacheAdapter cache;
 
     /** Queue name. */
     protected final String queueName;
@@ -98,7 +98,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         cap = hdr.capacity();
         collocated = hdr.collocated();
         queueKey = new GridCacheQueueHeaderKey(queueName);
-        cache = cctx.kernalContext().cache().jcache(cctx.name());
+        cache = cctx.kernalContext().cache().internalCache(cctx.name());
 
         log = cctx.logger(getClass());
 
@@ -137,24 +137,34 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public int size() {
-        GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.get(queueKey);
+        try {
+            GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.get(queueKey);
 
-        checkRemoved(hdr);
+            checkRemoved(hdr);
 
-        return hdr.size();
+            return hdr.size();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public T peek() throws IgniteException {
-        GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.get(queueKey);
+        try {
+            GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.get(queueKey);
 
-        checkRemoved(hdr);
+            checkRemoved(hdr);
 
-        if (hdr.empty())
-            return null;
+            if (hdr.empty())
+                return null;
 
-        return (T)cache.get(itemKey(hdr.head()));
+            return (T)cache.get(itemKey(hdr.head()));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -329,14 +339,19 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     @Override public void clear(int batchSize) throws IgniteException {
         A.ensure(batchSize >= 0, "Batch size cannot be negative: " + batchSize);
 
-        IgniteBiTuple<Long, Long> t = (IgniteBiTuple<Long, Long>)cache.invoke(queueKey, new ClearProcessor(id));
+        try {
+            IgniteBiTuple<Long, Long> t = (IgniteBiTuple<Long, Long>)cache.invoke(queueKey, new ClearProcessor(id)).get();
 
-        if (t == null)
-            return;
+            if (t == null)
+                return;
 
-        checkRemoved(t.get1());
+            checkRemoved(t.get1());
 
-        removeKeys(id, queueName, collocated, t.get1(), t.get2(), batchSize);
+            removeKeys(id, queueName, collocated, t.get1(), t.get2(), batchSize);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -372,6 +387,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @param startIdx Start item index.
      * @param endIdx End item index.
      * @param batchSize Batch size.
+     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     private void removeKeys(
@@ -381,6 +397,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         long startIdx,
         long endIdx,
         int batchSize)
+        throws IgniteCheckedException
     {
         Set<GridCacheQueueItemKey> keys = new HashSet<>(batchSize > 0 ? batchSize : 10);
 
@@ -593,19 +610,24 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             if (next == null)
                 throw new NoSuchElementException();
 
-            cur = next;
-            curIdx = idx;
+            try {
+                cur = next;
+                curIdx = idx;
 
-            idx++;
+                idx++;
 
-            if (rmvIdxs != null) {
-                while (F.contains(rmvIdxs, idx) && idx < endIdx)
-                    idx++;
+                if (rmvIdxs != null) {
+                    while (F.contains(rmvIdxs, idx) && idx < endIdx)
+                        idx++;
+                }
+
+                next = idx < endIdx ? (T)cache.get(itemKey(idx)) : null;
+
+                return cur;
             }
-
-            next = idx < endIdx ? (T)cache.get(itemKey(idx)) : null;
-
-            return cur;
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
         }
 
         /** {@inheritDoc} */

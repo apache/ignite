@@ -24,7 +24,6 @@ import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -33,11 +32,11 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 
 /**
@@ -213,10 +212,10 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
             info(">>> Waiting for preload futures...");
 
             GridCachePartitionExchangeManager<Object, Object> exchMgr
-                = ((GridKernal)g1).context().cache().context().exchange();
+                = ((IgniteKernal)g1).context().cache().context().exchange();
 
             // Wait for exchanges to complete.
-            for (IgniteFuture<?> fut : exchMgr.exchangeFutures())
+            for (IgniteInternalFuture<?> fut : exchMgr.exchangeFutures())
                 fut.get();
 
             CacheAffinity<Integer> aff = affinity(c1);

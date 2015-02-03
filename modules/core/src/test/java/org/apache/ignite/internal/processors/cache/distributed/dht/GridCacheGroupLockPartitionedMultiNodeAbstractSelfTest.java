@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 
@@ -70,7 +70,7 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
 
             fail("Exception should be thrown.");
         }
-        catch (IgniteCheckedException ignored) {
+        catch (IgniteException ignored) {
             // Expected exception.
         }
         finally {

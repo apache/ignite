@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;

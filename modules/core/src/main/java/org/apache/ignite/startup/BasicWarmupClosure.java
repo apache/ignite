@@ -20,13 +20,13 @@ package org.apache.ignite.startup;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.logger.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.text.*;
 import java.util.*;
@@ -191,10 +191,10 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
 
         Collection<Ignite> ignites = new LinkedList<>();
 
-        String old = System.getProperty(IgniteSystemProperties.GG_UPDATE_NOTIFIER);
+        String old = System.getProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER);
 
         try {
-            System.setProperty(IgniteSystemProperties.GG_UPDATE_NOTIFIER, "false");
+            System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
 
             TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -230,7 +230,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
             if (old == null)
                 old = "false";
 
-            System.setProperty(IgniteSystemProperties.GG_UPDATE_NOTIFIER, old);
+            System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, old);
         }
     }
 

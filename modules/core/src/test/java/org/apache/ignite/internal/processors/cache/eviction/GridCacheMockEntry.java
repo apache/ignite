@@ -19,11 +19,12 @@ package org.apache.ignite.internal.processors.cache.eviction;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -164,7 +165,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFuture<V> setAsync(V val,
+    @Nullable @Override public IgniteInternalFuture<V> setAsync(V val,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         // No-op.
         return null;
@@ -177,7 +178,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFuture<V> setIfAbsentAsync(V val) {
+    @Nullable @Override public IgniteInternalFuture<V> setIfAbsentAsync(V val) {
         // No-op.
         return null;
     }
@@ -190,7 +191,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFuture<Boolean> setxAsync(V val,
+    @Nullable @Override public IgniteInternalFuture<Boolean> setxAsync(V val,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         // No-op.
         return null;
@@ -203,7 +204,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFuture<Boolean> setxIfAbsentAsync(V val) {
+    @Nullable @Override public IgniteInternalFuture<Boolean> setxIfAbsentAsync(V val) {
         // No-op.
         return null;
     }
@@ -215,7 +216,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFuture<V> replaceAsync(V val) {
+    @Nullable @Override public IgniteInternalFuture<V> replaceAsync(V val) {
         // No-op.
         return null;
     }
@@ -227,7 +228,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFuture<Boolean> replacexAsync(V val) {
+    @Nullable @Override public IgniteInternalFuture<Boolean> replacexAsync(V val) {
         // No-op.
         return null;
     }
@@ -239,7 +240,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFuture<Boolean> replaceAsync(V oldVal, V newVal) {
+    @Nullable @Override public IgniteInternalFuture<Boolean> replaceAsync(V oldVal, V newVal) {
         // No-op.
         return null;
     }
@@ -252,7 +253,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFuture<V> removeAsync(
+    @Nullable @Override public IgniteInternalFuture<V> removeAsync(
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         // No-op.
         return null;
@@ -265,7 +266,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFuture<Boolean> removexAsync(
+    @Nullable @Override public IgniteInternalFuture<Boolean> removexAsync(
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         // No-op.
         return null;
@@ -278,7 +279,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFuture<Boolean> removeAsync(V val) {
+    @Nullable @Override public IgniteInternalFuture<Boolean> removeAsync(V val) {
         // No-op.
         return null;
     }
@@ -295,7 +296,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> lockAsync(long timeout,
+    @Override public IgniteInternalFuture<Boolean> lockAsync(long timeout,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         return new GridFinishedFuture<>(null, false);
     }
@@ -326,7 +327,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> reloadAsync() {
+    @Override public IgniteInternalFuture<V> reloadAsync() {
         return new GridFinishedFuture<>();
     }
 
@@ -336,7 +337,7 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> getAsync() {
+    @Override public IgniteInternalFuture<V> getAsync() {
         return new GridFinishedFuture<>();
     }
 

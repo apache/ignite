@@ -18,17 +18,13 @@
 package org.apache.ignite.internal.processors.streamer;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.streamer.*;
-import org.apache.ignite.streamer.router.*;
-import org.apache.ignite.thread.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -36,6 +32,10 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.streamer.*;
+import org.apache.ignite.streamer.router.*;
+import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -359,7 +359,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                     execFut.get();
                 }
                 catch (IgniteCheckedException e) {
-                    if (!e.hasCause(IgniteInterruptedException.class))
+                    if (!e.hasCause(IgniteInterruptedCheckedException.class))
                         U.warn(log, "Failed to wait for batch execution future completion (will ignore) " +
                             "[execFut=" + execFut + ", e=" + e + ']');
                 }
@@ -418,7 +418,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void addEvent(Object evt, Object... evts) throws IgniteCheckedException {
+    @Override public void addEvent(Object evt, Object... evts) {
         A.notNull(evt, "evt");
 
         if (!F.isEmpty(evts))
@@ -428,7 +428,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void addEventToStage(String stageName, Object evt, Object... evts) throws IgniteCheckedException {
+    @Override public void addEventToStage(String stageName, Object evt, Object... evts) {
         A.notNull(stageName, "stageName");
         A.notNull(evt, "evt");
 
@@ -439,14 +439,14 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void addEvents(Collection<?> evts) throws IgniteCheckedException {
+    @Override public void addEvents(Collection<?> evts) {
         A.ensure(!F.isEmpty(evts), "evts cannot be null or empty");
 
         addEventsToStage(firstStage, evts);
     }
 
     /** {@inheritDoc} */
-    @Override public void addEventsToStage(String stageName, Collection<?> evts) throws IgniteCheckedException {
+    @Override public void addEventsToStage(String stageName, Collection<?> evts) {
         A.notNull(stageName, "stageName");
         A.ensure(!F.isEmpty(evts), "evts cannot be empty or null");
 
@@ -454,6 +454,9 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
 
         try {
             addEvents0(null, 0, U.currentTimeMillis(), null, Collections.singleton(ctx.localNodeId()), stageName, evts);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             ctx.gateway().readUnlock();
@@ -569,7 +572,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
      * @param stageName Stage name.
      * @param evts Events.
      * @return Future.
-     * @throws org.apache.ignite.IgniteInterruptedException If failed.
+     * @throws IgniteInterruptedCheckedException If failed.
      */
     private GridStreamerStageExecutionFuture addEvents0(
         @Nullable IgniteUuid execId,
@@ -579,7 +582,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
         @Nullable Collection<UUID> execNodeIds,
         String stageName,
         Collection<?> evts
-    ) throws IgniteInterruptedException {
+    ) throws IgniteInterruptedCheckedException {
         assert !F.isEmpty(evts);
         assert !F.isEmpty(stageName);
 
@@ -610,7 +613,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
-                throw new IgniteInterruptedException(e);
+                throw new IgniteInterruptedCheckedException(e);
             }
         }
 
@@ -688,10 +691,9 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void onUndeploy(UUID leftNodeId, ClassLoader undeployedLdr) {
+    @Override public void onUndeploy(ClassLoader undeployedLdr) {
         if (log.isDebugEnabled())
-            log.debug("Processing undeployment event [leftNodeId=" + leftNodeId +
-                ", undeployedLdr=" + undeployedLdr + ']');
+            log.debug("Processing undeployment event undeployedLdr=" + undeployedLdr + ']');
 
         unwindUndeploys(undeployedLdr, true);
     }
@@ -751,8 +753,8 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
 
             execSvc.submit(worker);
 
-            batchFut.listenAsync(new CI1<IgniteFuture<Object>>() {
-                @Override public void apply(IgniteFuture<Object> t) {
+            batchFut.listenAsync(new CI1<IgniteInternalFuture<Object>>() {
+                @Override public void apply(IgniteInternalFuture<Object> t) {
                     BatchExecutionFuture fut = (BatchExecutionFuture)t;
 
                     if (log.isDebugEnabled())
@@ -812,7 +814,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                     sendWithRetries(dstNodeId, new GridStreamerResponse(futId, errBytes));
                 }
                 catch (IgniteCheckedException e) {
-                    if (!e.hasCause(ClusterTopologyException.class))
+                    if (!e.hasCause(ClusterTopologyCheckedException.class))
                         log.error("Failed to complete parent stage [futId=" + futId + ", err=" + e + ']');
                 }
             }
@@ -867,7 +869,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                 sendWithRetries(nodeId, new GridStreamerCancelRequest(cancelledFutId));
             }
             catch (IgniteCheckedException e) {
-                if (!e.hasCause(ClusterTopologyException.class))
+                if (!e.hasCause(ClusterTopologyCheckedException.class))
                     log.error("Failed to send streamer cancel request to remote node [nodeId=" + nodeId +
                         ", cancelledFutId=" + cancelledFutId + ']', e);
             }
@@ -895,7 +897,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                 addEvents0(null, fut.failoverAttemptCount() + 1, 0, null, Collections.singleton(ctx.localNodeId()),
                     fut.stageName(), fut.events());
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 e.printStackTrace();
 
                 assert false : "Failover submit should never attempt to acquire semaphore: " + fut + ']';
@@ -1122,7 +1124,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                         ", msg=" + msg + ", err=" + e + ']');
 
                 if (!ctx.discovery().alive(dstNodeId))
-                    throw new ClusterTopologyException("Failed to send message (destination node left grid): " +
+                    throw new ClusterTopologyCheckedException("Failed to send message (destination node left grid): " +
                         dstNodeId);
 
                 if (i == SEND_RETRY_COUNT - 1)
@@ -1277,7 +1279,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
                 long start = U.currentTimeMillis();
 

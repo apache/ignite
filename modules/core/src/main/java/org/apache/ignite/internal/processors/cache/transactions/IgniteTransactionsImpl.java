@@ -21,10 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -56,7 +55,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             cfg.getDefaultTxTimeout(),
             0,
             false
-        );
+        ).proxy();
     }
 
     /** {@inheritDoc} */
@@ -72,7 +71,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             cfg.getDefaultTxTimeout(),
             0,
             false
-        );
+        ).proxy();
     }
 
     /** {@inheritDoc} */
@@ -89,9 +88,88 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             timeout,
             txSize,
             false
-        );
+        ).proxy();
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteInternalTx txStartEx(
+        GridCacheContext ctx,
+        IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation,
+        long timeout,
+        int txSize)
+    {
+        A.notNull(concurrency, "concurrency");
+        A.notNull(isolation, "isolation");
+        A.ensure(timeout >= 0, "timeout cannot be negative");
+        A.ensure(txSize >= 0, "transaction size cannot be negative");
+
+        return txStart0(concurrency,
+            isolation,
+            timeout,
+            txSize,
+            ctx.system());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalTx txStartEx(
+        GridCacheContext ctx,
+        IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation)
+    {
+        A.notNull(concurrency, "concurrency");
+        A.notNull(isolation, "isolation");
+
+        TransactionsConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
+
+        return txStart0(concurrency,
+            isolation,
+            cfg.getDefaultTxTimeout(),
+            0,
+            ctx.system());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalTx txStartAffinity(GridCacheContext ctx,
+        Object affinityKey,
+        IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation,
+        long timeout,
+        int txSize)
+        throws IgniteCheckedException
+    {
+        return txStartGroupLock(ctx,
+            affinityKey,
+            concurrency,
+            isolation,
+            false,
+            timeout,
+            txSize,
+            ctx.system());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalTx txStartPartitionEx(GridCacheContext ctx,
+        int partId,
+        IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation,
+        long timeout,
+        int txSize)
+        throws IgniteCheckedException
+    {
+        Object grpLockKey = ctx.affinity().partitionAffinityKey(partId);
+
+        return txStartGroupLock(ctx,
+            grpLockKey,
+            concurrency,
+            isolation,
+            true,
+            timeout,
+            txSize,
+            ctx.system());
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteTx txStartSystem(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
         long timeout, int txSize) {
         A.notNull(concurrency, "concurrency");
@@ -105,7 +183,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             timeout,
             txSize,
             true
-        );
+        ).proxy();
     }
 
     /**
@@ -116,7 +194,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
      * @param sys System flag.
      * @return Transaction.
      */
-    private IgniteTx txStart0(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
+    private IgniteInternalTx txStart0(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
         long timeout, int txSize, boolean sys) {
         TransactionsConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
 
@@ -124,7 +202,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             throw new IllegalArgumentException("SERIALIZABLE isolation level is disabled (to enable change " +
                 "'txSerializableEnabled' configuration property)");
 
-        IgniteTxEx<K, V> tx = (IgniteTxEx<K, V>)cctx.tm().userTx();
+        IgniteInternalTx<K, V> tx = (IgniteInternalTx<K, V>)cctx.tm().userTx();
 
         if (tx != null)
             throw new IllegalStateException("Failed to start new transaction " +
@@ -146,26 +224,36 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
         assert tx != null;
 
-        // Wrap into proxy.
-        return new IgniteTxProxyImpl<>(tx, cctx, false);
-
+        return tx;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteTx txStartAffinity(String cacheName, Object affinityKey, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteException {
         GridCacheAdapter<Object, Object> cache = cctx.kernalContext().cache().internalCache(cacheName);
 
         if (cache == null)
             throw new IllegalArgumentException("Failed to find cache with given name (cache is not configured): " +
                 cacheName);
 
-        return txStartGroupLock(cache.context(), affinityKey, concurrency, isolation, false, timeout, txSize, false);
+        try {
+            return txStartGroupLock(cache.context(),
+                affinityKey,
+                concurrency,
+                isolation,
+                false,
+                timeout,
+                txSize,
+                false).proxy();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteTx txStartPartition(String cacheName, int partId, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteException {
         GridCacheAdapter<Object, Object> cache = cctx.kernalContext().cache().internalCache(cacheName);
 
         if (cache == null)
@@ -174,12 +262,25 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
         Object grpLockKey = cache.context().affinity().partitionAffinityKey(partId);
 
-        return txStartGroupLock(cache.context(), grpLockKey, concurrency, isolation, true, timeout, txSize, false);
+        try {
+            return txStartGroupLock(cache.context(),
+                grpLockKey,
+                concurrency,
+                isolation,
+                true,
+                timeout,
+                txSize,
+                false).proxy();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /**
      * Internal method to start group-lock transaction.
      *
+     * @param ctx Cache context.
      * @param grpLockKey Group lock key.
      * @param concurrency Transaction concurrency control.
      * @param isolation Transaction isolation level.
@@ -193,10 +294,10 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
-    private IgniteTx txStartGroupLock(GridCacheContext ctx, Object grpLockKey, IgniteTxConcurrency concurrency,
+    private IgniteInternalTx txStartGroupLock(GridCacheContext ctx, Object grpLockKey, IgniteTxConcurrency concurrency,
         IgniteTxIsolation isolation, boolean partLock, long timeout, int txSize, boolean sys)
         throws IllegalStateException, IgniteCheckedException {
-        IgniteTx tx = cctx.tm().userTx();
+        IgniteInternalTx tx = cctx.tm().userTx();
 
         if (tx != null)
             throw new IllegalStateException("Failed to start new transaction " +
@@ -221,7 +322,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         if (ctx.hasFlag(SYNC_COMMIT))
             tx0.syncCommit(true);
 
-        IgniteFuture<?> lockFut = tx0.groupLockAsync(ctx, (Collection)F.asList(grpLockKey));
+        IgniteInternalFuture<?> lockFut = tx0.groupLockAsync(ctx, (Collection)F.asList(grpLockKey));
 
         try {
             lockFut.get();
@@ -232,13 +333,14 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             throw e;
         }
 
-        // Wrap into proxy.
-        return new IgniteTxProxyImpl<>(tx0, cctx, false);
+        return tx0;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteTx tx() {
-        return cctx.tm().userTx();
+        IgniteInternalTx tx = cctx.tm().userTx();
+
+        return tx != null ? tx.proxy() : null;
     }
 
     /** {@inheritDoc} */

@@ -21,11 +21,11 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
@@ -104,8 +104,8 @@ public class GridCacheMvccManagerSelfTest extends GridCommonAbstractTest {
             tx.commit();
 
             for (int i = 0; i < gridCnt; i++) {
-                assert ((GridKernal)grid(i)).internalCache().context().mvcc().localCandidates().isEmpty();
-                assert ((GridKernal)grid(i)).internalCache().context().mvcc().remoteCandidates().isEmpty();
+                assert ((IgniteKernal)grid(i)).internalCache().context().mvcc().localCandidates().isEmpty();
+                assert ((IgniteKernal)grid(i)).internalCache().context().mvcc().remoteCandidates().isEmpty();
             }
         }
         finally {

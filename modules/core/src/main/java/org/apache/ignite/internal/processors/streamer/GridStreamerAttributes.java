@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.streamer;
 
-import org.apache.ignite.lang.*;
-import org.apache.ignite.streamer.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.streamer.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -71,7 +71,7 @@ public class GridCacheTxFinishSync<K, V> {
      * @param threadId Thread ID to wait ack.
      * @return {@code null} if ack was received or future that will be completed when ack is received.
      */
-    public IgniteFuture<?> awaitAckAsync(UUID nodeId, long threadId) {
+    public IgniteInternalFuture<?> awaitAckAsync(UUID nodeId, long threadId) {
         ThreadFinishSync threadSync = threadMap.get(threadId);
 
         if (threadSync == null)
@@ -150,7 +150,7 @@ public class GridCacheTxFinishSync<K, V> {
          * @param nodeId Node ID to wait ack from.
          * @return {@code null} if ack has been received or future that will be completed when ack is received.
          */
-        public IgniteFuture<?> awaitAckAsync(UUID nodeId) {
+        public IgniteInternalFuture<?> awaitAckAsync(UUID nodeId) {
             TxFinishSync sync = nodeMap.get(nodeId);
 
             if (sync == null)
@@ -233,7 +233,7 @@ public class GridCacheTxFinishSync<K, V> {
          *
          * @return {@code null} if ack has been received, or future that will be completed when ack is received.
          */
-        @Nullable public IgniteFuture<?> awaitAckAsync() {
+        @Nullable public IgniteInternalFuture<?> awaitAckAsync() {
             synchronized (this) {
                 if (cnt == 0)
                     return null;

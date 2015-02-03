@@ -25,7 +25,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -115,7 +114,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         assertSetIteratorsCleared();
 
         for (int i = 0; i < gridCount(); i++) {
-            GridKernal grid = (GridKernal)grid(i);
+            IgniteKernal grid = (IgniteKernal)grid(i);
 
             for (GridCache cache : grid.caches()) {
                 CacheDataStructuresManager dsMgr = grid.internalCache(cache.name()).context().dataStructures();
@@ -138,7 +137,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      */
     private void assertSetIteratorsCleared() {
         for (int i = 0; i < gridCount(); i++) {
-            GridKernal grid = (GridKernal) grid(i);
+            IgniteKernal grid = (IgniteKernal) grid(i);
 
             for (GridCache cache : grid.caches()) {
                 GridCacheQueryManager queries = grid.internalCache(cache.name()).context().queries();
@@ -666,7 +665,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         assertNotNull(set0);
 
-        Collection<IgniteFuture> futs = new ArrayList<>();
+        Collection<IgniteInternalFuture> futs = new ArrayList<>();
 
         final int THREADS_PER_NODE = 5;
         final int KEY_RANGE = 10_000;
@@ -719,7 +718,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
             }, THREADS_PER_NODE, "testSetMultithreaded"));
         }
 
-        for (IgniteFuture fut : futs)
+        for (IgniteInternalFuture fut : futs)
             fut.get();
     }
 
@@ -775,7 +774,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         final AtomicInteger val = new AtomicInteger(10_000);
 
-        IgniteFuture<?> fut;
+        IgniteInternalFuture<?> fut;
 
         try {
             fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
@@ -808,7 +807,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         for (int i = 0; i < gridCount(); i++) {
             Iterator<GridCacheEntryEx<Object, Object>> entries =
-                    ((GridKernal)grid(i)).context().cache().internalCache(cctx.name()).map().allEntries0().iterator();
+                    ((IgniteKernal)grid(i)).context().cache().internalCache(cctx.name()).map().allEntries0().iterator();
 
             while (entries.hasNext()) {
                 GridCacheEntryEx<Object, Object> entry = entries.next();

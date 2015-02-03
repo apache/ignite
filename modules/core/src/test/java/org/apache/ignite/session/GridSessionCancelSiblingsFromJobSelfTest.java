@@ -20,11 +20,11 @@ package org.apache.ignite.session;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -187,7 +187,7 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
         private volatile int taskNum = -1;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) {
             if (log.isInfoEnabled())
                 log.info("Splitting job [task=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
 
@@ -210,7 +210,7 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
 
                     /** {@inheritDoc} */
                     @SuppressWarnings({"BusyWait"})
-                    @Override public Object execute() throws IgniteCheckedException {
+                    @Override public Object execute() {
                         assert taskSes != null;
 
                         thread = Thread.currentThread();
@@ -272,13 +272,12 @@ public class GridSessionCancelSiblingsFromJobSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received)
-            throws IgniteCheckedException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received) {
             return received.size() == SPLIT_COUNT ? ComputeJobResultPolicy.REDUCE : ComputeJobResultPolicy.WAIT;
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public String reduce(List<ComputeJobResult> results) {
             if (log.isInfoEnabled())
                 log.info("Aggregating job [job=" + this + ", results=" + results + ']');
 

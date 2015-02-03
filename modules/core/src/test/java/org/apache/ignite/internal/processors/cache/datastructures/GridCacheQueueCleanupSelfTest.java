@@ -24,7 +24,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.datastructures.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 
@@ -179,7 +178,7 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
 
                 for (int i = 0; i < gridCount(); i++) {
                     GridCacheAdapter<Object, Object> cache =
-                        ((GridKernal)grid(i)).context().cache().internalCache(queueCacheName);
+                        ((IgniteKernal)grid(i)).context().cache().internalCache(queueCacheName);
 
                     Iterator<GridCacheEntryEx<Object, Object>> entries = cache.map().allEntries0().iterator();
 
@@ -210,7 +209,7 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
      * @param queueName Queue name.
      * @return Future completing when thread finishes.
      */
-    private IgniteFuture<?> startAddPollThread(final Ignite ignite, final AtomicBoolean stop, final String queueName) {
+    private IgniteInternalFuture<?> startAddPollThread(final Ignite ignite, final AtomicBoolean stop, final String queueName) {
         return GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 IgniteQueue<Integer> queue = ignite.queue(queueName, collectionConfiguration(), 0, true);

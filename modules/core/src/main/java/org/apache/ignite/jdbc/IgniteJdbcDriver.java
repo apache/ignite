@@ -66,7 +66,7 @@ import java.util.logging.*;
  * Note that cache name is case sensitive and you have to always specify it in quotes.
  * <h1 class="header">Dependencies</h1>
  * JDBC driver is located in main GridGain JAR and depends on all libraries located in
- * {@code GRIDGAIN_HOME/libs} folder. So if you are using JDBC driver in any external tool,
+ * {@code IGNITE_HOME/libs} folder. So if you are using JDBC driver in any external tool,
  * you have to add main GridGain JAR will all dependencies to its classpath.
  * <h1 class="header">Configuration</h1>
  * Internally JDBC driver <b>is based on GridGain Java client</b>. Therefore, all client

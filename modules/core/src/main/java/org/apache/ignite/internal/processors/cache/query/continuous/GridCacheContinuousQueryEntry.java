@@ -20,13 +20,14 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.event.*;
@@ -290,7 +291,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> getAsync() {
+    @Override public IgniteInternalFuture<V> getAsync() {
         assert impl != null;
 
         ctx.denyOnFlag(LOCAL);
@@ -308,7 +309,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> reloadAsync() {
+    @Override public IgniteInternalFuture<V> reloadAsync() {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -390,7 +391,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> setAsync(V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+    @Override public IgniteInternalFuture<V> setAsync(V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -408,7 +409,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> setIfAbsentAsync(V val) {
+    @Override public IgniteInternalFuture<V> setIfAbsentAsync(V val) {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -427,7 +428,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> setxAsync(V val,
+    @Override public IgniteInternalFuture<Boolean> setxAsync(V val,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         assert impl != null;
 
@@ -446,7 +447,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> setxIfAbsentAsync(V val) {
+    @Override public IgniteInternalFuture<Boolean> setxIfAbsentAsync(V val) {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -464,7 +465,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> replaceAsync(V val) {
+    @Override public IgniteInternalFuture<V> replaceAsync(V val) {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -482,7 +483,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> replacexAsync(V val) {
+    @Override public IgniteInternalFuture<Boolean> replacexAsync(V val) {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -500,7 +501,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> replaceAsync(V oldVal, V newVal) {
+    @Override public IgniteInternalFuture<Boolean> replaceAsync(V oldVal, V newVal) {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -519,7 +520,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> removeAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+    @Override public IgniteInternalFuture<V> removeAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -537,7 +538,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> removexAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+    @Override public IgniteInternalFuture<Boolean> removexAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -555,7 +556,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> removeAsync(V val) {
+    @Override public IgniteInternalFuture<Boolean> removeAsync(V val) {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -600,7 +601,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> lockAsync(long timeout,
+    @Override public IgniteInternalFuture<Boolean> lockAsync(long timeout,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         assert impl != null;
 

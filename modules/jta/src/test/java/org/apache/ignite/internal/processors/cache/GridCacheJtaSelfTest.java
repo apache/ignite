@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.jta.*;
 import org.apache.ignite.configuration.*;
@@ -91,9 +90,9 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
      *
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class TestTmLookup implements GridCacheTmLookup {
+    public static class TestTmLookup implements CacheTmLookup {
         /** {@inheritDoc} */
-        @Override public TransactionManager getTm() throws IgniteCheckedException {
+        @Override public TransactionManager getTm() {
             return jotm.getTransactionManager();
         }
     }

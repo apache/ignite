@@ -36,21 +36,24 @@ import org.apache.ignite.internal.managers.failover.*;
 import org.apache.ignite.internal.managers.indexing.*;
 import org.apache.ignite.internal.managers.loadbalancer.*;
 import org.apache.ignite.internal.managers.securesession.*;
+import org.apache.ignite.internal.managers.security.*;
 import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.email.*;
+import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
-import org.apache.ignite.internal.processors.interop.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.port.*;
+import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.rest.*;
@@ -61,8 +64,10 @@ import org.apache.ignite.internal.processors.session.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
+import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.plugin.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -139,7 +144,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Grid instance.
      */
-    public GridEx grid();
+    public IgniteEx grid();
 
     /**
      * Gets grid configuration.
@@ -329,13 +334,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Portable processor.
      */
     public GridPortableProcessor portable();
-
-    /**
-     * Gets interop processor.
-     *
-     * @return Interop processor.
-     */
-    public GridInteropProcessor interop();
 
     /**
      * Gets query processor.

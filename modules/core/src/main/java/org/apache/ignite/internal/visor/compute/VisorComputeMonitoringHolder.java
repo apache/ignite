@@ -47,7 +47,7 @@ public class VisorComputeMonitoringHolder {
      * @param g grid.
      * @param visorKey unique Visor instance key.
      */
-    public void startCollect(GridEx g, String visorKey) {
+    public void startCollect(IgniteEx g, String visorKey) {
         synchronized(listenVisor) {
             if (cleanupStopped) {
                 scheduleCleanupJob(g);
@@ -66,7 +66,7 @@ public class VisorComputeMonitoringHolder {
      * @param g grid.
      * @return {@code true} if task events should remain enabled.
      */
-    private boolean tryDisableEvents(GridEx g) {
+    private boolean tryDisableEvents(IgniteEx g) {
         if (!listenVisor.values().contains(true)) {
             listenVisor.clear();
 
@@ -82,7 +82,7 @@ public class VisorComputeMonitoringHolder {
      * @param g grid.
      * @param visorKey uniq Visor instance key.
      */
-    public void stopCollect(GridEx g, String visorKey) {
+    public void stopCollect(IgniteEx g, String visorKey) {
         synchronized(listenVisor) {
             listenVisor.remove(visorKey);
 
@@ -94,8 +94,8 @@ public class VisorComputeMonitoringHolder {
      * Schedule cleanup process for events monitoring.
      * @param g grid.
      */
-    private void scheduleCleanupJob(final GridEx g) {
-        ((GridKernal)g).context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(CLEANUP_TIMEOUT) {
+    private void scheduleCleanupJob(final IgniteEx g) {
+        ((IgniteKernal)g).context().timeout().addTimeoutObject(new GridTimeoutObjectAdapter(CLEANUP_TIMEOUT) {
             @Override public void onTimeout() {
                 synchronized(listenVisor) {
                     if (tryDisableEvents(g)) {

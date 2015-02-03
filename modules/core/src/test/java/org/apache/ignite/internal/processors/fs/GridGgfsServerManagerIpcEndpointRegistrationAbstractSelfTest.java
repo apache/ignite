@@ -22,21 +22,21 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.internal.processors.port.*;
 import org.apache.ignite.internal.util.ipc.loopback.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.fs.IgniteFsConfiguration.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.fs.IgniteFsConfiguration.*;
 
 /**
  * Base test class for {@link GridGgfsServer} checking IPC endpoint registrations.
@@ -96,15 +96,15 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
      * @return Tuple2 where (tcp endpoints count, shmem endpoints count).
      */
     protected T2<Integer, Integer> checkRegisteredIpcEndpoints() throws Exception {
-        GridKernalContext ctx = ((GridKernal)grid()).context();
+        GridKernalContext ctx = ((IgniteKernal)grid()).context();
 
         int tcp = 0;
         int shmem = 0;
 
         for (GridPortRecord record : ctx.ports().records()) {
-            if (record.clazz() == GridIpcSharedMemoryServerEndpoint.class)
+            if (record.clazz() == IpcSharedMemoryServerEndpoint.class)
                 shmem++;
-            else if (record.clazz() == GridIpcServerTcpEndpoint.class)
+            else if (record.clazz() == IpcServerTcpEndpoint.class)
                 tcp++;
         }
 

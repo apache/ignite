@@ -5,7 +5,7 @@ Apache Ignite AOP module provides capability to turn any Java method to a distri
 adding @Gridify annotation to it.
 
 To enable AOP module when starting a standalone node, move 'optional/ignite-aop' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing AOP Module In Maven Project

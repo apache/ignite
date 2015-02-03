@@ -32,7 +32,7 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
     private static final byte[] BIG = new byte[2048];
 
     static {
-        System.setProperty(GG_MARSHAL_BUFFERS_RECHECK, "1000");
+        System.setProperty(IGNITE_MARSHAL_BUFFERS_RECHECK, "1000");
     }
 
     /**

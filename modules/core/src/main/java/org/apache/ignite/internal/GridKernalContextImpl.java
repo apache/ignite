@@ -39,6 +39,7 @@ import org.apache.ignite.internal.managers.securesession.*;
 import org.apache.ignite.internal.managers.security.*;
 import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.dr.os.*;
 import org.apache.ignite.internal.processors.clock.*;
@@ -46,14 +47,15 @@ import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.email.*;
+import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
-import org.apache.ignite.internal.processors.interop.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.port.*;
+import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.rest.*;
@@ -62,12 +64,15 @@ import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;
 import org.apache.ignite.internal.processors.spring.*;
+import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
+import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -256,10 +261,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridInteropProcessor interopProc;
-
-    /** */
-    @GridToStringExclude
     private IgniteSpringProcessor spring;
 
     /** */
@@ -271,7 +272,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private List<GridComponent> comps = new LinkedList<>();
 
     /** */
-    private GridEx grid;
+    private IgniteEx grid;
 
     /** */
     private ExecutorService utilityCachePool;
@@ -325,7 +326,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(GridLoggerProxy log,
-        GridEx grid,
+        IgniteEx grid,
         IgniteConfiguration cfg,
         GridKernalGateway gw,
         ExecutorService utilityCachePool,
@@ -449,8 +450,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             hadoopProc = (IgniteHadoopProcessorAdapter)comp;
         else if (comp instanceof GridPortableProcessor)
             portableProc = (GridPortableProcessor)comp;
-        else if (comp instanceof GridInteropProcessor)
-            interopProc = (GridInteropProcessor)comp;
         else if (comp instanceof IgnitePluginProcessor)
             pluginProc = (IgnitePluginProcessor)comp;
         else if (comp instanceof GridQueryProcessor)
@@ -503,7 +502,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridEx grid() {
+    @Override public IgniteEx grid() {
         return grid;
     }
 
@@ -704,11 +703,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridInteropProcessor interop() {
-        return interopProc;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridQueryProcessor query() {
         return qryProc;
     }
@@ -785,7 +779,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public boolean isDaemon() {
-        return config().isDaemon() || "true".equalsIgnoreCase(System.getProperty(GG_DAEMON));
+        return config().isDaemon() || "true".equalsIgnoreCase(System.getProperty(IGNITE_DAEMON));
     }
 
     /** {@inheritDoc} */
@@ -900,7 +894,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            return GridGainEx.gridx(stash.get()).context();
+            return IgnitionEx.gridx(stash.get()).context();
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

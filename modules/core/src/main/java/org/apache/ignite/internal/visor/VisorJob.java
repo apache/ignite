@@ -20,8 +20,8 @@ package org.apache.ignite.internal.visor;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
@@ -31,7 +31,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
  */
 public abstract class VisorJob<A, R> extends ComputeJobAdapter {
     @IgniteInstanceResource
-    protected transient GridEx g;
+    protected transient IgniteEx g;
 
     /** Job start time. */
     protected transient long start;
@@ -51,7 +51,7 @@ public abstract class VisorJob<A, R> extends ComputeJobAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object execute() throws IgniteCheckedException {
+    @Nullable @Override public Object execute() {
         start = U.currentTimeMillis();
 
         A arg = argument(0);
@@ -71,7 +71,8 @@ public abstract class VisorJob<A, R> extends ComputeJobAdapter {
     /**
      * Execution logic of concrete task.
      *
+     * @param arg Task argument.
      * @return Result.
      */
-    protected abstract R run(@Nullable A arg) throws IgniteCheckedException;
+    protected abstract R run(@Nullable A arg) throws IgniteException;
 }

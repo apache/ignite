@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.nodestart.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -57,7 +57,7 @@ public class GridNodeStartUtilsSelfTest extends GridCommonAbstractTest {
                 assert "passwd1".equals(host.get(PASSWD));
                 assert new File("key1").equals(host.get(KEY));
                 assert (Integer)host.get(NODES) == 1;
-                assert "ggHome1".equals(host.get(GG_HOME));
+                assert "ggHome1".equals(host.get(IGNITE_HOME));
                 assert "cfg1".equals(host.get(CFG));
                 assert "script1".equals(host.get(SCRIPT));
             }
@@ -67,7 +67,7 @@ public class GridNodeStartUtilsSelfTest extends GridCommonAbstractTest {
                 assert "passwd2".equals(host.get(PASSWD));
                 assert new File("key2").equals(host.get(KEY));
                 assert (Integer)host.get(NODES) == 2;
-                assert "ggHome2".equals(host.get(GG_HOME));
+                assert "ggHome2".equals(host.get(IGNITE_HOME));
                 assert "cfg2".equals(host.get(CFG));
                 assert "script2".equals(host.get(SCRIPT));
             }
@@ -82,7 +82,7 @@ public class GridNodeStartUtilsSelfTest extends GridCommonAbstractTest {
         assert "passwd3".equals(dflts.get(PASSWD));
         assert new File("key3").equals(dflts.get(KEY));
         assert (Integer)dflts.get(NODES) == 3;
-        assert "ggHome3".equals(dflts.get(GG_HOME));
+        assert "ggHome3".equals(dflts.get(IGNITE_HOME));
         assert "cfg3".equals(dflts.get(CFG));
         assert "script3".equals(dflts.get(SCRIPT));
     }

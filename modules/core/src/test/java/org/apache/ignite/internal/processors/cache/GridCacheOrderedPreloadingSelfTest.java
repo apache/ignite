@@ -21,10 +21,10 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
@@ -137,7 +137,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
 
             // For first node in topology replicated preloader gets completed right away.
             for (int i = 1; i < GRID_CNT; i++) {
-                GridKernal kernal = (GridKernal)grid(i);
+                IgniteKernal kernal = (IgniteKernal)grid(i);
 
                 GridFutureAdapter<?> fut1 = (GridFutureAdapter<?>)kernal.internalCache(FIRST_CACHE_NAME).preloader()
                     .syncFuture();

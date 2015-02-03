@@ -308,7 +308,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
      * @throws IgniteCheckedException In case of error.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        System.setProperty(IgniteSystemProperties.GG_UPDATE_NOTIFIER, "false");
+        System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
 
         System.out.println("Starting master node [params=" + Arrays.toString(args) + ']');
 

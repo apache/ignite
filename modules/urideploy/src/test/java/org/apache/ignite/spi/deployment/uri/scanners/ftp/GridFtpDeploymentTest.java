@@ -20,12 +20,13 @@ package org.apache.ignite.spi.deployment.uri.scanners.ftp;
 import org.apache.ignite.spi.deployment.uri.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.spi.*;
+
 import java.util.*;
 
 /**
  * Test for FTP deployment.
  */
-@GridSpiTest(spi = GridUriDeploymentSpi.class, group = "Deployment SPI")
+@GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
 public class GridFtpDeploymentTest extends GridUriDeploymentAbstractSelfTest {
     /**
      * @throws Exception  If failed.

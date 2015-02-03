@@ -22,12 +22,12 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.fs.common.*;
-import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.fs.hadoop.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 
 import java.io.*;
@@ -39,7 +39,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
+import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.*;
 
 /**
  * Test interaction between a GGFS client and a GGFS server.
@@ -117,7 +117,7 @@ public class GridGgfsHadoopFileSystemClientSelfTest extends GridGgfsCommonAbstra
     /**
      * Test output stream deferred exception (GG-4440).
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws Exception If failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testOutputStreamDeferredException() throws Exception {
@@ -164,7 +164,7 @@ public class GridGgfsHadoopFileSystemClientSelfTest extends GridGgfsCommonAbstra
      */
     @SuppressWarnings("ConstantConditions")
     private void switchHandlerErrorFlag(boolean flag) throws Exception {
-        IgniteFsProcessorAdapter ggfsProc = ((GridKernal)grid(0)).context().ggfs();
+        IgniteFsProcessorAdapter ggfsProc = ((IgniteKernal)grid(0)).context().ggfs();
 
         Map<String, GridGgfsContext> ggfsMap = getField(ggfsProc, "ggfsCache");
 

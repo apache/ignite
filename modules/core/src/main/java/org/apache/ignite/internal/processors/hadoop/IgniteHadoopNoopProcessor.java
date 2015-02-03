@@ -18,9 +18,8 @@
 package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.future.*;
 
 /**
@@ -50,7 +49,7 @@ public class IgniteHadoopNoopProcessor extends IgniteHadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
+    @Override public IgniteInternalFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
         return new GridFinishedFutureEx<>(new IgniteCheckedException("Hadoop is not available."));
     }
 
@@ -65,7 +64,7 @@ public class IgniteHadoopNoopProcessor extends IgniteHadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<?> finishFuture(GridHadoopJobId jobId) throws IgniteCheckedException {
         return null;
     }
 

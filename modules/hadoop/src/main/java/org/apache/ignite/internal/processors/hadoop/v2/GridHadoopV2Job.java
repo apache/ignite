@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.hadoop.v2;
 
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapred.JobID;
@@ -38,6 +37,7 @@ import org.jdk8.backport.*;
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.Queue;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.processors.hadoop.GridHadoopUtils.*;

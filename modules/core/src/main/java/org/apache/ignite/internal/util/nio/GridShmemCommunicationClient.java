@@ -19,10 +19,10 @@ package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
-import org.jetbrains.annotations.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -33,7 +33,7 @@ import java.util.*;
  */
 public class GridShmemCommunicationClient extends GridAbstractCommunicationClient {
     /** */
-    private final GridIpcSharedMemoryClientEndpoint shmem;
+    private final IpcSharedMemoryClientEndpoint shmem;
 
     /** */
     private final ByteBuffer writeBuf;
@@ -59,7 +59,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
         assert port > 0 && port < 0xffff;
         assert connTimeout >= 0;
 
-        shmem = new GridIpcSharedMemoryClientEndpoint(port, (int)connTimeout, log);
+        shmem = new IpcSharedMemoryClientEndpoint(port, (int)connTimeout, log);
 
         this.msgWriter = msgWriter;
 

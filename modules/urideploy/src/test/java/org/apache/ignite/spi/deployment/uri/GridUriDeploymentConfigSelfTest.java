@@ -18,19 +18,20 @@
 package org.apache.ignite.spi.deployment.uri;
 
 import org.apache.ignite.testframework.junits.spi.*;
+
 import java.util.*;
 
 /**
  *
  */
-@GridSpiTest(spi = GridUriDeploymentSpi.class, group = "Deployment SPI")
-public class GridUriDeploymentConfigSelfTest extends GridSpiAbstractConfigTest<GridUriDeploymentSpi> {
+@GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
+public class GridUriDeploymentConfigSelfTest extends GridSpiAbstractConfigTest<UriDeploymentSpi> {
     /**
      * @throws Exception If failed.
      */
     public void testNegativeConfig() throws Exception {
-        checkNegativeSpiProperty(new GridUriDeploymentSpi(), "uriList", null);
-        checkNegativeSpiProperty(new GridUriDeploymentSpi(), "uriList", Collections.singletonList("qwertyuiop"), false);
-        checkNegativeSpiProperty(new GridUriDeploymentSpi(), "uriList", Collections.singletonList(null), false);
+        checkNegativeSpiProperty(new UriDeploymentSpi(), "uriList", null);
+        checkNegativeSpiProperty(new UriDeploymentSpi(), "uriList", Collections.singletonList("qwertyuiop"), false);
+        checkNegativeSpiProperty(new UriDeploymentSpi(), "uriList", Collections.singletonList(null), false);
     }
 }

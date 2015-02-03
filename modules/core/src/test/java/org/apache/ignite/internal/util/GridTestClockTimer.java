@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.internal.util.*;
-
 /**
  * Clock timer for tests.
  */
@@ -26,13 +24,13 @@ public class GridTestClockTimer implements Runnable {
     /** {@inheritDoc} */
     @Override public void run() {
         while (true) {
-            GridUtils.curTimeMillis = System.currentTimeMillis();
+            IgniteUtils.curTimeMillis = System.currentTimeMillis();
 
             try {
                 Thread.sleep(10);
             }
             catch (InterruptedException ignored) {
-                GridUtils.log(null, "Timer thread has been interrupted.");
+                IgniteUtils.log(null, "Timer thread has been interrupted.");
 
                 break;
             }

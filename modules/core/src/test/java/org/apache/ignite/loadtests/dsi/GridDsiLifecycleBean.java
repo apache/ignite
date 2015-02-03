@@ -40,21 +40,26 @@ public class GridDsiLifecycleBean implements LifecycleBean {
     private ApplicationContext springCtx;
 
     /** {@inheritDoc} */
-    @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
-        switch (evt) {
-            case BEFORE_GRID_START:
-                break;
+    @Override public void onLifecycleEvent(LifecycleEventType evt) {
+        try {
+            switch (evt) {
+                case BEFORE_GRID_START:
+                    break;
 
-            case AFTER_GRID_START:
-                ignite.atomicSequence("ID", 0, true);
+                case AFTER_GRID_START:
+                    ignite.atomicSequence("ID", 0, true);
 
-                break;
+                    break;
 
-            case BEFORE_GRID_STOP:
-                break;
+                case BEFORE_GRID_STOP:
+                    break;
 
-            case AFTER_GRID_STOP:
-                break;
+                case AFTER_GRID_STOP:
+                    break;
+            }
+        }
+        catch (Exception e) {
+            throw new IgniteException(e);
         }
     }
 }

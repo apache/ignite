@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.commands.alert
 
-import org.apache.ignite.internal.util.{GridUtils => U}
+import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 
 import org.apache.ignite._
@@ -224,7 +224,7 @@ class VisorAlertCommand {
         if (expr.isDefined)
             (n: ClusterNode) => f(n) && expr.get.apply(value(n))
         else
-            throw new IgniteCheckedException("Invalid expression: " + exprStr)
+            throw new IgniteException("Invalid expression: " + exprStr)
     }
 
     /**
@@ -243,7 +243,7 @@ class VisorAlertCommand {
         if (expr.isDefined)
             () => f() && expr.get.apply(value())
         else
-            throw new IgniteCheckedException("Invalid expression: " + exprStr)
+            throw new IgniteException("Invalid expression: " + exprStr)
     }
 
     /**
@@ -299,7 +299,7 @@ class VisorAlertCommand {
                             // Other tags.
                             case "t" if v != null => freq = v.toLong
                             case "r" => () // Skipping.
-                            case _ => throw new IgniteCheckedException("Invalid argument: " + makeArg(arg))
+                            case _ => throw new IgniteException("Invalid argument: " + makeArg(arg))
                         }
                     })
                 }

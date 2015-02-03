@@ -20,17 +20,17 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 
 /**
  * Tests for custom cache projection (with filters and flags).
@@ -612,6 +612,56 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         assertEquals(100500, map.get("kk1"));
         assertNull(c.get("kk1"));
         assertEquals(100500, (Object) cache().get("kk1"));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testSkipStoreIterator() throws Exception {
+        assertNull(cache().put("1", 100500));
+
+        IgniteCache<String, Integer> c = jcache().withSkipStore();
+
+        Iterator i = c.iterator();
+
+        assertTrue(i.hasNext());
+
+        i.next();
+
+        i.remove();
+
+        i = c.iterator();
+
+        assertFalse(i.hasNext());
+
+        assertNull(c.get("1"));
+
+        assertEquals(100500, map.get("1"));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testNotSkipStoreIterator() throws Exception {
+        assertNull(cache().put("1", 100500));
+
+        IgniteCache<String, Integer> c = jcache();
+
+        Iterator i = c.iterator();
+
+        assertTrue(i.hasNext());
+
+        i.next();
+
+        i.remove();
+
+        i = c.iterator();
+
+        assertFalse(i.hasNext());
+
+        assertNull(c.get("1"));
+
+        assertNull(map.get("1"));
     }
 
     /**

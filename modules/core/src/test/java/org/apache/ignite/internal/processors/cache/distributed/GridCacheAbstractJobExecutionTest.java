@@ -19,16 +19,16 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -121,7 +121,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
         Ignite ignite = grid(0);
 
-        Collection<IgniteFuture<?>> futs = new LinkedList<>();
+        Collection<ComputeTaskFuture<?>> futs = new LinkedList<>();
 
         IgniteCompute comp = ignite.compute().withAsync();
 
@@ -158,7 +158,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
             futs.add(comp.future());
         }
 
-        for (IgniteFuture<?> fut : futs)
+        for (ComputeTaskFuture<?> fut : futs)
             fut.get(); // Wait for completion.
 
         for (int i = 0; i < GRID_CNT; i++) {

@@ -22,14 +22,13 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.rest.handlers.*;
 import org.apache.ignite.internal.processors.rest.request.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.lang.reflect.*;
@@ -76,7 +75,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheGetFailsSyncNotify() throws Exception {
-        GridRestCommandHandler hnd = new TestableGridCacheCommandHandler(((GridKernal)grid()).context(), "getAsync",
+        GridRestCommandHandler hnd = new TestableCacheCommandHandler(((IgniteKernal)grid()).context(), "getAsync",
             true);
 
         GridRestCacheRequest req = new GridRestCacheRequest();
@@ -101,7 +100,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheGetFailsAsyncNotify() throws Exception {
-        GridRestCommandHandler hnd = new TestableGridCacheCommandHandler(((GridKernal)grid()).context(), "getAsync",
+        GridRestCommandHandler hnd = new TestableCacheCommandHandler(((IgniteKernal)grid()).context(), "getAsync",
             false);
 
         GridRestCacheRequest req = new GridRestCacheRequest();
@@ -176,7 +175,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException In case of any grid exception.
      */
     private <T> T testAppend(T curVal, T newVal, boolean append) throws IgniteCheckedException {
-        GridRestCommandHandler hnd = new GridCacheCommandHandler(((GridKernal)grid()).context());
+        GridRestCommandHandler hnd = new GridCacheCommandHandler(((IgniteKernal)grid()).context());
 
         String key = UUID.randomUUID().toString();
 
@@ -208,7 +207,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
     /**
      * Test command handler.
      */
-    private static class TestableGridCacheCommandHandler extends GridCacheCommandHandler {
+    private static class TestableCacheCommandHandler extends GridCacheCommandHandler {
         /** */
         private final String failMtd;
 
@@ -222,7 +221,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
          * @param failMtd Method to fail.
          * @param sync Sync notification flag.
          */
-        TestableGridCacheCommandHandler(final GridKernalContext ctx, final String failMtd, final boolean sync) {
+        TestableCacheCommandHandler(final GridKernalContext ctx, final String failMtd, final boolean sync) {
             super(ctx);
 
             this.failMtd = failMtd;
@@ -242,14 +241,14 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
                         if (failMtd.equals(mtd.getName())) {
-                            IgniteFuture<Object> fut = new GridFinishedFuture<>(ctx,
+                            IgniteInternalFuture<Object> fut = new GridFinishedFuture<>(ctx,
                                 new IgniteCheckedException("Operation failed"));
 
                             fut.syncNotify(sync);
 
                             return fut;
                         }
-                        // Rewriting flagsOn result to keep intercepting invocations after it.
+                        // Rewriting flagOn result to keep intercepting invocations after it.
                         else if ("flagsOn".equals(mtd.getName()))
                             return proxy;
                         else if ("forSubjectId".equals(mtd.getName()))

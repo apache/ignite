@@ -20,11 +20,13 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.mxbean.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.mxbean.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -142,7 +144,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withSkipStore() {
-        return flagsOn(CacheFlag.SKIP_STORE);
+        return flagOn(CacheFlag.SKIP_STORE);
     }
 
     /** {@inheritDoc} */
@@ -152,7 +154,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync())
-                    curFut.set(ctx.cache().globalLoadCacheAsync(p, args));
+                    setFuture(ctx.cache().globalLoadCacheAsync(p, args));
                 else
                     ctx.cache().globalLoadCache(p, args);
             }
@@ -172,7 +174,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync())
-                    curFut.set(delegate.<K, V>cache().loadCacheAsync(p, 0, args));
+                    setFuture(delegate.<K, V>cache().loadCacheAsync(p, 0, args));
                 else
                     delegate.<K, V>cache().loadCache(p, 0, args);
             }
@@ -192,7 +194,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync()) {
-                    curFut.set(delegate.putIfAbsentAsync(key, val));
+                    setFuture(delegate.putIfAbsentAsync(key, val));
 
                     return null;
                 }
@@ -332,7 +334,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync()) {
-                    curFut.set(delegate.getAsync(key));
+                    setFuture(delegate.getAsync(key));
 
                     return null;
                 }
@@ -355,7 +357,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync()) {
-                    curFut.set(delegate.getAllAsync(keys));
+                    setFuture(delegate.getAllAsync(keys));
 
                     return null;
                 }
@@ -381,7 +383,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync()) {
-                    curFut.set(delegate.getAllAsync(keys));
+                    setFuture(delegate.getAllAsync(keys));
 
                     return null;
                 }
@@ -437,7 +439,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
         try {
             if (isAsync()) {
-                curFut.set(delegate.containsKeyAsync(key));
+                setFuture(delegate.containsKeyAsync(key));
 
                 return false;
             }
@@ -458,11 +460,11 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            IgniteFuture<?>  fut = ctx.cache().loadAll(keys, replaceExisting);
+            IgniteInternalFuture<?> fut = ctx.cache().loadAll(keys, replaceExisting);
 
             if (completionLsnr != null) {
-                fut.listenAsync(new CI1<IgniteFuture<?>>() {
-                    @Override public void apply(IgniteFuture<?> fut) {
+                fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> fut) {
                         try {
                             fut.get();
 
@@ -487,7 +489,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync())
-                    curFut.set(delegate.putxAsync(key, val));
+                    setFuture(delegate.putxAsync(key, val));
                 else
                     delegate.putx(key, val);
             }
@@ -507,7 +509,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync()) {
-                    curFut.set(delegate.putAsync(key, val));
+                    setFuture(delegate.putAsync(key, val));
 
                     return null;
                 }
@@ -530,7 +532,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync())
-                    curFut.set(delegate.putAllAsync(map));
+                    setFuture(delegate.putAllAsync(map));
                 else
                     delegate.putAll(map);
             }
@@ -550,7 +552,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync()) {
-                    curFut.set(delegate.putxIfAbsentAsync(key, val));
+                    setFuture(delegate.putxIfAbsentAsync(key, val));
 
                     return false;
                 }
@@ -573,7 +575,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync()) {
-                    curFut.set(delegate.removexAsync(key));
+                    setFuture(delegate.removexAsync(key));
 
                     return false;
                 }
@@ -596,7 +598,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync()) {
-                    curFut.set(delegate.removeAsync(key, oldVal));
+                    setFuture(delegate.removeAsync(key, oldVal));
 
                     return false;
                 }
@@ -619,7 +621,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync()) {
-                    curFut.set(delegate.removeAsync(key));
+                    setFuture(delegate.removeAsync(key));
 
                     return null;
                 }
@@ -642,7 +644,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync()) {
-                    curFut.set(delegate.replaceAsync(key, oldVal, newVal));
+                    setFuture(delegate.replaceAsync(key, oldVal, newVal));
 
                     return false;
                 }
@@ -665,7 +667,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync()) {
-                    curFut.set(delegate.replacexAsync(key, val));
+                    setFuture(delegate.replacexAsync(key, val));
 
                     return false;
                 }
@@ -688,7 +690,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync()) {
-                    curFut.set(delegate.replaceAsync(key, val));
+                    setFuture(delegate.replaceAsync(key, val));
 
                     return null;
                 }
@@ -711,7 +713,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync())
-                    curFut.set(delegate.removeAllAsync(keys));
+                    setFuture(delegate.removeAllAsync(keys));
                 else
                     delegate.removeAll(keys);
             }
@@ -733,7 +735,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync())
-                    curFut.set(delegate.removeAllAsync(keys));
+                    setFuture(delegate.removeAllAsync(keys));
                 else
                     delegate.removeAll(keys);
             }
@@ -786,10 +788,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync()) {
-                    IgniteFuture<EntryProcessorResult<T>> fut = delegate.invokeAsync(key, entryProcessor, args);
+                    IgniteInternalFuture<EntryProcessorResult<T>> fut = delegate.invokeAsync(key, entryProcessor, args);
 
-                    IgniteFuture<T> fut0 = fut.chain(new CX1<IgniteFuture<EntryProcessorResult<T>>, T>() {
-                        @Override public T applyx(IgniteFuture<EntryProcessorResult<T>> fut)
+                    IgniteInternalFuture<T> fut0 = fut.chain(new CX1<IgniteInternalFuture<EntryProcessorResult<T>>, T>() {
+                        @Override public T applyx(IgniteInternalFuture<EntryProcessorResult<T>> fut)
                             throws IgniteCheckedException {
                             EntryProcessorResult<T> res = fut.get();
 
@@ -797,7 +799,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
                         }
                     });
 
-                    curFut.set(fut0);
+                    setFuture(fut0);
 
                     return null;
                 }
@@ -825,7 +827,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync()) {
-                    curFut.set(delegate.invokeAllAsync(keys, entryProcessor, args));
+                    setFuture(delegate.invokeAllAsync(keys, entryProcessor, args));
 
                     return null;
                 }
@@ -850,7 +852,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync()) {
-                    curFut.set(delegate.invokeAllAsync(map, args));
+                    setFuture(delegate.invokeAllAsync(map, args));
 
                     return null;
                 }
@@ -942,7 +944,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return ((GridCacheAdapter)delegate).igniteIterator(prj);
+            return ctx.cache().igniteIterator(this);
         }
         finally {
             gate.leave(prev);
@@ -1017,21 +1019,27 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
     }
 
     /**
-     * @param flags Flags to turn on (if empty, then no-op).
+     * @param flag Flag to turn on.
      * @return Cache with given flags enabled.
      */
-    public IgniteCache<K, V> flagsOn(@Nullable CacheFlag... flags) {
+    public IgniteCache<K, V> flagOn(CacheFlag flag) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            Set<CacheFlag> res = EnumSet.noneOf(CacheFlag.class);
+            Set<CacheFlag> res;
 
-            Set<CacheFlag> flags0 = prj !=null ? prj.flags() : null;
+            Set<CacheFlag> flags0 = prj != null ? prj.flags() : null;
 
-            if (flags0 != null && !flags0.isEmpty())
-                res.addAll(flags0);
+            if (flags0 != null) {
+                if (flags0.contains(flag))
+                    return this;
 
-            res.addAll(EnumSet.copyOf(F.asList(flags)));
+                res = EnumSet.copyOf(flags0);
+            }
+            else
+                res = EnumSet.noneOf(CacheFlag.class);
+
+            res.add(flag);
 
             GridCacheProjectionImpl<K, V> prj0 = new GridCacheProjectionImpl<>(
                 (prj != null ? prj : delegate),
@@ -1058,13 +1066,14 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
      * @return Cache exception.
      */
     private CacheException cacheException(IgniteCheckedException e) {
-        if (e instanceof CachePartialUpdateCheckedException)
-            return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
+        return U.convertToCacheException(e);
+    }
 
-        if (e.getCause() instanceof CacheException)
-            return (CacheException)e.getCause();
-
-        return new CacheException(e);
+    /**
+     * @param fut Future for async operation.
+     */
+    private <R> void setFuture(IgniteInternalFuture<R> fut) {
+        curFut.set(new IgniteFutureImpl<>(fut));
     }
 
     /** {@inheritDoc} */

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.util.future.nio;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
@@ -93,7 +93,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
 
                 return fut.get();
             }
-        }, IgniteFutureCancelledException.class, null);
+        }, IgniteFutureCancelledCheckedException.class, null);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -105,7 +105,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
 
                 return fut.get();
             }
-        }, IgniteFutureCancelledException.class, null);
+        }, IgniteFutureCancelledCheckedException.class, null);
     }
 
     /**
@@ -176,7 +176,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (IgniteFutureTimeoutException e) {
+        catch (IgniteFutureTimeoutCheckedException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -193,7 +193,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (IgniteFutureCancelledException e) {
+        catch (IgniteFutureCancelledCheckedException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -202,7 +202,7 @@ public class GridNioFutureSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (IgniteFutureCancelledException e) {
+        catch (IgniteFutureCancelledCheckedException e) {
             info("Caught expected exception: " + e);
         }
 

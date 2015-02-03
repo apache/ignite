@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -91,7 +91,7 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
     private void checkTtl(CacheMode mode) throws Exception {
         cacheMode = mode;
 
-        final GridKernal g = (GridKernal)startGrid(0);
+        final IgniteKernal g = (IgniteKernal)startGrid(0);
 
         try {
             final String key = "key";

@@ -18,8 +18,8 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
@@ -32,9 +32,9 @@ public class GridVersionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testVersions() throws Exception {
-        String propVal = System.getProperty(GG_UPDATE_NOTIFIER);
+        String propVal = System.getProperty(IGNITE_UPDATE_NOTIFIER);
 
-        System.setProperty(GG_UPDATE_NOTIFIER, "true");
+        System.setProperty(IGNITE_UPDATE_NOTIFIER, "true");
 
         try {
             Ignite ignite = startGrid();
@@ -61,9 +61,9 @@ public class GridVersionSelfTest extends GridCommonAbstractTest {
             stopGrid();
 
             if (propVal != null)
-                System.setProperty(GG_UPDATE_NOTIFIER, propVal);
+                System.setProperty(IGNITE_UPDATE_NOTIFIER, propVal);
             else
-                System.clearProperty(GG_UPDATE_NOTIFIER);
+                System.clearProperty(IGNITE_UPDATE_NOTIFIER);
         }
     }
 }

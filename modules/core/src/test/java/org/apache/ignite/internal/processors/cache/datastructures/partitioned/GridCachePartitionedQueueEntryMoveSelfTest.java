@@ -23,7 +23,7 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -103,7 +103,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
             final CountDownLatch latch1 = new CountDownLatch(1);
             //final CountDownLatch latch2 = new CountDownLatch(1);
 
-            IgniteFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
+            IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws IgniteCheckedException {
                     Ignite ignite = grid(0);
 
@@ -145,7 +145,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
 
             //latch2.countDown();
 
-            IgniteFuture<?> fut2 = GridTestUtils.runAsync(new Callable<Void>() {
+            IgniteInternalFuture<?> fut2 = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws IgniteCheckedException {
                     Ignite ignite = grid(GRID_CNT);
 

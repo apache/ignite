@@ -18,17 +18,17 @@
 package org.apache.ignite.client;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.apache.ignite.client.GridClientProtocol.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.client.GridClientProtocol.*;
 
 /**
  * Tests that client is able to connect to a grid with only default cache enabled.
@@ -54,7 +54,7 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(GG_JETTY_PORT, String.valueOf(HTTP_PORT));
+        System.setProperty(IGNITE_JETTY_PORT, String.valueOf(HTTP_PORT));
 
         startGrid();
     }
@@ -63,7 +63,7 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         stopGrid();
 
-        System.clearProperty (GG_JETTY_PORT);
+        System.clearProperty (IGNITE_JETTY_PORT);
     }
 
     /** {@inheritDoc} */

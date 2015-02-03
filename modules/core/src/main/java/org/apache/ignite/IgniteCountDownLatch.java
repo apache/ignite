@@ -83,11 +83,11 @@ public interface IgniteCountDownLatch extends Closeable {
      *      <li>has its interrupted status set on entry to this method; or
      *      <li>is interrupted while waiting,
      * </ul>
-     * then {@link org.apache.ignite.IgniteInterruptedException} is thrown and the current thread's
+     * then {@link org.apache.ignite.internal.IgniteInterruptedCheckedException} is thrown and the current thread's
      * interrupted status is cleared.
      *
      * @throws IgniteCheckedException If operation failed.
-     * @throws org.apache.ignite.IgniteInterruptedException if the current thread is interrupted
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException if the current thread is interrupted
      *      while waiting
      */
     public void await() throws IgniteCheckedException;
@@ -117,7 +117,7 @@ public interface IgniteCountDownLatch extends Closeable {
      *      <li>has its interrupted status set on entry to this method; or
      *      <li>is interrupted while waiting,
      * </ul>
-     * then {@link org.apache.ignite.IgniteInterruptedException} is thrown and the current thread's
+     * then {@link org.apache.ignite.internal.IgniteInterruptedCheckedException} is thrown and the current thread's
      * interrupted status is cleared.
      * <p>
      * If the specified waiting time elapses then the value {@code false}
@@ -127,7 +127,7 @@ public interface IgniteCountDownLatch extends Closeable {
      * @param timeout The maximum time to wait in milliseconds.
      * @return {@code True} if the count reached zero and {@code false}
      *      if the waiting time elapsed before the count reached zero.
-     * @throws org.apache.ignite.IgniteInterruptedException If the current thread is interrupted
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If the current thread is interrupted
      *      while waiting.
      * @throws IgniteCheckedException If operation failed.
      */
@@ -158,7 +158,7 @@ public interface IgniteCountDownLatch extends Closeable {
      *      <li>has its interrupted status set on entry to this method; or
      *      <li>is interrupted while waiting,
      * </ul>
-     * then {@link org.apache.ignite.IgniteInterruptedException} is thrown and the current thread's
+     * then {@link org.apache.ignite.internal.IgniteInterruptedCheckedException} is thrown and the current thread's
      * interrupted status is cleared.
      * <p>
      * If the specified waiting time elapses then the value {@code false}
@@ -170,7 +170,7 @@ public interface IgniteCountDownLatch extends Closeable {
      * @param unit The time unit of the {@code timeout} argument.
      * @return {@code True} if the count reached zero and {@code false}
      *      if the waiting time elapsed before the count reached zero.
-     * @throws org.apache.ignite.IgniteInterruptedException If the current thread is interrupted
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If the current thread is interrupted
      *      while waiting.
      * @throws IgniteCheckedException If operation failed.
      */

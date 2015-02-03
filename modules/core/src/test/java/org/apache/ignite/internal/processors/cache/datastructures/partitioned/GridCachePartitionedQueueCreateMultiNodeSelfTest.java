@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -32,9 +32,9 @@ import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  *
@@ -103,7 +103,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
     public void testQueueCreation() throws Exception {
         final AtomicInteger idx = new AtomicInteger();
 
-        IgniteFuture<?> fut = multithreadedAsync(
+        IgniteInternalFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     Ignite ignite = startGrid(idx.getAndIncrement());
@@ -153,7 +153,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
 
         final CountDownLatch latch = new CountDownLatch(threadCnt);
 
-        IgniteFuture<?> fut = multithreadedAsync(
+        IgniteInternalFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     Ignite ignite = startGrid(idx.getAndIncrement());

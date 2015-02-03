@@ -19,10 +19,10 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.executor.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -80,8 +80,11 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      * @param ctx Grid kernal context.
      * @param p Predicate.
      */
-    protected ClusterGroupAdapter(@Nullable ClusterGroup parent, @Nullable GridKernalContext ctx,
-                                  @Nullable UUID subjId, @Nullable IgnitePredicate<ClusterNode> p) {
+    protected ClusterGroupAdapter(@Nullable ClusterGroup parent,
+        @Nullable GridKernalContext ctx,
+        @Nullable UUID subjId,
+        @Nullable IgnitePredicate<ClusterNode> p)
+    {
         this.parent = parent;
 
         if (ctx != null)
@@ -98,8 +101,11 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      * @param ctx Grid kernal context.
      * @param ids Node IDs.
      */
-    protected ClusterGroupAdapter(@Nullable ClusterGroup parent, @Nullable GridKernalContext ctx,
-                                  @Nullable UUID subjId, Set<UUID> ids) {
+    protected ClusterGroupAdapter(@Nullable ClusterGroup parent,
+        @Nullable GridKernalContext ctx,
+        @Nullable UUID subjId,
+        Set<UUID> ids)
+    {
         this.parent = parent;
 
         if (ctx != null)
@@ -119,8 +125,12 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      * @param p Predicate.
      * @param ids Node IDs.
      */
-    private ClusterGroupAdapter(@Nullable ClusterGroup parent, @Nullable GridKernalContext ctx,
-                                @Nullable UUID subjId, @Nullable IgnitePredicate<ClusterNode> p, Set<UUID> ids) {
+    private ClusterGroupAdapter(@Nullable ClusterGroup parent,
+        @Nullable GridKernalContext ctx,
+        @Nullable UUID subjId,
+        @Nullable IgnitePredicate<ClusterNode> p,
+        Set<UUID> ids)
+    {
         this.parent = parent;
 
         if (ctx != null)
@@ -250,16 +260,16 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     public ExecutorService executorService() {
         assert ctx != null;
 
-        return new GridExecutorService(this, ctx.log());
+        return new GridExecutorService(this, ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterMetrics metrics() throws IgniteCheckedException {
+    @Override public final ClusterMetrics metrics() {
         guard();
 
         try {
             if (nodes().isEmpty())
-                throw U.emptyTopologyException();
+                throw U.convertException(U.emptyTopologyException());
 
             return new ClusterMetricsSnapshot(this);
         }
@@ -638,7 +648,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            GridKernal g = GridGainEx.gridx(gridName);
+            IgniteKernal g = IgnitionEx.gridx(gridName);
 
             return ids != null ? new ClusterGroupAdapter(g, g.context(), subjId, ids) :
                 p != null ? new ClusterGroupAdapter(g, g.context(), subjId, p) : g;

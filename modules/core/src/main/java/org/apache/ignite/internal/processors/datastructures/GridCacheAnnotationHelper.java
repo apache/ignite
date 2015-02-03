@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 
 import java.lang.annotation.*;
 import java.lang.reflect.*;

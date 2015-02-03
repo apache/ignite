@@ -19,10 +19,9 @@ package org.apache.ignite.internal.util.future;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -64,12 +63,12 @@ public class GridFinishedFutureSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of any exception.
      */
     private void testExternalizable(@Nullable Object t, @Nullable Throwable ex, boolean syncNotify) throws Exception {
-        GridKernalContext ctx = ((GridKernal)grid()).context();
+        GridKernalContext ctx = ((IgniteKernal)grid()).context();
 
         IgniteMarshaller m = new IgniteOptimizedMarshaller();
         ClassLoader clsLdr = getClass().getClassLoader();
 
-        IgniteFuture<Object> orig = t == null ? new GridFinishedFuture<>(ctx, ex) :
+        IgniteInternalFuture<Object> orig = t == null ? new GridFinishedFuture<>(ctx, ex) :
             new GridFinishedFuture<>(ctx, t);
 
         orig.syncNotify(syncNotify);
@@ -90,8 +89,8 @@ public class GridFinishedFutureSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch done = new CountDownLatch(1);
 
-        fut.listenAsync(new CI1<IgniteFuture<Object>>() {
-            @Override public void apply(IgniteFuture<Object> t) {
+        fut.listenAsync(new CI1<IgniteInternalFuture<Object>>() {
+            @Override public void apply(IgniteInternalFuture<Object> t) {
                 done.countDown();
             }
         });

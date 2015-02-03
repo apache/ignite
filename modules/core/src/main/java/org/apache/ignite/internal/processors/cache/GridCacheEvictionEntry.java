@@ -19,12 +19,13 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -151,7 +152,7 @@ public class GridCacheEvictionEntry<K, V> implements CacheEntry<K, V>, Externali
      */
     @SuppressWarnings({"unchecked"})
     @Nullable private V peek0(@Nullable GridCachePeekMode mode,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter, @Nullable IgniteTxEx<K, V> tx)
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter, @Nullable IgniteInternalTx<K, V> tx)
         throws IgniteCheckedException {
         assert tx == null || tx.local();
 
@@ -183,7 +184,7 @@ public class GridCacheEvictionEntry<K, V> implements CacheEntry<K, V>, Externali
      * @throws IgniteCheckedException If failed.
      */
     @Nullable private V peek0(@Nullable Collection<GridCachePeekMode> modes,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter, IgniteTxEx<K, V> tx) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter, IgniteInternalTx<K, V> tx) throws IgniteCheckedException {
         if (F.isEmpty(modes))
             return peek0(SMART, filter, tx);
 
@@ -212,7 +213,7 @@ public class GridCacheEvictionEntry<K, V> implements CacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> reloadAsync() {
+    @Override public IgniteInternalFuture<V> reloadAsync() {
         throw unsupported();
     }
 
@@ -249,7 +250,7 @@ public class GridCacheEvictionEntry<K, V> implements CacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> getAsync() {
+    @Override public IgniteInternalFuture<V> getAsync() {
         throw unsupported();
     }
 
@@ -259,7 +260,7 @@ public class GridCacheEvictionEntry<K, V> implements CacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> setAsync(V val, IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    @Override public IgniteInternalFuture<V> setAsync(V val, IgnitePredicate<CacheEntry<K, V>>[] filter) {
         throw unsupported();
     }
 
@@ -269,7 +270,7 @@ public class GridCacheEvictionEntry<K, V> implements CacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> setxAsync(V val, IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    @Override public IgniteInternalFuture<Boolean> setxAsync(V val, IgnitePredicate<CacheEntry<K, V>>[] filter) {
         throw unsupported();
     }
 
@@ -279,7 +280,7 @@ public class GridCacheEvictionEntry<K, V> implements CacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> replaceAsync(V val) {
+    @Override public IgniteInternalFuture<V> replaceAsync(V val) {
         throw unsupported();
     }
 
@@ -289,7 +290,7 @@ public class GridCacheEvictionEntry<K, V> implements CacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> replaceAsync(V oldVal, V newVal) {
+    @Override public IgniteInternalFuture<Boolean> replaceAsync(V oldVal, V newVal) {
         throw unsupported();
     }
 
@@ -309,7 +310,7 @@ public class GridCacheEvictionEntry<K, V> implements CacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> setIfAbsentAsync(V val) {
+    @Override public IgniteInternalFuture<V> setIfAbsentAsync(V val) {
         throw unsupported();
     }
 
@@ -319,7 +320,7 @@ public class GridCacheEvictionEntry<K, V> implements CacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> setxIfAbsentAsync(V val) {
+    @Override public IgniteInternalFuture<Boolean> setxIfAbsentAsync(V val) {
         throw unsupported();
     }
 
@@ -329,7 +330,7 @@ public class GridCacheEvictionEntry<K, V> implements CacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> replacexAsync(V val) {
+    @Override public IgniteInternalFuture<Boolean> replacexAsync(V val) {
         throw unsupported();
     }
 
@@ -339,7 +340,7 @@ public class GridCacheEvictionEntry<K, V> implements CacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> removeAsync(IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    @Override public IgniteInternalFuture<V> removeAsync(IgnitePredicate<CacheEntry<K, V>>[] filter) {
         throw unsupported();
     }
 
@@ -349,7 +350,7 @@ public class GridCacheEvictionEntry<K, V> implements CacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> removexAsync(IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    @Override public IgniteInternalFuture<Boolean> removexAsync(IgnitePredicate<CacheEntry<K, V>>[] filter) {
         throw unsupported();
     }
 
@@ -359,7 +360,7 @@ public class GridCacheEvictionEntry<K, V> implements CacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> removeAsync(V val) {
+    @Override public IgniteInternalFuture<Boolean> removeAsync(V val) {
         throw unsupported();
     }
 
@@ -417,7 +418,7 @@ public class GridCacheEvictionEntry<K, V> implements CacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> lockAsync(long timeout,
+    @Override public IgniteInternalFuture<Boolean> lockAsync(long timeout,
         @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
         throw unsupported();
     }

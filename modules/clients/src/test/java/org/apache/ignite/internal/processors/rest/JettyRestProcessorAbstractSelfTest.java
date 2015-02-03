@@ -36,7 +36,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(GG_JETTY_PORT, Integer.toString(restPort()));
+        System.setProperty(IGNITE_JETTY_PORT, Integer.toString(restPort()));
 
         super.beforeTestsStarted();
     }
@@ -45,7 +45,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        System.clearProperty(GG_JETTY_PORT);
+        System.clearProperty(IGNITE_JETTY_PORT);
     }
 
     /** {@inheritDoc} */

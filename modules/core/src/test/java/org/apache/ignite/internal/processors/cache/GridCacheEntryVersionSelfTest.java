@@ -21,10 +21,10 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -103,7 +103,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
             grid(0).cache(null).putAll(map);
 
             for (int g = 0; g < 3; g++) {
-                GridKernal grid = (GridKernal)grid(g);
+                IgniteKernal grid = (IgniteKernal)grid(g);
 
                 for (Integer key : map.keySet()) {
                     GridCacheAdapter<Object, Object> cache = grid.internalCache();
@@ -130,7 +130,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
             grid(0).cache(null).putAll(map);
 
             for (int g = 0; g < 4; g++) {
-                GridKernal grid = (GridKernal)grid(g);
+                IgniteKernal grid = (IgniteKernal)grid(g);
 
                 for (Integer key : map.keySet()) {
                     GridCacheAdapter<Object, Object> cache = grid.internalCache();

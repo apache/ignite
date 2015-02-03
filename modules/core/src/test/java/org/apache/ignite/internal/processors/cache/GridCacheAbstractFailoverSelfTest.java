@@ -19,14 +19,15 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -255,7 +256,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
 
         final int half = ENTRY_CNT / 2;
 
-        IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
             @Override public void apply() {
                 info("Run topology change.");
 
@@ -308,7 +309,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         }
         catch (IgniteCheckedException e) {
             // It is ok to fail with topology exception.
-            if (!X.hasCause(e, ClusterTopologyException.class))
+            if (!X.hasCause(e, ClusterTopologyCheckedException.class))
                 throw e;
         }
     }
@@ -335,7 +336,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         }
         catch (IgniteCheckedException e) {
             // It is ok to fail with topology exception.
-            if (!X.hasCause(e, ClusterTopologyException.class))
+            if (!X.hasCause(e, ClusterTopologyCheckedException.class))
                 throw e;
             else
                 info("Failed to put values to cache due to topology exception [0," + cnt + ')');
@@ -354,7 +355,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         }
         catch (IgniteCheckedException e) {
             // It is ok to fail with topology exception.
-            if (!X.hasCause(e, ClusterTopologyException.class))
+            if (!X.hasCause(e, ClusterTopologyCheckedException.class))
                 throw e;
         }
     }
@@ -381,7 +382,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         }
         catch (IgniteCheckedException e) {
             // It is ok to fail with topology exception.
-            if (!X.hasCause(e, ClusterTopologyException.class))
+            if (!X.hasCause(e, ClusterTopologyCheckedException.class))
                 throw e;
             else
                 info("Failed to remove values from cache due to topology exception [0," + cnt + ')');

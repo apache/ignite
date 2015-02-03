@@ -31,8 +31,8 @@ import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.SYNC;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  *
@@ -55,7 +55,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        GridQueryConfiguration idxCfg = new GridQueryConfiguration();
+        IgniteQueryConfiguration idxCfg = new IgniteQueryConfiguration();
 
         c.setQueryConfiguration(idxCfg);
 
@@ -194,7 +194,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      */
     private JdbcConnection connection() throws Exception {
-        GridKernalContext ctx = ((GridKernal)ignite).context();
+        GridKernalContext ctx = ((IgniteKernal)ignite).context();
 
         GridQueryProcessor qryProcessor = ctx.query();
 

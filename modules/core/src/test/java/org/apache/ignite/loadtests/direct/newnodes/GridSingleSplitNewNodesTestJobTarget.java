@@ -28,10 +28,9 @@ public class GridSingleSplitNewNodesTestJobTarget {
      * @param level Level.
      * @param jobSes Job session.
      * @return Always returns {@code 1}.
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unused")
-    public int executeLoadTestJob(int level, ComputeTaskSession jobSes) throws IgniteCheckedException {
+    public int executeLoadTestJob(int level, ComputeTaskSession jobSes) {
         assert level > 0;
         assert jobSes != null;
 
@@ -42,7 +41,7 @@ public class GridSingleSplitNewNodesTestJobTarget {
         }
         catch (InterruptedException e) {
             // Fail.
-            throw new IgniteCheckedException("Failed to wait for attribute.", e);
+            throw new IgniteException("Failed to wait for attribute.", e);
         }
 
         return 1;

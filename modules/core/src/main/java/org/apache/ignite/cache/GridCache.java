@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.transactions.*;
@@ -226,7 +227,7 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      *      {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method.
      * @return Future to be completed whenever loading completes.
      */
-    public IgniteFuture<?> loadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, long ttl, @Nullable Object... args);
+    public IgniteInternalFuture<?> loadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, long ttl, @Nullable Object... args);
 
     /**
      * Gets a random entry out of cache. In the worst cache scenario this method
@@ -264,5 +265,5 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      * <p>
      * @return Future that will be completed when preloading is finished.
      */
-    public IgniteFuture<?> forceRepartition();
+    public IgniteInternalFuture<?> forceRepartition();
 }

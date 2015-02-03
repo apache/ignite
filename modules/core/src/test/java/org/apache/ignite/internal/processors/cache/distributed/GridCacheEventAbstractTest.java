@@ -23,11 +23,11 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 
 import java.io.*;
 import java.util.*;
@@ -106,7 +106,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     private void waitForEvents(int gridIdx, IgniteBiTuple<Integer, Integer>... evtCnts) throws Exception {
         if (!F.isEmpty(evtCnts))
             try {
-                TestEventListener.waitForEventCount(((GridKernal)grid(0)).context(), evtCnts);
+                TestEventListener.waitForEventCount(((IgniteKernal)grid(0)).context(), evtCnts);
             }
             catch (IgniteCheckedException e) {
                 printEventCounters(gridIdx, evtCnts);
@@ -880,7 +880,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
             try {
                 cf.get(WAIT_TIMEOUT);
             }
-            catch (IgniteFutureTimeoutException e) {
+            catch (IgniteFutureTimeoutCheckedException e) {
                 throw new RuntimeException("Timed out waiting for events: " + cf, e);
             }
         }

@@ -21,10 +21,10 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
 import org.apache.ignite.spi.failover.jobstealing.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -98,7 +98,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
                         }
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     log.error("Failed to execute task.", e);
 
                     fail.getAndSet(e);
@@ -159,7 +159,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         /** {@inheritDoc} */
         @SuppressWarnings("ForLoopReplaceableByForEach")
             @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Object arg) throws IgniteCheckedException {
+            @Nullable Object arg) {
             assert subgrid.size() == 2 : "Invalid subgrid size: " + subgrid.size();
 
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
@@ -172,12 +172,11 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public JobStealingResult reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public JobStealingResult reduce(List<ComputeJobResult> results) {
             assert results.size() == 2;
 
-            for (ComputeJobResult res : results) {
+            for (ComputeJobResult res : results)
                 log.info("Job result: " + res.getData());
-            }
 
             Object obj0 = results.get(0).getData();
 
@@ -208,7 +207,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable execute() throws IgniteCheckedException {
+        @Override public Serializable execute() {
             try {
                 Long sleep = argument(0);
 
@@ -217,7 +216,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
                 Thread.sleep(sleep);
             }
             catch (InterruptedException e) {
-                throw new IgniteCheckedException("Job got interrupted.", e);
+                throw new IgniteException("Job got interrupted.", e);
             }
 
             return ignite.name();

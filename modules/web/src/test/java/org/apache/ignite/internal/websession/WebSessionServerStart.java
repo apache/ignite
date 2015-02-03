@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.websession;
 
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.*;
 import org.eclipse.jetty.webapp.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.servlet.*;
 import javax.servlet.http.*;
@@ -56,7 +56,7 @@ public class WebSessionServerStart {
             "/ggtest");
 
         ctx.setInitParameter("cfgFilePath", "/examples/config/spring-cache.xml");
-        ctx.setInitParameter("GridGainWebSessionsCacheName", "partitioned");
+        ctx.setInitParameter("IgniteWebSessionsCacheName", "partitioned");
 
         ctx.addServlet(new ServletHolder(servlet), "/*");
 

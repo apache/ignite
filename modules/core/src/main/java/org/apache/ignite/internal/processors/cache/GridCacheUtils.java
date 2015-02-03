@@ -22,16 +22,18 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -45,9 +47,9 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePeekMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.GridCachePeekMode.*;
 import static org.apache.ignite.internal.GridNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
@@ -168,20 +170,9 @@ public class GridCacheUtils {
         }
     };
 
-    /** Converts transaction to XID. */
-    private static final IgniteClosure<IgniteTx, IgniteUuid> tx2xid = new C1<IgniteTx, IgniteUuid>() {
-        @Override public IgniteUuid apply(IgniteTx tx) {
-            return tx.xid();
-        }
-
-        @Override public String toString() {
-            return "Transaction to XID converter.";
-        }
-    };
-
     /** Converts transaction to XID version. */
-    private static final IgniteClosure tx2xidVer = new C1<IgniteTxEx, GridCacheVersion>() {
-        @Override public GridCacheVersion apply(IgniteTxEx tx) {
+    private static final IgniteClosure tx2xidVer = new C1<IgniteInternalTx, GridCacheVersion>() {
+        @Override public GridCacheVersion apply(IgniteInternalTx tx) {
             return tx.xidVersion();
         }
 
@@ -803,15 +794,8 @@ public class GridCacheUtils {
      * @return Closure which converts transaction entry xid to XID version.
      */
     @SuppressWarnings( {"unchecked"})
-    public static <K, V> IgniteClosure<IgniteTxEx<K, V>, GridCacheVersion> tx2xidVersion() {
-        return (IgniteClosure<IgniteTxEx<K, V>, GridCacheVersion>)tx2xidVer;
-    }
-
-    /**
-     * @return Closure which converts transaction to xid.
-     */
-    public static IgniteClosure<IgniteTx, IgniteUuid> tx2xid() {
-        return tx2xid;
+    public static <K, V> IgniteClosure<IgniteInternalTx<K, V>, GridCacheVersion> tx2xidVersion() {
+        return (IgniteClosure<IgniteInternalTx<K, V>, GridCacheVersion>)tx2xidVer;
     }
 
     /**
@@ -1063,10 +1047,10 @@ public class GridCacheUtils {
      * @param excl Excludes.
      * @return Future listener that logs errors.
      */
-    public static IgniteInClosure<IgniteFuture<?>> errorLogger(final IgniteLogger log,
+    public static IgniteInClosure<IgniteInternalFuture<?>> errorLogger(final IgniteLogger log,
         final Class<? extends Exception>... excl) {
-        return new CI1<IgniteFuture<?>>() {
-            @Override public void apply(IgniteFuture<?> f) {
+        return new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> f) {
                 try {
                     f.get();
                 }
@@ -1212,21 +1196,21 @@ public class GridCacheUtils {
      * @param isolation Isolation.
      * @return New transaction.
      */
-    public static IgniteTx txStartInternal(GridCacheContext ctx, CacheProjection prj,
+    public static IgniteInternalTx txStartInternal(GridCacheContext ctx, CacheProjection prj,
         IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
         assert ctx != null;
         assert prj != null;
 
         ctx.tm().txContextReset();
 
-        return prj.txStart(concurrency, isolation);
+        return prj.txStartEx(concurrency, isolation);
     }
 
     /**
      * @param tx Transaction.
      * @return String view of all safe-to-print transaction properties.
      */
-    public static String txString(@Nullable IgniteTx tx) {
+    public static String txString(@Nullable IgniteInternalTx tx) {
         if (tx == null)
             return "null";
 
@@ -1427,7 +1411,7 @@ public class GridCacheUtils {
         if (!F.eq(locVal, rmtVal)) {
             if (fail) {
                 throw new IgniteCheckedException(attrMsg + " mismatch (fix " + attrMsg.toLowerCase() + " in cache " +
-                    "configuration or set -D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
+                    "configuration or set -D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
                     "system property) [cacheName=" + cfgName +
                     ", local" + capitalize(attrName) + "=" + locVal +
                     ", remote" + capitalize(attrName) + "=" + rmtVal +
@@ -1637,7 +1621,7 @@ public class GridCacheUtils {
     public static <K, V> void inTx(CacheProjection<K, V> cache, IgniteTxConcurrency concurrency,
         IgniteTxIsolation isolation, IgniteInClosureX<CacheProjection<K ,V>> clo) throws IgniteCheckedException {
 
-        try (IgniteTx tx = cache.txStart(concurrency, isolation)) {
+        try (IgniteInternalTx tx = cache.txStartEx(concurrency, isolation);) {
             clo.applyx(cache);
 
             tx.commit();
@@ -1650,7 +1634,7 @@ public class GridCacheUtils {
      * @param tx Transaction.
      * @return Subject ID.
      */
-    public static <K, V> UUID subjectId(IgniteTxEx<K, V> tx, GridCacheSharedContext<K, V> ctx) {
+    public static <K, V> UUID subjectId(IgniteInternalTx<K, V> tx, GridCacheSharedContext<K, V> ctx) {
         if (tx == null)
             return ctx.localNodeId();
 

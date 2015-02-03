@@ -18,19 +18,19 @@
 package org.apache.ignite.client.router.impl;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.client.router.*;
 import org.apache.ignite.internal.processors.spring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.lifecycle.*;
 
 import java.net.*;
 import java.util.*;
 import java.util.logging.*;
 
-import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.GridProductImpl.*;
+import static org.apache.ignite.internal.IgniteComponentType.*;
 
 /**
  * Loader class for router.
@@ -64,15 +64,13 @@ public class GridRouterCommandLineStartup {
         else {
             tcpRouter = new GridTcpRouterImpl(tcpCfg);
 
-            if (tcpRouter != null) {
-                try {
-                    tcpRouter.start();
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to start TCP router on port " + tcpCfg.getPort() + ": " + e.getMessage(), e);
+            try {
+                tcpRouter.start();
+            }
+            catch (Exception e) {
+                U.error(log, "Failed to start TCP router on port " + tcpCfg.getPort() + ": " + e.getMessage(), e);
 
-                    tcpRouter = null;
-                }
+                tcpRouter = null;
             }
         }
     }
@@ -85,7 +83,7 @@ public class GridRouterCommandLineStartup {
             try {
                 tcpRouter.stop();
             }
-            catch (IgniteCheckedException e) {
+            catch (Exception e) {
                 U.error(log, "Error while stopping the router.", e);
             }
         }
@@ -104,7 +102,7 @@ public class GridRouterCommandLineStartup {
             " _/ // (_ /    // /  / / / _/   ",
             "/___/\\___/_/|_/___/ /_/ /___/  ",
             " ",
-            "GridGain Router Command Line Loader",
+            "Ignite Router Command Line Loader",
             "ver. " + ACK_VER,
             COPYRIGHT,
             " "
@@ -123,7 +121,7 @@ public class GridRouterCommandLineStartup {
         URL cfgUrl = U.resolveGridGainUrl(cfgPath);
 
         if (cfgUrl == null) {
-            X.error("Spring XML file not found (is GRIDGAIN_HOME set?): " + cfgPath);
+            X.error("Spring XML file not found (is IGNITE_HOME set?): " + cfgPath);
 
             System.exit(1);
         }

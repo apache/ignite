@@ -35,7 +35,7 @@ public interface AuthenticationAclProvider {
      * Gets per-user access control map.
      *
      * @return Per-user access control map.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    public Map<GridSecurityCredentials, GridSecurityPermissionSet> acl() throws IgniteCheckedException;
+    public Map<GridSecurityCredentials, GridSecurityPermissionSet> acl() throws IgniteException;
 }

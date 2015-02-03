@@ -17,18 +17,19 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.ignite.util.antgar.*;
-import org.apache.tools.ant.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.spi.*;
+import org.apache.ignite.util.antgar.*;
+import org.apache.tools.ant.*;
+
 import java.io.*;
 import java.util.*;
 
 /**
  *
  */
-@GridSpiTest(spi = GridUriDeploymentSpi.class, group = "Deployment SPI")
+@GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
 public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbstractSelfTest {
     /**
      * @throws Exception If failed.

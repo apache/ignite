@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.commons.dbcp.managed.*;
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.jta.*;
 import org.h2.jdbcx.*;
@@ -62,9 +61,9 @@ public class GridHibernateL2CacheTransactionalSelfTest extends GridHibernateL2Ca
     /**
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class TestTmLookup implements GridCacheTmLookup {
+    public static class TestTmLookup implements CacheTmLookup {
         /** {@inheritDoc} */
-        @Override public TransactionManager getTm() throws IgniteCheckedException {
+        @Override public TransactionManager getTm() {
             return jotm.getTransactionManager();
         }
     }

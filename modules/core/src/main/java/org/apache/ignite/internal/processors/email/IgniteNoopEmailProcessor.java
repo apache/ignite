@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.email;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.future.*;
 
 import java.util.*;
@@ -45,12 +44,12 @@ public class IgniteNoopEmailProcessor extends IgniteEmailProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> schedule(String subj, String body, boolean html) {
+    @Override public IgniteInternalFuture<Boolean> schedule(String subj, String body, boolean html) {
         return new GridFinishedFuture<>(ctx, true);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> schedule(String subj, String body, boolean html, Collection<String> addrs) {
+    @Override public IgniteInternalFuture<Boolean> schedule(String subj, String body, boolean html, Collection<String> addrs) {
         return new GridFinishedFuture<>(ctx, true);
     }
 }

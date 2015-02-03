@@ -17,8 +17,9 @@
 
 package org.apache.ignite.cache.store;
 
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -47,7 +48,7 @@ public class GridCacheBalancingStoreSelfTest extends GridCommonAbstractTest {
 
         final AtomicBoolean finish = new AtomicBoolean();
 
-        IgniteFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new IgniteCallable<Void>() {
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new IgniteCallable<Void>() {
             @Override public Void call() throws Exception {
                 try {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();

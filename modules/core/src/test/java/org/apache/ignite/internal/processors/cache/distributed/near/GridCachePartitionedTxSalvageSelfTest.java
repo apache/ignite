@@ -23,14 +23,13 @@ import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 
@@ -88,15 +87,15 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
 
     @Override protected void beforeTestsStarted() throws Exception {
         // Set salvage timeout system property.
-        salvageTimeoutOld = System.setProperty(GG_TX_SALVAGE_TIMEOUT, SALVAGE_TIMEOUT.toString());
+        salvageTimeoutOld = System.setProperty(IGNITE_TX_SALVAGE_TIMEOUT, SALVAGE_TIMEOUT.toString());
     }
 
     @Override protected void afterTestsStopped() throws Exception {
         // Restore salvage timeout system property to its initial state.
         if (salvageTimeoutOld != null)
-            System.setProperty(GG_TX_SALVAGE_TIMEOUT, salvageTimeoutOld);
+            System.setProperty(IGNITE_TX_SALVAGE_TIMEOUT, salvageTimeoutOld);
         else
-            System.clearProperty(GG_TX_SALVAGE_TIMEOUT);
+            System.clearProperty(IGNITE_TX_SALVAGE_TIMEOUT);
     }
 
     @Override protected void beforeTest() throws Exception {
@@ -142,7 +141,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
      * @param prepare Whether to preapre transaction state
-     *                (i.e. call {@link IgniteTxEx#prepare()}).
+     *                (i.e. call {@link org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx#prepare()}).
      * @throws Exception If failed.
      */
     private void checkSalvageAfterTimeout(IgniteTxConcurrency mode, boolean prepare) throws Exception {
@@ -161,7 +160,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
      * @param prepare Whether to preapre transaction state
-     *                (i.e. call {@link IgniteTxEx#prepare()}).
+     *                (i.e. call {@link org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx#prepare()}).
      * @throws Exception If failed.
      */
     private void checkSalvageBeforeTimeout(IgniteTxConcurrency mode, boolean prepare) throws Exception {
@@ -188,7 +187,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
      * @param prepare Whether to preapre transaction state
-     *                (i.e. call {@link IgniteTxEx#prepare()}).
+     *                (i.e. call {@link org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx#prepare()}).
      * @throws Exception If failed.
      */
     private void startTxAndPutKeys(final IgniteTxConcurrency mode, final boolean prepare) throws Exception {
@@ -196,7 +195,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
 
         final Collection<Integer> keys = nearKeys(ignite);
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 GridCache<Object, Object> c = cache(0);
 
@@ -208,7 +207,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
 
                     // Unproxy.
                     if (prepare)
-                        U.<IgniteTxEx>field(tx, "tx").prepare();
+                        U.<IgniteInternalTx>field(tx, "tx").prepare();
                 }
                 catch (IgniteCheckedException e) {
                     info("Failed to put keys to cache: " + e.getMessage());
@@ -242,7 +241,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     private Collection<Integer> nearKeys(Ignite ignite) {
         final Collection<Integer> keys = new ArrayList<>(KEY_CNT);
 
-        GridKernal kernal = (GridKernal) ignite;
+        IgniteKernal kernal = (IgniteKernal) ignite;
 
         GridCacheAffinityManager<Object, Object> affMgr = kernal.internalCache().context().affinity();
 

@@ -18,11 +18,11 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.lifecycle.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -58,7 +58,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     private Object ctgr;
 
     /** Whether or not to log grid name. */
-    private static final boolean logGridName = System.getProperty(GG_LOG_GRID_NAME) != null;
+    private static final boolean logGridName = System.getProperty(IGNITE_LOG_GRID_NAME) != null;
 
     /**
      * No-arg constructor is required by externalization.
@@ -85,12 +85,13 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
-        U.startLifecycleAware(Collections.singleton(impl));
+    @Override public void start() {
+        if (impl instanceof LifecycleAware)
+            ((LifecycleAware)impl).start();
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() throws IgniteCheckedException {
+    @Override public void stop() {
         U.stopLifecycleAware(this, Collections.singleton(impl));
     }
 
@@ -162,7 +163,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /**
-     * Enriches the log message with grid name if {@link org.apache.ignite.IgniteSystemProperties#GG_LOG_GRID_NAME}
+     * Enriches the log message with grid name if {@link org.apache.ignite.IgniteSystemProperties#IGNITE_LOG_GRID_NAME}
      * system property is set.
      *
      * @param m Message to enrich.
@@ -200,7 +201,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
             String gridNameR = t.get1();
             Object ctgrR = t.get2();
 
-            return GridGainEx.gridx(gridNameR).log().getLogger(ctgrR);
+            return IgnitionEx.gridx(gridNameR).log().getLogger(ctgrR);
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

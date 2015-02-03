@@ -19,10 +19,11 @@ package org.apache.ignite.internal.util.nodestart;
 
 import com.jcraft.jsch.*;
 import org.apache.ignite.*;
-import org.apache.ignite.resources.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
 
 import java.io.*;
 import java.text.*;
@@ -35,20 +36,20 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  */
 public class GridNodeCallableImpl implements GridNodeCallable {
     /** Default GridGain home path for Windows (taken from environment variable). */
-    private static final String DFLT_GG_HOME_WIN = "%GRIDGAIN_HOME%";
+    private static final String DFLT_IGNITE_HOME_WIN = "%IGNITE_HOME%";
 
     /** Default GridGain home path for Linux (taken from environment variable). */
-    private static final String DFLT_GG_HOME_LINUX = "$GRIDGAIN_HOME";
+    private static final String DFLT_IGNITE_HOME_LINUX = "$IGNITE_HOME";
 
     /** Default start script path for Windows. */
-    private static final String DFLT_SCRIPT_WIN = "bin\\ggstart.bat -v -np";
+    private static final String DFLT_SCRIPT_WIN = "bin\\ignite.bat -v -np";
 
     /** Default start script path for Linux. */
-    private static final String DFLT_SCRIPT_LINUX = "bin/ggstart.sh -v";
+    private static final String DFLT_SCRIPT_LINUX = "bin/ignite.sh -v";
 
     /**
      * Logs folder for Windows.
-     * Folder for linux is configured in {@code gridgain-log4j.xml}.
+     * Folder for linux is configured in {@code ignite-log4j.xml}.
      */
     private static final String LOG_DIR_WIN = "work\\log";
 
@@ -119,7 +120,7 @@ public class GridNodeCallableImpl implements GridNodeCallable {
             String ggHome = spec.ggHome();
 
             if (ggHome == null)
-                ggHome = win ? DFLT_GG_HOME_WIN : DFLT_GG_HOME_LINUX;
+                ggHome = win ? DFLT_IGNITE_HOME_WIN : DFLT_IGNITE_HOME_LINUX;
 
             String script = spec.script();
 
@@ -196,7 +197,7 @@ public class GridNodeCallableImpl implements GridNodeCallable {
 
             return new GridTuple3<>(spec.host(), true, null);
         }
-        catch (IgniteInterruptedException e) {
+        catch (IgniteInterruptedCheckedException e) {
             return new GridTuple3<>(spec.host(), false, e.getMessage());
         }
         catch (Exception e) {
@@ -215,9 +216,9 @@ public class GridNodeCallableImpl implements GridNodeCallable {
      * @param cmd Command.
      * @throws JSchException In case of SSH error.
      * @throws IOException If IO error occurs.
-     * @throws org.apache.ignite.IgniteInterruptedException If thread was interrupted while waiting.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread was interrupted while waiting.
      */
-    private void shell(Session ses, String cmd) throws JSchException, IOException, IgniteInterruptedException {
+    private void shell(Session ses, String cmd) throws JSchException, IOException, IgniteInterruptedCheckedException {
         ChannelShell ch = null;
 
         try {
@@ -301,11 +302,11 @@ public class GridNodeCallableImpl implements GridNodeCallable {
     }
 
     /**
-     * Builds ggstart.sh attributes to set up SSH username and password and log directory for started node.
+     * Builds ignite.sh attributes to set up SSH username and password and log directory for started node.
      *
      * @param username SSH user name.
      * @param host Host.
-     * @return {@code ggstart.sh} script arguments.
+     * @return {@code ignite.sh} script arguments.
      */
     private String buildRemoteLogArguments(String username, String host) {
         assert username != null;
@@ -313,8 +314,8 @@ public class GridNodeCallableImpl implements GridNodeCallable {
 
         SB sb = new SB();
 
-        sb.a(" -J-D").a(GG_SSH_HOST).a("=\"").a(host).a("\"").
-            a(" -J-D").a(GG_SSH_USER_NAME).a("=\"").a(username).a("\"");
+        sb.a(" -J-D").a(IGNITE_SSH_HOST).a("=\"").a(host).a("\"").
+            a(" -J-D").a(IGNITE_SSH_USER_NAME).a("=\"").a(username).a("\"");
 
         return sb.toString();
     }

@@ -20,26 +20,24 @@ package org.apache.ignite.marshaller;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.datastructures.*;
-import org.apache.ignite.internal.processors.streamer.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.internal.product.*;
-import org.apache.ignite.streamer.*;
-import org.apache.ignite.streamer.window.*;
 import org.apache.ignite.internal.executor.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.affinity.*;
 import org.apache.ignite.internal.processors.service.*;
-import org.apache.ignite.p2p.*;
+import org.apache.ignite.internal.processors.streamer.*;
+import org.apache.ignite.internal.product.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.p2p.*;
+import org.apache.ignite.streamer.*;
+import org.apache.ignite.streamer.window.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -120,11 +118,14 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      */
     private static StreamerConfiguration streamerConfiguration() {
         Collection<StreamerStage> stages = F.<StreamerStage>asList(new StreamerStage() {
-            @Override public String name() {
+            @Override
+            public String name() {
                 return "name";
             }
 
-            @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection evts) {
+            @Nullable
+            @Override
+            public Map<String, Collection<?>> run(StreamerContext ctx, Collection evts) {
                 return null;
             }
         });
@@ -132,7 +133,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         StreamerConfiguration cfg = new StreamerConfiguration();
 
         cfg.setAtLeastOnce(true);
-        cfg.setWindows(F.asList((StreamerWindow)new StreamerUnboundedWindow()));
+        cfg.setWindows(F.asList((StreamerWindow) new StreamerUnboundedWindow()));
         cfg.setStages(stages);
 
         return cfg;
@@ -442,7 +443,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Tests marshal {@link GridKernal} instance.
+     * Tests marshal {@link IgniteKernal} instance.
      *
      * @throws Exception If test failed.
      */
@@ -456,8 +457,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         assert inBean.getObjectField() != null;
         assert outBean.getObjectField() != null;
 
-        assert inBean.getObjectField().getClass().equals(GridKernal.class);
-        assert outBean.getObjectField().getClass().equals(GridKernal.class);
+        assert inBean.getObjectField().getClass().equals(IgniteKernal.class);
+        assert outBean.getObjectField().getClass().equals(IgniteKernal.class);
 
         assert inBean != outBean;
 
@@ -475,7 +476,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         final Ignite ignite = grid();
 
         GridMarshallerTestBean inBean = newTestBean(ignite.cluster().forPredicate(new IgnitePredicate<ClusterNode>() {
-            @Override public boolean apply(ClusterNode n) {
+            @Override
+            public boolean apply(ClusterNode n) {
                 return n.id().equals(ignite.cluster().localNode().id());
             }
         }));

@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.testframework.*;
 
 import java.util.*;
@@ -159,7 +159,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
                 try {
                     assert grid(1).compute().call(new TakeJob(queueName, collocatedCollectionConfiguration()));
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     error(e.getMessage(), e);
                 }
             }

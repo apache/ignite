@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external.child;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.hadoop.message.*;
 import org.apache.ignite.internal.processors.hadoop.shuffle.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.*;
@@ -147,8 +147,8 @@ public class GridHadoopChildProcessRunner {
         if (!initFut.isDone() && log.isDebugEnabled())
             log.debug("Will wait for process initialization future completion: " + req);
 
-        initFut.listenAsync(new CI1<IgniteFuture<?>>() {
-            @Override public void apply(IgniteFuture<?> f) {
+        initFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> f) {
                 try {
                     // Make sure init was successful.
                     f.get();
@@ -219,8 +219,8 @@ public class GridHadoopChildProcessRunner {
      * @param req Update request.
      */
     private void updateTasks(final GridHadoopJobInfoUpdateRequest req) {
-        initFut.listenAsync(new CI1<IgniteFuture<?>>() {
-            @Override public void apply(IgniteFuture<?> gridFut) {
+        initFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> gridFut) {
                 assert initGuard.get();
 
                 assert req.jobId().equals(job.id());
@@ -316,8 +316,8 @@ public class GridHadoopChildProcessRunner {
             final long start = U.currentTimeMillis();
 
             try {
-                shuffleJob.flush().listenAsync(new CI1<IgniteFuture<?>>() {
-                    @Override public void apply(IgniteFuture<?> f) {
+                shuffleJob.flush().listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> f) {
                         long end = U.currentTimeMillis();
 
                         if (log.isDebugEnabled())
@@ -396,8 +396,8 @@ public class GridHadoopChildProcessRunner {
                 if (log.isTraceEnabled())
                     log.trace("Received shuffle message [desc=" + desc + ", msg=" + msg + ']');
 
-                initFut.listenAsync(new CI1<IgniteFuture<?>>() {
-                    @Override public void apply(IgniteFuture<?> f) {
+                initFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> f) {
                         try {
                             GridHadoopShuffleMessage m = (GridHadoopShuffleMessage)msg;
 

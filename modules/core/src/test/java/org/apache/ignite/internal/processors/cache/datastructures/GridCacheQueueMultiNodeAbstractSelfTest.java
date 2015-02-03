@@ -18,21 +18,16 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.datastructures.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
@@ -150,7 +145,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
 
             final Ignite g = startGrid(GRID_CNT + 1);
 
-            IgniteFuture<Object> fut1 = GridTestUtils.runAsync(new Callable<Object>() {
+            IgniteInternalFuture<Object> fut1 = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     info(">>> Executing put callable [node=" + g.cluster().localNode().id() +
                         ", thread=" + Thread.currentThread().getName() + ']');
@@ -179,7 +174,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
 
             final Ignite g1 = startGrid(GRID_CNT + 2);
 
-            IgniteFuture<Object> fut2 = GridTestUtils.runAsync(new Callable<Object>() {
+            IgniteInternalFuture<Object> fut2 = GridTestUtils.runAsync(new Callable<Object>() {
                 @SuppressWarnings("BusyWait")
                 @Override public Object call() throws Exception {
                     try {
@@ -327,7 +322,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
         info("Queue name: " + queueName + ", collocated: " + collocated);
 
         try {
-            Collection<IgniteFuture> futs = new ArrayList<>();
+            Collection<IgniteInternalFuture> futs = new ArrayList<>();
 
             final int THREADS_PER_NODE = 3;
             final int ITEMS_PER_THREAD = 1000;
@@ -351,7 +346,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
                 }, THREADS_PER_NODE, "testPutMultiNode"));
             }
 
-            for (IgniteFuture fut : futs)
+            for (IgniteInternalFuture fut : futs)
                 fut.get();
 
             IgniteQueue<Integer> queue = grid(0).queue(queueName, null, 0, false);
@@ -392,8 +387,8 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
         info("Queue name: " + queueName + ", collocated: " + collocated);
 
         try {
-            Collection<IgniteFuture> putFuts = new ArrayList<>();
-            Collection<IgniteFuture> pollFuts = new ArrayList<>();
+            Collection<IgniteInternalFuture> putFuts = new ArrayList<>();
+            Collection<IgniteInternalFuture> pollFuts = new ArrayList<>();
 
             final int PUT_THREADS_PER_NODE = 3;
             final int POLL_THREADS_PER_NODE = 2;
@@ -447,12 +442,12 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
                 }
             }
 
-            for (IgniteFuture fut : putFuts)
+            for (IgniteInternalFuture fut : putFuts)
                 fut.get();
 
             stopPoll.set(true);
 
-            for (IgniteFuture fut : pollFuts)
+            for (IgniteInternalFuture fut : pollFuts)
                 fut.get();
 
             IgniteCollectionConfiguration colCfg = collectionConfiguration();

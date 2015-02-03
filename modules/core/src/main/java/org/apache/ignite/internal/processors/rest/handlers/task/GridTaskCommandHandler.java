@@ -19,13 +19,9 @@ package org.apache.ignite.internal.processors.rest.handlers.task;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.resources.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.rest.*;
@@ -33,9 +29,13 @@ import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.processors.rest.handlers.*;
 import org.apache.ignite.internal.processors.rest.request.*;
 import org.apache.ignite.internal.processors.task.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.portables.*;
+import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -47,9 +47,11 @@ import java.util.concurrent.locks.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.internal.GridClosureCallMode.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
 import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
@@ -63,7 +65,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
     private static final int DFLT_MAX_TASK_RESULTS = 10240;
 
     /** Maximum number of task results. */
-    private final int maxTaskResults = getInteger(GG_REST_MAX_TASK_RESULTS, DFLT_MAX_TASK_RESULTS);
+    private final int maxTaskResults = getInteger(IGNITE_REST_MAX_TASK_RESULTS, DFLT_MAX_TASK_RESULTS);
 
     /** Task results. */
     private final Map<IgniteUuid, TaskDescriptor> taskDescs =
@@ -128,7 +130,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
         try {
             return handleAsyncUnsafe(req);
         }
@@ -148,7 +150,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
      * @return Future.
      * @throws IgniteCheckedException On any handling exception.
      */
-    private IgniteFuture<GridRestResponse> handleAsyncUnsafe(final GridRestRequest req) throws IgniteCheckedException {
+    private IgniteInternalFuture<GridRestResponse> handleAsyncUnsafe(final GridRestRequest req) throws IgniteCheckedException {
         assert req instanceof GridRestTaskRequest : "Invalid command for topology handler: " + req;
 
         assert SUPPORTED_COMMANDS.contains(req.command());
@@ -185,34 +187,31 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                 final UUID clientId = req.clientId();
 
-                final ComputeTaskFuture<Object> taskFut;
+                final IgniteInternalFuture<Object> taskFut;
 
                 if (locExec) {
-                    ClusterGroup prj = ctx.grid().forSubjectId(clientId);
-
-                    IgniteCompute comp = ctx.grid().compute(prj).withTimeout(timeout).withAsync();
+                    ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, clientId);
+                    ctx.task().setThreadContext(TC_TIMEOUT, timeout);
 
                     Object arg = !F.isEmpty(params) ? params.size() == 1 ? params.get(0) : params.toArray() : null;
 
-                    comp.execute(name, arg);
-
-                    taskFut = comp.future();
+                    taskFut = ctx.task().execute(name, arg);
                 }
                 else {
                     // Using predicate instead of node intentionally
                     // in order to provide user well-structured EmptyProjectionException.
                     ClusterGroup prj = ctx.grid().forPredicate(F.nodeForNodeId(req.destinationId()));
 
-                    IgniteCompute comp = ctx.grid().compute(prj).withNoFailover().withAsync();
+                    ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
-                    comp.call(new ExeCallable(name, params, timeout, clientId));
-
-                    taskFut = comp.future();
+                    taskFut = ctx.closure().callAsync(
+                        BALANCE,
+                        new ExeCallable(name, params, timeout, clientId), prj.nodes());
                 }
 
                 if (async) {
                     if (locExec) {
-                        IgniteUuid tid = taskFut.getTaskSession().getId();
+                        IgniteUuid tid = ((ComputeTaskInternalFuture)taskFut).getTaskSession().getId();
 
                         taskDescs.put(tid, new TaskDescriptor(false, null, null));
 
@@ -226,16 +225,16 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                     fut.onDone(res);
                 }
 
-                taskFut.listenAsync(new IgniteInClosure<IgniteFuture<Object>>() {
-                    @Override public void apply(IgniteFuture<Object> f) {
+                taskFut.listenAsync(new IgniteInClosure<IgniteInternalFuture<Object>>() {
+                    @Override public void apply(IgniteInternalFuture<Object> taskFut) {
                         try {
                             TaskDescriptor desc;
 
                             try {
-                                desc = new TaskDescriptor(true, f.get(), null);
+                                desc = new TaskDescriptor(true, taskFut.get(), null);
                             }
                             catch (IgniteCheckedException e) {
-                                if (e.hasCause(ClusterTopologyException.class, ClusterGroupEmptyException.class))
+                                if (e.hasCause(ClusterTopologyCheckedException.class, ClusterGroupEmptyCheckedException.class))
                                     U.warn(log, "Failed to execute task due to topology issues (are all mapped " +
                                         "nodes alive?) [name=" + name + ", clientId=" + req.clientId() +
                                         ", err=" + e + ']');
@@ -247,9 +246,9 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                             }
 
                             if (async && locExec) {
-                                assert taskFut instanceof ComputeTaskFuture;
+                                assert taskFut instanceof ComputeTaskInternalFuture;
 
-                                IgniteUuid tid = ((ComputeTaskFuture)taskFut).getTaskSession().getId();
+                                IgniteUuid tid = ((ComputeTaskInternalFuture)taskFut).getTaskSession().getId();
 
                                 taskDescs.put(tid, desc);
                             }
@@ -590,7 +589,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** */
         @IgniteInstanceResource
-        private GridEx g;
+        private IgniteEx g;
 
         /**
          * Required by {@link Externalizable}.

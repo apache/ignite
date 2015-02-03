@@ -4,7 +4,7 @@ Apache Ignite SLF4J Module
 Apache Ignite SLF4J module provides GridLogger implementation based on SLF4J.
 
 To enable SLF4J module when starting a standalone node, move 'optional/ignite-slf4j' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing SLF4J Module In Maven Project

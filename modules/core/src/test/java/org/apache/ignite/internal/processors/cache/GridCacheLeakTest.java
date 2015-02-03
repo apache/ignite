@@ -125,7 +125,7 @@ public class GridCacheLeakTest extends GridCommonAbstractTest {
 
                 if (i % 5000 == 0) {
                     for (int g = 0; g < 3; g++) {
-                        GridCacheConcurrentMap<Object, Object> map = ((GridKernal)grid(g)).internalCache(CACHE_NAME).map();
+                        GridCacheConcurrentMap<Object, Object> map = ((IgniteKernal)grid(g)).internalCache(CACHE_NAME).map();
 
                         info("Map size for cache [g=" + g + ", size=" + map.size() +
                             ", pubSize=" + map.publicSize() + ']');

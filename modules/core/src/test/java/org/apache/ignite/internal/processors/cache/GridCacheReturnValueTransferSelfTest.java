@@ -28,8 +28,8 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 
 /**
  * Tests transform for extra traffic.
@@ -141,7 +141,7 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
             IgniteCache<Integer, TestObject> cache = grid(2).jcache(null);
 
             if (backups > 0 && atomicityMode == ATOMIC)
-                cache = ((IgniteCacheProxy<Integer, TestObject>)cache).flagsOn(FORCE_TRANSFORM_BACKUP);
+                cache = ((IgniteCacheProxy<Integer, TestObject>)cache).flagOn(FORCE_TRANSFORM_BACKUP);
 
             for (int i = 0; i < 100; i++)
                 cache.put(i, new TestObject());
