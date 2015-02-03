@@ -44,21 +44,8 @@ import java.util.concurrent.locks.*;
  *  These methods don't specify any keys to load, and leave it to the underlying storage to load cache
  *  data based on the optionally passed in arguments.
  * </li>
- * <li>
- *     Method {@link #affinity()} provides {@link org.apache.ignite.cache.affinity.CacheAffinityFunction} service for information on
- *     data partitioning and mapping keys to grid nodes responsible for caching those keys.
- * </li>
- * <li>
- *     Method {@link #dataStructures()} provides {@link org.apache.ignite.cache.datastructures.CacheDataStructures} service for
- *     creating and working with distributed concurrent data structures, such as
- *     {@link IgniteAtomicLong}, {@link IgniteAtomicReference}, {@link org.apache.ignite.cache.datastructures.CacheQueue}, etc.
- * </li>
- * <li>
- *  Methods like {@code 'tx{Un}Synchronize(..)'} witch allow to get notifications for transaction state changes.
- *  This feature is very useful when integrating cache transactions with some other in-house transactions.
- * </li>
+ * <li>Various {@code 'query(..)'} methods to allow cache data querying.</li>
  * <li>Method {@link #metrics()} to provide metrics for the whole cache.</li>
- * <li>Method {@link #getConfiguration()} to provide cache configuration bean.</li>
  * </ul>
  *
  * @param <K> Cache key type.

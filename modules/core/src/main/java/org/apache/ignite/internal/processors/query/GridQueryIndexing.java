@@ -26,6 +26,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -66,6 +67,17 @@ public interface GridQueryIndexing {
      * @return Cursor.
      */
     public QueryCursor<List<?>> queryTwoStep(String space, String sqlQry, Object[] params);
+
+    /**
+     * Parses SQL query into two step query and executes it.
+     *
+     * @param space Space.
+     * @param type Type name.
+     * @param sqlQry Query.
+     * @param params Parameters.
+     * @return Cursor.
+     */
+    public QueryCursor<Cache.Entry<?,?>> queryTwoStep(String space, String type, String sqlQry, Object[] params);
 
     /**
      * Queries individual fields (generally used by JDBC drivers).

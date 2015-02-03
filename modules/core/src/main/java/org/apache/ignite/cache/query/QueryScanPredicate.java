@@ -20,7 +20,7 @@ package org.apache.ignite.cache.query;
 import org.apache.ignite.lang.*;
 
 /**
- * Scan predicate over cache entries.
+ * Scan predicate over cache entries. By default will accept all the entries.
  */
 public class QueryScanPredicate<K, V> extends QueryPredicate implements IgniteBiPredicate<K, V> {
     /** {@inheritDoc} */

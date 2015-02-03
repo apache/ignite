@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.query;
 
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
@@ -39,7 +40,7 @@ public abstract class QueryPredicate implements Serializable {
 
     /**
      * Constructs query predicate with optional page size, if {@code 0},
-     * then {@link QueryConfiguration#getPageSize()} is used.
+     * then {@link CacheQueryConfiguration#getPageSize()} is used.
      *
      * @param pageSize Optional page size.
      */
@@ -48,7 +49,7 @@ public abstract class QueryPredicate implements Serializable {
     }
 
     /**
-     * Gets optional page size, if {@code 0}, then {@link QueryConfiguration#getPageSize()} is used.
+     * Gets optional page size, if {@code 0}, then {@link CacheQueryConfiguration#getPageSize()} is used.
      *
      * @return Optional page size.
      */
@@ -57,7 +58,7 @@ public abstract class QueryPredicate implements Serializable {
     }
 
     /**
-     * Sets optional page size, if {@code 0}, then {@link QueryConfiguration#getPageSize()} is used.
+     * Sets optional page size, if {@code 0}, then {@link CacheQueryConfiguration#getPageSize()} is used.
      *
      * @param pageSize Optional page size.
      */

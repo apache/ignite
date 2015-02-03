@@ -20,7 +20,7 @@ package org.apache.ignite.cache.query;
 import org.apache.ignite.spi.indexing.*;
 
 /**
- * Predicate to be used by {@link GridIndexingSpi} implementations.
+ * Predicate to be used by {@link IndexingSpi} implementations.
  */
 public class QuerySpiPredicate extends QueryPredicate {
     /** Arguments. */

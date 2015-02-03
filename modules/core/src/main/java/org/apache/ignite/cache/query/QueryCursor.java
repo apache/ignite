@@ -34,7 +34,7 @@ public interface QueryCursor<T> extends Iterable<T>, AutoCloseable {
      * Since all the results will be fetched, all the resources will be closed
      * automatically after this call, e.g. there is no need to call {@link #close()} method in this case.
      *
-     * @return Collection containing full query result.
+     * @return List containing all query results.
      */
     public List<T> getAll();
 

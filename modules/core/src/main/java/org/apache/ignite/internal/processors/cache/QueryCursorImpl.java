@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
+package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.internal.util.lang.*;
 
 import java.util.*;
 
@@ -27,7 +28,7 @@ import java.util.*;
  */
 public class QueryCursorImpl<T> implements QueryCursor<T> {
     /** */
-    private GridH2ResultSetIterator<T> iter;
+    private GridCloseableIterator<T> iter;
 
     /** */
     private boolean iterTaken;
@@ -35,7 +36,7 @@ public class QueryCursorImpl<T> implements QueryCursor<T> {
     /**
      * @param iter Iterator.
      */
-    public QueryCursorImpl(GridH2ResultSetIterator<T> iter) {
+    public QueryCursorImpl(GridCloseableIterator<T> iter) {
         this.iter = iter;
     }
 
@@ -69,7 +70,7 @@ public class QueryCursorImpl<T> implements QueryCursor<T> {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        GridH2ResultSetIterator<T> i;
+        GridCloseableIterator<T> i;
 
         if ((i = iter) != null) {
             iter = null;

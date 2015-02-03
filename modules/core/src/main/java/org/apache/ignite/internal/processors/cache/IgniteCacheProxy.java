@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -233,6 +234,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public QueryCursor<Entry<K,V>> query(QueryPredicate filter) {
         A.notNull(filter, "filter");
 
@@ -241,35 +243,53 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
         try {
             if (filter instanceof QuerySqlPredicate) {
                 // TODO query over entries on indexing
+                ctx.kernalContext().query().query()
 
                 return null;
             }
+
+            final CacheQuery<Map.Entry<K,V>> qry;
+            final CacheQueryFuture<Map.Entry<K,V>> fut;
 
             if (filter instanceof QueryScanPredicate) {
-                CacheQuery<Map.Entry<K,V>> res = delegate.queries().createScanQuery((IgniteBiPredicate<K,V>)filter);
+                qry = delegate.queries().createScanQuery((IgniteBiPredicate<K,V>)filter);
 
-                // TODO convert to QueryCursor.
-                return null;
+                fut = qry.execute();
             }
-
-            if (filter instanceof QueryTextPredicate) {
+            else if (filter instanceof QueryTextPredicate) {
                 QueryTextPredicate p = (QueryTextPredicate)filter;
 
-                CacheQueryFuture<Map.Entry<K,V>> res = delegate.queries().createFullTextQuery(p.getType(), p.getText()).execute();
+                qry = delegate.queries().createFullTextQuery(p.getType(), p.getText());
 
-                // TODO convert to QueryCursor.
-                return null;
+                fut = qry.execute();
             }
+            else if (filter instanceof QuerySpiPredicate) {
+                qry = ((GridCacheQueriesEx)delegate.queries()).createSpiQuery();
 
-            if (filter instanceof QuerySpiPredicate) {
-                CacheQueryFuture<Object> res = ((GridCacheQueriesEx)delegate.queries()).createSpiQuery()
-                    .execute(((QuerySpiPredicate)filter).getArgs());
-
-                // TODO convert to QueryCursor.
-                return null;
+                fut = qry.execute(((QuerySpiPredicate)filter).getArgs());
             }
+            else
+                throw new IgniteException("Unsupported query predicate: " + filter);
 
-            throw new IgniteException("Unsupported query predicate: " + filter);
+            return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K,V>>() {
+                /** */
+                Map.Entry<K,V> cur;
+
+                @Override protected Entry<K,V> onNext() throws IgniteCheckedException {
+                    if (!onHasNext())
+                        throw new NoSuchElementException();
+
+                    return new CacheEntryImpl<>(cur.getKey(), cur.getValue());
+                }
+
+                @Override protected boolean onHasNext() throws IgniteCheckedException {
+                    return cur != null || (cur = fut.next()) != null;
+                }
+
+                @Override protected void onClose() throws IgniteCheckedException {
+                    fut.cancel();
+                }
+            });
         }
         finally {
             gate.leave(prev);
