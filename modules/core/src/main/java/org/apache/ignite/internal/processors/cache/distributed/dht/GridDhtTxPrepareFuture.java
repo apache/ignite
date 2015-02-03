@@ -342,6 +342,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                             if (err != null || procRes != null)
                                 ret.addEntryProcessResult(key,
                                     err == null ? new CacheInvokeResult<>(procRes) : new CacheInvokeResult<>(err));
+                            else
+                                ret.invokeResult(true);
                         }
                         else
                             ret.value(val);

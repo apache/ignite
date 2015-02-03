@@ -109,6 +109,13 @@ public class GridCacheReturn<V> implements Externalizable, IgniteOptimizedMarsha
     }
 
     /**
+     * @param invokeRes Invoke result flag.
+     */
+    public void invokeResult(boolean invokeRes) {
+        this.invokeRes = invokeRes;
+    }
+
+    /**
      * @param v Value.
      * @return This instance for chaining.
      */
@@ -176,6 +183,9 @@ public class GridCacheReturn<V> implements Externalizable, IgniteOptimizedMarsha
     public synchronized void mergeEntryProcessResults(GridCacheReturn<V> other) {
         assert invokeRes || v == null : "Invalid state to merge: " + this;
         assert other.invokeRes;
+
+        if (other.v == null)
+            return;
 
         invokeRes = true;
 
