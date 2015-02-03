@@ -19,7 +19,6 @@ package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.jdbc.model.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -137,13 +136,9 @@ public abstract class AbstractJdbcCacheStoreMultithreadedSelfTest<T extends Jdbc
 
             springCtx.refresh();
 
-            Collection<CacheQueryTypeMetadata> tp = springCtx.getBeansOfType(CacheQueryTypeMetadata.class).values();
+            Collection<CacheTypeMetadata> tp = springCtx.getBeansOfType(CacheTypeMetadata.class).values();
 
-            CacheQueryConfiguration cq = new CacheQueryConfiguration();
-
-            cq.setTypeMetadata(tp);
-
-            cc.setQueryConfiguration(cq);
+            cc.setTypeMetadata(tp);
         }
         catch (BeansException e) {
             if (X.hasCause(e, ClassNotFoundException.class))

@@ -35,21 +35,20 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
         " WHERE a.owner = '%s'" +
         " ORDER BY a.owner, a.table_name, a.column_id";
 
-    private static final int SQL_COLS_OWNER = 1;
+    /** Owner index. */
+    private static final int OWNER_IDX = 1;
 
-    private static final int SQL_COLS_TAB_NAME = 2;
+    /** Table name index. */
+    private static final int TABLE_NAME_IDX = 2;
 
-    private static final int SQL_COLS_COL_NAME = 3;
+    /** Column name index. */
+    private static final int COLUMN_NAME_IDX = 3;
 
-    private static final int SQL_COLS_NULLABLE = 4;
+    /** Nullable index. */
+    private static final int NULLABLE_IDX = 4;
 
-    private static final int SQL_COLS_DATA_TYPE = 5;
-
-    /** SQL to get indexes metadata. */
-    private static final String SQL_INDEXES = "select index_name, column_name, descend" +
-        " FROM all_ind_columns" +
-        " WHERE index_owner = ? and table_name = ?" +
-        "  ORDER BY index_name, column_position";
+    /** Data type index. */
+    private static final int DATA_TYPE_IDX = 5;
 
     /**
      * @param type Column type from Oracle database.
@@ -104,35 +103,9 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
         return "Y".equals(nullable);
     }
 
-    /**
-     * @param descend Index column sort direction from Oracle database.
-     * @return {@code true} if column sorted in descent direction.
-     */
-    private static Boolean decodeDescend(String descend) {
-        return descend != null ? "DESC".equals(descend) : null;
-    }
-
-    private static Map<String, Map<String, Boolean>> indexes(PreparedStatement stmt, String owner, String tbl)
-        throws SQLException {
-        Map<String, Map<String, Boolean>> idxs = new LinkedHashMap<>();
-
-        stmt.setString(1, owner);
-        stmt.setString(2, tbl);
-
-        try (ResultSet idxsRs = stmt.executeQuery()) {
-            while (idxsRs.next()) {
-                String idxName = idxsRs.getString("INDEX_NAME");
-            }
-        }
-
-        return idxs;
-    }
-
     /** {@inheritDoc} */
     @Override public Collection<DbTable> tables(Connection conn, boolean tblsOnly) throws SQLException {
         Collection<DbTable> tbls = new ArrayList<>();
-
-        PreparedStatement stmtIdxs = conn.prepareStatement(SQL_INDEXES);
 
         try (Statement stmt = conn.createStatement()) {
             Collection<DbColumn> cols = new ArrayList<>();
@@ -145,8 +118,8 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                 String prevTbl = "";
 
                 while (colsRs.next()) {
-                    String schema = colsRs.getString(SQL_COLS_OWNER);
-                    String tbl = colsRs.getString(SQL_COLS_TAB_NAME);
+                    String schema = colsRs.getString(OWNER_IDX);
+                    String tbl = colsRs.getString(TABLE_NAME_IDX);
 
                     if (prevSchema.isEmpty()) {
                         prevSchema = schema;
@@ -154,25 +127,22 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                     }
 
                     if (!schema.equals(prevSchema) || !tbl.equals(prevTbl)) {
-                        tbls.add(new DbTable(prevSchema, prevTbl, cols, Collections.<String>emptySet(),
-                            Collections.<String>emptySet(), null));
+                        tbls.add(new DbTable(prevSchema, prevTbl, cols));
 
                         prevSchema = schema;
                         prevTbl = tbl;
 
                         cols = new ArrayList<>();
                     }
-                    cols.add(new DbColumn(colsRs.getString(SQL_COLS_COL_NAME),
-                        decodeType(colsRs.getString(SQL_COLS_DATA_TYPE)),
+
+                    cols.add(new DbColumn(colsRs.getString(COLUMN_NAME_IDX),
+                        decodeType(colsRs.getString(DATA_TYPE_IDX)),
                         false,
-                        decodeNullable(colsRs.getString(SQL_COLS_NULLABLE))
-                    ));
+                        decodeNullable(colsRs.getString(NULLABLE_IDX))));
                 }
 
                 if (!cols.isEmpty())
-                    tbls.add(new DbTable(prevSchema, prevTbl, cols,
-                        Collections.<String>emptySet(), Collections.<String>emptySet(),
-                        Collections.<String, Map<String, Boolean>>emptyMap()));
+                    tbls.add(new DbTable(prevSchema, prevTbl, cols));
             }
         }
 

@@ -28,47 +28,6 @@ import java.util.*;
  * Database metadata parser.
  */
 public class DatabaseMetadataParser {
-//        try (ResultSet idxs = dbMeta.getIndexInfo(catalog, schema, tbl, false, true)) {
-//            while (idxs.next()) {
-//                String idxName = idxs.getString(6);
-//
-//                String colName = idxs.getString(9);
-//
-//                if (idxName == null || colName == null)
-//                    continue;
-//
-//                String idx = toJavaFieldName(idxName);
-//
-//                String col = toJavaFieldName(colName);
-//
-//                String askOrDesc = idxs.getString(10);
-//
-//                LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> idxCols = groups.get(idx);
-//
-//                if (idxCols == null) {
-//                    idxCols = new LinkedHashMap<>();
-//
-//                    groups.put(idx, idxCols);
-//                }
-//
-//                Class<?> dataType = qryFields.get(col);
-//
-//                Boolean desc = askOrDesc != null ? "D".equals(askOrDesc) : null;
-//
-//                if (desc != null) {
-//                    if (desc)
-//                        descFields.put(col, dataType);
-//                    else
-//                        ascFields.put(col, dataType);
-//                }
-//
-//                idxCols.put(col, new IgniteBiTuple<Class<?>, Boolean>(dataType, desc));
-//            }
-//        }
-//
-//        return new PojoDescriptor(parent, typeMeta, fields);
-//    }
-
     /**
      * Parse database metadata.
      *
@@ -108,9 +67,7 @@ public class DatabaseMetadataParser {
             Collection<PojoDescriptor> children = childrens.get(schema);
 
             if (parent == null) {
-                parent = new PojoDescriptor(null, new DbTable(schema, "", Collections.<DbColumn>emptyList(),
-                    Collections.<String>emptySet(), Collections.<String>emptySet(),
-                    Collections.<String, Map<String, Boolean>>emptyMap()));
+                parent = new PojoDescriptor(null, new DbTable(schema, "", Collections.<DbColumn>emptyList()));
 
                 children = new ArrayList<>();
 

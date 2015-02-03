@@ -98,45 +98,7 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
                             }
                         }
 
-                        Set<String> ascCols = new HashSet<>();
-
-                        Set<String> descCols = new HashSet<>();
-
-                        Map<String, Map<String, Boolean>> idxs = new LinkedHashMap<>();
-
-                        try (ResultSet idxRs = dbMeta.getIndexInfo(catalog, schema, tblName, false, true)) {
-                            while (idxRs.next()) {
-                                String idxName = idxRs.getString("INDEX_NAME");
-
-                                String colName = idxRs.getString("COLUMN_NAME");
-
-                                if (idxName == null || colName == null)
-                                    continue;
-
-                                Map<String, Boolean> idx = idxs.get(idxName);
-
-                                if (idx == null) {
-                                    idx = new LinkedHashMap<>();
-
-                                    idxs.put(idxName, idx);
-                                }
-
-                                String askOrDesc = idxRs.getString("ASC_OR_DESC");
-
-                                Boolean desc = askOrDesc != null ? "D".equals(askOrDesc) : null;
-
-                                idx.put(colName, desc);
-
-                                if (desc != null) {
-                                    if (desc)
-                                        descCols.add(colName);
-                                    else
-                                        ascCols.add(colName);
-                                }
-                            }
-                        }
-
-                        tbls.add(new DbTable(schema, tblName, cols, ascCols, descCols, idxs));
+                        tbls.add(new DbTable(schema, tblName, cols));
                     }
                 }
             }
