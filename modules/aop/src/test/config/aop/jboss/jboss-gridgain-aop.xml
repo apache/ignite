@@ -20,8 +20,8 @@
 <!DOCTYPE aop PUBLIC "-//JBoss//DTD JBOSS AOP 1.0//EN" "http://labs.jboss.com/portal/jbossaop/dtd/jboss-aop_1_0.dtd">
 
 <!--
-    GridGain aspect definition to be used with JBoss AS. Identical file called 'jboss-aop.xml'
-    is already included into gridgain-x.x.x.sar JBoss archive that is shipped with GridGain.
+    Ignite aspect definition to be used with JBoss AS. Identical file called 'jboss-aop.xml'
+    is already included into gridgain-x.x.x.sar JBoss archive that is shipped with Ignite.
     However, when doing your own custom deployment, you will need to copy this file
     into JBoss 'deploy' folder to enable AOP-based grid-enabling with @Gridify annotation.
 -->
