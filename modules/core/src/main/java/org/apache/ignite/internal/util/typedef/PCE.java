@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.util.typedef;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.lang.*;
 
 /**
  * Defines {@code alias} for <tt>GridPredicate&lt;CacheEntry&lt;K, V&gt;&gt;</tt> by extending

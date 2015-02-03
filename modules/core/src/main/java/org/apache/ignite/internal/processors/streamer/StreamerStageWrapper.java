@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.streamer;
 
-import org.apache.ignite.*;
-import org.apache.ignite.streamer.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.streamer.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -73,8 +72,7 @@ public class StreamerStageWrapper implements StreamerStage<Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Object> evts)
-        throws IgniteCheckedException {
+    @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Object> evts) {
         return delegate.run(ctx, evts);
     }
 

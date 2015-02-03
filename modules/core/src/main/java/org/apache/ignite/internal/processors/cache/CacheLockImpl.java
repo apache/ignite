@@ -137,7 +137,7 @@ class CacheLockImpl<K, V> implements Lock {
 
                 return res;
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 if (!fut.cancel()) {
                     if (fut.isDone()) {
                         Boolean res = fut.get();

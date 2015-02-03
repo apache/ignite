@@ -19,13 +19,15 @@ package org.apache.ignite.spi.checkpoint.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.checkpoint.*;
 import org.jetbrains.annotations.*;
+
+import javax.cache.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 
@@ -192,7 +194,7 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
         try {
             return getSpiContext().get(cacheName, key);
         }
-        catch (IgniteCheckedException e) {
+        catch (CacheException e) {
             throw new IgniteSpiException("Failed to load checkpoint data [key=" + key + ']', e);
         }
     }
@@ -212,7 +214,7 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
             else
                 return getSpiContext().putIfAbsent(cacheName, key, state, timeout) == null;
         }
-        catch (IgniteCheckedException e) {
+        catch (CacheException e) {
             throw new IgniteSpiException("Failed to save checkpoint data [key=" + key +
                 ", stateSize=" + state.length + ", timeout=" + timeout + ']', e);
         }
@@ -225,7 +227,7 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
         try {
             return getSpiContext().remove(cacheName, key) != null;
         }
-        catch (IgniteCheckedException e) {
+        catch (CacheException e) {
             U.error(log, "Failed to remove checkpoint data [key=" + key + ']', e);
 
             return false;

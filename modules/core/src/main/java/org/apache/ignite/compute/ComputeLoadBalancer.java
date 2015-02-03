@@ -108,8 +108,8 @@ public interface ComputeLoadBalancer {
      * @param exclNodes Optional collection of nodes that should be excluded from balanced nodes.
      *      If collection is {@code null} or empty - no nodes will be excluded.
      * @return Next balanced node.
-     * @throws IgniteCheckedException If any error occurred when finding next balanced node.
+     * @throws IgniteException If any error occurred when finding next balanced node.
      */
     @Nullable public ClusterNode getBalancedNode(ComputeJob job, @Nullable Collection<ClusterNode> exclNodes)
-        throws IgniteCheckedException;
+        throws IgniteException;
 }

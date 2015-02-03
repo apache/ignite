@@ -18,6 +18,7 @@
 package org.apache.ignite.testframework;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -156,7 +157,7 @@ public final class GridTestSafeThreadFactory implements ThreadFactory {
             for (Thread t : threads)
                 U.join(t);
         }
-        catch (IgniteInterruptedException ignored) {
+        catch (IgniteInterruptedCheckedException ignored) {
             // No-op.
         }
     }

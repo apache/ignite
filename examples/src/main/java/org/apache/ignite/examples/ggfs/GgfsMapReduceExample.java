@@ -129,12 +129,12 @@ public class GgfsMapReduceExample {
     private static class GrepTask extends IgniteFsTask<String, Collection<Line>> {
         /** {@inheritDoc} */
         @Override public IgniteFsJob createJob(IgniteFsPath path, IgniteFsFileRange range,
-            IgniteFsTaskArgs<String> args) throws IgniteCheckedException {
+            IgniteFsTaskArgs<String> args) {
             return new GrepJob(args.userArgument());
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<Line> reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Collection<Line> reduce(List<ComputeJobResult> results) {
             Collection<Line> lines = new TreeSet<>(new Comparator<Line>() {
                 @Override public int compare(Line line1, Line line2) {
                     return line1.rangePosition() < line2.rangePosition() ? -1 :
@@ -173,7 +173,7 @@ public class GgfsMapReduceExample {
         }
 
         /**  {@inheritDoc} */
-        @Override public Object execute(IgniteFs ggfs, IgniteFsRangeInputStream in) throws IgniteCheckedException, IOException {
+        @Override public Object execute(IgniteFs ggfs, IgniteFsRangeInputStream in) throws IgniteException, IOException {
             Collection<Line> res = null;
 
             long start = in.startOffset();

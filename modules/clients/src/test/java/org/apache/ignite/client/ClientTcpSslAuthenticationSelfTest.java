@@ -17,10 +17,10 @@
 
 package org.apache.ignite.client;
 
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.client.balancer.*;
 import org.apache.ignite.client.impl.*;
 import org.apache.ignite.client.ssl.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;

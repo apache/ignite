@@ -137,7 +137,7 @@ public class CacheManager implements javax.cache.CacheManager {
                 try {
                     ignite = Ignition.start(cfg);
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     throw new CacheException(e);
                 }
             }

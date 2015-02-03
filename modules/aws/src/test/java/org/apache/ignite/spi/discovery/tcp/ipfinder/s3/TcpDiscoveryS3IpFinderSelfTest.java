@@ -18,8 +18,8 @@
 package org.apache.ignite.spi.discovery.tcp.ipfinder.s3;
 
 import com.amazonaws.auth.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.testsuites.*;
 
 import java.net.*;

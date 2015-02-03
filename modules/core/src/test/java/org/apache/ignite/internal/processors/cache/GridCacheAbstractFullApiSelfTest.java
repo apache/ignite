@@ -26,13 +26,13 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
-import org.apache.ignite.spi.swapspace.inmemory.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.swapspace.inmemory.*;
 import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -46,11 +46,11 @@ import java.util.concurrent.locks.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCachePeekMode.*;
+import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.testframework.GridTestUtils.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.transactions.IgniteTxState.*;
-import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
  * Full API cache test.
@@ -1267,15 +1267,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertNull(asyncCache.invoke("key1", INCR_PROCESSOR));
 
-        IgniteInternalFuture<?> fut0 = asyncCache.future();
+        IgniteFuture<?> fut0 = asyncCache.future();
 
         assertNull(asyncCache.invoke("key2", INCR_PROCESSOR));
 
-        IgniteInternalFuture<?> fut1 = asyncCache.future();
+        IgniteFuture<?> fut1 = asyncCache.future();
 
         assertNull(asyncCache.invoke("key3", RMV_PROCESSOR));
 
-        IgniteInternalFuture<?> fut2 = asyncCache.future();
+        IgniteFuture<?> fut2 = asyncCache.future();
 
         fut0.get();
         fut1.get();
@@ -1634,7 +1634,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         IgniteInternalFuture<Boolean> fut1 = cache().putxAsync("key1", 10);
         IgniteInternalFuture<Boolean> fut2 = cache().putxAsync("key2", 11);
 
-        IgniteInternalFuture<IgniteTx> f = null;
+        IgniteFuture<IgniteTx> f = null;
 
         if (tx != null) {
             tx = (IgniteTx)tx.withAsync();
@@ -3735,7 +3735,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 }
             });
 
-            IgniteInternalFuture<Boolean> f = comp.future();
+            IgniteFuture<Boolean> f = comp.future();
 
                 // Let another thread start.
             latch.await();
@@ -3798,7 +3798,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                         f.get(100);
 
                         fail();
-                    } catch (IgniteFutureTimeoutException ex) {
+                    } catch (IgniteFutureTimeoutCheckedException ex) {
                         info("Caught expected exception: " + ex);
                     }
 
@@ -3812,7 +3812,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 }
             });
 
-            IgniteInternalFuture<Boolean> f = comp.future();
+            IgniteFuture<Boolean> f = comp.future();
 
             syncLatch.await();
 

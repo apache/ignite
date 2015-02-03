@@ -73,9 +73,9 @@ abstract class StreamerBoundedSizeWindowAdapter<E, T> extends StreamerWindowAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void checkConfiguration() throws IgniteCheckedException {
+    @Override public void checkConfiguration() {
         if (maxSize < 0)
-            throw new IgniteCheckedException("Failed to initialize window (maximumSize cannot be negative) " +
+            throw new IgniteException("Failed to initialize window (maximumSize cannot be negative) " +
                 "[windowClass=" + getClass().getSimpleName() +
                 ", maxSize=" + maxSize +
                 ", unique=" + unique + ']');

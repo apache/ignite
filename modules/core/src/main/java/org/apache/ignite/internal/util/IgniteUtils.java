@@ -19,11 +19,15 @@ package org.apache.ignite.internal.util;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.compute.*;
+import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -34,16 +38,23 @@ import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.streamer.*;
-import org.apache.ignite.spi.discovery.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.portables.*;
+import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.discovery.*;
+import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
+import javax.cache.*;
 import javax.management.*;
 import javax.naming.*;
 import javax.net.ssl.*;
@@ -301,6 +312,10 @@ public abstract class IgniteUtils {
     /** Mutex. */
     private static final Object mux = new Object();
 
+    /** Exception converters. */
+    private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
+        exceptionConverters;
+
     /**
      * Initializes enterprise check.
      */
@@ -539,6 +554,127 @@ public abstract class IgniteUtils {
         PORTABLE_CLS.add(UUID[].class);
         PORTABLE_CLS.add(Date[].class);
         PORTABLE_CLS.add(Timestamp[].class);
+
+        exceptionConverters = Collections.unmodifiableMap(exceptionConverters());
+    }
+
+
+    /**
+     * Gets map with converters to convert internal checked exceptions to public API unchecked exceptions.
+     *
+     * @return Exception converters.
+     */
+    private static Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
+        exceptionConverters() {
+        Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>> m = new HashMap<>();
+
+        m.put(IgniteInterruptedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteInterruptedException(e.getMessage(), (InterruptedException)e.getCause());
+            }
+        });
+
+        m.put(IgniteFutureCancelledCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteFutureCancelledException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteFutureTimeoutCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteFutureTimeoutException(e.getMessage(), e);
+            }
+        });
+
+        m.put(ClusterGroupEmptyCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new ClusterGroupEmptyException(e.getMessage(), e);
+            }
+        });
+
+        m.put(ClusterTopologyCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new ClusterTopologyException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteDeploymentCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteDeploymentException(e.getMessage(), e);
+            }
+        });
+
+        m.put(ComputeTaskTimeoutCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new ComputeTaskTimeoutException(e.getMessage(), e);
+            }
+        });
+
+        m.put(ComputeTaskCancelledCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new ComputeTaskCancelledException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteTxRollbackCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteTxRollbackException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteTxHeuristicCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteTxHeuristicException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteTxTimeoutCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteTxTimeoutException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteTxOptimisticCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteTxOptimisticException(e.getMessage(), e);
+            }
+        });
+
+        return m;
+    }
+
+    /**
+     * @param e Ignite checked exception.
+     * @return Ignite runtime exception.
+     */
+    public static IgniteException convertException(IgniteCheckedException e) {
+        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
+
+        if (converter != null)
+            return converter.apply(e);
+
+        if (e.getCause() instanceof IgniteException)
+            return (IgniteException)e.getCause();
+
+        return new IgniteException(e.getMessage(), e);
+    }
+
+    /**
+     * @param e Ignite checked exception.
+     * @return Ignite runtime exception.
+     */
+    @Nullable public static CacheException convertToCacheException(IgniteCheckedException e) {
+        if (e instanceof CachePartialUpdateCheckedException)
+            return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
+        else if (e instanceof CacheAtomicUpdateTimeoutCheckedException)
+            return new CacheAtomicUpdateTimeoutException(e.getMessage(), e);
+
+        if (e.getCause() instanceof CacheException)
+            return (CacheException)e.getCause();
+
+        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
+
+        return converter != null ? new CacheException(converter.apply(e)) : new CacheException(e);
     }
 
     /**
@@ -4173,9 +4309,9 @@ public abstract class IgniteUtils {
      *
      * @return Empty projection exception.
      */
-    public static ClusterGroupEmptyException emptyTopologyException() {
-        return new ClusterGroupEmptyException("Topology projection is empty. Note that predicate based " +
-            "projection can be empty from call to call.");
+    public static ClusterGroupEmptyCheckedException emptyTopologyException() {
+        return new ClusterGroupEmptyCheckedException("Clouster group is empty. Note that predicate based " +
+            "cluster group can be empty from call to call.");
     }
 
     /**
@@ -5645,17 +5781,17 @@ public abstract class IgniteUtils {
      * Converts {@link InterruptedException} to {@link IgniteCheckedException}.
      *
      * @param mux Mux to wait on.
-     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+     * @throws IgniteInterruptedCheckedException If interrupted.
      */
     @SuppressWarnings({"WaitNotInLoop", "WaitWhileNotSynced"})
-    public static void wait(Object mux) throws IgniteInterruptedException {
+    public static void wait(Object mux) throws IgniteInterruptedCheckedException {
         try {
             mux.wait();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -6874,16 +7010,16 @@ public abstract class IgniteUtils {
      * Awaits for condition.
      *
      * @param cond Condition to await for.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}
      */
-    public static void await(Condition cond) throws IgniteInterruptedException {
+    public static void await(Condition cond) throws IgniteInterruptedCheckedException {
         try {
             cond.await();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -6894,16 +7030,16 @@ public abstract class IgniteUtils {
      * @param time The maximum time to wait,
      * @param unit The unit of the {@code time} argument.
      * @return {@code false} if the waiting time detectably elapsed before return from the method, else {@code true}
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}
      */
-    public static boolean await(Condition cond, long time, TimeUnit unit) throws IgniteInterruptedException {
+    public static boolean await(Condition cond, long time, TimeUnit unit) throws IgniteInterruptedCheckedException {
         try {
             return cond.await(time, unit);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -6911,9 +7047,9 @@ public abstract class IgniteUtils {
      * Awaits for the latch.
      *
      * @param latch Latch to wait for.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}.
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
-    public static void await(CountDownLatch latch) throws IgniteInterruptedException {
+    public static void await(CountDownLatch latch) throws IgniteInterruptedCheckedException {
         try {
             if (latch.getCount() > 0)
                 latch.await();
@@ -6921,7 +7057,7 @@ public abstract class IgniteUtils {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -6933,17 +7069,17 @@ public abstract class IgniteUtils {
      * @param unit Time unit for timeout.
      * @return {@code True} if the count reached zero and {@code false}
      *      if the waiting time elapsed before the count reached zero.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}.
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
     public static boolean await(CountDownLatch latch, long timeout, TimeUnit unit)
-        throws IgniteInterruptedException {
+        throws IgniteInterruptedCheckedException {
         try {
             return latch.await(timeout, unit);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -7007,16 +7143,16 @@ public abstract class IgniteUtils {
      * Sleeps for given number of milliseconds.
      *
      * @param ms Time to sleep.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}.
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
-    public static void sleep(long ms) throws IgniteInterruptedException {
+    public static void sleep(long ms) throws IgniteInterruptedCheckedException {
         try {
             Thread.sleep(ms);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -7024,9 +7160,9 @@ public abstract class IgniteUtils {
      * Joins worker.
      *
      * @param w Worker.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}.
+     * @throws IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
-    public static void join(GridWorker w) throws IgniteInterruptedException {
+    public static void join(GridWorker w) throws IgniteInterruptedCheckedException {
         try {
             if (w != null)
                 w.join();
@@ -7034,7 +7170,7 @@ public abstract class IgniteUtils {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -7055,7 +7191,7 @@ public abstract class IgniteUtils {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
         catch (CancellationException e) {
             throw new IgniteCheckedException(e);
@@ -7066,16 +7202,16 @@ public abstract class IgniteUtils {
      * Joins thread.
      *
      * @param t Thread.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
-    public static void join(Thread t) throws IgniteInterruptedException {
+    public static void join(Thread t) throws IgniteInterruptedCheckedException {
         try {
             t.join();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -7083,16 +7219,16 @@ public abstract class IgniteUtils {
      * Acquires a permit from provided semaphore.
      *
      * @param sem Semaphore.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
-    public static void acquire(Semaphore sem) throws IgniteInterruptedException {
+    public static void acquire(Semaphore sem) throws IgniteInterruptedCheckedException {
         try {
             sem.acquire();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -8216,15 +8352,20 @@ public abstract class IgniteUtils {
 
     /**
      * For each object provided by the given {@link Iterable} checks if it implements
-     * {@link org.apache.ignite.lifecycle.LifecycleAware} interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#start} method.
+     * {@link LifecycleAware} interface and executes {@link LifecycleAware#start} method.
      *
      * @param objs Objects.
-     * @throws IgniteCheckedException If {@link org.apache.ignite.lifecycle.LifecycleAware#start} fails.
+     * @throws IgniteCheckedException If {@link LifecycleAware#start} fails.
      */
     public static void startLifecycleAware(Iterable<?> objs) throws IgniteCheckedException {
-        for (Object obj : objs) {
-            if (obj instanceof LifecycleAware)
-                ((LifecycleAware)obj).start();
+        try {
+            for (Object obj : objs) {
+                if (obj instanceof LifecycleAware)
+                    ((LifecycleAware)obj).start();
+            }
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to start component: " + e, e);
         }
     }
 
@@ -8241,7 +8382,7 @@ public abstract class IgniteUtils {
                 try {
                     ((LifecycleAware)obj).stop();
                 }
-                catch (IgniteCheckedException e) {
+                catch (Exception e) {
                     U.error(log, "Failed to stop component (ignoring): " + obj, e);
                 }
             }

@@ -18,11 +18,11 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.lifecycle.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -85,12 +85,13 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
-        U.startLifecycleAware(Collections.singleton(impl));
+    @Override public void start() {
+        if (impl instanceof LifecycleAware)
+            ((LifecycleAware)impl).start();
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() throws IgniteCheckedException {
+    @Override public void stop() {
         U.stopLifecycleAware(this, Collections.singleton(impl));
     }
 

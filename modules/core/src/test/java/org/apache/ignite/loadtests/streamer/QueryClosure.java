@@ -18,9 +18,10 @@
 package org.apache.ignite.loadtests.streamer;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 /**
  * Closure for events generation.
@@ -42,7 +43,7 @@ class QueryClosure implements IgniteInClosure<IgniteStreamer> {
         try {
             U.sleep(warmup);
         }
-        catch (IgniteInterruptedException ignore) {
+        catch (IgniteInterruptedCheckedException ignore) {
             return;
         }
 
@@ -55,7 +56,7 @@ class QueryClosure implements IgniteInClosure<IgniteStreamer> {
             try {
                 U.sleep(SLEEP_PERIOD_SEC * 1000);
             }
-            catch (IgniteInterruptedException ignore) {
+            catch (IgniteInterruptedCheckedException ignore) {
                 return;
             }
 

@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.timeout.*;
@@ -31,6 +30,10 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -1206,7 +1209,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             dep = ctx.deploy().deploy(cls0, U.detectClassLoader(cls0));
 
             if (dep == null)
-                throw new IgniteDeploymentException("Failed to deploy user message: " + msg);
+                throw new IgniteDeploymentCheckedException("Failed to deploy user message: " + msg);
 
             depClsName = cls0.getName();
         }
@@ -1773,7 +1776,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         null);
 
                     if (dep == null)
-                        throw new IgniteDeploymentException(
+                        throw new IgniteDeploymentCheckedException(
                             "Failed to obtain deployment information for user message. " +
                             "If you are using custom message or topic class, try implementing " +
                             "GridPeerDeployAware interface. [msg=" + ioMsg + ']');

@@ -19,12 +19,11 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.future.*;
 
 import java.io.*;
 import java.util.*;
@@ -41,10 +40,10 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Transactions to wait for. */
-    private final Set<IgniteTxEx<K, V>> txs = new GridLeanSet<>();
+    private final Set<IgniteInternalTx<K, V>> txs = new GridLeanSet<>();
 
     /** */
-    private Set<IgniteTxEx<K, V>> remainingTxs;
+    private Set<IgniteInternalTx<K, V>> remainingTxs;
 
     /** Logger. */
     private IgniteLogger log;
@@ -71,21 +70,21 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
     /**
      * @return Transactions to wait for.
      */
-    public Set<IgniteTxEx<K, V>> txs() {
+    public Set<IgniteInternalTx<K, V>> txs() {
         return txs;
     }
 
     /**
      * @return Remaining transactions.
      */
-    public Set<IgniteTxEx<K, V>> remainingTxs() {
+    public Set<IgniteInternalTx<K, V>> remainingTxs() {
         return remainingTxs;
     }
 
     /**
      * @param tx Transaction to add.
      */
-    public void addTx(IgniteTxEx<K, V> tx) {
+    public void addTx(IgniteInternalTx<K, V> tx) {
         txs.add(tx);
     }
 
@@ -101,10 +100,10 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
         else {
             remainingTxs = new GridConcurrentHashSet<>(txs);
 
-            for (final IgniteTxEx<K, V> tx : txs) {
+            for (final IgniteInternalTx<K, V> tx : txs) {
                 if (!tx.done()) {
-                    tx.finishFuture().listenAsync(new CI1<IgniteInternalFuture<IgniteTx>>() {
-                        @Override public void apply(IgniteInternalFuture<IgniteTx> t) {
+                    tx.finishFuture().listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
+                        @Override public void apply(IgniteInternalFuture<IgniteInternalTx> t) {
                             remainingTxs.remove(tx);
 
                             checkRemaining();

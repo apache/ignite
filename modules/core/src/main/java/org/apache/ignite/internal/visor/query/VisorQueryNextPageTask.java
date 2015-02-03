@@ -20,10 +20,10 @@ package org.apache.ignite.internal.visor.query;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.lang.*;
 
 import java.util.*;
 
@@ -58,8 +58,13 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorQueryResult run(IgniteBiTuple<String, Integer> arg) throws IgniteCheckedException {
-            return arg.get1().startsWith(VisorQueryUtils.SCAN_QRY_NAME) ? nextScanPage(arg) : nextSqlPage(arg);
+        @Override protected VisorQueryResult run(IgniteBiTuple<String, Integer> arg) {
+            try {
+                return arg.get1().startsWith(VisorQueryUtils.SCAN_QRY_NAME) ? nextScanPage(arg) : nextSqlPage(arg);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
         }
 
         /** Collect data from SQL query */

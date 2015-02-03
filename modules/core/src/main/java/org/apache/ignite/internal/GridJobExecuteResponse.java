@@ -18,10 +18,10 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -49,7 +49,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
 
     /** */
     @GridDirectTransient
-    private IgniteCheckedException gridEx;
+    private IgniteException gridEx;
 
     /** */
     private byte[] resBytes;
@@ -71,7 +71,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
     /** */
     @GridToStringExclude
     @GridDirectTransient
-    private IgniteCheckedException fakeEx;
+    private IgniteException fakeEx;
 
     /**
      * No-op constructor to support {@link Externalizable} interface. This
@@ -93,9 +93,17 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
      * @param jobAttrs Job attributes.
      * @param isCancelled Whether job was cancelled or not.
      */
-    public GridJobExecuteResponse(UUID nodeId, IgniteUuid sesId, IgniteUuid jobId, byte[] gridExBytes,
-        IgniteCheckedException gridEx, byte[] resBytes, Object res, byte[] jobAttrsBytes,
-        Map<Object, Object> jobAttrs, boolean isCancelled) {
+    public GridJobExecuteResponse(UUID nodeId,
+        IgniteUuid sesId,
+        IgniteUuid jobId,
+        byte[] gridExBytes,
+        IgniteException gridEx,
+        byte[] resBytes,
+        Object res,
+        byte[] jobAttrsBytes,
+        Map<Object, Object> jobAttrs,
+        boolean isCancelled)
+    {
         assert nodeId != null;
         assert sesId != null;
         assert jobId != null;
@@ -150,7 +158,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
     /**
      * @return Job exception.
      */
-    @Nullable public IgniteCheckedException getException() {
+    @Nullable public IgniteException getException() {
         return gridEx;
     }
 
@@ -185,14 +193,14 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
     /**
      * @return Fake exception.
      */
-    public IgniteCheckedException getFakeException() {
+    public IgniteException getFakeException() {
         return fakeEx;
     }
 
     /**
      * @param fakeEx Fake exception.
      */
-    public void setFakeException(IgniteCheckedException fakeEx) {
+    public void setFakeException(IgniteException fakeEx) {
         this.fakeEx = fakeEx;
     }
 

@@ -19,15 +19,16 @@ package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.thread.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.nio.ssl.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import sun.nio.ch.*;
@@ -709,7 +710,7 @@ public class GridNioServer<T> {
                     try {
                         U.sleep(50);
                     }
-                    catch (IgniteInterruptedException e) {
+                    catch (IgniteInterruptedCheckedException e) {
                         throw new IOException("Thread has been interrupted.", e);
                     }
                 }
@@ -930,7 +931,7 @@ public class GridNioServer<T> {
                         try {
                             U.sleep(50);
                         }
-                        catch (IgniteInterruptedException e) {
+                        catch (IgniteInterruptedCheckedException e) {
                             throw new IOException("Thread has been interrupted.", e);
                         }
                     }
@@ -1061,7 +1062,7 @@ public class GridNioServer<T> {
                     try {
                         U.sleep(50);
                     }
-                    catch (IgniteInterruptedException e) {
+                    catch (IgniteInterruptedCheckedException e) {
                         throw new IOException("Thread has been interrupted.", e);
                     }
                 }
@@ -1109,7 +1110,7 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
                 boolean reset = false;
                 while (!closed) {
@@ -1569,7 +1570,7 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
                 boolean reset = false;
 
