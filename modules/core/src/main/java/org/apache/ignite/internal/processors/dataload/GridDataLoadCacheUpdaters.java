@@ -100,7 +100,7 @@ public class GridDataLoadCacheUpdaters {
      * @param putMap Entries to put.
      * @throws IgniteException If failed.
      */
-    protected static <K, V> void updateAll(IgniteCache<K, V> cache, @Nullable Collection<K> rmvCol,
+    protected static <K, V> void updateAll(IgniteCache<K, V> cache, @Nullable Set<K> rmvCol,
         Map<K, V> putMap) {
         assert rmvCol != null || putMap != null;
 
