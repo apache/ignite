@@ -261,38 +261,19 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
                 return null;
             }
 
+            if (filter instanceof QuerySpiPredicate) {
+                CacheQueryFuture<Object> res = ((GridCacheQueriesEx)delegate.queries()).createSpiQuery()
+                    .execute(((QuerySpiPredicate)filter).getArgs());
+
+                // TODO convert to QueryCursor.
+                return null;
+            }
+
             throw new IgniteException("Unsupported query predicate: " + filter);
         }
         finally {
             gate.leave(prev);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <Z> QueryCursor<Z> querySpi(QuerySpiPredicate filter) {
-        A.notNull(filter, "filter");
-
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            CacheQueryFuture<Object> res = ((GridCacheQueriesEx)delegate.queries()).createSpiQuery()
-                .execute(filter.getArgs());
-
-            // TODO convert to QueryCursor.
-            return null;
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> QueryCursor<R> query(IgniteReducer<Entry<K,V>,R> rmtRdc, QueryPredicate filter) {
-        A.notNull(filter, "filter");
-        A.notNull(rmtRdc, "rmtRdc");
-
-        // TODO implement
-        return null;
     }
 
     /** {@inheritDoc} */

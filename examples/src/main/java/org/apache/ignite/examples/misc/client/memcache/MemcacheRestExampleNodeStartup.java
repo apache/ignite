@@ -19,7 +19,6 @@ package org.apache.ignite.examples.misc.client.memcache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -75,7 +74,7 @@ public class MemcacheRestExampleNodeStartup {
         cacheCfg.setPreloadMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        QueryConfiguration qryCfg = new QueryConfiguration();
+        CacheQueryConfiguration qryCfg = new CacheQueryConfiguration();
 
         qryCfg.setIndexPrimitiveKey(true);
         qryCfg.setIndexFixedTyping(false);

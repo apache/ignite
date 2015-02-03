@@ -20,6 +20,7 @@ package org.apache.ignite.spi.indexing;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -28,7 +29,7 @@ import java.util.*;
 @IgniteSpiNoop
 public class GridNoopIndexingSpi extends IgniteSpiAdapter implements GridIndexingSpi {
     /** {@inheritDoc} */
-    @Override public Iterator<?> query(@Nullable String spaceName, Collection<Object> params,
+    @Override public Iterator<Cache.Entry<?,?>> query(@Nullable String spaceName, Collection<Object> params,
         @Nullable GridIndexingQueryFilter filters) throws IgniteSpiException {
         throw new IgniteSpiException("You have to configure custom GridIndexingSpi implementation.");
     }

@@ -18,7 +18,6 @@
 package org.apache.ignite.jdbc;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -55,7 +54,7 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
         cache.setCacheMode(LOCAL);
         cache.setWriteSynchronizationMode(FULL_SYNC);
 
-        QueryConfiguration qryCfg = new QueryConfiguration();
+        CacheQueryConfiguration qryCfg = new CacheQueryConfiguration();
 
         qryCfg.setIndexPrimitiveKey(true);
 

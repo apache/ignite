@@ -21,19 +21,20 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.portables.*;
+import org.apache.ignite.spi.indexing.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -103,7 +104,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             idx.start(ctx);
 
             for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
-                QueryConfiguration qryCfg = ccfg.getQueryConfiguration();
+                CacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
 
                 if (qryCfg != null) {
                     if (!F.isEmpty(qryCfg.getTypeMetadata())) {
@@ -534,7 +535,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             portableIds = new HashMap<>();
 
             for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
-                QueryConfiguration qryCfg = ccfg.getQueryConfiguration();
+                CacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
 
                 if (qryCfg != null) {
                     for (QueryTypeMetadata meta : qryCfg.getTypeMetadata())
@@ -560,7 +561,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             declaredTypesById = new HashMap<>();
 
             for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
-                QueryConfiguration qryCfg = ccfg.getQueryConfiguration();
+                CacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
 
                 if (qryCfg != null) {
                     for (QueryTypeMetadata meta : qryCfg.getTypeMetadata())

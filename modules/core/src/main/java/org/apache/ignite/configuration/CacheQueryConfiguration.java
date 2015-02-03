@@ -15,15 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query;
+package org.apache.ignite.configuration;
+
+import org.apache.ignite.cache.query.*;
 
 import java.io.*;
 import java.util.*;
 
 /**
- * Query configuration object.
+ * Configuration for embedded indexing facilities.
  */
-public class QueryConfiguration implements Serializable {
+public class CacheQueryConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -51,14 +53,14 @@ public class QueryConfiguration implements Serializable {
     /**
      * Default constructor.
      */
-    public QueryConfiguration() {
+    public CacheQueryConfiguration() {
         // No-op.
     }
 
     /**
      * @param cfg Configuration to copy.
      */
-    public QueryConfiguration(QueryConfiguration cfg) {
+    public CacheQueryConfiguration(CacheQueryConfiguration cfg) {
         typeMeta = cfg.getTypeMetadata();
         typeRslvr = cfg.getTypeResolver();
         idxPrimitiveKey = cfg.isIndexPrimitiveKey();

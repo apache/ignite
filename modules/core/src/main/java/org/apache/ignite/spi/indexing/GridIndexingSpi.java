@@ -20,6 +20,7 @@ package org.apache.ignite.spi.indexing;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -67,7 +68,7 @@ public interface GridIndexingSpi extends IgniteSpi {
      * @return Query result.
      * @throws IgniteSpiException If failed.
      */
-    public Iterator<?> query(@Nullable String spaceName, Collection<Object> params,
+    public Iterator<Cache.Entry<?,?>> query(@Nullable String spaceName, Collection<Object> params,
         @Nullable GridIndexingQueryFilter filters) throws IgniteSpiException;
 
     /**

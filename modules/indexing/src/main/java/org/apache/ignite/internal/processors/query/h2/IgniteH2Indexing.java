@@ -1330,7 +1330,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return {@code true} If primitive keys must be indexed.
      */
     public boolean isIndexPrimitiveKey(@Nullable String spaceName) {
-        QueryConfiguration cfg = cacheQueryConfiguration(spaceName);
+        CacheQueryConfiguration cfg = cacheQueryConfiguration(spaceName);
 
         return cfg != null && cfg.isIndexPrimitiveKey();
     }
@@ -1340,21 +1340,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return {@code true} If primitive values must be indexed.
      */
     public boolean isIndexPrimitiveValue(String spaceName) {
-        QueryConfiguration cfg = cacheQueryConfiguration(spaceName);
+        CacheQueryConfiguration cfg = cacheQueryConfiguration(spaceName);
 
         return cfg != null && cfg.isIndexPrimitiveValue();
     }
 
     /** {@inheritDoc} */
     public boolean isIndexFixedTyping(String spaceName) {
-        QueryConfiguration cfg = cacheQueryConfiguration(spaceName);
+        CacheQueryConfiguration cfg = cacheQueryConfiguration(spaceName);
 
         return cfg != null && cfg.isIndexFixedTyping();
     }
 
     /** {@inheritDoc} */
     public boolean isEscapeAll(String spaceName) {
-        QueryConfiguration cfg = cacheQueryConfiguration(spaceName);
+        CacheQueryConfiguration cfg = cacheQueryConfiguration(spaceName);
 
         return cfg != null && cfg.isEscapeAll();
     }
@@ -1363,7 +1363,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param spaceName Space name.
      * @return Cache query configuration.
      */
-    @Nullable private QueryConfiguration cacheQueryConfiguration(String spaceName) {
+    @Nullable private CacheQueryConfiguration cacheQueryConfiguration(String spaceName) {
         return ctx == null ? null : ctx.cache().internalCache(spaceName).configuration().getQueryConfiguration();
     }
 

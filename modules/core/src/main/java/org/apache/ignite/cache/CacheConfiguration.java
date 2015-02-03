@@ -22,7 +22,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.cloner.*;
 import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.portables.PortableObject;
@@ -336,7 +335,7 @@ public class CacheConfiguration extends MutableConfiguration {
     private boolean keepPortableInStore = true;
 
     /** Query configuration. */
-    private QueryConfiguration qryCfg;
+    private CacheQueryConfiguration qryCfg;
 
     /**
      * Flag indicating whether data can be read from backup.
@@ -1756,7 +1755,7 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @return Cache query configuration.
      */
-    public QueryConfiguration getQueryConfiguration() {
+    public CacheQueryConfiguration getQueryConfiguration() {
         return qryCfg;
     }
 
@@ -1766,7 +1765,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * @param qryCfg Query configuration.
      * @see org.apache.ignite.cache.query.QueryConfiguration
      */
-    public void setQueryConfiguration(QueryConfiguration qryCfg) {
+    public void setQueryConfiguration(CacheQueryConfiguration qryCfg) {
         this.qryCfg = qryCfg;
     }
 

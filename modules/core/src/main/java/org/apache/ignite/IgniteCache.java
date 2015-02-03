@@ -210,23 +210,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public QueryCursor<Entry<K, V>> query(QueryPredicate filter);
 
     /**
-     * Queries configured indexing SPI with given predicate.
-     *
-     * @param filter Filter.
-     * @return Cursor.
-     */
-    public <Z> QueryCursor<Z> querySpi(QuerySpiPredicate filter);
-
-    /**
-     * Queries cache with given predicate with remote reducer.
-     *
-     * @param rmtRdc Remote reducer.
-     * @param filter Filter.
-     * @return Cursor.
-     */
-    public <R> QueryCursor<R> query(IgniteReducer<Entry<K, V>, R> rmtRdc, QueryPredicate filter);
-
-    /**
      * Queries separate entry fields with given SQL predicate.
      *
      * @param filter SQL Filter.
