@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ggfs;
+package org.apache.ignite.examples.fs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
@@ -25,35 +25,35 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Example that shows usage of {@link org.apache.ignite.IgniteFs} API. It starts a node with {@code GGFS}
+ * Example that shows usage of {@link org.apache.ignite.IgniteFs} API. It starts a node with {@code IgniteFs}
  * configured and performs several file system operations (create, write, append, read and delete
  * files, create, list and delete directories).
  * <p>
  * Remote nodes should always be started with configuration file which includes
- * GGFS: {@code 'ignite.sh examples/config/filesystem/example-ggfs.xml'}.
+ * IgniteFs: {@code 'ignite.sh examples/config/filesystem/example-ignitefs.xml'}.
  * <p>
- * Alternatively you can run {@link GgfsNodeStartup} in another JVM which will start
- * node with {@code examples/config/filesystem/example-ggfs.xml} configuration.
+ * Alternatively you can run {@link IgniteFsNodeStartup} in another JVM which will start
+ * node with {@code examples/config/filesystem/example-ignitefs.xml} configuration.
  */
-public final class GgfsExample {
+public final class IgniteFsExamples {
     /**
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        Ignite ignite = Ignition.start("examples/config/filesystem/example-ggfs.xml");
+        Ignite ignite = Ignition.start("examples/config/filesystem/example-ignitefs.xml");
 
         System.out.println();
-        System.out.println(">>> GGFS example started.");
+        System.out.println(">>> Ignitefs example started.");
 
         try {
             // Get an instance of Ignite File System.
-            IgniteFs fs = ignite.fileSystem("ggfs");
+            org.apache.ignite.IgniteFs fs = ignite.fileSystem("ignitefs");
 
             // Working directory path.
-            IgniteFsPath workDir = new IgniteFsPath("/examples/ggfs");
+            IgniteFsPath workDir = new IgniteFsPath("/examples/fs");
 
             // Cleanup working directory.
             delete(fs, workDir);
@@ -103,11 +103,11 @@ public final class GgfsExample {
      * Deletes file or directory. If directory
      * is not empty, it's deleted recursively.
      *
-     * @param fs GGFS.
+     * @param fs IgniteFs.
      * @param path File or directory path.
      * @throws IgniteException In case of error.
      */
-    private static void delete(IgniteFs fs, IgniteFsPath path) throws IgniteException {
+    private static void delete(org.apache.ignite.IgniteFs fs, IgniteFsPath path) throws IgniteException {
         assert fs != null;
         assert path != null;
 
@@ -135,11 +135,11 @@ public final class GgfsExample {
     /**
      * Creates directories.
      *
-     * @param fs GGFS.
+     * @param fs IgniteFs.
      * @param path Directory path.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    private static void mkdirs(IgniteFs fs, IgniteFsPath path) throws IgniteCheckedException {
+    private static void mkdirs(org.apache.ignite.IgniteFs fs, IgniteFsPath path) throws IgniteException {
         assert fs != null;
         assert path != null;
 
@@ -160,14 +160,14 @@ public final class GgfsExample {
     /**
      * Creates file and writes provided data to it.
      *
-     * @param fs GGFS.
+     * @param fs IgniteFs.
      * @param path File path.
      * @param data Data.
-     * @throws IgniteCheckedException If file can't be created.
+     * @throws IgniteException If file can't be created.
      * @throws IOException If data can't be written.
      */
-    private static void create(IgniteFs fs, IgniteFsPath path, @Nullable byte[] data)
-        throws IgniteCheckedException, IOException {
+    private static void create(org.apache.ignite.IgniteFs fs, IgniteFsPath path, @Nullable byte[] data)
+        throws IgniteException, IOException {
         assert fs != null;
         assert path != null;
 
@@ -189,13 +189,13 @@ public final class GgfsExample {
     /**
      * Opens file and appends provided data to it.
      *
-     * @param fs GGFS.
+     * @param fs IgniteFs.
      * @param path File path.
      * @param data Data.
-     * @throws IgniteCheckedException If file can't be created.
+     * @throws IgniteException If file can't be created.
      * @throws IOException If data can't be written.
      */
-    private static void append(IgniteFs fs, IgniteFsPath path, byte[] data) throws IgniteCheckedException, IOException {
+    private static void append(org.apache.ignite.IgniteFs fs, IgniteFsPath path, byte[] data) throws IgniteException, IOException {
         assert fs != null;
         assert path != null;
         assert data != null;
@@ -215,12 +215,12 @@ public final class GgfsExample {
     /**
      * Opens file and reads it to byte array.
      *
-     * @param fs GGFS.
+     * @param fs IgniteFs.
      * @param path File path.
-     * @throws IgniteCheckedException If file can't be opened.
+     * @throws IgniteException If file can't be opened.
      * @throws IOException If data can't be read.
      */
-    private static void read(IgniteFs fs, IgniteFsPath path) throws IgniteCheckedException, IOException {
+    private static void read(org.apache.ignite.IgniteFs fs, IgniteFsPath path) throws IgniteException, IOException {
         assert fs != null;
         assert path != null;
         assert fs.info(path).isFile();
@@ -238,11 +238,11 @@ public final class GgfsExample {
     /**
      * Lists files in directory.
      *
-     * @param fs GGFS.
+     * @param fs IgniteFs.
      * @param path Directory path.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    private static void list(IgniteFs fs, IgniteFsPath path) throws IgniteCheckedException {
+    private static void list(org.apache.ignite.IgniteFs fs, IgniteFsPath path) throws IgniteException {
         assert fs != null;
         assert path != null;
         assert fs.info(path).isDirectory();
@@ -267,11 +267,11 @@ public final class GgfsExample {
     /**
      * Prints information for file or directory.
      *
-     * @param fs GGFS.
+     * @param fs IgniteFs.
      * @param path File or directory path.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    private static void printInfo(IgniteFs fs, IgniteFsPath path) throws IgniteCheckedException {
+    private static void printInfo(org.apache.ignite.IgniteFs fs, IgniteFsPath path) throws IgniteException {
         System.out.println();
         System.out.println("Information for " + path + ": " + fs.info(path));
     }
