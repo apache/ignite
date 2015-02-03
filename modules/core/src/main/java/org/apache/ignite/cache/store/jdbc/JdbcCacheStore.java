@@ -204,16 +204,16 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start() throws IgniteException {
         if (dataSrc == null)
-            throw new IgniteCheckedException("Failed to initialize cache store (data source is not provided).");
+            throw new IgniteException("Failed to initialize cache store (data source is not provided).");
 
         if (dialect == null)
             dialect = resolveDialect();
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() throws IgniteCheckedException {
+    @Override public void stop() throws IgniteException {
         // No-op.
     }
 
