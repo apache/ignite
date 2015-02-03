@@ -26,7 +26,7 @@ import org.apache.ignite.testframework.junits.common.*;
 public class ProjectionExampleSelfTest extends GridAbstractExamplesTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        // Start up a cluster node.
+        // Start up a node.
         startGrid("grid-projection-example", DFLT_CFG);
     }
 

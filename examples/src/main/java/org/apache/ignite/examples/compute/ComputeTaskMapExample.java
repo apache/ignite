@@ -89,7 +89,7 @@ public class ComputeTaskMapExample {
                 map.put(new ComputeJobAdapter() {
                     @Nullable @Override public Object execute() {
                         System.out.println();
-                        System.out.println(">>> Printing '" + word + "' on this node from igntie job.");
+                        System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
 
                         // Return number of letters in the word.
                         return word.length();

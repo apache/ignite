@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.*;
  * initial {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method completes.
  * <p>
  * String "Hello Continuous Mapper" is passed as an argument for execution
- * of {@link org.apache.ignite.examples.compute.ComputeContinuousMapperExample.ContinuousMapperTask}. As an outcome, participating
+ * of {@link ContinuousMapperTask}. As an outcome, participating
  * nodes will print out a single word from the passed in string and return
  * number of characters in that word. However, to demonstrate continuous
  * mapping, next word will be mapped to a node only after the result from
@@ -136,7 +136,7 @@ public class ComputeContinuousMapperExample {
                         String word = argument(0);
 
                         System.out.println();
-                        System.out.println(">>> Printing '" + word + "' from igntie job at time: " + new Date());
+                        System.out.println(">>> Printing '" + word + "' from ignite job at time: " + new Date());
 
                         int cnt = word.length();
 

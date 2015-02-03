@@ -76,16 +76,16 @@ public class ComputeProjectionExample {
      * Print 'Hello' message on remote nodes.
      *
      * @param ignite Ignite.
-     * @param prj Projection.
-     * @throws IgniteCheckedException If failed.
+     * @param grp Cluster group.
+     * @throws IgniteException If failed.
      */
-    private static void sayHello(Ignite ignite, final ClusterGroup prj) throws IgniteCheckedException {
+    private static void sayHello(Ignite ignite, final ClusterGroup grp) throws IgniteException {
         // Print out hello message on all projection nodes.
-        ignite.compute(prj).broadcast(
+        ignite.compute(grp).broadcast(
             new IgniteRunnable() {
                 @Override public void run() {
                     // Print ID of remote node on remote node.
-                    System.out.println(">>> Hello Node: " + prj.ignite().cluster().localNode().id());
+                    System.out.println(">>> Hello Node: " + grp.ignite().cluster().localNode().id());
                 }
             }
         );

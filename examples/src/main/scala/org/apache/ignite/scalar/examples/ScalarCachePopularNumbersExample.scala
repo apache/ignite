@@ -58,10 +58,10 @@ object ScalarCachePopularNumbersExample extends App {
         println()
         println(">>> Cache popular numbers example started.")
 
-        val prj = ignite.cluster().forCache(CACHE_NAME)
+        val grp = ignite.cluster().forCache(CACHE_NAME)
 
-        if (prj.nodes().isEmpty)
-            println("Grid does not have cache configured: " + CACHE_NAME);
+        if (grp.nodes().isEmpty)
+            println("Ignite does not have cache configured: " + CACHE_NAME);
         else {
             val popularNumbersQryTimer = new Timer("numbers-query-worker")
 

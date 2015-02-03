@@ -24,7 +24,7 @@ import org.apache.ignite.lang.*;
 import java.util.concurrent.*;
 
 /**
- * Simple example to demonstrate usage of ignite-enabled executor service provided by Ignite.
+ * Simple example to demonstrate usage of distributed executor service provided by Ignite.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
@@ -54,7 +54,7 @@ public final class ComputeExecutorServiceExample {
                 exec.submit(new IgniteRunnable() {
                     @Override public void run() {
                         System.out.println();
-                        System.out.println(">>> Printing '" + word + "' on this node from igntie job.");
+                        System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
                     }
                 });
             }

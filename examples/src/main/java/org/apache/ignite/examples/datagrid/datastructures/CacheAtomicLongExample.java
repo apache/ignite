@@ -63,8 +63,7 @@ public final class CacheAtomicLongExample {
             // Try increment atomic long from all cluster nodes.
             // Note that this node is also part of the cluster.
             ignite.compute(ignite.cluster().forCache(CACHE_NAME)).call(new IgniteCallable<Object>() {
-                @Override
-                public Object call() throws Exception {
+                @Override public Object call() throws Exception {
                     for (int i = 0; i < RETRIES; i++)
                         System.out.println("AtomicLong value has been incremented: " + atomicLong.incrementAndGet());
 

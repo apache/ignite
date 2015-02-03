@@ -22,7 +22,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.lang.IgniteCallable;
 
 /**
- * Demonstrates broadcasting and unicasting computations within cluster projection.
+ * Demonstrates broadcasting and unicasting computations within cluster.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.

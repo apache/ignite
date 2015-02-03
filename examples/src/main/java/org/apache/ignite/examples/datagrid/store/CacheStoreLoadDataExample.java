@@ -60,8 +60,7 @@ public class CacheStoreLoadDataExample {
 
             // Start loading cache on all caching nodes.
             ignite.compute(ignite.cluster().forCache(null)).broadcast(new IgniteCallable<Object>() {
-                @Override
-                public Object call() throws Exception {
+                @Override public Object call() throws Exception {
                     // Load cache from persistent store.
                     cache.loadCache(null, 0, ENTRY_COUNT);
 

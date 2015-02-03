@@ -59,7 +59,9 @@ public class CacheStoreExample {
 
                 System.out.println("Read value: " + val);
 
-                cache.put(id, person(id, "Isaac", "Newton"));
+                val = cache.getAndPut(id, person(id, "Isaac", "Newton"));
+
+                System.out.println("Overwrote old value: " + val);
 
                 val = cache.get(id);
 

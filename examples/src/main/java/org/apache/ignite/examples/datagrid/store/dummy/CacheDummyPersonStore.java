@@ -32,7 +32,7 @@ import java.util.concurrent.*;
  * Dummy cache store implementation.
  */
 public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
-    /** Auto-inject igntie instance. */
+    /** Auto-inject ignite instance. */
     @IgniteInstanceResource
     private Ignite ignite;
 

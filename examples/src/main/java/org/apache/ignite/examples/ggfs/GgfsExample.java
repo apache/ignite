@@ -105,9 +105,9 @@ public final class GgfsExample {
      *
      * @param fs GGFS.
      * @param path File or directory path.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    private static void delete(IgniteFs fs, IgniteFsPath path) throws IgniteCheckedException {
+    private static void delete(IgniteFs fs, IgniteFsPath path) throws IgniteException {
         assert fs != null;
         assert path != null;
 

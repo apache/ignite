@@ -22,7 +22,6 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.lang.*;
 
 import java.util.*;
 
@@ -39,9 +38,9 @@ public class ComputeFailoverExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws Exception If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start(ComputeFailoverNodeStartup.configuration())) {
             if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2))
                 return;

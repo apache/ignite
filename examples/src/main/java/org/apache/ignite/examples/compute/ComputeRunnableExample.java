@@ -19,7 +19,6 @@ package org.apache.ignite.examples.compute;
 
 import org.apache.ignite.*;
 import org.apache.ignite.examples.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;
@@ -56,7 +55,7 @@ public class ComputeRunnableExample {
                 compute.run(new IgniteRunnable() {
                     @Override public void run() {
                         System.out.println();
-                        System.out.println(">>> Printing '" + word + "' on this node from igntie job.");
+                        System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
                     }
                 });
 

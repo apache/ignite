@@ -90,9 +90,11 @@ public class CacheTransactionExample {
         IgniteCache<Integer, Account> cache = Ignition.ignite().jcache(CACHE_NAME);
 
         try (IgniteTx tx = Ignition.ignite().transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            assert cache.get(acctId) != null;
+            Account acct0 = cache.get(acctId);
 
-            Account acct = new Account(cache.get(acctId).id, cache.get(acctId).balance);
+            assert acct0 != null;
+
+            Account acct = new Account(acct0.id, acct0.balance);
 
             // Deposit into account.
             acct.update(amount);
@@ -110,7 +112,7 @@ public class CacheTransactionExample {
     /**
      * Account.
      */
-    private static class Account implements Serializable, Cloneable {
+    private static class Account implements Serializable {
         /** Account ID. */
         private int id;
 
@@ -133,11 +135,6 @@ public class CacheTransactionExample {
          */
         void update(double amount) {
             balance += amount;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Object clone() throws CloneNotSupportedException {
-            return super.clone();
         }
 
         /** {@inheritDoc} */

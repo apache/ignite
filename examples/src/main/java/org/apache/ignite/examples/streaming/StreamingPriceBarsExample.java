@@ -180,9 +180,9 @@ public class StreamingPriceBarsExample {
      * Streams random prices into the system.
      *
      * @param ignite Ignite.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void streamData(final Ignite ignite) throws IgniteCheckedException {
+    private static void streamData(final Ignite ignite) throws IgniteException {
         IgniteStreamer streamer = ignite.streamer("priceBars");
 
         for (int i = 0; i < CNT; i++) {

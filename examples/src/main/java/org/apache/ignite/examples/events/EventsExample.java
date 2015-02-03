@@ -97,9 +97,9 @@ public class EventsExample {
     /**
      * Listen to events coming from all cluster nodes.
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void remoteListen() throws IgniteCheckedException {
+    private static void remoteListen() throws IgniteException {
         System.out.println();
         System.out.println(">>> Remote event listener example.");
 

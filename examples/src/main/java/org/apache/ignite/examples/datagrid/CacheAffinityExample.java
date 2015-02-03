@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 
@@ -118,8 +117,7 @@ public final class CacheAffinityExample {
             if (node != null) {
                 // Bring computations to the nodes where the data resides (i.e. collocation).
                 ignite.compute(ignite.cluster().forNode(node)).run(new IgniteRunnable() {
-                    @Override
-                    public void run() {
+                    @Override public void run() {
                         IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
 
                         // Peek is a local memory lookup, however, value should never be 'null'

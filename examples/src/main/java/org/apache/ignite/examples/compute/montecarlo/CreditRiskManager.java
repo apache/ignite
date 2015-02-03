@@ -39,16 +39,6 @@ public class CreditRiskManager {
     /**
      * Calculates credit risk for a given credit portfolio. This calculation uses
      * Monte-Carlo Simulation to produce risk value.
-     * <p>
-     * Note that this class generally represents a business logic and the entire
-     * grid enabling occurs in one line of annotation added to this method:
-     * <pre name="code" class="java">
-     * ...
-     * &#64;Gridify(taskClass = GridCreditRiskGridTask.class)
-     * ...
-     * </pre>
-     * Note also that this annotation could have been added externally via XML
-     * file leaving this file completely untouched - yet still fully grid enabled.
      *
      * @param portfolio Credit portfolio.
      * @param horizon Forecast horizon (in days).

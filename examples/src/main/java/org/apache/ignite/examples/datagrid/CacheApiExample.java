@@ -18,8 +18,6 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
 
 import javax.cache.processor.*;
 import java.util.concurrent.*;

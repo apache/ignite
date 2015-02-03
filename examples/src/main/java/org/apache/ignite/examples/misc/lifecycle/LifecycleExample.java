@@ -73,8 +73,8 @@ public final class LifecycleExample {
         /** {@inheritDoc} */
         @Override public void onLifecycleEvent(LifecycleEventType evt) {
             System.out.println();
-            System.out.println(">>> Grid lifecycle event occurred: " + evt);
-            System.out.println(">>> Grid name: " + ignite.name());
+            System.out.println(">>> Lifecycle event occurred: " + evt);
+            System.out.println(">>> Ignite name: " + ignite.name());
 
             if (evt == AFTER_GRID_START)
                 isStarted = true;

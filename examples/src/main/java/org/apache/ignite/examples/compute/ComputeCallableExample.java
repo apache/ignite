@@ -41,9 +41,9 @@ public class ComputeCallableExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws Exception If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Compute callable example started.");
@@ -55,7 +55,7 @@ public class ComputeCallableExample {
                 calls.add(new IgniteCallable<Integer>() {
                     @Override public Integer call() throws Exception {
                         System.out.println();
-                        System.out.println(">>> Printing '" + word + "' on this node from igntie job.");
+                        System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
 
                         return word.length();
                     }

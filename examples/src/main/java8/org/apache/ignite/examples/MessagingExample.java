@@ -140,7 +140,7 @@ public final class MessagingExample {
     /**
      * Listen for messages from remote nodes.
      *
-     * @param prj Projection.
+     * @param grp Cluster group.
      * @param orderedLatch Latch for ordered messages acks.
      * @param unorderedLatch Latch for unordered messages acks.
      */
@@ -149,14 +149,14 @@ public final class MessagingExample {
         final CountDownLatch orderedLatch,
         final CountDownLatch unorderedLatch
     ) {
-        prj.message().localListen(TOPIC.ORDERED, (nodeId, msg) -> {
+        grp.message().localListen(TOPIC.ORDERED, (nodeId, msg) -> {
             orderedLatch.countDown();
 
             // Return true to continue listening, false to stop.
             return orderedLatch.getCount() > 0;
         });
 
-        prj.message().localListen(TOPIC.UNORDERED, (nodeId, msg) -> {
+        grp.message().localListen(TOPIC.UNORDERED, (nodeId, msg) -> {
             unorderedLatch.countDown();
 
             // Return true to continue listening, false to stop.

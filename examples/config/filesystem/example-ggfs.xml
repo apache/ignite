@@ -53,7 +53,7 @@
         Configuration below demonstrates how to setup a GGFS node with file data.
     -->
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <!-- Set to true to enable ignite-aware class loading for examples, default is false. -->
+        <!-- Set to true to enable cluster-aware class loading for examples, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>
 
         <property name="marshaller">

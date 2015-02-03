@@ -57,9 +57,9 @@ public class ComputeBroadcastExample {
      * Print 'Hello' message on all nodes.
      *
      * @param ignite Ignite instance.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void hello(Ignite ignite) throws IgniteCheckedException {
+    private static void hello(Ignite ignite) throws IgniteException {
         // Print out hello message on all nodes.
         ignite.compute().broadcast(
             new IgniteRunnable() {
@@ -78,9 +78,9 @@ public class ComputeBroadcastExample {
      * Gather system info from all nodes and print it out.
      *
      * @param ignite Ignite instance.
-     * @throws IgniteCheckedException if failed.
+     * @throws IgniteException if failed.
      */
-    private static void gatherSystemInfo(Ignite ignite) throws IgniteCheckedException {
+    private static void gatherSystemInfo(Ignite ignite) throws IgniteException {
         // Gather system info from all nodes.
         Collection<String> res = ignite.compute().broadcast(
             new IgniteCallable<String>() {
