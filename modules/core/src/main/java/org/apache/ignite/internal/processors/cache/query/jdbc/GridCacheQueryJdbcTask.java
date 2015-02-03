@@ -23,15 +23,15 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.marshaller.jdk.*;
+import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.resources.*;
 
 import java.math.*;
 import java.net.*;
@@ -60,68 +60,78 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
     private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(1);
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, byte[] arg) throws IgniteCheckedException {
-        assert arg != null;
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, byte[] arg) {
+        try {
+            assert arg != null;
 
-        Map<String, Object> args = MARSHALLER.unmarshal(arg, null);
+            Map<String, Object> args = MARSHALLER.unmarshal(arg, null);
 
-        boolean first = true;
+            boolean first = true;
 
-        UUID nodeId = (UUID)args.remove("confNodeId");
+            UUID nodeId = (UUID)args.remove("confNodeId");
 
-        if (nodeId == null) {
-            nodeId = (UUID)args.remove("nodeId");
+            if (nodeId == null) {
+                nodeId = (UUID)args.remove("nodeId");
 
-            first = nodeId == null;
+                first = nodeId == null;
+            }
+
+            if (nodeId != null) {
+                for (ClusterNode n : subgrid)
+                    if (n.id().equals(nodeId))
+                        return F.asMap(new JdbcDriverJob(args, first), n);
+
+                throw new IgniteException("Node doesn't exist or left the grid: " + nodeId);
+            }
+            else {
+                String cache = (String)args.get("cache");
+
+                for (ClusterNode n : subgrid)
+                    if (U.hasCache(n, cache))
+                        return F.asMap(new JdbcDriverJob(args, first), n);
+
+                throw new IgniteException("Can't find node with cache: " + cache);
+            }
         }
-
-        if (nodeId != null) {
-            for (ClusterNode n : subgrid)
-                if (n.id().equals(nodeId))
-                    return F.asMap(new JdbcDriverJob(args, first), n);
-
-            throw new IgniteCheckedException("Node doesn't exist or left the grid: " + nodeId);
-        }
-        else {
-            String cache = (String)args.get("cache");
-
-            for (ClusterNode n : subgrid)
-                if (U.hasCache(n, cache))
-                    return F.asMap(new JdbcDriverJob(args, first), n);
-
-            throw new IgniteCheckedException("Can't find node with cache: " + cache);
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
-        byte status;
-        byte[] bytes;
+    @Override public byte[] reduce(List<ComputeJobResult> results) throws IgniteException {
+        try {
+            byte status;
+            byte[] bytes;
 
-        ComputeJobResult res = F.first(results);
+            ComputeJobResult res = F.first(results);
 
-        if (res.getException() == null) {
-            status = 0;
+            if (res.getException() == null) {
+                status = 0;
 
-            bytes = MARSHALLER.marshal(res.getData());
+                bytes = MARSHALLER.marshal(res.getData());
+            }
+            else {
+                status = 1;
+
+                bytes = MARSHALLER.marshal(new SQLException(res.getException().getMessage()));
+            }
+
+            byte[] packet = new byte[bytes.length + 1];
+
+            packet[0] = status;
+
+            U.arrayCopy(bytes, 0, packet, 1, bytes.length);
+
+            return packet;
         }
-        else {
-            status = 1;
-
-            bytes = MARSHALLER.marshal(new SQLException(res.getException().getMessage()));
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
-
-        byte[] packet = new byte[bytes.length + 1];
-
-        packet[0] = status;
-
-        U.arrayCopy(bytes, 0, packet, 1, bytes.length);
-
-        return packet;
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         return WAIT;
     }
 
@@ -168,117 +178,122 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
         }
 
         /** {@inheritDoc} */
-        @Override public Object execute() throws IgniteCheckedException {
-            String cacheName = argument("cache");
-            String sql = argument("sql");
-            Long timeout = argument("timeout");
-            List<Object> args = argument("args");
-            UUID futId = argument("futId");
-            Integer pageSize = argument("pageSize");
-            Integer maxRows = argument("maxRows");
+        @Override public Object execute() {
+            try {
+                String cacheName = argument("cache");
+                String sql = argument("sql");
+                Long timeout = argument("timeout");
+                List<Object> args = argument("args");
+                UUID futId = argument("futId");
+                Integer pageSize = argument("pageSize");
+                Integer maxRows = argument("maxRows");
 
-            assert pageSize != null;
-            assert maxRows != null;
+                assert pageSize != null;
+                assert maxRows != null;
 
-            GridTuple4<CacheQueryFuture<List<?>>, Integer, Boolean, Collection<String>> t = null;
+                GridTuple4<CacheQueryFuture<List<?>>, Integer, Boolean, Collection<String>> t = null;
 
-            Collection<String> tbls = null;
-            Collection<String> cols;
-            Collection<String> types = null;
+                Collection<String> tbls = null;
+                Collection<String> cols;
+                Collection<String> types = null;
 
-            if (first) {
-                assert sql != null;
-                assert timeout != null;
-                assert args != null;
-                assert futId == null;
+                if (first) {
+                    assert sql != null;
+                    assert timeout != null;
+                    assert args != null;
+                    assert futId == null;
 
-                GridCache<?, ?> cache = ((IgniteEx) ignite).cachex(cacheName);
+                    GridCache<?, ?> cache = ((IgniteEx) ignite).cachex(cacheName);
 
-                CacheQuery<List<?>> qry =
-                    ((GridCacheQueriesEx<?, ?>)cache.queries()).createSqlFieldsQuery(sql, true);
+                    CacheQuery<List<?>> qry =
+                        ((GridCacheQueriesEx<?, ?>)cache.queries()).createSqlFieldsQuery(sql, true);
 
-                qry.pageSize(pageSize);
-                qry.timeout(timeout);
+                    qry.pageSize(pageSize);
+                    qry.timeout(timeout);
 
-                // Query local and replicated caches only locally.
-                if (cache.configuration().getCacheMode() != PARTITIONED)
-                    qry = qry.projection(ignite.cluster().forLocal());
+                    // Query local and replicated caches only locally.
+                    if (cache.configuration().getCacheMode() != PARTITIONED)
+                        qry = qry.projection(ignite.cluster().forLocal());
 
-                CacheQueryFuture<List<?>> fut = qry.execute(args.toArray());
+                    CacheQueryFuture<List<?>> fut = qry.execute(args.toArray());
 
-                Collection<GridQueryFieldMetadata> meta = ((GridCacheQueryMetadataAware)fut).metadata().get();
+                    Collection<GridQueryFieldMetadata> meta = ((GridCacheQueryMetadataAware)fut).metadata().get();
 
-                if (meta == null) {
-                    // Try to extract initial SQL exception.
-                    try {
-                        fut.get();
+                    if (meta == null) {
+                        // Try to extract initial SQL exception.
+                        try {
+                            fut.get();
+                        }
+                        catch (IgniteCheckedException e) {
+                            if (e.hasCause(SQLException.class))
+                                throw new GridInternalException(e.getCause(SQLException.class).getMessage(), e);
+                        }
+
+                        throw new GridInternalException("Query failed on all nodes. Probably you are requesting " +
+                            "nonexistent table (check database metadata) or you are trying to join data that is " +
+                            "stored in non-collocated mode.");
                     }
-                    catch (IgniteCheckedException e) {
-                        if (e.hasCause(SQLException.class))
-                            throw new GridInternalException(e.getCause(SQLException.class).getMessage(), e);
+
+                    tbls = new ArrayList<>(meta.size());
+                    cols = new ArrayList<>(meta.size());
+                    types = new ArrayList<>(meta.size());
+
+                    for (GridQueryFieldMetadata desc : meta) {
+                        tbls.add(desc.typeName());
+                        cols.add(desc.fieldName().toUpperCase());
+                        types.add(desc.fieldTypeName());
                     }
 
-                    throw new GridInternalException("Query failed on all nodes. Probably you are requesting " +
-                        "nonexistent table (check database metadata) or you are trying to join data that is " +
-                        "stored in non-collocated mode.");
+                    futId = UUID.randomUUID();
+
+                    ignite.cluster().nodeLocalMap().put(futId, t = F.t(fut, 0, false, cols));
+
+                    scheduleRemoval(futId);
                 }
 
-                tbls = new ArrayList<>(meta.size());
-                cols = new ArrayList<>(meta.size());
-                types = new ArrayList<>(meta.size());
+                assert futId != null;
 
-                for (GridQueryFieldMetadata desc : meta) {
-                    tbls.add(desc.typeName());
-                    cols.add(desc.fieldName().toUpperCase());
-                    types.add(desc.fieldTypeName());
+                if (t == null)
+                    t = ignite.cluster().<UUID, GridTuple4<CacheQueryFuture<List<?>>, Integer, Boolean,
+                        Collection<String>>>nodeLocalMap().get(futId);
+
+                assert t != null;
+
+                cols = t.get4();
+
+                Collection<List<Object>> fields = new LinkedList<>();
+
+                CacheQueryFuture<List<?>> fut = t.get1();
+
+                int pageCnt = 0;
+                int totalCnt = t.get2();
+
+                List<?> next;
+
+                while ((next = fut.next()) != null && pageCnt++ < pageSize && (maxRows == 0 || totalCnt++ < maxRows)) {
+                    fields.add(F.transformList(next, new C1<Object, Object>() {
+                        @Override public Object apply(Object val) {
+                            if (val != null && !sqlType(val))
+                                val = val.toString();
+
+                            return val;
+                        }
+                    }));
                 }
 
-                futId = UUID.randomUUID();
+                boolean finished = next == null || totalCnt == maxRows;
 
-                ignite.cluster().nodeLocalMap().put(futId, t = F.t(fut, 0, false, cols));
+                if (!finished)
+                    ignite.cluster().nodeLocalMap().put(futId, F.t(fut, totalCnt, true, cols));
+                else
+                    ignite.cluster().nodeLocalMap().remove(futId);
 
-                scheduleRemoval(futId);
+                return first ? F.asList(ignite.cluster().localNode().id(), futId, tbls, cols, types, fields, finished) :
+                    F.asList(fields, finished);
             }
-
-            assert futId != null;
-
-            if (t == null)
-                t = ignite.cluster().<UUID, GridTuple4<CacheQueryFuture<List<?>>, Integer, Boolean,
-                    Collection<String>>>nodeLocalMap().get(futId);
-
-            assert t != null;
-
-            cols = t.get4();
-
-            Collection<List<Object>> fields = new LinkedList<>();
-
-            CacheQueryFuture<List<?>> fut = t.get1();
-
-            int pageCnt = 0;
-            int totalCnt = t.get2();
-
-            List<?> next;
-
-            while ((next = fut.next()) != null && pageCnt++ < pageSize && (maxRows == 0 || totalCnt++ < maxRows)) {
-                fields.add(F.transformList(next, new C1<Object, Object>() {
-                    @Override public Object apply(Object val) {
-                        if (val != null && !sqlType(val))
-                            val = val.toString();
-
-                        return val;
-                    }
-                }));
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
             }
-
-            boolean finished = next == null || totalCnt == maxRows;
-
-            if (!finished)
-                ignite.cluster().nodeLocalMap().put(futId, F.t(fut, totalCnt, true, cols));
-            else
-                ignite.cluster().nodeLocalMap().remove(futId);
-
-            return first ? F.asList(ignite.cluster().localNode().id(), futId, tbls, cols, types, fields, finished) :
-                F.asList(fields, finished);
         }
 
         /**

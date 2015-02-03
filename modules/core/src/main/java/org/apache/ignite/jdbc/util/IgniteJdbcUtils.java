@@ -18,9 +18,9 @@
 package org.apache.ignite.jdbc.util;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.sql.*;
 import java.util.*;

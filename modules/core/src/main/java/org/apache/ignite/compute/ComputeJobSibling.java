@@ -39,7 +39,7 @@ public interface ComputeJobSibling {
     /**
      * Sends a request to cancel this sibling.
      *
-     * @throws IgniteCheckedException If cancellation message could not be sent.
+     * @throws IgniteException If cancellation message could not be sent.
      */
-    public void cancel() throws IgniteCheckedException;
+    public void cancel() throws IgniteException;
 }

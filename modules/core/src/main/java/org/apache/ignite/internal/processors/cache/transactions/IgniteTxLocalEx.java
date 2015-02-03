@@ -21,9 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.processors.cache.dr.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;
@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Local transaction API.
  */
-public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
+public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
     /**
      * @return Minimum version involved in transaction.
      */

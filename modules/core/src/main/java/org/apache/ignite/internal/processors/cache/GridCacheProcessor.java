@@ -29,10 +29,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lifecycle.LifecycleAware;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
@@ -45,9 +41,13 @@ import org.apache.ignite.internal.processors.cache.local.atomic.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
@@ -56,17 +56,17 @@ import javax.management.*;
 import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.IgniteComponentType.*;
+import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Cache processor.
@@ -1727,13 +1727,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * Callback invoked by deployment manager for whenever a class loader
      * gets undeployed.
      *
-     * @param leftNodeId Left node ID.
      * @param ldr Class loader.
      */
-    public void onUndeployed(@Nullable UUID leftNodeId, ClassLoader ldr) {
+    public void onUndeployed(ClassLoader ldr) {
         if (!ctx.isStopping())
             for (GridCacheAdapter<?, ?> cache : caches.values())
-                cache.onUndeploy(leftNodeId, ldr);
+                cache.onUndeploy(ldr);
     }
 
     /**

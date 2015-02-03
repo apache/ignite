@@ -21,29 +21,31 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.transactions.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 
 /**
  * Base class for transactional DHT caches.
@@ -214,7 +216,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 tx = ctx.tm().onCreated(tx);
 
                                 if (tx == null || !ctx.tm().onStarted(tx))
-                                    throw new IgniteTxRollbackException("Failed to acquire lock (transaction " +
+                                    throw new IgniteTxRollbackCheckedException("Failed to acquire lock (transaction " +
                                         "has been completed) [ver=" + req.version() + ", tx=" + tx + ']');
                             }
 
@@ -403,13 +405,13 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 }
             }
         }
-        catch (IgniteTxRollbackException e) {
+        catch (IgniteTxRollbackCheckedException e) {
             String err = "Failed processing DHT lock request (transaction has been completed): " + req;
 
             U.error(log, err, e);
 
             res = new GridDhtLockResponse<>(ctx.cacheId(), req.version(), req.futureId(), req.miniId(),
-                new IgniteTxRollbackException(err, e));
+                new IgniteTxRollbackCheckedException(err, e));
 
             fail = true;
         }
@@ -440,7 +442,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 // Reply back to sender.
                 ctx.io().send(nodeId, res, ctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
             }
-            catch (ClusterTopologyException ignored) {
+            catch (ClusterTopologyCheckedException ignored) {
                 U.warn(log, "Failed to send lock reply to remote node because it left grid: " + nodeId);
 
                 fail = true;
@@ -867,8 +869,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                             assert t.implicit();
 
                                             return t.commitAsync().chain(
-                                                new C1<IgniteInternalFuture<IgniteTx>, GridNearLockResponse<K, V>>() {
-                                                    @Override public GridNearLockResponse<K, V> apply(IgniteInternalFuture<IgniteTx> f) {
+                                                new C1<IgniteInternalFuture<IgniteInternalTx>, GridNearLockResponse<K, V>>() {
+                                                    @Override public GridNearLockResponse<K, V> apply(IgniteInternalFuture<IgniteInternalTx> f) {
                                                         try {
                                                             // Check for error.
                                                             f.get();
@@ -1094,7 +1096,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      */
     private void sendLockReply(
         ClusterNode nearNode,
-        @Nullable IgniteTxEx<K,V> tx,
+        @Nullable IgniteInternalTx<K,V> tx,
         GridNearLockRequest<K, V> req,
         GridNearLockResponse<K, V> res
     ) {
@@ -1430,7 +1432,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 ctx.io().send(n, req);
             }
-            catch (ClusterTopologyException ignore) {
+            catch (ClusterTopologyCheckedException ignore) {
                 if (log.isDebugEnabled())
                     log.debug("Node left while sending unlock request: " + n);
             }
@@ -1458,7 +1460,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                     ctx.io().send(n, req);
                 }
-                catch (ClusterTopologyException ignore) {
+                catch (ClusterTopologyCheckedException ignore) {
                     if (log.isDebugEnabled())
                         log.debug("Node left while sending unlock request: " + n);
                 }

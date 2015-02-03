@@ -23,18 +23,19 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.dataload.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.portable.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.portable.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -134,6 +135,9 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
     /** Future to track loading finish. */
     private final GridFutureAdapter<?> fut;
+
+    /** Public API future to track loading finish. */
+    private final IgniteFuture<?> publicFut;
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -239,6 +243,8 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             log.debug("Added response listener within topic: " + topic);
 
         fut = new GridDataLoaderFuture(ctx, this);
+
+        publicFut = new IgniteFutureImpl<>(fut);
     }
 
     /**
@@ -257,7 +263,14 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> future() {
+    @Override public IgniteFuture<?> future() {
+        return publicFut;
+    }
+
+    /**
+     * @return Internal future.
+     */
+    public IgniteInternalFuture<?> internalFuture() {
         return fut;
     }
 
@@ -279,14 +292,14 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public void isolated(boolean isolated) throws IgniteCheckedException {
+    @Override public void isolated(boolean isolated) {
         if (isolated())
             return;
 
         ClusterNode node = F.first(ctx.grid().forCacheNodes(cacheName).nodes());
 
         if (node == null)
-            throw new IgniteCheckedException("Failed to get node for cache: " + cacheName);
+            throw new IgniteException("Failed to get node for cache: " + cacheName);
 
         GridCacheAttributes a = U.cacheAttributes(node, cacheName);
 
@@ -356,14 +369,14 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> addData(Map<K, V> entries) throws IllegalStateException {
+    @Override public IgniteFuture<?> addData(Map<K, V> entries) throws IllegalStateException {
         A.notNull(entries, "entries");
 
         return addData(entries.entrySet());
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) {
+    @Override public IgniteFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) {
         A.notEmpty(entries, "entries");
 
         enterBusy();
@@ -386,10 +399,10 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             load0(entries, resFut, keys, 0);
 
-            return resFut;
+            return new IgniteFutureImpl<>(resFut);
         }
         catch (IgniteException e) {
-            return new GridFinishedFuture<>(ctx, e);
+            return new IgniteFinishedFutureImpl<>(ctx, e);
         }
         finally {
             leaveBusy();
@@ -397,21 +410,21 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> addData(Map.Entry<K, V> entry) throws IgniteCheckedException, IllegalStateException {
+    @Override public IgniteFuture<?> addData(Map.Entry<K, V> entry) {
         A.notNull(entry, "entry");
 
         return addData(F.asList(entry));
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> addData(K key, V val) throws IgniteCheckedException, IllegalStateException {
+    @Override public IgniteFuture<?> addData(K key, V val) {
         A.notNull(key, "key");
 
         return addData(new Entry0<>(key, val));
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeData(K key) throws IgniteCheckedException, IllegalStateException {
+    @Override public IgniteFuture<?> removeData(K key) {
         return addData(key, null);
     }
 
@@ -462,7 +475,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             }
 
             if (node == null) {
-                resFut.onDone(new ClusterTopologyException("Failed to map key to node " +
+                resFut.onDone(new ClusterTopologyCheckedException("Failed to map key to node " +
                     "(no nodes with cache found in topology) [infos=" + entries.size() +
                     ", cacheName=" + cacheName + ']'));
 
@@ -530,7 +543,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             try {
                 f = buf.update(entriesForNode, lsnr);
             }
-            catch (IgniteInterruptedException e1) {
+            catch (IgniteInterruptedCheckedException e1) {
                 resFut.onDone(e1);
 
                 return;
@@ -541,7 +554,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                     buf.onNodeLeft();
 
                 if (f != null)
-                    f.onDone(new ClusterTopologyException("Failed to wait for request completion " +
+                    f.onDone(new ClusterTopologyCheckedException("Failed to wait for request completion " +
                         "(node has left): " + nodeId));
             }
         }
@@ -637,11 +650,14 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Override public void flush() throws IgniteCheckedException {
+    @Override public void flush() throws IgniteException {
         enterBusy();
 
         try {
             doFlush();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             leaveBusy();
@@ -665,6 +681,9 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             lastFlushTime = U.currentTimeMillis();
         }
+        catch (IgniteInterruptedCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             leaveBusy();
         }
@@ -672,9 +691,22 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
     /**
      * @param cancel {@code True} to close with cancellation.
+     * @throws IgniteException If failed.
+     */
+    @Override public void close(boolean cancel) throws IgniteException {
+        try {
+            closeEx(cancel);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /**
+     * @param cancel {@code True} to close with cancellation.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void close(boolean cancel) throws IgniteCheckedException {
+    public void closeEx(boolean cancel) throws IgniteCheckedException {
         if (!closed.compareAndSet(false, true))
             return;
 
@@ -718,7 +750,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws IgniteCheckedException {
+    @Override public void close() throws IgniteException {
         close(false);
     }
 
@@ -805,11 +837,11 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         /**
          * @param newEntries Infos.
          * @param lsnr Listener for the operation future.
-         * @throws org.apache.ignite.IgniteInterruptedException If failed.
+         * @throws IgniteInterruptedCheckedException If failed.
          * @return Future for operation.
          */
         @Nullable GridFutureAdapter<?> update(Iterable<Map.Entry<K, V>> newEntries,
-            IgniteInClosure<IgniteInternalFuture<?>> lsnr) throws IgniteInterruptedException {
+            IgniteInClosure<IgniteInternalFuture<?>> lsnr) throws IgniteInterruptedCheckedException {
             List<Map.Entry<K, V>> entries0 = null;
             GridFutureAdapter<Object> curFut0;
 
@@ -850,10 +882,9 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         /**
          * @return Future if any submitted.
          *
-         * @throws org.apache.ignite.IgniteInterruptedException If thread has been interrupted.
+         * @throws IgniteInterruptedCheckedException If thread has been interrupted.
          */
-        @Nullable
-        IgniteInternalFuture<?> flush() throws IgniteInterruptedException {
+        @Nullable IgniteInternalFuture<?> flush() throws IgniteInterruptedCheckedException {
             List<Map.Entry<K, V>> entries0 = null;
             GridFutureAdapter<Object> curFut0 = null;
 
@@ -897,9 +928,9 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         /**
          * Increments active tasks count.
          *
-         * @throws org.apache.ignite.IgniteInterruptedException If thread has been interrupted.
+         * @throws IgniteInterruptedCheckedException If thread has been interrupted.
          */
-        private void incrementActiveTasks() throws IgniteInterruptedException {
+        private void incrementActiveTasks() throws IgniteInterruptedCheckedException {
             U.acquire(sem);
         }
 
@@ -915,10 +946,10 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         /**
          * @param entries Entries to submit.
          * @param curFut Current future.
-         * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+         * @throws IgniteInterruptedCheckedException If interrupted.
          */
         private void submit(final Collection<Map.Entry<K, V>> entries, final GridFutureAdapter<Object> curFut)
-            throws IgniteInterruptedException {
+            throws IgniteInterruptedCheckedException {
             assert entries != null;
             assert !entries.isEmpty();
             assert curFut != null;
@@ -1044,7 +1075,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                     if (ctx.discovery().alive(node) && ctx.discovery().pingNode(node.id()))
                         ((GridFutureAdapter<Object>)fut).onDone(e);
                     else
-                        ((GridFutureAdapter<Object>)fut).onDone(new ClusterTopologyException("Failed to send " +
+                        ((GridFutureAdapter<Object>)fut).onDone(new ClusterTopologyCheckedException("Failed to send " +
                             "request (node has left): " + node.id()));
                 }
             }
@@ -1060,7 +1091,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             if (log.isDebugEnabled())
                 log.debug("Forcibly completing futures (node has left): " + node.id());
 
-            Exception e = new ClusterTopologyException("Failed to wait for request completion " +
+            Exception e = new ClusterTopologyCheckedException("Failed to wait for request completion " +
                 "(node has left): " + node.id());
 
             for (GridFutureAdapter<Object> f : reqs.values())

@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.spring;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.resource.*;
+import org.apache.ignite.lang.*;
 
 import java.net.*;
 import java.util.*;

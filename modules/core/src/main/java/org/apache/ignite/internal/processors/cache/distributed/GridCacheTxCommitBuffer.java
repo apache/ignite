@@ -32,7 +32,7 @@ public interface GridCacheTxCommitBuffer<K, V> {
      *
      * @param tx Committed transaction.
      */
-    public void addCommittedTx(IgniteTxEx<K, V> tx);
+    public void addCommittedTx(IgniteInternalTx<K, V> tx);
 
     /**
      * Gets transaction from commit buffer.

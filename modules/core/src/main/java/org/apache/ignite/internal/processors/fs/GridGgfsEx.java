@@ -47,14 +47,14 @@ public interface GridGgfsEx extends IgniteFs {
     public GridGgfsPaths proxyPaths();
 
     /** {@inheritDoc} */
-    @Override GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch)
-        throws IgniteCheckedException;
+    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch)
+        throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override GridGgfsInputStreamAdapter open(IgniteFsPath path) throws IgniteCheckedException;
+    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) throws IgniteCheckedException;
+    @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) throws IgniteException;
 
     /**
      * Gets global space counters.

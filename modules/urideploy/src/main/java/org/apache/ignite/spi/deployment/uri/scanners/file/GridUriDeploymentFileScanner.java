@@ -18,11 +18,11 @@
 package org.apache.ignite.spi.deployment.uri.scanners.file;
 
 import org.apache.ignite.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.deployment.uri.scanners.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.deployment.uri.scanners.*;
 
 import java.io.*;
 import java.net.*;

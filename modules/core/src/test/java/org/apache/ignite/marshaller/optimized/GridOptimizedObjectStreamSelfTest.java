@@ -18,10 +18,10 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;

@@ -15,17 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.interop;
+package org.apache.ignite.yardstick.cache;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 
 /**
- * Interop processor adapter.
+ * GridGain benchmark that performs get operations with {@link CacheMemoryMode#OFFHEAP_VALUES OFFHEAP VALUES}
+ * memory mode.
  */
-public abstract class GridInteropProcessorAdapter extends GridProcessorAdapter implements GridInteropProcessor {
+public class IgniteGetOffHeapValuesBenchmark extends IgniteGetBenchmark {
     /** {@inheritDoc} */
-    protected GridInteropProcessorAdapter(GridKernalContext ctx) {
-        super(ctx);
+    @Override protected IgniteCache<Integer, Object> cache() {
+        return ignite().jcache("atomic-offheap-values");
     }
 }

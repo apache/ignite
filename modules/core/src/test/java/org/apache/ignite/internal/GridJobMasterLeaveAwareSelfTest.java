@@ -23,18 +23,18 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -144,7 +144,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
                 try {
                     U.sleep(500);
                 }
-                catch (IgniteInterruptedException ignore) {
+                catch (IgniteInterruptedCheckedException ignore) {
                     // No-op.
                 }
 
@@ -253,8 +253,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testApply1() throws Exception {
-        testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteInternalFuture<?>>() {
-            @Override public IgniteInternalFuture<?> applyx(ClusterGroup grid) throws IgniteCheckedException {
+        testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
+            @Override public IgniteFuture<?> applyx(ClusterGroup grid) throws IgniteCheckedException {
                 IgniteCompute comp = compute(grid).withAsync();
 
                 comp.apply(new TestClosure(), "arg");
@@ -268,8 +268,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testApply2() throws Exception {
-        testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteInternalFuture<?>>() {
-            @Override public IgniteInternalFuture<?> applyx(ClusterGroup grid) throws IgniteCheckedException {
+        testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
+            @Override public IgniteFuture<?> applyx(ClusterGroup grid) throws IgniteCheckedException {
                 IgniteCompute comp = compute(grid).withAsync();
 
                 comp.apply(new TestClosure(), Arrays.asList("arg1", "arg2"));
@@ -283,8 +283,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testApply3() throws Exception {
-        testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteInternalFuture<?>>() {
-            @Override public IgniteInternalFuture<?> applyx(ClusterGroup grid) throws IgniteCheckedException {
+        testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
+            @Override public IgniteFuture<?> applyx(ClusterGroup grid) throws IgniteCheckedException {
                 IgniteCompute comp = compute(grid).withAsync();
 
                 comp.apply(new TestClosure(),
@@ -308,8 +308,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRun1() throws Exception {
-        testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteInternalFuture<?>>() {
-            @Override public IgniteInternalFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
+        testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
+            @Override public IgniteFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
                 IgniteCompute comp = compute(prj).withAsync();
 
                 comp.run(new TestRunnable());
@@ -323,8 +323,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRun2() throws Exception {
-        testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteInternalFuture<?>>() {
-            @Override public IgniteInternalFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
+        testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
+            @Override public IgniteFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
                 IgniteCompute comp = compute(prj).withAsync();
 
                 comp.run(Arrays.asList(new TestRunnable(), new TestRunnable()));
@@ -338,8 +338,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCall1() throws Exception {
-        testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteInternalFuture<?>>() {
-            @Override public IgniteInternalFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
+        testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
+            @Override public IgniteFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
                 IgniteCompute comp = compute(prj).withAsync();
 
                 comp.call(new TestCallable());
@@ -353,8 +353,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCall2() throws Exception {
-        testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteInternalFuture<?>>() {
-            @Override public IgniteInternalFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
+        testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
+            @Override public IgniteFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
                 IgniteCompute comp = compute(prj).withAsync();
 
                 comp.call(Arrays.asList(new TestCallable(), new TestCallable()));
@@ -368,8 +368,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCall3() throws Exception {
-        testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteInternalFuture<?>>() {
-            @Override public IgniteInternalFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
+        testMasterLeaveAwareCallback(2, new CX1<ClusterGroup, IgniteFuture<?>>() {
+            @Override public IgniteFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
                 IgniteCompute comp = compute(prj).withAsync();
 
                 comp.call(
@@ -393,8 +393,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBroadcast1() throws Exception {
-        testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteInternalFuture<?>>() {
-            @Override public IgniteInternalFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
+        testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
+            @Override public IgniteFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
                 IgniteCompute comp = compute(prj).withAsync();
 
                 comp.broadcast(new TestRunnable());
@@ -408,8 +408,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBroadcast2() throws Exception {
-        testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteInternalFuture<?>>() {
-            @Override public IgniteInternalFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
+        testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
+            @Override public IgniteFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
                 IgniteCompute comp = compute(prj).withAsync();
 
                 comp.broadcast(new TestCallable());
@@ -423,8 +423,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBroadcast3() throws Exception {
-        testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteInternalFuture<?>>() {
-            @Override public IgniteInternalFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
+        testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
+            @Override public IgniteFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
                 IgniteCompute comp = compute(prj).withAsync();
 
                 comp.broadcast(new TestClosure(), "arg");
@@ -438,8 +438,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinityRun() throws Exception {
-        testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteInternalFuture<?>>() {
-            @Override public IgniteInternalFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
+        testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
+            @Override public IgniteFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
                 IgniteCompute comp = compute(prj).withAsync();
 
                 CacheAffinity<Object> aff = prj.ignite().cache(null).affinity();
@@ -457,8 +457,8 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAffinityCall() throws Exception {
-        testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteInternalFuture<?>>() {
-            @Override public IgniteInternalFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
+        testMasterLeaveAwareCallback(1, new CX1<ClusterGroup, IgniteFuture<?>>() {
+            @Override public IgniteFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
                 IgniteCompute comp = compute(prj).withAsync();
 
                 CacheAffinity<Object> aff = prj.ignite().cache(null).affinity();
@@ -500,7 +500,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @param taskStarter Task started.
      * @throws Exception If failed.
      */
-    private void testMasterLeaveAwareCallback(int expJobs, IgniteClosure<ClusterGroup, IgniteInternalFuture<?>> taskStarter)
+    private void testMasterLeaveAwareCallback(int expJobs, IgniteClosure<ClusterGroup, IgniteFuture<?>> taskStarter)
         throws Exception {
         jobLatch = new CountDownLatch(expJobs);
         invokeLatch  = new CountDownLatch(expJobs);
@@ -510,7 +510,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
 
         int lastGridIdx = GRID_CNT - 1;
 
-        IgniteInternalFuture<?> fut = taskStarter.apply(grid(lastGridIdx).forPredicate(excludeLastPredicate()));
+        IgniteFuture<?> fut = taskStarter.apply(grid(lastGridIdx).forPredicate(excludeLastPredicate()));
 
         jobLatch.await();
 
@@ -523,7 +523,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         try {
             fut.get();
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             log.debug("Task failed: " + e);
         }
     }
@@ -598,7 +598,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteCheckedException {
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) {
             masterLeaveAware.onMasterLeave(log, this);
         }
     }
@@ -620,7 +620,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteCheckedException {
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) {
             masterLeaveAware.onMasterLeave(log, this);
         }
     }
@@ -644,7 +644,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteCheckedException {
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) {
             masterLeaveAware.onMasterLeave(log, this);
         }
     }
@@ -670,7 +670,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(jobCnt);
 
             for (int i = 0; i < jobCnt; i++)
@@ -680,7 +680,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -704,14 +704,14 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object execute() throws IgniteCheckedException {
+        @Override public Object execute() {
             masterLeaveAware.execute(log);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteCheckedException {
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) {
             masterLeaveAware.onMasterLeave(log, this);
         }
     }
@@ -757,7 +757,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
                         try {
                             U.await(waitLatch);
                         }
-                        catch (IgniteInterruptedException ignore) {
+                        catch (IgniteInterruptedCheckedException ignore) {
                             // No-op.
                         }
                     }
@@ -792,9 +792,9 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         /**
          * Await for job execution response to come.
          *
-         * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+         * @throws IgniteInterruptedCheckedException If interrupted.
          */
-        private void awaitResponse() throws IgniteInterruptedException {
+        private void awaitResponse() throws IgniteInterruptedCheckedException {
             U.await(respLatch);
         }
     }

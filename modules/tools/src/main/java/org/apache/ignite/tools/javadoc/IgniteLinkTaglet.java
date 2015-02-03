@@ -17,8 +17,8 @@
 
 package org.apache.ignite.tools.javadoc;
 
-import com.sun.tools.doclets.*;
 import com.sun.javadoc.*;
+import com.sun.tools.doclets.*;
 
 import java.io.*;
 import java.util.*;

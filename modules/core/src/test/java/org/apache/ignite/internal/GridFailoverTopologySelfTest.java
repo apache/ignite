@@ -96,7 +96,7 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
             try {
                 compute(ignite1.cluster().forRemotes()).execute(JobFailTask.class, null);
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 info("Got expected grid exception: " + e);
             }
 
@@ -118,7 +118,7 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
         private boolean jobFailedOver;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
             assert ignite != null;
 
             UUID locNodeId = ignite.configuration().getNodeId();
@@ -133,14 +133,14 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
             }
 
             return Collections.singletonMap(new ComputeJobAdapter(arg) {
-                @Override public Serializable execute() throws IgniteCheckedException {
-                    throw new IgniteCheckedException("Job exception.");
+                @Override public Serializable execute() {
+                    throw new IgniteException("Job exception.");
                 }
             }, remoteNode);
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws IgniteCheckedException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) {
             if (res.getException() != null && !jobFailedOver) {
                 jobFailedOver = true;
 
@@ -151,7 +151,7 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             assert results.size() == 1;
 
             return results.get(0).getData();

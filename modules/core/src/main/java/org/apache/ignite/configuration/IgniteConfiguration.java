@@ -19,23 +19,21 @@ package org.apache.ignite.configuration;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.fs.*;
+import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.managed.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.spi.authentication.*;
-import org.apache.ignite.spi.indexing.*;
-import org.apache.ignite.streamer.*;
-import org.apache.ignite.client.ssl.*;
-import org.apache.ignite.interop.*;
-import org.apache.ignite.hadoop.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.plugin.segmentation.*;
+import org.apache.ignite.portables.*;
+import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.spi.communication.*;
@@ -43,11 +41,11 @@ import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.spi.failover.*;
+import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.securesession.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.streamer.*;
 
 import javax.management.*;
 import java.lang.management.*;
@@ -72,7 +70,7 @@ import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
  */
 public class IgniteConfiguration {
     /** Courtesy notice log category. */
-    public static final String COURTESY_LOGGER_NAME = "org.gridgain.grid.CourtesyConfigNotice";
+    public static final String COURTESY_LOGGER_NAME = "org.apache.ignite.CourtesyConfigNotice";
 
     /**
      * Default flag for peer class loading. By default the value is {@code false}
@@ -389,9 +387,6 @@ public class IgniteConfiguration {
     /** Transactions configuration. */
     private TransactionsConfiguration txCfg = new TransactionsConfiguration();
 
-    /** Interop configuration. */
-    private InteropConfiguration interopCfg;
-
     /** */
     private Collection<? extends PluginConfiguration> pluginCfgs;
 
@@ -585,7 +580,6 @@ public class IgniteConfiguration {
         hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
-        interopCfg = cfg.getInteropConfiguration() != null ? cfg.getInteropConfiguration().copy() : null;
         jettyPath = cfg.getRestJettyPath();
         licUrl = cfg.getLicenseUrl();
         lifecycleBeans = cfg.getLifecycleBeans();
@@ -3114,24 +3108,6 @@ public class IgniteConfiguration {
      */
     public void setWarmupClosure(IgniteInClosure<IgniteConfiguration> warmupClos) {
         this.warmupClos = warmupClos;
-    }
-
-    /**
-     * Gets interop configuration.
-     *
-     * @return Interop configuration.
-     */
-    @Nullable public InteropConfiguration getInteropConfiguration() {
-        return interopCfg;
-    }
-
-    /**
-     * Sets interop configuration.
-     *
-     * @param interopCfg Interop configuration.
-     */
-    public void setInteropConfiguration(@Nullable InteropConfiguration interopCfg) {
-        this.interopCfg = interopCfg;
     }
 
     /**

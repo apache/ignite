@@ -61,7 +61,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
     @ComputeTaskNoResultCache
     private static class GridResultNoCacheTestTask extends GridAbstractCacheTestTask {
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
             assert res.getData() != null;
             assert rcvd.isEmpty();
 
@@ -69,7 +69,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             assert results.isEmpty();
 
             return null;
@@ -81,8 +81,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
      */
     private static class GridResultCacheTestTask extends GridAbstractCacheTestTask {
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
-            throws IgniteCheckedException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
             assert res.getData() != null;
             assert rcvd.contains(res);
 
@@ -93,7 +92,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             for (ComputeJobResult res : results) {
                 if (res.getException() != null)
                     throw res.getException();
@@ -110,7 +109,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
      */
     private abstract static class GridAbstractCacheTestTask extends ComputeTaskSplitAdapter<String, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
             String[] words = arg.split(" ");
 
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(words.length);

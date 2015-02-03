@@ -22,8 +22,8 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.dataload.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -98,10 +98,10 @@ public class GridDataLoadCacheUpdaters {
      * @param cache Cache.
      * @param rmvCol Keys to remove.
      * @param putMap Entries to put.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
     protected static <K, V> void updateAll(IgniteCache<K, V> cache, @Nullable Collection<K> rmvCol,
-        Map<K, V> putMap) throws IgniteCheckedException {
+        Map<K, V> putMap) {
         assert rmvCol != null || putMap != null;
 
         // Here we assume that there are no key duplicates, so the following calls are valid.
@@ -120,8 +120,7 @@ public class GridDataLoadCacheUpdaters {
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
-            throws IgniteCheckedException {
+        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
             assert cache != null;
             assert !F.isEmpty(entries);
 
@@ -148,8 +147,7 @@ public class GridDataLoadCacheUpdaters {
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
-            throws IgniteCheckedException {
+        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
             assert cache != null;
             assert !F.isEmpty(entries);
 
@@ -189,8 +187,7 @@ public class GridDataLoadCacheUpdaters {
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
-            throws IgniteCheckedException {
+        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
             assert cache != null;
             assert !F.isEmpty(entries);
 
@@ -230,8 +227,7 @@ public class GridDataLoadCacheUpdaters {
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
-            throws IgniteCheckedException {
+        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
             assert cache != null;
             assert !F.isEmpty(entries);
 

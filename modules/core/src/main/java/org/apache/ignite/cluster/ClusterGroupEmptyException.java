@@ -20,8 +20,8 @@ package org.apache.ignite.cluster;
 import org.jetbrains.annotations.*;
 
 /**
- * This exception defines illegal call on empty projection. Thrown by projection when operation
- * that requires at least one node is called on empty projection.
+ * This exception defines illegal call on empty cluster group. Thrown by cluster group when operation
+ * that requires at least one node is called on empty cluster group.
  */
 public class ClusterGroupEmptyException extends ClusterTopologyException {
     /** */

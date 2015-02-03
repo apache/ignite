@@ -17,11 +17,12 @@
 
 package org.apache.ignite.spi.checkpoint.sharedfs;
 
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.checkpoint.*;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.spi.*;
+
 import java.io.*;
-import java.util.Collection;
+import java.util.*;
 
 /**
  * Grid shared file system checkpoint SPI self test.

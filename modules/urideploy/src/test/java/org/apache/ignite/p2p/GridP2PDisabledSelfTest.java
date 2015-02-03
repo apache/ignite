@@ -19,9 +19,9 @@ package org.apache.ignite.p2p;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.deployment.uri.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -104,7 +104,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
 
                 assert false;
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 info("Received expected exception: " + e);
             }
         }

@@ -19,8 +19,8 @@ package org.apache.ignite.tests.p2p;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -30,15 +30,15 @@ import java.util.*;
  */
 public class GridP2PContinuousDeploymentTask1 extends ComputeTaskSplitAdapter<Object, Object> {
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
         return Collections.singleton(new ComputeJobAdapter() {
             @IgniteInstanceResource
             private Ignite ignite;
 
-            @Override public Object execute() throws IgniteCheckedException {
+            @Override public Object execute() {
                 X.println(">>> Executing GridP2PContinuousDeploymentTask1 job.");
 
-                ignite.cache(null).putx("key", new TestUserResource());
+                ignite.jcache(null).put("key", new TestUserResource());
 
                 return null;
             }
@@ -46,7 +46,7 @@ public class GridP2PContinuousDeploymentTask1 extends ComputeTaskSplitAdapter<Ob
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
         return null;
     }
 }

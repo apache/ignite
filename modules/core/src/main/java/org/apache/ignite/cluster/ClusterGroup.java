@@ -273,7 +273,7 @@ public interface ClusterGroup {
      * Gets a metrics snapshot for this projection.
      *
      * @return Grid projection metrics snapshot.
-     * @throws IgniteCheckedException If projection is empty.
+     * @throws IgniteException If projection is empty.
      */
-    public ClusterMetrics metrics() throws IgniteCheckedException;
+    public ClusterMetrics metrics() throws IgniteException;
 }

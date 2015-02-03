@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.util.ipc.shmem.benchmark;
 
 import org.apache.ignite.*;
-import org.apache.ignite.logger.java.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.logger.java.*;
 
 import javax.swing.*;
 import java.io.*;

@@ -20,6 +20,7 @@ package org.apache.ignite.spi.deployment.uri.scanners.file;
 import org.apache.ignite.spi.deployment.uri.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.spi.*;
+
 import java.util.*;
 
 /**

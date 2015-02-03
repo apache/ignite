@@ -20,11 +20,11 @@ package org.apache.ignite.marshaller;
 import com.esotericsoftware.kryo.*;
 import com.esotericsoftware.kryo.io.*;
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;

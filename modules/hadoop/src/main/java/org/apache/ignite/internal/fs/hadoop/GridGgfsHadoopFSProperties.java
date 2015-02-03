@@ -41,9 +41,9 @@ class GridGgfsHadoopFSProperties {
      * Constructor.
      *
      * @param props Properties.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    GridGgfsHadoopFSProperties(Map<String, String> props) throws IgniteCheckedException {
+    GridGgfsHadoopFSProperties(Map<String, String> props) throws IgniteException {
         usrName = props.get(PROP_USER_NAME);
         grpName = props.get(PROP_GROUP_NAME);
 
@@ -54,7 +54,7 @@ class GridGgfsHadoopFSProperties {
                 perm = new FsPermission((short)Integer.parseInt(permStr, 8));
             }
             catch (NumberFormatException ignore) {
-                throw new IgniteCheckedException("Permissions cannot be parsed: " + permStr);
+                throw new IgniteException("Permissions cannot be parsed: " + permStr);
             }
         }
     }

@@ -24,7 +24,7 @@ import org.jetbrains.annotations.*;
  * This exception indicates that task execution timed out. It is thrown from
  * {@link ComputeTaskFuture#get()} method.
  */
-public class ComputeTaskTimeoutException extends IgniteCheckedException {
+public class ComputeTaskTimeoutException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 
