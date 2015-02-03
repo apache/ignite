@@ -22,11 +22,11 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -400,7 +400,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     private Callable<Long> internalUpdate(final long l, final boolean updated) {
         return new Callable<Long>() {
             @Override public Long call() throws Exception {
-                IgniteTx tx = CU.txStartInternal(ctx, seqView, PESSIMISTIC, REPEATABLE_READ);
+                IgniteInternalTx tx = CU.txStartInternal(ctx, seqView, PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     GridCacheAtomicSequenceValue seq = seqView.get(key);

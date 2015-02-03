@@ -17,7 +17,6 @@
 
 package org.apache.ignite.tests.p2p;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 
 import java.io.*;
@@ -30,7 +29,7 @@ public class SingleSplitTestTask extends ComputeTaskSplitAdapter<Integer, Intege
     /**
      * {@inheritDoc}
      */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, Integer arg) throws IgniteCheckedException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, Integer arg) {
         assert gridSize > 0 : "Subgrid cannot be empty.";
 
         Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
@@ -44,7 +43,7 @@ public class SingleSplitTestTask extends ComputeTaskSplitAdapter<Integer, Intege
     /**
      * {@inheritDoc}
      */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Integer reduce(List<ComputeJobResult> results) {
         int retVal = 0;
 
         for (ComputeJobResult res : results) {

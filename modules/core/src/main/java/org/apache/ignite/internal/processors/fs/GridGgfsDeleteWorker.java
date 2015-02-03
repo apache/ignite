@@ -20,12 +20,13 @@ package org.apache.ignite.internal.processors.fs;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.lang.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -178,7 +179,7 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
                     else
                         break;
                 }
-                catch (IgniteInterruptedException ignored) {
+                catch (IgniteInterruptedCheckedException ignored) {
                     // Ignore this exception while stopping.
                 }
                 catch (IgniteCheckedException e) {
@@ -303,7 +304,7 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
                 try {
                     fut.get();
                 }
-                catch (IgniteFutureCancelledException ignore) {
+                catch (IgniteFutureCancelledCheckedException ignore) {
                     // This future can be cancelled only due to GGFS shutdown.
                     cancelled = true;
 

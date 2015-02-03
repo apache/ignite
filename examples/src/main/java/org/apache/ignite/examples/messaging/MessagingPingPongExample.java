@@ -80,7 +80,7 @@ public class MessagingPingPongExample {
 
                         return false; // Unsubscribe.
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         throw new GridClosureException(e);
                     }
                 }
@@ -112,7 +112,7 @@ public class MessagingPingPongExample {
 
                         return true; // Continue listening.
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         throw new GridClosureException(e);
                     }
                 }

@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.util.ipc;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.ipc.loopback.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Ggfs endpoint factory for inter-process communication.

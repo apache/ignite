@@ -22,7 +22,7 @@ import org.jetbrains.annotations.*;
 /**
  * Deployment or re-deployment failed.
  */
-public class IgniteDeploymentException extends IgniteCheckedException {
+public class IgniteDeploymentException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 

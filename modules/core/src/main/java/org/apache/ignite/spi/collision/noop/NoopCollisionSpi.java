@@ -17,9 +17,9 @@
 
 package org.apache.ignite.spi.collision.noop;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.collision.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 /**

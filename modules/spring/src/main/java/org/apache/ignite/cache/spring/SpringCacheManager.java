@@ -18,12 +18,12 @@
 package org.apache.ignite.cache.spring;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.GridCache;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.springframework.beans.factory.*;
-import org.springframework.cache.*;
+import org.springframework.cache.CacheManager;
 
 import java.util.*;
 

@@ -25,12 +25,12 @@ import org.apache.ignite.cache.eviction.random.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.processors.fs.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.event.*;
 import org.apache.ignite.internal.visor.file.*;
 import org.apache.ignite.internal.visor.log.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -616,7 +616,7 @@ public class VisorTaskUtils {
         String logsDir;
 
         if (ggfs instanceof GridGgfsEx)
-            logsDir = ((GridGgfsEx) ggfs).clientLogDirectory();
+            logsDir = ((GridGgfsEx)ggfs).clientLogDirectory();
         else if (ggfs == null)
             throw new IgniteCheckedException("Failed to get profiler log folder (GGFS instance not found)");
         else

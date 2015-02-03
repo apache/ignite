@@ -19,17 +19,17 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Abstract test for private cache interface.

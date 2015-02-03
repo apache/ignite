@@ -19,13 +19,14 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -503,7 +504,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                 try {
                                     cache.put(key, Integer.toString(key));
                                 }
-                                catch (IgniteTxRollbackException | ClusterTopologyException ignored) {
+                                catch (IgniteTxRollbackCheckedException | ClusterTopologyCheckedException ignored) {
                                     // It is ok if primary node leaves grid.
                                 }
 
@@ -651,11 +652,11 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                                         tx.commit();
                                     }
-                                    catch (ClusterTopologyException ignored) {
+                                    catch (ClusterTopologyCheckedException ignored) {
                                         // It is ok if primary node leaves grid.
                                     }
                                 }
-                                catch (ClusterTopologyException ignored) {
+                                catch (ClusterTopologyCheckedException ignored) {
                                     // It is ok if primary node leaves grid.
                                 }
 
@@ -796,7 +797,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                                     tx.commit();
                                 }
-                                catch (ClusterTopologyException ignored) {
+                                catch (ClusterTopologyCheckedException ignored) {
                                     // It is ok if primary node leaves grid.
                                 }
 

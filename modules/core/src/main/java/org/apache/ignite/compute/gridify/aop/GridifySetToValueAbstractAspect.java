@@ -18,10 +18,11 @@
 package org.apache.ignite.compute.gridify.aop;
 
 import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
 import org.apache.ignite.compute.gridify.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.util.gridify.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+
 import java.lang.reflect.*;
 import java.util.*;
 
@@ -134,7 +135,7 @@ public class GridifySetToValueAbstractAspect {
 
         while (true) {
             if (now > end)
-                throw new ComputeTaskTimeoutException("Timeout occurred while waiting for completion.");
+                throw new ComputeTaskTimeoutCheckedException("Timeout occurred while waiting for completion.");
 
             GridifyRangeArgument taskArg = createGridifyArgument(arg, res);
 

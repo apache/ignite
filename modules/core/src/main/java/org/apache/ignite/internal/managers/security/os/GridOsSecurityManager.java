@@ -20,11 +20,11 @@ package org.apache.ignite.internal.managers.security.os;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.security.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.spi.authentication.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;

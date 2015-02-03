@@ -20,13 +20,9 @@ package org.apache.ignite.internal.processors.rest;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.internal.managers.securesession.*;
 import org.apache.ignite.internal.managers.security.*;
+import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.processors.rest.handlers.*;
 import org.apache.ignite.internal.processors.rest.handlers.cache.*;
@@ -37,18 +33,22 @@ import org.apache.ignite.internal.processors.rest.handlers.top.*;
 import org.apache.ignite.internal.processors.rest.handlers.version.*;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
 import org.apache.ignite.internal.processors.rest.request.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.spi.authentication.*;
 import org.jdk8.backport.*;
 
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.plugin.security.GridSecuritySubjectType.*;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.*;
+import static org.apache.ignite.plugin.security.GridSecuritySubjectType.*;
 
 /**
  * Rest processor implementation.

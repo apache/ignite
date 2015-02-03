@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.rest.client.message;
 
 import org.apache.ignite.internal.util.portable.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.portables.*;
 
 import java.io.*;
 

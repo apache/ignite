@@ -18,7 +18,6 @@
 package org.apache.ignite;
 
 import junit.framework.*;
-import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.*;
 
 import java.io.*;

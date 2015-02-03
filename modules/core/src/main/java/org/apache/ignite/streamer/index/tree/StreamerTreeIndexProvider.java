@@ -19,10 +19,10 @@ package org.apache.ignite.streamer.index.tree;
 
 import com.romix.scala.collection.concurrent.*;
 import org.apache.ignite.*;
-import org.apache.ignite.streamer.index.*;
 import org.apache.ignite.internal.util.snaptree.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.streamer.index.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -101,7 +101,7 @@ public class StreamerTreeIndexProvider<E, K, V> extends StreamerIndexProviderAda
     }
 
     /** {@inheritDoc} */
-    @Override protected void add(E evt, K key, StreamerIndexUpdateSync sync) throws IgniteCheckedException {
+    @Override protected void add(E evt, K key, StreamerIndexUpdateSync sync) {
         State<E, K, V> state0 = state.get();
 
         if (state0 != null)
@@ -137,7 +137,7 @@ public class StreamerTreeIndexProvider<E, K, V> extends StreamerIndexProviderAda
 
             if (isUnique()) {
                 if (old != null)
-                    throw new IgniteCheckedException("Index unique key violation [evt=" + evt + ", key=" + key +
+                    throw new IgniteException("Index unique key violation [evt=" + evt + ", key=" + key +
                         ", idxKey=" + idxKey + ']');
             }
             else
@@ -198,7 +198,7 @@ public class StreamerTreeIndexProvider<E, K, V> extends StreamerIndexProviderAda
 
                 if (isUnique()) {
                     if (old != null)
-                        throw new IgniteCheckedException("Index unique key violation [evt=" + evt + ", key=" + key +
+                        throw new IgniteException("Index unique key violation [evt=" + evt + ", key=" + key +
                             ", idxKey=" + newIdxKey + ']');
                 }
                 else
@@ -220,7 +220,7 @@ public class StreamerTreeIndexProvider<E, K, V> extends StreamerIndexProviderAda
     }
 
     /** {@inheritDoc} */
-    @Override protected void remove(E evt, K key, StreamerIndexUpdateSync sync) throws IgniteCheckedException {
+    @Override protected void remove(E evt, K key, StreamerIndexUpdateSync sync) {
         State<E, K, V> state0 = state.get();
 
         if (state0 != null)
@@ -293,7 +293,7 @@ public class StreamerTreeIndexProvider<E, K, V> extends StreamerIndexProviderAda
 
                 if (isUnique()) {
                     if (old != null)
-                        throw new IgniteCheckedException("Index unique key violation [evt=" + evt + ", key=" + key +
+                        throw new IgniteException("Index unique key violation [evt=" + evt + ", key=" + key +
                             ", idxKey=" + newIdxKey + ']');
                 }
                 else
@@ -318,10 +318,10 @@ public class StreamerTreeIndexProvider<E, K, V> extends StreamerIndexProviderAda
      * @param key2 Key.
      * @param order Keys comparison result.
      * @param sync Sync.
-     * @throws IgniteCheckedException If interrupted.
+     * @throws IgniteException If interrupted.
      */
     private void lockKeys(IndexKey<V> key1, IndexKey<V> key2, int order, StreamerIndexUpdateSync sync)
-        throws IgniteCheckedException {
+        throws IgniteException {
         assert isUnique();
         assert key1 != null;
         assert key2 != null;
