@@ -59,7 +59,7 @@ import java.util.*;
  * <li>{@code org.gridgain.jit.name} - Name of JIT compiler used.</li>
  * <li>{@code org.gridgain.net.itf.name} - Name of network interface.</li>
  * <li>{@code org.gridgain.user.name} - Operating system user name.</li>
- * <li>{@code org.gridgain.grid.name} - Grid name (see {@link org.apache.ignite.Ignite#name()}).</li>
+ * <li>{@code org.gridgain.ignite.name} - Grid name (see {@link org.apache.ignite.Ignite#name()}).</li>
  * <li>
  *      {@code spiName.org.gridgain.spi.class} - SPI implementation class for every SPI,
  *      where {@code spiName} is the name of the SPI (see {@link org.apache.ignite.spi.IgniteSpi#getName()}.

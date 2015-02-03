@@ -46,10 +46,10 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_USER_NAME = ATTR_PREFIX + ".user.name";
 
     /** Internal attribute name constant. */
-    public static final String ATTR_GRID_NAME = ATTR_PREFIX + ".grid.name";
+    public static final String ATTR_GRID_NAME = ATTR_PREFIX + ".ignite.name";
 
     /** Deployment mode. */
-    public static final String ATTR_DEPLOYMENT_MODE = ATTR_PREFIX + ".grid.dep.mode";
+    public static final String ATTR_DEPLOYMENT_MODE = ATTR_PREFIX + ".ignite.dep.mode";
 
     /** Peer classloading enabled flag. */
     public static final String ATTR_PEER_CLASSLOADING = ATTR_PREFIX + ".peer.classloading.enabled";
