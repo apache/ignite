@@ -30,8 +30,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
  */
 public class SleepTestTask extends ComputeTaskSplitAdapter<String, Integer> {
     /** {@inheritDoc} */
-    @Override public Collection<? extends ComputeJob> split(int gridSize, String arg)
-        {
+    @Override public Collection<? extends ComputeJob> split(int gridSize, String arg) {
         return Collections.singleton(new ComputeJobAdapter(arg) {
             @Override public Object execute() {
                 try {
