@@ -17,7 +17,6 @@
 
 package org.apache.loadtests.direct.singlesplit;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.compute.gridify.*;
 import org.apache.loadtests.gridify.*;

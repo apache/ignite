@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.deployment.uri.tasks;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 
 import java.util.*;

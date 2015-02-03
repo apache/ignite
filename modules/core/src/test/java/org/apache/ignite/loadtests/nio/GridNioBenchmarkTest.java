@@ -18,8 +18,8 @@
 package org.apache.ignite.loadtests.nio;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.logger.*;
 import org.jetbrains.annotations.*;

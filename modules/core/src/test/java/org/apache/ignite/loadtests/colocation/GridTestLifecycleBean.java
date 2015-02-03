@@ -18,7 +18,6 @@
 package org.apache.ignite.loadtests.colocation;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
 

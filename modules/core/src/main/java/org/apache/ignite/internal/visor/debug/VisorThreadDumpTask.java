@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.visor.debug;
 
-import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.lang.*;
 
 import java.lang.management.*;
 

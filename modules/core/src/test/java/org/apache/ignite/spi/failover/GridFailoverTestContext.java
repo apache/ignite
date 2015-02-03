@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.failover;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 

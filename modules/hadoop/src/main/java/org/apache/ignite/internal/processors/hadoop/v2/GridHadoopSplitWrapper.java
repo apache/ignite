@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.v2;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 

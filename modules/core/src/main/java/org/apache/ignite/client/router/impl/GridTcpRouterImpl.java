@@ -18,8 +18,6 @@
 package org.apache.ignite.client.router.impl;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.logger.java.*;
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.router.*;
 import org.apache.ignite.client.ssl.*;
@@ -27,6 +25,8 @@ import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.nio.ssl.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.logger.java.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;

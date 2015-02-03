@@ -20,7 +20,6 @@ package org.apache.ignite.loadtests.job;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.loadtests.util.*;
 import org.apache.ignite.testframework.*;

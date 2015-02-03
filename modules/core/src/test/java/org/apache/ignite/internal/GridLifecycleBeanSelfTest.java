@@ -19,8 +19,8 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.streamer;
 
-import org.apache.ignite.*;
 import org.apache.ignite.streamer.*;
 
 import java.util.*;

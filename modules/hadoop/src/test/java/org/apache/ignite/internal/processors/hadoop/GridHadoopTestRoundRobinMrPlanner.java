@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.hadoop;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.hadoop.*;
-import org.apache.ignite.internal.processors.hadoop.planner.GridHadoopDefaultMapReducePlan;
+import org.apache.ignite.internal.processors.hadoop.planner.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

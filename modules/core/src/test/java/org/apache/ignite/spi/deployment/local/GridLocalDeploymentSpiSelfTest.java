@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.deployment.local;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.deployment.*;

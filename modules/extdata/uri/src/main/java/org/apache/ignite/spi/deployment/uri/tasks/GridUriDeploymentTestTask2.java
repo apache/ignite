@@ -17,10 +17,10 @@
 
 package org.apache.ignite.spi.deployment.uri.tasks;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.springframework.beans.factory.xml.*;
 import org.springframework.core.io.*;
+
 import java.util.*;
 
 /**

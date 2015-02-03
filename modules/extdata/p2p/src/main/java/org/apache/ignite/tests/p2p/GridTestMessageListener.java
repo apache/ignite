@@ -19,8 +19,8 @@ package org.apache.ignite.tests.p2p;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.resources.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;

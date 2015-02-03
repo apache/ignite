@@ -20,10 +20,10 @@ package org.apache.ignite;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller;
+import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.failover.FailoverSpi;
-import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
+import org.apache.ignite.spi.failover.*;
+import org.apache.ignite.spi.loadbalancing.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

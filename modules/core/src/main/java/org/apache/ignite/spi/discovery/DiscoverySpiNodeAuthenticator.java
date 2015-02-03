@@ -19,8 +19,8 @@ package org.apache.ignite.spi.discovery;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.managers.security.*;
+import org.apache.ignite.plugin.security.*;
 
 /**
  * Node authenticator.

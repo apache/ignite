@@ -17,7 +17,6 @@
 
 package org.apache.ignite.loadtests.dsi;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.util.typedef.*;
 

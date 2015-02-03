@@ -20,12 +20,13 @@ package org.apache.ignite.compute.gridify.aop;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.gridify.*;
 import org.apache.ignite.internal.compute.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.gridify.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+
 import java.lang.reflect.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.util.gridify.GridifyUtils.UNKNOWN_SIZE;
+import static org.apache.ignite.internal.util.gridify.GridifyUtils.*;
 
 /**
  * Convenience adapter with common methods for different aspect implementations

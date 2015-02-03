@@ -19,9 +19,9 @@ package org.apache.ignite.internal.managers.collision;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.collision.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

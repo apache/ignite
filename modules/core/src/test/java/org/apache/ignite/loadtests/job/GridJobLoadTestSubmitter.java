@@ -19,7 +19,6 @@ package org.apache.ignite.loadtests.job;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;

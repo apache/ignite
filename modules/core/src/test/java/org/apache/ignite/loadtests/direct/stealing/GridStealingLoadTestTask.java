@@ -17,7 +17,6 @@
 
 package org.apache.ignite.loadtests.direct.stealing;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;

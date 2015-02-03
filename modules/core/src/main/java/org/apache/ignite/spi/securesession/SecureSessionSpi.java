@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.securesession;
 
-import org.apache.ignite.spi.*;
 import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
