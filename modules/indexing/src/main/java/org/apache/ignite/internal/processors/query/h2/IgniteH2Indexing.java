@@ -1699,14 +1699,27 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @param keyCol Key column.
          * @param valCol Value column.
          */
-        public SpatialIndex createH2SpatialIndex(Table tbl, String idxName,
-                                                        IndexColumn[] cols, int keyCol, int valCol) {
+        private SpatialIndex createH2SpatialIndex(
+            Table tbl,
+            String idxName,
+            IndexColumn[] cols,
+            int keyCol,
+            int valCol
+        ) {
             String className = "org.apache.ignite.internal.processors.query.h2.opt.GridH2SpatialIndex";
+
             try {
                 Class<?> cls = Class.forName(className);
 
-                Constructor<?> ctor = cls.getConstructor(Table.class, String.class,
-                        IndexColumn[].class, int.class, int.class);
+                Constructor<?> ctor = cls.getConstructor(
+                    Table.class,
+                    String.class,
+                    IndexColumn[].class,
+                    int.class,
+                    int.class);
+
+                if (!ctor.isAccessible())
+                    ctor.setAccessible(true);
 
                 return (SpatialIndex)ctor.newInstance(tbl, idxName, cols, keyCol, valCol);
             }
