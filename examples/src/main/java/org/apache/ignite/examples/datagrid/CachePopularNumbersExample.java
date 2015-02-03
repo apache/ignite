@@ -67,7 +67,7 @@ public class CachePopularNumbersExample {
             // Clean up caches on all nodes before run.
             g.cache(CACHE_NAME).clear(0);
 
-            ClusterGroup prj = g.cluster().forCache(CACHE_NAME);
+            ClusterGroup prj = g.cluster().forCacheNodes(CACHE_NAME);
 
             if (prj.nodes().isEmpty()) {
                 System.out.println("Grid does not have cache configured: " + CACHE_NAME);
