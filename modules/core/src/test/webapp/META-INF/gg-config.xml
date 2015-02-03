@@ -255,7 +255,7 @@
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.s3.GridTcpDiscoveryS3IpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinder">
                         <property name="awsCredentials">
                             <bean class="com.amazonaws.auth.BasicAWSCredentials">
                                 <constructor-arg value="YOUR_ACCESS_KEY_ID" />
