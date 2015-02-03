@@ -35,7 +35,7 @@ import java.util.*;
  * Alternatively you can run {@link IgniteFsNodeStartup} in another JVM which will start
  * node with {@code examples/config/filesystem/example-ignitefs.xml} configuration.
  */
-public final class IgniteFsExamples {
+public final class IgniteFsExample {
     /**
      * Executes example.
      *
