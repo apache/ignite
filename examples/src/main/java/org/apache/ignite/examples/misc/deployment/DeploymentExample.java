@@ -84,7 +84,7 @@ public final class DeploymentExample {
             ignite.compute().undeployTask(TASK_NAME);
 
             System.out.println();
-            System.out.println(">>> Finished executing Grid Direct Deployment Example.");
+            System.out.println(">>> Finished executing Ignite Direct Deployment Example.");
             System.out.println(">>> Check participating nodes output.");
         }
     }

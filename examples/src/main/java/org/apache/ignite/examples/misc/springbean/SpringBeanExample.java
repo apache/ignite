@@ -75,7 +75,7 @@ public final class SpringBeanExample {
             res.get();
 
             System.out.println(">>>");
-            System.out.println(">>> Finished executing Grid \"Spring bean\" example.");
+            System.out.println(">>> Finished executing Ignite \"Spring bean\" example.");
             System.out.println(">>> You should see printed out of 'Hello world' on one of the nodes.");
             System.out.println(">>> Check all nodes for output (this node is also part of the cluster).");
             System.out.println(">>>");

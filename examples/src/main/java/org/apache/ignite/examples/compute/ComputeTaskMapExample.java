@@ -52,7 +52,7 @@ public class ComputeTaskMapExample {
             System.out.println("Compute task map example started.");
 
             // Execute task on the cluster and wait for its completion.
-            int cnt = ignite.compute().execute(CharacterCountTask.class, "Hello Grid Enabled World!");
+            int cnt = ignite.compute().execute(CharacterCountTask.class, "Hello Ignite Enabled World!");
 
             System.out.println();
             System.out.println(">>> Total number of characters in the phrase is '" + cnt + "'.");

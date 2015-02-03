@@ -27,7 +27,7 @@ public class ProjectionExampleSelfTest extends GridAbstractExamplesTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         // Start up a node.
-        startGrid("grid-projection-example", DFLT_CFG);
+        startGrid("ignite-projection-example", DFLT_CFG);
     }
 
     /**
