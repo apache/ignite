@@ -223,7 +223,11 @@ public class GridTcpCommunicationMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Nullable @Override public GridTcpCommunicationMessageAdapter readMessage(String name) {
-        return stream.readMessage();
+        GridTcpCommunicationMessageAdapter msg = stream.readMessage();
+
+        lastRead = stream.lastFinished();
+
+        return msg;
     }
 
     /** {@inheritDoc} */

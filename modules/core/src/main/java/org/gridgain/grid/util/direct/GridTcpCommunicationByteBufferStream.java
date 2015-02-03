@@ -527,8 +527,11 @@ public class GridTcpCommunicationByteBufferStream {
      */
     public GridTcpCommunicationMessageAdapter readMessage() {
         if (!msgTypeDone) {
-            if (!buf.hasRemaining())
+            if (!buf.hasRemaining()) {
+                lastFinished = false;
+
                 return null;
+            }
 
             byte type = readByte();
 
@@ -543,10 +546,15 @@ public class GridTcpCommunicationByteBufferStream {
             msgTypeDone = false;
             msg = null;
 
+            lastFinished = true;
+
             return msg0;
         }
-        else
+        else {
+            lastFinished = false;
+
             return null;
+        }
     }
 
     /**
