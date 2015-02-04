@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.*;
 @GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
 public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationSpi> extends GridSpiAbstractTest<T> {
     /** */
-    private static final Collection<GridTestResources> spiRsrcs = new ArrayList<>();
+    private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
 
     /** */
     protected static final List<TcpCommunicationSpi> spis = new ArrayList<>();
@@ -345,7 +345,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
 
             GridTestUtils.setFieldValue(spi, "gridName", "grid-" + i);
 
-            GridTestResources rsrcs = new GridTestResources();
+            IgniteTestResources rsrcs = new IgniteTestResources();
 
             GridTestNode node = new GridTestNode(rsrcs.getNodeId());
 
@@ -424,7 +424,7 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
             spi.spiStop();
         }
 
-        for (GridTestResources rsrcs : spiRsrcs)
+        for (IgniteTestResources rsrcs : spiRsrcs)
             rsrcs.stopThreads();
 
         spis.clear();

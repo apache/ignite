@@ -45,7 +45,7 @@ public class GgfsSharedMemoryTestServer {
         try {
             IpcServerEndpoint srv = new IpcSharedMemoryServerEndpoint();
 
-            new GridTestResources().inject(srv);
+            new IgniteTestResources().inject(srv);
 
             srv.start();
 
