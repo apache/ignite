@@ -141,39 +141,64 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteBiTuple<T, S> get() throws IgniteCheckedException {
+    @Override public IgniteBiTuple<T, S> get() {
         checkRemoved();
 
-        return CU.outTx(getCall, ctx);
+        try {
+            return CU.outTx(getCall, ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void set(T val, S stamp) throws IgniteCheckedException {
+    @Override public void set(T val, S stamp) {
         checkRemoved();
 
-        CU.outTx(internalSet(val, stamp), ctx);
+        try {
+            CU.outTx(internalSet(val, stamp), ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public boolean compareAndSet(T expVal, T newVal, S expStamp, S newStamp) throws IgniteCheckedException {
+    @Override public boolean compareAndSet(T expVal, T newVal, S expStamp, S newStamp) {
         checkRemoved();
 
-        return CU.outTx(internalCompareAndSet(F0.equalTo(expVal), wrapperClosure(newVal),
-            F0.equalTo(expStamp), wrapperClosure(newStamp)), ctx);
+        try {
+            return CU.outTx(internalCompareAndSet(F0.equalTo(expVal), wrapperClosure(newVal),
+                F0.equalTo(expStamp), wrapperClosure(newStamp)), ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public S stamp() throws IgniteCheckedException {
+    @Override public S stamp() {
         checkRemoved();
 
-        return CU.outTx(stampCall, ctx);
+        try {
+            return CU.outTx(stampCall, ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public T value() throws IgniteCheckedException {
+    @Override public T value() {
         checkRemoved();
 
-        return CU.outTx(valCall, ctx);
+        try {
+            return CU.outTx(valCall, ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -205,7 +230,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
             ctx.kernalContext().dataStructures().removeAtomicStamped(name);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
     }
 
@@ -341,9 +366,9 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     /**
      * Check removed status.
      *
-     * @throws IgniteCheckedException If removed.
+     * @throws DataStructureRemovedException If removed.
      */
-    private void checkRemoved() throws IgniteCheckedException {
+    private void checkRemoved() throws DataStructureRemovedException {
         if (rmvd)
             throw new DataStructureRemovedException("Atomic stamped was removed from cache: " + name);
     }

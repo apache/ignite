@@ -302,8 +302,8 @@ public class GridJettyRestHandler extends AbstractHandler {
         GridRestRequest restReq;
 
         switch (cmd) {
-            case CACHE_DECREMENT:
-            case CACHE_INCREMENT: {
+            case ATOMIC_DECREMENT:
+            case ATOMIC_INCREMENT: {
                 DataStructuresRequest restReq0 = new DataStructuresRequest();
 
                 restReq0.key(params.get("key"));

@@ -60,17 +60,17 @@ public interface IgniteAtomicReference<T> extends Closeable {
      * Gets current value of an atomic reference.
      *
      * @return current value of an atomic reference.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public T get() throws IgniteCheckedException;
+    public T get() throws IgniteException;
 
     /**
      * Unconditionally sets the value.
      *
      * @param val Value.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public void set(T val) throws IgniteCheckedException;
+    public void set(T val) throws IgniteException;
 
     /**
      * Conditionally sets the new value. That will be set if {@code expVal} is equal
@@ -79,9 +79,9 @@ public interface IgniteAtomicReference<T> extends Closeable {
      * @param expVal Expected value.
      * @param newVal New value.
      * @return Result of operation execution. If {@code true} than value have been updated.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public boolean compareAndSet(T expVal, T newVal) throws IgniteCheckedException;
+    public boolean compareAndSet(T expVal, T newVal) throws IgniteException;
 
     /**
      * Gets status of atomic.
@@ -92,6 +92,8 @@ public interface IgniteAtomicReference<T> extends Closeable {
 
     /**
      * Removes this atomic reference.
+     *
+     * @throws IgniteException If operation failed.
      */
     @Override public void close();
 }

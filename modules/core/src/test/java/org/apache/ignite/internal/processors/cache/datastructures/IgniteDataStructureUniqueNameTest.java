@@ -220,12 +220,16 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
     private void testUniqueName(final boolean singleGrid) throws Exception {
         final String name = IgniteUuid.randomUuid().toString();
 
-        final int THREADS = 10;
+        final int DS_TYPES = 7;
 
-        for (int iter = 0; iter < 10; iter++) {
+        final int THREADS = DS_TYPES * 3;
+
+        for (int iter = 0; iter < 20; iter++) {
             log.info("Iteration: " + iter);
 
             List<IgniteInternalFuture<Object>> futs = new ArrayList<>(THREADS);
+
+            final CyclicBarrier barrier = new CyclicBarrier(THREADS);
 
             for (int i = 0; i < THREADS; i++) {
                 final int idx = i;
@@ -233,39 +237,73 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
                 IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         try {
+                            Thread.currentThread().setName("test thread-" + idx);
+
+                            barrier.await();
+
                             Ignite ignite = singleGrid ? ignite(0) : ignite(idx % gridCount());
 
-                            switch (idx % 5) {
+                            Object res;
+
+                            switch (idx % DS_TYPES) {
                                 case 0:
                                     log.info("Create atomic long, grid: " + ignite.name());
 
-                                    return ignite.atomicLong(name, 0, true);
+                                    res = ignite.atomicLong(name, 0, true);
+
+                                    break;
 
                                 case 1:
                                     log.info("Create atomic sequence, grid: " + ignite.name());
 
-                                    return ignite.atomicSequence(name, 0, true);
+                                    res = ignite.atomicSequence(name, 0, true);
+
+                                    break;
 
                                 case 2:
                                     log.info("Create atomic stamped, grid: " + ignite.name());
 
-                                    return ignite.atomicStamped(name, 0, true, true);
+                                    res = ignite.atomicStamped(name, 0, true, true);
+
+                                    break;
 
                                 case 3:
                                     log.info("Create atomic latch, grid: " + ignite.name());
 
-                                    return ignite.countDownLatch(name, 0, true, true);
+                                    res = ignite.countDownLatch(name, 0, true, true);
+
+                                    break;
 
                                 case 4:
                                     log.info("Create atomic reference, grid: " + ignite.name());
 
-                                    return ignite.atomicReference(name, null, true);
+                                    res = ignite.atomicReference(name, null, true);
+
+                                    break;
+
+                                case 5:
+                                    log.info("Create queue, grid: " + ignite.name());
+
+                                    res = ignite.queue(name, config(false), 0, true);
+
+                                    break;
+
+                                case 6:
+                                    log.info("Create set, grid: " + ignite.name());
+
+                                    res = ignite.set(name, config(false), true);
+
+                                    break;
 
                                 default:
                                     fail();
 
                                     return null;
                             }
+
+                            log.info("Thread created: " + res);
+
+                            return res;
                         }
                         catch (IgniteException e) {
                             log.info("Failed: " + e);
@@ -280,6 +318,8 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
 
             Closeable dataStructure = null;
 
+            int createdCnt = 0;
+
             for (IgniteInternalFuture<Object> fut : futs) {
                 Object res = fut.get();
 
@@ -291,18 +331,23 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
                         res instanceof IgniteAtomicSequence ||
                         res instanceof IgniteAtomicReference ||
                         res instanceof IgniteAtomicStamped ||
-                        res instanceof IgniteCountDownLatch);
+                        res instanceof IgniteCountDownLatch ||
+                        res instanceof IgniteQueue ||
+                        res instanceof IgniteSet);
 
-                if (dataStructure != null) {
-                    log.info("Data structure created: " + dataStructure);
+                log.info("Data structure created: " + dataStructure);
 
+                createdCnt++;
+
+                if (dataStructure != null)
                     assertEquals(dataStructure.getClass(), res.getClass());
-                }
                 else
                     dataStructure = (Closeable)res;
             }
 
             assertNotNull(dataStructure);
+
+            assertEquals(3, createdCnt);
 
             dataStructure.close();
         }

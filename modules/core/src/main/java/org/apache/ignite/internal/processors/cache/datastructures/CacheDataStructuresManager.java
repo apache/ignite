@@ -120,7 +120,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
             U.await(initLatch);
 
         if (!initFlag)
-            throw new IgniteCheckedException("DataStructures processor was not properly initialized.");
+            throw new IgniteCheckedException("DataStructures manager was not properly initialized.");
     }
 
     /**
@@ -175,8 +175,8 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
 
                 if (old != null) {
                     if (old.capacity() != cap || old.collocated() != colloc)
-                        throw new IgniteCheckedException("Failed to create queue, queue with the same name but different " +
-                            "configuration already exists [name=" + name + ']');
+                        throw new IgniteCheckedException("Failed to create queue, queue with the same name but " +
+                            "different configuration already exists [name=" + name + ']');
 
                     hdr = old;
                 }
@@ -415,7 +415,6 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
 
     /**
      * @param id Set ID.
-     * @return {@code True} if set was removed.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
@@ -512,23 +511,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
         throws IgniteCheckedException {
         return CacheDataStructuresProcessor.retry(log, new Callable<T>() {
             @Nullable @Override public T call() throws Exception {
-                return (T) cache.putIfAbsent(key, val);
-            }
-        });
-    }
-
-
-    /**
-     * @param cache Cache.
-     * @param key Key to remove.
-     * @throws IgniteCheckedException If failed.
-     * @return Removed value.
-     */
-    @SuppressWarnings("unchecked")
-    @Nullable private <T> T retryRemove(final GridCache cache, final Object key) throws IgniteCheckedException {
-        return CacheDataStructuresProcessor.retry(log, new Callable<T>() {
-            @Nullable @Override public T call() throws Exception {
-                return (T) cache.remove(key);
+                return (T)cache.putIfAbsent(key, val);
             }
         });
     }

@@ -86,16 +86,11 @@ public class CacheCountDownLatchExample {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            try {
-                IgniteCountDownLatch latch = Ignition.ignite().countDownLatch(latchName, 1, false, true);
+            IgniteCountDownLatch latch = Ignition.ignite().countDownLatch(latchName, 1, false, true);
 
-                int newCnt = latch.countDown();
+            int newCnt = latch.countDown();
 
-                System.out.println("Counted down [newCnt=" + newCnt + ", nodeId=" + Ignition.ignite().cluster().localNode().id() + ']');
-            }
-            catch (IgniteCheckedException e) {
-                throw new RuntimeException(e);
-            }
+            System.out.println("Counted down [newCnt=" + newCnt + ", nodeId=" + Ignition.ignite().cluster().localNode().id() + ']');
         }
     }
 }

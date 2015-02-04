@@ -68,43 +68,43 @@ public interface IgniteAtomicSequence extends Closeable {
      * Gets current value of atomic sequence.
      *
      * @return Value of atomic sequence.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public long get() throws IgniteCheckedException;
+    public long get() throws IgniteException;
 
     /**
      * Increments and returns the value of atomic sequence.
      *
      * @return Value of atomic sequence after increment.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public long incrementAndGet() throws IgniteCheckedException;
+    public long incrementAndGet() throws IgniteException;
 
     /**
      * Gets and increments current value of atomic sequence.
      *
      * @return Value of atomic sequence before increment.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public long getAndIncrement() throws IgniteCheckedException;
+    public long getAndIncrement() throws IgniteException;
 
     /**
      * Adds {@code l} elements to atomic sequence and gets value of atomic sequence.
      *
      * @param l Number of added elements.
      * @return Value of atomic sequence.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public long addAndGet(long l) throws IgniteCheckedException;
+    public long addAndGet(long l) throws IgniteException;
 
     /**
      * Gets current value of atomic sequence and adds {@code l} elements.
      *
      * @param l Number of added elements.
      * @return Value of atomic sequence.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public long getAndAdd(long l) throws IgniteCheckedException;
+    public long getAndAdd(long l) throws IgniteException;
 
     /**
      * Gets local batch size for this atomic sequence.
@@ -129,6 +129,8 @@ public interface IgniteAtomicSequence extends Closeable {
 
     /**
      * Removes this atomic sequence.
+     *
+     * @throws IgniteException If operation failed.
      */
     @Override public void close();
 }

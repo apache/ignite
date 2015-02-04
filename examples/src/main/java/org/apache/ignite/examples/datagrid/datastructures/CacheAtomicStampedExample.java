@@ -37,9 +37,9 @@ public final class CacheAtomicStampedExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws Exception If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) throws Exception {
         try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Atomic stamped example started.");
@@ -108,15 +108,10 @@ public final class CacheAtomicStampedExample {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            try {
-                IgniteAtomicStamped<String, String> stamped = Ignition.ignite().
-                    atomicStamped(stampedName, null, null, true);
+            IgniteAtomicStamped<String, String> stamped = Ignition.ignite().
+                atomicStamped(stampedName, null, null, true);
 
-                System.out.println("Atomic stamped [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+            System.out.println("Atomic stamped [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');
         }
     }
 }

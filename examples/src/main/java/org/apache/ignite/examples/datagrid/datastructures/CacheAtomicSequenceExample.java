@@ -33,9 +33,6 @@ import java.util.*;
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  */
 public final class CacheAtomicSequenceExample {
-    /** Cache name. */
-    private static final String CACHE_NAME = "partitioned_tx";
-
     /** Number of retries */
     private static final int RETRIES = 20;
 
@@ -43,9 +40,9 @@ public final class CacheAtomicSequenceExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws Exception If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) throws Exception {
         try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache atomic sequence example started.");
@@ -62,7 +59,7 @@ public final class CacheAtomicSequenceExample {
             System.out.println("Sequence initial value: " + firstVal);
 
             // Try increment atomic sequence on all grid nodes. Note that this node is also part of the grid.
-            g.compute().run(new SequenceClosure(CACHE_NAME, seqName));
+            g.compute().run(new SequenceClosure(seqName));
 
             System.out.println("Sequence after incrementing [expected=" + (firstVal + RETRIES) + ", actual=" +
                 seq.get() + ']');
@@ -77,34 +74,23 @@ public final class CacheAtomicSequenceExample {
      * Obtains atomic sequence.
      */
     private static class SequenceClosure implements IgniteRunnable {
-        /** Cache name. */
-        private final String cacheName;
-
         /** Sequence name. */
         private final String seqName;
 
         /**
-         * @param cacheName Cache name.
          * @param seqName Sequence name.
          */
-        SequenceClosure(String cacheName, String seqName) {
-            this.cacheName = cacheName;
+        SequenceClosure(String seqName) {
             this.seqName = seqName;
         }
 
         /** {@inheritDoc} */
         @Override public void run() {
-            try {
-                IgniteAtomicSequence seq = Ignition.ignite().atomicSequence(seqName, 0, true);
+            IgniteAtomicSequence seq = Ignition.ignite().atomicSequence(seqName, 0, true);
 
-                for (int i = 0; i < RETRIES; i++)
-                    System.out.println("Sequence [currentValue=" + seq.get() + ", afterIncrement=" +
-                        seq.incrementAndGet() + ']');
-
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+            for (int i = 0; i < RETRIES; i++)
+                System.out.println("Sequence [currentValue=" + seq.get() + ", afterIncrement=" +
+                    seq.incrementAndGet() + ']');
         }
     }
 }

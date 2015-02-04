@@ -150,39 +150,64 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     }
 
     /** {@inheritDoc} */
-    @Override public void await() throws IgniteCheckedException {
-        initializeLatch();
+    @Override public void await() {
+        try {
+            initializeLatch();
 
-        U.await(internalLatch);
+            U.await(internalLatch);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public boolean await(long timeout, TimeUnit unit) throws IgniteCheckedException {
-        initializeLatch();
+    @Override public boolean await(long timeout, TimeUnit unit) {
+        try {
+            initializeLatch();
 
-        return U.await(internalLatch, timeout, unit);
+            return U.await(internalLatch, timeout, unit);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public boolean await(long timeout) throws IgniteCheckedException {
+    @Override public boolean await(long timeout) {
         return await(timeout, TimeUnit.MILLISECONDS);
     }
 
     /** {@inheritDoc} */
-    @Override public int countDown() throws IgniteCheckedException {
-        return CU.outTx(new CountDownCallable(1), ctx);
+    @Override public int countDown() {
+        try {
+            return CU.outTx(new CountDownCallable(1), ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public int countDown(int val) throws IgniteCheckedException {
+    @Override public int countDown(int val) {
         A.ensure(val > 0, "val should be positive");
 
-        return CU.outTx(new CountDownCallable(val), ctx);
+        try {
+            return CU.outTx(new CountDownCallable(val), ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc}*/
-    @Override public void countDownAll() throws IgniteCheckedException {
-        CU.outTx(new CountDownCallable(0), ctx);
+    @Override public void countDownAll() {
+        try {
+            CU.outTx(new CountDownCallable(0), ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -271,7 +296,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
             ctx.kernalContext().dataStructures().removeCountDownLatch(name);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
     }
 

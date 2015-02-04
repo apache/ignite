@@ -40,9 +40,9 @@ public final class CacheAtomicLongExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws Exception If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) throws Exception {
         try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Atomic long example started.");
@@ -59,7 +59,7 @@ public final class CacheAtomicLongExample {
             // Try increment atomic long from all grid nodes.
             // Note that this node is also part of the grid.
             g.compute().broadcast(new IgniteCallable<Object>() {
-                @Override public Object call() throws  Exception {
+                @Override public Object call() {
                     for (int i = 0; i < RETRIES; i++)
                         System.out.println("AtomicLong value has been incremented: " + atomicLong.incrementAndGet());
 

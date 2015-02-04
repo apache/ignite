@@ -419,7 +419,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /**
-     * Checks result of closure modifying queue header, throws {@link org.apache.ignite.datastructures.DataStructureRemovedException}
+     * Checks result of closure modifying queue header, throws {@link DataStructureRemovedException}
      * if queue was removed.
      *
      * @param idx Result of closure execution.
@@ -430,7 +430,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /**
-     * Checks queue state, throws {@link org.apache.ignite.datastructures.DataStructureRemovedException} if queue was removed.
+     * Checks queue state, throws {@link DataStructureRemovedException} if queue was removed.
      *
      * @param hdr Queue hdr.
      */
@@ -442,7 +442,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /**
      * Marks queue as removed.
      *
-     * @param throw0 If {@code true} then throws {@link org.apache.ignite.datastructures.DataStructureRemovedException}.
+     * @param throw0 If {@code true} then throws {@link DataStructureRemovedException}.
      */
     public void onRemoved(boolean throw0) {
         rmvd = true;

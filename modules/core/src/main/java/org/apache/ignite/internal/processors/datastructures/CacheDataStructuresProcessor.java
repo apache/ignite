@@ -19,19 +19,17 @@ package org.apache.ignite.internal.processors.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -41,9 +39,10 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
+import static org.apache.ignite.internal.processors.datastructures.CacheDataStructuresProcessor.DataStructureType.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 
 /**
  * Manager of data structures.
@@ -157,16 +156,10 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
 
         checkAtomicsConfiguration();
 
-        final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
+        return getAtomic(new IgniteOutClosureX<IgniteAtomicSequence>() {
+            @Override public IgniteAtomicSequence applyx() throws IgniteCheckedException {
+                GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
-        // Check type of structure received by key from local cache.
-        IgniteAtomicSequence val = cast(dsMap.get(key), IgniteAtomicSequence.class);
-
-        if (val != null)
-            return val;
-
-        return getAtomic(new Callable<IgniteAtomicSequence>() {
-            @Override public IgniteAtomicSequence call() throws Exception {
                 dsCacheCtx.gate().enter();
 
                 try (IgniteInternalTx tx = CU.txStartInternal(dsCacheCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
@@ -237,7 +230,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
                     dsCacheCtx.gate().leave();
                 }
             }
-        }, new DataStructureInfo(name, DataStructureType.ATOMIC_SEQ, null), create);
+        }, new DataStructureInfo(name, ATOMIC_SEQ, null), create, IgniteAtomicSequence.class);
     }
 
     /**
@@ -269,7 +262,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
 
                 return null;
             }
-        }, name, DataStructureType.ATOMIC_SEQ, null);
+        }, name, ATOMIC_SEQ, null);
     }
 
     /**
@@ -282,22 +275,17 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
      * @return Atomic long.
      * @throws IgniteCheckedException If loading failed.
      */
-    public final IgniteAtomicLong atomicLong(final String name, final long initVal,
+    public final IgniteAtomicLong atomicLong(final String name,
+        final long initVal,
         final boolean create) throws IgniteCheckedException {
         A.notNull(name, "name");
 
         checkAtomicsConfiguration();
 
-        final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
+        return getAtomic(new IgniteOutClosureX<IgniteAtomicLong>() {
+            @Override public IgniteAtomicLong applyx() throws IgniteCheckedException {
+                final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
-        // Check type of structure received by key from local cache.
-        IgniteAtomicLong atomicLong = cast(dsMap.get(key), IgniteAtomicLong.class);
-
-        if (atomicLong != null)
-            return atomicLong;
-
-        return getAtomic(new Callable<IgniteAtomicLong>() {
-            @Override public IgniteAtomicLong call() throws Exception {
                 dsCacheCtx.gate().enter();
 
                 try (IgniteInternalTx tx = CU.txStartInternal(dsCacheCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
@@ -340,19 +328,21 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
                     dsCacheCtx.gate().leave();
                 }
             }
-        }, new DataStructureInfo(name, DataStructureType.ATOMIC_LONG, null), create);
+        }, new DataStructureInfo(name, ATOMIC_LONG, null), create, IgniteAtomicLong.class);
     }
 
     /**
      * @param c Closure creating data structure instance.
      * @param dsInfo Data structure info.
      * @param create Create flag.
+     * @param cls Expected data structure class.
      * @return Data structure instance.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
-    @Nullable private <T> T getAtomic(Callable<T> c,
+    @Nullable private <T> T getAtomic(final IgniteOutClosureX<T> c,
         DataStructureInfo dsInfo,
-        boolean create)
+        boolean create,
+        Class<? extends T> cls)
         throws IgniteCheckedException
     {
         Map<String, DataStructureInfo> dsMap = utilityCache.get(DATA_STRUCTURES_KEY);
@@ -365,29 +355,28 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
         if (err != null)
             throw err;
 
-        T dataStructure;
+        final GridCacheInternalKey key = new GridCacheInternalKeyImpl(dsInfo.name);
+
+        // Check type of structure received by key from local cache.
+        T dataStructure = cast(this.dsMap.get(key), cls);
+
+        if (dataStructure != null)
+            return dataStructure;
+
+        if (!create)
+            return c.applyx();
 
         try (IgniteInternalTx tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-            if (create) {
-                err =  utilityCache.invoke(DATA_STRUCTURES_KEY, new AddAtomicProcessor(dsInfo)).get();
+            err = utilityCache.invoke(DATA_STRUCTURES_KEY, new AddAtomicProcessor(dsInfo)).get();
 
-                if (err != null)
-                    throw err;
-            }
-            else {
-                T2<Boolean, IgniteCheckedException> res =
-                        utilityCache.invoke(DATA_STRUCTURES_KEY, new ContainsAtomicProcessor(dsInfo)).get();
+            if (err != null)
+                throw err;
 
-                err = res.get2();
-
-                if (err != null)
-                    throw err;
-
-                if (!res.get1())
-                    return null;
-            }
-
-            dataStructure = ctx.closure().callLocalSafe(c, false).get();
+            dataStructure = ctx.closure().callLocalSafe(new Callable<T>() {
+                @Override public T call() throws Exception {
+                    return c.applyx();
+                }
+            }, false).get();
 
             tx.commit();
         }
@@ -421,13 +410,14 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
 
                 return null;
             }
-        }, name, DataStructureType.ATOMIC_LONG, null);
+        }, name, ATOMIC_LONG, null);
     }
 
     /**
      * @param c Closure.
      * @param name Data structure name.
      * @param type Data structure type.
+     * @param afterRmv Optional closure to run after data structure removed.
      * @throws IgniteCheckedException If failed.
      */
     private <T> void removeDataStructure(IgniteCallable<T> c,
@@ -459,11 +449,12 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
             if (err != null)
                 throw err;
 
-            if (!res.get1()) {
-                tx.commit();
+            assert res.get1() != null;
 
+            boolean exists = res.get1();
+
+            if (!exists)
                 return;
-            }
 
             rmvInfo = ctx.closure().callLocalSafe(c, false).get();
 
@@ -494,16 +485,10 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
 
         checkAtomicsConfiguration();
 
-        final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
+        return getAtomic(new IgniteOutClosureX<IgniteAtomicReference>() {
+            @Override public IgniteAtomicReference<T> applyx() throws IgniteCheckedException {
+                GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
-        // Check type of structure received by key from local cache.
-        IgniteAtomicReference atomicRef = cast(dsMap.get(key), IgniteAtomicReference.class);
-
-        if (atomicRef != null)
-            return atomicRef;
-
-        return getAtomic(new Callable<IgniteAtomicReference<T>>() {
-            @Override public IgniteAtomicReference<T> call() throws Exception {
                 dsCacheCtx.gate().enter();
 
                 try (IgniteInternalTx tx = CU.txStartInternal(dsCacheCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
@@ -548,7 +533,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
                     dsCacheCtx.gate().leave();
                 }
             }
-        }, new DataStructureInfo(name, DataStructureType.ATOMIC_REF, null), create);
+        }, new DataStructureInfo(name, ATOMIC_REF, null), create, IgniteAtomicReference.class);
     }
 
     /**
@@ -579,7 +564,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
 
                 return null;
             }
-        }, name, DataStructureType.ATOMIC_REF, null);
+        }, name, ATOMIC_REF, null);
     }
 
     /**
@@ -601,16 +586,10 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
 
         checkAtomicsConfiguration();
 
-        final GridCacheInternalKeyImpl key = new GridCacheInternalKeyImpl(name);
+        return getAtomic(new IgniteOutClosureX<IgniteAtomicStamped>() {
+            @Override public IgniteAtomicStamped<T, S> applyx() throws IgniteCheckedException {
+                GridCacheInternalKeyImpl key = new GridCacheInternalKeyImpl(name);
 
-        // Check type of structure received by key from local cache.
-        IgniteAtomicStamped atomicStamped = cast(dsMap.get(key), IgniteAtomicStamped.class);
-
-        if (atomicStamped != null)
-            return atomicStamped;
-
-        return getAtomic(new Callable<IgniteAtomicStamped<T, S>>() {
-            @Override public IgniteAtomicStamped<T, S> call() throws Exception {
                 dsCacheCtx.gate().enter();
 
                 try (IgniteInternalTx tx = CU.txStartInternal(dsCacheCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
@@ -655,7 +634,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
                     dsCacheCtx.gate().leave();
                 }
             }
-        }, new DataStructureInfo(name, DataStructureType.ATOMIC_STAMPED, null), create);
+        }, new DataStructureInfo(name, ATOMIC_STAMPED, null), create, IgniteAtomicStamped.class);
     }
 
     /**
@@ -686,7 +665,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
 
                 return null;
             }
-        }, name, DataStructureType.ATOMIC_STAMPED, null);
+        }, name, ATOMIC_STAMPED, null);
     }
 
     /**
@@ -718,7 +697,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
         }
 
         DataStructureInfo dsInfo = new DataStructureInfo(name,
-            DataStructureType.QUEUE,
+            QUEUE,
             create ? new QueueInfo(cfg.getCacheName(), cfg.isCollocated(), cap) : null);
 
         final int cap0 = cap;
@@ -733,7 +712,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
     /**
      * @param name Queue name.
      * @param cctx Queue cache context.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     public void removeQueue(final String name, final GridCacheContext cctx) throws IgniteCheckedException {
         assert name != null;
@@ -760,7 +739,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
             }
         };
 
-        removeDataStructure(rmv, name, DataStructureType.QUEUE, afterRmv);
+        removeDataStructure(rmv, name, QUEUE, afterRmv);
     }
 
     /**
@@ -785,36 +764,30 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
         if (err != null)
             throw err;
 
+        if (!create) {
+            DataStructureInfo oldInfo = dsMap.get(dsInfo.name);
+
+            assert oldInfo.info instanceof CollectionInfo : oldInfo.info;
+
+            String cacheName = ((CollectionInfo)oldInfo.info).cacheName;
+
+            GridCacheContext cacheCtx = ctx.cache().internalCache(cacheName).context();
+
+            return c.applyx(cacheCtx);
+        }
+
         T col;
 
         try (IgniteInternalTx tx = utilityCache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-            final String cacheName;
+            T2<String, IgniteCheckedException> res =
+                utilityCache.invoke(DATA_STRUCTURES_KEY, new AddCollectionProcessor(dsInfo)).get();
 
-            if (create) {
-                T2<String, IgniteCheckedException> res =
-                    utilityCache.invoke(DATA_STRUCTURES_KEY, new AddCollectionProcessor(dsInfo)).get();
+            err = res.get2();
 
-                err = res.get2();
+            if (err != null)
+                throw err;
 
-                if (err != null)
-                    throw err;
-
-                cacheName = res.get1();
-            }
-            else {
-                T3<Boolean, String, IgniteCheckedException> res =
-                    utilityCache.invoke(DATA_STRUCTURES_KEY, new ContainsCollectionProcessor(dsInfo)).get();
-
-                err = res.get3();
-
-                if (err != null)
-                    throw err;
-
-                if (!res.get1())
-                    return null;
-
-                cacheName = res.get2();
-            }
+            String cacheName = res.get1();
 
             final GridCacheContext cacheCtx = ctx.cache().internalCache(cacheName).context();
 
@@ -833,6 +806,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
     /**
      * @param dsMap Map with data structure information.
      * @param info New data structure information.
+     * @param create Create flag.
      * @return {@link IgniteException} if validation failed.
      */
     @Nullable private static IgniteCheckedException validateDataStructure(
@@ -878,16 +852,10 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
 
         checkAtomicsConfiguration();
 
-        final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
+        return getAtomic(new IgniteOutClosureX<IgniteCountDownLatch>() {
+            @Override public IgniteCountDownLatch applyx() throws IgniteCheckedException {
+                GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
-        // Check type of structure received by key from local cache.
-        GridCacheCountDownLatchEx latch = cast(dsMap.get(key), GridCacheCountDownLatchEx.class);
-
-        if (latch != null)
-            return latch;
-
-        return getAtomic(new Callable<IgniteCountDownLatch>() {
-            @Override public IgniteCountDownLatch call() throws Exception {
                 dsCacheCtx.gate().enter();
 
                 try (IgniteInternalTx tx = CU.txStartInternal(dsCacheCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
@@ -932,7 +900,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
                     dsCacheCtx.gate().leave();
                 }
             }
-        }, new DataStructureInfo(name, DataStructureType.COUNT_DOWN_LATCH, null), create);
+        }, new DataStructureInfo(name, COUNT_DOWN_LATCH, null), create, GridCacheCountDownLatchEx.class);
     }
 
     /**
@@ -978,7 +946,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
                     dsCacheCtx.gate().leave();
                 }
             }
-        }, name, DataStructureType.COUNT_DOWN_LATCH, null);
+        }, name, COUNT_DOWN_LATCH, null);
     }
 
     /**
@@ -1103,7 +1071,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
         }
 
         DataStructureInfo dsInfo = new DataStructureInfo(name,
-            DataStructureType.SET,
+            SET,
             create ? new CollectionInfo(cfg.getCacheName(), cfg.isCollocated()) : null);
 
         return getCollection(new CX1<GridCacheContext, IgniteSet<T>>() {
@@ -1116,7 +1084,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
     /**
      * @param name Set name.
      * @param cctx Set cache context.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     public void removeSet(final String name, final GridCacheContext cctx) throws IgniteCheckedException {
         assert name != null;
@@ -1134,7 +1102,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
             }
         };
 
-        removeDataStructure(rmv, name, DataStructureType.SET, afterRmv);
+        removeDataStructure(rmv, name, SET, afterRmv);
     }
 
     /**
@@ -1297,7 +1265,8 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
             // No-op.
         }
 
-        /**
+        /*
+         * @param cacheName Collection cache name.
          * @param collocated Collocated flag.
          */
         public CollectionInfo(String cacheName, boolean collocated) {
@@ -1416,7 +1385,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
             }
 
             if (create) {
-                if (type == DataStructureType.QUEUE || type == DataStructureType.SET) {
+                if (type == QUEUE || type == SET) {
                     CollectionInfo oldInfo = (CollectionInfo)info;
                     CollectionInfo newInfo = (CollectionInfo)dsInfo.info;
 
@@ -1427,7 +1396,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
                             ", existingCollocated=" + newInfo.collocated + ']');
                     }
 
-                    if (type == DataStructureType.QUEUE) {
+                    if (type == QUEUE) {
                         if (((QueueInfo)oldInfo).cap != ((QueueInfo)newInfo).cap) {
                             return new IgniteCheckedException("Another queue with the same name but different " +
                                 "configuration already created [name=" + name +
@@ -1458,128 +1427,6 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(DataStructureInfo.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    static class ContainsAtomicProcessor implements
-        EntryProcessor<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>, T2<Boolean, IgniteCheckedException>>,
-        Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private DataStructureInfo info;
-
-        /**
-         * @param info Data structure information.
-         */
-        ContainsAtomicProcessor(DataStructureInfo info) {
-            assert info != null;
-
-            this.info = info;
-        }
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public ContainsAtomicProcessor() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public T2<Boolean, IgniteCheckedException> process(
-            MutableEntry<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> entry,
-            Object... args)
-            throws EntryProcessorException
-        {
-            Map<String, DataStructureInfo> map = entry.getValue();
-
-            if (map == null)
-                return new T2<>(false, null);
-
-            DataStructureInfo oldInfo = map.get(info.name);
-
-            if (oldInfo == null)
-                return new T2<>(false, null);
-
-            return new T2<>(true, oldInfo.validate(info, false));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            info.writeExternal(out);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            info = new DataStructureInfo();
-
-            info.readExternal(in);
-        }
-    }
-
-    /**
-     *
-     */
-    static class ContainsCollectionProcessor implements
-        EntryProcessor<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>, T3<Boolean, String, IgniteCheckedException>>,
-        Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private DataStructureInfo info;
-
-        /**
-         * @param info Data structure information.
-         */
-        ContainsCollectionProcessor(DataStructureInfo info) {
-            assert info != null;
-
-            this.info = info;
-        }
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public ContainsCollectionProcessor() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public T3<Boolean, String, IgniteCheckedException> process(
-            MutableEntry<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> entry,
-            Object... args)
-            throws EntryProcessorException
-        {
-            Map<String, DataStructureInfo> map = entry.getValue();
-
-            if (map == null)
-                return new T3<>(false, null, null);
-
-            DataStructureInfo oldInfo = map.get(info.name);
-
-            if (oldInfo == null)
-                return new T3<>(false, null, null);
-
-            assert oldInfo.info instanceof CollectionInfo : oldInfo.info;
-
-            return new T3<>(true, ((CollectionInfo)oldInfo.info).cacheName, oldInfo.validate(info, false));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            info.writeExternal(out);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            info = new DataStructureInfo();
-
-            info.readExternal(in);
         }
     }
 
@@ -1655,14 +1502,19 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
 
             info.readExternal(in);
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(AddAtomicProcessor.class, this);
+        }
     }
 
     /**
      *
      */
     static class AddCollectionProcessor implements
-        EntryProcessor<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>, T2<String, IgniteCheckedException>>,
-        Externalizable {
+        EntryProcessor<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>,
+            T2<String, IgniteCheckedException>>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1690,7 +1542,6 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
         @Override public T2<String, IgniteCheckedException> process(
             MutableEntry<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> entry,
             Object... args)
-            throws EntryProcessorException
         {
             Map<String, DataStructureInfo> map = entry.getValue();
 
@@ -1732,14 +1583,19 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
 
             info.readExternal(in);
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(AddCollectionProcessor.class, this);
+        }
     }
 
     /**
      *
      */
     static class RemoveDataStructureProcessor implements
-        EntryProcessor<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>, T2<Boolean, IgniteCheckedException>>,
-        Externalizable {
+        EntryProcessor<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>,
+            T2<Boolean, IgniteCheckedException>>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1766,7 +1622,6 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
         @Override public T2<Boolean, IgniteCheckedException> process(
             MutableEntry<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> entry,
             Object... args)
-            throws EntryProcessorException
         {
             Map<String, DataStructureInfo> map = entry.getValue();
 
@@ -1801,6 +1656,11 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
             info = new DataStructureInfo();
 
             info.readExternal(in);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(RemoveDataStructureProcessor.class, this);
         }
     }
 }

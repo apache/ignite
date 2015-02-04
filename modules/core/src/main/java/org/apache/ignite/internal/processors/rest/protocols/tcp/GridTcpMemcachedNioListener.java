@@ -269,7 +269,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
     private GridRestRequest createRestRequest(GridMemcachedMessage req, GridRestCommand cmd) {
         assert req != null;
 
-        if (cmd == CACHE_INCREMENT || cmd == CACHE_DECREMENT) {
+        if (cmd == ATOMIC_INCREMENT || cmd == ATOMIC_DECREMENT) {
             DataStructuresRequest restReq = new DataStructuresRequest();
 
             restReq.command(cmd);
@@ -343,11 +343,11 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
 
                 break;
             case 0x05:
-                cmd = CACHE_INCREMENT;
+                cmd = ATOMIC_INCREMENT;
 
                 break;
             case 0x06:
-                cmd = CACHE_DECREMENT;
+                cmd = ATOMIC_DECREMENT;
 
                 break;
             case 0x07:
@@ -413,12 +413,12 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
 
                 break;
             case 0x15:
-                cmd = CACHE_INCREMENT;
+                cmd = ATOMIC_INCREMENT;
                 quiet = true;
 
                 break;
             case 0x16:
-                cmd = CACHE_DECREMENT;
+                cmd = ATOMIC_DECREMENT;
                 quiet = true;
 
                 break;

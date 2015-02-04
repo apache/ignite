@@ -3161,14 +3161,14 @@ public class IgniteConfiguration {
     }
 
     /**
-     * @return Atomic configuration.
+     * @return Atomic data structures configuration.
      */
     public IgniteAtomicConfiguration getAtomicConfiguration() {
         return atomicCfg;
     }
 
     /**
-     * @param atomicCfg Atomic configuration.
+     * @param atomicCfg Atomic data structures configuration.
      */
     public void setAtomicConfiguration(IgniteAtomicConfiguration atomicCfg) {
         this.atomicCfg = atomicCfg;

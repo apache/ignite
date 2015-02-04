@@ -117,24 +117,39 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     }
 
     /** {@inheritDoc} */
-    @Override public T get() throws IgniteCheckedException {
+    @Override public T get() {
         checkRemoved();
 
-        return CU.outTx(getCall, ctx);
+        try {
+            return CU.outTx(getCall, ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void set(T val) throws IgniteCheckedException {
+    @Override public void set(T val) {
         checkRemoved();
 
-        CU.outTx(internalSet(val), ctx);
+        try {
+            CU.outTx(internalSet(val), ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public boolean compareAndSet(T expVal, T newVal) throws IgniteCheckedException {
+    @Override public boolean compareAndSet(T expVal, T newVal) {
         checkRemoved();
 
-        return CU.outTx(internalCompareAndSet(wrapperPredicate(expVal), wrapperClosure(newVal)), ctx);
+        try {
+            return CU.outTx(internalCompareAndSet(wrapperPredicate(expVal), wrapperClosure(newVal)), ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -166,7 +181,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
             ctx.kernalContext().dataStructures().removeAtomicReference(name);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
     }
 
@@ -276,9 +291,9 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     /**
      * Check removed status.
      *
-     * @throws IgniteCheckedException If removed.
+     * @throws DataStructureRemovedException If removed.
      */
-    private void checkRemoved() throws IgniteCheckedException {
+    private void checkRemoved() throws DataStructureRemovedException {
         if (rmvd)
             throw new DataStructureRemovedException("Atomic reference was removed from cache: " + name);
     }

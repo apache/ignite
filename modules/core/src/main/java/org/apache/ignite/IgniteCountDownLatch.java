@@ -86,11 +86,11 @@ public interface IgniteCountDownLatch extends Closeable {
      * then {@link org.apache.ignite.internal.IgniteInterruptedCheckedException} is thrown and the current thread's
      * interrupted status is cleared.
      *
-     * @throws IgniteCheckedException If operation failed.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException if the current thread is interrupted
+     * @throws IgniteException If operation failed.
+     * @throws org.apache.ignite.IgniteInterruptedException if the current thread is interrupted
      *      while waiting
      */
-    public void await() throws IgniteCheckedException;
+    public void await() throws IgniteException;
 
     /**
      * Causes the current thread to wait until the latch has counted down to
@@ -127,11 +127,11 @@ public interface IgniteCountDownLatch extends Closeable {
      * @param timeout The maximum time to wait in milliseconds.
      * @return {@code True} if the count reached zero and {@code false}
      *      if the waiting time elapsed before the count reached zero.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If the current thread is interrupted
+     * @throws org.apache.ignite.IgniteInterruptedException If the current thread is interrupted
      *      while waiting.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public boolean await(long timeout) throws IgniteCheckedException;
+    public boolean await(long timeout) throws IgniteException;
 
     /**
      * Causes the current thread to wait until the latch has counted down to
@@ -170,11 +170,11 @@ public interface IgniteCountDownLatch extends Closeable {
      * @param unit The time unit of the {@code timeout} argument.
      * @return {@code True} if the count reached zero and {@code false}
      *      if the waiting time elapsed before the count reached zero.
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If the current thread is interrupted
+     * @throws org.apache.ignite.IgniteInterruptedException If the current thread is interrupted
      *      while waiting.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public boolean await(long timeout, TimeUnit unit) throws IgniteCheckedException;
+    public boolean await(long timeout, TimeUnit unit) throws IgniteException;
 
     /**
      * Decrements the count of the latch, releasing all waiting threads
@@ -187,9 +187,9 @@ public interface IgniteCountDownLatch extends Closeable {
      * If the current count equals zero then nothing happens.
      *
      * @return Count after decrement.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public int countDown() throws IgniteCheckedException;
+    public int countDown() throws IgniteException;
 
     /**
      * Decreases the count of the latch using passed in value,
@@ -203,18 +203,18 @@ public interface IgniteCountDownLatch extends Closeable {
      *
      * @param val Value to decrease counter on.
      * @return Count after decreasing.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public int countDown(int val) throws IgniteCheckedException;
+    public int countDown(int val) throws IgniteException;
 
     /**
      * Counts down this latch to zero, releasing all waiting threads on all nodes.
      * <p>
      * If the current count equals zero then nothing happens.
      *
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public void countDownAll() throws IgniteCheckedException;
+    public void countDownAll() throws IgniteException;
 
     /**
      * Gets {@code removed} status of the latch.
@@ -225,6 +225,8 @@ public interface IgniteCountDownLatch extends Closeable {
 
     /**
      * Removes this count down latch.
+     *
+     * @throws IgniteException If operation failed.
      */
     @Override public void close();
 }

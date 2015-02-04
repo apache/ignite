@@ -70,18 +70,18 @@ public interface IgniteAtomicStamped<T, S> extends Closeable {
      * Gets both current value and current stamp of atomic stamped.
      *
      * @return both current value and current stamp of atomic stamped.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public IgniteBiTuple<T, S> get() throws IgniteCheckedException;
+    public IgniteBiTuple<T, S> get() throws IgniteException;
 
     /**
      * Unconditionally sets the value and the stamp.
      *
      * @param val Value.
      * @param stamp Stamp.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public void set(T val, S stamp) throws IgniteCheckedException;
+    public void set(T val, S stamp) throws IgniteException;
 
     /**
      * Conditionally sets the new value and new stamp. They will be set if {@code expVal}
@@ -92,25 +92,25 @@ public interface IgniteAtomicStamped<T, S> extends Closeable {
      * @param expStamp Expected stamp.
      * @param newStamp New stamp.
      * @return Result of operation execution. If {@code true} than  value and stamp will be updated.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public boolean compareAndSet(T expVal, T newVal, S expStamp, S newStamp) throws IgniteCheckedException;
+    public boolean compareAndSet(T expVal, T newVal, S expStamp, S newStamp) throws IgniteException;
 
     /**
      * Gets current stamp.
      *
      * @return Current stamp.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public S stamp() throws IgniteCheckedException;
+    public S stamp() throws IgniteException;
 
     /**
      * Gets current value.
      *
      * @return Current value.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public T value() throws IgniteCheckedException;
+    public T value() throws IgniteException;
 
     /**
      * Gets status of atomic.
@@ -121,6 +121,8 @@ public interface IgniteAtomicStamped<T, S> extends Closeable {
 
     /**
      * Removes this atomic stamped.
+     *
+     * @throws IgniteException If operation failed.
      */
     @Override public void close();
 }

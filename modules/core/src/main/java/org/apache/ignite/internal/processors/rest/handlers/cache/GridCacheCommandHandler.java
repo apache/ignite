@@ -76,8 +76,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         CACHE_ADD,
         CACHE_REMOVE,
         CACHE_REPLACE,
-        CACHE_INCREMENT,
-        CACHE_DECREMENT,
+        ATOMIC_INCREMENT,
+        ATOMIC_DECREMENT,
         CACHE_CAS,
         CACHE_APPEND,
         CACHE_PREPEND

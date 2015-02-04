@@ -459,7 +459,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     }
 
     /**
-     * Throws {@link org.apache.ignite.datastructures.DataStructureRemovedException} if set was removed.
+     * Throws {@link DataStructureRemovedException} if set was removed.
      */
     private void checkRemoved() {
         if (rmvd)

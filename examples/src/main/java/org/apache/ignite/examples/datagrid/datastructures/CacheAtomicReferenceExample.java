@@ -37,9 +37,9 @@ public final class CacheAtomicReferenceExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws Exception If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) throws Exception {
         try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Atomic reference example started.");
@@ -102,14 +102,9 @@ public final class CacheAtomicReferenceExample {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            try {
-                IgniteAtomicReference<String> ref = Ignition.ignite().atomicReference(refName, null, true);
+            IgniteAtomicReference<String> ref = Ignition.ignite().atomicReference(refName, null, true);
 
-                System.out.println("Atomic reference value is " + ref.get() + '.');
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+            System.out.println("Atomic reference value is " + ref.get() + '.');
         }
     }
 }

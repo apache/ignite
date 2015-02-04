@@ -223,75 +223,119 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public long get() throws IgniteCheckedException {
+    @Override public long get() {
         checkRemoved();
 
-        return CU.outTx(getCall, ctx);
+        try {
+            return CU.outTx(getCall, ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public long incrementAndGet() throws IgniteCheckedException {
+    @Override public long incrementAndGet() {
         checkRemoved();
 
-        return CU.outTx(incAndGetCall, ctx);
+        try{
+            return CU.outTx(incAndGetCall, ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public long getAndIncrement() throws IgniteCheckedException {
+    @Override public long getAndIncrement() {
         checkRemoved();
 
-        return CU.outTx(getAndIncCall, ctx);
+        try {
+            return CU.outTx(getAndIncCall, ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public long addAndGet(long l) throws IgniteCheckedException {
+    @Override public long addAndGet(long l) {
         checkRemoved();
 
-        return CU.outTx(internalAddAndGet(l), ctx);
+        try {
+            return CU.outTx(internalAddAndGet(l), ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public long getAndAdd(long l) throws IgniteCheckedException {
+    @Override public long getAndAdd(long l) {
         checkRemoved();
 
-        return CU.outTx(internalGetAndAdd(l), ctx);
+        try {
+            return CU.outTx(internalGetAndAdd(l), ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public long decrementAndGet() throws IgniteCheckedException {
+    @Override public long decrementAndGet() {
         checkRemoved();
 
-        return CU.outTx(decAndGetCall, ctx);
+        try {
+            return CU.outTx(decAndGetCall, ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public long getAndDecrement() throws IgniteCheckedException {
+    @Override public long getAndDecrement() {
         checkRemoved();
 
-        return CU.outTx(getAndDecCall, ctx);
+        try {
+            return CU.outTx(getAndDecCall, ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public long getAndSet(long l) throws IgniteCheckedException {
+    @Override public long getAndSet(long l) {
         checkRemoved();
 
-        return CU.outTx(internalGetAndSet(l), ctx);
+        try {
+            return CU.outTx(internalGetAndSet(l), ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public boolean compareAndSet(long expVal, long newVal)
-        throws IgniteCheckedException {
+    @Override public boolean compareAndSet(long expVal, long newVal) {
         checkRemoved();
 
-        return CU.outTx(internalCompareAndSet(expVal, newVal), ctx);
+        try {
+            return CU.outTx(internalCompareAndSet(expVal, newVal), ctx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /**
      * Check removed flag.
      *
-     * @throws IgniteCheckedException If removed.
+     * @throws DataStructureRemovedException If removed.
      */
-    private void checkRemoved() throws IgniteCheckedException {
+    private void checkRemoved() throws DataStructureRemovedException {
         if (rmvd)
             throw new DataStructureRemovedException("Atomic long was removed from cache: " + name);
     }
@@ -325,7 +369,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
             ctx.kernalContext().dataStructures().removeAtomicLong(name);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
     }
 

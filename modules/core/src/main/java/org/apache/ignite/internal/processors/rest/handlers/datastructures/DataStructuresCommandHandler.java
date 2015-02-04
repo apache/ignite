@@ -25,7 +25,6 @@ import org.apache.ignite.internal.processors.rest.request.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -38,8 +37,8 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
 public class DataStructuresCommandHandler extends GridRestCommandHandlerAdapter {
     /** Supported commands. */
     private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(
-        CACHE_INCREMENT,
-        CACHE_DECREMENT
+        ATOMIC_INCREMENT,
+        ATOMIC_DECREMENT
     );
 
     /**
@@ -58,15 +57,17 @@ public class DataStructuresCommandHandler extends GridRestCommandHandlerAdapter 
     @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
         assert SUPPORTED_COMMANDS.contains(req.command()) : req.command();
 
-        return incrementOrDecrement((DataStructuresRequest)req).chain(new CX1<IgniteInternalFuture<?>, GridRestResponse>() {
-            @Override public GridRestResponse applyx(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
-                GridRestResponse res = new GridRestResponse();
+        return incrementOrDecrement((DataStructuresRequest)req).chain(
+            new CX1<IgniteInternalFuture<?>, GridRestResponse>() {
+                @Override public GridRestResponse applyx(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
+                    GridRestResponse res = new GridRestResponse();
 
-                res.setResponse(fut.get());
+                    res.setResponse(fut.get());
 
-                return res;
+                    return res;
+                }
             }
-        });
+        );
     }
     /**
      * Handles increment and decrement commands.
@@ -76,7 +77,7 @@ public class DataStructuresCommandHandler extends GridRestCommandHandlerAdapter 
      */
     private IgniteInternalFuture<?> incrementOrDecrement(final DataStructuresRequest req) {
         assert req != null;
-        assert req.command() == CACHE_INCREMENT || req.command() == CACHE_DECREMENT : req.command();
+        assert req.command() == ATOMIC_INCREMENT || req.command() == ATOMIC_DECREMENT : req.command();
 
         if (req.key() == null) {
             IgniteCheckedException err =
@@ -96,7 +97,7 @@ public class DataStructuresCommandHandler extends GridRestCommandHandlerAdapter 
                 Long init = req.initial();
                 Long delta = req.delta();
 
-                boolean decr = req.command() == CACHE_DECREMENT;
+                boolean decr = req.command() == ATOMIC_DECREMENT;
 
                 String key = (String)req.key();
 

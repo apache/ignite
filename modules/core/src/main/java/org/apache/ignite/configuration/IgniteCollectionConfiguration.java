@@ -20,13 +20,13 @@ package org.apache.ignite.configuration;
 import org.apache.ignite.cache.*;
 
 /**
- *
+ * Configuration for Ignite collections.
  */
 public class IgniteCollectionConfiguration {
     /** Cache name. */
     private String cacheName;
 
-    /** */
+    /** Collocated flag. */
     private boolean collocated;
 
     /**

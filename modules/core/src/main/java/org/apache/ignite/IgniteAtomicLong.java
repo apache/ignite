@@ -73,68 +73,68 @@ public interface IgniteAtomicLong extends Closeable {
      * Gets current value of atomic long.
      *
      * @return Current value of atomic long.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public long get() throws IgniteCheckedException;
+    public long get() throws IgniteException;
 
     /**
      * Increments and gets current value of atomic long.
      *
      * @return Value.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public long incrementAndGet() throws IgniteCheckedException;
+    public long incrementAndGet() throws IgniteException;
 
     /**
      * Gets and increments current value of atomic long.
      *
      * @return Value.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public long getAndIncrement() throws IgniteCheckedException;
+    public long getAndIncrement() throws IgniteException;
 
     /**
      * Adds {@code l} and gets current value of atomic long.
      *
      * @param l Number which will be added.
      * @return Value.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public long addAndGet(long l) throws IgniteCheckedException;
+    public long addAndGet(long l) throws IgniteException;
 
     /**
      * Gets current value of atomic long and adds {@code l}.
      *
      * @param l Number which will be added.
      * @return Value.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public long getAndAdd(long l) throws IgniteCheckedException;
+    public long getAndAdd(long l) throws IgniteException;
 
     /**
      * Decrements and gets current value of atomic long.
      *
      * @return Value.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public long decrementAndGet() throws IgniteCheckedException;
+    public long decrementAndGet() throws IgniteException;
 
     /**
      * Gets and decrements current value of atomic long.
      *
      * @return Value.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public long getAndDecrement() throws IgniteCheckedException;
+    public long getAndDecrement() throws IgniteException;
 
     /**
      * Gets current value of atomic long and sets new value {@code l} of atomic long.
      *
      * @param l New value of atomic long.
      * @return Value.
-     * @throws IgniteCheckedException If operation failed.
+     * @throws IgniteException If operation failed.
      */
-    public long getAndSet(long l) throws IgniteCheckedException;
+    public long getAndSet(long l) throws IgniteException;
 
     /**
      * Atomically compares current value to the expected value, and if they are equal, sets current value
@@ -143,9 +143,9 @@ public interface IgniteAtomicLong extends Closeable {
      * @param expVal Expected atomic long's value.
      * @param newVal New atomic long's value to set if current value equal to expected value.
      * @return {@code True} if comparison succeeded, {@code false} otherwise.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    public boolean compareAndSet(long expVal, long newVal) throws IgniteCheckedException;
+    public boolean compareAndSet(long expVal, long newVal) throws IgniteException;
 
     /**
      * Gets status of atomic.
@@ -156,6 +156,8 @@ public interface IgniteAtomicLong extends Closeable {
 
     /**
      * Removes this atomic long.
+     *
+     * @throws IgniteException If operation failed.
      */
     @Override public void close();
 }

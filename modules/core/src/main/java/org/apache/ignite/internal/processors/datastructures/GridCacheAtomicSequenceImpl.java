@@ -143,7 +143,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     }
 
     /** {@inheritDoc} */
-    @Override public long get() throws IgniteCheckedException {
+    @Override public long get() {
         checkRemoved();
 
         lock.lock();
@@ -157,27 +157,47 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     }
 
     /** {@inheritDoc} */
-    @Override public long incrementAndGet() throws IgniteCheckedException {
-        return internalUpdate(1, incAndGetCall, true);
+    @Override public long incrementAndGet() {
+        try {
+            return internalUpdate(1, incAndGetCall, true);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public long getAndIncrement() throws IgniteCheckedException {
-        return internalUpdate(1, getAndIncCall, false);
+    @Override public long getAndIncrement() {
+        try {
+            return internalUpdate(1, getAndIncCall, false);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public long addAndGet(long l) throws IgniteCheckedException {
+    @Override public long addAndGet(long l) {
         A.ensure(l > 0, " Parameter mustn't be less then 1: " + l);
 
-        return internalUpdate(l, null, true);
+        try {
+            return internalUpdate(l, null, true);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public long getAndAdd(long l) throws IgniteCheckedException {
+    @Override public long getAndAdd(long l) {
         A.ensure(l > 0, " Parameter mustn't be less then 1: " + l);
 
-        return internalUpdate(l, null, false);
+        try {
+            return internalUpdate(l, null, false);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /**
@@ -368,9 +388,9 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     /**
      * Check removed status.
      *
-     * @throws IgniteCheckedException If removed.
+     * @throws DataStructureRemovedException If removed.
      */
-    private void checkRemoved() throws IgniteCheckedException {
+    private void checkRemoved() throws DataStructureRemovedException {
         if (rmvd)
             throw new DataStructureRemovedException("Sequence was removed from cache: " + name);
     }
@@ -404,7 +424,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
             ctx.kernalContext().dataStructures().removeSequence(name);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
     }
 
