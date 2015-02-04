@@ -7,7 +7,7 @@
 </endLine>
         <firstLineDetectionPattern>(\s|\t)*/\*.*$</firstLineDetectionPattern>
         <lastLineDetectionPattern>.*\*/(\s|\t)*$</lastLineDetectionPattern>
-        <allowBlankLines>true</allowBlankLines>
+        <allowBlankLines>false</allowBlankLines>
         <isMultiline>true</isMultiline>
         <padLines>false</padLines>
     </javadoc_style>
