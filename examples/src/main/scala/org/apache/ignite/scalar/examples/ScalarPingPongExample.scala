@@ -17,16 +17,16 @@
 
 package org.apache.ignite.scalar.examples
 
+import java.util.UUID
+import java.util.concurrent.CountDownLatch
+
 import org.apache.ignite.messaging.MessagingListenActor
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 
-import java.util.UUID
-import java.util.concurrent.CountDownLatch
-
 /**
  * Demonstrates simple protocol-based exchange in playing a ping-pong between
- * two nodes. It is analogous to `GridMessagingPingPongExample` on Java side.
+ * two nodes. It is analogous to `MessagingPingPongExample` on Java side.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
@@ -41,7 +41,7 @@ object ScalarPingPongExample extends App {
      * Implements Ping Pong example between local and remote node.
      */
     def pingPong() {
-        val g = grid$
+        val g = ignite$
 
         if (g.cluster().nodes().size < 2) {
             println(">>>")
@@ -71,7 +71,7 @@ object ScalarPingPongExample extends App {
 
             // Set up local player: configure local node 'loc'
             // to listen for messages from remote node 'rmt'.
-            grid$.message().localListen(null, new MessagingListenActor[String]() {
+            ignite$.message().localListen(null, new MessagingListenActor[String]() {
                 def receive(nodeId: UUID, msg: String) {
                     println(msg)
 
@@ -96,7 +96,7 @@ object ScalarPingPongExample extends App {
      * Implements Ping Pong example between two remote nodes.
      */
     def pingPong2() {
-        val g = grid$
+        val g = ignite$
 
         if (g.cluster().forRemotes().nodes().size() < 2) {
             println(">>>")

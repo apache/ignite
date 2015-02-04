@@ -221,7 +221,7 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws IgniteCheckedException {}
+    @Override public void close() {}
 
     /** {@inheritDoc} */
     @Override public <K> CacheAffinity<K> affinity(String cacheName) {

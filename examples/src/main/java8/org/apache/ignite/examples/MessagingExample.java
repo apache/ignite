@@ -18,22 +18,18 @@
 package org.apache.ignite.examples;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.examples.*;
-
-import java.util.concurrent.*;
 
 /**
  * Example that demonstrates how to exchange messages between nodes. Use such
  * functionality for cases when you need to communicate to other nodes outside
- * of grid task.
+ * of ignite task.
  * <p>
  * To run this example you must have at least one remote node started.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-compute.xml} configuration.
  */
 public final class MessagingExample {
@@ -47,13 +43,13 @@ public final class MessagingExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
-            if (g.nodes().size() < 2) {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
+            if (ignite.nodes().size() < 2) {
                 System.out.println();
-                System.out.println(">>> Please start at least 2 grid nodes to run example.");
+                System.out.println(">>> Please start at least 2 cluster nodes to run example.");
                 System.out.println();
 
                 return;
@@ -63,7 +59,7 @@ public final class MessagingExample {
             System.out.println(">>> Messaging example started.");
 
             // Projection for remote nodes.
-            ClusterGroup rmtPrj = g.forRemotes();
+            ClusterGroup rmtPrj = ignite.forRemotes();
 
             // Listen for messages from remote nodes to make sure that they received all the messages.
             int msgCnt = rmtPrj.nodes().size() * MESSAGES_NUM;
@@ -71,9 +67,9 @@ public final class MessagingExample {
             CountDownLatch orderedLatch = new CountDownLatch(msgCnt);
             CountDownLatch unorderedLatch = new CountDownLatch(msgCnt);
 
-            localListen(g.forLocal(), orderedLatch, unorderedLatch);
+            localListen(ignite.forLocal(), orderedLatch, unorderedLatch);
 
-            // Register listeners on all grid nodes.
+            // Register listeners on all cluster nodes.
             startListening(rmtPrj);
 
             // Send unordered messages to all remote nodes.
@@ -98,22 +94,22 @@ public final class MessagingExample {
     }
 
     /**
-     * Start listening to messages on all grid nodes within passed in projection.
+     * Start listening to messages on all cluster nodes within passed in projection.
      *
-     * @param prj Grid projection.
-     * @throws IgniteCheckedException If failed.
+     * @param prj Cluster group.
+     * @throws IgniteException If failed.
      */
-    private static void startListening(ClusterGroup prj) throws IgniteCheckedException {
+    private static void startListening(ClusterGroup prj) throws IgniteException {
         // Add ordered message listener.
         prj.message().remoteListen(TOPIC.ORDERED, (nodeId, msg) -> {
             System.out.println("Received ordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
             try {
-                // Projection does not contain local node: GridProjection rmtPrj = g.forRemotes();
-                // So, need to get projection for sender node through entire grid.
+                // Projection does not contain local node: ClusterGroup rmtPrj = g.forRemotes();
+                // So, need to get projection for sender node through entire cluster.
                 prj.ignite().forNodeId(nodeId).message().send(TOPIC.ORDERED, msg);
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 e.printStackTrace();
             }
 
@@ -125,11 +121,11 @@ public final class MessagingExample {
             System.out.println("Received unordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
             try {
-                // Projection does not contain local node: GridProjection rmtPrj = g.forRemotes();
-                // So, need to get projection for sender node through entire grid.
+                // Projection does not contain local node: ClusterGroup rmtPrj = g.forRemotes();
+                // So, need to get projection for sender node through entire cluster.
                 prj.ignite().forNodeId(nodeId).message().send(TOPIC.UNORDERED, msg);
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 e.printStackTrace();
             }
 
@@ -140,7 +136,7 @@ public final class MessagingExample {
     /**
      * Listen for messages from remote nodes.
      *
-     * @param prj Grid projection.
+     * @param grp Cluster group.
      * @param orderedLatch Latch for ordered messages acks.
      * @param unorderedLatch Latch for unordered messages acks.
      */
@@ -149,14 +145,14 @@ public final class MessagingExample {
         final CountDownLatch orderedLatch,
         final CountDownLatch unorderedLatch
     ) {
-        prj.message().localListen(TOPIC.ORDERED, (nodeId, msg) -> {
+        grp.message().localListen(TOPIC.ORDERED, (nodeId, msg) -> {
             orderedLatch.countDown();
 
             // Return true to continue listening, false to stop.
             return orderedLatch.getCount() > 0;
         });
 
-        prj.message().localListen(TOPIC.UNORDERED, (nodeId, msg) -> {
+        grp.message().localListen(TOPIC.UNORDERED, (nodeId, msg) -> {
             unorderedLatch.countDown();
 
             // Return true to continue listening, false to stop.

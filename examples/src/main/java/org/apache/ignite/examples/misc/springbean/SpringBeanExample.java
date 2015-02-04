@@ -24,21 +24,21 @@ import org.springframework.context.support.*;
 import java.util.concurrent.*;
 
 /**
- * Demonstrates a simple use of GridGain grid configured with Spring.
+ * Demonstrates a simple use of Ignite configured with Spring.
  * <p>
  * String "Hello World." is printed out by Callable passed into
- * the executor service provided by Grid. This statement could be printed
- * out on any node in the grid.
+ * the executor service provided by Ignite. This statement could be printed
+ * out on any node in the cluster.
  * <p>
- * The major point of this example is to show grid injection by Spring
- * framework. Grid bean is described in {@code spring-bean.xml} file and instantiated
+ * The major point of this example is to show ignite injection by Spring
+ * framework. Ignite bean is described in {@code spring-bean.xml} file and instantiated
  * by Spring context. Once application completed its execution Spring will
- * apply grid bean destructor and stop the grid.
+ * apply ignite bean destructor and stop the ignite.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-compute.xml} configuration.
  */
 public final class SpringBeanExample {
@@ -46,7 +46,7 @@ public final class SpringBeanExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         System.out.println();
@@ -57,11 +57,11 @@ public final class SpringBeanExample {
             new ClassPathXmlApplicationContext("org/apache/ignite/examples/misc/springbean/spring-bean.xml");
 
         try {
-            // Get grid from Spring (note that local grid node is already started).
-            Ignite g = (Ignite)ctx.getBean("mySpringBean");
+            // Get ignite from Spring (note that local cluster node is already started).
+            Ignite ignite = (Ignite)ctx.getBean("mySpringBean");
 
-            // Execute any method on the retrieved grid instance.
-            ExecutorService exec = g.executorService();
+            // Execute any method on the retrieved ignite instance.
+            ExecutorService exec = ignite.executorService();
 
             Future<String> res = exec.submit(new Callable<String>() {
                 @Override public String call() throws Exception {
@@ -75,13 +75,13 @@ public final class SpringBeanExample {
             res.get();
 
             System.out.println(">>>");
-            System.out.println(">>> Finished executing Grid \"Spring bean\" example.");
+            System.out.println(">>> Finished executing Ignite \"Spring bean\" example.");
             System.out.println(">>> You should see printed out of 'Hello world' on one of the nodes.");
-            System.out.println(">>> Check all nodes for output (this node is also part of the grid).");
+            System.out.println(">>> Check all nodes for output (this node is also part of the cluster).");
             System.out.println(">>>");
         }
         finally {
-            // Stop local grid node.
+            // Stop local cluster node.
             ctx.destroy();
         }
     }

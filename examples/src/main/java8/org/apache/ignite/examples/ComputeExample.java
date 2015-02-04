@@ -19,11 +19,9 @@ package org.apache.ignite.examples;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.apache.ignite.lang.IgniteCallable;
 
 /**
- * Demonstrates broadcasting and unicasting computations within grid projection.
+ * Demonstrates broadcasting and unicasting computations within cluster.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
@@ -33,20 +31,20 @@ public class ComputeExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Compute broadcast example started.");
 
-            // Broadcast closure to all grid nodes.
+            // Broadcast closure to all cluster nodes.
             ignite.compute().broadcast((IgniteRunnable)() -> System.out.println("Hello World")).get();
 
-            // Unicast closure to some grid node picked by load balancer.
+            // Unicast closure to some cluster node picked by load balancer.
             ignite.compute().run((IgniteRunnable)() -> System.out.println("Hello World")).get();
 
-            // Unicast closure to some grid node picked by load balancer and return result.
+            // Unicast closure to some cluster node picked by load balancer and return result.
             int length = ignite.compute().call((IgniteCallable<Integer>)"Hello World"::length).get();
 
             System.out.println();
