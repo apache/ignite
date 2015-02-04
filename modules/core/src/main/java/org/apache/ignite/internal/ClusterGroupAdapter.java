@@ -536,18 +536,18 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterGroup forCacheNodes(@Nullable String cacheName, @Nullable String... cacheNames) {
-        return forPredicate(new CachesFilter(cacheName, cacheNames, null));
+    @Override public final ClusterGroup forCacheNodes(@Nullable String cacheName) {
+        return forPredicate(new CachesFilter(cacheName, null));
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterGroup forDataNodes(@Nullable String cacheName, @Nullable String... cacheNames) {
-        return forPredicate(new CachesFilter(cacheName, cacheNames, CachesFilter.DATA_MODES));
+    @Override public final ClusterGroup forDataNodes(@Nullable String cacheName) {
+        return forPredicate(new CachesFilter(cacheName, CachesFilter.DATA_MODES));
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterGroup forClientNodes(@Nullable String cacheName, @Nullable String... cacheNames) {
-        return forPredicate(new CachesFilter(cacheName, cacheNames, CachesFilter.CLIENT_MODES));
+    @Override public final ClusterGroup forClientNodes(@Nullable String cacheName) {
+        return forPredicate(new CachesFilter(cacheName, CachesFilter.CLIENT_MODES));
     }
 
     /** {@inheritDoc} */
@@ -687,21 +687,15 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         /** Cache name. */
         private final String cacheName;
 
-        /** Cache names. */
-        private final String[] cacheNames;
-
         /** */
         private final Set<CacheDistributionMode> distributionMode;
 
         /**
          * @param cacheName Cache name.
-         * @param cacheNames Cache names.
          * @param distributionMode Filter by {@link CacheConfiguration#getDistributionMode()}.
          */
-        private CachesFilter(@Nullable String cacheName, @Nullable String[] cacheNames,
-            @Nullable Set<CacheDistributionMode> distributionMode) {
+        private CachesFilter(@Nullable String cacheName, @Nullable Set<CacheDistributionMode> distributionMode) {
             this.cacheName = cacheName;
-            this.cacheNames = cacheNames;
             this.distributionMode = distributionMode;
         }
 
@@ -709,31 +703,12 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         @Override public boolean apply(ClusterNode n) {
             GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
 
-            if (caches == null)
-                return false;
-
-            if (!hasCache(caches, cacheName, distributionMode))
-                return false;
-
-            if (!F.isEmpty(cacheNames))
-                for (String cn : cacheNames)
-                    if (!hasCache(caches, cn, distributionMode))
-                        return false;
-
-            return true;
-        }
-
-        /**
-         * @param cacheName Cache name to check.
-         * @param distributionMode Filter by {@link CacheConfiguration#getDistributionMode()}.
-         * @return {@code true} if given node has specified cache started.
-         */
-        public static boolean hasCache(GridCacheAttributes[] caches, @Nullable String cacheName,
-            @Nullable Collection<CacheDistributionMode> distributionMode) {
-            for (GridCacheAttributes attrs : caches) {
-                if (Objects.equals(cacheName, attrs.cacheName())
-                    && (distributionMode == null || distributionMode.contains(attrs.partitionedTaxonomy())))
-                    return true;
+            if (caches != null) {
+                for (GridCacheAttributes attrs : caches) {
+                    if (Objects.equals(cacheName, attrs.cacheName())
+                        && (distributionMode == null || distributionMode.contains(attrs.partitionedTaxonomy())))
+                        return true;
+                }
             }
 
             return false;
