@@ -300,7 +300,6 @@
                     <exclude>**/ipc/shmem/*.sh</exclude>
                     <exclude>**/keystore/generate.sh</exclude>
                     <exclude>**/pom-installed.xml</exclude>
-                    <exclude>**/yardstick/**</exclude>
                 </excludes>
             </configuration>
             <executions>

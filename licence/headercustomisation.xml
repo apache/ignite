@@ -21,8 +21,7 @@
     <javadoc_style>
         <firstLine>/*</firstLine>
         <beforeEachLine> * </beforeEachLine>
-        <endLine> */
-</endLine>
+        <endLine> */EOL</endLine>
         <firstLineDetectionPattern>(\s|\t)*/\*.*$</firstLineDetectionPattern>
         <lastLineDetectionPattern>.*\*/(\s|\t)*$</lastLineDetectionPattern>
         <allowBlankLines>false</allowBlankLines>
@@ -32,7 +31,7 @@
     <batch>
         <firstLine>::</firstLine>
         <beforeEachLine>:: </beforeEachLine>
-        <endLine>::</endLine>
+        <endLine>::EOL</endLine>
         <firstLineDetectionPattern>[:][:].*$</firstLineDetectionPattern>
         <lastLineDetectionPattern>"[:][:].*$"</lastLineDetectionPattern>
         <allowBlankLines>false</allowBlankLines>
