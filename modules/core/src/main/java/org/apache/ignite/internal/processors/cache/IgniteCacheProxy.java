@@ -711,7 +711,6 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
     /** {@inheritDoc} */
     @Override public void removeAll() {
-        // TODO IGNITE-1.
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

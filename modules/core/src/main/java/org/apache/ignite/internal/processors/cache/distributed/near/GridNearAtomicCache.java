@@ -631,7 +631,7 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void removeAll() throws IgniteCheckedException {
-        dht.removeAll(keySet());
+        dht.removeAll();
     }
 
     /** {@inheritDoc} */

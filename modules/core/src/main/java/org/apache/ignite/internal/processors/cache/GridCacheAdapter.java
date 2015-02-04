@@ -1273,7 +1273,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @return {@code True} if cleared.
      */
     private boolean clearLocally(GridCacheVersion obsoleteVer, K key,
-                                 @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
         try {
             if (ctx.portableEnabled())
                 key = (K)ctx.marshalToPortable(key);
@@ -3406,7 +3406,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 }
             } while (ctx.affinity().affinityTopologyVersion() > topVer);
         }
-        catch (ClusterGroupEmptyException ignore) {
+        catch (ClusterGroupEmptyCheckedException ignore) {
             if (log.isDebugEnabled())
                 log.debug("All remote nodes left while cache remove [cacheName=" + name() + "]");
         }
@@ -5319,7 +5319,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            ((IgniteEx) ignite).cachex(cacheName).clearLocally();
+            ((IgniteEx)ignite).cachex(cacheName).clearLocally();
 
             return null;
         }
