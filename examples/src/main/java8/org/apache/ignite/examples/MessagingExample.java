@@ -62,10 +62,10 @@ public final class MessagingExample {
             System.out.println(">>> Messaging example started.");
 
             // Projection for remote nodes.
-            ClusterGroup rmtPrj = ignite.cluster().forRemotes();
+            ClusterGroup rmtGrp = ignite.cluster().forRemotes();
 
             // Listen for messages from remote nodes to make sure that they received all the messages.
-            int msgCnt = rmtPrj.nodes().size() * MESSAGES_NUM;
+            int msgCnt = rmtGrp.nodes().size() * MESSAGES_NUM;
 
             CountDownLatch orderedLatch = new CountDownLatch(msgCnt);
             CountDownLatch unorderedLatch = new CountDownLatch(msgCnt);
@@ -73,17 +73,17 @@ public final class MessagingExample {
             localListen(ignite.message(ignite.cluster().forLocal()), orderedLatch, unorderedLatch);
 
             // Register listeners on all cluster nodes.
-            startListening(ignite, ignite.message(rmtPrj));
+            startListening(ignite, ignite.message(rmtGrp));
 
             // Send unordered messages to all remote nodes.
             for (int i = 0; i < MESSAGES_NUM; i++)
-                ignite.message(rmtPrj).send(TOPIC.UNORDERED, Integer.toString(i));
+                ignite.message(rmtGrp).send(TOPIC.UNORDERED, Integer.toString(i));
 
             System.out.println(">>> Finished sending unordered messages.");
 
             // Send ordered messages to all remote nodes.
             for (int i = 0; i < MESSAGES_NUM; i++)
-                ignite.message(rmtPrj).sendOrdered(TOPIC.ORDERED, Integer.toString(i), 0);
+                ignite.message(rmtGrp).sendOrdered(TOPIC.ORDERED, Integer.toString(i), 0);
 
             System.out.println(">>> Finished sending ordered messages.");
             System.out.println(">>> Check output on all nodes for message printouts.");
