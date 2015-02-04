@@ -24,7 +24,7 @@ import org.jetbrains.annotations.*;
  * Provides information about current release. Note that enterprise users are also
  * able to renew license. Instance of {@code GridProduct} is obtained from grid as follows:
  * <pre name="code" class="java">
- * GridProduct p = GridGain.grid().product();
+ * GridProduct p = Ignition.ignite().product();
  * </pre>
  */
 public interface IgniteProduct {

@@ -74,7 +74,7 @@ import java.io.*;
  *
  * gridCfg.setServiceConfiguration(svcCfg);
  * ...
- * GridGain.start(gridCfg);
+ * Ignition.start(gridCfg);
  * </pre>
  * <h1 class="header">Cancellation</h1>
  * Services can be cancelled by calling any of the {@code cancel} methods on {@link org.apache.ignite.IgniteManaged} API.

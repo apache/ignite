@@ -35,7 +35,7 @@ import java.util.concurrent.*;
  * in the {@link ClusterGroup}. Instance of {@code GridCompute} is obtained from grid projection
  * as follows:
  * <pre name="code" class="java">
- * GridCompute c = GridGain.grid().compute();
+ * GridCompute c = Ignition.ignite().compute();
  * </pre>
  * The methods are grouped as follows:
  * <ul>
@@ -356,7 +356,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * <p>
      * Here is an example.
      * <pre name="code" class="java">
-     * GridGain.grid().withName("MyTask").run(new MyRunnable() {...});
+     * Ignition.ignite().withName("MyTask").run(new MyRunnable() {...});
      * </pre>
      *
      * @param taskName Task name.
@@ -372,7 +372,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * <p>
      * Here is an example.
      * <pre name="code" class="java">
-     * GridGain.grid().withTimeout(10000).run(new MyRunnable() {...});
+     * Ignition.ignite().withTimeout(10000).run(new MyRunnable() {...});
      * </pre>
      *
      * @param timeout Computation timeout in milliseconds.
@@ -388,7 +388,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * <p>
      * Here is an example.
      * <pre name="code" class="java">
-     * GridGain.grid().compute().withNoFailover().run(new MyRunnable() {...});
+     * Ignition.ignite().compute().withNoFailover().run(new MyRunnable() {...});
      * </pre>
      *
      * @return This {@code GridCompute} instance for chaining calls.

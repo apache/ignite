@@ -92,7 +92,7 @@ import java.util.*;
  * <h1 class="header">Building Portable Objects</h1>
  * GridGain comes with {@link PortableBuilder} which allows to build portable objects dynamically:
  * <pre name=code class=java>
- * GridPortableBuilder builder = GridGain.grid().portables().builder("org.project.MyObject");
+ * GridPortableBuilder builder = Ignition.ignite().portables().builder("org.project.MyObject");
  *
  * builder.setField("fieldA", "A");
  * builder.setField("fieldB", "B");
@@ -108,7 +108,7 @@ import java.util.*;
  * obj.setFieldA("A");
  * obj.setFieldB(123);
  *
- * GridPortableObject portableObj = GridGain.grid().portables().toPortable(obj);
+ * GridPortableObject portableObj = Ignition.ignite().portables().toPortable(obj);
  * </pre>
  * <h1 class="header">Portable Metadata</h1>
  * Even though GridGain portable protocol only works with hash codes for type and field names

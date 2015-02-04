@@ -47,7 +47,7 @@ import java.io.*;
  *
  * gridCfg.setServiceConfiguration(svcCfg1, svcCfg2);
  * ...
- * GridGain.start(gridCfg);
+ * Ignition.start(gridCfg);
  * </pre>
  * The above configuration can also be specified in a Spring configuration file.
  */

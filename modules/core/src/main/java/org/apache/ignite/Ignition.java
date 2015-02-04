@@ -50,7 +50,7 @@ import java.util.*;
  *
  * cfg.setDeploymentSpi(deploySpi);
  *
- * GridGain.start(cfg);
+ * Ignition.start(cfg);
  * </pre>
  * Here is how a grid instance can be configured from Spring XML configuration file. The
  * example below configures a grid instance with additional user attributes
@@ -73,7 +73,7 @@ import java.util.*;
  * absolute or relative to IGNITE_HOME.
  * <pre name="code" class="java">
  * ...
- * GridGain.start("/path/to/spring/xml/file.xml");
+ * Ignition.start("/path/to/spring/xml/file.xml");
  * ...
  * </pre>
  * You can also instantiate grid directly from Spring without using {@code GridGain}.

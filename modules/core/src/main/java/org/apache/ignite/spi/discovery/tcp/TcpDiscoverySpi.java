@@ -114,7 +114,7 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
  * cfg.setDiscoverySpi(spi);
  *
  * // Start grid.
- * GridGain.start(cfg);
+ * Ignition.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * GridTcpDiscoverySpi can be configured from Spring XML configuration file:

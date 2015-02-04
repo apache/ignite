@@ -29,7 +29,7 @@ import java.util.*;
  * There are {@code 2} ways to subscribe to event listening, {@code local} and {@code remote}. Instance
  * of {@code GridMessaging} is obtained from grid projection as follows:
  * <pre name="code" class="java">
- * GridEvents evts = GridGain.grid().events();
+ * GridEvents evts = Ignition.ignite().events();
  * </pre> * <p>
  * Local subscription, defined by {@link #localListen(IgnitePredicate, int...)} method, will add
  * a listener for specified events on local node only. This listener will be notified whenever any

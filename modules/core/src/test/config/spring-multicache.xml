@@ -23,8 +23,8 @@
     When starting a standalone GridGain node, you need to execute the following command:
     {IGNITE_HOME}/bin/ignite.{bat|sh} path-to-this-file/example-cache.xml
 
-    When starting GridGain from Java IDE, pass path to this file into GridGain:
-    GridGain.start("path-to-this-file/example-benchmark.xml");
+    When starting GridGain from Java IDE, pass path to this file into Ignition:
+    Ignition.start("path-to-this-file/example-benchmark.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

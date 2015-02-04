@@ -30,7 +30,7 @@ import java.util.*;
  * Defines functionality necessary to deploy distributed services on the grid. Instance of
  * {@code GridServices} is obtained from grid projection as follows:
  * <pre name="code" class="java">
- * GridServices svcs = GridGain.grid().services();
+ * GridServices svcs = Ignition.ignite().services();
  * </pre>
  * With distributed services you can do the following:
  * <ul>
@@ -67,7 +67,7 @@ import java.util.*;
  *
  * gridCfg.setServiceConfiguration(svcCfg1, svcCfg2);
  * ...
- * GridGain.start(gridCfg);
+ * Ignition.start(gridCfg);
  * </pre>
  * <h1 class="header">Load Balancing</h1>
  * In all cases, other than singleton service deployment, GridGain will automatically make sure that

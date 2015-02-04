@@ -45,7 +45,7 @@ import org.apache.ignite.spi.authentication.*;
  * cfg.setAuthenticationSpi(authSpi);
  *
  * // Start grid.
- * GridGain.start(cfg);
+ * Ignition.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * GridNoopAuthenticationSpi can be configured from Spring XML configuration file:

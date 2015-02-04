@@ -107,7 +107,7 @@ import java.util.Date;
  * <h1 class="header">Building Portable Objects</h1>
  * GridGain comes with {@link org.apache.ignite.portables.PortableBuilder} which allows to build portable objects dynamically:
  * <pre name=code class=java>
- * GridPortableBuilder builder = GridGain.grid().portables().builder();
+ * GridPortableBuilder builder = Ignition.ignite().portables().builder();
  *
  * builder.typeId("MyObject");
  *
@@ -125,7 +125,7 @@ import java.util.Date;
  * obj.setFieldA("A");
  * obj.setFieldB(123);
  *
- * GridPortableObject portableObj = GridGain.grid().portables().toPortable(obj);
+ * GridPortableObject portableObj = Ignition.ignite().portables().toPortable(obj);
  * </pre>
  * NOTE: you don't need to convert typed objects to portable format before storing
  * them in cache, GridGain will do that automatically.

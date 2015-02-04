@@ -38,7 +38,7 @@ import java.util.*;
  *
  *     cfg.setSecurityCredentialsProvider(new GridSecurityCredentialsBasicProvider(creds));
  *
- *     Grid grid = GridGain.start(cfg);
+ *     Grid grid = Ignition.start(cfg);
  * </pre>
  * For remote Java client, configuration is provided in a similar way by specifying
  * {@code GridClientConfiguration.setSecurityCredentialsProvider(...)} property.
