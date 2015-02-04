@@ -19,18 +19,17 @@ package org.apache.ignite.examples.compute;
 
 import org.apache.ignite.*;
 import org.apache.ignite.examples.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;
 
 /**
- * Demonstrates a simple use of {@link org.apache.ignite.lang.IgniteRunnable}.
+ * Demonstrates a simple use of {@link IgniteRunnable}.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-compute.xml} configuration.
  */
 public class ComputeRunnableExample {
@@ -38,17 +37,17 @@ public class ComputeRunnableExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
-        try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
+    public static void main(String[] args) throws IgniteException {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println("Compute runnable example started.");
 
             Collection<IgniteFuture> futs = new ArrayList<>();
 
             // Enable asynchronous mode.
-            IgniteCompute compute = g.compute().withAsync();
+            IgniteCompute compute = ignite.compute().withAsync();
 
             // Iterate through all words in the sentence and create callable jobs.
             for (final String word : "Print words using runnable".split(" ")) {
@@ -56,7 +55,7 @@ public class ComputeRunnableExample {
                 compute.run(new IgniteRunnable() {
                     @Override public void run() {
                         System.out.println();
-                        System.out.println(">>> Printing '" + word + "' on this node from grid job.");
+                        System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
                     }
                 });
 
@@ -69,7 +68,7 @@ public class ComputeRunnableExample {
 
             System.out.println();
             System.out.println(">>> Finished printing words using runnable execution.");
-            System.out.println(">>> Check all nodes for output (this node is also part of the grid).");
+            System.out.println(">>> Check all nodes for output (this node is also part of the cluster).");
         }
     }
 }

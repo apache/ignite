@@ -25,14 +25,14 @@ import org.apache.ignite.lang.*;
 import java.util.*;
 
 /**
- * Grid cache distributed queue example. This example demonstrates {@code FIFO} unbounded
+ * Ignite cache distributed queue example. This example demonstrates {@code FIFO} unbounded
  * cache queue.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheQueueExample {
     /** Cache name. */
@@ -51,20 +51,20 @@ public class CacheQueueExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache queue example started.");
 
             // Make queue name.
             String queueName = UUID.randomUUID().toString();
 
-            queue = initializeQueue(g, queueName);
+            queue = initializeQueue(ignite, queueName);
 
-            readFromQueue(g);
+            readFromQueue(ignite);
 
-            writeToQueue(g);
+            writeToQueue(ignite);
 
-            clearAndRemoveQueue(g);
+            clearAndRemoveQueue(ignite);
         }
 
         System.out.println("Cache queue example finished.");
@@ -73,18 +73,18 @@ public class CacheQueueExample {
     /**
      * Initialize queue.
      *
-     * @param g Grid.
+     * @param ignite Ignite.
      * @param queueName Name of queue.
      * @return Queue.
      * @throws IgniteCheckedException If execution failed.
      */
-    private static CacheQueue<String> initializeQueue(Ignite g, String queueName) throws IgniteCheckedException {
+    private static CacheQueue<String> initializeQueue(Ignite ignite, String queueName) throws IgniteCheckedException {
         // Initialize new FIFO queue.
-        CacheQueue<String> queue = g.cache(CACHE_NAME).dataStructures().queue(queueName, 0, false, true);
+        CacheQueue<String> queue = ignite.cache(CACHE_NAME).dataStructures().queue(queueName, 0, false, true);
 
         // Initialize queue items.
         // We will be use blocking operation and queue size must be appropriated.
-        for (int i = 0; i < g.cluster().nodes().size() * RETRIES * 2; i++)
+        for (int i = 0; i < ignite.cluster().nodes().size() * RETRIES * 2; i++)
             queue.put(Integer.toString(i));
 
         System.out.println("Queue size after initializing: " + queue.size());
@@ -95,14 +95,14 @@ public class CacheQueueExample {
     /**
      * Read items from head and tail of queue.
      *
-     * @param g Grid.
-     * @throws IgniteCheckedException If failed.
+     * @param ignite Ignite.
+     * @throws IgniteException If failed.
      */
-    private static void readFromQueue(Ignite g) throws IgniteCheckedException {
+    private static void readFromQueue(Ignite ignite) throws IgniteException {
         final String queueName = queue.name();
 
         // Read queue items on each node.
-        g.compute().run(new QueueClosure(CACHE_NAME, queueName, false));
+        ignite.compute().run(new QueueClosure(CACHE_NAME, queueName, false));
 
         System.out.println("Queue size after reading [expected=0, actual=" + queue.size() + ']');
     }
@@ -110,16 +110,16 @@ public class CacheQueueExample {
     /**
      * Write items into queue.
      *
-     * @param g Grid.
-     * @throws IgniteCheckedException If failed.
+     * @param ignite Ignite.
+     * @throws IgniteException If failed.
      */
-    private static void writeToQueue(Ignite g) throws IgniteCheckedException {
+    private static void writeToQueue(Ignite ignite) throws IgniteException {
         final String queueName = queue.name();
 
         // Write queue items on each node.
-        g.compute().run(new QueueClosure(CACHE_NAME, queueName, true));
+        ignite.compute().run(new QueueClosure(CACHE_NAME, queueName, true));
 
-        System.out.println("Queue size after writing [expected=" + g.cluster().nodes().size() * RETRIES +
+        System.out.println("Queue size after writing [expected=" + ignite.cluster().nodes().size() * RETRIES +
             ", actual=" + queue.size() + ']');
 
         System.out.println("Iterate over queue.");
@@ -132,10 +132,10 @@ public class CacheQueueExample {
     /**
      * Clear and remove queue.
      *
-     * @param g Grid.
+     * @param ignite Ignite.
      * @throws IgniteCheckedException If execution failed.
      */
-    private static void clearAndRemoveQueue(Ignite g) throws IgniteCheckedException {
+    private static void clearAndRemoveQueue(Ignite ignite) throws IgniteCheckedException {
         System.out.println("Queue size before clearing: " + queue.size());
 
         // Clear queue.
@@ -144,7 +144,7 @@ public class CacheQueueExample {
         System.out.println("Queue size after clearing: " + queue.size());
 
         // Remove queue from cache.
-        g.cache(CACHE_NAME).dataStructures().removeQueue(queue.name());
+        ignite.cache(CACHE_NAME).dataStructures().removeQueue(queue.name());
 
         // Try to work with removed queue.
         try {

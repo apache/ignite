@@ -54,7 +54,7 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
         // Run server endpoint.
         IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint();
 
-        new GridTestResources().inject(srv);
+        new IgniteTestResources().inject(srv);
 
         try {
             srv.start();

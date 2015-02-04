@@ -26,9 +26,9 @@ import java.util.*;
 public class CreditRiskManager {
     /**
      * Default randomizer with normal distribution.
-     * Note that since every JVM on the grid will have its own random
+     * Note that since every JVM on the cluster will have its own random
      * generator (independently initialized) the Monte-Carlo simulation
-     * will be slightly skewed when performed on the grid due to skewed
+     * will be slightly skewed when performed on the ignite cluster due to skewed
      * normal distribution of the sub-jobs comparing to execution on the
      * local node only with single random generator. Real-life applications
      * may want to provide its own implementation of distributed random
@@ -39,16 +39,6 @@ public class CreditRiskManager {
     /**
      * Calculates credit risk for a given credit portfolio. This calculation uses
      * Monte-Carlo Simulation to produce risk value.
-     * <p>
-     * Note that this class generally represents a business logic and the entire
-     * grid enabling occurs in one line of annotation added to this method:
-     * <pre name="code" class="java">
-     * ...
-     * &#64;Gridify(taskClass = GridCreditRiskGridTask.class)
-     * ...
-     * </pre>
-     * Note also that this annotation could have been added externally via XML
-     * file leaving this file completely untouched - yet still fully grid enabled.
      *
      * @param portfolio Credit portfolio.
      * @param horizon Forecast horizon (in days).

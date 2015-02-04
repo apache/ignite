@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.examples.*;
 
 /**
- * Demonstrates how cache can be populated with data utilizing {@link org.apache.ignite.IgniteDataLoader} API.
- * {@link org.apache.ignite.IgniteDataLoader} is a lot more efficient to use than standard
+ * Demonstrates how cache can be populated with data utilizing {@link IgniteDataLoader} API.
+ * {@link IgniteDataLoader} is a lot more efficient to use than standard
  * {@code CacheProjection.put(...)} operation as it properly buffers cache requests
  * together and properly manages load on remote nodes.
  * <p>
@@ -30,7 +30,7 @@ import org.apache.ignite.examples.*;
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheDataLoaderExample {
     /** Cache name. */
@@ -46,24 +46,24 @@ public class CacheDataLoaderExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws IgniteException {
         ExamplesUtils.checkMinMemory(MIN_MEMORY);
 
-        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache data loader example started.");
 
             // Clean up caches on all nodes before run.
-            g.cache(CACHE_NAME).globalClearAll(0);
+            ignite.jcache(CACHE_NAME).clear();
 
             System.out.println();
             System.out.println(">>> Cache clear finished.");
 
             long start = System.currentTimeMillis();
 
-            try (IgniteDataLoader<Integer, String> ldr = g.dataLoader(CACHE_NAME)) {
+            try (IgniteDataLoader<Integer, String> ldr = ignite.dataLoader(CACHE_NAME)) {
                 // Configure loader.
                 ldr.perNodeBufferSize(1024);
                 ldr.perNodeParallelLoadOperations(8);

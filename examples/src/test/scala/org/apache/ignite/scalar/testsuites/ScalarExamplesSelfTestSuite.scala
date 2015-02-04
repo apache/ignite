@@ -17,13 +17,12 @@
 
 package org.apache.ignite.scalar.testsuites
 
-import org.apache.ignite.IgniteSystemProperties
+import org.apache.ignite.IgniteSystemProperties._
 import org.apache.ignite.scalar.tests.examples.{ScalarExamplesMultiNodeSelfTest, ScalarExamplesSelfTest}
-import org.scalatest._
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import IgniteSystemProperties._
 import org.apache.ignite.testframework.GridTestUtils
+import org.junit.runner.RunWith
+import org.scalatest._
+import org.scalatest.junit.JUnitRunner
 
 /**
  *

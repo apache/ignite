@@ -289,11 +289,6 @@ public abstract class IgniteUtils {
     public static final String MAC_INVALID_ARG_MSG = "On MAC OS you may have too many file descriptors open " +
         "(simple restart usually solves the issue)";
 
-    /** Default help pages. */
-    public static final List<String> DFLT_HELP_LINKS = Arrays.asList(
-        "Troubleshooting:      http://bit.ly/GridGain-Troubleshooting",
-        "Documentation Center: http://bit.ly/GridGain-Documentation");
-
     /** Portable classes. */
     private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
 
@@ -8265,23 +8260,6 @@ public abstract class IgniteUtils {
             System.arraycopy(src, off, resBuf, resOff, len);
 
         return resOff + len;
-    }
-
-    /**
-     * Checks if exception has help URLs.
-     *
-     * @param msg Error message.
-     * @return Formatted error message.
-     */
-    public static String errorMessageWithHelpUrls(String msg) {
-        StringBuilder sb = msg == null ? new StringBuilder() : new StringBuilder(msg);
-
-        sb.append("\nFor more information see:\n");
-
-        for (String url : DFLT_HELP_LINKS)
-            sb.append("    ").append(url).append("\n");
-
-        return sb.toString();
     }
 
     /**

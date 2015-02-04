@@ -18,10 +18,11 @@
 package org.apache.ignite.examples.datagrid.starschema;
 
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.*;
 
 /**
  * Represents a purchase record. In our {@code snowflake} schema purchase
- * is a {@code 'fact'} and will be cached in larger {@link org.apache.ignite.cache.CacheMode#PARTITIONED}
+ * is a {@code 'fact'} and will be cached in larger {@link CacheMode#PARTITIONED}
  * cache.
  */
 public class FactPurchase {
