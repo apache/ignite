@@ -1476,7 +1476,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 assert entryProcessor != null;
 
-                CacheInvokeEntry<K, V> entry = new CacheInvokeEntry<>(key, old);
+                CacheInvokeEntry<K, V> entry = new CacheInvokeEntry<>(cctx, key, old);
 
                 try {
                     Object computed = entryProcessor.process(entry, invokeArgs);
@@ -1894,7 +1894,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 EntryProcessor<K, V, ?> entryProcessor = (EntryProcessor<K, V, ?>)writeObj;
 
-                CacheInvokeEntry<K, V> entry = new CacheInvokeEntry<>(key, old);
+                CacheInvokeEntry<K, V> entry = new CacheInvokeEntry<>(cctx, key, old);
 
                 try {
                     Object computed = entryProcessor.process(entry, invokeArgs);

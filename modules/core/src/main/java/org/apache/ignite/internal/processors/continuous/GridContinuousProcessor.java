@@ -311,6 +311,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryDataType discoveryDataType() {
+        return DiscoveryDataType.CONTINUOUS_PROC;
+    }
+
+    /** {@inheritDoc} */
     @Override @Nullable public Object collectDiscoveryData(UUID nodeId) {
         if (!nodeId.equals(ctx.localNodeId())) {
             pendingLock.lock();

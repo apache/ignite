@@ -1331,7 +1331,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         CU.<K, V>empty(),
                         null);
 
-                    CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(entry.key(), old);
+                    CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(ctx, entry.key(), old);
 
                     V updated;
                     CacheInvokeResult invokeRes = null;

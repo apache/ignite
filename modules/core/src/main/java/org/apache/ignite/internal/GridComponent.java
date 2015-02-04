@@ -29,6 +29,17 @@ import java.util.*;
  */
 public interface GridComponent {
     /**
+     * Unique component type for discovery data exchange.
+     */
+    enum DiscoveryDataType {
+        /** */
+        CONTINUOUS_PROC,
+
+        /** */
+        PLUGIN
+    }
+
+    /**
      * Starts grid component.
      *
      * @throws IgniteCheckedException Throws in case of any errors.
@@ -93,4 +104,12 @@ public interface GridComponent {
      * @return Validation result or {@code null} in case of success.
      */
     @Nullable public IgniteSpiNodeValidationResult validateNode(ClusterNode node);
+
+    /**
+     * Gets unique component type to distinguish components providing discovery data. Must return non-null value
+     * if component implements method {@link #collectDiscoveryData(UUID)}.
+     *
+     * @return Unique component type for discovery data exchange.
+     */
+    @Nullable public DiscoveryDataType discoveryDataType();
 }

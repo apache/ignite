@@ -729,11 +729,11 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @CacheQueryGroupIndex(name = "msg_tx", unique = true)
+    @CacheQueryGroupIndex(name = "msg_tx")
     @SuppressWarnings({"UnusedDeclaration"})
     private static class Request implements Serializable {
         /** */
-        @CacheQuerySqlField(unique = true)
+        @CacheQuerySqlField
         private Long id;
 
         /** */
@@ -774,7 +774,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     @SuppressWarnings({"UnusedDeclaration"})
     private static class Response implements Serializable {
         /** */
-        @CacheQuerySqlField(unique = true)
+        @CacheQuerySqlField
         private Long id;
 
         /** */
@@ -805,7 +805,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
      */
     private static class Session implements Serializable {
         /** */
-        @CacheQuerySqlField(unique = true)
+        @CacheQuerySqlField
         private String terminalId;
 
         /**

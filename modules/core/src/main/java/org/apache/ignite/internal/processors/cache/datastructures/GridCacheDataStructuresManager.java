@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.datastructures.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -648,7 +649,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         if (queueQryGuard.compareAndSet(false, true)) {
             queueQry = (GridCacheContinuousQueryAdapter)cctx.cache().queries().createContinuousQuery();
 
-            queueQry.filter(new QueueHeaderPredicate());
+            queueQry.remoteFilter(new QueueHeaderPredicate());
 
             queueQry.localCallback(new IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry>>() {
                @Override public boolean apply(UUID id, Collection<GridCacheContinuousQueryEntry> entries) {
@@ -1430,7 +1431,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     /**
      * Predicate for queue continuous query.
      */
-    private static class QueueHeaderPredicate implements IgniteBiPredicate, Externalizable {
+    private static class QueueHeaderPredicate implements IgnitePredicate<CacheContinuousQueryEntry>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1442,8 +1443,8 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(Object key, Object val) {
-            return key instanceof GridCacheQueueHeaderKey;
+        @Override public boolean apply(CacheContinuousQueryEntry e) {
+            return e.getKey() instanceof GridCacheQueueHeaderKey;
         }
 
         /** {@inheritDoc} */
