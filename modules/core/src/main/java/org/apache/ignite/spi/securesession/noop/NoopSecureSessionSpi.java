@@ -54,7 +54,7 @@ import java.util.*;
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *         ...
  *         &lt;property name="secureSessionSpi"&gt;
- *             &lt;bean class="org.gridgain.grid.spi.SecureSession.noop.GridNoopSecureSessionSpi"/&gt;
+ *             &lt;bean class="org.apache.ignite.spi.SecureSession.noop.GridNoopSecureSessionSpi"/&gt;
  *         &lt;/property&gt;
  *         ...
  * &lt;/bean&gt;

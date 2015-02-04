@@ -40,7 +40,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * <pre name="code" class="xml">
  *      ...
  *      &lt;property name="gridLogger"&gt;
- *          &lt;bean class="org.gridgain.grid.logger.java.GridJavaLogger"&gt;
+ *          &lt;bean class="org.apache.ignite.logger.java.IgniteJavaLogger"&gt;
  *              &lt;constructor-arg type="java.util.logging.Logger"&gt;
  *                  &lt;bean class="java.util.logging.Logger"&gt;
  *                      &lt;constructor-arg type="java.lang.String" value="global"/&gt;
@@ -54,7 +54,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * <pre name="code" class="xml">
  *      ...
  *      &lt;property name="gridLogger"&gt;
- *          &lt;bean class="org.gridgain.grid.logger.java.GridJavaLogger"/&gt;
+ *          &lt;bean class="org.apache.ignite.logger.java.IgniteJavaLogger"/&gt;
  *      &lt;/property&gt;
  *      ...
  * </pre>

@@ -80,7 +80,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  *
  *         &lt;!-- SPI configuration. --&gt;
  *         &lt;property name=&quot;checkpointSpi&quot;&gt;
- *             &lt;bean class=&quot;org.gridgain.grid.spi.checkpoint.cache.GridCacheCheckpointSpi&quot;&gt;
+ *             &lt;bean class=&quot;org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpi&quot;&gt;
  *                 &lt;property name=&quot;cacheName&quot; value=&quot;CACHE_NAME&quot;/&gt;
  *             &lt;/bean&gt;
  *         &lt;/property&gt;

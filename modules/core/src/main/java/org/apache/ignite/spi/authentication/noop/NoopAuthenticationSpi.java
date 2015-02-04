@@ -53,7 +53,7 @@ import org.apache.ignite.spi.authentication.*;
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *         ...
  *         &lt;property name="authenticationSpi"&gt;
- *             &lt;bean class="org.gridgain.grid.spi.authentication.noop.GridNoopAuthenticationSpi"/&gt;
+ *             &lt;bean class="org.apache.ignite.spi.authentication.noop.NoopAuthenticationSpi"/&gt;
  *         &lt;/property&gt;
  *         ...
  * &lt;/bean&gt;

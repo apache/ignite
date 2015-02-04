@@ -1903,7 +1903,7 @@ public class IgnitionEx {
 
             try {
                 // Use reflection to avoid loading undesired classes.
-                Class helperCls = Class.forName("org.gridgain.grid.util.GridConfigurationHelper");
+                Class helperCls = Class.forName("org.apache.ignite.util.GridConfigurationHelper");
 
                 helperCls.getMethod("overrideConfiguration", IgniteConfiguration.class, Properties.class,
                     String.class, IgniteLogger.class).invoke(helperCls, myCfg, System.getProperties(), name, log);

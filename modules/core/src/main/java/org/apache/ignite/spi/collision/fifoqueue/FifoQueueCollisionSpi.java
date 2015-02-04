@@ -62,7 +62,7 @@ import java.util.*;
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *       ...
  *       &lt;property name="collisionSpi"&gt;
- *           &lt;bean class="org.gridgain.grid.spi.collision.fifoqueue.GridFifoQueueCollisionSpi"&gt;
+ *           &lt;bean class="org.apache.ignite.spi.collision.fifoqueue.GridFifoQueueCollisionSpi"&gt;
  *               &lt;property name="parallelJobsNumber" value="1"/&gt;
  *           &lt;/bean&gt;
  *       &lt;/property&gt;

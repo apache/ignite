@@ -29,7 +29,7 @@ import java.util.*;
  * Java logger test.
  */
 @GridCommonTest(group = "Logger")
-public class GridJavaLoggerTest extends TestCase {
+public class IgniteJavaLoggerTest extends TestCase {
     /** */
     @SuppressWarnings({"FieldCanBeLocal"})
     private IgniteLogger log;
@@ -55,7 +55,7 @@ public class GridJavaLoggerTest extends TestCase {
         log.error("This is 'error' message.");
         log.error("This is 'error' message.", new Exception("It's a test error exception"));
 
-        assert log.getLogger(GridJavaLoggerTest.class.getName()) instanceof IgniteJavaLogger;
+        assert log.getLogger(IgniteJavaLoggerTest.class.getName()) instanceof IgniteJavaLogger;
 
         assert log.fileName() != null;
 

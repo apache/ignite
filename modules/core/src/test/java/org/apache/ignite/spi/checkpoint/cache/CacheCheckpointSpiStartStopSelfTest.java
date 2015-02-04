@@ -15,32 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.checkpoint.jdbc;
+package org.apache.ignite.spi.checkpoint.cache;
 
 import org.apache.ignite.spi.*;
 import org.apache.ignite.testframework.junits.spi.*;
-import org.hsqldb.jdbc.*;
 
 /**
- * Grid jdbc checkpoint SPI start stop self test.
+ * Grid cache checkpoint SPI start stop self test.
  */
-@GridSpiTest(spi = JdbcCheckpointSpi.class, group = "Checkpoint SPI")
-public class GridJdbcCheckpointSpiStartStopSelfTest
-    extends GridSpiStartStopAbstractTest<JdbcCheckpointSpi> {
+@GridSpiTest(spi = CacheCheckpointSpi.class, group = "Checkpoint SPI")
+public class CacheCheckpointSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<CacheCheckpointSpi> {
     /** {@inheritDoc} */
-    @Override protected void spiConfigure(JdbcCheckpointSpi spi) throws Exception {
-        jdbcDataSource ds = new jdbcDataSource();
-
-        ds.setDatabase("jdbc:hsqldb:mem:gg_test_" + getClass().getSimpleName());
-        ds.setUser("sa");
-        ds.setPassword("");
-
-        spi.setDataSource(ds);
-        spi.setCheckpointTableName("startstop_checkpoints");
-        spi.setKeyFieldName("key");
-        spi.setValueFieldName("value");
-        spi.setValueFieldType("longvarbinary");
-        spi.setExpireDateFieldName("expire_date");
+    @Override protected void spiConfigure(CacheCheckpointSpi spi) throws Exception {
+        spi.setCacheName("test-checkpoints");
 
         super.spiConfigure(spi);
     }

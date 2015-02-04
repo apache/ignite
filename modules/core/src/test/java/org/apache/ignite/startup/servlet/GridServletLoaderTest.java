@@ -39,7 +39,7 @@ import java.util.*;
  *          <pre class="snippet">
  *          &lt;servlet&gt;
  *              &lt;servlet-name&gt;GridGain&lt;/servlet-name&gt;
- *              &lt;servlet-class&gt;org.gridgain.grid.loaders.servlet.GridServletLoader&lt;/servlet-class&gt;
+ *              &lt;servlet-class&gt;org.apache.ignite.loaders.servlet.GridServletLoader&lt;/servlet-class&gt;
  *              &lt;init-param&gt;
  *                  &lt;param-name&gt;cfgFilePath&lt;/param-name&gt;
  *                  &lt;param-value&gt;config/default-config.xml&lt;/param-value&gt;

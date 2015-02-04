@@ -76,7 +76,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *         ...
  *         &lt;property name="discoverySpi"&gt;
- *             &lt;bean class="org.gridgain.grid.spi.eventStorage.memory.GridMemoryEventStorageSpi"&gt;
+ *             &lt;bean class="org.apache.ignite.spi.eventStorage.memory.GridMemoryEventStorageSpi"&gt;
  *                 &lt;property name="expireCount" value="2000"/&gt;
  *             &lt;/bean&gt;
  *         &lt;/property&gt;

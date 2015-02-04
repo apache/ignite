@@ -28,7 +28,7 @@ import static org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi.*;
  * Grid jdbc checkpoint SPI config self test.
  */
 @GridSpiTest(spi = JdbcCheckpointSpi.class, group = "Checkpoint SPI")
-public class GridJdbcCheckpointSpiConfigSelfTest extends GridSpiAbstractConfigTest<JdbcCheckpointSpi> {
+public class JdbcCheckpointSpiConfigSelfTest extends GridSpiAbstractConfigTest<JdbcCheckpointSpi> {
     /**
      * @throws Exception If failed.
      */

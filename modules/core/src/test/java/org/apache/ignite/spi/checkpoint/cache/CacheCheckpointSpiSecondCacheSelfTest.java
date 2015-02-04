@@ -30,7 +30,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 /**
  * Test for cache checkpoint SPI with second cache configured.
  */
-public class GridCacheCheckpointSpiSecondCacheSelfTest extends GridCommonAbstractTest {
+public class CacheCheckpointSpiSecondCacheSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -41,7 +41,7 @@ public class GridCacheCheckpointSpiSecondCacheSelfTest extends GridCommonAbstrac
     private static final String CP_CACHE = "checkpoints";
 
     /** Starts grid. */
-    public GridCacheCheckpointSpiSecondCacheSelfTest() {
+    public CacheCheckpointSpiSecondCacheSelfTest() {
         super(true);
     }
 

@@ -41,7 +41,7 @@
                 </property>
 
                 <property name="store">
-                    <bean class="org.gridgain.grid.cache.store.GridGeneratingTestStore"/>
+                    <bean class="org.apache.ignite.cache.store.GridGeneratingTestStore"/>
                 </property>
             </bean>
         </property>

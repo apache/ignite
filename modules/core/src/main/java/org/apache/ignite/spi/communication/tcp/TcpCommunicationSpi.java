@@ -127,7 +127,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *         ...
  *         &lt;property name="communicationSpi"&gt;
- *             &lt;bean class="org.gridgain.grid.spi.communication.tcp.GridTcpCommunicationSpi"&gt;
+ *             &lt;bean class="org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpi"&gt;
  *                 &lt;!-- Override local port. --&gt;
  *                 &lt;property name="localPort" value="4321"/&gt;
  *             &lt;/bean&gt;

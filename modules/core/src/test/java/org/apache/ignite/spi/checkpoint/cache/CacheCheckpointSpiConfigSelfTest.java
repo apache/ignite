@@ -17,13 +17,18 @@
 
 package org.apache.ignite.spi.checkpoint.cache;
 
-import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.testframework.junits.spi.*;
 
 /**
- * Grid cache checkpoint SPI self test.
+ * Grid cache checkpoint SPI config self test.
  */
 @GridSpiTest(spi = CacheCheckpointSpi.class, group = "Checkpoint SPI")
-public class GridCacheCheckpointSpiSelfTest extends GridCheckpointSpiAbstractTest<CacheCheckpointSpi> {
-    // No-op.
+public class CacheCheckpointSpiConfigSelfTest extends GridSpiAbstractConfigTest<CacheCheckpointSpi> {
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNegativeConfig() throws Exception {
+        checkNegativeSpiProperty(new CacheCheckpointSpi(), "cacheName", null);
+        checkNegativeSpiProperty(new CacheCheckpointSpi(), "cacheName", "");
+    }
 }

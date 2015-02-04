@@ -22,10 +22,10 @@ import org.apache.ignite.testframework.junits.spi.*;
 import org.hsqldb.jdbc.*;
 
 /**
- * Grid jdbc checkpoint SPI default config self test.
+ * Grid jdbc checkpoint SPI custom config self test.
  */
 @GridSpiTest(spi = JdbcCheckpointSpi.class, group = "Checkpoint SPI")
-public class GridJdbcCheckpointSpiDefaultConfigSelfTest extends
+public class JdbcCheckpointSpiCustomConfigSelfTest extends
     GridCheckpointSpiAbstractTest<JdbcCheckpointSpi> {
     /** {@inheritDoc} */
     @Override protected void spiConfigure(JdbcCheckpointSpi spi) throws Exception {
@@ -36,9 +36,11 @@ public class GridJdbcCheckpointSpiDefaultConfigSelfTest extends
         ds.setPassword("");
 
         spi.setDataSource(ds);
-
-        // Default BLOB type is not valid for hsqldb.
+        spi.setCheckpointTableName("custom_config_checkpoints");
+        spi.setKeyFieldName("key");
+        spi.setValueFieldName("value");
         spi.setValueFieldType("longvarbinary");
+        spi.setExpireDateFieldName("expire_date");
 
         super.spiConfigure(spi);
     }

@@ -5742,18 +5742,18 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Replaces all occurrences of {@code org.gridgain.} with {@code o.g.},
-     * {@code org.gridgain.grid.} with {@code o.g.g.}, {@code org.gridgain.visor.} with {@code o.g.v.} and
-     * {@code org.gridgain.scalar.} with {@code o.g.s.}.
+     * Replaces all occurrences of {@code org.apache.ignite.} with {@code o.a.i.},
+     * {@code org.apache.ignite.internal.} with {@code o.a.i.i.}, {@code org.apache.ignite.visor.} with {@code o.a.i.v.} and
+     * {@code org.apache.ignite.scalar.} with {@code o.a.i.s.}.
      *
      * @param s String to replace in.
      * @return Replaces string.
      */
     public static String compact(String s) {
-        return s.replace("org.gridgain.grid.", "o.g.g.").
-            replace("org.gridgain.visor.", "o.g.v.").
-            replace("org.gridgain.scalar.", "o.g.s.").
-            replace("org.gridgain.", "o.g.");
+        return s.replace("org.apache.ignite.internal.", "o.a.i.i.").
+            replace("org.apache.ignite.visor.", "o.a.i.v.").
+            replace("org.apache.ignite.scalar.", "o.a.i.s.").
+            replace("org.apache.ignite.", "o.a.i.");
     }
 
     /**

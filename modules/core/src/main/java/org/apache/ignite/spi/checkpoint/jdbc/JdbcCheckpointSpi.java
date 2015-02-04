@@ -86,7 +86,7 @@ import java.text.*;
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *     &lt;property name="checkpointSpi"&gt;
- *         &lt;bean class="org.gridgain.grid.spi.checkpoint.jdbc.GridJdbcCheckpointSpi"&gt;
+ *         &lt;bean class="org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi"&gt;
  *             &lt;property name="dataSrc"&gt;&lt;ref bean="anyPooledDataSourceBean" /&gt;&lt;/property&gt;
  *             &lt;property name="checkpointTableName" value="GRID_CHECKPOINTS" /&gt;
  *             &lt;property name="user" value="test" /&gt;
