@@ -15,55 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache.model;
+package org.apache.ignite.yardstick.cache.store.jdbc;
 
-import java.io.*;
+import org.apache.ignite.*;
+import org.apache.ignite.yardstick.cache.model.*;
+import org.yardstickframework.*;
+
+import java.util.*;
 
 /**
- * Entity class for benchmark.
+ * Ignite JDBC cache store benchmark that performs get operations.
  */
-public class SampleValue implements Externalizable {
-    /** */
-    private int id;
+public class IgniteJdbcStoreGetBenchmark extends IgniteJdbcStoreAbstractBenchmark {
+    /** Cache. */
+    protected IgniteCache<Object, Object> cache;
 
-    /** */
-    public SampleValue() {
-        // No-op.
-    }
+    /** {@inheritDoc} */
+    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
+        super.setUp(cfg);
 
-    /**
-     * @param id Id.
-     */
-    public SampleValue(int id) {
-        this.id = id;
-    }
-
-    /**
-     * @param id Id.
-     */
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    /**
-     * @return Id.
-     */
-    public int getId() {
-        return id;
+        cache = cache();
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        id = in.readInt();
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        int id = nextRandom(args.range());
+
+        cache().get(new SampleKey(id));
+
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(id);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return "Value [id=" + id + ']';
+    @Override protected IgniteCache<Object, Object> cache() {
+        return ignite().jcache("atomic");
     }
 }

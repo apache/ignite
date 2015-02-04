@@ -39,20 +39,28 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
     private static final int SCHEMA_CATALOG_IDX = 2;
 
     /** Table name index. */
-    private static final int TABLE_NAME_IDX = 3;
+    private static final int TBL_NAME_IDX = 3;
 
     /** Primary key column name index. */
-    private static final int PK_COLUMN_NAME_IDX = 4;
+    private static final int PK_COL_NAME_IDX = 4;
 
     /** Column name index. */
-    private static final int COLUMN_NAME_IDX = 4;
+    private static final int COL_NAME_IDX = 4;
 
     /** Column data type index. */
-    private static final int COLUMN_DATA_TYPE_IDX = 5;
+    private static final int COL_DATA_TYPE_IDX = 5;
 
     /** Column nullable index. */
-    private static final int COLUMN_NULLABLE_IDX = 11;
+    private static final int COL_NULLABLE_IDX = 11;
 
+    /** Index name index. */
+    private static final int IDX_NAME_IDX = 6;
+
+    /** Index column name index. */
+    private static final int IDX_COL_NAME_IDX = 9;
+
+    /** Index column descend index. */
+    private static final int IDX_ASC_OR_DESC_IDX = 10;
 
     /** {@inheritDoc} */
     @Override public Collection<DbTable> tables(Connection conn, boolean tblsOnly) throws SQLException {
@@ -75,30 +83,57 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
                 try (ResultSet tblsRs = dbMeta.getTables(catalog, schema, "%",
                     tblsOnly ? TABLES_ONLY : TABLES_AND_VIEWS)) {
                     while (tblsRs.next()) {
-                        String tblName = tblsRs.getString(TABLE_NAME_IDX);
+                        String tblName = tblsRs.getString(TBL_NAME_IDX);
 
                         Set<String> pkCols = new HashSet<>();
 
                         try (ResultSet pkRs = dbMeta.getPrimaryKeys(catalog, schema, tblName)) {
                             while (pkRs.next())
-                                pkCols.add(pkRs.getString(PK_COLUMN_NAME_IDX));
+                                pkCols.add(pkRs.getString(PK_COL_NAME_IDX));
                         }
 
                         List<DbColumn> cols = new ArrayList<>();
 
                         try (ResultSet colsRs = dbMeta.getColumns(catalog, schema, tblName, null)) {
                             while (colsRs.next()) {
-                                String colName = colsRs.getString(COLUMN_NAME_IDX);
+                                String colName = colsRs.getString(COL_NAME_IDX);
 
                                 cols.add(new DbColumn(
                                     colName,
-                                    colsRs.getInt(COLUMN_DATA_TYPE_IDX),
+                                    colsRs.getInt(COL_DATA_TYPE_IDX),
                                     pkCols.contains(colName),
-                                    colsRs.getInt(COLUMN_NULLABLE_IDX) == DatabaseMetaData.columnNullable));
+                                    colsRs.getInt(COL_NULLABLE_IDX) == DatabaseMetaData.columnNullable));
                             }
                         }
 
-                        tbls.add(new DbTable(schema, tblName, cols));
+                        Map<String, Map<String, Boolean>> idxs = new LinkedHashMap<>();
+
+                        try (ResultSet idxRs = dbMeta.getIndexInfo(catalog, schema, tblName, false, true)) {
+                            while (idxRs.next()) {
+                                String idxName = idxRs.getString(IDX_NAME_IDX);
+
+                                String colName = idxRs.getString(IDX_COL_NAME_IDX);
+
+                                if (idxName == null || colName == null)
+                                    continue;
+
+                                Map<String, Boolean> idx = idxs.get(idxName);
+
+                                if (idx == null) {
+                                    idx = new LinkedHashMap<>();
+
+                                    idxs.put(idxName, idx);
+                                }
+
+                                String askOrDesc = idxRs.getString(IDX_ASC_OR_DESC_IDX);
+
+                                Boolean desc = askOrDesc != null ? "D".equals(askOrDesc) : null;
+
+                                idx.put(colName, desc);
+                            }
+                        }
+
+                        tbls.add(table(schema, tblName, cols, idxs));
                     }
                 }
             }

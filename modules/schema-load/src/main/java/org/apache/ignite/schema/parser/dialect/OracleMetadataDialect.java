@@ -39,16 +39,22 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
     private static final String SQL_PRIMARY_KEYS = "SELECT b.column_name" +
         " FROM all_constraints a" +
         "  INNER JOIN all_cons_columns b ON a.owner = b.owner AND a.constraint_name = b.constraint_name" +
-        " WHERE a.table_name = ? AND a.constraint_type = 'P'";
+        " WHERE a.owner = ? and a.table_name = ? AND a.constraint_type = 'P'";
+
+    /** SQL to get indexes metadata. */
+    private static final String SQL_INDEXES = "select index_name, column_name, descend" +
+        " FROM all_ind_columns" +
+        " WHERE index_owner = ? and table_name = ?" +
+        " ORDER BY index_name, column_position";
 
     /** Owner index. */
     private static final int OWNER_IDX = 1;
 
     /** Table name index. */
-    private static final int TABLE_NAME_IDX = 2;
+    private static final int TBL_NAME_IDX = 2;
 
     /** Column name index. */
-    private static final int COLUMN_NAME_IDX = 3;
+    private static final int COL_NAME_IDX = 3;
 
     /** Nullable index. */
     private static final int NULLABLE_IDX = 4;
@@ -62,12 +68,21 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
     /** Numeric scale index. */
     private static final int DATA_SCALE_IDX = 7;
 
+    /** Index name index. */
+    private static final int IDX_NAME_IDX = 1;
+
+    /** Index column name index. */
+    private static final int IDX_COL_NAME_IDX = 2;
+
+    /** Index column sort order index. */
+    private static final int IDX_COL_DESCEND_IDX = 3;
+
     /**
      * @param rs Result set with column type metadata from Oracle database.
      * @return JDBC type.
      * @throws SQLException If failed to decode type.
      */
-    private static int decodeType(ResultSet rs) throws SQLException {
+    private int decodeType(ResultSet rs) throws SQLException {
         switch (rs.getString(DATA_TYPE_IDX)) {
             case "CHAR":
             case "NCHAR":
@@ -140,12 +155,43 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
         return OTHER;
     }
 
-    /**
-     * @param nullable Column nullable attribute from Oracle database.
-     * @return {@code true}
-     */
-    private static boolean decodeNullable(String nullable) {
-        return "Y".equals(nullable);
+    private Set<String> primaryKeys(PreparedStatement stmt, String owner, String tbl) throws SQLException {
+        Set<String> pkCols = new HashSet<>();
+
+        stmt.setString(1, tbl);
+
+        try (ResultSet pkRs = stmt.executeQuery()) {
+            while(pkRs.next())
+                pkCols.add(pkRs.getString(1));
+        }
+
+        return pkCols;
+    }
+
+    private Map<String, Map<String, Boolean>> indexes(PreparedStatement stmt, String owner, String tbl)
+        throws SQLException {
+        Map<String, Map<String, Boolean>> idxs = new LinkedHashMap<>();
+
+        stmt.setString(1, owner);
+        stmt.setString(2, tbl);
+
+        try (ResultSet idxsRs = stmt.executeQuery()) {
+            while (idxsRs.next()) {
+                String idxName = idxsRs.getString(IDX_NAME_IDX);
+
+                Map<String, Boolean> idx = idxs.get(idxName);
+
+                if (idx == null) {
+                    idx = new LinkedHashMap<>();
+
+                    idxs.put(idxName, idx);
+                }
+
+                idx.put(idxsRs.getString(IDX_COL_NAME_IDX), "DESC".equals(idxsRs.getString(IDX_COL_DESCEND_IDX)));
+            }
+        }
+
+        return idxs;
     }
 
     /** {@inheritDoc} */
@@ -154,57 +200,55 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
 
         PreparedStatement pkStmt = conn.prepareStatement(SQL_PRIMARY_KEYS);
 
+        PreparedStatement idxStmt = conn.prepareStatement(SQL_INDEXES);
+
         try (Statement colsStmt = conn.createStatement()) {
             Collection<DbColumn> cols = new ArrayList<>();
 
-            Set<String> pkCols = new HashSet<>();
+            Set<String> pkCols = Collections.emptySet();
+            Map<String, Map<String, Boolean>> idxs = Collections.emptyMap();
 
-            String owner = conn.getMetaData().getUserName().toUpperCase();
+            String user = conn.getMetaData().getUserName().toUpperCase();
 
             String sql = String.format(SQL_COLUMNS,
-                tblsOnly ? "INNER JOIN all_tables b on a.table_name = b.table_name" : "", owner);
+                tblsOnly ? "INNER JOIN all_tables b on a.table_name = b.table_name" : "", user);
 
             try (ResultSet colsRs = colsStmt.executeQuery(sql)) {
                 String prevSchema = "";
                 String prevTbl = "";
 
                 while (colsRs.next()) {
-                    String schema = colsRs.getString(OWNER_IDX);
-                    String tbl = colsRs.getString(TABLE_NAME_IDX);
+                    String owner = colsRs.getString(OWNER_IDX);
+                    String tbl = colsRs.getString(TBL_NAME_IDX);
 
-                    if (!prevSchema.equals(schema) || !prevTbl.equals(tbl)) {
-                        pkCols.clear();
+                    if (!prevSchema.equals(owner) || !prevTbl.equals(tbl)) {
+                        pkCols = primaryKeys(pkStmt, owner, tbl);
 
-                        pkStmt.setString(1, tbl);
-
-                        try (ResultSet pkRs = pkStmt.executeQuery()) {
-                            while(pkRs.next())
-                                pkCols.add(pkRs.getString(1));
-                        }
+                        idxs = indexes(idxStmt, owner, tbl);
                     }
 
                     if (prevSchema.isEmpty()) {
-                        prevSchema = schema;
+                        prevSchema = owner;
                         prevTbl = tbl;
                     }
 
-                    if (!schema.equals(prevSchema) || !tbl.equals(prevTbl)) {
-                        tbls.add(new DbTable(prevSchema, prevTbl, cols));
+                    if (!owner.equals(prevSchema) || !tbl.equals(prevTbl)) {
+                        tbls.add(new DbTable(prevSchema, prevTbl, cols, null, null, null)); // TODO !!!
 
-                        prevSchema = schema;
+                        prevSchema = owner;
                         prevTbl = tbl;
 
                         cols = new ArrayList<>();
                     }
 
-                    String colName = colsRs.getString(COLUMN_NAME_IDX);
+                    String colName = colsRs.getString(COL_NAME_IDX);
 
                     cols.add(new DbColumn(colName, decodeType(colsRs), pkCols.contains(colName),
                         !"N".equals(colsRs.getString(NULLABLE_IDX))));
                 }
 
                 if (!cols.isEmpty())
-                    tbls.add(new DbTable(prevSchema, prevTbl, cols));
+                    tbls.add(table(prevSchema, prevTbl, cols, idxs));
             }
         }
 

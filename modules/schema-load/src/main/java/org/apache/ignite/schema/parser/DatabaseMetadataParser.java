@@ -67,7 +67,9 @@ public class DatabaseMetadataParser {
             Collection<PojoDescriptor> children = childrens.get(schema);
 
             if (parent == null) {
-                parent = new PojoDescriptor(null, new DbTable(schema, "", Collections.<DbColumn>emptyList()));
+                parent = new PojoDescriptor(null, new DbTable(schema, "", Collections.<DbColumn>emptyList(),
+                    Collections.<String>emptySet(), Collections.<String>emptySet(),
+                    Collections.<String, Map<String, Boolean>>emptyMap()));
 
                 children = new ArrayList<>();
 

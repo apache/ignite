@@ -145,7 +145,7 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
             typeMethods.put(valType, new PojoMethodsCache(valType, type.getValueFields()));
         }
 
-        HashMap<String, Map<String, PojoMethodsCache>> newMtdsCache = new HashMap<>(mtdsCache);
+        Map<String, Map<String, PojoMethodsCache>> newMtdsCache = new HashMap<>(mtdsCache);
 
         newMtdsCache.put(cacheName, typeMethods);
 
@@ -161,7 +161,7 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
 
         try {
             for (CacheTypeFieldMetadata field : fields)
-                t.setters.get(field.getJavaName()).invoke(obj, rs.getObject(field.getDbName()));
+                t.setters.get(field.getJavaName()).invoke(obj, rs.getObject(field.getDatabaseName()));
 
             return (R)obj;
         }

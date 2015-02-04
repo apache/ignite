@@ -60,28 +60,28 @@ public class CacheTypeFieldMetadata {
     /**
      * @return Column name in database.
      */
-    public String getDbName() {
+    public String getDatabaseName() {
         return dbName;
     }
 
     /**
      * @param dbName Column name in database.
      */
-    public void setDbName(String dbName) {
+    public void setDatabaseName(String dbName) {
         this.dbName = dbName;
     }
 
     /**
      * @return Column JDBC type in database.
      */
-    public int getDbType() {
+    public int getDatabaseType() {
         return dbType;
     }
 
     /**
      * @param dbType Column JDBC type in database.
      */
-    public void setDbType(int dbType) {
+    public void setDatabaseType(int dbType) {
         this.dbType = dbType;
     }
 

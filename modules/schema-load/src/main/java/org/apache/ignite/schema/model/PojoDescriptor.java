@@ -20,6 +20,7 @@ package org.apache.ignite.schema.model;
 import javafx.beans.property.*;
 import javafx.beans.value.*;
 import javafx.collections.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.schema.parser.*;
 
 import java.math.*;
@@ -64,6 +65,9 @@ public class PojoDescriptor {
     /** Java class fields. */
     private final ObservableList<PojoField> fields;
 
+    /** Fields map for quick access. */
+    private final Map<String, PojoField> fieldsMap;
+
     /**
      * Constructor of POJO descriptor.
      *
@@ -87,14 +91,20 @@ public class PojoDescriptor {
 
         List<PojoField> flds = new ArrayList<>(cols.size());
 
+        fieldsMap = new HashMap<>(cols.size());
+
         for (DbColumn col : cols) {
-            PojoField fld = new PojoField(col.name(), col.type(),
-                toJavaFieldName(col.name()), toJavaType(col.type(), col.nullable()).getName(),
+            String colName = col.name();
+
+            PojoField fld = new PojoField(colName, col.type(),
+                toJavaFieldName(colName), toJavaType(col.type(), col.nullable()).getName(),
                 col.key(), col.nullable());
 
             fld.owner(this);
 
             flds.add(fld);
+
+            fieldsMap.put(colName, fld);
         }
 
         fields = FXCollections.observableList(flds);
@@ -259,6 +269,63 @@ public class PojoDescriptor {
                 vals.add(field);
 
         return vals;
+    }
+
+    /**
+     * @return Ascending fields.
+     */
+    public Collection<PojoField> ascendingFields() {
+        Collection<PojoField> res = new ArrayList<>();
+
+        Set<String> asc = tbl.ascendingColumns();
+
+        for (PojoField field : fields)
+            if (field.use() && asc.contains(field.dbName()))
+                res.add(field);
+
+        return res;
+    }
+
+    /**
+     * @return Descending fields.
+     */
+    public Collection<PojoField> descendingFields() {
+        Collection<PojoField> res = new ArrayList<>();
+
+        Set<String> desc = tbl.descendingColumns();
+
+        for (PojoField field : fields)
+            if (field.use() && desc.contains(field.dbName()))
+                res.add(field);
+
+        return res;
+    }
+
+    /**
+     * Gets indexes groups.
+     */
+    public Map<String, Map<String, IgniteBiTuple<String, Boolean>>> groups() {
+        Map<String, Map<String, Boolean>> idxs = tbl.indexes();
+
+        Map<String, Map<String, IgniteBiTuple<String, Boolean>>> groups = new LinkedHashMap<>(idxs.size());
+
+        for (Map.Entry<String, Map<String, Boolean>> idx : idxs.entrySet()) {
+            String idxName = idx.getKey();
+
+            Map<String, Boolean> idxCols = idx.getValue();
+
+            Map<String, IgniteBiTuple<String, Boolean>> grp = new LinkedHashMap<>();
+
+            groups.put(idxName, grp);
+
+            for (Map.Entry<String, Boolean> idxCol : idxCols.entrySet()) {
+                PojoField fld = fieldsMap.get(idxCol.getKey());
+
+                grp.put(fld.javaName(), new IgniteBiTuple<>(fld.javaTypeName(), idxCol.getValue()));
+            }
+        }
+
+        return groups;
     }
 
     /**

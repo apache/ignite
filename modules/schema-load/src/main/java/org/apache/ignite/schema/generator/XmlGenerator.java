@@ -18,6 +18,7 @@
 package org.apache.ignite.schema.generator;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.schema.model.*;
 import org.apache.ignite.schema.ui.*;
 import org.w3c.dom.*;
@@ -157,10 +158,64 @@ public class XmlGenerator {
             for (PojoField field : fields) {
                 Element item = addBean(doc, list, CacheTypeFieldMetadata.class);
 
-                addProperty(doc, item, "dbName", field.dbName());
-                addProperty(doc, item, "dbType", String.valueOf(field.dbType()));
+                addProperty(doc, item, "databaseName", field.dbName());
+                addProperty(doc, item, "databaseType", String.valueOf(field.dbType()));
                 addProperty(doc, item, "javaName", field.javaName());
                 addProperty(doc, item, "javaType", field.javaTypeName());
+            }
+        }
+    }
+
+    /**
+     * Add query fields to xml document.
+     *
+     * @param doc XML document.
+     * @param parent Parent XML node.
+     * @param name Property name.
+     * @param fields Map with fields.
+     */
+    private static void addQueryFields(Document doc, Node parent, String name, Collection<PojoField> fields) {
+        if (!fields.isEmpty()) {
+            Element prop = addProperty(doc, parent, name, null);
+
+            Element map = addElement(doc, prop, "map");
+
+            for (PojoField field : fields)
+                addElement(doc, map, "entry", "key", field.javaName(), "value", field.javaTypeName());
+        }
+    }
+
+    /**
+     * Add indexes to xml document.
+     *
+     * @param doc XML document.
+     * @param parent Parent XML node.
+     * @param groups Map with indexes.
+     */
+    private static void addQueryGroups(Document doc, Node parent,
+        Map<String, Map<String, IgniteBiTuple<String, Boolean>>> groups) {
+        if (!groups.isEmpty()) {
+            Element prop = addProperty(doc, parent, "groups", null);
+
+            Element map = addElement(doc, prop, "map");
+
+            for (Map.Entry<String, Map<String, IgniteBiTuple<String, Boolean>>> group : groups.entrySet()) {
+                Element entry1 = addElement(doc, map, "entry", "key", group.getKey());
+
+                Element val1 = addElement(doc, entry1, "map");
+
+                Map<String, IgniteBiTuple<String, Boolean>> fields = group.getValue();
+
+                for (Map.Entry<String, IgniteBiTuple<String, Boolean>> field : fields.entrySet()) {
+                    Element entry2 = addElement(doc, val1, "entry", "key", field.getKey());
+
+                    Element val2 = addBean(doc, entry2, IgniteBiTuple.class);
+
+                    IgniteBiTuple<String, Boolean> idx = field.getValue();
+
+                    addElement(doc, val2, "constructor-arg", null, null, "value", idx.get1());
+                    addElement(doc, val2, "constructor-arg", null, null, "value", String.valueOf(idx.get2()));
+                }
             }
         }
     }
@@ -188,6 +243,14 @@ public class XmlGenerator {
         addFields(doc, bean, "keyFields", pojo.keyFields());
 
         addFields(doc, bean, "valueFields", pojo.valueFields(includeKeys));
+
+        addQueryFields(doc, bean, "queryFields", pojo.fields());
+
+        addQueryFields(doc, bean, "ascendingFields", pojo.ascendingFields());
+
+        addQueryFields(doc, bean, "descendingFields", pojo.descendingFields());
+
+        addQueryGroups(doc, bean, pojo.groups());
     }
 
     /**
