@@ -37,7 +37,7 @@ import java.util.concurrent.*;
 /**
  * Test resources for injection.
  */
-public class GridTestResources {
+public class IgniteTestResources {
     /** */
     private static final IgniteLogger rootLog = new GridTestLog4jLogger(false);
 
@@ -66,7 +66,7 @@ public class GridTestResources {
     private GridResourceProcessor rsrcProc;
 
     /** */
-    public GridTestResources() {
+    public IgniteTestResources() {
         log = rootLog.getLogger(getClass());
         nodeId = UUID.randomUUID();
         jmx = ManagementFactory.getPlatformMBeanServer();
@@ -83,7 +83,7 @@ public class GridTestResources {
     /**
      * @param jmx JMX server.
      */
-    public GridTestResources(MBeanServer jmx) {
+    public IgniteTestResources(MBeanServer jmx) {
         assert jmx != null;
 
         this.jmx = jmx;
@@ -104,7 +104,7 @@ public class GridTestResources {
     /**
      * @param log Logger.
      */
-    public GridTestResources(IgniteLogger log) {
+    public IgniteTestResources(IgniteLogger log) {
         assert log != null;
 
         this.log = log.getLogger(getClass());
@@ -175,7 +175,7 @@ public class GridTestResources {
 
         rsrcProc.injectBasicResource(target, IgniteLoggerResource.class, getLogger().getLogger(target.getClass()));
         rsrcProc.injectBasicResource(target, IgniteInstanceResource.class,
-            new GridTestIgnite(null, locHost, nodeId, getMarshaller(), jmx, home));
+            new IgniteMock(null, locHost, nodeId, getMarshaller(), jmx, home));
     }
 
     /**

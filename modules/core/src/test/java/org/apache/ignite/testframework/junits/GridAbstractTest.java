@@ -162,7 +162,7 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * @return Test resources.
      */
-    protected GridTestResources getTestResources() {
+    protected IgniteTestResources getTestResources() {
         return getTestCounters().getTestResources();
     }
 
@@ -976,7 +976,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param rsrcs Resources.
      * @throws Exception If failed.
      */
-    protected IgniteConfiguration getConfiguration(GridTestResources rsrcs) throws Exception {
+    protected IgniteConfiguration getConfiguration(IgniteTestResources rsrcs) throws Exception {
         return getConfiguration(getTestGridName(), rsrcs);
     }
 
@@ -1050,7 +1050,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
-    protected IgniteConfiguration getConfiguration(String gridName, GridTestResources rsrcs) throws Exception {
+    protected IgniteConfiguration getConfiguration(String gridName, IgniteTestResources rsrcs) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName(gridName);
@@ -1334,7 +1334,7 @@ public abstract class GridAbstractTest extends TestCase {
         private boolean reset;
 
         /** */
-        private GridTestResources rsrcs = new GridTestResources();
+        private IgniteTestResources rsrcs = new IgniteTestResources();
 
         /**
          * @return Reset flag.
@@ -1346,7 +1346,7 @@ public abstract class GridAbstractTest extends TestCase {
         /**
          * @return Test resources.
          */
-        public GridTestResources getTestResources() {
+        public IgniteTestResources getTestResources() {
             return rsrcs;
         }
 
