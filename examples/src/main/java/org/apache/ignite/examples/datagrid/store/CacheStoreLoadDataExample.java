@@ -18,13 +18,12 @@
 package org.apache.ignite.examples.datagrid.store;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 
 /**
  * Loads data from persistent store at cache startup by calling
- * {@link org.apache.ignite.cache.GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method on
+ * {@link IgniteCache#loadCache(IgniteBiPredicate, Object...)} method on
  * all nodes.
  * <p>
  * Remote nodes should always be started using {@link CacheNodeWithStoreStartup}.
@@ -42,24 +41,24 @@ public class CacheStoreLoadDataExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws IgniteException {
         ExamplesUtils.checkMinMemory(MIN_MEMORY);
 
-        try (Ignite g = Ignition.start(CacheNodeWithStoreStartup.configure())) {
+        try (Ignite ignite = Ignition.start(CacheNodeWithStoreStartup.configure())) {
             System.out.println();
             System.out.println(">>> Cache store load data example started.");
 
-            final GridCache<String, Integer> cache = g.cache(null);
+            final IgniteCache<String, Integer> cache = ignite.jcache(null);
 
             // Clean up caches on all nodes before run.
-            cache.globalClearAll(0);
+            cache.clear();
 
             long start = System.currentTimeMillis();
 
             // Start loading cache on all caching nodes.
-            g.compute(g.cluster().forCacheNodes(null)).broadcast(new IgniteCallable<Object>() {
+            ignite.compute(ignite.cluster().forCacheNodes(null)).broadcast(new IgniteCallable<Object>() {
                 @Override public Object call() throws Exception {
                     // Load cache from persistent store.
                     cache.loadCache(null, 0, ENTRY_COUNT);

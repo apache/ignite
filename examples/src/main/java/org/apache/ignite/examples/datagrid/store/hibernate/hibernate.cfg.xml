@@ -39,6 +39,6 @@
         <property name="show_sql">false</property>
 
         <!-- Mappings. -->
-        <mapping resource="org/gridgain/examples/datagrid/store/hibernate/Person.hbm.xml"/>
+        <mapping resource="org/apache/ignite/examples/datagrid/store/hibernate/Person.hbm.xml"/>
     </session-factory>
 </hibernate-configuration>

@@ -27,10 +27,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 
 import java.util.*;
 
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 
 /**
  * Starts up an empty node with cache configuration that contains default cache.
@@ -43,19 +43,19 @@ public class MemcacheRestExampleNodeStartup {
      * Start up an empty node with specified cache configuration.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) throws IgniteException {
         Ignition.start(configuration());
     }
 
     /**
-     * Create Grid configuration with GGFS and enabled IPC.
+     * Create Ignite configuration with IgniteFs and enabled IPC.
      *
-     * @return Grid configuration.
-     * @throws IgniteCheckedException If configuration creation failed.
+     * @return Ignite configuration.
+     * @throws IgniteException If configuration creation failed.
      */
-    public static IgniteConfiguration configuration() throws IgniteCheckedException {
+    public static IgniteConfiguration configuration() throws IgniteException {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setLocalHost("127.0.0.1");
