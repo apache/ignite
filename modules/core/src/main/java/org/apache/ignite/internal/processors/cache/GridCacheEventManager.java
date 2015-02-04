@@ -242,7 +242,9 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return {@code True} if event is recordable.
      */
     public boolean isRecordable(int type) {
-        return !CU.isUtilityCache(cctx.name()) && cctx.gridEvents().isRecordable(type);
+        return !cctx.system() &&
+            !CU.isAtomicsCache(cctx.name()) &&
+            cctx.gridEvents().isRecordable(type);
     }
 
     /** {@inheritDoc} */
