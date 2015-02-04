@@ -292,7 +292,10 @@
                 <excludes>
                     <exclude>**/com/romix/scala/**</exclude>
                     <exclude>**/GridOffHeapSnapTreeMap.java</exclude>
-                    <exclude>**/SnapTreeMap.java</exclude>
+                    <exclude>**/internal/util/snaptree/SnapTreeMap.java</exclude>
+                    <exclude>**/internal/util/snaptree/CopyOnWriteManager.java</exclude>
+                    <exclude>**/internal/util/snaptree/Epoch.java</exclude>
+                    <exclude>**/internal/util/snaptree/EpochNode.java</exclude>
                     <exclude>**/org/jetbrains/annotations/**</exclude>
                     <exclude>**/org/pcollections/**</exclude>
                     <exclude>**/org/jdk8/backport/**</exclude>
