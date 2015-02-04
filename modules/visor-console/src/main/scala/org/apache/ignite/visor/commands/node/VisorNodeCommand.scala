@@ -20,7 +20,7 @@ package org.apache.ignite.visor.commands.node
 import org.apache.ignite.internal.IgniteNodeAttributes
 import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite.internal.util.typedef.internal.U
-import GridNodeAttributes._
+import IgniteNodeAttributes._
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef.X
 

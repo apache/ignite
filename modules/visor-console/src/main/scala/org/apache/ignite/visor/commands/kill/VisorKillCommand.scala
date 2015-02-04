@@ -18,7 +18,7 @@
 package org.apache.ignite.visor.commands.kill
 
 import org.apache.ignite.internal.IgniteNodeAttributes
-import GridNodeAttributes._
+import IgniteNodeAttributes._
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
