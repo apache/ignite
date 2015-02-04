@@ -18,7 +18,7 @@
 -->
 
 <!--
-    Example web.xml to startup GridGain from Servlet container, like Tomcat.
+    Example web.xml to startup Ignite from Servlet container, like Tomcat.
 -->
 <web-app xmlns="http://java.sun.com/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

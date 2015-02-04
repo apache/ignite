@@ -26,7 +26,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 /**
  * Examples test suite.
  * <p>
- * Contains only Spring gridify examples tests.
+ * Contains only Spring ignite examples tests.
  */
 public class IgniteExamplesSelfTestSuite extends TestSuite {
     /**
@@ -39,35 +39,35 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
 
         TestSuite suite = new TestSuite("Ignite Examples Test Suite");
 
-        suite.addTest(new TestSuite(GridCacheExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridBasicExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridContinuationExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridContinuousMapperExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridDeploymentExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridEventsExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridLifecycleExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridMessagingExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridMemcacheRestExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridMonteCarloExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridTaskExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridSpringBeanExamplesSelfTest.class));
+        suite.addTest(new TestSuite(CacheExamplesSelfTest.class));
+        suite.addTest(new TestSuite(BasicExamplesSelfTest.class));
+        suite.addTest(new TestSuite(ContinuationExamplesSelfTest.class));
+        suite.addTest(new TestSuite(ContinuousMapperExamplesSelfTest.class));
+        suite.addTest(new TestSuite(DeploymentExamplesSelfTest.class));
+        suite.addTest(new TestSuite(EventsExamplesSelfTest.class));
+        suite.addTest(new TestSuite(LifecycleExamplesSelfTest.class));
+        suite.addTest(new TestSuite(MessagingExamplesSelfTest.class));
+        suite.addTest(new TestSuite(MemcacheRestExamplesSelfTest.class));
+        suite.addTest(new TestSuite(MonteCarloExamplesSelfTest.class));
+        suite.addTest(new TestSuite(TaskExamplesSelfTest.class));
+        suite.addTest(new TestSuite(SpringBeanExamplesSelfTest.class));
         suite.addTest(new TestSuite(IgniteFsExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridCheckpointExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridHibernateL2CacheExampleSelfTest.class));
-        suite.addTest(new TestSuite(GridProjectionExampleSelfTest.class));
+        suite.addTest(new TestSuite(CheckpointExamplesSelfTest.class));
+        suite.addTest(new TestSuite(HibernateL2CacheExampleSelfTest.class));
+        suite.addTest(new TestSuite(ProjectionExampleSelfTest.class));
 
         // Multi-node.
-        suite.addTest(new TestSuite(GridCacheExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheStoreLoadDataExampleMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridBasicExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridContinuationExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridContinuousMapperExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridDeploymentExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridEventsExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridTaskExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridMemcacheRestExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridMonteCarloExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridHibernateL2CacheExampleMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(CacheExamplesMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(CacheStoreLoadDataExampleMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(BasicExamplesMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(ContinuationExamplesMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(ContinuousMapperExamplesMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(DeploymentExamplesMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(EventsExamplesMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(TaskExamplesMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(MemcacheRestExamplesMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(MonteCarloExamplesMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(HibernateL2CacheExampleMultiNodeSelfTest.class));
 
         return suite;
     }

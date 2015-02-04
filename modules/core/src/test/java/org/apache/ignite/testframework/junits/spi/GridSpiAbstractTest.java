@@ -143,7 +143,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected final GridTestResources getTestResources() {
+    @Override protected final IgniteTestResources getTestResources() {
         return getTestData().getTestResources();
     }
 
@@ -585,7 +585,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         private Map<String, Object> allAttrs = new HashMap<>();
 
         /** */
-        private GridTestResources rsrcs = new GridTestResources();
+        private IgniteTestResources rsrcs = new IgniteTestResources();
 
         /**
          *
@@ -598,7 +598,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
          * @return Test resources.
          *
          */
-        public GridTestResources getTestResources() {
+        public IgniteTestResources getTestResources() {
             return rsrcs;
         }
 

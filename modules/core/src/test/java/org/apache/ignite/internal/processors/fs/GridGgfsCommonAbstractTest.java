@@ -46,7 +46,7 @@ public class GridGgfsCommonAbstractTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(GridTestResources rsrcs) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(IgniteTestResources rsrcs) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(rsrcs);
 
         cfg.setPeerClassLoadingEnabled(false);
@@ -56,7 +56,7 @@ public class GridGgfsCommonAbstractTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName, GridTestResources rsrcs) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String gridName, IgniteTestResources rsrcs) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName, rsrcs);
 
         cfg.setPeerClassLoadingEnabled(false);

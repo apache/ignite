@@ -19,23 +19,23 @@
 -->
 
 <!--
-    Example configuration of the Hadoop FS driver over GridGain FS API.
+    Example configuration of the Hadoop FS driver over Ignite FS API.
     Copy this file into '$HADOOP_HOME/conf/core-site.xml'.
 -->
 <configuration>
     <property>
         <name>fs.default.name</name>
-        <value>ggfs:///</value>
+        <value>ignitefs:///</value>
     </property>
 
     <property>
-        <!-- FS driver class for the 'ggfs://' URIs. -->
-        <name>fs.ggfs.impl</name>
+        <!-- FS driver class for the 'ignitefs://' URIs. -->
+        <name>fs.ignitefs.impl</name>
         <value>org.apache.ignite.fs.hadoop.v1.GridGgfsHadoopFileSystem</value>
     </property>
 
     <property>
-        <!-- FS driver class for the 'ggfs://' URIs in Hadoop2.x -->
+        <!-- FS driver class for the 'ignitefs://' URIs in Hadoop2.x -->
         <name>fs.AbstractFileSystem.ggfs.impl</name>
         <value>org.apache.ignite.fs.hadoop.v2.GridGgfsHadoopFileSystem</value>
     </property>
