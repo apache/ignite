@@ -27,7 +27,7 @@ public class ContinuousMapperExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGridContinuousMapperExample() throws Exception {
+    public void testContinuousMapperExample() throws Exception {
         ComputeContinuousMapperExample.main(EMPTY_ARGS);
     }
 }

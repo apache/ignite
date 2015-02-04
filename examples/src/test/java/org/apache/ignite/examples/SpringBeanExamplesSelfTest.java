@@ -27,7 +27,7 @@ public class SpringBeanExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGridSpringBeanHelloWorldExample() throws Exception {
+    public void testSpringBeanHelloWorldExample() throws Exception {
         SpringBeanExample.main(EMPTY_ARGS);
     }
 }

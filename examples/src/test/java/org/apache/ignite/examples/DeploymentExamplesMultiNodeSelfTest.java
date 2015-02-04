@@ -22,9 +22,9 @@ package org.apache.ignite.examples;
  */
 public class DeploymentExamplesMultiNodeSelfTest extends DeploymentExamplesSelfTest {
     /** {@inheritDoc} */
-    @Override public void testGridDeploymentExample() throws Exception {
+    @Override public void testDeploymentExample() throws Exception {
         startRemoteNodes();
 
-        super.testGridDeploymentExample();
+        super.testDeploymentExample();
     }
 }

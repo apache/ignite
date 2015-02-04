@@ -27,7 +27,7 @@ public class ContinuationExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGridContinuationExample() throws Exception {
+    public void testContinuationExample() throws Exception {
         ComputeFibonacciContinuationExample.main(EMPTY_ARGS);
     }
 }

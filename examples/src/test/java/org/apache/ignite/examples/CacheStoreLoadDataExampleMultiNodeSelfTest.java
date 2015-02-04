@@ -33,7 +33,7 @@ public class CacheStoreLoadDataExampleMultiNodeSelfTest extends GridAbstractExam
     /**
      * @throws Exception If failed.
      */
-    public void testGridCacheStoreLoaderExample() throws Exception {
+    public void testCacheStoreLoaderExample() throws Exception {
         CacheStoreLoadDataExample.main(EMPTY_ARGS);
     }
 }

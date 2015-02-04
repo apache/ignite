@@ -27,7 +27,7 @@ public class EventsExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGridEventsExample() throws Exception {
+    public void testEventsExample() throws Exception {
         EventsExample.main(EMPTY_ARGS);
     }
 }

@@ -35,7 +35,7 @@ public class MemcacheRestExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGridMemcacheRestExample() throws Exception {
+    public void testMemcacheRestExample() throws Exception {
         MemcacheRestExample.main(EMPTY_ARGS);
     }
 }

@@ -39,7 +39,7 @@ public class CheckpointExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGridCheckpointExample() throws Exception {
+    public void testCheckpointExample() throws Exception {
         ComputeFailoverExample.main(EMPTY_ARGS);
     }
 }

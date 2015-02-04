@@ -27,7 +27,7 @@ public class HibernateL2CacheExampleSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGridHibernateL2CacheExample() throws Exception {
+    public void testHibernateL2CacheExample() throws Exception {
         HibernateL2CacheExample.main(EMPTY_ARGS);
     }
 }

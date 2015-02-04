@@ -32,21 +32,21 @@ public class MessagingExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGridMessagingExample() throws Exception {
+    public void testMessagingExample() throws Exception {
         MessagingExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridMessagingPingPongExample() throws Exception {
+    public void testMessagingPingPongExample() throws Exception {
         MessagingPingPongExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGridMessagingPingPongListenActorExample() throws Exception {
+    public void testessagingPingPongListenActorExample() throws Exception {
         MessagingPingPongListenActorExample.main(EMPTY_ARGS);
     }
 }

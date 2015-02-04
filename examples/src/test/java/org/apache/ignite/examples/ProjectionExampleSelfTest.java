@@ -33,7 +33,7 @@ public class ProjectionExampleSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGridProjectionExample() throws Exception {
+    public void testProjectionExample() throws Exception {
         ComputeProjectionExample.main(EMPTY_ARGS);
     }
 }

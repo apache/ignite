@@ -27,7 +27,7 @@ public class LifecycleExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGridLifecycleExample() throws Exception {
+    public void testLifecycleExample() throws Exception {
         LifecycleExample.main(EMPTY_ARGS);
     }
 }

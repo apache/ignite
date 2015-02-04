@@ -27,7 +27,7 @@ public class DeploymentExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGridDeploymentExample() throws Exception {
+    public void testDeploymentExample() throws Exception {
         DeploymentExample.main(EMPTY_ARGS);
     }
 }
