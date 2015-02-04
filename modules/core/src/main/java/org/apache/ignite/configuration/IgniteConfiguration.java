@@ -160,18 +160,6 @@ public class IgniteConfiguration {
     /** Default size of management thread pool. */
     public static final int DFLT_MGMT_THREAD_CNT = 4;
 
-    /** Default size of REST thread pool. */
-    public static final int DFLT_REST_CORE_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
-
-    /** Default max size of REST thread pool. */
-    public static final int DFLT_REST_MAX_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
-
-    /** Default keep alive time for REST thread pool. */
-    public static final long DFLT_REST_KEEP_ALIVE_TIME = 0;
-
-    /** Default max queue capacity of REST thread pool. */
-    public static final int DFLT_REST_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
-
     /** Default segmentation policy. */
     public static final GridSegmentationPolicy DFLT_SEG_PLC = STOP;
 

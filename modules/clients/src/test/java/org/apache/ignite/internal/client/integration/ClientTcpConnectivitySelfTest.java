@@ -38,10 +38,10 @@ public class ClientTcpConnectivitySelfTest extends ClientAbstractConnectivitySel
         ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
         if (addr != null)
-            clientCfg.setRestTcpHost(addr);
+            clientCfg.setHost(addr);
 
         if (port != null)
-            clientCfg.setRestTcpPort(port);
+            clientCfg.setPort(port);
 
         cfg.setClientConnectionConfiguration(clientCfg);
 

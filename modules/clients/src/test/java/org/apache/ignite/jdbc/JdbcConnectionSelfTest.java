@@ -65,7 +65,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
         ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
         if (!gridName.endsWith("0"))
-            clientCfg.setRestTcpPort(CUSTOM_PORT);
+            clientCfg.setPort(CUSTOM_PORT);
 
         cfg.setClientConnectionConfiguration(clientCfg);
 

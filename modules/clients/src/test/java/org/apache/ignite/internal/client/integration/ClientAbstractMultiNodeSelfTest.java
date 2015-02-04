@@ -136,13 +136,13 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         if (restEnabled) {
             ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
-            clientCfg.setRestTcpPort(REST_TCP_PORT_BASE);
+            clientCfg.setPort(REST_TCP_PORT_BASE);
 
             GridSslContextFactory sslCtxFactory = sslContextFactory();
 
             if (sslCtxFactory != null) {
-                clientCfg.setRestTcpSslEnabled(true);
-                clientCfg.setRestTcpSslContextFactory(sslCtxFactory);
+                clientCfg.setSslEnabled(true);
+                clientCfg.setSslContextFactory(sslCtxFactory);
             }
 
             c.setClientConnectionConfiguration(clientCfg);

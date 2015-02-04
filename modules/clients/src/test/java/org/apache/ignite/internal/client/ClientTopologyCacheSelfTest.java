@@ -277,7 +277,7 @@ public class ClientTopologyCacheSelfTest extends GridCommonAbstractTest {
 
         ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
-        clientCfg.setRestTcpPort(BINARY_PORT);
+        clientCfg.setPort(BINARY_PORT);
 
         cfg.setClientConnectionConfiguration(clientCfg);
 

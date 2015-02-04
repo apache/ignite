@@ -35,22 +35,25 @@ public class ClientConnectionConfiguration {
     public static final boolean DFLT_TCP_NODELAY = true;
 
     /** Default TCP direct buffer flag. */
-    public static final boolean DFLT_REST_TCP_DIRECT_BUF = false;
+    public static final boolean DFLT_TCP_DIRECT_BUF = false;
 
     /** Default REST idle timeout. */
-    public static final int DFLT_REST_IDLE_TIMEOUT = 7000;
+    public static final int DFLT_IDLE_TIMEOUT = 7000;
 
     /** Default rest port range. */
-    public static final int DFLT_REST_PORT_RANGE = 100;
+    public static final int DFLT_PORT_RANGE = 100;
 
     /** Default size of REST thread pool. */
-    public static final int DFLT_REST_CORE_THREAD_CNT = IgniteConfiguration.DFLT_PUBLIC_CORE_THREAD_CNT;
+    public static final int DFLT_CORE_THREAD_CNT = IgniteConfiguration.DFLT_PUBLIC_CORE_THREAD_CNT;
 
     /** Default max size of REST thread pool. */
-    public static final int DFLT_REST_MAX_THREAD_CNT = IgniteConfiguration.DFLT_PUBLIC_CORE_THREAD_CNT;
+    public static final int DFLT_MAX_THREAD_CNT = IgniteConfiguration.DFLT_PUBLIC_CORE_THREAD_CNT;
+
+    /** Default keep alive time for REST thread pool. */
+    public static final long DFLT_KEEP_ALIVE_TIME = 0;
 
     /** Default max queue capacity of REST thread pool. */
-    public static final int DFLT_REST_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
+    public static final int DFLT_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
 
     /** Default socket send and receive buffer size. */
     public static final int DFLT_SOCK_BUF_SIZE = 32 * 1024;
@@ -59,55 +62,55 @@ public class ClientConnectionConfiguration {
     private String jettyPath;
 
     /** REST secret key. */
-    private String restSecretKey;
+    private String secretKey;
 
     /** TCP host. */
-    private String restTcpHost;
+    private String host;
 
     /** TCP port. */
-    private int restTcpPort = DFLT_TCP_PORT;
+    private int port = DFLT_TCP_PORT;
 
     /** TCP no delay flag. */
-    private boolean restTcpNoDelay = DFLT_TCP_NODELAY;
+    private boolean noDelay = DFLT_TCP_NODELAY;
 
     /** REST TCP direct buffer flag. */
-    private boolean restTcpDirectBuf = DFLT_REST_TCP_DIRECT_BUF;
+    private boolean directBuf = DFLT_TCP_DIRECT_BUF;
 
     /** REST TCP send buffer size. */
-    private int restTcpSndBufSize = DFLT_SOCK_BUF_SIZE;
+    private int sndBufSize = DFLT_SOCK_BUF_SIZE;
 
     /** REST TCP receive buffer size. */
-    private int restTcpRcvBufSize = DFLT_SOCK_BUF_SIZE;
+    private int rcvBufSize = DFLT_SOCK_BUF_SIZE;
 
     /** REST TCP send queue limit. */
-    private int restTcpSndQueueLimit;
+    private int sndQueueLimit;
 
     /** REST TCP selector count. */
-    private int restTcpSelectorCnt = Math.min(4, Runtime.getRuntime().availableProcessors());
+    private int selectorCnt = Math.min(4, Runtime.getRuntime().availableProcessors());
 
     /** Idle timeout. */
-    private long restIdleTimeout = DFLT_REST_IDLE_TIMEOUT;
+    private long idleTimeout = DFLT_IDLE_TIMEOUT;
 
     /** SSL enable flag, default is disabled. */
-    private boolean restTcpSslEnabled;
+    private boolean sslEnabled;
 
     /** SSL need client auth flag. */
-    private boolean restTcpSslClientAuth;
+    private boolean sslClientAuth;
 
     /** SSL context factory for rest binary server. */
-    private GridSslContextFactory restTcpSslCtxFactory;
+    private GridSslContextFactory sslCtxFactory;
 
     /** Port range */
-    private int restPortRange = DFLT_REST_PORT_RANGE;
+    private int portRange = DFLT_PORT_RANGE;
 
     /** REST requests executor service. */
-    private ExecutorService restExecSvc;
+    private ExecutorService execSvc;
 
     /** REST executor service shutdown flag. */
-    private boolean restSvcShutdown = true;
+    private boolean execSvcShutdown = true;
 
     /** Client message interceptor. */
-    private ClientMessageInterceptor clientMsgInterceptor;
+    private ClientMessageInterceptor msgInterceptor;
 
     /**
      * Creates client connection configuration with all default values.
@@ -125,24 +128,24 @@ public class ClientConnectionConfiguration {
     public ClientConnectionConfiguration(ClientConnectionConfiguration cfg) {
         assert cfg != null;
 
-        clientMsgInterceptor = cfg.getClientMessageInterceptor();
-        restExecSvc = cfg.getRestExecutorService();
-        restSvcShutdown = cfg.isRestExecutorServiceShutdown();
-        restIdleTimeout = cfg.getRestIdleTimeout();
-        jettyPath = cfg.getRestJettyPath();
-        restPortRange = cfg.getRestPortRange();
-        restSecretKey = cfg.getRestSecretKey();
-        restTcpDirectBuf = cfg.isRestTcpDirectBuffer();
-        restTcpHost = cfg.getRestTcpHost();
-        restTcpNoDelay = cfg.isRestTcpNoDelay();
-        restTcpPort = cfg.getRestTcpPort();
-        restTcpRcvBufSize = cfg.getRestTcpReceiveBufferSize();
-        restTcpSelectorCnt = cfg.getRestTcpSelectorCount();
-        restTcpSndBufSize = cfg.getRestTcpSendBufferSize();
-        restTcpSndQueueLimit = cfg.getRestTcpSendQueueLimit();
-        restTcpSslClientAuth = cfg.isRestTcpSslClientAuth();
-        restTcpSslCtxFactory = cfg.getRestTcpSslContextFactory();
-        restTcpSslEnabled = cfg.isRestTcpSslEnabled();
+        msgInterceptor = cfg.getMessageInterceptor();
+        execSvc = cfg.getExecutorService();
+        execSvcShutdown = cfg.isExecutorServiceShutdown();
+        idleTimeout = cfg.getIdleTimeout();
+        jettyPath = cfg.getJettyPath();
+        portRange = cfg.getPortRange();
+        secretKey = cfg.getSecretKey();
+        directBuf = cfg.isDirectBuffer();
+        host = cfg.getHost();
+        noDelay = cfg.isNoDelay();
+        port = cfg.getPort();
+        rcvBufSize = cfg.getReceiveBufferSize();
+        selectorCnt = cfg.getSelectorCount();
+        sndBufSize = cfg.getSendBufferSize();
+        sndQueueLimit = cfg.getSendQueueLimit();
+        sslClientAuth = cfg.isSslClientAuth();
+        sslCtxFactory = cfg.getSslContextFactory();
+        sslEnabled = cfg.isSslEnabled();
     }
 
     /**
@@ -152,7 +155,7 @@ public class ClientConnectionConfiguration {
      *
      * @param jettyPath Path to {@code JETTY} XML configuration file.
      */
-    public void setRestJettyPath(String jettyPath) {
+    public void setJettyPath(String jettyPath) {
         this.jettyPath = jettyPath;
     }
 
@@ -169,17 +172,17 @@ public class ClientConnectionConfiguration {
      * @see IgniteSystemProperties#IGNITE_JETTY_HOST
      * @see IgniteSystemProperties#IGNITE_JETTY_PORT
      */
-    public String getRestJettyPath() {
+    public String getJettyPath() {
         return jettyPath;
     }
 
     /**
      * Sets secret key to authenticate REST requests. If key is {@code null} or empty authentication is disabled.
      *
-     * @param restSecretKey REST secret key.
+     * @param secretKey REST secret key.
      */
-    public void setRestSecretKey(@Nullable String restSecretKey) {
-        this.restSecretKey = restSecretKey;
+    public void setSecretKey(@Nullable String secretKey) {
+        this.secretKey = secretKey;
     }
 
     /**
@@ -189,8 +192,8 @@ public class ClientConnectionConfiguration {
      * @see IgniteSystemProperties#IGNITE_JETTY_HOST
      * @see IgniteSystemProperties#IGNITE_JETTY_PORT
      */
-    @Nullable public String getRestSecretKey() {
-        return restSecretKey;
+    @Nullable public String getSecretKey() {
+        return secretKey;
     }
 
     /**
@@ -205,17 +208,17 @@ public class ClientConnectionConfiguration {
      *
      * @return TCP host.
      */
-    public String getRestTcpHost() {
-        return restTcpHost;
+    public String getHost() {
+        return host;
     }
 
     /**
      * Sets host for TCP binary protocol server.
      *
-     * @param restTcpHost TCP host.
+     * @param host TCP host.
      */
-    public void setRestTcpHost(String restTcpHost) {
-        this.restTcpHost = restTcpHost;
+    public void setHost(String host) {
+        this.host = host;
     }
 
     /**
@@ -225,17 +228,17 @@ public class ClientConnectionConfiguration {
      *
      * @return TCP port.
      */
-    public int getRestTcpPort() {
-        return restTcpPort;
+    public int getPort() {
+        return port;
     }
 
     /**
      * Sets port for TCP binary protocol server.
      *
-     * @param restTcpPort TCP port.
+     * @param port TCP port.
      */
-    public void setRestTcpPort(int restTcpPort) {
-        this.restTcpPort = restTcpPort;
+    public void setPort(int port) {
+        this.port = port;
     }
 
     /**
@@ -247,18 +250,18 @@ public class ClientConnectionConfiguration {
      *
      * @return Whether {@code TCP_NODELAY} option should be enabled.
      */
-    public boolean isRestTcpNoDelay() {
-        return restTcpNoDelay;
+    public boolean isNoDelay() {
+        return noDelay;
     }
 
     /**
      * Sets whether {@code TCP_NODELAY} option should be set for all accepted client connections.
      *
-     * @param restTcpNoDelay {@code True} if option should be enabled.
-     * @see #isRestTcpNoDelay()
+     * @param noDelay {@code True} if option should be enabled.
+     * @see #isNoDelay()
      */
-    public void setRestTcpNoDelay(boolean restTcpNoDelay) {
-        this.restTcpNoDelay = restTcpNoDelay;
+    public void setNoDelay(boolean noDelay) {
+        this.noDelay = noDelay;
     }
 
     /**
@@ -269,18 +272,18 @@ public class ClientConnectionConfiguration {
      *
      * @return Whether direct buffer should be used.
      */
-    public boolean isRestTcpDirectBuffer() {
-        return restTcpDirectBuf;
+    public boolean isDirectBuffer() {
+        return directBuf;
     }
 
     /**
      * Sets whether to use direct buffer for REST TCP server.
      *
-     * @param restTcpDirectBuf {@code True} if option should be enabled.
-     * @see #isRestTcpDirectBuffer()
+     * @param directBuf {@code True} if option should be enabled.
+     * @see #isDirectBuffer()
      */
-    public void setRestTcpDirectBuffer(boolean restTcpDirectBuf) {
-        this.restTcpDirectBuf = restTcpDirectBuf;
+    public void setDirectBuffer(boolean directBuf) {
+        this.directBuf = directBuf;
     }
 
     /**
@@ -288,18 +291,18 @@ public class ClientConnectionConfiguration {
      *
      * @return REST TCP server send buffer size (0 for default).
      */
-    public int getRestTcpSendBufferSize() {
-        return restTcpSndBufSize;
+    public int getSendBufferSize() {
+        return sndBufSize;
     }
 
     /**
      * Sets REST TCP server send buffer size.
      *
-     * @param restTcpSndBufSize Send buffer size.
-     * @see #getRestTcpSendBufferSize()
+     * @param sndBufSize Send buffer size.
+     * @see #getSendBufferSize()
      */
-    public void setRestTcpSendBufferSize(int restTcpSndBufSize) {
-        this.restTcpSndBufSize = restTcpSndBufSize;
+    public void setSendBufferSize(int sndBufSize) {
+        this.sndBufSize = sndBufSize;
     }
 
     /**
@@ -307,18 +310,18 @@ public class ClientConnectionConfiguration {
      *
      * @return REST TCP server receive buffer size (0 for default).
      */
-    public int getRestTcpReceiveBufferSize() {
-        return restTcpRcvBufSize;
+    public int getReceiveBufferSize() {
+        return rcvBufSize;
     }
 
     /**
      * Sets REST TCP server receive buffer size.
      *
-     * @param restTcpRcvBufSize Receive buffer size.
-     * @see #getRestTcpReceiveBufferSize()
+     * @param rcvBufSize Receive buffer size.
+     * @see #getReceiveBufferSize()
      */
-    public void setRestTcpReceiveBufferSize(int restTcpRcvBufSize) {
-        this.restTcpRcvBufSize = restTcpRcvBufSize;
+    public void setReceiveBufferSize(int rcvBufSize) {
+        this.rcvBufSize = rcvBufSize;
     }
 
     /**
@@ -327,18 +330,18 @@ public class ClientConnectionConfiguration {
      *
      * @return REST TCP server send queue limit (0 for unlimited).
      */
-    public int getRestTcpSendQueueLimit() {
-        return restTcpSndQueueLimit;
+    public int getSendQueueLimit() {
+        return sndQueueLimit;
     }
 
     /**
      * Sets REST TCP server send queue limit.
      *
-     * @param restTcpSndQueueLimit REST TCP server send queue limit (0 for unlimited).
-     * @see #getRestTcpSendQueueLimit()
+     * @param sndQueueLimit REST TCP server send queue limit (0 for unlimited).
+     * @see #getSendQueueLimit()
      */
-    public void setRestTcpSendQueueLimit(int restTcpSndQueueLimit) {
-        this.restTcpSndQueueLimit = restTcpSndQueueLimit;
+    public void setSendQueueLimit(int sndQueueLimit) {
+        this.sndQueueLimit = sndQueueLimit;
     }
 
     /**
@@ -347,18 +350,18 @@ public class ClientConnectionConfiguration {
      *
      * @return Number of selector threads for REST TCP server.
      */
-    public int getRestTcpSelectorCount() {
-        return restTcpSelectorCnt;
+    public int getSelectorCount() {
+        return selectorCnt;
     }
 
     /**
      * Sets number of selector threads for REST TCP server.
      *
-     * @param restTcpSelectorCnt Number of selector threads for REST TCP server.
-     * @see #getRestTcpSelectorCount()
+     * @param selectorCnt Number of selector threads for REST TCP server.
+     * @see #getSelectorCount()
      */
-    public void setRestTcpSelectorCount(int restTcpSelectorCnt) {
-        this.restTcpSelectorCnt = restTcpSelectorCnt;
+    public void setSelectorCount(int selectorCnt) {
+        this.selectorCnt = selectorCnt;
     }
 
     /**
@@ -369,18 +372,18 @@ public class ClientConnectionConfiguration {
      *
      * @return Idle timeout in milliseconds.
      */
-    public long getRestIdleTimeout() {
-        return restIdleTimeout;
+    public long getIdleTimeout() {
+        return idleTimeout;
     }
 
     /**
      * Sets idle timeout for REST server.
      *
-     * @param restIdleTimeout Idle timeout in milliseconds.
-     * @see #getRestIdleTimeout()
+     * @param idleTimeout Idle timeout in milliseconds.
+     * @see #getIdleTimeout()
      */
-    public void setRestIdleTimeout(long restIdleTimeout) {
-        this.restIdleTimeout = restIdleTimeout;
+    public void setIdleTimeout(long idleTimeout) {
+        this.idleTimeout = idleTimeout;
     }
 
     /**
@@ -391,8 +394,8 @@ public class ClientConnectionConfiguration {
      *
      * @return {@code True} if SSL should be enabled.
      */
-    public boolean isRestTcpSslEnabled() {
-        return restTcpSslEnabled;
+    public boolean isSslEnabled() {
+        return sslEnabled;
     }
 
     /**
@@ -401,10 +404,10 @@ public class ClientConnectionConfiguration {
      * Note that if this flag is set to {@code true}, then a valid instance of {@link GridSslContextFactory}
      * should be provided in {@code GridConfiguration}. Otherwise, TCP binary protocol will fail to start.
      *
-     * @param restTcpSslEnabled {@code True} if SSL should be enabled.
+     * @param sslEnabled {@code True} if SSL should be enabled.
      */
-    public void setRestTcpSslEnabled(boolean restTcpSslEnabled) {
-        this.restTcpSslEnabled = restTcpSslEnabled;
+    public void setSslEnabled(boolean sslEnabled) {
+        this.sslEnabled = sslEnabled;
     }
 
     /**
@@ -413,17 +416,17 @@ public class ClientConnectionConfiguration {
      *
      * @return Whether or not client authentication is required.
      */
-    public boolean isRestTcpSslClientAuth() {
-        return restTcpSslClientAuth;
+    public boolean isSslClientAuth() {
+        return sslClientAuth;
     }
 
     /**
      * Sets flag indicating whether or not SSL client authentication is required.
      *
-     * @param needClientAuth Whether or not client authentication is required.
+     * @param sslClientAuth Whether or not client authentication is required.
      */
-    public void setRestTcpSslClientAuth(boolean needClientAuth) {
-        restTcpSslClientAuth = needClientAuth;
+    public void setSslClientAuth(boolean sslClientAuth) {
+        this.sslClientAuth = sslClientAuth;
     }
 
     /**
@@ -432,19 +435,19 @@ public class ClientConnectionConfiguration {
      * @return SslContextFactory instance.
      * @see GridSslContextFactory
      */
-    public GridSslContextFactory getRestTcpSslContextFactory() {
-        return restTcpSslCtxFactory;
+    public GridSslContextFactory getSslContextFactory() {
+        return sslCtxFactory;
     }
 
     /**
      * Sets instance of {@link GridSslContextFactory} that will be used to create an instance of {@code SSLContext}
      * for Secure Socket Layer on TCP binary protocol. This factory will only be used if
-     * {@link #setRestTcpSslEnabled(boolean)} is set to {@code true}.
+     * {@link #setSslEnabled(boolean)} is set to {@code true}.
      *
-     * @param restTcpSslCtxFactory Instance of {@link GridSslContextFactory}
+     * @param sslCtxFactory Instance of {@link GridSslContextFactory}
      */
-    public void setRestTcpSslContextFactory(GridSslContextFactory restTcpSslCtxFactory) {
-        this.restTcpSslCtxFactory = restTcpSslCtxFactory;
+    public void setSslContextFactory(GridSslContextFactory sslCtxFactory) {
+        this.sslCtxFactory = sslCtxFactory;
     }
 
     /**
@@ -452,17 +455,17 @@ public class ClientConnectionConfiguration {
      *
      * @return Number of ports to try.
      */
-    public int getRestPortRange() {
-        return restPortRange;
+    public int getPortRange() {
+        return portRange;
     }
 
     /**
      * Sets number of ports to try if configured one is in use.
      *
-     * @param restPortRange Port range.
+     * @param portRange Port range.
      */
-    public void setRestPortRange(int restPortRange) {
-        this.restPortRange = restPortRange;
+    public void setPortRange(int portRange) {
+        this.portRange = portRange;
     }
 
     /**
@@ -472,34 +475,34 @@ public class ClientConnectionConfiguration {
      * If not provided, new executor service will be created using the following
      * configuration:
      * <ul>
-     *     <li>Core pool size - {@link #DFLT_REST_CORE_THREAD_CNT}</li>
-     *     <li>Max pool size - {@link #DFLT_REST_MAX_THREAD_CNT}</li>
-     *     <li>Queue capacity - {@link #DFLT_REST_THREADPOOL_QUEUE_CAP}</li>
+     *     <li>Core pool size - {@link #DFLT_CORE_THREAD_CNT}</li>
+     *     <li>Max pool size - {@link #DFLT_MAX_THREAD_CNT}</li>
+     *     <li>Queue capacity - {@link #DFLT_THREADPOOL_QUEUE_CAP}</li>
      * </ul>
      *
      * @return Thread pool implementation to be used for processing of client
      *      messages.
      */
-    public ExecutorService getRestExecutorService() {
-        return restExecSvc;
+    public ExecutorService getExecutorService() {
+        return execSvc;
     }
 
     /**
      * Sets thread pool to use for processing of client messages (REST requests).
      *
-     * @param restExecSvc Thread pool to use for processing of client messages.
+     * @param execSvc Thread pool to use for processing of client messages.
      */
-    public void setRestExecutorService(ExecutorService restExecSvc) {
-        this.restExecSvc = restExecSvc;
+    public void setExecutorService(ExecutorService execSvc) {
+        this.execSvc = execSvc;
     }
 
     /**
      * Sets REST executor service shutdown flag.
      *
-     * @param restSvcShutdown REST executor service shutdown flag.
+     * @param execSvcShutdown REST executor service shutdown flag.
      */
-    public void setRestExecutorServiceShutdown(boolean restSvcShutdown) {
-        this.restSvcShutdown = restSvcShutdown;
+    public void setExecutorServiceShutdown(boolean execSvcShutdown) {
+        this.execSvcShutdown = execSvcShutdown;
     }
 
     /**
@@ -511,8 +514,8 @@ public class ClientConnectionConfiguration {
      *
      * @return REST executor service shutdown flag.
      */
-    public boolean isRestExecutorServiceShutdown() {
-        return restSvcShutdown;
+    public boolean isExecutorServiceShutdown() {
+        return execSvcShutdown;
     }
 
     /**
@@ -529,8 +532,8 @@ public class ClientConnectionConfiguration {
      * @see ClientMessageInterceptor
      * @return Interceptor.
      */
-    @Nullable public ClientMessageInterceptor getClientMessageInterceptor() {
-        return clientMsgInterceptor;
+    @Nullable public ClientMessageInterceptor getMessageInterceptor() {
+        return msgInterceptor;
     }
 
     /**
@@ -543,7 +546,7 @@ public class ClientConnectionConfiguration {
      *
      * @param interceptor Interceptor.
      */
-    public void setClientMessageInterceptor(ClientMessageInterceptor interceptor) {
-        clientMsgInterceptor = interceptor;
+    public void setMessageInterceptor(ClientMessageInterceptor interceptor) {
+        msgInterceptor = interceptor;
     }
 }

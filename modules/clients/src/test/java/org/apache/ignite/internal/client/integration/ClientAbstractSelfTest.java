@@ -193,12 +193,12 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
-        clientCfg.setRestTcpPort(BINARY_PORT);
+        clientCfg.setPort(BINARY_PORT);
 
         if (useSsl()) {
-            clientCfg.setRestTcpSslEnabled(true);
+            clientCfg.setSslEnabled(true);
 
-            clientCfg.setRestTcpSslContextFactory(sslContextFactory());
+            clientCfg.setSslContextFactory(sslContextFactory());
         }
 
         cfg.setClientConnectionConfiguration(clientCfg);
@@ -212,8 +212,9 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(cacheConfiguration(null), cacheConfiguration("replicated"),
             cacheConfiguration("partitioned"), cacheConfiguration(CACHE_NAME));
 
-        clientCfg.setClientMessageInterceptor(new ClientMessageInterceptor() {
-            @Override public Object onReceive(@Nullable Object obj) {
+        clientCfg.setMessageInterceptor(new ClientMessageInterceptor() {
+            @Override
+            public Object onReceive(@Nullable Object obj) {
                 if (obj != null)
                     INTERCEPTED_OBJECTS.put(obj, obj);
 
@@ -221,7 +222,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
                     obj + INTERCEPTED_SUF : obj;
             }
 
-            @Override public Object onSend(Object obj) {
+            @Override
+            public Object onSend(Object obj) {
                 if (obj != null)
                     INTERCEPTED_OBJECTS.put(obj, obj);
 

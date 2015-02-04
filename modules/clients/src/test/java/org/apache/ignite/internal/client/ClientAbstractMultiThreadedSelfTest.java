@@ -164,12 +164,12 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
 
         ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
-        clientCfg.setRestTcpPort(REST_TCP_PORT_BASE);
+        clientCfg.setPort(REST_TCP_PORT_BASE);
 
         if (useSsl()) {
-            clientCfg.setRestTcpSslEnabled(true);
+            clientCfg.setSslEnabled(true);
 
-            clientCfg.setRestTcpSslContextFactory(sslContextFactory());
+            clientCfg.setSslContextFactory(sslContextFactory());
         }
 
         c.setClientConnectionConfiguration(clientCfg);

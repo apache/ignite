@@ -1363,7 +1363,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
         // Save port range, port numbers will be stored by rest processor at runtime.
         if (cfg.getClientConnectionConfiguration() != null)
-            add(attrs, ATTR_REST_PORT_RANGE, cfg.getClientConnectionConfiguration().getRestPortRange());
+            add(attrs, ATTR_REST_PORT_RANGE, cfg.getClientConnectionConfiguration().getPortRange());
 
         try {
             AuthenticationSpi authSpi = cfg.getAuthenticationSpi();
@@ -1485,8 +1485,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         ClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
 
         if (clientCfg != null) {
-            restExecSvcMBean = clientCfg.getRestExecutorService() != null ?
-                registerExecutorMBean(clientCfg.getRestExecutorService(), "GridRestExecutor") : null;
+            restExecSvcMBean = clientCfg.getExecutorService() != null ?
+                registerExecutorMBean(clientCfg.getExecutorService(), "GridRestExecutor") : null;
         }
     }
 
@@ -2433,8 +2433,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             F.copy(objs, cfg.getSegmentationResolvers());
 
         if (cfg.getClientConnectionConfiguration() != null)
-            F.copy(objs, cfg.getClientConnectionConfiguration().getClientMessageInterceptor(),
-                cfg.getClientConnectionConfiguration().getRestTcpSslContextFactory());
+            F.copy(objs, cfg.getClientConnectionConfiguration().getMessageInterceptor(),
+                cfg.getClientConnectionConfiguration().getSslContextFactory());
 
         F.copy(objs, cfg.getMarshaller(), cfg.getGridLogger(), cfg.getMBeanServer());
 

@@ -37,7 +37,7 @@ public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstract
 
         assert cfg.getClientConnectionConfiguration() != null;
 
-        cfg.getClientConnectionConfiguration().setRestSecretKey(REST_SECRET_KEY);
+        cfg.getClientConnectionConfiguration().setSecretKey(REST_SECRET_KEY);
 
         return cfg;
     }

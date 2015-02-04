@@ -85,6 +85,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.configuration.ClientConnectionConfiguration.*;
 import static org.apache.ignite.configuration.IgniteConfiguration.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
@@ -1581,7 +1582,7 @@ public class IgnitionEx {
                     new LinkedBlockingQueue<Runnable>());
             }
 
-            restExecSvc = clientCfg != null ? clientCfg.getRestExecutorService() : null;
+            restExecSvc = clientCfg != null ? clientCfg.getExecutorService() : null;
 
             if (restExecSvc != null && !cfg.isRestEnabled()) {
                 U.warn(log, "REST executor service is configured, but REST is disabled in configuration " +
@@ -1592,13 +1593,13 @@ public class IgnitionEx {
 
                 restExecSvc = new IgniteThreadPoolExecutor(
                     "rest-" + cfg.getGridName(),
-                    DFLT_REST_CORE_THREAD_CNT,
-                    DFLT_REST_MAX_THREAD_CNT,
-                    DFLT_REST_KEEP_ALIVE_TIME,
-                    new LinkedBlockingQueue<Runnable>(DFLT_REST_THREADPOOL_QUEUE_CAP)
+                    DFLT_CORE_THREAD_CNT,
+                    DFLT_MAX_THREAD_CNT,
+                    DFLT_KEEP_ALIVE_TIME,
+                    new LinkedBlockingQueue<Runnable>(DFLT_THREADPOOL_QUEUE_CAP)
                 );
 
-                clientCfg.setRestExecutorService(restExecSvc);
+                clientCfg.setExecutorService(restExecSvc);
             }
 
             utilityCacheExecSvc = new IgniteThreadPoolExecutor(
@@ -1613,7 +1614,7 @@ public class IgnitionEx {
             mgmtSvcShutdown = cfg.getManagementExecutorServiceShutdown();
             p2pSvcShutdown = cfg.getPeerClassLoadingExecutorServiceShutdown();
             ggfsSvcShutdown = cfg.getGgfsExecutorServiceShutdown();
-            restSvcShutdown = clientCfg != null && clientCfg.isRestExecutorServiceShutdown();
+            restSvcShutdown = clientCfg != null && clientCfg.isExecutorServiceShutdown();
 
             if (marsh == null) {
                 if (!U.isHotSpot()) {

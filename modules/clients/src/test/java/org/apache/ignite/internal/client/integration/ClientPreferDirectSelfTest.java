@@ -70,7 +70,7 @@ public class ClientPreferDirectSelfTest extends GridCommonAbstractTest {
 
         ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
-        clientCfg.setRestTcpPort(REST_TCP_PORT_BASE);
+        clientCfg.setPort(REST_TCP_PORT_BASE);
 
         c.setClientConnectionConfiguration(clientCfg);
 

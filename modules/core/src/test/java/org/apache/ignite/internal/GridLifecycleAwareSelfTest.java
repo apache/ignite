@@ -155,7 +155,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
         ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
-        clientCfg.setClientMessageInterceptor(interceptor);
+        clientCfg.setMessageInterceptor(interceptor);
 
         cfg.setClientConnectionConfiguration(clientCfg);
 
@@ -169,7 +169,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
         TestContextFactory ctxFactory = new TestContextFactory();
 
-        clientCfg.setRestTcpSslContextFactory(ctxFactory);
+        clientCfg.setSslContextFactory(ctxFactory);
 
         lifecycleAwares.add(ctxFactory);
 

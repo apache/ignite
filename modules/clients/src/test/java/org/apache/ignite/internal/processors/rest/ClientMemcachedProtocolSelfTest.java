@@ -81,7 +81,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
         assert cfg.getClientConnectionConfiguration() != null;
 
         if (customPort != null)
-            cfg.getClientConnectionConfiguration().setRestTcpPort(customPort);
+            cfg.getClientConnectionConfiguration().setPort(customPort);
 
         return cfg;
     }

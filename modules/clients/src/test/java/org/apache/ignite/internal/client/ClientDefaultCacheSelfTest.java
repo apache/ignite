@@ -79,7 +79,7 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
         ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
-        clientCfg.setRestJettyPath(REST_JETTY_CFG);
+        clientCfg.setJettyPath(REST_JETTY_CFG);
 
         cfg.setClientConnectionConfiguration(clientCfg);
 

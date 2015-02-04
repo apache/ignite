@@ -91,7 +91,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
 
         ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
-        clientCfg.setRestTcpPort(PORT);
+        clientCfg.setPort(PORT);
 
         cfg.setClientConnectionConfiguration(clientCfg);
 

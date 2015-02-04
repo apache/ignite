@@ -39,7 +39,7 @@ public class ClientTcpTaskExecutionAfterTopologyRestartSelfTest extends GridComm
 
         ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
-        clientCfg.setRestTcpPort(PORT);
+        clientCfg.setPort(PORT);
 
         cfg.setClientConnectionConfiguration(clientCfg);
 

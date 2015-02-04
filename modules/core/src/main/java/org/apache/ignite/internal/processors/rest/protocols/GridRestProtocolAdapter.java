@@ -67,7 +67,7 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
 
         log = ctx.log(getClass());
 
-        secretKey = ctx.config().getClientConnectionConfiguration().getRestSecretKey();
+        secretKey = ctx.config().getClientConnectionConfiguration().getSecretKey();
     }
 
     /**

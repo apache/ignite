@@ -115,7 +115,7 @@ public class RestProcessorTest extends GridCommonAbstractTest {
         ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
         // Ensure - no authentication.
-        clientCfg.setRestSecretKey(null);
+        clientCfg.setSecretKey(null);
 
         cfg.setClientConnectionConfiguration(clientCfg);
 

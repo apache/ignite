@@ -70,8 +70,8 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
 
         ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
-        clientCfg.setRestTcpPort(BINARY_PORT);
-        clientCfg.setRestJettyPath(REST_JETTY_CFG);
+        clientCfg.setPort(BINARY_PORT);
+        clientCfg.setJettyPath(REST_JETTY_CFG);
 
         cfg.setClientConnectionConfiguration(clientCfg);
 

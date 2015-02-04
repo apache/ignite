@@ -69,17 +69,17 @@ public class ClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTest {
 
         ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
-        clientCfg.setRestTcpPort(REST_TCP_PORT);
-        clientCfg.setRestTcpSslEnabled(true);
+        clientCfg.setPort(REST_TCP_PORT);
+        clientCfg.setSslEnabled(true);
 
-        clientCfg.setRestTcpSslClientAuth(checkClient);
-        clientCfg.setRestTcpSslClientAuth(checkClient);
+        clientCfg.setSslClientAuth(checkClient);
+        clientCfg.setSslClientAuth(checkClient);
 
         GridSslBasicContextFactory factory = (GridSslBasicContextFactory)GridTestUtils.sslContextFactory();
 
         factory.setTrustManagers(srvTrustMgr);
 
-        clientCfg.setRestTcpSslContextFactory(factory);
+        clientCfg.setSslContextFactory(factory);
 
         c.setClientConnectionConfiguration(clientCfg);
 

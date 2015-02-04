@@ -128,7 +128,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             fut.setWorker(w);
 
             try {
-                config().getRestExecutorService().execute(w);
+                config().getExecutorService().execute(w);
             }
             catch (RejectedExecutionException e) {
                 U.error(log, "Failed to execute worker due to execution rejection " +
@@ -328,13 +328,13 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
     /**
      * Applies {@link org.apache.ignite.configuration.ClientMessageInterceptor}
-     * from {@link org.apache.ignite.configuration.ClientConnectionConfiguration#getClientMessageInterceptor()}
+     * from {@link org.apache.ignite.configuration.ClientConnectionConfiguration#getMessageInterceptor()}
      * to all user parameters in the request.
      *
      * @param req Client request.
      */
     private void interceptRequest(GridRestRequest req) {
-        ClientMessageInterceptor interceptor = config().getClientMessageInterceptor();
+        ClientMessageInterceptor interceptor = config().getMessageInterceptor();
 
         if (interceptor == null)
             return;
@@ -375,14 +375,14 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
     /**
      * Applies {@link org.apache.ignite.configuration.ClientMessageInterceptor} from
-     * {@link org.apache.ignite.configuration.ClientConnectionConfiguration#getClientMessageInterceptor()}
+     * {@link org.apache.ignite.configuration.ClientConnectionConfiguration#getMessageInterceptor()}
      * to all user objects in the response.
      *
      * @param res Response.
      * @param req Request.
      */
     private void interceptResponse(GridRestResponse res, GridRestRequest req) {
-        ClientMessageInterceptor interceptor = config().getClientMessageInterceptor();
+        ClientMessageInterceptor interceptor = config().getMessageInterceptor();
 
         if (interceptor != null && res.getResponse() != null) {
             switch (req.command()) {

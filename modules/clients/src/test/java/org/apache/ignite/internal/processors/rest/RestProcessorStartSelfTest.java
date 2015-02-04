@@ -61,7 +61,7 @@ public class RestProcessorStartSelfTest extends GridCommonAbstractTest {
 
         ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
-        clientCfg.setRestTcpPort(TCP_PORT);
+        clientCfg.setPort(TCP_PORT);
 
         cfg.setClientConnectionConfiguration(clientCfg);
 
