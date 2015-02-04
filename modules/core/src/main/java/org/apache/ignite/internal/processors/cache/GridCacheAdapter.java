@@ -3406,7 +3406,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 }
             } while (ctx.affinity().affinityTopologyVersion() > topVer);
         }
-        catch (ClusterGroupEmptyException ignore) {
+        catch (ClusterGroupEmptyCheckedException ignore) {
             if (log.isDebugEnabled())
                 log.debug("All remote nodes left while cache remove [cacheName=" + name() + "]");
         }
