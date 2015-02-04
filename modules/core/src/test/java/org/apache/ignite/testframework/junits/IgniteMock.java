@@ -14,9 +14,8 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.marshaller.IgniteMarshaller;
 import org.apache.ignite.internal.product.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
@@ -197,11 +196,6 @@ public class IgniteMock implements Ignite {
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteFs> fileSystems() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridHadoop hadoop() {
         return null;
     }
 

@@ -21,12 +21,11 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.plugin.*;
 import org.apache.ignite.internal.product.*;
+import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.*;
-import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
 import org.springframework.beans.factory.*;
@@ -296,13 +295,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         assert g != null;
 
         return g.fileSystems();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridHadoop hadoop() {
-        assert g != null;
-
-        return g.hadoop();
     }
 
     /** {@inheritDoc} */

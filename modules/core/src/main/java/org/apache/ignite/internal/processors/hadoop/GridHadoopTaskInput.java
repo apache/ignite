@@ -15,26 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.hadoop;
+package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
- * Map-reduce execution planner.
+ * Task input.
  */
-public interface GridHadoopMapReducePlanner {
+public interface GridHadoopTaskInput extends AutoCloseable {
     /**
-     * Prepares map-reduce execution plan for the given job and topology.
+     * Moves cursor to the next element.
      *
-     * @param job Job.
-     * @param top Topology.
-     * @param oldPlan Old plan in case of partial failure.
-     * @return Map reduce plan.
+     * @return {@code false} If input is exceeded.
      */
-    public GridHadoopMapReducePlan preparePlan(GridHadoopJob job, Collection<ClusterNode> top,
-        @Nullable GridHadoopMapReducePlan oldPlan) throws IgniteCheckedException;
+    boolean next();
+
+    /**
+     * Gets current key.
+     *
+     * @return Key.
+     */
+    Object key();
+
+    /**
+     * Gets values for current key.
+     *
+     * @return Values.
+     */
+    Iterator<?> values();
+
+    /**
+     * Closes input.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    @Override public void close() throws IgniteCheckedException;
 }

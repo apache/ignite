@@ -15,42 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.hadoop;
+package org.apache.ignite.internal.processors.hadoop;
 
-import org.jetbrains.annotations.*;
+import java.io.*;
 
 /**
-* Task type.
-*/
-public enum GridHadoopTaskType {
-    /** Setup task. */
-    SETUP,
-
-    /** Map task. */
-    MAP,
-
-    /** Reduce task. */
-    REDUCE,
-
-    /** Combine task. */
-    COMBINE,
-
-    /** Commit task. */
-    COMMIT,
-
-    /** Abort task. */
-    ABORT;
-
-    /** Enumerated values. */
-    private static final GridHadoopTaskType[] VALS = values();
+ * Abstract fragment of an input data source.
+ */
+public abstract class GridHadoopInputSplit implements Externalizable {
+    /** */
+    protected String[] hosts;
 
     /**
-     * Efficiently gets enumerated value from its ordinal.
+     * Array of hosts where this input split resides.
      *
-     * @param ord Ordinal value.
-     * @return Enumerated value.
+     * @return Hosts.
      */
-    @Nullable public static GridHadoopTaskType fromOrdinal(byte ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    public String[] hosts() {
+        assert hosts != null;
+
+        return hosts;
     }
+
+    /**
+     * This method must be implemented for purpose of internal implementation.
+     *
+     * @param obj Another object.
+     * @return {@code true} If objects are equal.
+     */
+    @Override public abstract boolean equals(Object obj);
+
+    /**
+     * This method must be implemented for purpose of internal implementation.
+     *
+     * @return Hash code of the object.
+     */
+    @Override public abstract int hashCode();
 }
