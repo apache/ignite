@@ -280,6 +280,7 @@
                     <include>src/**/*.java</include>
                     <include>src/**/*.scala</include>
                     <include>**/*.php</include>
+                    <inclide>src/**/*.properties</inclide>
                 </includes>
                 <excludes>
                     <exclude>**/com/romix/scala/**</exclude>
@@ -288,6 +289,7 @@
                     <exclude>**/org/jetbrains/annotations/**</exclude>
                     <exclude>**/org/pcollections/**</exclude>
                     <exclude>**/org/jdk8/backport/**</exclude>
+                    <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends of file content-->
                 </excludes>
             </configuration>
             <executions>
