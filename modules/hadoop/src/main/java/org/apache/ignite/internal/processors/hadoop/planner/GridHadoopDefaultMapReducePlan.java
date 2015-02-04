@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.planner;
 
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

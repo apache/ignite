@@ -15,19 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.hadoop;
+package org.apache.ignite.internal.processors.hadoop;
 
 /**
- * Partitioner.
+ * Job run phase.
  */
-public interface GridHadoopPartitioner {
-    /**
-     * Gets partition which is actually a reducer index for the given key and value pair.
-     *
-     * @param key Key.
-     * @param val Value.
-     * @param parts Number of partitions.
-     * @return Partition.
-     */
-    public int partition(Object key, Object val, int parts);
+public enum GridHadoopJobPhase {
+    /** Job is running setup task. */
+    PHASE_SETUP,
+
+    /** Job is running map and combine tasks. */
+    PHASE_MAP,
+
+    /** Job has finished all map tasks and running reduce tasks. */
+    PHASE_REDUCE,
+
+    /** Job is stopping due to exception during any of the phases. */
+    PHASE_CANCELLING,
+
+    /** Job has finished execution. */
+    PHASE_COMPLETE
 }
