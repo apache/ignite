@@ -1128,17 +1128,17 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public ClusterGroup forCacheNodes(String cacheName, @Nullable String... cacheNames) {
+        @Override public ClusterGroup forCacheNodes(String cacheName) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public ClusterGroup forDataNodes(String cacheName, @Nullable String... cacheNames) {
+        @Override public ClusterGroup forDataNodes(String cacheName) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public ClusterGroup forClientNodes(String cacheName, @Nullable String... cacheNames) {
+        @Override public ClusterGroup forClientNodes(String cacheName) {
             return null;
         }
 
