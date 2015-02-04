@@ -68,7 +68,6 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridStopWithCancelSelfTest.class);
         suite.addTestSuite(GridReduceSelfTest.class);
         suite.addTestSuite(GridEventConsumeSelfTest.class);
-        suite.addTestSuite(IgniteExceptionHelpLinksSelfTest.class);
         suite.addTestSuite(GridSuppressedExceptionSelfTest.class);
         suite.addTestSuite(GridLifecycleAwareSelfTest.class);
         suite.addTestSuite(GridMessageListenSelfTest.class);
