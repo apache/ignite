@@ -27,7 +27,7 @@ import org.apache.ignite.scalar.scalar._
 import scala.collection.JavaConversions._
 
 /**
- * Demonstrates basic In-Memory Data Grid operations with Scalar.
+ * Demonstrates basic In-Memory Data Ignite Cluster operations with Scalar.
  * <p>
  * Remote nodes should always be started with configuration file which includes
  * cache: `'ignite.sh examples/config/example-cache.xml'`. Local node can
@@ -126,7 +126,7 @@ object ScalarCacheExample extends App {
      * so we can actually see what happens underneath locally and remotely.
      */
     def registerListener() {
-        val g = grid$
+        val g = ignite$
 
         g *< (() => {
             val lsnr = new IgnitePredicate[IgniteEvent] {

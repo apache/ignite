@@ -18,12 +18,10 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.transactions.*;
 
 import java.io.*;
 
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -34,7 +32,7 @@ import static org.apache.ignite.transactions.IgniteTxIsolation.*;
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheTransactionExample {
     /** Cache name. */
@@ -44,21 +42,21 @@ public class CacheTransactionExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
-        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
+    public static void main(String[] args) throws IgniteException {
+        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache transaction example started.");
 
             // Clean up caches on all nodes before run.
-            g.cache(CACHE_NAME).clear(0);
+            ignite.cache(CACHE_NAME).clear(0);
 
-            GridCache<Integer, Account> cache = g.cache(CACHE_NAME);
+            IgniteCache<Integer, Account> cache = ignite.jcache(CACHE_NAME);
 
             // Initialize.
-            cache.putx(1, new Account(1, 100));
-            cache.putx(2, new Account(1, 200));
+            cache.put(1, new Account(1, 100));
+            cache.put(2, new Account(1, 200));
 
             System.out.println();
             System.out.println(">>> Accounts before deposit: ");
@@ -83,22 +81,24 @@ public class CacheTransactionExample {
      *
      * @param acctId Account ID.
      * @param amount Amount to deposit.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void deposit(int acctId, double amount) throws IgniteCheckedException {
+    private static void deposit(int acctId, double amount) throws IgniteException {
         // Clone every object we get from cache, so we can freely update it.
-        CacheProjection<Integer, Account> cache = Ignition.ignite().<Integer, Account>cache(CACHE_NAME).flagsOn(CLONE);
+        IgniteCache<Integer, Account> cache = Ignition.ignite().jcache(CACHE_NAME);
 
-        try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            Account acct = cache.get(acctId);
+        try (IgniteTx tx = Ignition.ignite().transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            Account acct0 = cache.get(acctId);
 
-            assert acct != null;
+            assert acct0 != null;
+
+            Account acct = new Account(acct0.id, acct0.balance);
 
             // Deposit into account.
             acct.update(amount);
 
             // Store updated account in cache.
-            cache.putx(acctId, acct);
+            cache.put(acctId, acct);
 
             tx.commit();
         }
@@ -110,7 +110,7 @@ public class CacheTransactionExample {
     /**
      * Account.
      */
-    private static class Account implements Serializable, Cloneable {
+    private static class Account implements Serializable {
         /** Account ID. */
         private int id;
 
@@ -133,11 +133,6 @@ public class CacheTransactionExample {
          */
         void update(double amount) {
             balance += amount;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Object clone() throws CloneNotSupportedException {
-            return super.clone();
         }
 
         /** {@inheritDoc} */

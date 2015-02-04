@@ -28,7 +28,7 @@ import org.apache.ignite.lang.*;
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-compute.xml} configuration.
  */
 public class ComputeProjectionExample {
@@ -36,9 +36,9 @@ public class ComputeProjectionExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws IgniteException {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2))
                 return;
@@ -48,8 +48,7 @@ public class ComputeProjectionExample {
 
             IgniteCluster cluster = ignite.cluster();
 
-            // Say hello to all nodes in the grid, including local node.
-            // Note, that Grid itself also implements GridProjection.
+            // Say hello to all nodes in the cluster, including local node.
             sayHello(ignite, cluster);
 
             // Say hello to all remote nodes.
@@ -74,19 +73,19 @@ public class ComputeProjectionExample {
     }
 
     /**
-     * Print 'Hello' message on remote grid nodes.
+     * Print 'Hello' message on remote nodes.
      *
-     * @param ignite Grid.
-     * @param prj Grid projection.
-     * @throws IgniteCheckedException If failed.
+     * @param ignite Ignite.
+     * @param grp Cluster group.
+     * @throws IgniteException If failed.
      */
-    private static void sayHello(Ignite ignite, final ClusterGroup prj) throws IgniteCheckedException {
+    private static void sayHello(Ignite ignite, final ClusterGroup grp) throws IgniteException {
         // Print out hello message on all projection nodes.
-        ignite.compute(prj).broadcast(
+        ignite.compute(grp).broadcast(
             new IgniteRunnable() {
                 @Override public void run() {
                     // Print ID of remote node on remote node.
-                    System.out.println(">>> Hello Node: " + prj.ignite().cluster().localNode().id());
+                    System.out.println(">>> Hello Node: " + grp.ignite().cluster().localNode().id());
                 }
             }
         );

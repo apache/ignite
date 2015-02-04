@@ -46,7 +46,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName,
-        GridTestResources rsrcs) throws Exception {
+        IgniteTestResources rsrcs) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName, rsrcs);
 
         LocalDeploymentSpi spi = new LocalDeploymentSpi();

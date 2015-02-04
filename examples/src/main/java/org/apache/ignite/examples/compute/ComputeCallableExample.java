@@ -24,7 +24,7 @@ import org.apache.ignite.lang.*;
 import java.util.*;
 
 /**
- * Demonstrates using of {@link org.apache.ignite.lang.IgniteCallable} job execution on the grid.
+ * Demonstrates using of {@link IgniteCallable} job execution on the cluster.
  * <p>
  * This example takes a sentence composed of multiple words and counts number of non-space
  * characters in the sentence by having each compute job count characters in each individual
@@ -33,7 +33,7 @@ import java.util.*;
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-compute.xml} configuration.
  */
 public class ComputeCallableExample {
@@ -41,10 +41,10 @@ public class ComputeCallableExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
-        try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
+    public static void main(String[] args) throws IgniteException {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Compute callable example started.");
 
@@ -55,15 +55,15 @@ public class ComputeCallableExample {
                 calls.add(new IgniteCallable<Integer>() {
                     @Override public Integer call() throws Exception {
                         System.out.println();
-                        System.out.println(">>> Printing '" + word + "' on this node from grid job.");
+                        System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
 
                         return word.length();
                     }
                 });
             }
 
-            // Execute collection of callables on the grid.
-            Collection<Integer> res = g.compute().call(calls);
+            // Execute collection of callables on the ignite.
+            Collection<Integer> res = ignite.compute().call(calls);
 
             int sum = 0;
 
@@ -73,7 +73,7 @@ public class ComputeCallableExample {
 
             System.out.println();
             System.out.println(">>> Total number of characters in the phrase is '" + sum + "'.");
-            System.out.println(">>> Check all nodes for output (this node is also part of the grid).");
+            System.out.println(">>> Check all nodes for output (this node is also part of the cluster).");
         }
     }
 }

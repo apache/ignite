@@ -49,7 +49,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
     private static final int ITERS = 50;
 
     /** */
-    private static final Collection<GridTestResources> spiRsrcs = new ArrayList<>();
+    private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
 
     /** */
     protected static final List<CommunicationSpi<GridTcpCommunicationMessageAdapter>> spis = new ArrayList<>();
@@ -319,7 +319,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
 
             GridTestUtils.setFieldValue(spi, "gridName", "grid-" + i);
 
-            GridTestResources rsrcs = new GridTestResources();
+            IgniteTestResources rsrcs = new IgniteTestResources();
 
             GridTestNode node = new GridTestNode(rsrcs.getNodeId());
 
@@ -400,7 +400,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
             spi.spiStop();
         }
 
-        for (GridTestResources rsrcs : spiRsrcs)
+        for (IgniteTestResources rsrcs : spiRsrcs)
             rsrcs.stopThreads();
     }
 

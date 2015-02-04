@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.datagrid.store;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 
@@ -39,27 +38,27 @@ public class CacheStoreExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws IgniteException {
         IgniteConfiguration cfg = CacheNodeWithStoreStartup.configure();
 
-        // To start grid with desired configuration uncomment the appropriate line.
-        try (Ignite g = Ignition.start(cfg)) {
+        // To start ignite with desired configuration uncomment the appropriate line.
+        try (Ignite ignite = Ignition.start(cfg)) {
             System.out.println();
             System.out.println(">>> Cache store example started.");
 
-            GridCache<Long, Person> cache = g.cache(null);
+            IgniteCache<Long, Person> cache = ignite.jcache(null);
 
             // Clean up caches on all nodes before run.
-            cache.clear(0);
+            cache.clear();
 
-            try (IgniteTx tx = cache.txStart()) {
+            try (IgniteTx tx = ignite.transactions().txStart()) {
                 Person val = cache.get(id);
 
                 System.out.println("Read value: " + val);
 
-                val = cache.put(id, person(id, "Isaac", "Newton"));
+                val = cache.getAndPut(id, person(id, "Isaac", "Newton"));
 
                 System.out.println("Overwrote old value: " + val);
 
