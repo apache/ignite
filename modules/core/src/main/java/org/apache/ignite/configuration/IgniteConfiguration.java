@@ -429,7 +429,7 @@ public class IgniteConfiguration {
     private GridHadoopConfiguration hadoopCfg;
 
     /** Client access configuration. */
-    private ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
+    private ClientConnectionConfiguration clientCfg;
 
     /** Portable configuration. */
     private PortableConfiguration portableCfg;
