@@ -433,7 +433,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
                         nodes,
                         true).get();
                 }
-                catch (ClusterTopologyCheckedException e) {
+                catch (ClusterTopologyException | ClusterTopologyCheckedException e) {
                     if (log.isDebugEnabled())
                         log.debug("BlockSet job failed, will retry: " + e);
 
@@ -446,7 +446,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
                         nodes,
                         true).get();
                 }
-                catch (ClusterTopologyCheckedException e) {
+                catch (ClusterTopologyException | ClusterTopologyCheckedException e) {
                     if (log.isDebugEnabled())
                         log.debug("RemoveSetData job failed, will retry: " + e);
 
