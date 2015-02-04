@@ -282,6 +282,7 @@
                     <include>**/*.php</include>
                     <inclide>src/**/*.properties</inclide>
                     <include>**/*.sh</include>
+                    <include>**/*.bat</include>
                 </includes>
                 <excludes>
                     <exclude>**/com/romix/scala/**</exclude>

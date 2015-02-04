@@ -11,4 +11,14 @@
         <isMultiline>true</isMultiline>
         <padLines>false</padLines>
     </javadoc_style>
+    <batch>
+        <firstLine>::</firstLine>
+        <beforeEachLine>:: </beforeEachLine>
+        <endLine>::</endLine>
+        <firstLineDetectionPattern>[:][:].*$</firstLineDetectionPattern>
+        <lastLineDetectionPattern>"[:][:].*$"</lastLineDetectionPattern>
+        <allowBlankLines>false</allowBlankLines>
+        <isMultiline>true</isMultiline>
+        <padLines>false</padLines>
+    </batch>
 </additionalHeaders>
