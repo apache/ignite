@@ -12,18 +12,15 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.indexing.*;
 import org.h2.jdbc.*;
 import org.h2.result.*;
 import org.h2.value.*;
 import org.jdk8.backport.*;
-import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
 import java.sql.*;
@@ -97,20 +94,7 @@ public class GridMapQueryExecutor {
      * @param req Query request.
      */
     private void executeLocalQuery(ClusterNode node, GridQueryRequest req) {
-        h2.setFilters(new IndexingQueryFilter() {
-            @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forSpace(String spaceName) {
-                final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(spaceName);
-
-                if (cache.context().isReplicated() || cache.configuration().getBackups() == 0)
-                    return null;
-
-                return new IgniteBiPredicate<K, V>() {
-                    @Override public boolean apply(K k, V v) {
-                        return cache.context().affinity().primary(ctx.discovery().localNode(), k, -1);
-                    }
-                };
-            }
-        });
+        h2.setFilters(h2.backupFilter());
 
         try {
             QueryResults qr = new QueryResults(req.requestId(), req.queries().size());

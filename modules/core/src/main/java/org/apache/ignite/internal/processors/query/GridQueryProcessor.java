@@ -24,6 +24,7 @@ import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
@@ -486,6 +487,82 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             return idx.queryTwoStep(space, type, sqlQry, params);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param space Space.
+     * @param type Type.
+     * @param sqlQry Query.
+     * @param params Parameters.
+     * @return Cursor.
+     */
+    public <K,V> Iterator<Cache.Entry<K,V>> queryLocal(String space, String type, String sqlQry, Object[] params) {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+
+        try {
+            TypeDescriptor typeDesc = typesByName.get(new TypeName(space, type));
+
+            if (typeDesc == null || !typeDesc.registered())
+                return new GridEmptyCloseableIterator<>();
+
+            final GridCloseableIterator<IgniteBiTuple<K,V>> i = idx.query(space, sqlQry, F.asList(params), typeDesc,
+                idx.backupFilter());
+
+            return new ClIter<Cache.Entry<K,V>>() {
+                @Override public void close() throws Exception {
+                    i.close();
+                }
+
+                @Override public boolean hasNext() {
+                    return i.hasNext();
+                }
+
+                @Override public Cache.Entry<K,V> next() {
+                    IgniteBiTuple<K,V> t = i.next();
+
+                    return new CacheEntryImpl<>(t.getKey(), t.getValue());
+                }
+
+                @Override public void remove() {
+                    throw new UnsupportedOperationException();
+                }
+            };
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * Closeable iterator.
+     */
+    private static interface ClIter<X> extends AutoCloseable, Iterator<X> {
+        // No-op.
+    }
+
+    /**
+     * @param space Space.
+     * @param sql SQL Query.
+     * @param args Arguments.
+     * @return Iterator.
+     */
+    public Iterator<List<?>> queryLocalFields(String space, String sql, Object[] args) {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+
+        try {
+            return idx.queryFields(space, sql, F.asList(args), idx.backupFilter()).iterator();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             busyLock.leaveBusy();

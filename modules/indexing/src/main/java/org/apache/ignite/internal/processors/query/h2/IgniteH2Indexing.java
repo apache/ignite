@@ -34,11 +34,6 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.offheap.unsafe.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -1438,6 +1433,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     public void registerSpace(String spaceName) {
         schemaNames.add(schema(spaceName));
+    }
+
+    /** {@inheritDoc} */
+    @Override public IndexingQueryFilter backupFilter() {
+        return new IndexingQueryFilter() {
+            @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forSpace(String spaceName) {
+                final GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(spaceName);
+
+                if (cache.context().isReplicated() || cache.configuration().getBackups() == 0)
+                    return null;
+
+                return new IgniteBiPredicate<K, V>() {
+                    @Override public boolean apply(K k, V v) {
+                        return cache.context().affinity().primary(ctx.discovery().localNode(), k, -1);
+                    }
+                };
+            }
+        };
     }
 
     /**

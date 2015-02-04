@@ -201,4 +201,11 @@ public interface GridQueryIndexing {
      * @param type Type descriptor.
      */
     public void rebuildIndexes(@Nullable String spaceName, GridQueryTypeDescriptor type);
+
+    /**
+     * Returns backup filter.
+     *
+     * @return Backup filter.
+     */
+    public IndexingQueryFilter backupFilter();
 }

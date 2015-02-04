@@ -20,11 +20,10 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.mxbean.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -185,7 +184,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync())
-                    setFuture(delegate.<K, V>cache().loadCacheAsync(p, 0, args));
+                    setFuture(delegate.<K,V>cache().loadCacheAsync(p, 0, args));
                 else
                     delegate.<K, V>cache().loadCache(p, 0, args);
             }
@@ -243,8 +242,71 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param filter Filter.
+     * @param grp Optional cluster group.
+     * @return Cursor.
+     */
     @SuppressWarnings("unchecked")
+    private QueryCursor<Entry<K,V>> query(QueryPredicate filter, @Nullable ClusterGroup grp) {
+        final CacheQuery<Map.Entry<K,V>> qry;
+        final CacheQueryFuture<Map.Entry<K,V>> fut;
+
+        if (filter instanceof QueryScanPredicate) {
+            qry = delegate.queries().createScanQuery((IgniteBiPredicate<K,V>)filter);
+
+            if (grp != null)
+                qry.projection(grp);
+
+            fut = qry.execute();
+        }
+        else if (filter instanceof QueryTextPredicate) {
+            QueryTextPredicate p = (QueryTextPredicate)filter;
+
+            qry = delegate.queries().createFullTextQuery(p.getType(), p.getText());
+
+            if (grp != null)
+                qry.projection(grp);
+
+            fut = qry.execute();
+        }
+        else if (filter instanceof QuerySpiPredicate) {
+            qry = ((GridCacheQueriesEx)delegate.queries()).createSpiQuery();
+
+            if (grp != null)
+                qry.projection(grp);
+
+            fut = qry.execute(((QuerySpiPredicate)filter).getArgs());
+        }
+        else
+            throw new IgniteException("Unsupported query predicate: " + filter);
+
+        return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K,V>>() {
+            /** */
+            Map.Entry<K,V> cur;
+
+            @Override protected Entry<K,V> onNext() throws IgniteCheckedException {
+                if (!onHasNext())
+                    throw new NoSuchElementException();
+
+                Map.Entry<K,V> e = cur;
+
+                cur = null;
+
+                return new CacheEntryImpl<>(e.getKey(), e.getValue());
+            }
+
+            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                return cur != null || (cur = fut.next()) != null;
+            }
+
+            @Override protected void onClose() throws IgniteCheckedException {
+                fut.cancel();
+            }
+        });
+    }
+
+    /** {@inheritDoc} */
     @Override public QueryCursor<Entry<K,V>> query(QueryPredicate filter) {
         A.notNull(filter, "filter");
 
@@ -257,52 +319,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
                 return ctx.kernalContext().query().queryTwoStep(ctx.name(), p.getType(), p.getSql(), p.getArgs());
             }
 
-            final CacheQuery<Map.Entry<K,V>> qry;
-            final CacheQueryFuture<Map.Entry<K,V>> fut;
-
-            if (filter instanceof QueryScanPredicate) {
-                qry = delegate.queries().createScanQuery((IgniteBiPredicate<K,V>)filter);
-
-                fut = qry.execute();
-            }
-            else if (filter instanceof QueryTextPredicate) {
-                QueryTextPredicate p = (QueryTextPredicate)filter;
-
-                qry = delegate.queries().createFullTextQuery(p.getType(), p.getText());
-
-                fut = qry.execute();
-            }
-            else if (filter instanceof QuerySpiPredicate) {
-                qry = ((GridCacheQueriesEx)delegate.queries()).createSpiQuery();
-
-                fut = qry.execute(((QuerySpiPredicate)filter).getArgs());
-            }
-            else
-                throw new IgniteException("Unsupported query predicate: " + filter);
-
-            return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K,V>>() {
-                /** */
-                Map.Entry<K,V> cur;
-
-                @Override protected Entry<K,V> onNext() throws IgniteCheckedException {
-                    if (!onHasNext())
-                        throw new NoSuchElementException();
-
-                    Map.Entry<K,V> e = cur;
-
-                    cur = null;
-
-                    return new CacheEntryImpl<>(e.getKey(), e.getValue());
-                }
-
-                @Override protected boolean onHasNext() throws IgniteCheckedException {
-                    return cur != null || (cur = fut.next()) != null;
-                }
-
-                @Override protected void onClose() throws IgniteCheckedException {
-                    fut.cancel();
-                }
-            });
+            return query(filter, null);
         }
         finally {
             gate.leave(prev);
@@ -313,24 +330,50 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
     @Override public QueryCursor<List<?>> queryFields(QuerySqlPredicate filter) {
         A.notNull(filter, "filter");
 
-        // TODO implement
-        return null;
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return ctx.kernalContext().query().queryTwoStep(ctx.name(), filter.getSql(), filter.getArgs());
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public QueryCursor<Entry<K,V>> localQuery(QueryPredicate filter) {
         A.notNull(filter, "filter");
 
-        // TODO implement
-        return null;
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            if (filter instanceof QuerySqlPredicate) {
+                QuerySqlPredicate p = (QuerySqlPredicate)filter;
+
+                return new QueryCursorImpl<>(ctx.kernalContext().query().<K,V>queryLocal(
+                    ctx.name(), p.getType(), p.getSql(), p.getArgs()));
+            }
+
+            return query(filter, ctx.kernalContext().grid().forLocal());
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public QueryCursor<List<?>> localQueryFields(QuerySqlPredicate filter) {
         A.notNull(filter, "filter");
 
-        // TODO implement
-        return null;
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return new QueryCursorImpl<>(ctx.kernalContext().query().queryLocalFields(
+                ctx.name(), filter.getSql(), filter.getArgs()));
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
