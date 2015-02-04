@@ -30,8 +30,8 @@
         <property name="keyFields">
             <list>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="ID"/>
-                    <property name="dbType" value="4"/>
+                    <property name="databaseName" value="ID"/>
+                    <property name="databaseType" value="4"/>
                     <property name="javaName" value="id"/>
                     <property name="javaType" value="java.lang.Integer"/>
                 </bean>
@@ -40,20 +40,20 @@
         <property name="valueFields">
             <list>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="ID"/>
-                    <property name="dbType" value="4"/>
+                    <property name="databaseName" value="ID"/>
+                    <property name="databaseType" value="4"/>
                     <property name="javaName" value="id"/>
                     <property name="javaType" value="java.lang.Integer"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="NAME"/>
-                    <property name="dbType" value="12"/>
+                    <property name="databaseName" value="NAME"/>
+                    <property name="databaseType" value="12"/>
                     <property name="javaName" value="name"/>
                     <property name="javaType" value="java.lang.String"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="CITY"/>
-                    <property name="dbType" value="12"/>
+                    <property name="databaseName" value="CITY"/>
+                    <property name="databaseType" value="12"/>
                     <property name="javaName" value="city"/>
                     <property name="javaType" value="java.lang.String"/>
                 </bean>
@@ -68,8 +68,8 @@
         <property name="keyFields">
             <list>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="ID"/>
-                    <property name="dbType" value="4"/>
+                    <property name="databaseName" value="ID"/>
+                    <property name="databaseType" value="4"/>
                     <property name="javaName" value="id"/>
                     <property name="javaType" value="java.lang.Integer"/>
                 </bean>
@@ -78,20 +78,20 @@
         <property name="valueFields">
             <list>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="ID"/>
-                    <property name="dbType" value="4"/>
+                    <property name="databaseName" value="ID"/>
+                    <property name="databaseType" value="4"/>
                     <property name="javaName" value="id"/>
                     <property name="javaType" value="java.lang.Integer"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="ORG_ID"/>
-                    <property name="dbType" value="4"/>
+                    <property name="databaseName" value="ORG_ID"/>
+                    <property name="databaseType" value="4"/>
                     <property name="javaName" value="orgId"/>
                     <property name="javaType" value="java.lang.Integer"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="NAME"/>
-                    <property name="dbType" value="12"/>
+                    <property name="databaseName" value="NAME"/>
+                    <property name="databaseType" value="12"/>
                     <property name="javaName" value="name"/>
                     <property name="javaType" value="java.lang.String"/>
                 </bean>

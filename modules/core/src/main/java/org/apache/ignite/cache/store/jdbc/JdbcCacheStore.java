@@ -437,8 +437,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
         EntryMapping em = cacheMappings(cacheName).get(keyTypeId);
 
         if (em == null)
-            throw new CacheException("Failed to find mapping description for key: " + key + " in cache: "
-                + (cacheName != null ? cacheName : "<default>"));
+            throw new CacheException("Failed to find mapping description [table = " + em.fullTableName() +
+                ", key=" + key + ", cache=" + (cacheName != null ? cacheName : "<default>") + "]");
 
         return em;
     }
@@ -540,7 +540,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
         EntryMapping em = entryMapping(keyTypeId(key), key);
 
         if (log.isDebugEnabled())
-            log.debug("Start load value from database by key: " + key);
+            log.debug("Start load value from database [table= " + em.fullTableName()+ ", key=" + key + "]");
 
         Connection conn = null;
 
@@ -559,7 +559,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
                 return buildObject(em.valueType(), em.valueColumns(), rs);
         }
         catch (SQLException e) {
-            throw new CacheLoaderException("Failed to load object by key: " + key, e);
+            throw new CacheLoaderException("Failed to load object [table=" + em.fullTableName() +
+                ", key=" + key + "]", e);
         }
         finally {
             end(conn, stmt);
@@ -617,45 +618,72 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
      * @param entry Cache entry.
      */
     private void writeUpsert(PreparedStatement insStmt, PreparedStatement updStmt,
-        EntryMapping em, Cache.Entry<? extends K, ? extends V> entry) throws SQLException {
-        for (int attempt = 0; attempt < MAX_ATTEMPT_WRITE_COUNT; attempt++) {
-            int i = fillValueParameters(updStmt, 1, em, entry.getValue());
+        EntryMapping em, Cache.Entry<? extends K, ? extends V> entry) throws CacheWriterException {
+        try {
+            CacheWriterException we = null;
 
-            fillKeyParameters(updStmt, i, em, entry.getKey());
+            for (int attempt = 0; attempt < MAX_ATTEMPT_WRITE_COUNT; attempt++) {
+                int i = fillValueParameters(updStmt, 1, em, entry.getValue());
 
-            if (updStmt.executeUpdate() == 0) {
-                i = fillKeyParameters(insStmt, em, entry.getKey());
+                fillKeyParameters(updStmt, i, em, entry.getKey());
 
-                fillValueParameters(insStmt, i, em, entry.getValue());
+                if (updStmt.executeUpdate() == 0) {
+                    i = fillKeyParameters(insStmt, em, entry.getKey());
 
-                try {
-                    insStmt.executeUpdate();
-                }
-                catch (SQLException e) {
-                    String sqlState = e.getSQLState();
+                    fillValueParameters(insStmt, i, em, entry.getValue());
 
-                    SQLException nested = e.getNextException();
+                    try {
+                        insStmt.executeUpdate();
 
-                    while (sqlState == null && nested != null) {
-                        sqlState = nested.getSQLState();
-
-                        nested = nested.getNextException();
+                        if (i > 0)
+                            U.warn(log, "Entry was inserted in database on second try [table=" + em.fullTableName() +
+                                ", entry=" + entry + "]");
                     }
+                    catch (SQLException e) {
+                        String sqlState = e.getSQLState();
 
-                    // The error with code 23505 is thrown when trying to insert a row that
-                    // would violate a unique index or primary key.
-                    // TODO check with all RDBMS
-                    if (sqlState != null && Integer.valueOf(sqlState) == 23505)
-                        continue;
+                        SQLException nested = e.getNextException();
 
-                    throw e;
+                        while (sqlState == null && nested != null) {
+                            sqlState = nested.getSQLState();
+
+                            nested = nested.getNextException();
+                        }
+
+                        // The error with code 23505 is thrown when trying to insert a row that
+                        // would violate a unique index or primary key.
+                        // TODO check with all RDBMS
+                        if (sqlState != null && Integer.valueOf(sqlState) == 23505) {
+                            if (we == null)
+                                we = new CacheWriterException("Failed insert entry in database, violate a unique" +
+                                    " index or primary key [table=" + em.fullTableName() + ", entry=" + entry + "]");
+
+                            we.addSuppressed(e);
+
+                            U.warn(log, "Failed insert entry in database, violate a unique index or primary key" +
+                                " [table=" + em.fullTableName() + ", entry=" + entry + "]");
+
+                            continue;
+                        }
+
+                        throw new CacheWriterException("Failed insert entry in database [table=" + em.fullTableName() +
+                            ", entry=" + entry, e);
+                    }
                 }
+
+                if (i > 0)
+                    U.warn(log, "Entry was updated in database on second try [table=" + em.fullTableName() +
+                        ", entry=" + entry + "]");
+
+                return;
             }
 
-            return;
+            throw we;
         }
-
-        throw new CacheWriterException("Failed write entry to database: " + entry);
+        catch (SQLException e) {
+            throw new CacheWriterException("Failed update entry in database [table=" + em.fullTableName() +
+                ", entry=" + entry + "]", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -667,7 +695,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
         EntryMapping em = entryMapping(keyTypeId(key), key);
 
         if (log.isDebugEnabled())
-            log.debug("Start write entry to database: " + entry);
+            log.debug("Start write entry to database [table=" + em.fullTableName() + ", entry=" + entry + "]");
 
         Connection conn = null;
 
@@ -710,7 +738,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
             }
         }
         catch (SQLException e) {
-            throw new CacheWriterException("Failed to write entry to database: " + entry, e);
+            throw new CacheWriterException("Failed to write entry to database [table=" + em.fullTableName() +
+                ", entry=" + entry + "]", e);
         }
         finally {
             closeConnection(conn);
@@ -733,6 +762,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
                 PreparedStatement mergeStmt = null;
 
                 try {
+                    EntryMapping em = null;
+
                     LazyValue<Object[]> lazyEntries = new LazyValue<Object[]>() {
                         @Override public Object[] create() {
                             return entries.toArray();
@@ -746,11 +777,11 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
 
                         Object keyTypeId = keyTypeId(key);
 
-                        EntryMapping em = entryMapping(keyTypeId, key);
+                        em = entryMapping(keyTypeId, key);
 
                         if (currKeyTypeId == null || !currKeyTypeId.equals(keyTypeId)) {
                             if (mergeStmt != null) {
-                                executeBatch(mergeStmt, "writeAll", fromIdx, prepared, lazyEntries);
+                                executeBatch(em, mergeStmt, "writeAll", fromIdx, prepared, lazyEntries);
 
                                 U.closeQuiet(mergeStmt);
                             }
@@ -769,14 +800,14 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
                         mergeStmt.addBatch();
 
                         if (++prepared % batchSz == 0) {
-                            executeBatch(mergeStmt, "writeAll", fromIdx, prepared, lazyEntries);
+                            executeBatch(em, mergeStmt, "writeAll", fromIdx, prepared, lazyEntries);
 
                             prepared = 0;
                         }
                     }
 
                     if (mergeStmt != null && prepared % batchSz != 0)
-                        executeBatch(mergeStmt, "writeAll", fromIdx, prepared, lazyEntries);
+                        executeBatch(em, mergeStmt, "writeAll", fromIdx, prepared, lazyEntries);
                 }
                 finally {
                     U.closeQuiet(mergeStmt);
@@ -832,7 +863,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
         EntryMapping em = entryMapping(keyTypeId(key), key);
 
         if (log.isDebugEnabled())
-            log.debug("Start remove value from database by key: " + key);
+            log.debug("Start remove value from database [table=" + em.fullTableName() + ", key=" + key + "]");
 
         Connection conn = null;
 
@@ -845,11 +876,15 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
 
             fillKeyParameters(stmt, em, key);
 
-            if (stmt.executeUpdate() == 0)
-                log.warning("Nothing was deleted in database for key: " + key);
+            int delCnt = stmt.executeUpdate();
+
+            if (delCnt != 1)
+                U.warn(log, "Unexpected number of deleted entries [table=" + em.fullTableName() + ", key=" + key +
+                    "expected=1, actual=" + delCnt + "]");
         }
         catch (SQLException e) {
-            throw new CacheWriterException("Failed to remove value from database by key: " + key, e);
+            throw new CacheWriterException("Failed to remove value from database [table=" + em.fullTableName() +
+                ", key=" + key + "]", e);
         }
         finally {
             end(conn, stmt);
@@ -857,28 +892,33 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
     }
 
     /**
+     * @param em Entry mapping.
      * @param stmt Statement.
-     * @param stmtType Statement description for error message.
+     * @param desc Statement description for error message.
      * @param fromIdx Objects in batch start from index.
      * @param prepared Expected objects in batch.
      * @param lazyObjs All objects used in batch statement as array.
      */
-    private void executeBatch(Statement stmt, String stmtType, int fromIdx, int prepared, LazyValue<Object[]> lazyObjs)
-        throws SQLException {
+    private void executeBatch(EntryMapping em, Statement stmt, String desc, int fromIdx, int prepared,
+        LazyValue<Object[]> lazyObjs) throws SQLException {
         int[] rowCounts = stmt.executeBatch();
 
         int numOfRowCnt = rowCounts.length;
 
         if (numOfRowCnt != prepared)
-            log.warning("JDBC driver did not return the expected number of updated row counts," +
-                " actual row count: " + numOfRowCnt + " expected: " + prepared);
+            U.warn(log, "Unexpected number of updated rows [table=" + em.fullTableName() +", expected=" + prepared +
+                ", actual=" + numOfRowCnt + "]");
 
-        for (int i = 0; i < numOfRowCnt; i++)
-            if (rowCounts[i] != 1) {
+        for (int i = 0; i < numOfRowCnt; i++) {
+            int cnt = rowCounts[i];
+
+            if (cnt != 1) {
                 Object[] objs = lazyObjs.value();
 
-                log.warning("Batch " + stmtType + " returned unexpected updated row count for: " + objs[fromIdx + i]);
+                U.warn(log, "Batch " + desc + " returned unexpected updated row count [table=" + em.fullTableName() +
+                    ", entry=" + objs[fromIdx + i] + ", expected=1, actual=" + cnt + "]");
             }
+        }
     }
 
     /** {@inheritDoc} */
@@ -891,6 +931,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
             conn = connection();
 
             Object currKeyTypeId  = null;
+
+            EntryMapping em = null;
 
             PreparedStatement delStmt = null;
 
@@ -905,7 +947,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
             for (Object key : keys) {
                 Object keyTypeId = keyTypeId(key);
 
-                EntryMapping em = entryMapping(keyTypeId, key);
+                em = entryMapping(keyTypeId, key);
 
                 if (delStmt == null) {
                     delStmt = conn.prepareStatement(em.remQry);
@@ -914,7 +956,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
                 }
 
                 if (!currKeyTypeId.equals(keyTypeId)) {
-                    executeBatch(delStmt, "deleteAll", fromIdx, prepared, lazyKeys);
+                    executeBatch(em, delStmt, "deleteAll", fromIdx, prepared, lazyKeys);
 
                     fromIdx += prepared;
 
@@ -928,7 +970,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
                 delStmt.addBatch();
 
                 if (++prepared % batchSz == 0) {
-                    executeBatch(delStmt, "deleteAll", fromIdx, prepared, lazyKeys);
+                    executeBatch(em, delStmt, "deleteAll", fromIdx, prepared, lazyKeys);
 
                     fromIdx += prepared;
 
@@ -937,7 +979,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
             }
 
             if (delStmt != null && prepared % batchSz != 0)
-                executeBatch(delStmt, "deleteAll", fromIdx, prepared, lazyKeys);
+                executeBatch(em, delStmt, "deleteAll", fromIdx, prepared, lazyKeys);
         }
         catch (SQLException e) {
             throw new CacheWriterException("Failed to remove values from database", e);
@@ -950,23 +992,23 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
     /**
      * @param stmt Prepare statement.
      * @param i Start index for parameters.
-     * @param type Type description.
+     * @param em Entry mapping.
      * @param key Key object.
      * @return Next index for parameters.
      */
-    protected int fillKeyParameters(PreparedStatement stmt, int i, EntryMapping type,
+    protected int fillKeyParameters(PreparedStatement stmt, int i, EntryMapping em,
         Object key) throws CacheException {
-        for (CacheTypeFieldMetadata field : type.keyColumns()) {
-            Object fieldVal = extractField(type.keyType(), field.getJavaName(), key);
+        for (CacheTypeFieldMetadata field : em.keyColumns()) {
+            Object fieldVal = extractField(em.keyType(), field.getJavaName(), key);
 
             try {
                 if (fieldVal != null)
                     stmt.setObject(i++, fieldVal);
                 else
-                    stmt.setNull(i++, field.getDbType());
+                    stmt.setNull(i++, field.getDatabaseType());
             }
             catch (SQLException e) {
-                throw new CacheException("Failed to set statement parameter name: " + field.getDbName(), e);
+                throw new CacheException("Failed to set statement parameter name: " + field.getDatabaseName(), e);
             }
         }
 
@@ -999,10 +1041,10 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
                 if (fieldVal != null)
                     stmt.setObject(i++, fieldVal);
                 else
-                    stmt.setNull(i++, field.getDbType());
+                    stmt.setNull(i++, field.getDatabaseType());
             }
             catch (SQLException e) {
-                throw new CacheWriterException("Failed to set statement parameter name: " + field.getDbName(), e);
+                throw new CacheWriterException("Failed to set statement parameter name: " + field.getDatabaseName(), e);
             }
         }
 
@@ -1141,6 +1183,9 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
         /** Type metadata. */
         private final CacheTypeMetadata typeMeta;
 
+        /** Full table name. */
+        private final String fullTblName;
+
         /**
          * @param typeMeta Type metadata.
          */
@@ -1162,6 +1207,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
             String schema = typeMeta.getDatabaseSchema();
 
             String tblName = typeMeta.getDatabaseTable();
+
+            fullTblName = schema + "." + tblName;
 
             keyCols = databaseColumns(keyFields);
 
@@ -1199,7 +1246,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
             return F.transform(dsc, new C1<CacheTypeFieldMetadata, String>() {
                 /** {@inheritDoc} */
                 @Override public String apply(CacheTypeFieldMetadata col) {
-                    return col.getDbName();
+                    return col.getDatabaseName();
                 }
             });
         }
@@ -1258,6 +1305,15 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
          */
         protected Collection<CacheTypeFieldMetadata> valueColumns() {
             return typeMeta.getValueFields();
+        }
+
+        /**
+         * Get full table name.
+         *
+         * @return &lt;schema&gt;.&lt;table name&gt
+         */
+        protected String fullTableName() {
+            return fullTblName;
         }
     }
 
@@ -1389,7 +1445,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
                         if (fieldVal != null)
                             stmt.setObject(i++, fieldVal);
                         else
-                            stmt.setNull(i++, field.getDbType());
+                            stmt.setNull(i++, field.getDatabaseType());
                     }
 
                 ResultSet rs = stmt.executeQuery();

@@ -606,7 +606,6 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        Class.forName("org.h2.Driver");
         Connection conn = DriverManager.getConnection(DFLT_CONN_URL, "sa", "");
 
         Statement stmt = conn.createStatement();

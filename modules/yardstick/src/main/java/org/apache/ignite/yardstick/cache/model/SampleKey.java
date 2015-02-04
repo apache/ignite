@@ -20,21 +20,21 @@ package org.apache.ignite.yardstick.cache.model;
 import java.io.*;
 
 /**
- * Entity class for benchmark.
+ * Key class for benchmark.
  */
-public class SampleValue implements Externalizable {
+public class SampleKey implements Externalizable {
     /** */
     private int id;
 
     /** */
-    public SampleValue() {
+    public SampleKey() {
         // No-op.
     }
 
     /**
      * @param id Id.
      */
-    public SampleValue(int id) {
+    public SampleKey(int id) {
         this.id = id;
     }
 
@@ -63,7 +63,26 @@ public class SampleValue implements Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        SampleKey key = (SampleKey)o;
+
+        return id == key.id;
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return id;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
-        return "Value [id=" + id + ']';
+        return "Key [id=" + id + ']';
     }
 }

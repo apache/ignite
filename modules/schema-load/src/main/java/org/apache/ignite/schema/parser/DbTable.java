@@ -32,17 +32,33 @@ public class DbTable {
     /** Columns. */
     private final Collection<DbColumn> cols;
 
+    /** Columns in ascending order. */
+    private final Set<String> ascCols;
+
+    /** Columns in descending order. */
+    private final Set<String> descCols;
+
+    /** Indexes. */
+    private final Map<String, Map<String, Boolean>> idxs;
+
     /**
      * Default columns.
      *
      * @param schema Schema name.
      * @param tbl Table name.
      * @param cols Columns.
+     * @param ascCols Columns in ascending order.
+     * @param descCols Columns in descending order.
+     * @param idxs Indexes;
      */
-    public DbTable(String schema, String tbl, Collection<DbColumn> cols) {
+    public DbTable(String schema, String tbl, Collection<DbColumn> cols, Set<String> ascCols, Set<String> descCols,
+        Map<String, Map<String, Boolean>> idxs) {
         this.schema = schema;
         this.tbl = tbl;
         this.cols = cols;
+        this.ascCols = ascCols;
+        this.descCols = descCols;
+        this.idxs = idxs;
     }
 
     /**
@@ -64,5 +80,26 @@ public class DbTable {
      */
     public Collection<DbColumn> columns() {
         return cols;
+    }
+
+    /**
+     * @return Fields in ascending order
+     */
+    public Set<String> ascendingColumns() {
+        return ascCols;
+    }
+
+    /**
+     * @return Fields in descending order
+     */
+    public Set<String> descendingColumns() {
+        return descCols;
+    }
+
+    /**
+     * @return Indexes.
+     */
+    public Map<String, Map<String, Boolean>> indexes() {
+        return idxs;
     }
 }
