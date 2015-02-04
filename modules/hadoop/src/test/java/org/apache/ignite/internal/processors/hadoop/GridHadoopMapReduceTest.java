@@ -184,12 +184,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                try {
-                    return ggfs.exists(statPath);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
+                return ggfs.exists(statPath);
             }
         }, 10000);
 

@@ -23,6 +23,7 @@ import org.apache.hadoop.mapreduce.OutputCommitter;
 import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.hadoop.*;
+import org.apache.ignite.internal.*;
 
 import java.io.*;
 
@@ -66,7 +67,7 @@ public class GridHadoopV2CleanupTask extends GridHadoopV2Task {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 }

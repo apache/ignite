@@ -24,24 +24,23 @@ import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 
 /**
@@ -258,7 +257,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
             info(">>> Finished checking nodes [keyCnt=" + keyCnt + ", nodeCnt=" + nodeCnt + ", grids=" +
                 U.grids2names(ignites) + ']');
 
-            Collection<IgniteInternalFuture<?>> futs = new LinkedList<>();
+            Collection<IgniteFuture<?>> futs = new LinkedList<>();
 
             Ignite last = F.last(ignites);
 
@@ -298,7 +297,11 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                 checkActiveState(ignites);
             }
 
-            info("Waiting for preload futures: " + F.view(futs, F.unfinishedFutures()));
+            info("Waiting for preload futures: " + F.view(futs, new IgnitePredicate<IgniteFuture<?>>() {
+                @Override public boolean apply(IgniteFuture<?> fut) {
+                    return !fut.isDone();
+                }
+            }));
 
             X.waitAll(futs);
 
@@ -537,7 +540,7 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 it.remove();
 
-                Collection<IgniteInternalFuture<?>> futs = new LinkedList<>();
+                Collection<IgniteFuture<?>> futs = new LinkedList<>();
 
                 for (Ignite gg : ignites)
                     futs.add(waitForLocalEvent(gg.events(), new P1<IgniteEvent>() {

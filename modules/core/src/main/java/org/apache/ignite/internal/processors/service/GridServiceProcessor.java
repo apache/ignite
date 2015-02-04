@@ -19,25 +19,26 @@ package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.query.continuous.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.managed.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.thread.*;
-import org.apache.ignite.transactions.*;
-import org.apache.ignite.cache.query.CacheContinuousQueryEntry;
-import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.processors.cache.query.continuous.*;
-import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -47,9 +48,9 @@ import java.util.concurrent.*;
 import static java.util.Map.*;
 import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
  * Grid service processor.
@@ -389,12 +390,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 return fut;
             }
-            catch (ClusterTopologyException e) {
+            catch (ClusterTopologyCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
             }
             catch (IgniteCheckedException e) {
-                if (e.hasCause(ClusterTopologyException.class)) {
+                if (e.hasCause(ClusterTopologyCheckedException.class)) {
                     if (log.isDebugEnabled())
                         log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
 
@@ -434,7 +435,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 return fut;
             }
-            catch (ClusterTopologyException e) {
+            catch (ClusterTopologyCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
             }
@@ -552,11 +553,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param sticky Whether multi-node request should be done.
      * @param <T> Service interface type.
      * @return The proxy of a service by its name and class.
+     * @throws IgniteException If failed to create proxy.
      */
     @SuppressWarnings("unchecked")
     public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> svcItf, boolean sticky)
         throws IgniteException {
-
         if (hasLocalNode(prj)) {
             ManagedServiceContextImpl ctx = serviceContext(name);
 
@@ -627,7 +628,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         Object affKey = cfg.getAffinityKey();
 
         while (true) {
-            try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                 GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(cfg.getName());
 
                 GridServiceAssignments oldAssigns = (GridServiceAssignments)cache.get(key);
@@ -735,7 +736,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 break;
             }
-            catch (ClusterTopologyException e) {
+            catch (ClusterTopologyCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Topology changed while reassigning (will retry): " + e.getMessage());
 
@@ -815,14 +816,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             try {
                                 cp.execute(svcCtx);
                             }
-                            catch (InterruptedException | IgniteInterruptedException ignore) {
+                            catch (InterruptedException | IgniteInterruptedCheckedException ignore) {
                                 if (log.isDebugEnabled())
                                     log.debug("Service thread was interrupted [name=" + svcCtx.name() + ", execId=" +
                                         svcCtx.executionId() + ']');
                             }
                             catch (IgniteException e) {
                                 if (e.hasCause(InterruptedException.class) ||
-                                    e.hasCause(IgniteInterruptedException.class)) {
+                                    e.hasCause(IgniteInterruptedCheckedException.class)) {
                                     if (log.isDebugEnabled())
                                         log.debug("Service thread was interrupted [name=" + svcCtx.name() +
                                             ", execId=" + svcCtx.executionId() + ']');
@@ -1008,7 +1009,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     reassign(dep, topVer);
             }
             catch (IgniteCheckedException e) {
-                if (!(e instanceof ClusterTopologyException))
+                if (!(e instanceof ClusterTopologyCheckedException))
                     log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
 
                 long newTopVer = ctx.discovery().topologyVersion();
@@ -1088,7 +1089,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                         reassign(dep, topVer);
                                     }
                                     catch (IgniteCheckedException ex) {
-                                        if (!(e instanceof ClusterTopologyException))
+                                        if (!(e instanceof ClusterTopologyCheckedException))
                                             LT.error(log, ex, "Failed to do service reassignment (will retry): " +
                                                 dep.configuration().getName());
 
@@ -1158,7 +1159,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         it.remove();
                     }
                     catch (IgniteCheckedException e) {
-                        if (!(e instanceof ClusterTopologyException))
+                        if (!(e instanceof ClusterTopologyCheckedException))
                             LT.error(log, e, "Failed to do service reassignment (will retry): " +
                                 dep.configuration().getName());
                     }

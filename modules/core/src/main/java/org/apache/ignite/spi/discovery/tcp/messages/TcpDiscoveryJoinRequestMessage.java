@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.discovery.tcp.internal.*;
 
 import java.io.*;
 import java.util.*;

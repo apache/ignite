@@ -111,7 +111,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
             try {
                 ignite1.compute().execute(GridTestMultipleSpisTask.class.getName(), ignite1.cluster().localNode().id());
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 e.printStackTrace();
 
                 assert false : "Unexpected exception.";
@@ -175,7 +175,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public ClusterNode getBalancedNode(ComputeTaskSession ses, List<ClusterNode> top,
-            ComputeJob job) throws IgniteCheckedException {
+            ComputeJob job) {
             if (getName().equals(expName))
                 isTaskLoadBalancingCalled = true;
             else
@@ -237,7 +237,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) {
             assert subgrid.size() == 2;
             assert taskSes != null;
             assert ignite != null;
@@ -251,7 +251,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res,
-            List<ComputeJobResult> received) throws IgniteCheckedException {
+            List<ComputeJobResult> received) {
             if (res.getException() != null)
                 return ComputeJobResultPolicy.FAILOVER;
 
@@ -284,14 +284,14 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public UUID execute() throws IgniteCheckedException {
+        @Override public UUID execute() throws IgniteException {
             assert ignite != null;
             assert jobSes != null;
             assert argument(0) != null;
 
             // Should always fail on task originating node and work on another one.
             if (ignite.configuration().getNodeId().equals(argument(0)))
-                throw new IgniteCheckedException("Expected exception to failover job.");
+                throw new IgniteException("Expected exception to failover job.");
 
             // Use checkpoint on job side. This will happen on remote node.
             jobSes.loadCheckpoint("test");

@@ -19,11 +19,11 @@ package org.apache.ignite.streamer.index;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.streamer.index.hash.*;
 import org.apache.ignite.streamer.index.tree.*;
 import org.apache.ignite.streamer.window.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -93,7 +93,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
             fail("Exception should have been thrown.");
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -261,7 +261,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
                     try {
                         win.enqueue(evt);
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         if (e.getMessage().contains("Index unique key violation"))
                             nIdxErrors.incrementAndGet();
                         else
@@ -319,7 +319,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
                                 U.sleep(50);
                         }
                     }
-                    catch (IgniteInterruptedException ignored) {
+                    catch (IgniteInterruptedCheckedException ignored) {
                         // No-op.
                     }
                 }
@@ -532,7 +532,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
                 fail("Exception should have been thrown.");
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 info("Caught expected exception: " + e);
             }
         }
@@ -675,9 +675,8 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String onAdded(StreamerIndexEntry<String, String, String> entry, String evt)
-            throws IgniteCheckedException {
-            throw new IgniteCheckedException("Unique key violation: " + evt);
+        @Nullable @Override public String onAdded(StreamerIndexEntry<String, String, String> entry, String evt) {
+            throw new IgniteException("Unique key violation: " + evt);
         }
 
         /** {@inheritDoc} */

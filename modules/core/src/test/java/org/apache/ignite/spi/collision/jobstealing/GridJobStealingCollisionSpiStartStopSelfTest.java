@@ -17,11 +17,12 @@
 
 package org.apache.ignite.spi.collision.jobstealing;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.failover.jobstealing.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.spi.*;
+
 import java.util.*;
 
 import static org.apache.ignite.internal.GridNodeAttributes.*;

@@ -18,8 +18,8 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.processors.license.*;
+import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;

@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
 /**
  * This exception is used to indicate error with grid topology (e.g., crashed node, etc.).
  */
-public class ClusterTopologyException extends IgniteCheckedException {
+public class ClusterTopologyException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 

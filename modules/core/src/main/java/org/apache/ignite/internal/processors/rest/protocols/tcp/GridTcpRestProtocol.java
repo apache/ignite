@@ -18,15 +18,12 @@
 package org.apache.ignite.internal.processors.rest.protocols.tcp;
 
 import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.client.marshaller.*;
 import org.apache.ignite.client.marshaller.jdk.*;
 import org.apache.ignite.client.marshaller.optimized.*;
 import org.apache.ignite.client.ssl.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.processors.rest.protocols.*;
@@ -34,6 +31,9 @@ import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.nio.ssl.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.marshaller.jdk.*;
+import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;

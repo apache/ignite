@@ -309,9 +309,9 @@ public interface Ignite extends AutoCloseable {
      * The method is invoked automatically on objects managed by the
      * {@code try-with-resources} statement.
      *
-     * @throws IgniteCheckedException If failed to stop grid.
+     * @throws IgniteException If failed to stop grid.
      */
-    @Override public void close() throws IgniteCheckedException;
+    @Override public void close() throws IgniteException;
 
     /**
      * Gets affinity service to provide information about data partitioning

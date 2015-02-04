@@ -135,7 +135,7 @@ if %ENABLE_ASSERTIONS% == 1 set JVM_OPTS_VISOR=%JVM_OPTS_VISOR% -ea
 ::
 "%JAVA_HOME%\bin\java.exe" %JVM_OPTS_VISOR% -DIGNITE_PROG_NAME="%PROG_NAME%" ^
 -DIGNITE_DEPLOYMENT_MODE_OVERRIDE=ISOLATED %QUIET% %JVM_XOPTS% -cp "%CP%" ^
- org.gridgain.visor.commands.VisorConsole
+ org.apache.ignite.visor.commands.VisorConsole
 
 :error_finish
 

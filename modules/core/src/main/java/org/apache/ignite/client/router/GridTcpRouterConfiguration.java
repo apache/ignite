@@ -18,10 +18,10 @@
 package org.apache.ignite.client.router;
 
 import org.apache.ignite.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.client.ssl.*;
-import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;

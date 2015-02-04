@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.util.typedef;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -490,42 +490,6 @@ public final class X {
     }
 
     /**
-     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy
-     * <b>excluding</b> that throwable itself.
-     * <p>
-     * Note that this method follows includes {@link Throwable#getSuppressed()}
-     * into check.
-     *
-     * @param t Throwable to check (if {@code null}, {@code false} is returned).
-     * @param cls Cause classes to check (if {@code null} or empty, {@code false} is returned).
-     * @return {@code True} if one of the causing exception is an instance of passed in classes,
-     *      {@code false} otherwise.
-     */
-    public static boolean hasCauseExcludeRoot(@Nullable Throwable t, @Nullable Class<? extends Throwable>... cls) {
-        if (t == null || F.isEmpty(cls))
-            return false;
-
-        assert cls != null;
-
-        for (Throwable th = t.getCause(); th != null; th = th.getCause()) {
-            for (Class<? extends Throwable> c : cls) {
-                if (c.isAssignableFrom(th.getClass()))
-                    return true;
-            }
-
-            if (th.getCause() == th)
-                break;
-        }
-
-        for (Throwable n : t.getSuppressed()) {
-            if (hasCause(n, cls))
-                return true;
-        }
-
-        return false;
-    }
-
-    /**
      * Gets first cause if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy.
      * <p>
      * Note that this method follows includes {@link Throwable#getSuppressed()}
@@ -821,11 +785,11 @@ public final class X {
      * @param futs Futures to wait for.
      * @throws IgniteCheckedException If any of the futures threw exception.
      */
-    public static void waitAll(@Nullable Iterable<IgniteInternalFuture<?>> futs) throws IgniteCheckedException {
+    public static void waitAll(@Nullable Iterable<IgniteFuture<?>> futs) throws IgniteCheckedException {
         if (F.isEmpty(futs))
             return;
 
-        for (IgniteInternalFuture fut : futs)
+        for (IgniteFuture fut : futs)
             fut.get();
     }
 

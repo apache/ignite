@@ -23,7 +23,7 @@ import org.apache.ignite.scalar.scalar._
 import scala.math._
 
 /**
- * This example calculates Pi number in parallel on the grid. Note that these few
+ * This example calculates Pi number in parallel on the ignite cluster. Note that these few
  * lines of code work on one node, two nodes or hundreds of nodes without any changes
  * or any explicit deployment.
  * <p>
@@ -36,9 +36,9 @@ object ScalarPiCalculationExample {
 
     def main(args: Array[String]) {
         scalar("examples/config/example-compute.xml") {
-            val jobs = for (i <- 0 until grid$.cluster().nodes().size()) yield () => calcPi(i * N)
+            val jobs = for (i <- 0 until ignite$.cluster().nodes().size()) yield () => calcPi(i * N)
 
-            println("Pi estimate: " + grid$.reduce$[Double, Double](jobs, _.sum, null))
+            println("Pi estimate: " + ignite$.reduce$[Double, Double](jobs, _.sum, null))
         }
     }
 

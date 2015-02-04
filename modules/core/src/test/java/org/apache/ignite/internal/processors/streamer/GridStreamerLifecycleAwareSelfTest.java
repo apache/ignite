@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.streamer;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.streamer.index.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 

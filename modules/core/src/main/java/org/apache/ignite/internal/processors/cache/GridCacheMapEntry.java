@@ -18,21 +18,22 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.extras.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.dr.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
@@ -44,10 +45,10 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
-import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 
 /**
  * Adapter for cache entry.
@@ -618,13 +619,13 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Nullable protected V readThrough(@Nullable IgniteTxEx<K, V> tx, K key, boolean reload,
+    @Nullable protected V readThrough(@Nullable IgniteInternalTx<K, V> tx, K key, boolean reload,
         IgnitePredicate<CacheEntry<K, V>>[] filter, UUID subjId, String taskName) throws IgniteCheckedException {
         return cctx.store().loadFromStore(tx, key);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public final V innerGet(@Nullable IgniteTxEx<K, V> tx,
+    @Nullable @Override public final V innerGet(@Nullable IgniteInternalTx<K, V> tx,
         boolean readSwap,
         boolean readThrough,
         boolean failFast,
@@ -657,7 +658,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantTypeArguments", "TooBroadScope"})
-    private V innerGet0(IgniteTxEx<K, V> tx,
+    private V innerGet0(IgniteInternalTx<K, V> tx,
         boolean readSwap,
         boolean readThrough,
         boolean evt,
@@ -853,7 +854,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         boolean loadedFromStore = false;
 
         if (ret == null && readThrough) {
-            IgniteTxEx tx0 = null;
+            IgniteInternalTx tx0 = null;
 
             if (tx != null && tx.local()) {
                 if (cctx.isReplicated() || cctx.isColocated() || tx.near())
@@ -1036,7 +1037,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @Override public final GridCacheUpdateTxResult<V> innerSet(
-        @Nullable IgniteTxEx<K, V> tx,
+        @Nullable IgniteInternalTx<K, V> tx,
         UUID evtNodeId,
         UUID affNodeId,
         V val,
@@ -1190,7 +1191,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @Override public final GridCacheUpdateTxResult<V> innerRemove(
-        @Nullable IgniteTxEx<K, V> tx,
+        @Nullable IgniteInternalTx<K, V> tx,
         UUID evtNodeId,
         UUID affNodeId,
         boolean writeThrough,
@@ -2740,7 +2741,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable @Override public GridTuple<V> peek0(boolean failFast, GridCachePeekMode mode,
-        IgnitePredicate<CacheEntry<K, V>>[] filter, @Nullable IgniteTxEx<K, V> tx)
+        IgnitePredicate<CacheEntry<K, V>>[] filter, @Nullable IgniteInternalTx<K, V> tx)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException {
         assert tx == null || tx.local();
 
@@ -2831,7 +2832,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @throws GridCacheEntryRemovedException If entry is obsolete.
      * @throws IgniteCheckedException If entry was externally locked.
      */
-    private void groupLockSanityCheck(IgniteTxEx<K, V> tx) throws GridCacheEntryRemovedException, IgniteCheckedException {
+    private void groupLockSanityCheck(IgniteInternalTx<K, V> tx) throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert tx.groupLock();
 
         IgniteTxEntry<K, V> txEntry = tx.entry(txKey());
@@ -2853,7 +2854,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @throws IgniteCheckedException If unexpected cache failure occurred.
      */
     @Nullable private GridTuple<V> peekTxThenGlobal(boolean failFast, IgnitePredicate<CacheEntry<K, V>>[] filter,
-        IgniteTxEx<K, V> tx) throws GridCacheFilterFailedException, GridCacheEntryRemovedException, IgniteCheckedException {
+        IgniteInternalTx<K, V> tx) throws GridCacheFilterFailedException, GridCacheEntryRemovedException, IgniteCheckedException {
         GridTuple<V> peek = peekTx(failFast, filter, tx);
 
         // If transaction has value (possibly null, which means value is to be deleted).
@@ -2874,7 +2875,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      */
     @Nullable private GridTuple<V> peekTx(boolean failFast,
         IgnitePredicate<CacheEntry<K, V>>[] filter,
-        @Nullable IgniteTxEx<K, V> tx) throws GridCacheFilterFailedException {
+        @Nullable IgniteInternalTx<K, V> tx) throws GridCacheFilterFailedException {
         return tx == null ? null : tx.peek(cctx, failFast, key, filter);
     }
 
@@ -3065,14 +3066,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Override public boolean initialValue(V val,
+    @Override public boolean initialValue(
+        V val,
         byte[] valBytes,
         GridCacheVersion ver,
         long ttl,
         long expireTime,
         boolean preload,
         long topVer,
-        GridDrType drType) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        GridDrType drType)
+        throws IgniteCheckedException, GridCacheEntryRemovedException {
         if (cctx.isUnmarshalValues() && valBytes != null && val == null && isNewLocked())
             val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
 
@@ -3874,7 +3877,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             return false;
         }
 
-        IgniteTxEx<K, V> tx = cctx.tm().localTxx();
+        IgniteInternalTx<K, V> tx = cctx.tm().localTxx();
 
         return tx == null || !tx.removed(txKey());
     }

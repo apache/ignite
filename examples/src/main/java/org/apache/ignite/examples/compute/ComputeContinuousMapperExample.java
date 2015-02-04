@@ -30,10 +30,10 @@ import java.util.concurrent.atomic.*;
 /**
  * Demonstrates usage of continuous mapper. With continuous mapper
  * it is possible to continue mapping jobs asynchronously even after
- * initial {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method completes.
+ * initial {@link ComputeTask#map(List, Object)} method completes.
  * <p>
  * String "Hello Continuous Mapper" is passed as an argument for execution
- * of {@link GridContinuousMapperTask}. As an outcome, participating
+ * of {@link ContinuousMapperTask}. As an outcome, participating
  * nodes will print out a single word from the passed in string and return
  * number of characters in that word. However, to demonstrate continuous
  * mapping, next word will be mapped to a node only after the result from
@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.*;
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-compute.xml} configuration.
  */
 public class ComputeContinuousMapperExample {
@@ -50,14 +50,14 @@ public class ComputeContinuousMapperExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) throws IgniteException {
         System.out.println();
         System.out.println(">>> Compute continuous mapper example started.");
 
-        try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
-            int phraseLen = g.compute().execute(GridContinuousMapperTask.class, "Hello Continuous Mapper");
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
+            int phraseLen = ignite.compute().execute(ContinuousMapperTask.class, "Hello Continuous Mapper");
 
             System.out.println();
             System.out.println(">>> Total number of characters in the phrase is '" + phraseLen + "'.");
@@ -69,13 +69,13 @@ public class ComputeContinuousMapperExample {
      * is split into multiple words and next word is sent out for processing only
      * when the result for the previous word was received.
      * <p>
-     * Note that annotation {@link org.apache.ignite.compute.ComputeTaskNoResultCache} is optional and tells GridGain
+     * Note that annotation {@link ComputeTaskNoResultCache} is optional and tells Ignite
      * not to accumulate results from individual jobs. In this example we increment
-     * total character count directly in {@link #result(org.apache.ignite.compute.ComputeJobResult, List)} method,
+     * total character count directly in {@link #result(ComputeJobResult, List)} method,
      * and therefore don't need to accumulate them be be processed at reduction step.
      */
     @ComputeTaskNoResultCache
-    private static class GridContinuousMapperTask extends ComputeTaskAdapter<String, Integer> {
+    private static class ContinuousMapperTask extends ComputeTaskAdapter<String, Integer> {
         /** This field will be injected with task continuous mapper. */
         @IgniteTaskContinuousMapperResource
         private ComputeTaskContinuousMapper mapper;
@@ -87,10 +87,9 @@ public class ComputeContinuousMapperExample {
         private final AtomicInteger totalChrCnt = new AtomicInteger(0);
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> grid, String phrase)
-            throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> nodes, String phrase) {
             if (phrase == null || phrase.isEmpty())
-                throw new IgniteCheckedException("Phrase is empty.");
+                throw new IgniteException("Phrase is empty.");
 
             // Populate word queue.
             Collections.addAll(words, phrase.split(" "));
@@ -104,8 +103,7 @@ public class ComputeContinuousMapperExample {
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
-            throws IgniteCheckedException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
             // If there is an error, fail-over to another node.
             if (res.getException() != null)
                 return super.result(res, rcvd);
@@ -120,16 +118,14 @@ public class ComputeContinuousMapperExample {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             return totalChrCnt.get();
         }
 
         /**
          * Sends next queued word to the next node implicitly selected by load balancer.
-         *
-         * @throws IgniteCheckedException If sending of a word failed.
          */
-        private void sendWord() throws IgniteCheckedException {
+        private void sendWord() {
             // Remove first word from the queue.
             String word = words.poll();
 
@@ -140,7 +136,7 @@ public class ComputeContinuousMapperExample {
                         String word = argument(0);
 
                         System.out.println();
-                        System.out.println(">>> Printing '" + word + "' from grid job at time: " + new Date());
+                        System.out.println(">>> Printing '" + word + "' from ignite job at time: " + new Date());
 
                         int cnt = word.length();
 

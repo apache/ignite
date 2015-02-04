@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.streamer.task;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.processors.closure.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.streamer.*;
-import org.apache.ignite.internal.processors.closure.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -55,8 +55,7 @@ public class GridStreamerBroadcastTask extends GridPeerDeployAwareTaskAdapter<Vo
     }
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg)
-        throws IgniteCheckedException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
         Map<ComputeJob, ClusterNode> res = U.newHashMap(subgrid.size());
 
         for (ClusterNode node : subgrid)
@@ -66,12 +65,12 @@ public class GridStreamerBroadcastTask extends GridPeerDeployAwareTaskAdapter<Vo
     }
 
     /** {@inheritDoc} */
-    @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Void reduce(List<ComputeJobResult> results) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         // No failover.
         if (res.getException() != null)
             throw res.getException();
@@ -113,7 +112,7 @@ public class GridStreamerBroadcastTask extends GridPeerDeployAwareTaskAdapter<Vo
         }
 
         /** {@inheritDoc} */
-        @Override public Object execute() throws IgniteCheckedException {
+        @Override public Object execute() {
             IgniteStreamer s = g.streamer(streamer);
 
             assert s != null;

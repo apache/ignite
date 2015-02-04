@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.security;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.security.*;
 
 import java.io.*;
@@ -53,13 +54,23 @@ public class GridSecurityImpl implements GridSecurity, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridSecuritySubject> authenticatedSubjects() throws IgniteCheckedException {
-        return secMgr.authenticatedSubjects();
+    @Override public Collection<GridSecuritySubject> authenticatedSubjects() throws IgniteException {
+        try {
+            return secMgr.authenticatedSubjects();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException {
-        return secMgr.authenticatedSubject(subjId);
+    @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws IgniteException {
+        try {
+            return secMgr.authenticatedSubject(subjId);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */

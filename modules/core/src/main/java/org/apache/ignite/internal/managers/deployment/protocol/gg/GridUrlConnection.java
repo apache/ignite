@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.managers.deployment.protocol.gg;
 
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.lang.*;
 
 import java.io.*;
 import java.net.*;

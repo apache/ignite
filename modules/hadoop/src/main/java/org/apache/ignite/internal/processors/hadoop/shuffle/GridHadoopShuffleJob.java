@@ -411,7 +411,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
                 snd.join();
             }
             catch (InterruptedException e) {
-                throw new IgniteInterruptedException(e);
+                throw new IgniteInterruptedCheckedException(e);
             }
         }
 
@@ -460,7 +460,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
                     log.debug("Finished waiting for sending thread to complete on shuffle job flush: " + job.id());
             }
             catch (InterruptedException e) {
-                throw new IgniteInterruptedException(e);
+                throw new IgniteInterruptedCheckedException(e);
             }
         }
 

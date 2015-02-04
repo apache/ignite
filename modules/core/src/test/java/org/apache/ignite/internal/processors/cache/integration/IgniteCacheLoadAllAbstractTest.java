@@ -24,7 +24,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.jdk8.backport.*;
 
-import javax.cache.Cache;
+import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import java.util.*;

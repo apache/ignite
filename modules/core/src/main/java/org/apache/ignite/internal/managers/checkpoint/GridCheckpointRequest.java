@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.managers.checkpoint;
 
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 import java.io.*;
 import java.nio.*;

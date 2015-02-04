@@ -20,10 +20,10 @@ package org.apache.ignite.session;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -127,7 +127,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) {
             if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
 
@@ -136,7 +136,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
             for (int i = 1; i <= SPLIT_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
                     @SuppressWarnings({"UnconditionalWait"})
-                    public Serializable execute() throws IgniteCheckedException {
+                    public Serializable execute() {
                         assert taskSes != null;
 
                         if (log.isInfoEnabled())
@@ -165,7 +165,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
                             return lsnr.getAttributes().size() == 0 ? 0 : 1;
                         }
                         catch (InterruptedException e) {
-                            throw new IgniteCheckedException("Failed to wait for listener due to interruption.", e);
+                            throw new IgniteException("Failed to wait for listener due to interruption.", e);
                         }
                     }
                 });
@@ -175,7 +175,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received) throws IgniteCheckedException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received) {
             if (result.getException() != null)
                 throw result.getException();
 
@@ -183,7 +183,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
 

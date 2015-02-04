@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 
 import javax.cache.processor.*;
@@ -31,7 +30,7 @@ import java.util.concurrent.*;
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheApiExample {
     /** Cache name. */
@@ -41,21 +40,18 @@ public class CacheApiExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
-        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
+    public static void main(String[] args) throws IgniteException {
+        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache API example started.");
 
             // Clean up caches on all nodes before run.
-            g.cache(CACHE_NAME).globalClearAll(0);
+            ignite.jcache(CACHE_NAME).clear();
 
             // Demonstrate atomic map operations.
             atomicMapOperations();
-
-            // Demonstrate various ways to iterate over locally cached values.
-            localIterators();
         }
     }
 
@@ -63,13 +59,13 @@ public class CacheApiExample {
      * Demonstrates cache operations similar to {@link ConcurrentMap} API. Note that
      * cache API is a lot richer than the JDK {@link ConcurrentMap}.
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void atomicMapOperations() throws IgniteCheckedException {
+    private static void atomicMapOperations() throws IgniteException {
         System.out.println();
         System.out.println(">>> Cache atomic map operation examples.");
 
-        IgniteCache<Integer, String> cache = Ignition.ignite().jcache(CACHE_NAME);
+        final IgniteCache<Integer, String> cache = Ignition.ignite().jcache(CACHE_NAME);
 
         // Put and return previous value.
         String v = cache.getAndPut(1, "1");
@@ -80,21 +76,27 @@ public class CacheApiExample {
         cache.put(2, "2");
 
 
-        // Put asynchronously (every cache operation has async counterpart).
-        // TODO IGNITE-60: uncomment when implemented.
-//        IgniteFuture<String> fut = cache.putAsync(3, "3");
-//
-//        // Asynchronously wait for result.
-//        fut.listenAsync(new IgniteInClosure<IgniteFuture<String>>() {
-//            @Override public void apply(IgniteFuture<String> fut) {
-//                try {
-//                    System.out.println("Put operation completed [previous-value=" + fut.get() + ']');
-//                }
-//                catch (IgniteCheckedException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//        });
+        // Put asynchronously.
+        final IgniteCache<Integer, String> asyncCache = cache.withAsync();
+
+        asyncCache.put(3, "3");
+
+        asyncCache.get(3);
+
+        IgniteFuture<String> fut = asyncCache.future();
+
+        //Asynchronously wait for result.
+        fut.listenAsync(new IgniteInClosure<IgniteFuture<String>>() {
+            @Override
+            public void apply(IgniteFuture<String> fut) {
+                try {
+                    System.out.println("Put operation completed [previous-value=" + fut.get() + ']');
+                }
+                catch (IgniteException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
 
         // Put-if-absent.
         boolean b1 = cache.putIfAbsent(4, "4");
@@ -118,53 +120,5 @@ public class CacheApiExample {
         b1 = cache.replace(7, "7", "77");
         b2 = cache.replace(7, "7", "777");
         assert b1 & !b2;
-    }
-
-    /**
-     * Demonstrates various iteration methods over locally cached values.
-     */
-    private static void localIterators() {
-        System.out.println();
-        System.out.println(">>> Local iterator examples.");
-
-        GridCache<Integer, String> cache = Ignition.ignite().cache(CACHE_NAME);
-
-        // Iterate over whole cache.
-        for (CacheEntry<Integer, String> e : cache)
-            System.out.println("Basic cache iteration [key=" + e.getKey() + ", val=" + e.getValue() + ']');
-
-        // Iterate over cache projection for all keys below 5.
-        CacheProjection<Integer, String> keysBelow5 = cache.projection(
-            new IgnitePredicate<CacheEntry<Integer, String>>() {
-                @Override public boolean apply(CacheEntry<Integer, String> e) {
-                    return e.getKey() < 5;
-                }
-            }
-        );
-
-        for (CacheEntry<Integer, String> e : keysBelow5)
-            System.out.println("Cache projection iteration [key=" + e.getKey() + ", val=" + e.getValue() + ']');
-
-        // Iterate over each element using 'forEach' construct.
-        cache.forEach(new IgniteInClosure<CacheEntry<Integer, String>>() {
-            @Override public void apply(CacheEntry<Integer, String> e) {
-                System.out.println("forEach iteration [key=" + e.getKey() + ", val=" + e.getValue() + ']');
-            }
-        });
-
-        // Search cache for element with value "1" using 'forAll' construct.
-        cache.forAll(new IgnitePredicate<CacheEntry<Integer, String>>() {
-            @Override public boolean apply(CacheEntry<Integer, String> e) {
-                String v = e.peek();
-
-                if ("1".equals(v)) {
-                    System.out.println("Found cache value '1' using forEach iteration.");
-
-                    return false; // Stop iteration.
-                }
-
-                return true; // Continue iteration.
-            }
-        });
     }
 }

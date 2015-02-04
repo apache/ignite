@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.util.ipc.shmem;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 
 /**
  * Helper class for {@link IpcSharedMemoryNativeLoaderSelfTest#testLoadWithCorruptedLibFile()} test, which contains test logic.

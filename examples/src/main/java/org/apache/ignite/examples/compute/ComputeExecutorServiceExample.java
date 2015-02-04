@@ -24,12 +24,12 @@ import org.apache.ignite.lang.*;
 import java.util.concurrent.*;
 
 /**
- * Simple example to demonstrate usage of grid-enabled executor service provided by GridGain.
+ * Simple example to demonstrate usage of distributed executor service provided by Ignite.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-compute.xml} configuration.
  */
 public final class ComputeExecutorServiceExample {
@@ -37,16 +37,16 @@ public final class ComputeExecutorServiceExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws Exception If example execution failed.
      */
     @SuppressWarnings({"TooBroadScope"})
     public static void main(String[] args) throws Exception {
-        try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Compute executor service example started.");
 
-            // Get grid-enabled executor service.
-            ExecutorService exec = g.executorService();
+            // Get ignite-enabled executor service.
+            ExecutorService exec = ignite.executorService();
 
             // Iterate through all words in the sentence and create callable jobs.
             for (final String word : "Print words using runnable".split(" ")) {
@@ -54,7 +54,7 @@ public final class ComputeExecutorServiceExample {
                 exec.submit(new IgniteRunnable() {
                     @Override public void run() {
                         System.out.println();
-                        System.out.println(">>> Printing '" + word + "' on this node from grid job.");
+                        System.out.println(">>> Printing '" + word + "' on this node from ignite job.");
                     }
                 });
             }
@@ -65,7 +65,7 @@ public final class ComputeExecutorServiceExample {
             exec.awaitTermination(0, TimeUnit.MILLISECONDS);
 
             System.out.println();
-            System.out.println(">>> Check all nodes for output (this node is also part of the grid).");
+            System.out.println(">>> Check all nodes for output (this node is also part of the cluster).");
         }
     }
 }
