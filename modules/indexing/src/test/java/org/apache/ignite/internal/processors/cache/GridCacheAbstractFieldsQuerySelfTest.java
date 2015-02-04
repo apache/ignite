@@ -180,7 +180,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     /** @throws Exception If failed. */
     public void testCacheMetaData() throws Exception {
         // Put internal key to test filtering of internal objects.
-        grid(0).cache(null).put(new GridCacheInternalKeyImpl("test"), 1);
+        grid(0).cache(null).put(new GridCacheInternalKeyImpl("LONG"), new GridCacheAtomicLongValue(0));
 
         Collection<GridCacheSqlMetadata> metas =
             ((GridCacheQueriesEx<?, ?>)grid(0).cache(null).queries()).sqlMetadata();
