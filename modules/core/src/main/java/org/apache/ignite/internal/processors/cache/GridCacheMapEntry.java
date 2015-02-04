@@ -3066,7 +3066,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Override public boolean initialValue(V val,
+    @Override public boolean initialValue(
+        V val,
         byte[] valBytes,
         GridCacheVersion ver,
         long ttl,
