@@ -49,7 +49,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
     private AtomicLong msgId = new AtomicLong();
 
     /** SPI resource. */
-    private GridTestResources spiRsrc;
+    private IgniteTestResources spiRsrc;
 
     /** SPI */
     private TcpCommunicationSpi spi;
@@ -209,7 +209,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
     @Override protected void beforeTestsStarted() throws Exception {
         spi = createSpi();
 
-        spiRsrc = new GridTestResources(getMBeanServer());
+        spiRsrc = new IgniteTestResources(getMBeanServer());
 
         locNode = new GridTestNode(spiRsrc.getNodeId());
 
@@ -233,7 +233,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
 
         spi.onContextInitialized(ctx);
 
-        GridTestResources remoteRsrc = new GridTestResources();
+        IgniteTestResources remoteRsrc = new IgniteTestResources();
 
         remoteNode = new GridTestNode(remoteRsrc.getNodeId());
 

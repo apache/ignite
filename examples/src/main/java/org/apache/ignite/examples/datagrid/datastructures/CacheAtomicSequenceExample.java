@@ -31,7 +31,7 @@ import java.util.*;
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public final class CacheAtomicSequenceExample {
     /** Cache name. */
@@ -47,23 +47,23 @@ public final class CacheAtomicSequenceExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache atomic sequence example started.");
 
             // Make name of sequence.
             final String seqName = UUID.randomUUID().toString();
 
-            // Initialize atomic sequence in grid.
-            CacheAtomicSequence seq = g.cache(CACHE_NAME).dataStructures().atomicSequence(seqName, 0, true);
+            // Initialize atomic sequence in ignite.
+            CacheAtomicSequence seq = ignite.cache(CACHE_NAME).dataStructures().atomicSequence(seqName, 0, true);
 
             // First value of atomic sequence on this node.
             long firstVal = seq.get();
 
             System.out.println("Sequence initial value: " + firstVal);
 
-            // Try increment atomic sequence on all grid nodes. Note that this node is also part of the grid.
-            g.compute().run(new SequenceClosure(CACHE_NAME, seqName));
+            // Try increment atomic sequence on all cluster nodes. Note that this node is also part of the cluster.
+            ignite.compute().run(new SequenceClosure(CACHE_NAME, seqName));
 
             System.out.println("Sequence after incrementing [expected=" + (firstVal + RETRIES) + ", actual=" +
                 seq.get() + ']');
@@ -71,7 +71,7 @@ public final class CacheAtomicSequenceExample {
 
         System.out.println();
         System.out.println("Finished atomic sequence example...");
-        System.out.println("Check all nodes for output (this node is also part of the grid).");
+        System.out.println("Check all nodes for output (this node is also part of the cluster).");
     }
 
     /**

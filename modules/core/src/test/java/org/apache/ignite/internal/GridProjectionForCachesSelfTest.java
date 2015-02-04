@@ -34,7 +34,7 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests for {@link org.apache.ignite.cluster.ClusterGroup#forCacheNodes(String, String...)} method.
+ * Tests for {@link org.apache.ignite.cluster.ClusterGroup#forCacheNodes(String)} method.
  */
 public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     /** */
@@ -142,21 +142,6 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testProjectionForBothCaches() throws Exception {
-        ClusterGroup prj = ignite.cluster().forCacheNodes(null, CACHE_NAME);
-
-        assert prj != null;
-        assert prj.nodes().size() == 2;
-        assert !prj.nodes().contains(grid(0).localNode());
-        assert !prj.nodes().contains(grid(1).localNode());
-        assert prj.nodes().contains(grid(2).localNode());
-        assert prj.nodes().contains(grid(3).localNode());
-        assert !prj.nodes().contains(grid(4).localNode());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testProjectionForDataCaches() throws Exception {
         ClusterGroup prj = ignite.cluster().forDataNodes(null);
 
@@ -174,16 +159,6 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
         assert prj != null;
         assert prj.nodes().size() == 1;
         assert prj.nodes().contains(grid(1).localNode());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testProjectionForClientBothCaches() throws Exception {
-        ClusterGroup prj = ignite.cluster().forClientNodes(null, CACHE_NAME);
-
-        assert prj != null;
-        assert prj.nodes().isEmpty();
     }
 
     /**

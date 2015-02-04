@@ -17,26 +17,26 @@
 
 package org.apache.ignite.scalar.examples
 
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit._
+import javax.swing.{JComponent, JLabel, JOptionPane}
+
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
 
-import javax.swing.{JComponent, JLabel, JOptionPane}
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit._
-
 /**
  * This example demonstrates how you can easily startup multiple nodes
  * in the same JVM with Scala. All started nodes use default configuration
- * with only difference of the grid name which has to be different for
+ * with only difference of the ignite cluster name which has to be different for
  * every node so they can be differentiated within JVM.
  * <p>
  * Starting multiple nodes in the same JVM is especially useful during
- * testing and debugging as it allows you to create a full grid within
+ * testing and debugging as it allows you to create a full ignite cluster within
  * a test case, simulate various scenarios, and watch how jobs and data
- * behave within a grid.
+ * behave within a ignite cluster.
  */
 object ScalarJvmCloudExample {
     /** Names of nodes to start. */
@@ -58,7 +58,7 @@ object ScalarJvmCloudExample {
                     cfg.setGridName(name)
 
                     // Configure in-VM TCP discovery so we don't
-                    // interfere with other grids running on the same network.
+                    // interfere with other ignites running on the same network.
                     val discoSpi = new TcpDiscoverySpi
 
                     discoSpi.setIpFinder(ipFinder)
@@ -80,11 +80,11 @@ object ScalarJvmCloudExample {
             JOptionPane.showMessageDialog(
                 null,
                 Array[JComponent](
-                    new JLabel("GridGain JVM cloud started."),
-                    new JLabel("Number of nodes in the grid: " + scalar.grid$(NODES(1)).get.cluster().nodes().size()),
+                    new JLabel("Ignite JVM cloud started."),
+                    new JLabel("Number of nodes in the cluster: " + scalar.ignite$(NODES(1)).get.cluster().nodes().size()),
                     new JLabel("Click OK to stop.")
                 ),
-                "GridGain",
+                "Ignite",
                 JOptionPane.INFORMATION_MESSAGE)
 
         }

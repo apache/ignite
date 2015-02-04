@@ -60,6 +60,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
     private GridCacheProjectionImpl<K, V> prj;
 
     /**
+     * Empty constructor required for {@link Externalizable}.
+     */
+    public IgniteCacheProxy() {
+        // No-op.
+    }
+
+    /**
      * @param ctx Context.
      * @param delegate Delegate.
      * @param prj Projection.
