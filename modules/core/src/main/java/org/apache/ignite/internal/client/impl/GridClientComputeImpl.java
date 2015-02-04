@@ -246,36 +246,6 @@ class GridClientComputeImpl extends GridClientAbstractProjection<GridClientCompu
     }
 
     /** {@inheritDoc} */
-    @Override public List<String> log(int lineFrom, int lineTo) throws GridClientException {
-        return logAsync(lineFrom, lineTo).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridClientFuture<List<String>> logAsync(final int lineFrom, final int lineTo) {
-        return withReconnectHandling(new ClientProjectionClosure<List<String>>() {
-            @Override public GridClientFuture<List<String>> apply(GridClientConnection conn, UUID destNodeId)
-                throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.log(null, lineFrom, lineTo, destNodeId);
-            }
-        });
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<String> log(String path, int lineFrom, int lineTo) throws GridClientException {
-        return logAsync(path, lineFrom, lineTo).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridClientFuture<List<String>> logAsync(final String path, final int lineFrom, final int lineTo) {
-        return withReconnectHandling(new ClientProjectionClosure<List<String>>() {
-            @Override public GridClientFuture<List<String>> apply(GridClientConnection conn, UUID destNodeId)
-                throws GridClientConnectionResetException, GridClientClosedException {
-                return conn.log(path, lineFrom, lineTo, destNodeId);
-            }
-        });
-    }
-
-    /** {@inheritDoc} */
     @Override public GridClientCompute withKeepPortables() {
         KEEP_PORTABLES.set(true);
 

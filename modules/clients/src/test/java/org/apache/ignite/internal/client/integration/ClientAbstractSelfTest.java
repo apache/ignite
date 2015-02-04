@@ -27,7 +27,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.client.ssl.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -37,7 +36,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -197,10 +195,6 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         clientCfg.setRestTcpPort(BINARY_PORT);
 
-        clientCfg.setRestAccessibleFolders(
-            U.getGridGainHome() + "/work/log",
-            U.resolveGridGainPath("modules/core/src/test/resources/log").getAbsolutePath());
-
         if (useSsl()) {
             clientCfg.setRestTcpSslEnabled(true);
 
@@ -348,8 +342,6 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         futs.put("refreshById", compute.refreshNodeAsync(UUID.randomUUID(), true, true));
         futs.put("refreshByIP", compute.refreshNodeAsync("nodeIP", true, true));
         futs.put("refreshTop", compute.refreshTopologyAsync(true, true));
-        futs.put("log", compute.logAsync(-1, -1));
-        futs.put("logForPath", compute.logAsync("path/to/log", -1, -1));
 
         GridClientFactory.stop(client.id(), false);
 
@@ -1295,121 +1287,6 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         assertNull(node.metrics());
         assertNotNull(node.tcpAddresses());
         assertEquals(grid().localNode().id(), node.nodeId());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public void testLog() throws Exception {
-        final GridClientCompute compute = client.compute();
-
-        /* Usually this log file is created by log4j, but some times it doesn't exists. */
-        new File(U.getGridGainHome(), "work/log/gridgain.log").createNewFile();
-
-        List<String> log = compute.log(6, 7);
-        assertNotNull(log);
-
-        log = compute.log(-7, -6);
-        assertNotNull(log);
-
-        log = compute.log(-6, -7);
-        assertNotNull(log);
-        assertTrue(log.isEmpty());
-
-        String path = "work/log/gridgain.log." + System.currentTimeMillis();
-
-        File file = new File(U.getGridGainHome(), path);
-
-        assert !file.exists();
-
-        FileWriter writer = new FileWriter(file);
-
-        String sep = System.getProperty("line.separator");
-
-        writer.write("Line 1" + sep);
-        writer.write(sep);
-        writer.write("Line 2" + sep);
-        writer.write("Line 3" + sep);
-
-        writer.flush();
-        writer.close();
-
-        log = compute.log(path, -1, -1);
-        assertNotNull(log);
-        assertEquals(1, log.size());
-        assertEquals("Line 3", log.get(0));
-
-        // Indexing from 0.
-        log = compute.log(path, 2, 3);
-        assertNotNull(log);
-        assertEquals(2, log.size());
-        assertEquals("Line 2", log.get(0));
-        assertEquals("Line 3", log.get(1));
-
-        // Backward reading.
-        log = compute.log(path, -3, -1);
-        assertNotNull(log);
-        assertEquals(3, log.size());
-        assertEquals("", log.get(0));
-        assertEquals("Line 2", log.get(1));
-        assertEquals("Line 3", log.get(2));
-
-        log = compute.log(path, -4, -3);
-        assertNotNull(log);
-        assertEquals(2, log.size());
-        assertEquals("Line 1", log.get(0));
-        assertEquals("", log.get(1));
-
-        log = compute.log(path, -5, -8);
-        assertNotNull(log);
-        assertEquals(0, log.size());
-
-        assert file.delete();
-
-        log = compute.log(TEST_LOG_PATH, -9, -5);
-        assertNotNull(log);
-        assertEquals(5, log.size());
-
-        log = compute.log(TEST_LOG_PATH, -1, -1);
-        assertNotNull(log);
-        assertEquals(1, log.size());
-        assertEquals("[14:23:34,336][INFO ][main][GridTaskContinuousMapperSelfTest] >>> Stopping test: " +
-            "testContinuousMapperNegative in 2633 ms <<<",
-            log.get(0));
-
-        log = compute.log(TEST_LOG_PATH, -13641, -13640);
-        assertNotNull(log);
-        assertEquals(1, log.size());
-        assertEquals("[14:14:22,515][INFO ][main][GridListenActorSelfTest] ", log.get(0));
-
-        assertThrows(
-            log(),
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    compute.log("wrong/path", -1, -1);
-
-                    return null;
-                }
-            },
-            GridClientException.class,
-            null
-        );
-
-        assertThrows(
-            log(),
-            new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    new File(U.getGridGainHome(), "work/security.log").createNewFile();
-
-                    compute.log("work/log/../security.log", -1, -1);
-
-                    return null;
-                }
-            },
-            GridClientException.class,
-            null
-        );
     }
 
     /**

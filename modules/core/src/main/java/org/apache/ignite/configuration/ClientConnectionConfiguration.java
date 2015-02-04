@@ -100,9 +100,6 @@ public class ClientConnectionConfiguration {
     /** Port range */
     private int restPortRange = DFLT_REST_PORT_RANGE;
 
-    /** Folders accessible by REST. */
-    private String[] restAccessibleFolders;
-
     /** REST requests executor service. */
     private ExecutorService restExecSvc;
 
@@ -129,7 +126,6 @@ public class ClientConnectionConfiguration {
         assert cfg != null;
 
         clientMsgInterceptor = cfg.getClientMessageInterceptor();
-        restAccessibleFolders = cfg.getRestAccessibleFolders();
         restExecSvc = cfg.getRestExecutorService();
         restSvcShutdown = cfg.isRestExecutorServiceShutdown();
         restIdleTimeout = cfg.getRestIdleTimeout();
@@ -467,29 +463,6 @@ public class ClientConnectionConfiguration {
      */
     public void setRestPortRange(int restPortRange) {
         this.restPortRange = restPortRange;
-    }
-
-    /**
-     * Gets list of folders that are accessible for log reading command. When remote client requests
-     * a log file, file path is checked against this list. If requested file is not located in any
-     * sub-folder of these folders, request is not processed.
-     * <p>
-     * By default, list consists of a single {@code IGNITE_HOME} folder. If {@code IGNITE_HOME}
-     * could not be detected and property is not specified, no restrictions applied.
-     *
-     * @return Array of folders that are allowed be read by remote clients.
-     */
-    public String[] getRestAccessibleFolders() {
-        return restAccessibleFolders;
-    }
-
-    /**
-     * Sets array of folders accessible by REST processor for log reading command.
-     *
-     * @param restAccessibleFolders Array of folder paths.
-     */
-    public void setRestAccessibleFolders(String... restAccessibleFolders) {
-        this.restAccessibleFolders = restAccessibleFolders;
     }
 
     /**

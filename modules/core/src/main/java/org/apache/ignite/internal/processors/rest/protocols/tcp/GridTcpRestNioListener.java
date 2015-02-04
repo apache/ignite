@@ -350,19 +350,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
             restReq = restTopReq;
         }
-        else if (msg instanceof GridClientLogRequest) {
-            GridClientLogRequest req = (GridClientLogRequest) msg;
-
-            GridRestLogRequest restLogReq = new GridRestLogRequest();
-
-            restLogReq.command(LOG);
-
-            restLogReq.path(req.path());
-            restLogReq.from(req.from());
-            restLogReq.to(req.to());
-
-            restReq = restLogReq;
-        }
 
         if (restReq != null) {
             restReq.destinationId(msg.destinationId());

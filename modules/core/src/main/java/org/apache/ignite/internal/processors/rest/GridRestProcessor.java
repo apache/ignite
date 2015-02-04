@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.processors.rest.handlers.*;
 import org.apache.ignite.internal.processors.rest.handlers.cache.*;
-import org.apache.ignite.internal.processors.rest.handlers.log.*;
 import org.apache.ignite.internal.processors.rest.handlers.metadata.*;
 import org.apache.ignite.internal.processors.rest.handlers.task.*;
 import org.apache.ignite.internal.processors.rest.handlers.top.*;
@@ -253,7 +252,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new GridTaskCommandHandler(ctx));
             addHandler(new GridTopologyCommandHandler(ctx));
             addHandler(new GridVersionCommandHandler(ctx));
-            addHandler(new GridLogCommandHandler(ctx));
             addHandler(new GridPortableMetadataHandler(ctx));
 
             // Start protocols.
@@ -592,7 +590,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case TOPOLOGY:
             case NODE:
             case VERSION:
-            case LOG:
             case NOOP:
             case QUIT:
             case GET_PORTABLE_METADATA:

@@ -362,20 +362,6 @@ public abstract class GridClientConnection {
         @Nullable UUID destNodeId) throws GridClientConnectionResetException, GridClientClosedException;
 
     /**
-     * Gets log entries.
-     *
-     * @param path Log file path.  If {@code null}, then default path will be used.
-     * @param fromLine Index of start line that should be retrieved.
-     * @param toLine Index of end line that should be retrieved.
-     * @param destNodeId Destination node ID.
-     * @return Log file contents.
-     * @throws GridClientConnectionResetException In case of error.
-     * @throws GridClientClosedException If client was manually closed before request was sent over network.
-     */
-    public abstract GridClientFuture<List<String>> log(@Nullable String path, int fromLine, int toLine, UUID destNodeId)
-        throws GridClientConnectionResetException, GridClientClosedException;
-
-    /**
      * Forwards a message in raw form to the connected node. This method supposed to be used only inside router.
      * The exact types of acceptable arguments and return values depend on connection implementation.
      *

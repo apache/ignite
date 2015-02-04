@@ -306,12 +306,6 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                return dflt.projection(noneFilter).log(-1, -1);
-            }
-        }, GridServerUnreachableException.class, null);
-
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Override public Object call() throws Exception {
                 return singleNodePrj.projection(second);
             }
         }, GridClientException.class, null);

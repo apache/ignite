@@ -573,22 +573,6 @@ final class TestBinaryClient {
     }
 
     /**
-     * @param path Log file path.
-     * @return Log file contents.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public List<String> log(@Nullable String path, int from, int to) throws IgniteCheckedException {
-        GridClientLogRequest msg = new GridClientLogRequest();
-
-        msg.requestId(idCntr.getAndIncrement());
-        msg.path(path);
-        msg.from(from);
-        msg.to(to);
-
-        return makeRequest(msg).getObject();
-    }
-
-    /**
      * Response data.
      */
     private static class Response {

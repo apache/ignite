@@ -927,18 +927,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     }
 
     /** {@inheritDoc} */
-    @Override public GridClientFuture<List<String>> log(String path, int fromLine, int toLine, UUID destNodeId)
-        throws GridClientConnectionResetException, GridClientClosedException {
-        GridClientLogRequest msg = new GridClientLogRequest();
-
-        msg.from(fromLine);
-        msg.to(toLine);
-        msg.path(path);
-
-        return makeRequest(msg, destNodeId);
-    }
-
-    /** {@inheritDoc} */
     @Override public GridClientFutureAdapter<GridRouterRequest> forwardMessage(Object msg)
         throws GridClientException {
         assert msg instanceof GridRouterRequest;

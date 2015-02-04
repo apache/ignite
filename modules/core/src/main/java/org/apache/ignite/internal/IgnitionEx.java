@@ -1437,7 +1437,6 @@ public class IgnitionEx {
                     clientCfg = new ClientConnectionConfiguration();
 
                     clientCfg.setClientMessageInterceptor(cfg.getClientMessageInterceptor());
-                    clientCfg.setRestAccessibleFolders(cfg.getRestAccessibleFolders());
                     clientCfg.setRestExecutorService(cfg.getRestExecutorService());
                     clientCfg.setRestExecutorServiceShutdown(cfg.getRestExecutorServiceShutdown());
                     clientCfg.setRestIdleTimeout(cfg.getRestIdleTimeout());

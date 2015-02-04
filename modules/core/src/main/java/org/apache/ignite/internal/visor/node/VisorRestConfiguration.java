@@ -76,7 +76,6 @@ public class VisorRestConfiguration implements Serializable {
 
         if (restEnabled) {
             cfg.tcpSslEnabled(clnCfg.isRestTcpSslEnabled());
-            cfg.accessibleFolders(clnCfg.getRestAccessibleFolders());
             cfg.jettyPath(clnCfg.getRestJettyPath());
             cfg.jettyHost(getProperty(IGNITE_JETTY_HOST));
             cfg.jettyPort(intValue(IGNITE_JETTY_PORT, null));
