@@ -23,13 +23,13 @@ import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 
@@ -141,7 +141,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
      * @param prepare Whether to preapre transaction state
-     *                (i.e. call {@link IgniteTxEx#prepare()}).
+     *                (i.e. call {@link org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx#prepare()}).
      * @throws Exception If failed.
      */
     private void checkSalvageAfterTimeout(IgniteTxConcurrency mode, boolean prepare) throws Exception {
@@ -160,7 +160,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
      * @param prepare Whether to preapre transaction state
-     *                (i.e. call {@link IgniteTxEx#prepare()}).
+     *                (i.e. call {@link org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx#prepare()}).
      * @throws Exception If failed.
      */
     private void checkSalvageBeforeTimeout(IgniteTxConcurrency mode, boolean prepare) throws Exception {
@@ -187,7 +187,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
      * @param prepare Whether to preapre transaction state
-     *                (i.e. call {@link IgniteTxEx#prepare()}).
+     *                (i.e. call {@link org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx#prepare()}).
      * @throws Exception If failed.
      */
     private void startTxAndPutKeys(final IgniteTxConcurrency mode, final boolean prepare) throws Exception {
@@ -207,7 +207,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
 
                     // Unproxy.
                     if (prepare)
-                        U.<IgniteTxEx>field(tx, "tx").prepare();
+                        U.<IgniteInternalTx>field(tx, "tx").prepare();
                 }
                 catch (IgniteCheckedException e) {
                     info("Failed to put keys to cache: " + e.getMessage());

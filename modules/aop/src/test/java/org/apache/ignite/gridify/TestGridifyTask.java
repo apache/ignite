@@ -17,7 +17,6 @@
 
 package org.apache.ignite.gridify;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.compute.gridify.*;
 
@@ -32,14 +31,14 @@ public class TestGridifyTask extends ComputeTaskSplitAdapter<GridifyArgument, Ob
     public static final String TASK_NAME = "org.apache.ignite.gridify.TestGridifyTask";
 
     /** {@inheritDoc} */
-    @Override public Collection<? extends ComputeJob> split(int gridSize, GridifyArgument arg) throws IgniteCheckedException {
+    @Override public Collection<? extends ComputeJob> split(int gridSize, GridifyArgument arg) {
         assert arg.getMethodParameters().length == 1;
 
         return Collections.singletonList(new TestGridifyJob((String)arg.getMethodParameters()[0]));
     }
 
     /** {@inheritDoc} */
-    @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Object reduce(List<ComputeJobResult> results) {
         assert results.size() == 1;
 
         return results.get(0).getData();

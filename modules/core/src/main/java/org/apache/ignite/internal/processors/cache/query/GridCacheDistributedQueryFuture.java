@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -192,7 +193,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** {@inheritDoc} */
     @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
-    @Override protected void loadAllPages() throws IgniteInterruptedException {
+    @Override protected void loadAllPages() throws IgniteInterruptedCheckedException {
         assert !Thread.holdsLock(mux);
 
         U.await(firstPageLatch);

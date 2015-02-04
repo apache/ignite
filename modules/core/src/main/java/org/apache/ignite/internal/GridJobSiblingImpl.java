@@ -20,8 +20,8 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 import java.io.*;
 import java.util.*;
@@ -136,14 +136,20 @@ public class GridJobSiblingImpl implements ComputeJobSibling, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel() throws IgniteCheckedException {
+    @Override public void cancel() {
         GridTaskSessionImpl ses = ctx.session().getSession(sesId);
 
         if (ses == null) {
             Collection<ClusterNode> nodes = ctx.discovery().remoteNodes();
 
-            if (!nodes.isEmpty())
-                ctx.io().send(nodes, TOPIC_JOB_CANCEL, new GridJobCancelRequest(sesId, jobId), SYSTEM_POOL);
+            if (!nodes.isEmpty()) {
+                try {
+                    ctx.io().send(nodes, TOPIC_JOB_CANCEL, new GridJobCancelRequest(sesId, jobId), SYSTEM_POOL);
+                }
+                catch (IgniteCheckedException e) {
+                    throw U.convertException(e);
+                }
+            }
 
             // Cancel local jobs directly.
             ctx.job().cancelJob(sesId, jobId, false);

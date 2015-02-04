@@ -234,7 +234,7 @@ public class GridHibernateReadWriteAccessStrategy extends GridHibernateAccessStr
                     tx.rollback();
             }
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             log.error("Failed to rollback cache transaction.", e);
         }
     }

@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 

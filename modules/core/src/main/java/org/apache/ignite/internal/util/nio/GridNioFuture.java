@@ -35,8 +35,8 @@ public interface GridNioFuture<R> {
      * returns operation result.
      *
      * @return Operation result.
-     * @throws org.apache.ignite.IgniteInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
-     * @throws IgniteFutureCancelledException Subclass of {@link GridException} throws if operation was cancelled.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws org.apache.ignite.internal.IgniteFutureCancelledCheckedException Subclass of {@link IgniteCheckedException} throws if operation was cancelled.
      * @throws IgniteCheckedException If operation failed.
      * @throws IOException If IOException occurred while performing operation.
      */
@@ -49,9 +49,9 @@ public interface GridNioFuture<R> {
      *
      * @param timeout The maximum time to wait in milliseconds.
      * @return Operation result.
-     * @throws org.apache.ignite.IgniteInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
-     * @throws IgniteFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
-     * @throws IgniteFutureCancelledException Subclass of {@link GridException} throws if operation was cancelled.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws org.apache.ignite.internal.IgniteFutureTimeoutCheckedException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
+     * @throws org.apache.ignite.internal.IgniteFutureCancelledCheckedException Subclass of {@link IgniteCheckedException} throws if operation was cancelled.
      * @throws IgniteCheckedException If operation failed.
      * @throws IOException If IOException occurred while performing operation.
      */
@@ -64,9 +64,9 @@ public interface GridNioFuture<R> {
      * @param timeout The maximum time to wait.
      * @param unit The time unit of the {@code timeout} argument.
      * @return Operation result.
-     * @throws org.apache.ignite.IgniteInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
-     * @throws IgniteFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
-     * @throws IgniteFutureCancelledException Subclass of {@link GridException} throws if operation was cancelled.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws org.apache.ignite.internal.IgniteFutureTimeoutCheckedException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
+     * @throws org.apache.ignite.internal.IgniteFutureCancelledCheckedException Subclass of {@link IgniteCheckedException} throws if operation was cancelled.
      * @throws IgniteCheckedException If operation failed.
      * @throws IOException If IOException occurred while performing operation.
      */

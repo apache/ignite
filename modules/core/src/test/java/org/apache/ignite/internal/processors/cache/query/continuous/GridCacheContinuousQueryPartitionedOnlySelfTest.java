@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Continuous queries tests for partitioned cache.

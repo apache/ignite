@@ -21,21 +21,21 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.security.*;
-import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.spi.discovery.*;
-import org.apache.ignite.spi.discovery.tcp.internal.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
-import org.apache.ignite.spi.discovery.tcp.messages.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.discovery.*;
+import org.apache.ignite.spi.discovery.tcp.internal.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
+import org.apache.ignite.spi.discovery.tcp.messages.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -800,7 +800,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             try {
                 U.sleep(2000);
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 throw new IgniteSpiException("Thread has been interrupted.", e);
             }
         }
@@ -891,7 +891,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (log.isDebugEnabled())
                     log.debug("Context has been initialized.");
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 U.warn(log, "Thread has been interrupted while waiting for SPI context initialization.", e);
             }
         }
@@ -1284,7 +1284,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                     locNode.setAttributes(attrs);
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException | IgniteCheckedException e) {
                     throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
                 }
 
@@ -1487,7 +1487,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 try {
                     U.sleep(2000);
                 }
-                catch (IgniteInterruptedException e) {
+                catch (IgniteInterruptedCheckedException e) {
                     throw new IgniteSpiException("Thread has been interrupted.", e);
                 }
             }
@@ -1511,7 +1511,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 try {
                     U.sleep(2000);
                 }
-                catch (IgniteInterruptedException e) {
+                catch (IgniteInterruptedCheckedException e) {
                     throw new IgniteSpiException("Thread has been interrupted.", e);
                 }
             }
@@ -3155,7 +3155,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         node.setAttributes(attrs);
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException | IgniteCheckedException e) {
                     LT.error(log, e, "Authentication failed [nodeId=" + node.id() + ", addrs=" +
                         U.addressesAsString(node) + ']');
 
@@ -3610,7 +3610,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 authFailed = false;
                         }
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException | IgniteCheckedException e) {
                         U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
                     }
                     finally {

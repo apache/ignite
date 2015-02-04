@@ -19,10 +19,10 @@ package org.apache.ignite.startup.cmdline;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lifecycle.*;
 import org.jetbrains.annotations.*;
 
 import javax.swing.*;

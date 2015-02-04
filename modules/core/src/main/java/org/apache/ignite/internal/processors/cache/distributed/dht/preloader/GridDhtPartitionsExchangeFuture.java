@@ -22,12 +22,13 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.timeout.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -406,9 +407,9 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /**
      * Starts activity.
      *
-     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+     * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    public void init() throws IgniteInterruptedException {
+    public void init() throws IgniteInterruptedCheckedException {
         assert oldestNode.get() != null;
 
         if (init.compareAndSet(false, true)) {
@@ -496,7 +497,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                     top.beforeExchange(exchId);
                 }
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 onDone(e);
 
                 throw e;
@@ -597,7 +598,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
         try {
             sendLocalPartitions(oldestNode, exchId);
         }
-        catch (ClusterTopologyException ignore) {
+        catch (ClusterTopologyCheckedException ignore) {
             if (log.isDebugEnabled())
                 log.debug("Oldest node left during partition exchange [nodeId=" + oldestNode.id() +
                     ", exchId=" + exchId + ']');

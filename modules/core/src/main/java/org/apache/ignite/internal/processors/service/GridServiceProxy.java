@@ -20,12 +20,13 @@ package org.apache.ignite.internal.processors.service;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.managed.*;
-import org.apache.ignite.resources.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.managed.*;
+import org.apache.ignite.resources.*;
 import org.jdk8.backport.*;
 
 import java.io.*;
@@ -151,7 +152,7 @@ class GridServiceProxy<T> implements Serializable {
                         ).get();
                     }
                 }
-                catch (GridServiceNotFoundException | ClusterTopologyException e) {
+                catch (GridServiceNotFoundException | ClusterTopologyCheckedException e) {
                     if (log.isDebugEnabled())
                         log.debug("Service was not found or topology changed (will retry): " + e.getMessage());
                 }

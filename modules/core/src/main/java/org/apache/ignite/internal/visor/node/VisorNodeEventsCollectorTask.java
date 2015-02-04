@@ -17,17 +17,16 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.task.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.visor.event.*;
 import org.apache.ignite.internal.visor.util.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -51,8 +50,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
     /** {@inheritDoc} */
     @Override protected Iterable<? extends VisorGridEvent> reduce0(
-        List<ComputeJobResult> results) throws IgniteCheckedException {
-
+        List<ComputeJobResult> results) {
         Collection<VisorGridEvent> allEvents = new ArrayList<>();
 
         for (ComputeJobResult r : results) {
@@ -262,8 +260,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends VisorGridEvent> run(final VisorNodeEventsCollectorTaskArg arg)
-            throws IgniteCheckedException {
+        @Override protected Collection<? extends VisorGridEvent> run(final VisorNodeEventsCollectorTaskArg arg) {
             final long startEvtTime = arg.timeArgument() == null ? 0L : System.currentTimeMillis() - arg.timeArgument();
 
             final ClusterNodeLocalMap<String, Long> nl = g.nodeLocalMap();

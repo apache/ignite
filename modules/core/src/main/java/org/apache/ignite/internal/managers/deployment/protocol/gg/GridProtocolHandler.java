@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.managers.deployment.protocol.gg;
 
 import org.apache.ignite.internal.managers.deployment.*;
+
 import java.io.*;
 import java.net.*;
 
@@ -30,7 +31,7 @@ public class GridProtocolHandler extends URLStreamHandler {
 
     /**
      * Registers deployment manager.
-     * 
+     *
      * @param mgr Deployment manager.
      */
     public static void registerDeploymentManager(GridDeploymentManager mgr) {

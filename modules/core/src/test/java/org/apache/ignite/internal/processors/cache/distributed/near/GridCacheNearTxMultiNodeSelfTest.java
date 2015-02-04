@@ -24,24 +24,24 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests near transactions.
@@ -235,12 +235,12 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings( {"unchecked"})
     private void checkTm(Ignite g, IgniteTxManager tm) {
-        Collection<IgniteTxEx> txs = tm.txs();
+        Collection<IgniteInternalTx> txs = tm.txs();
 
         info(">>> Number of transactions in the set [size=" + txs.size() +
             ", nodeId=" + g.cluster().localNode().id() + ']');
 
-        for (IgniteTxEx tx : txs)
+        for (IgniteInternalTx tx : txs)
             assert tx.done() : "Transaction is not finished: " + tx;
     }
 }

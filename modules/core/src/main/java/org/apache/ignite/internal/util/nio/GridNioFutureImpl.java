@@ -18,9 +18,10 @@
 package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -87,7 +88,7 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
                 acquireSharedInterruptibly(0);
 
             if (getState() == CANCELLED)
-                throw new IgniteFutureCancelledException("Future was cancelled: " + this);
+                throw new IgniteFutureCancelledCheckedException("Future was cancelled: " + this);
 
             if (err != null)
                 throw U.cast(err);
@@ -97,7 +98,7 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -118,7 +119,7 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException("Got interrupted while waiting for future to complete.", e);
+            throw new IgniteInterruptedCheckedException("Got interrupted while waiting for future to complete.", e);
         }
     }
 
@@ -126,15 +127,15 @@ public class GridNioFutureImpl<R> extends AbstractQueuedSynchronizer implements 
      * @param nanosTimeout Timeout (nanoseconds).
      * @return Result.
      * @throws InterruptedException If interrupted.
-     * @throws IgniteFutureTimeoutException If timeout reached before computation completed.
+     * @throws org.apache.ignite.internal.IgniteFutureTimeoutCheckedException If timeout reached before computation completed.
      * @throws IgniteCheckedException If error occurred.
      */
     @Nullable protected R get0(long nanosTimeout) throws InterruptedException, IgniteCheckedException {
         if (endTime == 0 && !tryAcquireSharedNanos(0, nanosTimeout))
-            throw new IgniteFutureTimeoutException("Timeout was reached before computation completed.");
+            throw new IgniteFutureTimeoutCheckedException("Timeout was reached before computation completed.");
 
         if (getState() == CANCELLED)
-            throw new IgniteFutureCancelledException("Future was cancelled: " + this);
+            throw new IgniteFutureCancelledCheckedException("Future was cancelled: " + this);
 
         if (err != null)
             throw U.cast(err);

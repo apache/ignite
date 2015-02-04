@@ -19,14 +19,14 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
-import org.apache.ignite.internal.processors.query.h2.sql.*;
-import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
 import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.cache.query.reducefields.*;
+import org.apache.ignite.internal.processors.query.h2.sql.*;
+import org.apache.ignite.spi.communication.tcp.*;
 
 /**
  * Test suite for cache queries.

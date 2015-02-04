@@ -21,21 +21,22 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -630,7 +631,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             assert topVer > 0;
 
             if (CU.affinityNodes(cctx, topVer).isEmpty()) {
-                onDone(new ClusterTopologyException("Failed to map keys for cache (all partition nodes left the grid)."));
+                onDone(new ClusterTopologyCheckedException("Failed to map keys for cache (all partition nodes left the grid)."));
 
                 return;
             }
@@ -871,7 +872,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                     cctx.io().send(node, req, cctx.ioPolicy());
                 }
-                catch (ClusterTopologyException ex) {
+                catch (ClusterTopologyCheckedException ex) {
                     assert fut != null;
 
                     fut.onResult(ex);
@@ -886,7 +887,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
                             cctx.io().send(node, req, cctx.ioPolicy());
                         }
-                        catch (ClusterTopologyException ex) {
+                        catch (ClusterTopologyCheckedException ex) {
                             assert fut != null;
 
                             fut.onResult(ex);
@@ -1090,8 +1091,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @param nodeId Node ID.
      * @return Topology exception with user-friendly message.
      */
-    private ClusterTopologyException newTopologyException(@Nullable Throwable nested, UUID nodeId) {
-        return new ClusterTopologyException("Failed to acquire lock for keys (primary node left grid, " +
+    private ClusterTopologyCheckedException newTopologyException(@Nullable Throwable nested, UUID nodeId) {
+        return new ClusterTopologyCheckedException("Failed to acquire lock for keys (primary node left grid, " +
             "retry transaction if possible) [keys=" + keys + ", node=" + nodeId + ']', nested);
     }
 
@@ -1207,7 +1208,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         /**
          * @param e Node left exception.
          */
-        void onResult(ClusterTopologyException e) {
+        void onResult(ClusterTopologyCheckedException e) {
             if (isDone())
                 return;
 

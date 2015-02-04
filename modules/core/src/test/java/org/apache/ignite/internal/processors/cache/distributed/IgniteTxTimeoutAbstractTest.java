@@ -19,8 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 
@@ -145,7 +146,7 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
 
             assert false : "Timeout never happened for transaction: " + tx;
         }
-        catch (IgniteTxTimeoutException e) {
+        catch (IgniteTxTimeoutCheckedException e) {
             info("Received expected timeout exception [msg=" + e.getMessage() + ", tx=" + tx + ']');
         }
         finally {

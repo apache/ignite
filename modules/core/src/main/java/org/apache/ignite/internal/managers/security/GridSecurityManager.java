@@ -19,9 +19,9 @@ package org.apache.ignite.internal.managers.security;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.authentication.*;
-import org.apache.ignite.internal.managers.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

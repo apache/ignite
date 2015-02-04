@@ -20,16 +20,17 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -37,14 +38,15 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.transactions.IgniteTxState.*;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 
 /**
  *
  */
-public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFuture<IgniteTx>
-    implements GridCacheFuture<IgniteTx> {
+public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFuture<IgniteInternalTx>
+    implements GridCacheFuture<IgniteInternalTx> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -89,7 +91,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @param commit Commit flag.
      */
     public GridNearTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridNearTxLocal<K, V> tx, boolean commit) {
-        super(cctx.kernalContext(), F.<IgniteTx>identityReducer(tx));
+        super(cctx.kernalContext(), F.<IgniteInternalTx>identityReducer(tx));
 
         assert cctx != null;
 
@@ -139,7 +141,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     // Remove previous mapping.
                     mappings.remove(nodeId);
 
-                    f.onResult(new ClusterTopologyException("Remote node left grid (will fail): " + nodeId));
+                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will fail): " + nodeId));
 
                     return true;
                 }
@@ -169,7 +171,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         if (err.compareAndSet(null, e)) {
             boolean marked = tx.setRollbackOnly();
 
-            if (e instanceof IgniteTxRollbackException) {
+            if (e instanceof IgniteTxRollbackCheckedException) {
                 if (marked) {
                     try {
                         tx.rollback();
@@ -198,7 +200,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      */
     public void onResult(UUID nodeId, GridNearTxFinishResponse<K, V> res) {
         if (!isDone())
-            for (IgniteInternalFuture<IgniteTx> fut : futures()) {
+            for (IgniteInternalFuture<IgniteInternalTx> fut : futures()) {
                 if (isMini(fut)) {
                     MiniFuture f = (MiniFuture)fut;
 
@@ -212,7 +214,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(IgniteTx tx, Throwable err) {
+    @Override public boolean onDone(IgniteInternalTx tx, Throwable err) {
         if ((initialized() || err != null)) {
             if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING))
                 this.tx.tmCommit();
@@ -220,7 +222,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             Throwable th = this.err.get();
 
             if (super.onDone(tx, th != null ? th : err)) {
-                if (error() instanceof IgniteTxHeuristicException) {
+                if (error() instanceof IgniteTxHeuristicCheckedException) {
                     long topVer = this.tx.topologyVersion();
 
                     for (IgniteTxEntry<K, V> e : this.tx.writeMap().values()) {
@@ -281,7 +283,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             // Finish local mapping only as we need send commit message to backups.
             for (GridDistributedTxMapping<K, V> m : mappings.values()) {
                 if (m.node().isLocal()) {
-                    IgniteInternalFuture<IgniteTx> fut = cctx.tm().txHandler().finishColocatedLocal(commit, tx);
+                    IgniteInternalFuture<IgniteInternalTx> fut = cctx.tm().txHandler().finishColocatedLocal(commit, tx);
 
                     // Add new future.
                     if (fut != null)
@@ -368,7 +370,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         if (n.isLocal()) {
             req.miniId(IgniteUuid.randomUuid());
 
-            IgniteInternalFuture<IgniteTx> fut = cctx.tm().txHandler().finish(n.id(), tx, req);
+            IgniteInternalFuture<IgniteInternalTx> fut = cctx.tm().txHandler().finish(n.id(), tx, req);
 
             // Add new future.
             if (fut != null)
@@ -391,7 +393,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 if (!isSync() && !m.explicitLock())
                     fut.onDone();
             }
-            catch (ClusterTopologyException e) {
+            catch (ClusterTopologyCheckedException e) {
                 // Remove previous mapping.
                 mappings.remove(m.node().id());
 
@@ -413,7 +415,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * Mini-future for get operations. Mini-futures are only waiting on a single
      * node as opposed to multiple nodes.
      */
-    private class MiniFuture extends GridFutureAdapter<IgniteTx> {
+    private class MiniFuture extends GridFutureAdapter<IgniteInternalTx> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -475,7 +477,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         /**
          * @param e Node failure.
          */
-        void onResult(ClusterTopologyException e) {
+        void onResult(ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will fail): " + this);
 

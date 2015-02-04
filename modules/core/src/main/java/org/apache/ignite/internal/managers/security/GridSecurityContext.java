@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.managers.security;
 
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.security.*;
 
 import java.io.*;
 import java.util.*;

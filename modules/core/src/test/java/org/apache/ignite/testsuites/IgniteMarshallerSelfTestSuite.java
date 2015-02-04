@@ -18,9 +18,9 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
-import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.internal.util.io.*;
+import org.apache.ignite.marshaller.jdk.*;
+import org.apache.ignite.marshaller.optimized.*;
 
 /**
  * Test suite for all marshallers.

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.local;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 
-import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Tests local cache.

@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal.processors.hadoop.examples;
 
-import java.io.*;
-import java.util.*;
-
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
+
+import java.io.*;
+import java.util.*;
 
 /**
  * Mapper phase of WordCount job.

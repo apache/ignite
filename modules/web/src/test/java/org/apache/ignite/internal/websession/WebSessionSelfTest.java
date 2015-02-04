@@ -19,13 +19,13 @@ package org.apache.ignite.internal.websession;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
-import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.servlet.*;
-import org.eclipse.jetty.webapp.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.servlet.*;
+import org.eclipse.jetty.webapp.*;
 import org.jetbrains.annotations.*;
 
 import javax.servlet.*;

@@ -23,20 +23,21 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.query.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 
 /**
@@ -278,7 +279,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
                 return true;
             }
-            catch (ClusterTopologyException ignored) {
+            catch (ClusterTopologyCheckedException ignored) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to send query response since node left grid [nodeId=" + nodeId +
                         ", res=" + res + "]");
@@ -301,7 +302,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                         try {
                             U.sleep(RESEND_FREQ);
                         }
-                        catch (IgniteInterruptedException e1) {
+                        catch (IgniteInterruptedCheckedException e1) {
                             U.error(log,
                                 "Waiting for queries response resending was interrupted (response will not be sent) " +
                                 "[nodeId=" + nodeId + ", response=" + res + "]", e1);
