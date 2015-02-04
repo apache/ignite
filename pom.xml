@@ -266,6 +266,9 @@
             <artifactId>license-maven-plugin</artifactId>
             <version>2.8</version>
             <configuration>
+                <mapping>
+                    <scala>JAVADOC_STYLE</scala>
+                </mapping>
                 <headerDefinitions>
                     <headerDefinition>licence/headercustomisation.xml</headerDefinition>
                 </headerDefinitions>
@@ -275,7 +278,7 @@
                 </properties>
                 <includes>
                     <include>src/**/*.java</include>
-                    <!--<include>src/**/*.xml</include>-->
+                    <include>src/**/*.scala</include>
                 </includes>
                 <excludes>
                     <exclude>**/com/romix/scala/**</exclude>
