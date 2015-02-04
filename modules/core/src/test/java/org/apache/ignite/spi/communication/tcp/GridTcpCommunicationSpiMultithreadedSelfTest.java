@@ -57,7 +57,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
     private final boolean useShmem;
 
     /** SPI resources. */
-    private static final Collection<GridTestResources> spiRsrcs = new ArrayList<>();
+    private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
 
     /** SPIs */
     private static final Map<UUID, CommunicationSpi<GridTcpCommunicationMessageAdapter>> spis =
@@ -449,7 +449,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
             GridTestUtils.setFieldValue(spi, "gridName", "grid-" + i);
 
-            GridTestResources rsrcs = new GridTestResources();
+            IgniteTestResources rsrcs = new IgniteTestResources();
 
             GridTestNode node = new GridTestNode(rsrcs.getNodeId());
 
@@ -528,7 +528,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
             spi.spiStop();
         }
 
-        for (GridTestResources rsrcs : spiRsrcs)
+        for (IgniteTestResources rsrcs : spiRsrcs)
             rsrcs.stopThreads();
 
         lsnrs.clear();

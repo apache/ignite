@@ -160,8 +160,53 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
         Object obj = t.newInstance();
 
         try {
-            for (CacheTypeFieldMetadata field : fields)
-                t.setters.get(field.getJavaName()).invoke(obj, rs.getObject(field.getDatabaseName()));
+            for (CacheTypeFieldMetadata field : fields) {
+                Method setter = t.setters.get(field.getJavaName());
+
+                Class<?> type = field.getJavaType();
+
+                String colName = field.getDatabaseName();
+
+                if (type == boolean.class)
+                    setter.invoke(obj, rs.getBoolean(colName));
+                else if (type == byte.class)
+                    setter.invoke(obj, rs.getByte(colName));
+                else if (type == short.class)
+                    setter.invoke(obj, rs.getShort(colName));
+                else if (type == int.class)
+                    setter.invoke(obj, rs.getInt(colName));
+                else if (type == long.class)
+                    setter.invoke(obj, rs.getLong(colName));
+                else if (type == float.class)
+                    setter.invoke(obj, rs.getFloat(colName));
+                else if (type == double.class)
+                    setter.invoke(obj, rs.getDouble(colName));
+                else if (type == Byte.class || type == Short.class || type == Integer.class ||
+                    type == Long.class || type == Float.class || type == Double.class) {
+                    Object val = rs.getObject(colName);
+
+                    if (val != null) {
+                        Number num = (Number)val;
+
+                        if (type == Byte.class)
+                            setter.invoke(obj, num.byteValue());
+                        else if (type == Short.class)
+                            setter.invoke(obj, num.shortValue());
+                        else if (type == Integer.class)
+                            setter.invoke(obj, num.intValue());
+                        else if (type == long.class)
+                            setter.invoke(obj, num.longValue());
+                        else if (type == float.class)
+                            setter.invoke(obj, num.floatValue());
+                        else if (type == double.class)
+                            setter.invoke(obj, num.doubleValue());
+                    }
+                    else
+                        setter.invoke(obj, new Object[]{ null });
+                }
+                else
+                    setter.invoke(obj, rs.getObject(colName));
+            }
 
             return (R)obj;
         }

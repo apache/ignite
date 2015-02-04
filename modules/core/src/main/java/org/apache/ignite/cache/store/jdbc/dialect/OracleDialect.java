@@ -37,7 +37,7 @@ public class OracleDialect extends BasicJdbcDialect {
 
         String colsLst = mkString(cols, ", ");
 
-        String selCols = mkString(uniqCols, new C1<String, String>() {
+        String selCols = mkString(cols, new C1<String, String>() {
             @Override public String apply(String col) {
                 return String.format("? AS %s", col);
             }
@@ -47,7 +47,7 @@ public class OracleDialect extends BasicJdbcDialect {
             @Override public String apply(String col) {
                 return String.format("t.%s=v.%s", col, col);
             }
-        }, "", ", ", "");
+        }, "(", " AND ", ")");
 
         String setCols = mkString(uniqCols, new C1<String, String>() {
             @Override public String apply(String col) {
@@ -62,7 +62,7 @@ public class OracleDialect extends BasicJdbcDialect {
         }, "", ", ", "");
 
         return String.format("MERGE INTO %s.%s t" +
-            " USING (SELECT %s FROM dual) AS v" +
+            " USING (SELECT %s FROM dual) v" +
             "  ON %s" +
             " WHEN MATCHED THEN" +
             "  UPDATE SET %s" +

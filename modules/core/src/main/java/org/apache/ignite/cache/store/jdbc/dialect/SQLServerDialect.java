@@ -61,7 +61,7 @@ public class SQLServerDialect extends BasicJdbcDialect {
                 " WHEN MATCHED THEN" +
                 "  UPDATE SET %s" +
                 " WHEN NOT MATCHED THEN" +
-                "  INSERT (%s) VALUES (%s)", schema, tblName, repeat("?", cols.size(), "", ",", ""), colsLst,
+                "  INSERT (%s) VALUES (%s);", schema, tblName, repeat("?", cols.size(), "", ",", ""), colsLst,
             match, setCols, colsLst, valuesCols);
     }
 }

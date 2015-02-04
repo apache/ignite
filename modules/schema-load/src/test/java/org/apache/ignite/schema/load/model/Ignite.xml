@@ -30,8 +30,8 @@
         <property name="keyFields">
             <list>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="PK"/>
-                    <property name="dbType" value="4"/>
+                    <property name="databaseName" value="PK"/>
+                    <property name="databaseType" value="4"/>
                     <property name="javaName" value="pk"/>
                     <property name="javaType" value="int"/>
                 </bean>
@@ -40,92 +40,92 @@
         <property name="valueFields">
             <list>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="PK"/>
-                    <property name="dbType" value="4"/>
+                    <property name="databaseName" value="PK"/>
+                    <property name="databaseType" value="4"/>
                     <property name="javaName" value="pk"/>
                     <property name="javaType" value="int"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="BOOLCOL"/>
-                    <property name="dbType" value="16"/>
+                    <property name="databaseName" value="BOOLCOL"/>
+                    <property name="databaseType" value="16"/>
                     <property name="javaName" value="boolcol"/>
                     <property name="javaType" value="java.lang.Boolean"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="BYTECOL"/>
-                    <property name="dbType" value="-6"/>
+                    <property name="databaseName" value="BYTECOL"/>
+                    <property name="databaseType" value="-6"/>
                     <property name="javaName" value="bytecol"/>
                     <property name="javaType" value="java.lang.Byte"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="SHORTCOL"/>
-                    <property name="dbType" value="5"/>
+                    <property name="databaseName" value="SHORTCOL"/>
+                    <property name="databaseType" value="5"/>
                     <property name="javaName" value="shortcol"/>
                     <property name="javaType" value="java.lang.Short"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="INTCOL"/>
-                    <property name="dbType" value="4"/>
+                    <property name="databaseName" value="INTCOL"/>
+                    <property name="databaseType" value="4"/>
                     <property name="javaName" value="intcol"/>
                     <property name="javaType" value="java.lang.Integer"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="LONGCOL"/>
-                    <property name="dbType" value="-5"/>
+                    <property name="databaseName" value="LONGCOL"/>
+                    <property name="databaseType" value="-5"/>
                     <property name="javaName" value="longcol"/>
                     <property name="javaType" value="java.lang.Long"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="FLOATCOL"/>
-                    <property name="dbType" value="7"/>
+                    <property name="databaseName" value="FLOATCOL"/>
+                    <property name="databaseType" value="7"/>
                     <property name="javaName" value="floatcol"/>
                     <property name="javaType" value="java.lang.Float"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="DOUBLECOL"/>
-                    <property name="dbType" value="8"/>
+                    <property name="databaseName" value="DOUBLECOL"/>
+                    <property name="databaseType" value="8"/>
                     <property name="javaName" value="doublecol"/>
                     <property name="javaType" value="java.lang.Double"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="DOUBLECOL2"/>
-                    <property name="dbType" value="8"/>
+                    <property name="databaseName" value="DOUBLECOL2"/>
+                    <property name="databaseType" value="8"/>
                     <property name="javaName" value="doublecol2"/>
                     <property name="javaType" value="java.lang.Double"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="BIGDECIMALCOL"/>
-                    <property name="dbType" value="3"/>
+                    <property name="databaseName" value="BIGDECIMALCOL"/>
+                    <property name="databaseType" value="3"/>
                     <property name="javaName" value="bigdecimalcol"/>
                     <property name="javaType" value="java.math.BigDecimal"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="STRCOL"/>
-                    <property name="dbType" value="12"/>
+                    <property name="databaseName" value="STRCOL"/>
+                    <property name="databaseType" value="12"/>
                     <property name="javaName" value="strcol"/>
                     <property name="javaType" value="java.lang.String"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="DATECOL"/>
-                    <property name="dbType" value="91"/>
+                    <property name="databaseName" value="DATECOL"/>
+                    <property name="databaseType" value="91"/>
                     <property name="javaName" value="datecol"/>
                     <property name="javaType" value="java.sql.Date"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="TIMECOL"/>
-                    <property name="dbType" value="92"/>
+                    <property name="databaseName" value="TIMECOL"/>
+                    <property name="databaseType" value="92"/>
                     <property name="javaName" value="timecol"/>
                     <property name="javaType" value="java.sql.Time"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="TSCOL"/>
-                    <property name="dbType" value="93"/>
+                    <property name="databaseName" value="TSCOL"/>
+                    <property name="databaseType" value="93"/>
                     <property name="javaName" value="tscol"/>
                     <property name="javaType" value="java.sql.Timestamp"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="ARRCOL"/>
-                    <property name="dbType" value="-3"/>
+                    <property name="databaseName" value="ARRCOL"/>
+                    <property name="databaseType" value="-3"/>
                     <property name="javaName" value="arrcol"/>
                     <property name="javaType" value="java.lang.Object"/>
                 </bean>
@@ -140,8 +140,8 @@
         <property name="keyFields">
             <list>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="PK"/>
-                    <property name="dbType" value="4"/>
+                    <property name="databaseName" value="PK"/>
+                    <property name="databaseType" value="4"/>
                     <property name="javaName" value="pk"/>
                     <property name="javaType" value="int"/>
                 </bean>
@@ -150,92 +150,92 @@
         <property name="valueFields">
             <list>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="PK"/>
-                    <property name="dbType" value="4"/>
+                    <property name="databaseName" value="PK"/>
+                    <property name="databaseType" value="4"/>
                     <property name="javaName" value="pk"/>
                     <property name="javaType" value="int"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="BOOLCOL"/>
-                    <property name="dbType" value="16"/>
+                    <property name="databaseName" value="BOOLCOL"/>
+                    <property name="databaseType" value="16"/>
                     <property name="javaName" value="boolcol"/>
                     <property name="javaType" value="boolean"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="BYTECOL"/>
-                    <property name="dbType" value="-6"/>
+                    <property name="databaseName" value="BYTECOL"/>
+                    <property name="databaseType" value="-6"/>
                     <property name="javaName" value="bytecol"/>
                     <property name="javaType" value="byte"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="SHORTCOL"/>
-                    <property name="dbType" value="5"/>
+                    <property name="databaseName" value="SHORTCOL"/>
+                    <property name="databaseType" value="5"/>
                     <property name="javaName" value="shortcol"/>
                     <property name="javaType" value="short"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="INTCOL"/>
-                    <property name="dbType" value="4"/>
+                    <property name="databaseName" value="INTCOL"/>
+                    <property name="databaseType" value="4"/>
                     <property name="javaName" value="intcol"/>
                     <property name="javaType" value="int"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="LONGCOL"/>
-                    <property name="dbType" value="-5"/>
+                    <property name="databaseName" value="LONGCOL"/>
+                    <property name="databaseType" value="-5"/>
                     <property name="javaName" value="longcol"/>
                     <property name="javaType" value="long"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="FLOATCOL"/>
-                    <property name="dbType" value="7"/>
+                    <property name="databaseName" value="FLOATCOL"/>
+                    <property name="databaseType" value="7"/>
                     <property name="javaName" value="floatcol"/>
                     <property name="javaType" value="float"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="DOUBLECOL"/>
-                    <property name="dbType" value="8"/>
+                    <property name="databaseName" value="DOUBLECOL"/>
+                    <property name="databaseType" value="8"/>
                     <property name="javaName" value="doublecol"/>
                     <property name="javaType" value="double"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="DOUBLECOL2"/>
-                    <property name="dbType" value="8"/>
+                    <property name="databaseName" value="DOUBLECOL2"/>
+                    <property name="databaseType" value="8"/>
                     <property name="javaName" value="doublecol2"/>
                     <property name="javaType" value="double"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="BIGDECIMALCOL"/>
-                    <property name="dbType" value="3"/>
+                    <property name="databaseName" value="BIGDECIMALCOL"/>
+                    <property name="databaseType" value="3"/>
                     <property name="javaName" value="bigdecimalcol"/>
                     <property name="javaType" value="java.math.BigDecimal"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="STRCOL"/>
-                    <property name="dbType" value="12"/>
+                    <property name="databaseName" value="STRCOL"/>
+                    <property name="databaseType" value="12"/>
                     <property name="javaName" value="strcol"/>
                     <property name="javaType" value="java.lang.String"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="DATECOL"/>
-                    <property name="dbType" value="91"/>
+                    <property name="databaseName" value="DATECOL"/>
+                    <property name="databaseType" value="91"/>
                     <property name="javaName" value="datecol"/>
                     <property name="javaType" value="java.sql.Date"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="TIMECOL"/>
-                    <property name="dbType" value="92"/>
+                    <property name="databaseName" value="TIMECOL"/>
+                    <property name="databaseType" value="92"/>
                     <property name="javaName" value="timecol"/>
                     <property name="javaType" value="java.sql.Time"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="TSCOL"/>
-                    <property name="dbType" value="93"/>
+                    <property name="databaseName" value="TSCOL"/>
+                    <property name="databaseType" value="93"/>
                     <property name="javaName" value="tscol"/>
                     <property name="javaType" value="java.sql.Timestamp"/>
                 </bean>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="dbName" value="ARRCOL"/>
-                    <property name="dbType" value="-3"/>
+                    <property name="databaseName" value="ARRCOL"/>
+                    <property name="databaseType" value="-3"/>
                     <property name="javaName" value="arrcol"/>
                     <property name="javaType" value="java.lang.Object"/>
                 </bean>
