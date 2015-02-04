@@ -61,7 +61,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private static final long RETRY_TIMEOUT = 1000;
 
     /** Local service instances. */
-    private final Map<String, Collection<ManagedServiceContextImpl>> locSvcs = new HashMap<>();
+    private final Map<String, Collection<ManagedServiceContextImpl>> locSvcs = new HashMap<>();;
 
     /** Deployment futures. */
     private final ConcurrentMap<String, GridServiceDeploymentFuture> depFuts = new ConcurrentHashMap8<>();
