@@ -433,11 +433,15 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
                         nodes,
                         true).get();
                 }
-                catch (ClusterTopologyException | ClusterTopologyCheckedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("BlockSet job failed, will retry: " + e);
+                catch (IgniteCheckedException e) {
+                    if (e.hasCause(ClusterTopologyException.class)) {
+                        if (log.isDebugEnabled())
+                            log.debug("RemoveSetData job failed, will retry: " + e);
 
-                    continue;
+                        continue;
+                    }
+                    else
+                        throw e;
                 }
 
                 try {
@@ -446,11 +450,15 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
                         nodes,
                         true).get();
                 }
-                catch (ClusterTopologyException | ClusterTopologyCheckedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("RemoveSetData job failed, will retry: " + e);
+                catch (IgniteCheckedException e) {
+                    if (e.hasCause(ClusterTopologyException.class)) {
+                        if (log.isDebugEnabled())
+                            log.debug("RemoveSetData job failed, will retry: " + e);
 
-                    continue;
+                        continue;
+                    }
+                    else
+                        throw e;
                 }
 
                 if (cctx.topologyVersionFuture().get() == topVer)
