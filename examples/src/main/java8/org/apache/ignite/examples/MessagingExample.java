@@ -18,6 +18,9 @@
 package org.apache.ignite.examples;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
+
+import java.util.concurrent.*;
 
 /**
  * Example that demonstrates how to exchange messages between nodes. Use such
@@ -47,7 +50,7 @@ public final class MessagingExample {
      */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
-            if (ignite.nodes().size() < 2) {
+            if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2)) {
                 System.out.println();
                 System.out.println(">>> Please start at least 2 cluster nodes to run example.");
                 System.out.println();
@@ -59,7 +62,7 @@ public final class MessagingExample {
             System.out.println(">>> Messaging example started.");
 
             // Projection for remote nodes.
-            ClusterGroup rmtPrj = ignite.forRemotes();
+            ClusterGroup rmtPrj = ignite.cluster().forRemotes();
 
             // Listen for messages from remote nodes to make sure that they received all the messages.
             int msgCnt = rmtPrj.nodes().size() * MESSAGES_NUM;
@@ -67,20 +70,20 @@ public final class MessagingExample {
             CountDownLatch orderedLatch = new CountDownLatch(msgCnt);
             CountDownLatch unorderedLatch = new CountDownLatch(msgCnt);
 
-            localListen(ignite.forLocal(), orderedLatch, unorderedLatch);
+            localListen(ignite.message(ignite.cluster().forLocal()), orderedLatch, unorderedLatch);
 
             // Register listeners on all cluster nodes.
-            startListening(rmtPrj);
+            startListening(ignite, ignite.message(rmtPrj));
 
             // Send unordered messages to all remote nodes.
             for (int i = 0; i < MESSAGES_NUM; i++)
-                rmtPrj.message().send(TOPIC.UNORDERED, Integer.toString(i));
+                ignite.message(rmtPrj).send(TOPIC.UNORDERED, Integer.toString(i));
 
             System.out.println(">>> Finished sending unordered messages.");
 
             // Send ordered messages to all remote nodes.
             for (int i = 0; i < MESSAGES_NUM; i++)
-                rmtPrj.message().sendOrdered(TOPIC.ORDERED, Integer.toString(i), 0);
+                ignite.message(rmtPrj).sendOrdered(TOPIC.ORDERED, Integer.toString(i), 0);
 
             System.out.println(">>> Finished sending ordered messages.");
             System.out.println(">>> Check output on all nodes for message printouts.");
@@ -96,63 +99,60 @@ public final class MessagingExample {
     /**
      * Start listening to messages on all cluster nodes within passed in projection.
      *
-     * @param prj Cluster group.
+     * @param ignite Ignite.
+     * @param imsg Ignite messaging.
      * @throws IgniteException If failed.
      */
-    private static void startListening(ClusterGroup prj) throws IgniteException {
+    private static void startListening(final Ignite ignite, IgniteMessaging imsg) throws IgniteException {
         // Add ordered message listener.
-        prj.message().remoteListen(TOPIC.ORDERED, (nodeId, msg) -> {
+        imsg.remoteListen(TOPIC.ORDERED, (nodeId, msg) -> {
             System.out.println("Received ordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
             try {
-                // Projection does not contain local node: ClusterGroup rmtPrj = g.forRemotes();
-                // So, need to get projection for sender node through entire cluster.
-                prj.ignite().forNodeId(nodeId).message().send(TOPIC.ORDERED, msg);
+                ignite.message(ignite.cluster().forNodeId(nodeId)).send(TOPIC.ORDERED, msg);
             }
             catch (IgniteException e) {
                 e.printStackTrace();
             }
 
             return true; // Return true to continue listening.
-        }).get();
+        });
 
         // Add unordered message listener.
-        prj.message().remoteListen(TOPIC.UNORDERED, (nodeId, msg) -> {
+        imsg.remoteListen(TOPIC.UNORDERED, (nodeId, msg) -> {
             System.out.println("Received unordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
             try {
-                // Projection does not contain local node: ClusterGroup rmtPrj = g.forRemotes();
-                // So, need to get projection for sender node through entire cluster.
-                prj.ignite().forNodeId(nodeId).message().send(TOPIC.UNORDERED, msg);
+                ignite.message(ignite.cluster().forNodeId(nodeId)).send(TOPIC.UNORDERED, msg);
             }
             catch (IgniteException e) {
                 e.printStackTrace();
             }
 
             return true; // Return true to continue listening.
-        }).get();
+        });
     }
 
     /**
      * Listen for messages from remote nodes.
      *
-     * @param grp Cluster group.
+     * @param imsg Ignite messaging.
      * @param orderedLatch Latch for ordered messages acks.
      * @param unorderedLatch Latch for unordered messages acks.
      */
     private static void localListen(
-        ClusterGroup prj,
+        IgniteMessaging imsg,
         final CountDownLatch orderedLatch,
         final CountDownLatch unorderedLatch
     ) {
-        grp.message().localListen(TOPIC.ORDERED, (nodeId, msg) -> {
+        imsg.localListen(TOPIC.ORDERED, (nodeId, msg) -> {
             orderedLatch.countDown();
 
             // Return true to continue listening, false to stop.
             return orderedLatch.getCount() > 0;
         });
 
-        grp.message().localListen(TOPIC.UNORDERED, (nodeId, msg) -> {
+        imsg.localListen(TOPIC.UNORDERED, (nodeId, msg) -> {
             unorderedLatch.countDown();
 
             // Return true to continue listening, false to stop.

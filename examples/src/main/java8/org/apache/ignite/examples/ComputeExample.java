@@ -33,19 +33,19 @@ public class ComputeExample {
      * @param args Command line arguments, none required.
      * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws IgniteException {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Compute broadcast example started.");
 
             // Broadcast closure to all cluster nodes.
-            ignite.compute().broadcast((IgniteRunnable)() -> System.out.println("Hello World")).get();
+            ignite.compute().broadcast((IgniteRunnable) () -> System.out.println("Hello World"));
 
             // Unicast closure to some cluster node picked by load balancer.
-            ignite.compute().run((IgniteRunnable)() -> System.out.println("Hello World")).get();
+            ignite.compute().run((IgniteRunnable) () -> System.out.println("Hello World"));
 
             // Unicast closure to some cluster node picked by load balancer and return result.
-            int length = ignite.compute().call((IgniteCallable<Integer>)"Hello World"::length).get();
+            int length = ignite.compute().call((IgniteCallable<Integer>) "Hello World"::length);
 
             System.out.println();
             System.out.println(">>> Computed length: " + length);
