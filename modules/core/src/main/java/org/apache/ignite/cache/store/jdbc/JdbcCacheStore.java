@@ -437,8 +437,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
         EntryMapping em = cacheMappings(cacheName).get(keyTypeId);
 
         if (em == null)
-            throw new CacheException("Failed to find mapping description [table = " + em.fullTableName() +
-                ", key=" + key + ", cache=" + (cacheName != null ? cacheName : "<default>") + "]");
+            throw new CacheException("Failed to find mapping description [key=" + key +
+                ", cache=" + (cacheName != null ? cacheName : "<default>") + "]");
 
         return em;
     }
