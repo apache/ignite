@@ -284,6 +284,8 @@
                     <include>**/*.sh</include>
                     <include>**/*.bat</include>
                     <include>**/*.js</include>
+                    <include>**/*.xml</include>
+                    <include>**/*.css</include>
                 </includes>
                 <excludes>
                     <exclude>**/com/romix/scala/**</exclude>
