@@ -279,6 +279,7 @@
                 <includes>
                     <include>src/**/*.java</include>
                     <include>src/**/*.scala</include>
+                    <include>**/*.php</include>
                 </includes>
                 <excludes>
                     <exclude>**/com/romix/scala/**</exclude>
