@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Servlet loader test.
  *
- * 1. Create folder where all GridGain jar files will be placed.
+ * 1. Create folder where all Ignite jar files will be placed.
  * For example: /home/ggdev/apache-tomcat-6.0.14/gridgain
  *
  * 2. Add in {@code $TOMCAT_HOME/conf/catalina.properties} for property {@code common.loader}
@@ -38,7 +38,7 @@ import java.util.*;
  * 3. Add in {@code $TOMCAT_HOME/conf/web.xml}
  *          <pre class="snippet">
  *          &lt;servlet&gt;
- *              &lt;servlet-name&gt;GridGain&lt;/servlet-name&gt;
+ *              &lt;servlet-name&gt;Ignite&lt;/servlet-name&gt;
  *              &lt;servlet-class&gt;org.apache.ignite.loaders.servlet.GridServletLoader&lt;/servlet-class&gt;
  *              &lt;init-param&gt;
  *                  &lt;param-name&gt;cfgFilePath&lt;/param-name&gt;

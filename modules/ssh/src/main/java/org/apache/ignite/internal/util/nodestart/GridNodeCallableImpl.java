@@ -35,10 +35,10 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * SSH-based node starter.
  */
 public class GridNodeCallableImpl implements GridNodeCallable {
-    /** Default GridGain home path for Windows (taken from environment variable). */
+    /** Default Ignite home path for Windows (taken from environment variable). */
     private static final String DFLT_IGNITE_HOME_WIN = "%IGNITE_HOME%";
 
-    /** Default GridGain home path for Linux (taken from environment variable). */
+    /** Default Ignite home path for Linux (taken from environment variable). */
     private static final String DFLT_IGNITE_HOME_LINUX = "$IGNITE_HOME";
 
     /** Default start script path for Windows. */

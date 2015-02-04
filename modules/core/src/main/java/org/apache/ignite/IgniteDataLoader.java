@@ -80,7 +80,7 @@ import java.util.*;
  *  <li>
  *      {@link #deployClass(Class)} - optional deploy class for peer deployment. All classes
  *      loaded by a data loader must be class-loadable from the same class-loader.
- *      GridGain will make the best effort to detect the most suitable class-loader
+ *      Ignite will make the best effort to detect the most suitable class-loader
  *      for data loading. However, in complex cases, where compound or deeply nested
  *      class-loaders are used, it is best to specify a deploy class which can be any
  *      class loaded by the class-loader for given data.
@@ -213,7 +213,7 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
 
     /**
      * Optional deploy class for peer deployment. All classes loaded by a data loader
-     * must be class-loadable from the same class-loader. GridGain will make the best
+     * must be class-loadable from the same class-loader. Ignite will make the best
      * effort to detect the most suitable class-loader for data loading. However,
      * in complex cases, where compound or deeply nested class-loaders are used,
      * it is best to specify a deploy class which can be any class loaded by

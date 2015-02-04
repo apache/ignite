@@ -62,7 +62,7 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
 
     /**
      * @param garFileName Name of .gar file.
-     * @param garDescFileName Name of GridGain descriptor file.
+     * @param garDescFileName Name of Ignite descriptor file.
      * @param taskId Task id.
      * @param deployed If {@code true} then givent task should be deployed after test,
      *      if {@code false} then it should be undeployed.

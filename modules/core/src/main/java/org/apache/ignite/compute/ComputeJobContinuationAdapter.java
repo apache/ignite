@@ -91,7 +91,7 @@ public abstract class ComputeJobContinuationAdapter extends ComputeJobAdapter im
 
     /**
      * Creates job with one arguments. This constructor exists for better
-     * backward compatibility with internal GridGain 2.x code.
+     * backward compatibility with internal Ignite 2.x code.
      *
      * @param arg Job argument.
      */

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.fs.common;
 
 /**
  * Abstract class for all messages sent between GGFS client (Hadoop File System implementation) and
- * GGFS server (GridGain data node).
+ * GGFS server (Ignite data node).
  */
 public abstract class GridGgfsMessage {
     /** GGFS command. */

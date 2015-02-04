@@ -276,7 +276,7 @@ public abstract class IgniteUtils {
     /** Boxed class map. */
     private static final Map<Class<?>, Class<?>> boxedClsMap = new HashMap<>(16, .5f);
 
-    /** Class loader used to load GridGain. */
+    /** Class loader used to load Ignite. */
     private static final ClassLoader gridClassLoader = IgniteUtils.class.getClassLoader();
 
     /** MAC OS invalid argument socket error message. */
@@ -286,10 +286,10 @@ public abstract class IgniteUtils {
     /** Portable classes. */
     private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
 
-    /** GridGain Logging Directory. */
+    /** Ignite Logging Directory. */
     public static final String IGNITE_LOG_DIR = System.getenv(IgniteSystemProperties.IGNITE_LOG_DIR);
 
-    /** GridGain Work Directory. */
+    /** Ignite Work Directory. */
     public static final String IGNITE_WORK_DIR = System.getenv(IgniteSystemProperties.IGNITE_WORK_DIR);
 
     /** Clock timer. */
@@ -1924,7 +1924,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @return Class loader used to load GridGain itself.
+     * @return Class loader used to load Ignite itself.
      */
     public static ClassLoader gridClassLoader() {
         return gridClassLoader;
@@ -2394,7 +2394,7 @@ public abstract class IgniteUtils {
     @Nullable private static String resolveProjectHome() {
         assert Thread.holdsLock(IgniteUtils.class);
 
-        // Resolve GridGain home via environment variables.
+        // Resolve Ignite home via environment variables.
         String ggHome0 = IgniteSystemProperties.getString(IGNITE_HOME);
 
         if (!F.isEmpty(ggHome0))
@@ -2485,7 +2485,7 @@ public abstract class IgniteUtils {
                 ggHomeTup = ggHome;
 
                 if (ggHomeTup == null) {
-                    // Resolve GridGain installation home directory.
+                    // Resolve Ignite installation home directory.
                     ggHome = F.t(ggHome0 = resolveProjectHome());
 
                     if (ggHome0 != null)
@@ -2502,7 +2502,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @param path GridGain home. May be {@code null}.
+     * @param path Ignite home. May be {@code null}.
      */
     public static void setGridGainHome(@Nullable String path) {
         GridTuple<String> ggHomeTup = ggHome;
@@ -5685,7 +5685,7 @@ public abstract class IgniteUtils {
                     }
             }
         }
-        // Don't go into internal GridGain structures.
+        // Don't go into internal Ignite structures.
         else if (isIgnite(obj.getClass()))
             return null;
         else if (obj instanceof Iterable)
@@ -5720,7 +5720,7 @@ public abstract class IgniteUtils {
      * Checks if given class is of {@code Ignite} type.
      *
      * @param cls Class to check.
-     * @return {@code True} if given class is of {@code GridGain} type.
+     * @return {@code True} if given class is of {@code Ignite} type.
      */
     public static boolean isIgnite(Class<?> cls) {
         return cls.getName().startsWith("org.apache.ignite");
@@ -6078,7 +6078,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Indicates that GridGain has been sufficiently tested on the current OS.
+     * Indicates that Ignite has been sufficiently tested on the current OS.
      *
      * @return {@code true} if current OS was sufficiently tested - {@code false} otherwise.
      */
@@ -8043,7 +8043,7 @@ public abstract class IgniteUtils {
      * @param msg Message to start string.
      * @param args Even length array where the odd elements are parameter names
      *      and even elements are parameter values.
-     * @return Log message, formatted as recommended by GridGain guidelines.
+     * @return Log message, formatted as recommended by Ignite guidelines.
      */
     public static String fl(String msg, Object... args) {
         assert args.length % 2 == 0;
@@ -8346,7 +8346,7 @@ public abstract class IgniteUtils {
      * {@link org.apache.ignite.lifecycle.LifecycleAware} interface and executes {@link org.apache.ignite.lifecycle.LifecycleAware#stop} method.
      *
      * @param log Logger used to log error message in case of stop failure.
-     * @param objs Object passed to GridGain configuration.
+     * @param objs Object passed to Ignite configuration.
      */
     public static void stopLifecycleAware(IgniteLogger log, Iterable<?> objs) {
         for (Object obj : objs) {
@@ -8365,7 +8365,7 @@ public abstract class IgniteUtils {
      * Groups given nodes by the node's physical computer (host).
      * <p>
      * Detection of the same physical computer (host) is based on comparing set of network interface MACs.
-     * If two nodes have the same set of MACs, GridGain considers these nodes running on the same
+     * If two nodes have the same set of MACs, Ignite considers these nodes running on the same
      * physical computer.
      *
      * @param nodes Nodes.
@@ -8582,8 +8582,8 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @param userWorkDir GridGain work folder provided by user.
-     * @param userGgHome GridGain home folder provided by user.
+     * @param userWorkDir Ignite work folder provided by user.
+     * @param userGgHome Ignite home folder provided by user.
      */
     public static void setWorkDirectory(@Nullable String userWorkDir, @Nullable String userGgHome)
         throws IgniteCheckedException {
@@ -8633,7 +8633,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Nullifies GridGain home directory. For test purposes only.
+     * Nullifies Ignite home directory. For test purposes only.
      */
     static void nullifyHomeDirectory() {
         ggHome = null;

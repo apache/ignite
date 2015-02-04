@@ -27,7 +27,7 @@ import java.net.*;
 import java.util.*;
 
 /**
- * This class defines a factory for the main GridGain API. It controls Grid life cycle
+ * This class defines a factory for the main Ignite API. It controls Grid life cycle
  * and allows listening for grid events.
  * <h1 class="header">Grid Loaders</h1>
  * Although user can apply grid factory directly to start and stop grid, grid is
@@ -76,13 +76,13 @@ import java.util.*;
  * Ignition.start("/path/to/spring/xml/file.xml");
  * ...
  * </pre>
- * You can also instantiate grid directly from Spring without using {@code GridGain}.
+ * You can also instantiate grid directly from Spring without using {@code Ignition}.
  * For more information refer to {@ignitelink org.apache.ignite.IgniteSpringBean} documentation.
  */
 public class Ignition {
     /**
      * This is restart code that can be used by external tools, like Shell scripts,
-     * to auto-restart the GridGain JVM process. Note that there is no standard way
+     * to auto-restart the Ignite JVM process. Note that there is no standard way
      * for a JVM to restart itself from Java application and therefore we rely on
      * external tools to provide that capability.
      * <p>
@@ -93,7 +93,7 @@ public class Ignition {
 
     /**
      * This is kill code that can be used by external tools, like Shell scripts,
-     * to auto-stop the GridGain JVM process without restarting.
+     * to auto-stop the Ignite JVM process without restarting.
      */
     public static final int KILL_EXIT_CODE = 130;
 
@@ -227,8 +227,8 @@ public class Ignition {
      * should be responsible for stopping it.
      * <p>
      * Note also that restarting functionality only works with the tools that specifically
-     * support GridGain's protocol for restarting. Currently only standard <tt>ignite.{sh|bat}</tt>
-     * scripts support restarting of JVM GridGain's process.
+     * support Ignite's protocol for restarting. Currently only standard <tt>ignite.{sh|bat}</tt>
+     * scripts support restarting of JVM Ignite's process.
      *
      * @param cancel If {@code true} then all jobs currently executing on
      *      all grids will be cancelled by calling {@link org.apache.ignite.compute.ComputeJob#cancel()}
@@ -413,7 +413,7 @@ public class Ignition {
     /**
      * Adds a lsnr for grid life cycle events.
      * <p>
-     * Note that unlike other listeners in GridGain this listener will be
+     * Note that unlike other listeners in Ignite this listener will be
      * notified from the same thread that triggers the state change. Because of
      * that it is the responsibility of the user to make sure that listener logic
      * is light-weight and properly handles (catches) any runtime exceptions, if any

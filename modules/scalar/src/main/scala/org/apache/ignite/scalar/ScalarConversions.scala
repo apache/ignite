@@ -36,7 +36,7 @@ import scala.util.control.Breaks._
 /**
  * ==Overview==
  * Mixin for `scalar` object providing `implicit` and `explicit` conversions between
- * Java and Scala GridGain components.
+ * Java and Scala Ignite components.
  *
  * It is very important to review this class as it defines what `implicit` conversions
  * will take place when using Scalar. Note that object `scalar` mixes in this

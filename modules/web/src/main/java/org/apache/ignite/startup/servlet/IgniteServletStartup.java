@@ -31,13 +31,13 @@ import java.net.*;
 import java.util.*;
 
 /**
- * This class defines servlet-based GridGain startup. This startup can be used to start GridGain
+ * This class defines servlet-based Ignite startup. This startup can be used to start Ignite
  * inside any web container as servlet.
  * <p>
  * This startup must be defined in {@code web.xml} file.
  * <pre name="code" class="xml">
  * &lt;servlet&gt;
- *     &lt;servlet-name&gt;GridGain&lt;/servlet-name&gt;
+ *     &lt;servlet-name&gt;Ignite&lt;/servlet-name&gt;
  *     &lt;servlet-class&gt;org.apache.ignite.startup.servlet.IgniteServletStartup&lt;/servlet-class&gt;
  *     &lt;init-param&gt;
  *         &lt;param-name&gt;cfgFilePath&lt;/param-name&gt;
@@ -48,7 +48,7 @@ import java.util.*;
  * </pre>
  * <p>
  * Servlet-based startup may be used in any web container like Tomcat, Jetty and etc.
- * Depending on the way this startup is deployed the GridGain instance can be accessed
+ * Depending on the way this startup is deployed the Ignite instance can be accessed
  * by either all web applications or by only one. See web container class loading architecture:
  * <ul>
  * <li><a target=_blank href="http://tomcat.apache.org/tomcat-7.0-doc/class-loader-howto.html">http://tomcat.apache.org/tomcat-7.0-doc/class-loader-howto.html</a></li>
@@ -56,11 +56,11 @@ import java.util.*;
  * </ul>
  * <p>
  * <h2 class="header">Tomcat</h2>
- * There are two ways to start GridGain on Tomcat.
+ * There are two ways to start Ignite on Tomcat.
  * <ul>
- * <li>GridGain started when web container starts and GridGain instance is accessible only to all web applications.
+ * <li>Ignite started when web container starts and Ignite instance is accessible only to all web applications.
  * <ol>
- *     <li>Add GridGain libraries in Tomcat common loader.
+ *     <li>Add Ignite libraries in Tomcat common loader.
  *         Add in file {@code $TOMCAT_HOME/conf/catalina.properties} for property {@code shared.loader}
  *         the following {@code $IGNITE_HOME/gridgain.jar,$IGNITE_HOME/libs/*.jar}
  *         (replace {@code $IGNITE_HOME} with absolute path).
@@ -68,7 +68,7 @@ import java.util.*;
  *     <li>Configure startup in {@code $TOMCAT_HOME/conf/web.xml}
  *         <pre name="code" class="xml">
  *         &lt;servlet&gt;
- *             &lt;servlet-name&gt;GridGain&lt;/servlet-name&gt;
+ *             &lt;servlet-name&gt;Ignite&lt;/servlet-name&gt;
  *             &lt;servlet-class&gt;org.apache.ignite.startup.servlet.IgniteServletStartup&lt;/servlet-class&gt;
  *             &lt;init-param&gt;
  *                 &lt;param-name&gt;cfgFilePath&lt;/param-name&gt;
@@ -81,7 +81,7 @@ import java.util.*;
  *     </ol>
  * </li>
  * <li>
- * GridGain started from WAR-file and GridGain instance is accessible only to that web application.
+ * Ignite started from WAR-file and Ignite instance is accessible only to that web application.
  * Difference with approach described above is that {@code web.xml} file and all libraries should
  * be added in WAR file without changes in Tomcat configuration files.
  * </li>
@@ -96,7 +96,7 @@ import java.util.*;
  *
  * ServletHttpContext ctx = (ServletHttpContext)service.getContext("/");
  *
- * ServletHolder servlet = ctx.addServlet("GridGain", "/GridGainStartup",
+ * ServletHolder servlet = ctx.addServlet("Ignite", "/IgniteStartup",
  *      "org.apache.ignite.startup.servlet.IgniteServletStartup");
  *
  * servlet.setInitParameter("cfgFilePath", "config/default-config.xml");
@@ -124,7 +124,7 @@ public class IgniteServletStartup extends HttpServlet {
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public void init() throws ServletException {
-        // Avoid multiple servlet instances. GridGain should be loaded once.
+        // Avoid multiple servlet instances. Ignite should be loaded once.
         if (loaded)
             return;
 

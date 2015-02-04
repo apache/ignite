@@ -40,8 +40,8 @@ import java.util.concurrent.*;
 import static org.apache.ignite.IgniteState.*;
 
 /**
- * This class defines random command-line GridGain loader. This loader can be used
- * to randomly start and stop GridGain from command line for tests. This loader is a Java
+ * This class defines random command-line Ignite loader. This loader can be used
+ * to randomly start and stop Ignite from command line for tests. This loader is a Java
  * application with {@link #main(String[])} method that accepts command line arguments.
  * See below for details.
  */

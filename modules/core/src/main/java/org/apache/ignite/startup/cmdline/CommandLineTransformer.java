@@ -21,7 +21,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * This class is a workaround for a versatile problems with passing arguments to the GridGain Windows batch launcher
+ * This class is a workaround for a versatile problems with passing arguments to the Ignite Windows batch launcher
  * scripts. It transforms command line options passed to the *.bat launcher scripts into a reformatted, adapted for
  * Windows batch usage variables.
  * <p>

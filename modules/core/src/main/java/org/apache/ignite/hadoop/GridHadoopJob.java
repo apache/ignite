@@ -59,7 +59,7 @@ public interface GridHadoopJob {
      * Does all the needed initialization for the job. Will be called on each node where tasks for this job must
      * be executed.
      * <p>
-     * If job is running in external mode this method will be called on instance in GridGain node with parameter
+     * If job is running in external mode this method will be called on instance in Ignite node with parameter
      * {@code false} and on instance in external process with parameter {@code true}.
      *
      * @param external If {@code true} then this job instance resides in external process.
@@ -71,7 +71,7 @@ public interface GridHadoopJob {
     /**
      * Release all the resources.
      * <p>
-     * If job is running in external mode this method will be called on instance in GridGain node with parameter
+     * If job is running in external mode this method will be called on instance in Ignite node with parameter
      * {@code false} and on instance in external process with parameter {@code true}.
      *
      * @param external If {@code true} then this job instance resides in external process.

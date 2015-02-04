@@ -53,7 +53,7 @@ import org.jetbrains.annotations.*;
  * and annotated with {@link CacheQuerySqlFunction}. Classes containing these methods must be registered in
  * {@link org.apache.ignite.configuration.IgniteQueryConfiguration#setIndexCustomFunctionClasses(Class[])}.
  * <h1 class="header">Full Text Queries</h1>
- * GridGain supports full text queries based on Apache Lucene engine. This queries are created by
+ * Ignite supports full text queries based on Apache Lucene engine. This queries are created by
  * {@link CacheQueries#createFullTextQuery(Class, String)} method. Note that all fields that
  * are expected to show up in text query results must be annotated with {@link CacheQueryTextField}
  * annotation.
@@ -63,7 +63,7 @@ import org.jetbrains.annotations.*;
  * entries, skipping over entries that don't pass the optionally provided key-value filter
  * (see {@link CacheQueries#createScanQuery(org.apache.ignite.lang.IgniteBiPredicate)} method).
  * <h2 class="header">Limitations</h2>
- * Data in GridGain cache is usually distributed across several nodes,
+ * Data in Ignite cache is usually distributed across several nodes,
  * so some queries may not work as expected. Keep in mind following limitations
  * (not applied if data is queried from one node only):
  * <ul>
@@ -131,13 +131,13 @@ import org.jetbrains.annotations.*;
  *     "from Person, Organization where Person.orgId = Organization.id " +
  *         "and Organization.name = ? and Person.salary &gt; ? and Person.salary &lt;= ?");
  *
- * // Query all nodes to find all cached GridGain employees
+ * // Query all nodes to find all cached Ignite employees
  * // with salaries less than 1000.
- * qry.execute("GridGain", 0, 1000);
+ * qry.execute("Ignition", 0, 1000);
  *
- * // Query only remote nodes to find all remotely cached GridGain employees
+ * // Query only remote nodes to find all remotely cached Ignite employees
  * // with salaries greater than 1000 and less than 2000.
- * qry.projection(grid.remoteProjection()).execute("GridGain", 1000, 2000);
+ * qry.projection(grid.remoteProjection()).execute("Ignition", 1000, 2000);
  * </pre>
  * Here is a possible query that will use Lucene text search to scan all resumes to
  * check if employees have {@code Master} degree:
@@ -149,7 +149,7 @@ import org.jetbrains.annotations.*;
  * mastersQry.execute();
  * </pre>
  * <h1 class="header">Geo-Spatial Indexes and Queries</h1>
- * GridGain also support <b>Geo-Spatial Indexes</b>. Here is an example of geo-spatial index:
+ * Ignite also support <b>Geo-Spatial Indexes</b>. Here is an example of geo-spatial index:
  * <pre name="code" class="java">
  * private class MapPoint implements Serializable {
  *     // Geospatial index.

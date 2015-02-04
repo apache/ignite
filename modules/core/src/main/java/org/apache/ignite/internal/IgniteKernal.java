@@ -101,7 +101,7 @@ import static org.apache.ignite.internal.util.nodestart.GridNodeStartUtils.*;
 import static org.apache.ignite.lifecycle.LifecycleEventType.*;
 
 /**
- * GridGain kernal.
+ * Ignite kernal.
  * <p/>
  * See <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a> for information on the
  * misspelling.
@@ -113,7 +113,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     /** Compatible versions. */
     private static final String COMPATIBLE_VERS = GridProperties.get("gridgain.compatible.vers");
 
-    /** GridGain site that is shown in log messages. */
+    /** Ignite site that is shown in log messages. */
     static final String SITE = "www.gridgain.com";
 
     /** System line separator. */
@@ -2809,7 +2809,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
      * Local grid node is excluded.
      * <p>
      * Detection of the same physical computer is based on comparing set of network interface MACs.
-     * If two nodes have the same set of MACs, GridGain considers these nodes running on the same
+     * If two nodes have the same set of MACs, Ignite considers these nodes running on the same
      * physical computer.
      * @return Grid nodes that reside on the same physical computer as local grid node.
      */

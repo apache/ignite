@@ -48,7 +48,7 @@ public class GridRemoteStartSpecification {
     /** Number of nodes to start. */
     private final int nodes;
 
-    /** GridGain installation folder. */
+    /** Ignite installation folder. */
     private String ggHome;
 
     /** Configuration path. */
@@ -73,7 +73,7 @@ public class GridRemoteStartSpecification {
      * @param passwd Password (can be {@code null} if private key authentication is used).
      * @param key Private key file path.
      * @param nodes Number of nodes to start.
-     * @param ggHome GridGain installation folder.
+     * @param ggHome Ignite installation folder.
      * @param cfg Configuration path.
      * @param script Script path.
      */
@@ -90,7 +90,7 @@ public class GridRemoteStartSpecification {
      * @param passwd Password (can be {@code null} if private key authentication is used).
      * @param key Private key file path.
      * @param nodes Number of nodes to start.
-     * @param ggHome GridGain installation folder.
+     * @param ggHome Ignite installation folder.
      * @param cfg Configuration path.
      * @param script Script path.
      * @param logger Custom logger.
@@ -213,7 +213,7 @@ public class GridRemoteStartSpecification {
     }
 
     /**
-     * @return GridGain installation folder.
+     * @return Ignite installation folder.
      */
     public String ggHome() {
         return ggHome;

@@ -49,7 +49,7 @@ public class GridNodeStartUtils {
     /** Key for number of nodes. */
     public static final String NODES = "nodes";
 
-    /** Key for GridGain home folder. */
+    /** Key for Ignite home folder. */
     public static final String IGNITE_HOME = "ggHome";
 
     /** Key for configuration path. */

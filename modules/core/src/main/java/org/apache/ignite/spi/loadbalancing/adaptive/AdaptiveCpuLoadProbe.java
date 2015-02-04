@@ -41,7 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * for that, you should set {@link #setProcessorCoefficient(double)} parameter to
  * {@code 0.75} .
  * <p>
- * Below is an example of how CPU load probe would be configured in GridGain
+ * Below is an example of how CPU load probe would be configured in Ignite
  * Spring configuration file:
  * <pre name="code" class="xml">
  * &lt;property name="loadBalancingSpi"&gt;

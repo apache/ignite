@@ -28,7 +28,7 @@ import org.jetbrains.annotations.*;
  * <a target=_new href="http://jakarta.apache.org/commons/logging/">JCL</a> and
  * console logging are provided as supported implementations.
  * <p>
- * GridGain logger could be configured either from code (for example log4j logger):
+ * Ignite logger could be configured either from code (for example log4j logger):
  * <pre name="code" class="java">
  *      GridConfiguration cfg = new GridConfiguration();
  *      ...
@@ -51,16 +51,16 @@ import org.jetbrains.annotations.*;
  *      &lt;/property&gt;
  *      ...
  * </pre>
- * It's recommended to use GridGain's logger injection instead of using/instantiating
+ * It's recommended to use Ignite's logger injection instead of using/instantiating
  * logger in your task/job code. See {@link org.apache.ignite.resources.IgniteLoggerResource} annotation about logger
  * injection.
  * <h1 class="header">Quiet Mode</h1>
- * By default GridGain 3.0 and later starts in "quiet" mode suppressing {@code INFO} and {@code DEBUG}
- * log output. If system property {@code IGNITE_QUIET} is set to {@code false} than GridGain
+ * By default Ignite 3.0 and later starts in "quiet" mode suppressing {@code INFO} and {@code DEBUG}
+ * log output. If system property {@code IGNITE_QUIET} is set to {@code false} than Ignition
  * will operate in normal un-suppressed logging mode. Note that all output in "quiet" mode is
  * done through standard output (STDOUT).
  * <p>
- * Note that GridGain's standard startup scripts <tt>$IGNITE_HOME/bin/ignite.{sh|bat}</tt> start
+ * Note that Ignite's standard startup scripts <tt>$IGNITE_HOME/bin/ignite.{sh|bat}</tt> start
  * by default in "quiet" mode. Both scripts accept {@code -v} arguments to turn off "quiet" mode.
  */
 @GridToStringExclude

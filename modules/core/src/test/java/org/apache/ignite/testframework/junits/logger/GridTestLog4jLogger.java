@@ -39,7 +39,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * Log4j-based implementation for logging. This logger should be used
  * by loaders that have prefer <a target=_new href="http://logging.apache.org/log4j/docs/">log4j</a>-based logging.
  * <p>
- * Here is a typical example of configuring log4j logger in GridGain configuration file:
+ * Here is a typical example of configuring log4j logger in Ignite configuration file:
  * <pre name="code" class="xml">
  *      &lt;property name="gridLogger"&gt;
  *          &lt;bean class="org.apache.ignite.logger.log4j.GridLog4jLogger"&gt;
@@ -51,7 +51,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * <pre name="code" class="java">
  *      GridConfiguration cfg = new GridConfiguration();
  *      ...
- *      URL xml = U.resolveGridGainUrl("config/custom-log4j.xml");
+ *      URL xml = U.resolveIgniteUrl("config/custom-log4j.xml");
  *      GridLogger log = new GridLog4jLogger(xml);
  *      ...
  *      cfg.setGridLogger(log);
@@ -60,7 +60,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * Please take a look at <a target=_new href="http://logging.apache.org/log4j/1.2/index.html>Apache Log4j 1.2</a>
  * for additional information.
  * <p>
- * It's recommended to use GridGain logger injection instead of using/instantiating
+ * It's recommended to use Ignite logger injection instead of using/instantiating
  * logger in your task/job code. See {@link org.apache.ignite.resources.IgniteLoggerResource} annotation about logger
  * injection.
  */

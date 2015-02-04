@@ -162,7 +162,7 @@ public class GridJobLoadTest implements Runnable {
             for (int i = 0; i < srvNodes; i++)
                 startNode("server", SERVER_NODE_CONFIGURATION);
 
-            // Start clients in the second order to cache a client node in GridGain.
+            // Start clients in the second order to cache a client node in Ignite.
             for (int i = 0; i < clientNodes; i++)
                 clientIgnites.add(startNode("client", CLIENT_NODE_CONFIGURATION));
         }

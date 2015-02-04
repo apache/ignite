@@ -76,7 +76,7 @@
     </appender>
 
     <!--
-        Uncomment to enable GridGain query execution debugging.
+        Uncomment to enable Ignite query execution debugging.
     -->
     <!--
     <category name="org.apache.ignite.cache.query">

@@ -79,7 +79,7 @@ public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
     /**
      * Checks whether all provided events are user-recordable.
      * <p>
-     * Note that this method supports only predefined GridGain events.
+     * Note that this method supports only predefined Ignite events.
      *
      * @param types Event types.
      * @return Whether all events are recordable.

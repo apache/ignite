@@ -59,11 +59,11 @@ import static org.apache.ignite.internal.fs.hadoop.GridGgfsHadoopUtils.*;
  *      &lt;value&gt;org.apache.ignite.fs.hadoop.GridGgfsHadoopFileSystem&lt;/value&gt;
  *  &lt;/property&gt;
  * </pre>
- * You should also add GridGain JAR and all libraries to Hadoop classpath. To
+ * You should also add Ignite JAR and all libraries to Hadoop classpath. To
  * do this, add following lines to {@code conf/hadoop-env.sh} script in Hadoop
  * distribution:
  * <pre name="code" class="bash">
- * export IGNITE_HOME=/path/to/GridGain/distribution
+ * export IGNITE_HOME=/path/to/Ignite/distribution
  * export HADOOP_CLASSPATH=$IGNITE_HOME/gridgain*.jar
  *
  * for f in $IGNITE_HOME/libs/*.jar; do
@@ -78,7 +78,7 @@ import static org.apache.ignite.internal.fs.hadoop.GridGgfsHadoopUtils.*;
  * started together with Hadoop {@code task-tracker} processes.
  * <p>
  * For sample client and data node configuration refer to {@code config/hadoop/default-config-client.xml}
- * and {@code config/hadoop/default-config.xml} configuration files in GridGain installation.
+ * and {@code config/hadoop/default-config.xml} configuration files in Ignite installation.
  */
 public class GridGgfsHadoopFileSystem extends FileSystem {
     /** Internal property to indicate management connection. */

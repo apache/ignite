@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import javax.swing.*;
 
 /**
- * GridGain startup.
+ * Ignite startup.
  */
 public class GridStartupMain {
     /**

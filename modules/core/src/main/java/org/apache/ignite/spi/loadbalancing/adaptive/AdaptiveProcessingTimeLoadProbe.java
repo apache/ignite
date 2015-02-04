@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * time values or current (default is to use averages). The algorithm
  * returns a sum of job wait time and job execution time.
  * <p>
- * Below is an example of how CPU load probe would be configured in GridGain
+ * Below is an example of how CPU load probe would be configured in Ignite
  * Spring configuration file:
  * <pre name="code" class="xml">
  * &lt;property name="loadBalancingSpi"&gt;

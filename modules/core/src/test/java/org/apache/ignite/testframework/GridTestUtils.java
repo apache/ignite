@@ -639,7 +639,7 @@ public final class GridTestUtils {
     }
 
     /**
-     * @return GridGain home.
+     * @return Ignite home.
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ProhibitedExceptionThrown"})

@@ -57,7 +57,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
- * Common abstract test for GridGain tests.
+ * Common abstract test for Ignite tests.
  */
 @SuppressWarnings({
     "TransientFieldInNonSerializableClass",
@@ -1035,7 +1035,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @return GridGain home.
+     * @return Ignite home.
      */
     protected String home() {
         return getTestResources().getGridgainHome();

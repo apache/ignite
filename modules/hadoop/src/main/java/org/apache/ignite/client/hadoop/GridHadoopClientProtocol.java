@@ -46,13 +46,13 @@ import static org.apache.ignite.internal.processors.hadoop.GridHadoopUtils.*;
  * Hadoop client protocol.
  */
 public class GridHadoopClientProtocol implements ClientProtocol {
-    /** GridGain framework name property. */
+    /** Ignite framework name property. */
     public static final String FRAMEWORK_NAME = "gridgain";
 
     /** Protocol version. */
     private static final long PROTO_VER = 1L;
 
-    /** Default GridGain system directory. */
+    /** Default Ignite system directory. */
     private static final String SYS_DIR = ".gridgain/system";
 
     /** Configuration. */

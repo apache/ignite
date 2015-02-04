@@ -18,12 +18,12 @@
   -->
 
 <!--
-    GridGain Spring configuration file.
+    Ignite Spring configuration file.
 
-    When starting a standalone GridGain node, you need to execute the following command:
+    When starting a standalone Ignite node, you need to execute the following command:
     {IGNITE_HOME}/bin/ignite.{bat|sh} path-to-this-file/default-config.xml
 
-    When starting GridGain from Java IDE, pass path to this file into Ignition:
+    When starting Ignite from Java IDE, pass path to this file into Ignition:
     Ignition.start("path-to-this-file/default-config.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
@@ -87,7 +87,7 @@
     </bean>
 
     <!--
-        Configuration of GridGain node.
+        Configuration of Ignite node.
     -->
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!--
@@ -101,7 +101,7 @@
         </property>
 
         <!--
-            This port will be used by Apache Hadoop client to connect to GridGain node as if it was a job tracker.
+            This port will be used by Apache Hadoop client to connect to Ignite node as if it was a job tracker.
         -->
         <property name="restTcpPort" value="11211"/>
 

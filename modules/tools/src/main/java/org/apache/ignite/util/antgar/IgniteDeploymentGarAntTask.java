@@ -31,7 +31,7 @@ import java.io.*;
  * <li>{@code basedir} - Base directory for GAR archive.</li>
  * <li>
  *      {@code descrdir} - Directory where descriptor {@link #DESC_NAME} file is located.
- *      If not specified, it is assumed that GridGain descriptor will be searched in base directory
+ *      If not specified, it is assumed that Ignite descriptor will be searched in base directory
  *      (see {@link #setBasedir(File)}). <b>Note</b> further that GAR descriptor file is fully optional
  *      itself for GAR archive.
  * </li>

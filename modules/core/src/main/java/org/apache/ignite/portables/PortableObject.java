@@ -24,7 +24,7 @@ import java.util.*;
 
 /**
  * Wrapper for portable object in portable binary format. Once an object is defined as portable,
- * GridGain will always store it in memory in the portable (i.e. binary) format.
+ * Ignite will always store it in memory in the portable (i.e. binary) format.
  * User can choose to work either with the portable format or with the deserialized form
  * (assuming that class definitions are present in the classpath).
  * <p>
@@ -62,7 +62,7 @@ import java.util.*;
  * <p>
  * And finally, if we have class definitions in the classpath, we may choose to work with deserialized
  * typed objects at all times. In this case we do incur the deserialization cost, however,
- * GridGain will only deserialize on the first access and will cache the deserialized object,
+ * Ignite will only deserialize on the first access and will cache the deserialized object,
  * so it does not have to be deserialized again:
  * <pre name=code class=java>
  * CacheProjection&lt;MyKey.class, MyValue.class&gt; prj =
@@ -75,7 +75,7 @@ import java.util.*;
  * </pre>
  * <h1 class="header">Working With Maps and Collections</h1>
  * All maps and collections in the portable objects are serialized automatically. When working
- * with different platforms, e.g. C++ or .NET, GridGain will automatically pick the most
+ * with different platforms, e.g. C++ or .NET, Ignite will automatically pick the most
  * adequate collection or map in either language. For example, {@link ArrayList} in Java will become
  * {@code List} in C#, {@link LinkedList} in Java is {@link LinkedList} in C#, {@link HashMap}
  * in Java is {@code Dictionary} in C#, and {@link TreeMap} in Java becomes {@code SortedDictionary}
@@ -90,7 +90,7 @@ import java.util.*;
  * As the structure of a portable object changes, the new fields become available for SQL queries
  * automatically.
  * <h1 class="header">Building Portable Objects</h1>
- * GridGain comes with {@link PortableBuilder} which allows to build portable objects dynamically:
+ * Ignite comes with {@link PortableBuilder} which allows to build portable objects dynamically:
  * <pre name=code class=java>
  * GridPortableBuilder builder = Ignition.ignite().portables().builder("org.project.MyObject");
  *
@@ -111,8 +111,8 @@ import java.util.*;
  * GridPortableObject portableObj = Ignition.ignite().portables().toPortable(obj);
  * </pre>
  * <h1 class="header">Portable Metadata</h1>
- * Even though GridGain portable protocol only works with hash codes for type and field names
- * to achieve better performance, GridGain provides metadata for all portable types which
+ * Even though Ignite portable protocol only works with hash codes for type and field names
+ * to achieve better performance, Ignite provides metadata for all portable types which
  * can be queried ar runtime via any of the {@link org.apache.ignite.IgnitePortables#metadata(Class) GridPortables.metadata(...)}
  * methods. Having metadata also allows for proper formatting of {@code GridPortableObject.toString()} method,
  * even when portable objects are kept in binary format only, which may be necessary for audit reasons.

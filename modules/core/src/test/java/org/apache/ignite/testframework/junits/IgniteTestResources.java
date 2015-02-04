@@ -186,7 +186,7 @@ public class IgniteTestResources {
     }
 
     /**
-     * @return GridGain home.
+     * @return Ignite home.
      */
     public String getGridgainHome() {
         return home;

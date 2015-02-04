@@ -34,7 +34,7 @@ import org.jetbrains.annotations.*;
  * </ul>
  * <h1 class="header">User Version</h1>
  * User version comes into play whenever you would like to redeploy tasks deployed
- * in {@link #SHARED} or {@link #CONTINUOUS} modes. By default, GridGain will
+ * in {@link #SHARED} or {@link #CONTINUOUS} modes. By default, Ignite will
  * automatically detect if class-loader changed or a node is restarted. However,
  * if you would like to change and redeploy code on a subset of nodes, or in
  * case of {@link #CONTINUOUS} mode to kill the ever living deployment, you should
@@ -54,13 +54,13 @@ import org.jetbrains.annotations.*;
  * file with desired user version in it.
  * <p>
  * <h1 class="header">Always-Local Development</h1>
- * GridGain deployment (regardless of mode) allows you to develop everything as you would
+ * Ignite deployment (regardless of mode) allows you to develop everything as you would
  * locally. You never need to specifically write any kind of code for remote nodes. For
  * example, if you need to use a distributed cache from your {@link org.apache.ignite.compute.ComputeJob}, then you can
  * the following:
  * <ol>
  *  <li>
- *      Simply startup stand-alone GridGain nodes by executing
+ *      Simply startup stand-alone Ignite nodes by executing
  *      {@code IGNITE_HOME/ignite.{sh|bat}} scripts.
  *  </li>
  *  <li>
@@ -120,7 +120,7 @@ public enum IgniteDeploymentMode {
      * different master nodes share the same instances of resources on worker nodes. This allows for all
      * tasks executing on remote nodes to reuse, for example, the same instances of
      * connection pools or caches. When using this mode, you can
-     * startup multiple stand-alone GridGain worker nodes, define resources
+     * startup multiple stand-alone Ignite worker nodes, define resources
      * on master nodes and have them initialize once on worker nodes regardless
      * of which master node they came from.
      * <p>
@@ -149,7 +149,7 @@ public enum IgniteDeploymentMode {
      * different master nodes share the same instances of resources on worker nodes. This allows for all
      * tasks executing on remote nodes to reuse, for example, the same instances of
      * connection pools or caches. When using this mode, you can
-     * startup multiple stand-alone GridGain worker nodes, define resources
+     * startup multiple stand-alone Ignite worker nodes, define resources
      * on master nodes and have them initialize once on worker nodes regardless
      * of which master node they came from.
      * <p>

@@ -27,7 +27,7 @@ import java.util.*;
  * <ul>
  * <li>
  *     Must have static filed (private or public) declared of type {@link Object}
- *     with name {@code GG_CLASS_ID}. GridGain will reflectively initialize this field with
+ *     with name {@code GG_CLASS_ID}. Ignite will reflectively initialize this field with
  *     proper class ID during system startup.
  * </li>
  * <li>

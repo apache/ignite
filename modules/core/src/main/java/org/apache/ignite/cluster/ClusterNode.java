@@ -178,7 +178,7 @@ public interface ClusterNode {
      * <p>
      * If {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()} value isn't {@code null} node will try to use that
      * address for all communications and returned collection will contain only that address.
-     * If it is {@code null} then local wildcard address will be used, and GridGain
+     * If it is {@code null} then local wildcard address will be used, and Ignition
      * will make the best effort to supply all addresses of that node in returned collection.
      *
      * @return Collection of addresses.
@@ -206,7 +206,7 @@ public interface ClusterNode {
      * for new nodes will come in proper order. All other SPIs not supporting ordering
      * may choose to return node startup time here.
      * <p>
-     * <b>NOTE</b>: in cases when discovery SPI doesn't support ordering GridGain cannot
+     * <b>NOTE</b>: in cases when discovery SPI doesn't support ordering Ignite cannot
      * guarantee that orders on all nodes will be unique or chronologically correct.
      * If such guarantee is required - make sure use discovery SPI that provides ordering.
      *
@@ -236,7 +236,7 @@ public interface ClusterNode {
      * way to see daemon nodes is to use {@link IgniteCluster#forDaemons()} method.
      * <p>
      * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on GridGain and needs to participate in the topology but should be
+     * is build on Ignite and needs to participate in the topology but should be
      * excluded from "normal" topology so that it won't participate in task execution
      * or in-memory database.
      * <p>

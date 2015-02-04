@@ -58,17 +58,17 @@ import java.util.concurrent.*;
  * by the configured marshaller. For example, {@link IgniteOptimizedMarshaller} requires {@link Serializable}
  * objects by default, but can be configured not to. Generally speaking objects that implement {@link Serializable}
  * or {@link Externalizable} will perform better. For {@link Runnable} and {@link Callable} interfaces
- * GridGain provides analogous {@link IgniteRunnable} and {@link IgniteCallable} classes which are
+ * Ignite provides analogous {@link IgniteRunnable} and {@link IgniteCallable} classes which are
  * {@link Serializable} and should be used to run computations on the grid.
  * <h1 class="header">Load Balancing</h1>
- * In all cases other than {@code broadcast(...)}, GridGain must select a node for a computation
+ * In all cases other than {@code broadcast(...)}, Ignite must select a node for a computation
  * to be executed. The node will be selected based on the underlying {@link LoadBalancingSpi},
  * which by default sequentially picks next available node from grid projection. Other load balancing
  * policies, such as {@code random} or {@code adaptive}, can be configured as well by selecting
  * a different load balancing SPI in grid configuration. If your logic requires some custom
  * load balancing behavior, consider implementing {@link ComputeTask} directly.
  * <h1 class="header">Fault Tolerance</h1>
- * GridGain guarantees that as long as there is at least one grid node standing, every job will be
+ * Ignite guarantees that as long as there is at least one grid node standing, every job will be
  * executed. Jobs will automatically failover to another node if a remote node crashed
  * or has rejected execution due to lack of resources. By default, in case of failover, next
  * load balanced node will be picked for job execution. Also jobs will never be re-routed to the
@@ -407,7 +407,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * Another way of class deployment is deployment from local class path.
      * Classes from local class path always have a priority over P2P deployed ones.
      * <p>
-     * Note that class can be deployed multiple times on remote nodes, i.e. re-deployed. GridGain
+     * Note that class can be deployed multiple times on remote nodes, i.e. re-deployed. Ignition
      * maintains internal version of deployment for each instance of deployment (analogous to
      * class and class loader in Java). Execution happens always on the latest deployed instance.
      * <p>

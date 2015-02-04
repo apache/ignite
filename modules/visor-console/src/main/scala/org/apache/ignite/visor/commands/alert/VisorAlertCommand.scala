@@ -71,7 +71,7 @@ import scala.util.control.Breaks._
  *         Note that only one of the '-u' or '-r' is allowed.
  *         If neither '-u' or '-r' provided - all alerts will be printed.
  *
- *         NOTE: Email settings can be specified in GridGain configu
+ *         NOTE: Email settings can be specified in Ignite configu
  *         Email notification will be sent for the alert only
  *         provided mnemonic predicates evaluate to 'true'."
  *     -t

@@ -21,7 +21,7 @@ import java.lang.annotation.*;
 
 /**
  * This annotation allows to assign optional name to grid task. If attached to
- * {@link ComputeTask} implementation GridGain will take this name as a task name
+ * {@link ComputeTask} implementation Ignite will take this name as a task name
  * instead of default which is grid task's class FQN.
  */
 @Documented

@@ -46,14 +46,14 @@ import scala.language.{implicitConversions, reflectiveCalls}
  * | disco | Prints topology change log as seen from the oldest node.                      |
  * |       | Timeframe for querying events can be specified in arguments.                   |
  * |       |                                                                               |
- * |       | Note that this command depends on GridGain events.                            |
+ * |       | Note that this command depends on Ignite events.                            |
  * |       |                                                                               |
- * |       | GridGain events can be individually enabled and disabled and disabled events  |
+ * |       | Ignite events can be individually enabled and disabled and disabled events  |
  * |       | can affect the results produced by this command. Note also that configuration |
  * |       | of Event Storage SPI that is responsible for temporary storage of generated   |
  * |       | events on each node can also affect the functionality of this command.        |
  * |       |                                                                               |
- * |       | By default - all events are DISABLED and GridGain stores last 10,000 local     |
+ * |       | By default - all events are DISABLED and Ignite stores last 10,000 local     |
  * |       | events on each node. Both of these defaults can be changed in configuration.  |
  * +---------------------------------------------------------------------------------------+
  * }}}

@@ -36,7 +36,7 @@ public class GridNodeVisorAttributesSelfTest extends GridCommonAbstractTest {
         "os.version"
     };
 
-    /** GridGain-specific properties required by Visor. */
+    /** Ignite-specific properties required by Visor. */
     private static final String[] IGNITE_PROPS = new String[] {
         "org.apache.ignite.jvm.pid"
     };

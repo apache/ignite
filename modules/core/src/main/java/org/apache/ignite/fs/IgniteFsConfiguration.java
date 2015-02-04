@@ -29,7 +29,7 @@ import java.util.concurrent.*;
  * method.
  * <p>
  * Refer to {@code config/hadoop/default-config.xml} or {@code config/hadoop/default-config-client.xml}
- * configuration files under GridGain installation to see sample {@code GGFS} configuration.
+ * configuration files under Ignite installation to see sample {@code GGFS} configuration.
  */
 public class IgniteFsConfiguration {
     /** Default file system user name. */

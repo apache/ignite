@@ -46,7 +46,7 @@ public final class GridConfigurationFinder {
     }
 
     /**
-     * Lists paths to all GridGain configuration files located in IGNITE_HOME with their
+     * Lists paths to all Ignite configuration files located in IGNITE_HOME with their
      * last modification timestamps.
      *
      * @return Collection of configuration files and their last modification timestamps.
@@ -57,7 +57,7 @@ public final class GridConfigurationFinder {
     }
 
     /**
-     * Lists paths to all GridGain configuration files located in given directory with their
+     * Lists paths to all Ignite configuration files located in given directory with their
      * last modification timestamps.
      *
      * @param dir Directory.
@@ -92,7 +92,7 @@ public final class GridConfigurationFinder {
     }
 
     /**
-     * Lists paths to all GridGain configuration files located in given directory with their
+     * Lists paths to all Ignite configuration files located in given directory with their
      * last modification timestamps.
      *
      * NOTE: default configuration path will be skipped.

@@ -63,7 +63,7 @@ public class VisorCacheConfiguration implements Serializable {
     /** Swap enabled flag. */
     private boolean swapEnabled;
 
-    /** Flag indicating whether GridGain should attempt to index value and/or key instances stored in cache. */
+    /** Flag indicating whether Ignite should attempt to index value and/or key instances stored in cache. */
     private boolean queryIndexEnabled;
 
     /** Flag indicating whether to persist once on commit, or after every operation. */
@@ -335,14 +335,14 @@ public class VisorCacheConfiguration implements Serializable {
     }
 
     /**
-     * @return Flag indicating whether GridGain should attempt to index value and/or key instances stored in cache.
+     * @return Flag indicating whether Ignite should attempt to index value and/or key instances stored in cache.
      */
     public boolean queryIndexEnabled() {
         return queryIndexEnabled;
     }
 
     /**
-     * @param qryIdxEnabled New flag indicating whether GridGain should attempt to index value and/or key instances
+     * @param qryIdxEnabled New flag indicating whether Ignite should attempt to index value and/or key instances
      * stored in cache.
      */
     public void queryIndexEnabled(boolean qryIdxEnabled) {

@@ -1389,7 +1389,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * nodes and local node, as opposed to {@link CacheProjection#clearAll()} method which only
      * clears local node's cache.
      * <p>
-     * GridGain will make the best attempt to clear caches on all nodes. If some caches
+     * Ignite will make the best attempt to clear caches on all nodes. If some caches
      * could not be cleared, then exception will be thrown.
      *
      * @param timeout Timeout for clear all task in milliseconds (0 for never).

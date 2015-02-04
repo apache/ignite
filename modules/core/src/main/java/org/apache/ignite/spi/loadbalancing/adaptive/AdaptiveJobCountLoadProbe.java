@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * <p>
  * The load of a node is simply calculated by adding active and waiting job counts.
  * <p>
- * Below is an example of how CPU load probe would be configured in GridGain
+ * Below is an example of how CPU load probe would be configured in Ignite
  * Spring configuration file:
  * <pre name="code" class="xml">
  * &lt;property name="loadBalancingSpi"&gt;

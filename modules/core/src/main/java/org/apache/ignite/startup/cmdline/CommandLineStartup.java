@@ -41,13 +41,13 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.internal.GridProductImpl.*;
 
 /**
- * This class defines command-line GridGain startup. This startup can be used to start GridGain
+ * This class defines command-line Ignite startup. This startup can be used to start Ignite
  * outside of any hosting environment from command line. This startup is a Java application with
  * {@link #main(String[])} method that accepts command line arguments. It accepts just one
  * parameter which is Spring XML configuration file path. You can run this class from command
  * line without parameters to get help message.
  * <p>
- * Note that scripts {@code ${IGNITE_HOME}/bin/ignite.{sh|bat}} shipped with GridGain use
+ * Note that scripts {@code ${IGNITE_HOME}/bin/ignite.{sh|bat}} shipped with Ignite use
  * this startup and you can use them as an example.
  */
 @SuppressWarnings({"CallToSystemExit"})

@@ -51,9 +51,9 @@ public interface IgniteProduct {
     public IgniteProductVersion version();
 
     /**
-     * Copyright statement for GridGain code.
+     * Copyright statement for Ignite code.
      *
-     * @return Legal copyright statement for GridGain code.
+     * @return Legal copyright statement for Ignite code.
      */
     public String copyright();
 

@@ -235,7 +235,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *             <td><b>ggHome</b></td>
      *             <td>String</td>
      *             <td>
-     *                 Path to GridGain installation folder. If not defined, IGNITE_HOME
+     *                 Path to Ignite installation folder. If not defined, IGNITE_HOME
      *                 environment variable must be set on remote hosts.
      *             </td>
      *         </tr>
@@ -289,8 +289,8 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     /**
      * Stops nodes satisfying optional set of predicates.
      * <p>
-     * <b>NOTE:</b> {@code System.exit(GridGain.KILL_EXIT_CODE)} will be executed on each
-     * stopping node. If you have other applications running in the same JVM along with GridGain,
+     * <b>NOTE:</b> {@code System.exit(Ignition.KILL_EXIT_CODE)} will be executed on each
+     * stopping node. If you have other applications running in the same JVM along with Ignition,
      * those applications will be stopped as well.
      *
      * @throws IgniteException In case of error.
@@ -300,8 +300,8 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     /**
      * Stops nodes defined by provided IDs.
      * <p>
-     * <b>NOTE:</b> {@code System.exit(GridGain.KILL_EXIT_CODE)} will be executed on each
-     * stopping node. If you have other applications running in the same JVM along with GridGain,
+     * <b>NOTE:</b> {@code System.exit(Ignition.KILL_EXIT_CODE)} will be executed on each
+     * stopping node. If you have other applications running in the same JVM along with Ignition,
      * those applications will be stopped as well.
      *
      * @param ids IDs defining nodes to stop.
@@ -312,7 +312,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     /**
      * Restarts nodes satisfying optional set of predicates.
      * <p>
-     * <b>NOTE:</b> this command only works for grid nodes started with GridGain
+     * <b>NOTE:</b> this command only works for grid nodes started with Ignition
      * {@code ignite.sh} or {@code ignite.bat} scripts.
      *
      * @throws IgniteException In case of error.
@@ -322,7 +322,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     /**
      * Restarts nodes defined by provided IDs.
      * <p>
-     * <b>NOTE:</b> this command only works for grid nodes started with GridGain
+     * <b>NOTE:</b> this command only works for grid nodes started with Ignition
      * {@code ignite.sh} or {@code ignite.bat} scripts.
      *
      * @param ids IDs defining nodes to restart.

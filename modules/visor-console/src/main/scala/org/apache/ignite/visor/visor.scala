@@ -113,10 +113,10 @@ trait VisorTag
  * }}}
  *
  * ==Overview==
- * Visor console provides monitoring capabilities for GridGain.
+ * Visor console provides monitoring capabilities for Ignite.
  *
  * ==Usage==
- * GridGain ships with `IGNITE_HOME/bin/ignitevisorcmd.{sh|bat}` script that starts Visor console.
+ * Ignite ships with `IGNITE_HOME/bin/ignitevisorcmd.{sh|bat}` script that starts Visor console.
  *
  * Just type:<ex>help</ex> in Visor console to get help and get started.
  */
@@ -206,7 +206,7 @@ object visor extends VisorTag {
      */
     private final val DFLT_LOG_PATH = "visor/visor-log"
 
-    /** Default configuration path relative to GridGain home. */
+    /** Default configuration path relative to Ignite home. */
     private final val DFLT_CFG = "config/default-config.xml"
 
     /** Log file. */
@@ -2256,7 +2256,7 @@ object visor extends VisorTag {
      * Starts logging to file `visor-log` located at `/home/user`.
      * <br>
      * <ex>log -l -f=log/visor-log</ex>
-     * Starts logging to file `visor-log` located at &lt`GridGain home folder`&gt`/log`.
+     * Starts logging to file `visor-log` located at &lt`Ignite home folder`&gt`/log`.
      * <br>
      * <ex>log -l -p=20</ex>
      * Starts logging with querying events period of 20 seconds.

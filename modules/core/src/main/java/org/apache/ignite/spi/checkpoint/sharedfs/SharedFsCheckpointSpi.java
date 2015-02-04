@@ -173,7 +173,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
      * <p>
      * If not provided, default value is {@link #DFLT_DIR_PATH}.
      *
-     * @param dirPaths Absolute or GridGain installation home folder relative path where checkpoints
+     * @param dirPaths Absolute or Ignite installation home folder relative path where checkpoints
      * will be stored.
      */
     @IgniteSpiConfiguration(optional = true)

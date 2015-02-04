@@ -43,20 +43,20 @@ import scala.annotation.meta.field
  * ==Overview==
  * `scalar` is the main object that encapsulates Scalar DSL. It includes global functions
  * on "scalar" keyword, helper converters as well as necessary implicit conversions. `scalar` also
- * mimics many methods in `GridGain` class from Java side.
+ * mimics many methods in `Ignite` class from Java side.
  *
  * The idea behind Scalar DSL - '''zero additional logic and only conversions''' implemented
  * using Scala "Pimp" pattern. Note that most of the Scalar DSL development happened on Java
- * side of GridGain 3.0 product line - Java APIs had to be adjusted quite significantly to
+ * side of Ignite 3.0 product line - Java APIs had to be adjusted quite significantly to
  * support natural adaptation of functional APIs. That basically means that all functional
  * logic must be available on Java side and Scalar only provides conversions from Scala
- * language constructs to Java constructs. Note that currently GridGain supports Scala 2.8
+ * language constructs to Java constructs. Note that currently Ignite supports Scala 2.8
  * and up only.
  *
  * This design approach ensures that Java side does not starve and usage paradigm
  * is mostly the same between Java and Scala - yet with full power of Scala behind.
  * In other words, Scalar only adds Scala specifics, but not greatly altering semantics
- * of how GridGain APIs work. Most of the time the code in Scalar can be written in
+ * of how Ignite APIs work. Most of the time the code in Scalar can be written in
  * Java in almost the same number of lines.
  *
  * ==Suffix '$' In Names==
@@ -77,10 +77,10 @@ import scala.annotation.meta.field
  *
  * ==Examples==
  * Here are few short examples of how Scalar can be used to program routine distributed
- * task. All examples below use default GridGain configuration and default grid. All these
+ * task. All examples below use default Ignite configuration and default grid. All these
  * examples take an implicit advantage of auto-discovery and failover, load balancing and
  * collision resolution, zero deployment and many other underlying technologies in the
- * GridGain - while remaining absolutely distilled to the core domain logic.
+ * Ignite - while remaining absolutely distilled to the core domain logic.
  *
  * This code snippet prints out full topology:
  * <pre name="code" class="scala">

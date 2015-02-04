@@ -90,7 +90,7 @@ import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
 /**
- * This class defines a factory for the main GridGain API. It controls Grid life cycle
+ * This class defines a factory for the main Ignite API. It controls Grid life cycle
  * and allows listening for grid events.
  * <h1 class="header">Grid Loaders</h1>
  * Although user can apply grid factory directly to start and stop grid, grid is
@@ -108,7 +108,7 @@ import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
  * GridConfiguration cfg = new GridConfiguration();
  */
 public class IgnitionEx {
-    /** Default configuration path relative to GridGain home. */
+    /** Default configuration path relative to Ignite home. */
     public static final String DFLT_CFG = "config/default-config.xml";
 
     /** Map of named grids. */
@@ -336,8 +336,8 @@ public class IgnitionEx {
      * should be responsible for stopping it.
      * <p>
      * Note also that restarting functionality only works with the tools that specifically
-     * support GridGain's protocol for restarting. Currently only standard <tt>ignite.{sh|bat}</tt>
-     * scripts support restarting of JVM GridGain's process.
+     * support Ignite's protocol for restarting. Currently only standard <tt>ignite.{sh|bat}</tt>
+     * scripts support restarting of JVM Ignite's process.
      *
      * @param cancel If {@code true} then all jobs currently executing on
      *      all grids will be cancelled by calling {@link org.apache.ignite.compute.ComputeJob#cancel()}
@@ -1019,7 +1019,7 @@ public class IgnitionEx {
     /**
      * Adds a lsnr for grid life cycle events.
      * <p>
-     * Note that unlike other listeners in GridGain this listener will be
+     * Note that unlike other listeners in Ignite this listener will be
      * notified from the same thread that triggers the state change. Because of
      * that it is the responsibility of the user to make sure that listener logic
      * is light-weight and properly handles (catches) any runtime exceptions, if any
@@ -1353,7 +1353,7 @@ public class IgnitionEx {
 
             String ggHome = cfg.getGridGainHome();
 
-            // Set GridGain home.
+            // Set Ignite home.
             if (ggHome == null)
                 ggHome = U.getGridGainHome();
             else
@@ -1391,7 +1391,7 @@ public class IgnitionEx {
             // Initialize factory's log.
             log = cfgLog.getLogger(G.class);
 
-            // Check GridGain home folder (after log is available).
+            // Check Ignite home folder (after log is available).
             if (ggHome != null) {
                 File ggHomeFile = new File(ggHome);
 
@@ -1927,7 +1927,7 @@ public class IgnitionEx {
                 ensureMultiInstanceSupport(swapspaceSpi);
             }
 
-            // Register GridGain MBean for current grid instance.
+            // Register Ignite MBean for current grid instance.
             registerFactoryMbean(myCfg.getMBeanServer());
 
             boolean started = false;
@@ -2143,7 +2143,7 @@ public class IgnitionEx {
                         log.debug("Shutdown is in progress (ignoring): " + e.getMessage());
                 }
 
-            // Unregister GridGain MBean.
+            // Unregister Ignite MBean.
             unregisterFactoryMBean();
 
             try {

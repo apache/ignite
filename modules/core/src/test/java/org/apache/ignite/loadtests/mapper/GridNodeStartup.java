@@ -24,7 +24,7 @@ import javax.swing.*;
 
 /**
  * Starts up an empty node with cache configuration.
- * You can also start a stand-alone GridGain instance by passing the path
+ * You can also start a stand-alone Ignite instance by passing the path
  * to configuration file to {@code 'ignite.{sh|bat}'} script, like so:
  * {@code 'ignite.sh examples/config/example-cache.xml'}.
  * <p>

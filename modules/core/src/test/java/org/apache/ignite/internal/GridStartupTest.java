@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import javax.swing.*;
 
 /**
- * GridGain startup.
+ * Ignite startup.
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared"})
 @GridCommonTest(group = "Kernal")

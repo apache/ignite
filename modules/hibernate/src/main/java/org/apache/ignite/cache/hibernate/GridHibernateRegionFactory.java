@@ -39,8 +39,8 @@ import static org.hibernate.cache.spi.access.AccessType.*;
  * hibernate.cache.use_second_level_cache=true
  * hibernate.cache.region.factory_class=org.apache.ignite.cache.hibernate.GridHibernateRegionFactory
  * </pre>
- * Note that before region factory is started you need to start properly configured GridGain node in the same JVM.
- * For example to start GridGain node one of loader provided in {@code org.gridgain.grid.startup} package can be used.
+ * Note that before region factory is started you need to start properly configured Ignite node in the same JVM.
+ * For example to start Ignite node one of loader provided in {@code org.gridgain.grid.startup} package can be used.
  * <p>
  * Name of grid to be used for region factory must be specified as following Hibernate property:
  * <pre name="code" class="brush: xml; gutter: false;">

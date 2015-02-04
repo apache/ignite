@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Main entry-point for all GridGain APIs.
+ * Main entry-point for all Ignite APIs.
  * You can obtain an instance of {@code Grid} through {@link Ignition#ignite()},
  * or for named grids you can use {@link Ignition#ignite(String)}. Note that you
  * can have multiple instances of {@code Grid} running in the same VM by giving
@@ -83,7 +83,7 @@ public interface Ignite extends AutoCloseable {
      * <b>NOTE:</b>
      * <br>
      * SPIs obtains through this method should never be used directly. SPIs provide
-     * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
+     * internal view on the subsystem and is used internally by Ignite kernal. In rare use cases when
      * access to a specific implementation of this SPI is required - an instance of this SPI can be obtained
      * via this method to check its configuration properties or call other non-SPI
      * methods.
@@ -258,12 +258,12 @@ public interface Ignite extends AutoCloseable {
     public <K, V> IgniteDataLoader<K, V> dataLoader(@Nullable String cacheName);
 
     /**
-     * Gets an instance of GGFS - GridGain In-Memory File System, if one is not
+     * Gets an instance of GGFS - Ignite In-Memory File System, if one is not
      * configured then {@link IllegalArgumentException} will be thrown.
      * <p>
      * GGFS is fully compliant with Hadoop {@code FileSystem} APIs and can
      * be plugged into Hadoop installations. For more information refer to
-     * documentation on Hadoop integration shipped with GridGain.
+     * documentation on Hadoop integration shipped with Ignite.
      *
      * @param name GGFS name.
      * @return GGFS instance.

@@ -66,7 +66,7 @@ import java.lang.annotation.*;
  * then you must implement custom grid task which will take care of proper state
  * initialization (see
  * <a target="github" href="https://github.com/gridgain/gridgain/tree/master/examples/java/org/gridgain/examples/helloworld/gridify/state">HelloWorld - Gridify With State</a>
- * example). In either case, GridGain must be able to serialize the state passed to remote node.
+ * example). In either case, Ignite must be able to serialize the state passed to remote node.
  * <p>
  * <h1 class="header">Java Example</h1>
  * <p>
@@ -93,7 +93,7 @@ import java.lang.annotation.*;
  * <p>
  * <h1 class="header">Jboss AOP</h1>
  * The following configuration needs to be applied to enable JBoss byte code
- * weaving. Note that GridGain is not shipped with JBoss and necessary
+ * weaving. Note that Ignite is not shipped with JBoss and necessary
  * libraries will have to be downloaded separately (they come standard
  * if you have JBoss installed already):
  * <ul>
@@ -170,16 +170,16 @@ public @interface GridifySetToValue {
      * be the sub-collection
      * that will travel to remote nodes. Note that this is NOT a dynamic setting and you have to set
      * the split size up front. This may look
-     * as a deficiency but GridGain will properly handle this case by giving more than one sub-collection
+     * as a deficiency but Ignite will properly handle this case by giving more than one sub-collection
      * to a specific node (as defined by load balancing SPI in use).
      * <p>
      * This value should be greater than zero and can be less, equal or greater than {@link #threshold()}
      * value. In most cases, however, the optimal value for the split size is the {@link #threshold()} value.
-     * For example, if input collection size is 100, number of nodes 10 and split size is set to 5 - GridGain
+     * For example, if input collection size is 100, number of nodes 10 and split size is set to 5 - Ignition
      * will submit 2 sub-collections of 5 elements each to each node (provided in order by load
      * balancing SPI).
      * <p>
-     * By default (when split size is zero) - GridGain will automatically determine the split size based on
+     * By default (when split size is zero) - Ignite will automatically determine the split size based on
      * number of nodes and collection size - if collection size is available (not an iterator). If collection
      * size cannot be determined - the split size will default to threshold. If threshold is not set - a runtime
      * exception will be thrown.

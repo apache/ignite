@@ -23,9 +23,9 @@ import java.io.*;
  * An instance of grid-managed service. Grid-managed services may be deployed from
  * {@link org.apache.ignite.IgniteManaged} facade or directly from grid configuration at startup.
  * <h1 class="header">Deployment</h1>
- * Whenever service is deployed, GridGain will automatically calculate how many
+ * Whenever service is deployed, Ignite will automatically calculate how many
  * instances of this service should be deployed on each node within the cluster.
- * Whenever service is deployed on a cluster node, GridGain will call
+ * Whenever service is deployed on a cluster node, Ignite will call
  * {@link #execute(ManagedServiceContext)} method on that service. It is up to the user
  * to control whenever the service should exit from the {@code execute} method.
  * For example, user may choose to implement service as follows:
@@ -78,19 +78,19 @@ import java.io.*;
  * </pre>
  * <h1 class="header">Cancellation</h1>
  * Services can be cancelled by calling any of the {@code cancel} methods on {@link org.apache.ignite.IgniteManaged} API.
- * Whenever a deployed service is cancelled, GridGain will automatically call
+ * Whenever a deployed service is cancelled, Ignite will automatically call
  * {@link ManagedService#cancel(ManagedServiceContext)} method on that service.
  * <p>
- * Note that GridGain cannot guarantee that the service exits from {@link ManagedService#execute(ManagedServiceContext)}
+ * Note that Ignite cannot guarantee that the service exits from {@link ManagedService#execute(ManagedServiceContext)}
  * method whenever {@link #cancel(ManagedServiceContext)} is called. It is up to the user to
  * make sure that the service code properly reacts to cancellations.
  */
 public interface ManagedService extends Serializable {
     /**
-     * Cancels this service. GridGain will automatically call this method whenever any of the
+     * Cancels this service. Ignite will automatically call this method whenever any of the
      * {@code cancel} methods on {@link org.apache.ignite.IgniteManaged} API are called.
      * <p>
-     * Note that GridGain cannot guarantee that the service exits from {@link #execute(ManagedServiceContext)}
+     * Note that Ignite cannot guarantee that the service exits from {@link #execute(ManagedServiceContext)}
      * method whenever {@code cancel(GridServiceContext)} method is called. It is up to the user to
      * make sure that the service code properly reacts to cancellations.
      *

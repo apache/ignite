@@ -62,14 +62,14 @@ public class GridHadoopSetup {
     }
 
     /**
-     * This operation prepares the clean unpacked Hadoop distributive to work as client with GridGain-Hadoop.
+     * This operation prepares the clean unpacked Hadoop distributive to work as client with Ignite-Hadoop.
      * It performs these operations:
      * <ul>
      *     <li>Check for setting of HADOOP_HOME environment variable.</li>
      *     <li>Try to resolve HADOOP_COMMON_HOME or evaluate it relative to HADOOP_HOME.</li>
      *     <li>In Windows check if winutils.exe exists and try to fix issue with some restrictions.</li>
      *     <li>In Windows check new line character issues in CMD scripts.</li>
-     *     <li>Scan Hadoop lib directory to detect GridGain JARs. If these don't exist tries to create ones.</li>
+     *     <li>Scan Hadoop lib directory to detect Ignite JARs. If these don't exist tries to create ones.</li>
      * </ul>
      */
     private static void configureHadoop() {
@@ -288,9 +288,9 @@ public class GridHadoopSetup {
     }
 
     /**
-     * Checks GridGain home.
+     * Checks Ignite home.
      *
-     * @param ggHome GridGain home.
+     * @param ggHome Ignite home.
      */
     private static void checkGridGainHome(String ggHome) {
         URL jarUrl = U.class.getProtectionDomain().getCodeSource().getLocation();

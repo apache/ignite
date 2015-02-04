@@ -26,7 +26,7 @@ import org.jetbrains.annotations.*;
  * loggers. Implementation simply delegates to underlying JCL logger. This logger
  * should be used by loaders that have JCL-based internal logging (e.g., Websphere).
  * <p>
- * Here is an example of configuring JCL logger in GridGain configuration Spring
+ * Here is an example of configuring JCL logger in Ignite configuration Spring
  * file to work over log4j implementation. Note that we use the same configuration file
  * as we provide by default:
  * <pre name="code" class="xml">
@@ -50,7 +50,7 @@ import org.jetbrains.annotations.*;
  *      &lt;/property&gt;
  *      ...
  * </pre>
- * And the same configuration if you'd like to configure GridGain in your code:
+ * And the same configuration if you'd like to configure Ignite in your code:
  * <pre name="code" class="java">
  *      GridConfiguration cfg = new GridConfiguration();
  *      ...
@@ -68,7 +68,7 @@ import org.jetbrains.annotations.*;
  * </pre>
  *
  * <p>
- * It's recommended to use GridGain logger injection instead of using/instantiating
+ * It's recommended to use Ignite logger injection instead of using/instantiating
  * logger in your task/job code. See {@link org.apache.ignite.resources.IgniteLoggerResource} annotation about logger
  * injection.
  */

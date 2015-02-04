@@ -86,7 +86,7 @@ import static javax.cache.Cache.*;
  * }
  * </pre>
  * This behavior can be overridden by setting {@link CacheConfiguration#setKeepPortableInStore(boolean)}
- * flag value to {@code false}. In this case, GridGain will deserialize keys and values stored in portable
+ * flag value to {@code false}. In this case, Ignite will deserialize keys and values stored in portable
  * format before they are passed to cache store, so that you can use the following cache store signature instead:
  * <pre name="code" class="java">
  * public class ObjectsCacheStore implements GridCacheStore&lt;Integer, Person&gt; {
