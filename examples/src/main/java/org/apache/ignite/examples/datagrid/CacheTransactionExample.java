@@ -50,7 +50,7 @@ public class CacheTransactionExample {
             System.out.println(">>> Cache transaction example started.");
 
             // Clean up caches on all nodes before run.
-            ignite.cache(CACHE_NAME).clear(0);
+            ignite.jcache(CACHE_NAME).clear();
 
             IgniteCache<Integer, Account> cache = ignite.jcache(CACHE_NAME);
 

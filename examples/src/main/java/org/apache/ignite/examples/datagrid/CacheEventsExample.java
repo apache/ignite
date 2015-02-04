@@ -53,7 +53,7 @@ public class CacheEventsExample {
             final IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
 
             // Clean up caches on all nodes before run.
-            cache.clear(0);
+            cache.clear();
 
             // This optional local callback is called for each event notification
             // that passed remote predicate listener.

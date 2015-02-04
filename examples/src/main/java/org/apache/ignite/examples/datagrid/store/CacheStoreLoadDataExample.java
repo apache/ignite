@@ -53,7 +53,7 @@ public class CacheStoreLoadDataExample {
             final IgniteCache<String, Integer> cache = ignite.jcache(null);
 
             // Clean up caches on all nodes before run.
-            cache.clear(0);
+            cache.clear();
 
             long start = System.currentTimeMillis();
 
