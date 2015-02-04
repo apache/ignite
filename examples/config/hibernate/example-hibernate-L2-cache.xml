@@ -21,7 +21,7 @@
     "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
 
 <!--
-    Configuration file for GridHibernateL2CacheExample.
+    Configuration file for HibernateL2CacheExample.
 -->
 
 <hibernate-configuration>
@@ -45,7 +45,7 @@
         <property name="cache.region.factory_class">org.apache.ignite.cache.hibernate.GridHibernateRegionFactory</property>
 
         <!-- Specify the name of the ignite, that will be used for second level caching. -->
-        <property name="org.apache.ignite.hibernate.grid_name">hibernate-ignite</property>
+        <property name="org.apache.ignite.hibernate.ignite_name">hibernate-ignite</property>
 
         <!-- Specify connection release mode. -->
         <property name="connection.release_mode">on_close</property>

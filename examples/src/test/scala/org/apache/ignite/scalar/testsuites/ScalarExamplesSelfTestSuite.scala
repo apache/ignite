@@ -17,7 +17,6 @@
 
 package org.apache.ignite.scalar.testsuites
 
-import org.apache.ignite.IgniteSystemProperties
 import org.apache.ignite.IgniteSystemProperties._
 import org.apache.ignite.scalar.tests.examples.{ScalarExamplesMultiNodeSelfTest, ScalarExamplesSelfTest}
 import org.apache.ignite.testframework.GridTestUtils
