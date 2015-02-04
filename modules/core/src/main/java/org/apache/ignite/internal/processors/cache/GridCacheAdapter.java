@@ -82,9 +82,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** removeAll() batch size. */
-    private static final long REMOVE_ALL_BATCH_SIZE = 100L;
-
     /** clearLocally() split threshold. */
     public static final int CLEAR_ALL_SPLIT_THRESHOLD = 10000;
 
@@ -3402,7 +3399,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                 if (!nodes.isEmpty()) {
                     ctx.closures().callAsyncNoFailover(BROADCAST,
-                        new GlobalRemoveAllCallable<>(name(), topVer, REMOVE_ALL_BATCH_SIZE), nodes, true).get();
+                        new GlobalRemoveAllCallable<>(name(), topVer), nodes, true).get();
                 }
             } while (ctx.affinity().affinityTopologyVersion() > topVer);
         }
@@ -5206,6 +5203,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @GridInternal
     private static class GlobalRemoveAllCallable<K,V> implements Callable<Object>, Externalizable {
         /** */
+        private static final long REMOVE_ALL_BATCH_SIZE = 100L;
+
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** Cache name. */
@@ -5213,9 +5213,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         /** Topology version. */
         private long topVer;
-
-        /** Remove batch size. */
-        private long rmvBatchSz;
 
         /** Injected grid instance. */
         @IgniteInstanceResource
@@ -5233,10 +5230,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param topVer Topology version.
          * @param rmvBatchSz Remove batch size.
          */
-        private GlobalRemoveAllCallable(String cacheName, long topVer, long rmvBatchSz) {
+        private GlobalRemoveAllCallable(String cacheName, long topVer) {
             this.cacheName = cacheName;
             this.topVer = topVer;
-            this.rmvBatchSz = rmvBatchSz;
         }
 
         /**
@@ -5260,7 +5256,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 if (ctx.affinity().primary(ctx.localNode(), k, topVer))
                     keys.add(k);
 
-                if (keys.size() >= rmvBatchSz) {
+                if (keys.size() >= REMOVE_ALL_BATCH_SIZE) {
                     cache.removeAll(keys);
 
                     keys.clear();
@@ -5276,14 +5272,12 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             U.writeString(out, cacheName);
             out.writeLong(topVer);
-            out.writeLong(rmvBatchSz);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             cacheName = U.readString(in);
             topVer = in.readLong();
-            rmvBatchSz = in.readLong();
         }
     }
 
