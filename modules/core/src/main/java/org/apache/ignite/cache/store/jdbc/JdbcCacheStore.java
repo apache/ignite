@@ -652,7 +652,6 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
 
                         // The error with code 23505 is thrown when trying to insert a row that
                         // would violate a unique index or primary key.
-                        // TODO check with all RDBMS
                         if (sqlState != null && Integer.valueOf(sqlState) == 23505) {
                             if (we == null)
                                 we = new CacheWriterException("Failed insert entry in database, violate a unique" +
@@ -712,7 +711,11 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
 
                     fillValueParameters(stmt, i, em, entry.getValue());
 
-                    stmt.executeUpdate();
+                    int updCnt = stmt.executeUpdate();
+
+                    if (updCnt != 1)
+                        U.warn(log, "Unexpected number of updated entries [table=" + em.fullTableName() +
+                            ", key=" + key + "expected=1, actual=" + updCnt + "]");
                 }
                 finally {
                     U.closeQuiet(stmt);
