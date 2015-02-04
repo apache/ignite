@@ -488,7 +488,6 @@ public class ClientConnectionConfiguration {
      * Sets thread pool to use for processing of client messages (REST requests).
      *
      * @param restExecSvc Thread pool to use for processing of client messages.
-     * @see IgniteConfiguration#getRestExecutorService()
      */
     public void setRestExecutorService(ExecutorService restExecSvc) {
         this.restExecSvc = restExecSvc;
@@ -498,7 +497,6 @@ public class ClientConnectionConfiguration {
      * Sets REST executor service shutdown flag.
      *
      * @param restSvcShutdown REST executor service shutdown flag.
-     * @see IgniteConfiguration#getRestExecutorService()
      */
     public void setRestExecutorServiceShutdown(boolean restSvcShutdown) {
         this.restSvcShutdown = restSvcShutdown;

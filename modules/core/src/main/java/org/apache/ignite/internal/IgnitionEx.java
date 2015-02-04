@@ -1433,28 +1433,8 @@ public class IgnitionEx {
 
             if (clientCfg == null) {
                 // If client config is not provided then create config copying values from GridConfiguration.
-                if (cfg.isRestEnabled()) {
+                if (cfg.isRestEnabled())
                     clientCfg = new ClientConnectionConfiguration();
-
-                    clientCfg.setClientMessageInterceptor(cfg.getClientMessageInterceptor());
-                    clientCfg.setRestExecutorService(cfg.getRestExecutorService());
-                    clientCfg.setRestExecutorServiceShutdown(cfg.getRestExecutorServiceShutdown());
-                    clientCfg.setRestIdleTimeout(cfg.getRestIdleTimeout());
-                    clientCfg.setRestJettyPath(cfg.getRestJettyPath());
-                    clientCfg.setRestPortRange(cfg.getRestPortRange());
-                    clientCfg.setRestSecretKey(cfg.getRestSecretKey());
-                    clientCfg.setRestTcpDirectBuffer(cfg.isRestTcpDirectBuffer());
-                    clientCfg.setRestTcpHost(cfg.getRestTcpHost());
-                    clientCfg.setRestTcpNoDelay(cfg.isRestTcpNoDelay());
-                    clientCfg.setRestTcpPort(cfg.getRestTcpPort());
-                    clientCfg.setRestTcpReceiveBufferSize(cfg.getRestTcpReceiveBufferSize());
-                    clientCfg.setRestTcpSelectorCount(cfg.getRestTcpSelectorCount());
-                    clientCfg.setRestTcpSendBufferSize(cfg.getRestTcpSendBufferSize());
-                    clientCfg.setRestTcpSendQueueLimit(cfg.getRestTcpSendQueueLimit());
-                    clientCfg.setRestTcpSslClientAuth(cfg.isRestTcpSslClientAuth());
-                    clientCfg.setRestTcpSslContextFactory(cfg.getRestTcpSslContextFactory());
-                    clientCfg.setRestTcpSslEnabled(cfg.isRestTcpSslEnabled());
-                }
             }
             else
                 clientCfg = new ClientConnectionConfiguration(clientCfg);
