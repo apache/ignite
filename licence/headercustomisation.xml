@@ -40,10 +40,10 @@
         <padLines>false</padLines>
     </batch>
     <xml_style>
-        <firstLine><![CDATA[EOLEOL<!--]]></firstLine>
+        <firstLine><![CDATA[<!--]]></firstLine>
         <beforeEachLine><![CDATA[  ]]></beforeEachLine>
         <endLine><![CDATA[-->EOL]]></endLine>
-        <firstLineDetectionPattern><![CDATA[\n\n<!--.*$]]></firstLineDetectionPattern>
+        <firstLineDetectionPattern><![CDATA[<!--.*$]]></firstLineDetectionPattern>
         <lastLineDetectionPattern><![CDATA[.*-->(\\s|\\t)*$]]></lastLineDetectionPattern>
         <allowBlankLines>false</allowBlankLines>
         <isMultiline>true</isMultiline>
