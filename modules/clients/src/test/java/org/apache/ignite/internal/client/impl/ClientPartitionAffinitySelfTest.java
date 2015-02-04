@@ -21,7 +21,6 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.impl.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.client.impl;
 
 import org.apache.ignite.internal.client.*;
-import org.apache.ignite.internal.client.impl.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;

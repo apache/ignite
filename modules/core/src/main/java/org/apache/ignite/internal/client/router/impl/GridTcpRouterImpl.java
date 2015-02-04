@@ -21,8 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.client.router.*;
 import org.apache.ignite.internal.client.ssl.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.logger.java.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.nio.ssl.*;

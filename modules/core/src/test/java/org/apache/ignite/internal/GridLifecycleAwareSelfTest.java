@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.client.ssl.*;
 import org.apache.ignite.lifecycle.*;

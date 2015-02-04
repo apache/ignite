@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.client.impl.*;
 import org.apache.ignite.internal.client.util.*;
-import org.apache.ignite.logger.java.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.nio.*;
@@ -41,8 +40,8 @@ import java.util.concurrent.*;
 import java.util.logging.*;
 
 import static java.util.logging.Level.*;
-import static org.apache.ignite.internal.client.impl.connection.GridClientConnectionCloseReason.*;
 import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.client.impl.connection.GridClientConnectionCloseReason.*;
 
 /**
  * Cached connections manager.

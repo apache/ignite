@@ -20,7 +20,6 @@ package org.apache.ignite.internal.client.router;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.client.ssl.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
