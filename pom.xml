@@ -267,9 +267,9 @@
             <version>2.8</version>
             <configuration>
                 <headerDefinitions>
-                    <headerDefinition>headercustomisation.xml</headerDefinition>
+                    <headerDefinition>licence/headercustomisation.xml</headerDefinition>
                 </headerDefinitions>
-                <header>header.txt</header>
+                <header>licence/header.txt</header>
                 <properties>
                     <inceptionYear>2014</inceptionYear>
                 </properties>
