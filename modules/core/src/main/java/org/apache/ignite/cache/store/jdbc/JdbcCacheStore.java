@@ -385,7 +385,6 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
 
     /**
      * @return Type mappings for specified cache name.
-     *
      * @throws CacheException If failed to initialize.
      */
     private Map<Object, EntryMapping> cacheMappings(@Nullable String cacheName) throws CacheException {
@@ -437,8 +436,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
         EntryMapping em = cacheMappings(cacheName).get(keyTypeId);
 
         if (em == null)
-            throw new CacheException("Failed to find mapping description [table = " + em.fullTableName() +
-                ", key=" + key + ", cache=" + (cacheName != null ? cacheName : "<default>") + "]");
+            throw new CacheException("Failed to find mapping description [key=" + key +
+                ", cache=" + (cacheName != null ? cacheName : "<default>") + "]");
 
         return em;
     }
@@ -540,7 +539,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
         EntryMapping em = entryMapping(keyTypeId(key), key);
 
         if (log.isDebugEnabled())
-            log.debug("Start load value from database [table= " + em.fullTableName()+ ", key=" + key + "]");
+            log.debug("Start load value from database [table= " + em.fullTableName() + ", key=" + key + "]");
 
         Connection conn = null;
 
@@ -623,19 +622,19 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
             CacheWriterException we = null;
 
             for (int attempt = 0; attempt < MAX_ATTEMPT_WRITE_COUNT; attempt++) {
-                int i = fillValueParameters(updStmt, 1, em, entry.getValue());
+                int paramIdx = fillValueParameters(updStmt, 1, em, entry.getValue());
 
-                fillKeyParameters(updStmt, i, em, entry.getKey());
+                fillKeyParameters(updStmt, paramIdx, em, entry.getKey());
 
                 if (updStmt.executeUpdate() == 0) {
-                    i = fillKeyParameters(insStmt, em, entry.getKey());
+                    paramIdx = fillKeyParameters(insStmt, em, entry.getKey());
 
-                    fillValueParameters(insStmt, i, em, entry.getValue());
+                    fillValueParameters(insStmt, paramIdx, em, entry.getValue());
 
                     try {
                         insStmt.executeUpdate();
 
-                        if (i > 0)
+                        if (attempt > 0)
                             U.warn(log, "Entry was inserted in database on second try [table=" + em.fullTableName() +
                                 ", entry=" + entry + "]");
                     }
@@ -652,7 +651,6 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
 
                         // The error with code 23505 is thrown when trying to insert a row that
                         // would violate a unique index or primary key.
-                        // TODO check with all RDBMS
                         if (sqlState != null && Integer.valueOf(sqlState) == 23505) {
                             if (we == null)
                                 we = new CacheWriterException("Failed insert entry in database, violate a unique" +
@@ -671,7 +669,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
                     }
                 }
 
-                if (i > 0)
+                if (attempt > 0)
                     U.warn(log, "Entry was updated in database on second try [table=" + em.fullTableName() +
                         ", entry=" + entry + "]");
 
@@ -712,7 +710,11 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
 
                     fillValueParameters(stmt, i, em, entry.getValue());
 
-                    stmt.executeUpdate();
+                    int updCnt = stmt.executeUpdate();
+
+                    if (updCnt != 1)
+                        U.warn(log, "Unexpected number of updated entries [table=" + em.fullTableName() +
+                            ", entry=" + entry + "expected=1, actual=" + updCnt + "]");
                 }
                 finally {
                     U.closeQuiet(stmt);
@@ -906,7 +908,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
         int numOfRowCnt = rowCounts.length;
 
         if (numOfRowCnt != prepared)
-            U.warn(log, "Unexpected number of updated rows [table=" + em.fullTableName() +", expected=" + prepared +
+            U.warn(log, "Unexpected number of updated rows [table=" + em.fullTableName() + ", expected=" + prepared +
                 ", actual=" + numOfRowCnt + "]");
 
         for (int i = 0; i < numOfRowCnt; i++) {
@@ -930,7 +932,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
         try {
             conn = connection();
 
-            Object currKeyTypeId  = null;
+            Object currKeyTypeId = null;
 
             EntryMapping em = null;
 
@@ -1267,6 +1269,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
 
             return dialect.loadQuery(typeMeta.getDatabaseSchema(), typeMeta.getDatabaseTable(), keyCols, cols, keyCnt);
         }
+
         /**
          * Construct query for select values in range.
          *
