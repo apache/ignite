@@ -34,7 +34,7 @@ public class IgniteFsExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGgfsApiExample() throws Exception {
+    public void testIgniteFsApiExample() throws Exception {
         String configPath = U.isWindows() ? IGNITEFS_LOOPBACK_CFG : IGNITEFS_SHMEM_CFG;
 
         try {
