@@ -1630,6 +1630,10 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
+        @Override public GridIoPolicy ioPolicy() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
         /** {@inheritDoc} */
         @Override public long topologyVersion() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
