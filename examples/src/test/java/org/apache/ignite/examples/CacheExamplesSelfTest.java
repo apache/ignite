@@ -38,49 +38,49 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
      * @throws Exception If failed.
      */
     public void testCacheAtomicLongExample() throws Exception {
-        CacheAtomicLongExample.main(EMPTY_ARGS);
+        IgniteAtomicLongExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCacheAtomicReferenceExample() throws Exception {
-        CacheAtomicReferenceExample.main(EMPTY_ARGS);
+        IgniteAtomicReferenceExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCacheAtomicSequenceExample() throws Exception {
-        CacheAtomicSequenceExample.main(EMPTY_ARGS);
+        IgniteAtomicSequenceExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCacheAtomicStampedExample() throws Exception {
-        CacheAtomicStampedExample.main(EMPTY_ARGS);
+        IgniteAtomicStampedExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCacheCountDownLatchExample() throws Exception {
-        CacheCountDownLatchExample.main(EMPTY_ARGS);
+        IgniteCountDownLatchExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCacheQueueExample() throws Exception {
-        CacheQueueExample.main(EMPTY_ARGS);
+        IgniteQueueExample.main(EMPTY_ARGS);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCacheSetExample() throws Exception {
-        CacheSetExample.main(EMPTY_ARGS);
+        IgniteSetExample.main(EMPTY_ARGS);
     }
 
     /**

@@ -53,7 +53,7 @@ public class IgniteQueueExample {
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
-            System.out.println(">>> Cache queue example started.");
+            System.out.println(">>> Ignite queue example started.");
 
             // Make queue name.
             String queueName = UUID.randomUUID().toString();
