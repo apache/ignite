@@ -286,6 +286,7 @@
                     <include>**/*.js</include>
                     <include>**/*.xml</include>
                     <include>**/*.css</include>
+                    <include>**/*.cpp</include>
                 </includes>
                 <excludes>
                     <exclude>**/com/romix/scala/**</exclude>
