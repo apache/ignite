@@ -392,13 +392,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws IgniteCheckedException {
-        assert g != null;
-
-        g.close();
-    }
-
-    /** {@inheritDoc} */
     @Override public <K> CacheAffinity<K> affinity(String cacheName) {
         return g.affinity(cacheName);
     }
