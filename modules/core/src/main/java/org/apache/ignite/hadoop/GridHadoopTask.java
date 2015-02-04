@@ -60,7 +60,7 @@ public abstract class GridHadoopTask {
      * Runs task.
      *
      * @param taskCtx Context.
-     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      * @throws IgniteCheckedException If failed.
      */
     public abstract void run(GridHadoopTaskContext taskCtx) throws IgniteCheckedException;

@@ -22,7 +22,7 @@ import org.apache.ignite.*;
 /**
  * Exception thrown by SPI implementations.
  */
-public class IgniteSpiException extends IgniteCheckedException {
+public class IgniteSpiException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 

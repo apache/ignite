@@ -66,7 +66,12 @@ public final class GridRouterFactory {
     public static GridTcpRouter startTcpRouter(GridTcpRouterConfiguration cfg) throws IgniteCheckedException {
         GridTcpRouterImpl router = new GridTcpRouterImpl(cfg);
 
-        router.start();
+        try {
+            router.start();
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to start router: " + e, e);
+        }
 
         GridTcpRouterImpl old = tcpRouters.putIfAbsent(router.id(), router);
 

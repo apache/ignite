@@ -21,13 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.continuous.*;
-import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.event.*;
@@ -256,10 +257,10 @@ public class GridCacheContinuousQueryAdapter<K, V> implements CacheContinuousQue
         if (prj == null)
             prj = ctx.grid();
 
-        prj = prj.forCache(ctx.name());
+        prj = prj.forCacheNodes(ctx.name());
 
         if (prj.nodes().isEmpty())
-            throw new ClusterTopologyException("Failed to execute query (projection is empty): " + this);
+            throw new ClusterTopologyCheckedException("Failed to execute query (projection is empty): " + this);
 
         CacheMode mode = ctx.config().getCacheMode();
 

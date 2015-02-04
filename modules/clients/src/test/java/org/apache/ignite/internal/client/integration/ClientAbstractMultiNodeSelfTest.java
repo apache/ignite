@@ -26,9 +26,13 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.client.balancer.*;
 import org.apache.ignite.internal.client.ssl.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
@@ -705,8 +709,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         private int gridSize;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg)
-            throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             this.gridSize = gridSize;
@@ -733,7 +736,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public String reduce(List<ComputeJobResult> results) {
             int sum = 0;
 
             String locNodeId = null;
@@ -791,7 +794,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
             GridCacheVersion v = ((GridCacheVersionable)o).version();
 
-            IgniteTxEx t = tm.tx(v);
+            IgniteInternalTx t = tm.tx(v);
 
             if (t.hasWriteKey(cacheCtx.txKey("x1")))
                 assertFalse("Invalid tx flags: " + t, t.syncCommit());

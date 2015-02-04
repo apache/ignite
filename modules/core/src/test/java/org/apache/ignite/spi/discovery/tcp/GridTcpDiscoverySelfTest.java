@@ -21,16 +21,16 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.port.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.internal.processors.port.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.discovery.tcp.messages.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -851,7 +851,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                         return null;
                     }
                 },
-                IgniteCheckedException.class,
+                IgniteException.class,
                 null);
         }
         finally {
@@ -880,7 +880,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
                         return null;
                     }
                 },
-                IgniteCheckedException.class,
+                IgniteException.class,
                 null);
         }
         finally {

@@ -20,17 +20,17 @@ package org.apache.ignite.loadtests.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.IgniteTxIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Performance comparison between putAll and group lock.

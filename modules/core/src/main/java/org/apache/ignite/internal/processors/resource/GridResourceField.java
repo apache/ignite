@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.resource;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
+
 import java.lang.annotation.*;
 import java.lang.reflect.*;
 

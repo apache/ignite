@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.client.integration;
 
 import org.apache.ignite.*;
+import org.apache.ignite.client.*;
+import org.apache.ignite.client.balancer.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.client.*;
@@ -151,8 +153,7 @@ public class ClientPreferDirectSelfTest extends GridCommonAbstractTest {
         private int gridSize;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg)
-            throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             this.gridSize = gridSize;
@@ -176,7 +177,7 @@ public class ClientPreferDirectSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public String reduce(List<ComputeJobResult> results) {
             int sum = 0;
 
             for (ComputeJobResult res : results) {

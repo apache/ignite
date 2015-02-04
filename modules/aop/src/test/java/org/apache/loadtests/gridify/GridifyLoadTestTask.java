@@ -29,7 +29,7 @@ import java.util.*;
  */
 public class GridifyLoadTestTask extends ComputeTaskSplitAdapter<GridifyArgument, Integer> {
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, GridifyArgument arg) throws IgniteCheckedException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, GridifyArgument arg) {
         assert gridSize > 0 : "Subgrid cannot be empty.";
 
         int jobsNum = (Integer)arg.getMethodParameters()[0];
@@ -53,12 +53,12 @@ public class GridifyLoadTestTask extends ComputeTaskSplitAdapter<GridifyArgument
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Integer reduce(List<ComputeJobResult> results) {
         int retVal = 0;
 
         for (ComputeJobResult res : results) {
             if (res.getException() != null) {
-                throw new IgniteCheckedException("Received exception in reduce method (load test jobs can never fail): " + res,
+                throw new IgniteException("Received exception in reduce method (load test jobs can never fail): " + res,
                     res.getException());
             }
 

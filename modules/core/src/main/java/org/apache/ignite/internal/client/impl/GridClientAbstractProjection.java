@@ -143,7 +143,7 @@ abstract class GridClientAbstractProjection<T extends GridClientAbstractProjecti
         catch (GridClientException e) {
             return new GridClientFutureAdapter<>(e);
         }
-        catch (IgniteInterruptedException | InterruptedException e) {
+        catch (IgniteInterruptedCheckedException | InterruptedException e) {
             Thread.currentThread().interrupt();
 
             return new GridClientFutureAdapter<>(
@@ -215,7 +215,7 @@ abstract class GridClientAbstractProjection<T extends GridClientAbstractProjecti
         catch (GridClientException e) {
             return new GridClientFutureAdapter<>(e);
         }
-        catch (IgniteInterruptedException | InterruptedException e) {
+        catch (IgniteInterruptedCheckedException | InterruptedException e) {
             Thread.currentThread().interrupt();
 
             return new GridClientFutureAdapter<>(new GridClientException("Interrupted when (re)trying to perform " +

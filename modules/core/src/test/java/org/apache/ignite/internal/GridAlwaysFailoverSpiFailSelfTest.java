@@ -21,9 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.failover.always.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -68,7 +68,7 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             //No-op
         }
 
@@ -88,11 +88,11 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
 
         try {
             ignite.compute().execute(GridTestFailoverTask.class.getName(),
-                new IgniteCheckedException("Task should NOT be failed over"));
+                new IgniteException("Task should NOT be failed over"));
 
             assert false;
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             //No-op
         }
 
@@ -117,19 +117,19 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             assert gridSize == 1;
-            assert arg instanceof IgniteCheckedException;
+            assert arg instanceof IgniteException;
 
             Collection<ComputeJob> res = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++)
-                res.add(new GridTestFailoverJob((IgniteCheckedException)arg));
+                res.add(new GridTestFailoverJob((IgniteException)arg));
 
             return res;
         }
 
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res,
-            List<ComputeJobResult> received) throws IgniteCheckedException {
+            List<ComputeJobResult> received) {
             if (res.getException() != null)
                 return ComputeJobResultPolicy.FAILOVER;
 
@@ -149,11 +149,11 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
         /**
          * @param ex Exception to be thrown in {@link #execute}.
          */
-        GridTestFailoverJob(IgniteCheckedException ex) { super(ex); }
+        GridTestFailoverJob(IgniteException ex) { super(ex); }
 
         /** {@inheritDoc} */
-        @Override public IgniteCheckedException execute() throws IgniteCheckedException {
-            throw this.<IgniteCheckedException>argument(0);
+        @Override public IgniteException execute() {
+            throw this.<IgniteException>argument(0);
         }
     }
 }

@@ -31,7 +31,6 @@ import javax.cache.event.*;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
-
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;

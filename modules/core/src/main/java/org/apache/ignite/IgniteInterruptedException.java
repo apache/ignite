@@ -18,10 +18,9 @@
 package org.apache.ignite;
 
 /**
- * This exception is used to wrap standard {@link InterruptedException} into {@link IgniteCheckedException}.
+ * This exception is used to wrap standard {@link InterruptedException} into {@link IgniteException}.
  */
-@SuppressWarnings({"TypeMayBeWeakened"})
-public class IgniteInterruptedException extends IgniteCheckedException {
+public class IgniteInterruptedException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 

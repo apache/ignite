@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.client;
 
-import org.apache.ignite.*;
 import org.apache.ignite.portables.*;
 
 import java.util.*;
@@ -27,7 +26,7 @@ import java.util.*;
  */
 public class ClientPortableArgumentTask extends TaskSingleJobSplitAdapter {
     /** {@inheritDoc} */
-    @Override protected Object executeJob(int gridSize, Object arg) throws IgniteCheckedException {
+    @Override protected Object executeJob(int gridSize, Object arg) {
         Collection args = (Collection)arg;
 
         Iterator<Object> it = args.iterator();

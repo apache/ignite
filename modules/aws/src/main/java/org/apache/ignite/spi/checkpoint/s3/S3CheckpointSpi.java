@@ -22,13 +22,14 @@ import com.amazonaws.auth.*;
 import com.amazonaws.services.s3.*;
 import com.amazonaws.services.s3.model.*;
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.checkpoint.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -276,7 +277,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
                     try {
                         U.sleep(200);
                     }
-                    catch (IgniteInterruptedException e) {
+                    catch (IgniteInterruptedCheckedException e) {
                         throw new IgniteSpiException("Thread has been interrupted.", e);
                     }
             }

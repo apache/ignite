@@ -20,19 +20,20 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -40,15 +41,15 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 
 /**
  *
  */
-public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<IgniteTxEx<K, V>>
-    implements GridCacheMvccFuture<K, V, IgniteTxEx<K, V>> {
+public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<IgniteInternalTx<K, V>>
+    implements GridCacheMvccFuture<K, V, IgniteInternalTx<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -90,12 +91,12 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * @param tx Transaction.
      */
     public GridNearTxPrepareFuture(GridCacheSharedContext<K, V> cctx, final GridNearTxLocal<K, V> tx) {
-        super(cctx.kernalContext(), new IgniteReducer<IgniteTxEx<K, V>, IgniteTxEx<K, V>>() {
-            @Override public boolean collect(IgniteTxEx<K, V> e) {
+        super(cctx.kernalContext(), new IgniteReducer<IgniteInternalTx<K, V>, IgniteInternalTx<K, V>>() {
+            @Override public boolean collect(IgniteInternalTx<K, V> e) {
                 return true;
             }
 
-            @Override public IgniteTxEx<K, V> reduce() {
+            @Override public IgniteInternalTx<K, V> reduce() {
                 // Nothing to aggregate.
                 return tx;
             }
@@ -171,7 +172,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new ClusterTopologyException("Remote node left grid (will retry): " + nodeId));
+                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
 
                     found = true;
                 }
@@ -189,12 +190,12 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         if (err.compareAndSet(null, e)) {
             boolean marked = tx.setRollbackOnly();
 
-            if (e instanceof IgniteTxOptimisticException) {
+            if (e instanceof IgniteTxOptimisticCheckedException) {
                 assert nodeId != null : "Missing node ID for optimistic failure exception: " + e;
 
                 tx.removeKeysMapping(nodeId, mappings);
             }
-            if (e instanceof IgniteTxRollbackException) {
+            if (e instanceof IgniteTxRollbackCheckedException) {
                 if (marked) {
                     try {
                         tx.rollback();
@@ -262,7 +263,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      */
     public void onResult(UUID nodeId, GridNearTxPrepareResponse<K, V> res) {
         if (!isDone()) {
-            for (IgniteInternalFuture<IgniteTxEx<K, V>> fut : pending()) {
+            for (IgniteInternalFuture<IgniteInternalTx<K, V>> fut : pending()) {
                 if (isMini(fut)) {
                     MiniFuture f = (MiniFuture)fut;
 
@@ -277,7 +278,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(IgniteTxEx<K, V> t, Throwable err) {
+    @Override public boolean onDone(IgniteInternalTx<K, V> t, Throwable err) {
         // If locks were not acquired yet, delay completion.
         if (isDone() || (err == null && !checkLocks()))
             return false;
@@ -333,14 +334,14 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                     if (!tx.state(PREPARING)) {
                         if (tx.setRollbackOnly()) {
                             if (tx.timedOut())
-                                onError(null, null, new IgniteTxTimeoutException("Transaction timed out and " +
+                                onError(null, null, new IgniteTxTimeoutCheckedException("Transaction timed out and " +
                                     "was rolled back: " + this));
                             else
                                 onError(null, null, new IgniteCheckedException("Invalid transaction state for prepare " +
                                     "[state=" + tx.state() + ", tx=" + this + ']'));
                         }
                         else
-                            onError(null, null, new IgniteTxRollbackException("Invalid transaction state for " +
+                            onError(null, null, new IgniteTxRollbackCheckedException("Invalid transaction state for " +
                                 "prepare [state=" + tx.state() + ", tx=" + this + ']'));
 
                         return;
@@ -356,7 +357,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                     prepare0();
                 }
-                catch (IgniteTxTimeoutException | IgniteTxOptimisticException e) {
+                catch (IgniteTxTimeoutCheckedException | IgniteTxOptimisticCheckedException e) {
                     onError(cctx.localNodeId(), null, e);
                 }
                 catch (IgniteCheckedException e) {
@@ -368,7 +369,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                     tx.rollbackAsync();
 
-                    onError(null, null, new IgniteTxRollbackException(msg, e));
+                    onError(null, null, new IgniteTxRollbackCheckedException(msg, e));
                 }
             }
             else {
@@ -478,7 +479,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
             if (CU.affinityNodes(cacheCtx, topVer).isEmpty()) {
-                onDone(new ClusterTopologyException("Failed to map keys for cache (all " +
+                onDone(new ClusterTopologyCheckedException("Failed to map keys for cache (all " +
                     "partition nodes left the grid): " + cacheCtx.name()));
 
                 return;
@@ -600,14 +601,14 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             // At this point, if any new node joined, then it is
             // waiting for this transaction to complete, so
             // partition reassignments are not possible here.
-            IgniteInternalFuture<IgniteTxEx<K, V>> fut = cctx.tm().txHandler().prepareTx(n.id(), tx, req);
+            IgniteInternalFuture<IgniteInternalTx<K, V>> fut = cctx.tm().txHandler().prepareTx(n.id(), tx, req);
 
             // Add new future.
             add(new GridEmbeddedFuture<>(
                 cctx.kernalContext(),
                 fut,
-                new C2<IgniteTxEx<K, V>, Exception, IgniteTxEx<K, V>>() {
-                    @Override public IgniteTxEx<K, V> apply(IgniteTxEx<K, V> t, Exception ex) {
+                new C2<IgniteInternalTx<K, V>, Exception, IgniteInternalTx<K, V>>() {
+                    @Override public IgniteInternalTx<K, V> apply(IgniteInternalTx<K, V> t, Exception ex) {
                         if (ex != null) {
                             onError(n.id(), mappings, ex);
 
@@ -736,7 +737,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * Mini-future for get operations. Mini-futures are only waiting on a single
      * node as opposed to multiple nodes.
      */
-    private class MiniFuture extends GridFutureAdapter<IgniteTxEx<K, V>> {
+    private class MiniFuture extends GridFutureAdapter<IgniteInternalTx<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -812,7 +813,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         /**
          * @param e Node failure.
          */
-        void onResult(ClusterTopologyException e) {
+        void onResult(ClusterTopologyCheckedException e) {
             if (isDone())
                 return;
 

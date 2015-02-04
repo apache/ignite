@@ -19,11 +19,13 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -31,6 +33,8 @@ import javax.cache.integration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+
+import static junit.framework.Assert.*;
 
 /**
  * Test store.
@@ -306,7 +310,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
             try {
                 U.sleep(operationDelay);
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 throw new IgniteException(e);
             }
         }
@@ -323,7 +327,9 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
 
         txs.add(tx);
 
-        IgniteTxEx tx0 = (IgniteTxEx)tx;
+        assertTrue("Unexpected tx class: " + tx.getClass(), tx instanceof IgniteTxProxy);
+
+        IgniteInternalTx tx0 = GridTestUtils.getFieldValue(tx, "tx");
 
         if (!tx0.local())
             throw new IgniteException("Tx is not local: " + tx);

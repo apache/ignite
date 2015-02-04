@@ -26,7 +26,7 @@ import org.jetbrains.annotations.*;
  * rejects execution.
  * @see org.apache.ignite.configuration.IgniteConfiguration#getExecutorService()
  */
-public class ComputeExecutionRejectedException extends IgniteCheckedException {
+public class ComputeExecutionRejectedException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 

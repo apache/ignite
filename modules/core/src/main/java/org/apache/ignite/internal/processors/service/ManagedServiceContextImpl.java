@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import org.apache.ignite.managed.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.managed.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;

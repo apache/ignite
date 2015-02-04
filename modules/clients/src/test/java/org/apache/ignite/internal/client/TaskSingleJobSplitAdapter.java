@@ -36,22 +36,22 @@ public abstract class TaskSingleJobSplitAdapter<T, R> extends ComputeTaskSplitAd
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(final int gridSize, final T arg) throws IgniteCheckedException {
+    @Override protected Collection<? extends ComputeJob> split(final int gridSize, final T arg) {
         return Collections.singleton(new ComputeJobAdapter() {
-            @Override public Object execute() throws IgniteCheckedException {
+            @Override public Object execute() {
                 return executeJob(gridSize, arg);
             }
         });
     }
 
     /** {@inheritDoc} */
-    @Override public R reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public R reduce(List<ComputeJobResult> results) {
         assert results.size() == 1;
 
         ComputeJobResult res = results.get(0);
 
         if (res.isCancelled())
-            throw new IgniteCheckedException("Reduce receives failed job.");
+            throw new IgniteException("Reduce receives failed job.");
 
         return res.getData();
     }
@@ -65,11 +65,6 @@ public abstract class TaskSingleJobSplitAdapter<T, R> extends ComputeTaskSplitAd
      * @return Job execution result (possibly {@code null}). This result will be returned
      *      in {@link org.apache.ignite.compute.ComputeJobResult#getData()} method passed into
      *      {@link org.apache.ignite.compute.ComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} method into task on caller node.
-     * @throws IgniteCheckedException If job execution caused an exception. This exception will be
-     *      returned in {@link org.apache.ignite.compute.ComputeJobResult#getException()} method passed into
-     *      {@link org.apache.ignite.compute.ComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} method into task on caller node.
-     *      If execution produces a {@link RuntimeException} or {@link Error}, then
-     *      it will be wrapped into {@link IgniteCheckedException}.
      */
-    protected abstract Object executeJob(int gridSize, T arg) throws IgniteCheckedException;
+    protected abstract Object executeJob(int gridSize, T arg);
 }

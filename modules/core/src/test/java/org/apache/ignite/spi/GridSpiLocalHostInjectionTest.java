@@ -18,9 +18,9 @@
 package org.apache.ignite.spi;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.testframework.junits.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;

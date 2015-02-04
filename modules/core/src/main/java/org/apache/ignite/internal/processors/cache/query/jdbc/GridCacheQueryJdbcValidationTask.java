@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.cache.query.jdbc;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -39,7 +39,7 @@ public class GridCacheQueryJdbcValidationTask extends ComputeTaskSplitAdapter<St
 
     /** {@inheritDoc} */
     @Override protected Collection<? extends ComputeJob> split(int gridSize,
-        @Nullable final String cacheName) throws IgniteCheckedException {
+        @Nullable final String cacheName) {
         // Register big data usage.
         GridLicenseUseRegistry.onUsage(DATA_GRID, getClass());
 
@@ -58,7 +58,7 @@ public class GridCacheQueryJdbcValidationTask extends ComputeTaskSplitAdapter<St
     }
 
     /** {@inheritDoc} */
-    @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Boolean reduce(List<ComputeJobResult> results) {
         return F.first(results).getData();
     }
 }

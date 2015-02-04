@@ -21,12 +21,13 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -589,7 +590,7 @@ public class CacheConsistentHashAffinityFunction implements CacheAffinityFunctio
                 try {
                     U.await(initLatch);
                 }
-                catch (IgniteInterruptedException ignored) {
+                catch (IgniteInterruptedCheckedException ignored) {
                     // Recover interrupted state flag.
                     Thread.currentThread().interrupt();
                 }

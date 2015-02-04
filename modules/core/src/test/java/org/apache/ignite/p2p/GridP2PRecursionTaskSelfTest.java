@@ -129,7 +129,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      */
     public static class FactorialTask extends ComputeTaskAdapter<Long, Long> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Long arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Long arg) {
             assert arg > 1;
 
             Map<FactorialJob, ClusterNode> map = new HashMap<>();
@@ -150,12 +150,11 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Long reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Long reduce(List<ComputeJobResult> results) {
             long retVal = 0;
 
-            for (ComputeJobResult res : results) {
+            for (ComputeJobResult res : results)
                 retVal += (Long)res.getData();
-            }
 
             return retVal;
         }
@@ -176,7 +175,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Long execute() throws IgniteCheckedException {
+        @Override public Long execute() {
             Long arg = argument(0);
 
             assert arg != null;

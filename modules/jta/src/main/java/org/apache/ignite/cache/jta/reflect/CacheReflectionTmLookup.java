@@ -95,7 +95,7 @@ public class CacheReflectionTmLookup implements CacheTmLookup {
     }
 
     /** {@inheritDoc} */
-    @Override public TransactionManager getTm() throws IgniteCheckedException {
+    @Override public TransactionManager getTm() throws IgniteException {
         assert cls != null;
         assert mtd != null;
 
@@ -103,13 +103,13 @@ public class CacheReflectionTmLookup implements CacheTmLookup {
             return (TransactionManager)Class.forName(cls).getMethod(mtd).invoke(null);
         }
         catch (ClassNotFoundException e) {
-            throw new IgniteCheckedException("Failed to find class: " + cls, e);
+            throw new IgniteException("Failed to find class: " + cls, e);
         }
         catch (NoSuchMethodException e) {
-            throw new IgniteCheckedException("Failed to find method: " + mtd, e);
+            throw new IgniteException("Failed to find method: " + mtd, e);
         }
         catch (InvocationTargetException | IllegalAccessException e) {
-            throw new IgniteCheckedException("Failed to invoke method: " + mtd, e);
+            throw new IgniteException("Failed to invoke method: " + mtd, e);
         }
     }
 }

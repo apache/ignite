@@ -22,12 +22,12 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
@@ -53,7 +53,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
 
     /** Owning transaction. */
     @GridToStringExclude
-    private IgniteTxEx<K, V> tx;
+    private IgniteInternalTx<K, V> tx;
 
     /** Cache key. */
     @GridToStringInclude
@@ -167,7 +167,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @param drVer Data center replication version.
      */
     public IgniteTxEntry(GridCacheContext<K, V> ctx,
-        IgniteTxEx<K, V> tx,
+        IgniteInternalTx<K, V> tx,
         GridCacheOperation op,
         V val,
         long ttl,
@@ -210,7 +210,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @param drVer Data center replication version.
      */
     public IgniteTxEntry(GridCacheContext<K, V> ctx,
-        IgniteTxEx<K, V> tx,
+        IgniteInternalTx<K, V> tx,
         GridCacheOperation op,
         V val,
         EntryProcessor<K, V, ?> entryProcessor,

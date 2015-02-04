@@ -36,30 +36,30 @@ public class ClientTestPortableAffinityKeyTask extends ComputeTaskAdapter<Object
 
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> clusterNodes,
-        @Nullable final Object arg) throws IgniteCheckedException {
+        @Nullable final Object arg) {
         for (ClusterNode node : clusterNodes) {
             if (node.isLocal())
                 return Collections.singletonMap(new ComputeJobAdapter() {
-                    @Override public Object execute() throws IgniteCheckedException {
+                    @Override public Object execute() {
                         return executeJob(arg);
                     }
                 }, node);
         }
 
-        throw new IgniteCheckedException("Failed to find local node in task topology: " + clusterNodes);
+        throw new IgniteException("Failed to find local node in task topology: " + clusterNodes);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override public Boolean reduce(List<ComputeJobResult> results) {
         return results.get(0).getData();
     }
 
     /**
      * @param arg Argument.
      * @return Execution result.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-     protected Boolean executeJob(Object arg) throws IgniteCheckedException {
+     protected Boolean executeJob(Object arg) throws IgniteException {
         Collection args = (Collection)arg;
 
         Iterator<Object> it = args.iterator();
@@ -75,10 +75,10 @@ public class ClientTestPortableAffinityKeyTask extends ComputeTaskAdapter<Object
         Object affKey = ignite.cache(cacheName).affinity().affinityKey(obj);
 
         if (!expAffKey.equals(affKey))
-            throw new IgniteCheckedException("Unexpected affinity key: " + affKey);
+            throw new IgniteException("Unexpected affinity key: " + affKey);
 
         if (!ignite.cache(cacheName).affinity().mapKeyToNode(obj).isLocal())
-            throw new IgniteCheckedException("Job is not run on primary node.");
+            throw new IgniteException("Job is not run on primary node.");
 
         return true;
     }

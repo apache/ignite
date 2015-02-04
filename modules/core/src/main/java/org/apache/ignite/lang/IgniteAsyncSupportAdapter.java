@@ -19,13 +19,14 @@ package org.apache.ignite.lang;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.future.*;
 
 /**
  * Adapter for {@link IgniteAsyncSupport}.
  */
 public class IgniteAsyncSupportAdapter<T extends IgniteAsyncSupport> implements IgniteAsyncSupport {
     /** Future for previous asynchronous operation. */
-    protected ThreadLocal<IgniteInternalFuture<?>> curFut;
+    protected ThreadLocal<IgniteFuture<?>> curFut;
 
     /**
      * Default constructor.
@@ -43,6 +44,7 @@ public class IgniteAsyncSupportAdapter<T extends IgniteAsyncSupport> implements 
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public T withAsync() {
         if (isAsync())
             return (T)this;
@@ -52,6 +54,8 @@ public class IgniteAsyncSupportAdapter<T extends IgniteAsyncSupport> implements 
 
     /**
      * Creates component with asynchronous mode enabled.
+     *
+     * @return Component with asynchronous mode enabled.
      */
     protected T createAsyncInstance() {
         throw new UnsupportedOperationException();
@@ -63,18 +67,19 @@ public class IgniteAsyncSupportAdapter<T extends IgniteAsyncSupport> implements 
     }
 
     /** {@inheritDoc} */
-    @Override public <R> IgniteInternalFuture<R> future() {
+    @SuppressWarnings("unchecked")
+    @Override public <R> IgniteFuture<R> future() {
         if (curFut == null)
             throw new IllegalStateException("Asynchronous mode is disabled.");
 
-        IgniteInternalFuture<?> fut = curFut.get();
+        IgniteFuture<?> fut = curFut.get();
 
         if (fut == null)
             throw new IllegalStateException("Asynchronous operation not started.");
 
         curFut.set(null);
 
-        return (IgniteInternalFuture<R>)fut;
+        return (IgniteFuture<R>)fut;
     }
 
     /**
@@ -85,11 +90,19 @@ public class IgniteAsyncSupportAdapter<T extends IgniteAsyncSupport> implements 
      */
     public <R> R saveOrGet(IgniteInternalFuture<R> fut) throws IgniteCheckedException {
         if (curFut != null) {
-            curFut.set(fut);
+            curFut.set(createFuture(fut));
 
             return null;
         }
         else
             return fut.get();
+    }
+
+    /**
+     * @param fut Internal future.
+     * @return Public API future.
+     */
+    protected <R> IgniteFuture<R> createFuture(IgniteInternalFuture<R> fut) {
+        return new IgniteFutureImpl<>(fut);
     }
 }

@@ -20,13 +20,13 @@ package org.apache.ignite.internal.processors.hadoop.planner;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.fs.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.fs.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.fs.hadoop.*;
+import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -161,8 +161,14 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
                     ggfs = (GridGgfsEx)((IgniteEx)ignite).ggfsx(endpoint.ggfs());
 
                 if (ggfs != null && !ggfs.isProxy(split0.file())) {
-                    Collection<IgniteFsBlockLocation> blocks = ggfs.affinity(new IgniteFsPath(split0.file()),
-                        split0.start(), split0.length());
+                    Collection<IgniteFsBlockLocation> blocks;
+
+                    try {
+                        blocks = ggfs.affinity(new IgniteFsPath(split0.file()), split0.start(), split0.length());
+                    }
+                    catch (IgniteException e) {
+                        throw new IgniteCheckedException(e);
+                    }
 
                     assert blocks != null;
 

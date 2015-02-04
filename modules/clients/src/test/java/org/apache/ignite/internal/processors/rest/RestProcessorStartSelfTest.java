@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest;
 
+import org.apache.ignite.client.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.*;

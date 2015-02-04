@@ -257,7 +257,7 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
      */
     private static class TestTask extends ComputeTaskSplitAdapter<String, String> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, final String arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, final String arg) {
             return Collections.singleton(new ComputeJobAdapter() {
                 @Override public String execute() {
                     return arg;
@@ -266,7 +266,7 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public String reduce(List<ComputeJobResult> results) {
             assertEquals(1, results.size());
 
             return results.get(0).getData();

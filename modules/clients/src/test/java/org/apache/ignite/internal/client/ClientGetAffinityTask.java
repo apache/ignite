@@ -20,8 +20,8 @@ package org.apache.ignite.internal.client;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
 
 import java.util.*;
 
@@ -36,7 +36,7 @@ public class ClientGetAffinityTask extends TaskSingleJobSplitAdapter<String, Int
     private transient Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected Object executeJob(int gridSize, String arg) throws IgniteCheckedException {
+    @Override protected Object executeJob(int gridSize, String arg) {
         A.notNull(arg, "task argument");
 
         String[] split = arg.split(":", 2);
@@ -55,7 +55,7 @@ public class ClientGetAffinityTask extends TaskSingleJobSplitAdapter<String, Int
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         if (res.getException() != null)
             return FAILOVER;
 

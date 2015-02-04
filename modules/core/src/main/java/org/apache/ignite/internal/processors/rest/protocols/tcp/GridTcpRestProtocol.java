@@ -34,6 +34,9 @@ import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.nio.ssl.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.marshaller.jdk.*;
+import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;

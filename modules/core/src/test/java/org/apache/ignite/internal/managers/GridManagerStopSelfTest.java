@@ -18,6 +18,16 @@
 package org.apache.ignite.internal.managers;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.managers.checkpoint.*;
+import org.apache.ignite.internal.managers.collision.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.managers.failover.*;
+import org.apache.ignite.internal.managers.loadbalancer.*;
+import org.apache.ignite.internal.managers.swapspace.*;
+import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
@@ -36,16 +46,6 @@ import org.apache.ignite.spi.failover.always.*;
 import org.apache.ignite.spi.loadbalancing.roundrobin.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.internal.managers.checkpoint.*;
-import org.apache.ignite.internal.managers.collision.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.managers.deployment.*;
-import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.managers.failover.*;
-import org.apache.ignite.internal.managers.loadbalancer.*;
-import org.apache.ignite.internal.managers.swapspace.*;
-import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.testframework.junits.*;
 import org.apache.ignite.testframework.junits.common.*;
 

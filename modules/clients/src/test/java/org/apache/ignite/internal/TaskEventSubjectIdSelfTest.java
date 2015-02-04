@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.client.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -335,7 +336,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /** */
     private static class SimpleTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return Collections.singleton(new ComputeJobAdapter() {
                 @Nullable @Override public Object execute() {
                     return null;
@@ -344,7 +345,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -352,7 +353,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /** */
     private static class FailedTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return Collections.singleton(new ComputeJobAdapter() {
                 @Nullable @Override public Object execute() {
                     return null;
@@ -361,15 +362,15 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
-            throw new IgniteCheckedException("Task failed.");
+        @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
+            throw new IgniteException("Task failed.");
         }
     }
 
     /** */
     private static class TimedOutTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return Collections.singleton(new ComputeJobAdapter() {
                 @Nullable @Override public Object execute() {
                     try {
@@ -385,7 +386,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

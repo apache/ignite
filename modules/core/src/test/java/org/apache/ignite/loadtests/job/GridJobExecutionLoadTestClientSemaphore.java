@@ -20,10 +20,9 @@ package org.apache.ignite.loadtests.job;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.loadtests.util.*;
 import org.apache.ignite.testframework.*;
 import org.jdk8.backport.*;
@@ -58,8 +57,8 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
     /** {@inheritDoc} */
     @SuppressWarnings("InfiniteLoopStatement")
     @Nullable @Override public Object call() throws Exception {
-        final IgniteInClosure<IgniteInternalFuture<?>> lsnr = new CI1<IgniteInternalFuture<?>>() {
-            @Override public void apply(IgniteInternalFuture<?> t) {
+        final IgniteInClosure<IgniteFuture<?>> lsnr = new CI1<IgniteFuture<?>>() {
+            @Override public void apply(IgniteFuture<?> t) {
                 tasksSem.release();
             }
         };
@@ -217,7 +216,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
                 try {
                     rmts.execute(GridJobExecutionLoadTestTask.class, null);
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     e.printStackTrace();
                 }
 
@@ -233,7 +232,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
                 }
             });
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             throw new IllegalStateException(e);
         }
     }

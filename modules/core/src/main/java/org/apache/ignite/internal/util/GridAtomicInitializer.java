@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.concurrent.*;
@@ -92,9 +93,9 @@ public class GridAtomicInitializer<T> {
      * Await for completion.
      *
      * @return {@code true} If initialization was completed successfully.
-     * @throws org.apache.ignite.IgniteInterruptedException If thread was interrupted.
+     * @throws IgniteInterruptedCheckedException If thread was interrupted.
      */
-    public boolean await() throws IgniteInterruptedException {
+    public boolean await() throws IgniteInterruptedCheckedException {
         if (!finished) {
             synchronized (mux) {
                 while (!finished)

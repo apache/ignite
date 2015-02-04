@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.client;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.resources.*;
 
 /**
@@ -30,10 +29,10 @@ public class ClientPutPortableTask extends TaskSingleJobSplitAdapter {
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected Object executeJob(int gridSize, Object arg) throws IgniteCheckedException {
+    @Override protected Object executeJob(int gridSize, Object arg) {
         String cacheName = (String)arg;
 
-        GridCache<Object, Object> cache = ignite.cache(cacheName);
+        IgniteCache<Object, Object> cache = ignite.jcache(cacheName);
 
         ClientTestPortable p = new ClientTestPortable(100, true);
 

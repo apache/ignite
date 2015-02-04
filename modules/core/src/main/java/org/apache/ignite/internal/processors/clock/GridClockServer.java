@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.clock;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.thread.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.thread.*;
 
 import java.io.*;
 import java.net.*;
@@ -174,7 +174,7 @@ public class GridClockServer {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             DatagramPacket packet = new DatagramPacket(new byte[GridClockMessage.PACKET_SIZE],
                 GridClockMessage.PACKET_SIZE);
 

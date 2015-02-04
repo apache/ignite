@@ -20,6 +20,9 @@ package org.apache.ignite.internal.client;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.client.balancer.*;
+import org.apache.ignite.client.impl.*;
+import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -27,6 +30,9 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.client.balancer.*;
 import org.apache.ignite.internal.client.impl.*;
 import org.apache.ignite.internal.client.ssl.*;
+import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.processors.affinity.*;
@@ -572,8 +578,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
         private int gridSize;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg)
-            throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             this.gridSize = gridSize;
@@ -592,7 +597,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public String reduce(List<ComputeJobResult> results) {
             int sum = 0;
 
             String locNodeId = null;

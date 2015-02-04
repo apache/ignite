@@ -73,7 +73,7 @@ public class GridSessionSetJobAttribute2SelfTest extends GridCommonAbstractTest 
         private UUID attrVal;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) {
             assert subgrid.size() == 2;
             assert arg != null;
 
@@ -90,12 +90,12 @@ public class GridSessionSetJobAttribute2SelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             try {
                 Thread.sleep(100);
             }
             catch (InterruptedException e) {
-                throw new IgniteCheckedException("Got interrupted while while sleeping.", e);
+                throw new IgniteException("Got interrupted while while sleeping.", e);
             }
 
             Serializable ser = taskSes.getAttribute(TEST_ATTR_KEY);
@@ -122,7 +122,7 @@ public class GridSessionSetJobAttribute2SelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable execute() throws IgniteCheckedException {
+        @Override public Serializable execute() {
             assert taskSes != null;
             assert argument(0) != null;
 

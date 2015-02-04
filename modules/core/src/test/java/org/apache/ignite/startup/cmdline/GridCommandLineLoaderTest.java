@@ -18,10 +18,11 @@
 package org.apache.ignite.startup.cmdline;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.testframework.junits.common.*;
+
 import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteState.*;

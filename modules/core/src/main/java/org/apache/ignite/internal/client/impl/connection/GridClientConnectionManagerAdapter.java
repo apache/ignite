@@ -23,12 +23,13 @@ import org.apache.ignite.internal.client.impl.*;
 import org.apache.ignite.internal.client.util.*;
 import org.apache.ignite.logger.java.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.nio.ssl.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.logger.java.*;
+import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
