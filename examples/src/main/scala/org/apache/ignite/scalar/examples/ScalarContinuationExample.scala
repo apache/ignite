@@ -17,25 +17,24 @@
 
 package org.apache.ignite.scalar.examples
 
+import java.math._
+import java.util
+
 import org.apache.ignite.compute.ComputeJobContext
-import org.apache.ignite.internal.IgniteInternalFuture
-import org.apache.ignite.lang.IgniteClosure
+import org.apache.ignite.lang.{IgniteClosure, IgniteFuture}
 import org.apache.ignite.resources.IgniteJobContextResource
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 import org.jetbrains.annotations.Nullable
 
-import java.math._
-import java.util
-
 /**
- * This example recursively calculates `Fibonacci` numbers on the grid. This is
+ * This example recursively calculates `Fibonacci` numbers on the ignite cluster. This is
  * a powerful design pattern which allows for creation of fully distributively recursive
  * (a.k.a. nested) tasks or closures with continuations. This example also shows
  * usage of `continuations`, which allows us to wait for results from remote nodes
  * without blocking threads.
  * <p>
- * Note that because this example utilizes local node storage via `GridNodeLocal`,
+ * Note that because this example utilizes local node storage via `NodeLocal`,
  * it gets faster if you execute it multiple times, as the more you execute it,
  * the more values it will be cached on remote nodes.
  * <p>
@@ -48,21 +47,21 @@ object ScalarContinuationExample {
             // Calculate fibonacci for N.
             val N: Long = 100
 
-            val thisNode = grid$.cluster().localNode
+            val thisNode = ignite$.cluster().localNode
 
             val start = System.currentTimeMillis
 
             // Projection that excludes this node if others exists.
-            val prj = if (grid$.cluster().nodes().size() > 1) grid$.cluster().forOthers(thisNode) else grid$.cluster().forNode(thisNode)
+            val prj = if (ignite$.cluster().nodes().size() > 1) ignite$.cluster().forOthers(thisNode) else ignite$.cluster().forNode(thisNode)
 
-            val fib = grid$.compute(prj).apply(new FibonacciClosure(thisNode.id()), N)
+            val fib = ignite$.compute(prj).apply(new FibonacciClosure(thisNode.id()), N)
 
             val duration = System.currentTimeMillis - start
 
             println(">>>")
             println(">>> Finished executing Fibonacci for '" + N + "' in " + duration + " ms.")
             println(">>> Fibonacci sequence for input number '" + N + "' is '" + fib + "'.")
-            println(">>> You should see prints out every recursive Fibonacci execution on grid nodes.")
+            println(">>> You should see prints out every recursive Fibonacci execution on cluster nodes.")
             println(">>> Check remote nodes for output.")
             println(">>>")
         }
@@ -72,7 +71,7 @@ object ScalarContinuationExample {
 /**
  * Closure to execute.
  *
- * @param excludeNodeId Node to exclude from execution if there are more then 1 node in grid.
+ * @param excludeNodeId Node to exclude from execution if there are more then 1 node in cluster.
  */
 class FibonacciClosure (
     private[this] val excludeNodeId: util.UUID
@@ -82,7 +81,7 @@ class FibonacciClosure (
     // However, these fields will be preserved locally while
     // this closure is being "held", i.e. while it is suspended
     // and is waiting to be continued.
-    @transient private var fut1, fut2: IgniteInternalFuture[BigInteger] = null
+    @transient private var fut1, fut2: IgniteFuture[BigInteger] = null
 
     // Auto-inject job context.
     @IgniteJobContextResource
@@ -95,7 +94,7 @@ class FibonacciClosure (
             // Make sure n is not negative.
             val n = math.abs(num)
 
-            val g = grid$
+            val g = ignite$
 
             if (n <= 2)
                 return if (n == 0)
@@ -104,21 +103,21 @@ class FibonacciClosure (
                     BigInteger.ONE
 
             // Get properly typed node-local storage.
-            val store = g.cluster().nodeLocalMap[Long, IgniteInternalFuture[BigInteger]]()
+            val store = g.cluster().nodeLocalMap[Long, IgniteFuture[BigInteger]]()
 
             // Check if value is cached in node-local store first.
             fut1 = store.get(n - 1)
             fut2 = store.get(n - 2)
 
-            val excludeNode = grid$.cluster().node(excludeNodeId)
+            val excludeNode = ignite$.cluster().node(excludeNodeId)
 
             // Projection that excludes node with id passed in constructor if others exists.
-            val prj = if (grid$.cluster().nodes().size() > 1) grid$.cluster().forOthers(excludeNode) else grid$.cluster().forNode(excludeNode)
+            val prj = if (ignite$.cluster().nodes().size() > 1) ignite$.cluster().forOthers(excludeNode) else ignite$.cluster().forNode(excludeNode)
 
-            val comp = grid$.compute(prj).withAsync()
+            val comp = ignite$.compute(prj).withAsync()
 
             // If future is not cached in node-local store, cache it.
-            // Note recursive grid execution!
+            // Note recursive execution!
             if (fut1 == null) {
                 comp.apply(new FibonacciClosure(excludeNodeId), n - 1)
 
@@ -134,7 +133,7 @@ class FibonacciClosure (
 
             // If futures are not done, then wait asynchronously for the result
             if (!fut1.isDone || !fut2.isDone) {
-                val lsnr = (fut: IgniteInternalFuture[BigInteger]) => {
+                val lsnr = (fut: IgniteFuture[BigInteger]) => {
                     // This method will be called twice, once for each future.
                     // On the second call - we have to have both futures to be done
                     // - therefore we can call the continuation.

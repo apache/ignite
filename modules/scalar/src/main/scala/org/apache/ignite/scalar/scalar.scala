@@ -196,7 +196,7 @@ object scalar extends ScalarConversions {
      * @param body Closure to execute within automatically managed default grid instance.
      */
     def apply(body: Ignite => Unit) {
-        if (!isStarted) init(Ignition.start, body) else body(grid$)
+        if (!isStarted) init(Ignition.start, body) else body(ignite$)
     }
 
     /**
@@ -207,7 +207,7 @@ object scalar extends ScalarConversions {
      * @param body Closure to execute within automatically managed default grid instance.
      */
     def apply[T](body: Ignite => T): T =
-        if (!isStarted) init(Ignition.start, body) else body(grid$)
+        if (!isStarted) init(Ignition.start, body) else body(ignite$)
 
     /**
      * Executes given closure within automatically managed default grid instance.
@@ -285,7 +285,7 @@ object scalar extends ScalarConversions {
      * @param cacheName Name of the cache to get.
      */
     @inline def cache$[K, V](@Nullable gridName: String, @Nullable cacheName: String): Option[GridCache[K, V]] =
-        grid$(gridName) match {
+        ignite$(gridName) match {
             case Some(g) => Option(g.cache(cacheName))
             case None => None
         }
@@ -300,7 +300,7 @@ object scalar extends ScalarConversions {
     @inline def dataLoader$[K, V](
         @Nullable cacheName: String,
         bufSize: Int): IgniteDataLoader[K, V] = {
-        val dl = grid$.dataLoader[K, V](cacheName)
+        val dl = ignite$.dataLoader[K, V](cacheName)
 
         dl.perNodeBufferSize(bufSize)
 
@@ -310,7 +310,7 @@ object scalar extends ScalarConversions {
     /**
      * Gets default grid instance.
      */
-    @inline def grid$: Ignite = Ignition.ignite
+    @inline def ignite$: Ignite = Ignition.ignite
 
     /**
      * Gets node ID as ID8 string.
@@ -322,7 +322,7 @@ object scalar extends ScalarConversions {
      *
      * @param name Grid name.
      */
-    @inline def grid$(@Nullable name: String): Option[Ignite] =
+    @inline def ignite$(@Nullable name: String): Option[Ignite] =
         try {
             Option(Ignition.ignite(name))
         }
@@ -423,7 +423,7 @@ object scalar extends ScalarConversions {
      *  @return Started grid.
      */
     def start(): Ignite = {
-        if (!isStarted) Ignition.start else grid$
+        if (!isStarted) Ignition.start else ignite$
     }
 
     /**

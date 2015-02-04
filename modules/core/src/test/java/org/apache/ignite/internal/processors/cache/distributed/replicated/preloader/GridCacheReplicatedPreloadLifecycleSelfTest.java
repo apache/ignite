@@ -22,18 +22,18 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests for replicated cache preloader.
@@ -82,52 +82,57 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
             @IgniteInstanceResource
             private Ignite ignite;
 
-            @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
-                switch (evt) {
-                    case AFTER_GRID_START: {
-                        GridCache<Object, MyValue> c1 = ignite.cache("one");
-                        GridCache<Object, MyValue> c2 = ignite.cache("two");
+            @Override public void onLifecycleEvent(LifecycleEventType evt) {
+                try {
+                    switch (evt) {
+                        case AFTER_GRID_START: {
+                            GridCache<Object, MyValue> c1 = ignite.cache("one");
+                            GridCache<Object, MyValue> c2 = ignite.cache("two");
 
-                        if (!ignite.name().contains("Test0")) {
-                            if (!quiet) {
-                                info("Keys already in cache:");
+                            if (!ignite.name().contains("Test0")) {
+                                if (!quiet) {
+                                    info("Keys already in cache:");
 
-                                for (Object k : c1.keySet())
-                                    info("Cache1: " + k.toString());
+                                    for (Object k : c1.keySet())
+                                        info("Cache1: " + k.toString());
 
-                                for (Object k : c2.keySet())
-                                    info("Cache2: " + k.toString());
+                                    for (Object k : c2.keySet())
+                                        info("Cache2: " + k.toString());
+                                }
+
+                                return;
                             }
 
-                            return;
+                            info("Populating cache data...");
+
+                            int i = 0;
+
+                            for (Object key : keys) {
+                                c1.put(key, new MyValue(value(key)));
+
+                                if (i++ % 2 == 0)
+                                    c2.put(key, new MyValue(value(key)));
+                            }
+
+                            assert c1.size() == keys.length : "Invalid cache1 size [size=" + c1.size() +
+                                ", entries=" + c1.entrySet() + ']';
+                            assert c2.size() == keys.length / 2 : "Invalid cache2 size [size=" + c2.size() +
+                                ", entries=" + c2.entrySet() + ']';
+
+                            break;
                         }
 
-                        info("Populating cache data...");
+                        case BEFORE_GRID_START:
+                        case BEFORE_GRID_STOP:
+                        case AFTER_GRID_STOP: {
+                            info("Lifecycle event: " + evt);
 
-                        int i = 0;
-
-                        for (Object key : keys) {
-                            c1.put(key, new MyValue(value(key)));
-
-                            if (i++ % 2 == 0)
-                                c2.put(key, new MyValue(value(key)));
+                            break;
                         }
-
-                        assert c1.size() == keys.length : "Invalid cache1 size [size=" + c1.size() +
-                            ", entries=" + c1.entrySet() + ']';
-                        assert c2.size() == keys.length / 2 : "Invalid cache2 size [size=" + c2.size() +
-                            ", entries=" + c2.entrySet() + ']';
-
-                        break;
                     }
-
-                    case BEFORE_GRID_START:
-                    case BEFORE_GRID_STOP:
-                    case AFTER_GRID_STOP: {
-                        info("Lifecycle event: " + evt);
-
-                        break;
-                    }
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
                 }
             }
         };

@@ -54,7 +54,7 @@
         Set Hadoop 2.* file system implementation class for IgniteFS.
     -->
     <property>
-        <name>fs.AbstractFileSystem.ignitefs.impl</name>
+        <name>fs.AbstractFileSystem.ggfs.impl</name>
         <value>org.apache.ignite.fs.hadoop.v2.GridGgfsHadoopFileSystem</value>
     </property>
 

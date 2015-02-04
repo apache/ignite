@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.dataload;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 
@@ -34,7 +34,7 @@ class GridDataLoaderFuture extends GridFutureAdapter<Object> {
 
     /** Data loader. */
     @GridToStringExclude
-    private IgniteDataLoader dataLdr;
+    private IgniteDataLoaderImpl dataLdr;
 
     /**
      * Default constructor for {@link Externalizable} support.
@@ -47,7 +47,7 @@ class GridDataLoaderFuture extends GridFutureAdapter<Object> {
      * @param ctx Context.
      * @param dataLdr Data loader.
      */
-    GridDataLoaderFuture(GridKernalContext ctx, IgniteDataLoader dataLdr) {
+    GridDataLoaderFuture(GridKernalContext ctx, IgniteDataLoaderImpl dataLdr) {
         super(ctx);
 
         assert dataLdr != null;
@@ -60,7 +60,7 @@ class GridDataLoaderFuture extends GridFutureAdapter<Object> {
         checkValid();
 
         if (onCancelled()) {
-            dataLdr.close(true);
+            dataLdr.closeEx(true);
 
             return true;
         }

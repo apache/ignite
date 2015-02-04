@@ -31,7 +31,7 @@ import java.util.*;
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public final class CacheAtomicStampedExample {
     /** Cache name. */
@@ -44,7 +44,7 @@ public final class CacheAtomicStampedExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache atomic stamped example started.");
 
@@ -58,16 +58,16 @@ public final class CacheAtomicStampedExample {
             String stamp = UUID.randomUUID().toString();
 
             // Initialize atomic stamped in cache.
-            CacheAtomicStamped<String, String> stamped = g.cache(CACHE_NAME).dataStructures().
+            CacheAtomicStamped<String, String> stamped = ignite.cache(CACHE_NAME).dataStructures().
                 atomicStamped(stampedName, val, stamp, true);
 
             System.out.println("Atomic stamped initial [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');
 
-            // Make closure for checking atomic stamped on grid.
+            // Make closure for checking atomic stamped on ignite.
             Runnable c = new StampedUpdateClosure(CACHE_NAME, stampedName);
 
-            // Check atomic stamped on all grid nodes.
-            g.compute().run(c);
+            // Check atomic stamped on all cluster nodes.
+            ignite.compute().run(c);
 
             // Make new value of atomic stamped.
             String newVal = UUID.randomUUID().toString();
@@ -79,22 +79,22 @@ public final class CacheAtomicStampedExample {
 
             stamped.compareAndSet("WRONG EXPECTED VALUE", newVal, "WRONG EXPECTED STAMP", newStamp);
 
-            // Check atomic stamped on all grid nodes.
+            // Check atomic stamped on all cluster nodes.
             // Atomic stamped value and stamp shouldn't be changed.
-            g.compute().run(c);
+            ignite.compute().run(c);
 
             System.out.println("Try to change value and stamp of atomic stamped with correct value and stamp.");
 
             stamped.compareAndSet(val, newVal, stamp, newStamp);
 
-            // Check atomic stamped on all grid nodes.
+            // Check atomic stamped on all cluster nodes.
             // Atomic stamped value and stamp should be changed.
-            g.compute().run(c);
+            ignite.compute().run(c);
         }
 
         System.out.println();
         System.out.println("Finished atomic stamped example...");
-        System.out.println("Check all nodes for output (this node is also part of the grid).");
+        System.out.println("Check all nodes for output (this node is also part of the cluster).");
     }
 
     /**

@@ -17,11 +17,11 @@
 
 package org.apache.ignite.marshaller.optimized;
 
-import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
+import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 
-import java.net.InetSocketAddress;
-import java.util.Collection;
+import java.net.*;
+import java.util.*;
 
 /**
  * Test TCP discovery IP finder adapter.

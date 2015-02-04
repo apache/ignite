@@ -22,31 +22,34 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.mxbean.*;
-import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.processors.cache.affinity.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.dr.*;
 import org.apache.ignite.internal.processors.task.*;
+import org.apache.ignite.internal.transactions.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.mxbean.*;
+import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.portables.*;
+import org.apache.ignite.resources.*;
+import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -60,14 +63,14 @@ import java.util.concurrent.locks.*;
 
 import static java.util.Collections.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.cache.GridCachePeekMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.GridClosureCallMode.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Adapter for different cache implementations.
@@ -191,7 +194,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public ClusterGroup gridProjection() {
-        return ctx.grid().forCache(name());
+        return ctx.grid().forCacheNodes(name());
     }
 
     /**
@@ -716,7 +719,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 }
             }
 
-            IgniteTxEx<K, V> tx = ctx.tm().localTx();
+            IgniteInternalTx<K, V> tx = ctx.tm().localTx();
 
             if (tx != null) {
                 GridTuple<V> peek = tx.peek(ctx, failFast, key, filter);
@@ -795,7 +798,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @return Peeked value.
      * @throws IgniteCheckedException In case of error.
      */
-    @Nullable protected V peek0(K key, @Nullable Collection<GridCachePeekMode> modes, IgniteTxEx<K, V> tx)
+    @Nullable protected V peek0(K key, @Nullable Collection<GridCachePeekMode> modes, IgniteInternalTx<K, V> tx)
         throws IgniteCheckedException {
         try {
             GridTuple<V> peek = peek0(false, key, modes, tx);
@@ -821,7 +824,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @throws GridCacheFilterFailedException If filer validation failed.
      */
     @Nullable protected GridTuple<V> peek0(boolean failFast, K key, @Nullable Collection<GridCachePeekMode> modes,
-        IgniteTxEx<K, V> tx) throws IgniteCheckedException, GridCacheFilterFailedException {
+        IgniteInternalTx<K, V> tx) throws IgniteCheckedException, GridCacheFilterFailedException {
         if (F.isEmpty(modes))
             return F.t(peek(key, (IgnitePredicate<CacheEntry<K, V>>)null));
 
@@ -892,7 +895,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @throws IgniteCheckedException If failed.
      */
     protected Map<K, V> peekAll0(@Nullable Collection<? extends K> keys, @Nullable Collection<GridCachePeekMode> modes,
-        IgniteTxEx<K, V> tx, @Nullable Collection<K> skipped) throws IgniteCheckedException {
+        IgniteInternalTx<K, V> tx, @Nullable Collection<K> skipped) throws IgniteCheckedException {
         if (F.isEmpty(keys))
             return emptyMap();
 
@@ -1291,7 +1294,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @Override public void globalClearAll(long timeout) throws IgniteCheckedException {
         try {
             // Send job to remote nodes only.
-            Collection<ClusterNode> nodes = ctx.grid().forCache(name()).forRemotes().nodes();
+            Collection<ClusterNode> nodes = ctx.grid().forCacheNodes(name()).forRemotes().nodes();
 
             IgniteInternalFuture<Object> fut = null;
 
@@ -1307,11 +1310,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             if (fut != null)
                 fut.get();
         }
-        catch (ClusterGroupEmptyException ignore) {
+        catch (ClusterGroupEmptyCheckedException ignore) {
             if (log.isDebugEnabled())
                 log.debug("All remote nodes left while cache clear [cacheName=" + name() + "]");
         }
-        catch (ComputeTaskTimeoutException e) {
+        catch (ComputeTaskTimeoutCheckedException e) {
             U.warn(log, "Timed out waiting for remote nodes to finish cache clear (consider increasing " +
                 "'networkTimeout' configuration property) [cacheName=" + name() + "]");
 
@@ -1463,7 +1466,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     public IgniteInternalFuture<Object> readThroughAllAsync(final Collection<? extends K> keys,
         boolean reload,
-        @Nullable final IgniteTxEx<K, V> tx,
+        @Nullable final IgniteInternalTx<K, V> tx,
         IgnitePredicate<CacheEntry<K, V>>[] filter,
         @Nullable UUID subjId,
         String taskName,
@@ -2320,13 +2323,15 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                 Map<K, EntryProcessorResult<T>> resMap = fut.get().value();
 
+                EntryProcessorResult<T> res = null;
+
                 if (resMap != null) {
                     assert resMap.isEmpty() || resMap.size() == 1 : resMap.size();
 
-                    return resMap.isEmpty() ? null : resMap.values().iterator().next();
+                    res = resMap.isEmpty() ? null : resMap.values().iterator().next();
                 }
 
-                return null;
+                return res != null ? res : new CacheInvokeResult<T>((T)null);
             }
         });
     }
@@ -3467,7 +3472,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 try {
                     return fut.get();
                 }
-                catch (IgniteInterruptedException ignored) {
+                catch (IgniteInterruptedCheckedException ignored) {
                     // Interrupted status of current thread was cleared, retry to get lock.
                     isInterrupted = true;
                 }
@@ -3555,6 +3560,13 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteInternalTx txStartEx(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
+        IgniteTransactionsEx txs = ctx.kernalContext().cache().transactions();
+
+        return txs.txStartEx(ctx, concurrency, isolation);
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteTx txStart(IgniteTxConcurrency concurrency,
         IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException {
         IgniteTransactionsEx txs = ctx.kernalContext().cache().transactions();
@@ -3619,7 +3631,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final long topVer = ctx.affinity().affinityTopologyVersion();
 
         if (ctx.store().isLocalStore()) {
-            try (final IgniteDataLoader<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false)) {
+            IgniteDataLoaderImpl<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false);
+
+            try {
                 ldr.updater(new GridDrDataLoadCacheUpdater<K, V>());
 
                 LocalStoreLoadClosure c = new LocalStoreLoadClosure(p, ldr, ttl);
@@ -3627,6 +3641,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 ctx.store().loadCache(c, args);
 
                 c.onDone();
+            }
+            finally {
+                ldr.closeEx(false);
             }
         }
         else {
@@ -3715,7 +3732,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         if (replaceExisting) {
             if (ctx.store().isLocalStore()) {
-                Collection<ClusterNode> nodes = ctx.grid().forCache(name()).nodes();
+                Collection<ClusterNode> nodes = ctx.grid().forCacheNodes(name()).nodes();
 
                 if (nodes.isEmpty())
                     return new GridFinishedFuture<>(ctx.kernalContext());
@@ -3736,7 +3753,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             }
         }
         else {
-            Collection<ClusterNode> nodes = ctx.grid().forCache(name()).nodes();
+            Collection<ClusterNode> nodes = ctx.grid().forCacheNodes(name()).nodes();
 
             if (nodes.isEmpty())
                 return new GridFinishedFuture<>(ctx.kernalContext());
@@ -3789,7 +3806,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final long topVer = ctx.affinity().affinityTopologyVersion();
 
         if (ctx.store().isLocalStore()) {
-            try (final IgniteDataLoader<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false)) {
+            IgniteDataLoaderImpl<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false);
+
+            try {
                 ldr.updater(new GridDrDataLoadCacheUpdater<K, V>());
 
                 LocalStoreLoadClosure c = new LocalStoreLoadClosure(null, ldr, 0);
@@ -3797,6 +3816,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 ctx.store().localStoreLoadAll(null, keys, c);
 
                 c.onDone();
+            }
+            finally {
+                ldr.closeEx(false);
             }
         }
         else {
@@ -3817,29 +3839,24 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @throws IgniteCheckedException If failed.
      */
     void globalLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws IgniteCheckedException {
-        ClusterGroup nodes = ctx.kernalContext().grid().cluster().forCache(ctx.name());
-
-        IgniteCompute comp = ctx.kernalContext().grid().compute(nodes).withNoFailover();
-
-        comp.broadcast(new LoadCacheClosure<>(ctx.name(), p, args));
+        globalLoadCacheAsync(p, args).get();
     }
 
     /**
      * @param p Predicate.
      * @param args Arguments.
      * @throws IgniteCheckedException If failed.
+     * @return Load cache future.
      */
     IgniteInternalFuture<?> globalLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
         throws IgniteCheckedException {
-        ClusterGroup nodes = ctx.kernalContext().grid().cluster().forCache(ctx.name());
+        ClusterGroup nodes = ctx.kernalContext().grid().cluster().forCacheNodes(ctx.name());
 
-        IgniteCompute comp = ctx.kernalContext().grid().compute(nodes).withNoFailover();
+        ctx.kernalContext().task().setThreadContext(TC_NO_FAILOVER, true);
 
-        comp = comp.withAsync();
-
-        comp.broadcast(new LoadCacheClosure<>(ctx.name(), p, args));
-
-        return comp.future();
+        return ctx.kernalContext().closure().callAsync(BROADCAST,
+            Arrays.asList(new LoadCacheClosure<>(ctx.name(), p, args)),
+            nodes.nodes());
     }
 
     /** {@inheritDoc} */
@@ -4031,7 +4048,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @return Transaction commit future.
      */
     @SuppressWarnings("unchecked")
-    public IgniteInternalFuture<IgniteTx> commitTxAsync(final IgniteTxEx tx) {
+    public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(final IgniteInternalTx tx) {
         FutureHolder holder = lastFut.get();
 
         holder.lock();
@@ -4040,9 +4057,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             IgniteInternalFuture fut = holder.future();
 
             if (fut != null && !fut.isDone()) {
-                IgniteInternalFuture<IgniteTx> f = new GridEmbeddedFuture<>(fut,
-                    new C2<Object, Exception, IgniteInternalFuture<IgniteTx>>() {
-                        @Override public IgniteInternalFuture<IgniteTx> apply(Object o, Exception e) {
+                IgniteInternalFuture<IgniteInternalTx> f = new GridEmbeddedFuture<>(fut,
+                    new C2<Object, Exception, IgniteInternalFuture<IgniteInternalTx>>() {
+                        @Override public IgniteInternalFuture<IgniteInternalTx> apply(Object o, Exception e) {
                             return tx.commitAsync();
                         }
                     }, ctx.kernalContext());
@@ -4052,7 +4069,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 return f;
             }
 
-            IgniteInternalFuture<IgniteTx> f = tx.commitAsync();
+            IgniteInternalFuture<IgniteInternalTx> f = tx.commitAsync();
 
             saveFuture(holder, f);
 
@@ -4063,42 +4080,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         finally {
             holder.unlock();
         }
-    }
-
-    /**
-     * Synchronously commits transaction after all previous asynchronous operations are completed.
-     *
-     * @param tx Transaction to commit.
-     * @throws IgniteCheckedException If commit failed.
-     */
-    void commitTx(IgniteTx tx) throws IgniteCheckedException {
-        awaitLastFut();
-
-        tx.commit();
-    }
-
-    /**
-     * Synchronously rolls back transaction after all previous asynchronous operations are completed.
-     *
-     * @param tx Transaction to commit.
-     * @throws IgniteCheckedException If commit failed.
-     */
-    void rollbackTx(IgniteTx tx) throws IgniteCheckedException {
-        awaitLastFut();
-
-        tx.rollback();
-    }
-
-    /**
-     * Synchronously ends transaction after all previous asynchronous operations are completed.
-     *
-     * @param tx Transaction to commit.
-     * @throws IgniteCheckedException If commit failed.
-     */
-    void endTx(IgniteTx tx) throws IgniteCheckedException {
-        awaitLastFut();
-
-        tx.close();
     }
 
     /**
@@ -4131,7 +4112,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     private int globalSize(boolean primaryOnly) throws IgniteCheckedException {
         try {
             // Send job to remote nodes only.
-            Collection<ClusterNode> nodes = ctx.grid().forCache(name()).forRemotes().nodes();
+            Collection<ClusterNode> nodes = ctx.grid().forCacheNodes(name()).forRemotes().nodes();
 
             IgniteInternalFuture<Collection<Integer>> fut = null;
 
@@ -4151,13 +4132,13 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             return globalSize;
         }
-        catch (ClusterGroupEmptyException ignore) {
+        catch (ClusterGroupEmptyCheckedException ignore) {
             if (log.isDebugEnabled())
                 log.debug("All remote nodes left while cache clear [cacheName=" + name() + "]");
 
             return primaryOnly ? primarySize() : size();
         }
-        catch (ComputeTaskTimeoutException e) {
+        catch (ComputeTaskTimeoutCheckedException e) {
             U.warn(log, "Timed out waiting for remote nodes to finish cache clear (consider increasing " +
                 "'networkTimeout' configuration property) [cacheName=" + name() + "]");
 
@@ -4208,14 +4189,14 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                 return t;
             }
-            catch (IgniteInterruptedException | IgniteTxHeuristicException | IgniteTxRollbackException e) {
+            catch (IgniteInterruptedCheckedException | IgniteTxHeuristicCheckedException | IgniteTxRollbackCheckedException e) {
                 throw e;
             }
             catch (IgniteCheckedException e) {
                 try {
                     tx.rollback();
 
-                    e = new IgniteTxRollbackException("Transaction has been rolled back: " +
+                    e = new IgniteTxRollbackCheckedException("Transaction has been rolled back: " +
                         tx.xid(), e);
                 }
                 catch (IgniteCheckedException | AssertionError | RuntimeException e1) {
@@ -4380,7 +4361,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            return new GridFinishedFutureEx<>(new IgniteInterruptedException("Failed to wait for asynchronous " +
+            return new GridFinishedFutureEx<>(new IgniteInterruptedCheckedException("Failed to wait for asynchronous " +
                 "operation permit (thread got interrupted).", e));
         }
     }
@@ -5570,7 +5551,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final Collection<Map.Entry<K, V>> col;
 
         /** */
-        final IgniteDataLoader<K, V> ldr;
+        final IgniteDataLoaderImpl<K, V> ldr;
 
         /** */
         final long ttl;
@@ -5580,7 +5561,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param ldr Loader.
          * @param ttl TTL.
          */
-        private LocalStoreLoadClosure(@Nullable IgniteBiPredicate<K, V> p, IgniteDataLoader<K, V> ldr, long ttl) {
+        private LocalStoreLoadClosure(@Nullable IgniteBiPredicate<K, V> p, IgniteDataLoaderImpl<K, V> ldr, long ttl) {
             this.p = p;
             this.ldr = ldr;
             this.ttl = ttl;

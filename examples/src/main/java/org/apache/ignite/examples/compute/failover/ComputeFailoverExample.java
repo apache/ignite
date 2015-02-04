@@ -27,7 +27,7 @@ import org.apache.ignite.resources.*;
 import java.util.*;
 
 /**
- * Demonstrates the usage of checkpoints in GridGain.
+ * Demonstrates the usage of checkpoints in Ignite.
  * <p>
  * The example tries to compute phrase length. In order to mitigate possible node failures, intermediate
  * result is saved as as checkpoint after each job step.
@@ -39,18 +39,18 @@ public class ComputeFailoverExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
-        try (Ignite g = Ignition.start(ComputeFailoverNodeStartup.configuration())) {
-            if (!ExamplesUtils.checkMinTopologySize(g.cluster(), 2))
+    public static void main(String[] args) throws IgniteException{
+        try (Ignite ignite = Ignition.start(ComputeFailoverNodeStartup.configuration())) {
+            if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2))
                 return;
 
             System.out.println();
             System.out.println("Compute failover example started.");
 
             // Number of letters.
-            int charCnt = g.compute().apply(new CheckPointJob(), "Stage1 Stage2");
+            int charCnt = ignite.compute().apply(new CheckPointJob(), "Stage1 Stage2");
 
             System.out.println();
             System.out.println(">>> Finished executing fail-over example with checkpoints.");
@@ -66,7 +66,7 @@ public class ComputeFailoverExample {
         @IgniteTaskSessionResource
         private ComputeTaskSession jobSes;
 
-        /** Injected grid logger. */
+        /** Injected ignite logger. */
         @IgniteLoggerResource
         private IgniteLogger log;
 
@@ -79,7 +79,7 @@ public class ComputeFailoverExample {
         /**
          * The job will check the checkpoint with key '{@code fail}' and if
          * it's {@code true} it will throw exception to simulate a failure.
-         * Otherwise, it will execute the grid-enabled method.
+         * Otherwise, it will execute enabled method.
          */
         @Override public Integer apply(String phrase) {
             System.out.println();
@@ -91,44 +91,39 @@ public class ComputeFailoverExample {
 
             final String cpKey = checkpointKey();
 
-            try {
-                IgniteBiTuple<Integer, Integer> state = jobSes.loadCheckpoint(cpKey);
+            IgniteBiTuple<Integer, Integer> state = jobSes.loadCheckpoint(cpKey);
 
-                int idx = 0;
-                int sum = 0;
+            int idx = 0;
+            int sum = 0;
 
-                if (state != null) {
-                    this.state = state;
+            if (state != null) {
+                this.state = state;
 
-                    // Last processed word index and total length.
-                    idx = state.get1();
-                    sum = state.get2();
-                }
-
-                for (int i = idx; i < words.size(); i++) {
-                    sum += words.get(i).length();
-
-                    this.state = new IgniteBiTuple<>(i + 1, sum);
-
-                    // Save checkpoint with scope of task execution.
-                    // It will be automatically removed when task completes.
-                    jobSes.saveCheckpoint(cpKey, this.state);
-
-                    // For example purposes, we fail on purpose after first stage.
-                    // This exception will cause job to be failed over to another node.
-                    if (i == 0) {
-                        System.out.println();
-                        System.out.println(">>> Job will be failed over to another node.");
-
-                        throw new ComputeJobFailoverException("Expected example job exception.");
-                    }
-                }
-
-                return sum;
+                // Last processed word index and total length.
+                idx = state.get1();
+                sum = state.get2();
             }
-            catch (IgniteCheckedException e) {
-                throw new GridClosureException(e);
+
+            for (int i = idx; i < words.size(); i++) {
+                sum += words.get(i).length();
+
+                this.state = new IgniteBiTuple<>(i + 1, sum);
+
+                // Save checkpoint with scope of task execution.
+                // It will be automatically removed when task completes.
+                jobSes.saveCheckpoint(cpKey, this.state);
+
+                // For example purposes, we fail on purpose after first stage.
+                // This exception will cause job to be failed over to another node.
+                if (i == 0) {
+                    System.out.println();
+                    System.out.println(">>> Job will be failed over to another node.");
+
+                    throw new ComputeJobFailoverException("Expected example job exception.");
+                }
             }
+
+            return sum;
         }
 
         /**

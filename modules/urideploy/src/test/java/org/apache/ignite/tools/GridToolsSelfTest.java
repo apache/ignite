@@ -17,11 +17,11 @@
 
 package org.apache.ignite.tools;
 
-import org.apache.ignite.util.antgar.*;
-import org.apache.tools.ant.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.util.antgar.*;
+import org.apache.tools.ant.*;
 
 import java.io.*;
 import java.util.zip.*;

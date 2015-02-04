@@ -17,9 +17,9 @@
 
 package org.apache.ignite.cache.query;
 
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 import java.util.*;
 

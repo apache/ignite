@@ -24,22 +24,22 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.license.*;
+import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.log4j.*;
-import org.apache.ignite.internal.processors.license.*;
-import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.spi.checkpoint.sharedfs.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
+import org.apache.log4j.*;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
 import org.springframework.context.*;
@@ -162,7 +162,7 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * @return Test resources.
      */
-    protected GridTestResources getTestResources() {
+    protected IgniteTestResources getTestResources() {
         return getTestCounters().getTestResources();
     }
 
@@ -976,7 +976,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param rsrcs Resources.
      * @throws Exception If failed.
      */
-    protected IgniteConfiguration getConfiguration(GridTestResources rsrcs) throws Exception {
+    protected IgniteConfiguration getConfiguration(IgniteTestResources rsrcs) throws Exception {
         return getConfiguration(getTestGridName(), rsrcs);
     }
 
@@ -1050,7 +1050,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
-    protected IgniteConfiguration getConfiguration(String gridName, GridTestResources rsrcs) throws Exception {
+    protected IgniteConfiguration getConfiguration(String gridName, IgniteTestResources rsrcs) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName(gridName);
@@ -1334,7 +1334,7 @@ public abstract class GridAbstractTest extends TestCase {
         private boolean reset;
 
         /** */
-        private GridTestResources rsrcs = new GridTestResources();
+        private IgniteTestResources rsrcs = new IgniteTestResources();
 
         /**
          * @return Reset flag.
@@ -1346,7 +1346,7 @@ public abstract class GridAbstractTest extends TestCase {
         /**
          * @return Test resources.
          */
-        public GridTestResources getTestResources() {
+        public IgniteTestResources getTestResources() {
             return rsrcs;
         }
 

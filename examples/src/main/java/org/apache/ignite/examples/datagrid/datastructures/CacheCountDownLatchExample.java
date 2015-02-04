@@ -31,7 +31,7 @@ import java.util.*;
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheCountDownLatchExample {
     /** Cache name. */
@@ -46,23 +46,23 @@ public class CacheCountDownLatchExample {
      * @param args Command line arguments, none required.
      * @throws IgniteCheckedException If example execution failed.
      */
-    public static void main(String[] args) throws Exception {
-        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
+    public static void main(String[] args) throws IgniteCheckedException {
+        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache atomic countdown latch example started.");
 
             // Make name of count down latch.
             final String latchName = UUID.randomUUID().toString();
 
-            // Initialize count down latch in grid.
-            CacheCountDownLatch latch = g.cache(CACHE_NAME).dataStructures().
+            // Initialize count down latch in ignite.
+            CacheCountDownLatch latch = ignite.cache(CACHE_NAME).dataStructures().
                 countDownLatch(latchName, INITIAL_COUNT, false, true);
 
             System.out.println("Latch initial value: " + latch.count());
 
-            // Start waiting on the latch on all grid nodes.
+            // Start waiting on the latch on all cluster nodes.
             for (int i = 0; i < INITIAL_COUNT; i++)
-                g.compute().run(new LatchClosure(CACHE_NAME, latchName));
+                ignite.compute().run(new LatchClosure(CACHE_NAME, latchName));
 
             // Wait for latch to go down which essentially means that all remote closures completed.
             latch.await();
@@ -72,7 +72,7 @@ public class CacheCountDownLatchExample {
 
         System.out.println();
         System.out.println("Finished count down latch example...");
-        System.out.println("Check all nodes for output (this node is also part of the grid).");
+        System.out.println("Check all nodes for output (this node is also part of the cluster).");
     }
 
     /**

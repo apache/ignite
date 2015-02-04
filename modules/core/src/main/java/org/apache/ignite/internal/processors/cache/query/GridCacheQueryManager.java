@@ -48,8 +48,8 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.GridClosureCallMode.*;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
 

@@ -124,6 +124,26 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      * @param fut Future to cancel.
      * @throws Exception If failed.
      */
+    private void testMessageSet(IgniteFuture<?> fut) throws Exception {
+        cancelLatch.await();
+
+        assertTrue(fut.cancel());
+
+        resLatch.countDown();
+
+        assertTrue(U.await(finishLatch, 5000, MILLISECONDS));
+
+        Map map = U.field(((IgniteKernal)grid(0)).context().io(), "msgSetMap");
+
+        info("Map: " + map);
+
+        assertTrue(map.isEmpty());
+    }
+
+    /**
+     * @param fut Future to cancel.
+     * @throws Exception If failed.
+     */
     private void testMessageSet(IgniteInternalFuture<?> fut) throws Exception {
         cancelLatch.await();
 
@@ -176,7 +196,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
     @ComputeTaskSessionFullSupport
     private static class Task extends ComputeTaskSplitAdapter<Void, Void> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) {
             return Collections.singleton(new ComputeJobAdapter() {
                 @Nullable @Override public Object execute() {
                     return null;
@@ -185,7 +205,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -196,16 +216,16 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
     @ComputeTaskSessionFullSupport
     private static class FailTask extends ComputeTaskSplitAdapter<Void, Void> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) {
             return Collections.singleton(new ComputeJobAdapter() {
-                @Nullable @Override public Object execute() throws IgniteCheckedException {
-                    throw new IgniteCheckedException("Task failed.");
+                @Nullable @Override public Object execute() {
+                    throw new IgniteException("Task failed.");
                 }
             });
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.util.typedef;
 
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.lang.*;
 
 /**
  * Defines {@code alias} for <tt>GridPredicate&lt;GridEvent&gt;</tt> by extending

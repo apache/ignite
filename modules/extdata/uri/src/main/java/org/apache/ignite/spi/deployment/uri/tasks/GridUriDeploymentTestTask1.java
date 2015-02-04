@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.deployment.uri.tasks;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.springframework.beans.factory.xml.*;
 import org.springframework.core.io.*;
@@ -49,14 +48,14 @@ public class GridUriDeploymentTestTask1 extends ComputeTaskSplitAdapter<Object, 
     /**
      * {@inheritDoc}
      */
-    @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+    @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) {
         return null;
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Object reduce(List<ComputeJobResult> results) {
         return null;
     }
 }

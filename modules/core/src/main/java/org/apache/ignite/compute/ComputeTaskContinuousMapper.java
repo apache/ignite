@@ -67,33 +67,33 @@ public interface ComputeTaskContinuousMapper {
      *
      * @param job Job instance to send. If {@code null} is passed, exception will be thrown.
      * @param node Grid node. If {@code null} is passed, exception will be thrown.
-     * @throws IgniteCheckedException If job can not be processed.
+     * @throws IgniteException If job can not be processed.
      */
-    public void send(ComputeJob job, ClusterNode node) throws IgniteCheckedException;
+    public void send(ComputeJob job, ClusterNode node) throws IgniteException;
 
     /**
      * Sends collection of grid jobs to assigned nodes.
      *
      * @param mappedJobs Map of grid jobs assigned to grid node. If {@code null}
      *      or empty list is passed, exception will be thrown.
-     * @throws IgniteCheckedException If job can not be processed.
+     * @throws IgniteException If job can not be processed.
      */
-    public void send(Map<? extends ComputeJob, ClusterNode> mappedJobs) throws IgniteCheckedException;
+    public void send(Map<? extends ComputeJob, ClusterNode> mappedJobs) throws IgniteException;
 
     /**
      * Sends job to a node automatically picked by the underlying load balancer.
      *
      * @param job Job instance to send. If {@code null} is passed, exception will be thrown.
-     * @throws IgniteCheckedException If job can not be processed.
+     * @throws IgniteException If job can not be processed.
      */
-    public void send(ComputeJob job) throws IgniteCheckedException;
+    public void send(ComputeJob job) throws IgniteException;
 
     /**
      * Sends collection of jobs to nodes automatically picked by the underlying load balancer.
      *
      * @param jobs Collection of grid job instances. If {@code null} or empty
      *      list is passed, exception will be thrown.
-     * @throws IgniteCheckedException If job can not be processed.
+     * @throws IgniteException If job can not be processed.
      */
-    public void send(Collection<? extends ComputeJob> jobs) throws IgniteCheckedException;
+    public void send(Collection<? extends ComputeJob> jobs) throws IgniteException;
 }

@@ -21,18 +21,18 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.eventstorage.*;
-import org.apache.ignite.internal.managers.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.managers.deployment.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -886,7 +886,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
             GridDeployment dep = ctx.deploy().deploy(p.getClass(), U.detectClassLoader(p.getClass()));
 
             if (dep == null)
-                throw new IgniteDeploymentException("Failed to deploy event filter: " + p);
+                throw new IgniteDeploymentCheckedException("Failed to deploy event filter: " + p);
 
             GridEventStorageMessage msg = new GridEventStorageMessage(
                 resTopic,
@@ -1051,7 +1051,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
                         null);
 
                     if (dep == null)
-                        throw new IgniteDeploymentException("Failed to obtain deployment for event filter " +
+                        throw new IgniteDeploymentCheckedException("Failed to obtain deployment for event filter " +
                             "(is peer class loading turned on?): " + req);
 
                     filter = marsh.unmarshal(req.filter(), dep.classLoader());

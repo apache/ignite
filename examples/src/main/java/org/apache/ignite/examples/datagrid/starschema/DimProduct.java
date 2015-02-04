@@ -18,10 +18,12 @@
 package org.apache.ignite.examples.datagrid.starschema;
 
 import org.apache.ignite.cache.query.annotations.*;
+import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.*;
 
 /**
  * Represents a product available for purchase. In our {@code snowflake} schema a {@code product}
- * is a {@code 'dimension'} and will be cached in {@link org.apache.ignite.cache.CacheMode#REPLICATED}
+ * is a {@code 'dimension'} and will be cached in {@link CacheMode#REPLICATED}
  * cache.
  */
 public class DimProduct {

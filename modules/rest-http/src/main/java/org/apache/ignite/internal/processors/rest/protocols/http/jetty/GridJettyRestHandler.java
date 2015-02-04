@@ -18,15 +18,16 @@
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
 import net.sf.json.*;
+import net.sf.json.processors.*;
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.server.handler.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.rest.request.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.security.*;
+import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.server.handler.*;
 import org.jetbrains.annotations.*;
 
 import javax.servlet.*;
@@ -35,14 +36,25 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.processors.rest.GridRestResponse.*;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
+import static org.apache.ignite.internal.processors.rest.GridRestResponse.*;
 
 /**
  * Jetty REST handler. The following URL format is supported:
  * {@code /gridgain?cmd=cmdName&param1=abc&param2=123}
  */
 public class GridJettyRestHandler extends AbstractHandler {
+    /** JSON value processor that does not transform input object. */
+    private static final JsonValueProcessor SKIP_STR_VAL_PROC = new JsonValueProcessor() {
+        @Override public Object processArrayValue(Object o, JsonConfig jsonConfig) {
+            return o;
+        }
+
+        @Override public Object processObjectValue(String s, Object o, JsonConfig jsonConfig) {
+            return o;
+        }
+    };
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -262,6 +274,11 @@ public class GridJettyRestHandler extends AbstractHandler {
         }
 
         JsonConfig cfg = new GridJettyJsonConfig();
+
+        // Workaround for not needed transformation of string into JSON object.
+        if (cmdRes.getResponse() instanceof String)
+            cfg.registerJsonValueProcessor(cmdRes.getClass(), "response", SKIP_STR_VAL_PROC);
+
         JSON json;
 
         try {

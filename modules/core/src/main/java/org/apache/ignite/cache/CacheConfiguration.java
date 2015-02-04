@@ -17,16 +17,15 @@
 
 package org.apache.ignite.cache;
 
-import org.apache.ignite.Ignite;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.cloner.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.portables.PortableObject;
-import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.portables.*;
+import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;

@@ -19,9 +19,9 @@ package org.apache.ignite.streamer.index.hash;
 
 import com.romix.scala.collection.concurrent.*;
 import org.apache.ignite.*;
-import org.apache.ignite.streamer.index.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.streamer.index.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -65,7 +65,7 @@ public class StreamerHashIndexProvider<E, K, V> extends StreamerIndexProviderAda
     }
 
     /** {@inheritDoc} */
-    @Override protected void add(E evt, K key, StreamerIndexUpdateSync sync) throws IgniteCheckedException {
+    @Override protected void add(E evt, K key, StreamerIndexUpdateSync sync) {
         State<E, K, V> state0 = state.get();
 
         if (state0 != null)
@@ -100,7 +100,7 @@ public class StreamerHashIndexProvider<E, K, V> extends StreamerIndexProviderAda
         }
         else {
             if (isUnique())
-                throw new IgniteCheckedException("Index unique key violation [evt=" + evt + ", key=" + key + ']');
+                throw new IgniteException("Index unique key violation [evt=" + evt + ", key=" + key + ']');
 
             V val = updater.onAdded(oldEntry, evt);
 
@@ -130,7 +130,7 @@ public class StreamerHashIndexProvider<E, K, V> extends StreamerIndexProviderAda
     }
 
     /** {@inheritDoc} */
-    @Override protected void remove(E evt, K key, StreamerIndexUpdateSync sync) throws IgniteCheckedException {
+    @Override protected void remove(E evt, K key, StreamerIndexUpdateSync sync) {
         State<E, K, V> state0 = state.get();
 
         if (state0 != null)

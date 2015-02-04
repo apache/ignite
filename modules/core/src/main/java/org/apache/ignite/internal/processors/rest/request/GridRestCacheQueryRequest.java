@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.rest.request;
 
 import org.apache.ignite.internal.processors.rest.client.message.*;
 
-import java.io.Serializable;
+import java.io.*;
 
 /**
  * Cache query request.

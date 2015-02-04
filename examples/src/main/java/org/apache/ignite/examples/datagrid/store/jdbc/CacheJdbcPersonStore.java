@@ -41,9 +41,9 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
     /**
      * Constructor.
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    public CacheJdbcPersonStore() throws IgniteCheckedException {
+    public CacheJdbcPersonStore() throws IgniteException {
         prepareDb();
     }
 
@@ -51,9 +51,9 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
      * Prepares database for example execution. This method will create a
      * table called "PERSONS" so it can be used by store implementation.
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private void prepareDb() throws IgniteCheckedException {
+    private void prepareDb() throws IgniteException {
         try (Connection conn = openConnection(false); Statement st = conn.createStatement()) {
             st.execute("create table if not exists PERSONS (id number unique, firstName varchar(255), " +
                 "lastName varchar(255))");
@@ -61,7 +61,7 @@ public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
             conn.commit();
         }
         catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to create database table.", e);
+            throw new IgniteException("Failed to create database table.", e);
         }
     }
 

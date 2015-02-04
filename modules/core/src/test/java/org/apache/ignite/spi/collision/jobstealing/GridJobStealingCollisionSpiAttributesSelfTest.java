@@ -19,10 +19,10 @@ package org.apache.ignite.spi.collision.jobstealing;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.spi.collision.*;
-import org.apache.ignite.spi.failover.jobstealing.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.collision.*;
+import org.apache.ignite.spi.failover.jobstealing.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.spi.*;
 

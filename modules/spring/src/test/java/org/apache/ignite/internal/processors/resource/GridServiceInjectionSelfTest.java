@@ -138,8 +138,8 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
             fail();
         }
-        catch (IgniteCheckedException e) {
-            assertTrue(e.getMessage().startsWith("Remote job threw user exception"));
+        catch (IgniteException e) {
+            assertTrue(e.getMessage().startsWith("Resource field is not assignable from the resource"));
         }
     }
 
@@ -235,8 +235,8 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
             fail();
         }
-        catch (IgniteCheckedException e) {
-            assertTrue(e.getMessage().startsWith("Remote job threw user exception"));
+        catch (IgniteException e) {
+            assertTrue(e.getMessage().startsWith("Setter does not have single parameter of required type"));
         }
     }
 

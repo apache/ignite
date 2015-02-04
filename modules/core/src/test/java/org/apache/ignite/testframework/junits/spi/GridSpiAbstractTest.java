@@ -19,10 +19,11 @@ package org.apache.ignite.testframework.junits.spi;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.security.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.*;
@@ -30,7 +31,6 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.*;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig.*;
@@ -143,7 +143,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected final GridTestResources getTestResources() {
+    @Override protected final IgniteTestResources getTestResources() {
         return getTestData().getTestResources();
     }
 
@@ -585,7 +585,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         private Map<String, Object> allAttrs = new HashMap<>();
 
         /** */
-        private GridTestResources rsrcs = new GridTestResources();
+        private IgniteTestResources rsrcs = new IgniteTestResources();
 
         /**
          *
@@ -598,7 +598,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
          * @return Test resources.
          *
          */
-        public GridTestResources getTestResources() {
+        public IgniteTestResources getTestResources() {
             return rsrcs;
         }
 

@@ -19,10 +19,10 @@ package org.apache.ignite.cache.websession;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 
 import javax.cache.*;
 import javax.cache.expiry.*;
@@ -34,9 +34,9 @@ import java.util.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Filter for web sessions caching.
@@ -295,7 +295,7 @@ public class GridWebSessionFilter implements Filter {
                 else
                     sesId = doFilter0(httpReq, res, chain);
             }
-            catch (IgniteCheckedException e) {
+            catch (Exception e) {
                 U.error(log, "Failed to update web session: " + sesId, e);
             }
         }
@@ -310,10 +310,10 @@ public class GridWebSessionFilter implements Filter {
      * @return Session ID.
      * @throws IOException In case of I/O error.
      * @throws ServletException In case oif servlet error.
-     * @throws IgniteCheckedException In case of other error.
+     * @throws CacheException In case of other error.
      */
     private String doFilter0(HttpServletRequest httpReq, ServletResponse res, FilterChain chain) throws IOException,
-        ServletException, IgniteCheckedException {
+        ServletException, CacheException {
         GridWebSession cached;
 
         String sesId = httpReq.getRequestedSessionId();

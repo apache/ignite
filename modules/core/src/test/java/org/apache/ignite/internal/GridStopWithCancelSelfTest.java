@@ -84,7 +84,7 @@ public class GridStopWithCancelSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable String arg) throws IgniteCheckedException {
+            @Nullable String arg) {
             for (ClusterNode node : subgrid) {
                 if (node.id().equals(ignite.configuration().getNodeId())) {
                     return Collections.singletonMap(new ComputeJobAdapter() {
@@ -95,14 +95,14 @@ public class GridStopWithCancelSelfTest extends GridCommonAbstractTest {
                             cancelCorrect = true;
                         }
 
-                        @Override public Serializable execute() throws IgniteCheckedException {
+                        @Override public Serializable execute() {
                             cnt.countDown();
 
                             try {
                                 Thread.sleep(Long.MAX_VALUE);
                             }
                             catch (InterruptedException e) {
-                                throw new IgniteCheckedException(e);
+                                throw new IgniteException(e);
                             }
 
                             return null;
@@ -111,7 +111,7 @@ public class GridStopWithCancelSelfTest extends GridCommonAbstractTest {
                 }
             }
 
-            throw new IgniteCheckedException("Local node not found");
+            throw new IgniteException("Local node not found");
         }
 
         /** {@inheritDoc} */

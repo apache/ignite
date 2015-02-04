@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
@@ -1164,6 +1165,13 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws UnsupportedOperationException If cache is {@link CacheAtomicityMode#ATOMIC}.
      */
     public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation);
+
+    /**
+     * @param concurrency Concurrency.
+     * @param isolation Isolation.
+     * @return New transaction.
+     */
+    public IgniteInternalTx txStartEx(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation);
 
     /**
      * Starts transaction with specified isolation, concurrency, timeout, invalidation flag,

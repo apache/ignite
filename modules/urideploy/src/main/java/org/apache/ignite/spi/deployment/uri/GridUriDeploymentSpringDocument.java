@@ -18,10 +18,11 @@
 package org.apache.ignite.spi.deployment.uri;
 
 import org.apache.ignite.compute.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.*;
 import org.springframework.beans.*;
 import org.springframework.beans.factory.xml.*;
+
 import java.util.*;
 
 /**

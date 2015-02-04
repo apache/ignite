@@ -18,15 +18,15 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
-import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -37,7 +37,7 @@ import java.util.concurrent.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests that transaction is invalidated in case of {@link IgniteTxHeuristicException}.
+ * Tests that transaction is invalidated in case of {@link org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException}.
  */
 public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** Index SPI throwing exception. */
@@ -403,7 +403,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 return null;
             }
-        }, IgniteTxHeuristicException.class, null);
+        }, IgniteTxHeuristicCheckedException.class, null);
 
         checkEmpty(key);
     }
@@ -491,7 +491,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 return null;
             }
-        }, IgniteTxHeuristicException.class, null);
+        }, IgniteTxHeuristicCheckedException.class, null);
 
         for (Integer key : m.keySet())
             checkEmpty(key);
@@ -525,7 +525,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 return null;
             }
-        }, IgniteTxHeuristicException.class, null);
+        }, IgniteTxHeuristicCheckedException.class, null);
 
         checkEmpty(key);
     }

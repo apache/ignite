@@ -37,7 +37,7 @@ import java.util.*;
  * any other group of events and will be passed to stage as is. Event processing order is not guaranteed, group that
  * was submitted second can be processed earlier then first submitted group.
  * <p>
- * If {@link org.apache.ignite.streamer.StreamerConfiguration#isAtLeastOnce()} is set to {@code false}, then event execution is not tracked
+ * If {@link StreamerConfiguration#isAtLeastOnce()} is set to {@code false}, then event execution is not tracked
  * by streamer and any occurred failure will be reported to failure listener on node on which failure happened. If
  * this configuration property is set to {@code true}, then streamer will cancel current pipeline execution in case
  * of failure and will try to execute pipeline from the beginning. If failover cannot be succeeded or maximum number
@@ -67,9 +67,9 @@ public interface IgniteStreamer {
      *
      * @param evt Event to add.
      * @param evts Optional events to add.
-     * @throws IgniteCheckedException If event submission failed.
+     * @throws IgniteException If event submission failed.
      */
-    public void addEvent(Object evt, Object... evts) throws IgniteCheckedException;
+    public void addEvent(Object evt, Object... evts) throws IgniteException;
 
     /**
      * Submits group of events to streamer. Events will be processed from a stage with specified name.
@@ -77,27 +77,27 @@ public interface IgniteStreamer {
      * @param stageName Stage name to start with.
      * @param evt Event tp process.
      * @param evts Optional events.
-     * @throws IgniteCheckedException If event submission failed.
+     * @throws IgniteException If event submission failed.
      */
-    public void addEventToStage(String stageName, Object evt, Object... evts) throws IgniteCheckedException;
+    public void addEventToStage(String stageName, Object evt, Object... evts) throws IgniteException;
 
     /**
      * Submits group of events for processing. This group of events will be processed on default stage,
      * i.e. stage that is the first in the streamer stages list.
      *
      * @param evts Events to add.
-     * @throws IgniteCheckedException If event submission failed.
+     * @throws IgniteException If event submission failed.
      */
-    public void addEvents(Collection<?> evts) throws IgniteCheckedException;
+    public void addEvents(Collection<?> evts) throws IgniteException;
 
     /**
      * Submits events to streamer. Events will be processed from a stage with specified name.
      *
      * @param stageName Stage name to start with.
      * @param evts Events to process.
-     * @throws IgniteCheckedException If event submission failed.
+     * @throws IgniteException If event submission failed.
      */
-    public void addEventsToStage(String stageName, Collection<?> evts) throws IgniteCheckedException;
+    public void addEventsToStage(String stageName, Collection<?> evts) throws IgniteException;
 
     /**
      * Gets streamer context. Streamer context provides access to streamer local space on this node, configured
@@ -109,7 +109,7 @@ public interface IgniteStreamer {
 
     /**
      * Adds streamer failure listener. Listener will be notified on node on which failure occurred in case if
-     * {@link org.apache.ignite.streamer.StreamerConfiguration#isAtLeastOnce()} is set to {@code false} and on node which originated
+     * {@link StreamerConfiguration#isAtLeastOnce()} is set to {@code false} and on node which originated
      * pipeline execution otherwise.
      *
      * @param lsnr Listener to add.

@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.util.nio.ssl;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.net.ssl.*;
 import java.io.*;
