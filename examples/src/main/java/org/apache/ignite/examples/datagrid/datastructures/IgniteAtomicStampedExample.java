@@ -53,16 +53,16 @@ public final class IgniteAtomicStampedExample {
             // Make stamp of atomic stamped.
             String stamp = UUID.randomUUID().toString();
 
-            // Initialize atomic stamped in cache.
+            // Initialize atomic stamped.
             IgniteAtomicStamped<String, String> stamped = ignite.atomicStamped(stampedName, val, stamp, true);
 
             System.out.println("Atomic stamped initial [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');
 
-            // Make closure for checking atomic stamped on grid.
+            // Make closure for checking atomic stamped.
             Runnable c = new StampedUpdateClosure(stampedName);
 
             // Check atomic stamped on all cluster nodes.
-            ignite.compute().run(c);
+            ignite.compute().broadcast(c);
 
             // Make new value of atomic stamped.
             String newVal = UUID.randomUUID().toString();

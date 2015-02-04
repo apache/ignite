@@ -56,8 +56,8 @@ public final class IgniteAtomicLongExample {
             System.out.println();
             System.out.println("Atomic long initial value : " + atomicLong.get() + '.');
 
-            // Try increment atomic long from all grid nodes.
-            // Note that this node is also part of the grid.
+            // Try increment atomic long from all nodes.
+            // Note that this node is also part of the ignite cluster.
             ignite.compute().broadcast(new IgniteCallable<Object>() {
                 @Override public Object call() {
                     for (int i = 0; i < RETRIES; i++)

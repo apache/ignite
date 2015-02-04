@@ -106,7 +106,7 @@ public class IgniteQueueExample {
         final String queueName = queue.name();
 
         // Read queue items on each node.
-        ignite.compute().run(new QueueClosure(queueName, false));
+        ignite.compute().broadcast(new QueueClosure(queueName, false));
 
         System.out.println("Queue size after reading [expected=0, actual=" + queue.size() + ']');
     }
