@@ -299,6 +299,8 @@
                     <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
                     <exclude>**/ipc/shmem/*.sh</exclude>
                     <exclude>**/keystore/generate.sh</exclude>
+                    <exclude>**/pom-installed.xml</exclude>
+                    <exclude>**/yardstick/**</exclude>
                 </excludes>
             </configuration>
             <executions>
@@ -306,7 +308,7 @@
                     <id>check-license</id>
                     <phase>validate</phase>
                     <goals>
-                        <goal>check</goal>
+                        <goal>format</goal>
                     </goals>
                 </execution>
             </executions>
