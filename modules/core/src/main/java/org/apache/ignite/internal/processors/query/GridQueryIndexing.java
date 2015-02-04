@@ -77,7 +77,7 @@ public interface GridQueryIndexing {
      * @param params Parameters.
      * @return Cursor.
      */
-    public QueryCursor<Cache.Entry<?,?>> queryTwoStep(String space, String type, String sqlQry, Object[] params);
+    public <K,V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(String space, String type, String sqlQry, Object[] params);
 
     /**
      * Queries individual fields (generally used by JDBC drivers).
@@ -89,7 +89,7 @@ public interface GridQueryIndexing {
      * @return Query result.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> GridQueryFieldsResult queryFields(@Nullable String spaceName, String qry,
+    public GridQueryFieldsResult queryFields(@Nullable String spaceName, String qry,
         Collection<Object> params, IndexingQueryFilter filters) throws IgniteCheckedException;
 
     /**

@@ -242,10 +242,9 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
         try {
             if (filter instanceof QuerySqlPredicate) {
-                // TODO query over entries on indexing
-                ctx.kernalContext().query().query()
+                QuerySqlPredicate p = (QuerySqlPredicate)filter;
 
-                return null;
+                return ctx.kernalContext().query().queryTwoStep(ctx.name(), p.getType(), p.getSql(), p.getArgs());
             }
 
             final CacheQuery<Map.Entry<K,V>> qry;
@@ -279,7 +278,11 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
                     if (!onHasNext())
                         throw new NoSuchElementException();
 
-                    return new CacheEntryImpl<>(cur.getKey(), cur.getValue());
+                    Map.Entry<K,V> e = cur;
+
+                    cur = null;
+
+                    return new CacheEntryImpl<>(e.getKey(), e.getValue());
                 }
 
                 @Override protected boolean onHasNext() throws IgniteCheckedException {

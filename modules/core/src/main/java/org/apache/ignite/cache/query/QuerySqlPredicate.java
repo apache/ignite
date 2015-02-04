@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  */
 public final class QuerySqlPredicate extends QueryPredicate {
     /** */
-    private Class<?> type;
+    private String type;
 
     /** SQL clause. */
     private String sql;
@@ -48,9 +48,22 @@ public final class QuerySqlPredicate extends QueryPredicate {
      * @param args Arguments.
      */
     public QuerySqlPredicate(Class<?> type, String sql, Object... args) {
-        this.type = type;
-        this.sql = sql;
-        this.args = args;
+        setType(type);
+        setSql(sql);
+        setArgs(args);
+    }
+
+    /**
+     * Constructs SQL predicate with given type, SQL clause and arguments.
+     *
+     * @param type Type to query in cache.
+     * @param sql SQL clause.
+     * @param args Arguments.
+     */
+    public QuerySqlPredicate(String type, String sql, Object... args) {
+        setType(type);
+        setSql(sql);
+        setArgs(args);
     }
 
     /**
@@ -60,7 +73,7 @@ public final class QuerySqlPredicate extends QueryPredicate {
      * @param args Arguments.
      */
     public QuerySqlPredicate(String sql, Object... args) {
-        this(null, sql, args);
+        this((String)null, sql, args);
     }
 
     /**
@@ -104,7 +117,7 @@ public final class QuerySqlPredicate extends QueryPredicate {
      *
      * @return Type.
      */
-    public Class<?> getType() {
+    public String getType() {
         return type;
     }
 
@@ -113,8 +126,15 @@ public final class QuerySqlPredicate extends QueryPredicate {
      *
      * @param type Type.
      */
-    public void setType(Class<?> type) {
+    public void setType(String type) {
         this.type = type;
+    }
+
+    /**
+     * @param type Type.
+     */
+    public void setType(Class<?> type) {
+        this.type = type == null ? null : type.getName();
     }
 
     /** {@inheritDoc} */

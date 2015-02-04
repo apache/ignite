@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.internal.util.lang.*;
 
 import java.util.*;
 
@@ -28,7 +27,7 @@ import java.util.*;
  */
 public class QueryCursorImpl<T> implements QueryCursor<T> {
     /** */
-    private GridCloseableIterator<T> iter;
+    private Iterator<T> iter;
 
     /** */
     private boolean iterTaken;
@@ -36,7 +35,7 @@ public class QueryCursorImpl<T> implements QueryCursor<T> {
     /**
      * @param iter Iterator.
      */
-    public QueryCursorImpl(GridCloseableIterator<T> iter) {
+    public QueryCursorImpl(Iterator<T> iter) {
         this.iter = iter;
     }
 
@@ -70,16 +69,18 @@ public class QueryCursorImpl<T> implements QueryCursor<T> {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        GridCloseableIterator<T> i;
+        Iterator<T> i;
 
         if ((i = iter) != null) {
             iter = null;
 
-            try {
-                i.close();
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
+            if (i instanceof AutoCloseable) {
+                try {
+                    ((AutoCloseable)i).close();
+                }
+                catch (Exception e) {
+                    throw new IgniteException(e);
+                }
             }
         }
     }

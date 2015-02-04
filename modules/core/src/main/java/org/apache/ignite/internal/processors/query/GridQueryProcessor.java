@@ -38,6 +38,7 @@ import org.apache.ignite.spi.indexing.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -466,6 +467,25 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         try {
             return idx.queryTwoStep(space, sqlQry, params);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param space Space.
+     * @param type Type.
+     * @param sqlQry Query.
+     * @param params Parameters.
+     * @return Cursor.
+     */
+    public <K,V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(String space, String type, String sqlQry, Object[] params) {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+
+        try {
+            return idx.queryTwoStep(space, type, sqlQry, params);
         }
         finally {
             busyLock.leaveBusy();

@@ -55,6 +55,7 @@ import org.h2.value.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache;
 import java.io.*;
 import java.lang.reflect.*;
 import java.math.*;
@@ -535,7 +536,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <K, V> GridQueryFieldsResult queryFields(@Nullable final String spaceName, final String qry,
+    @Override public GridQueryFieldsResult queryFields(@Nullable final String spaceName, final String qry,
         @Nullable final Collection<Object> params, final IndexingQueryFilter filters)
         throws IgniteCheckedException {
         setFilters(filters);
@@ -758,6 +759,51 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public QueryCursor<List<?>> queryTwoStep(String space, GridCacheTwoStepQuery qry) {
         return rdcQryExec.query(space, qry);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <K, V> QueryCursor<Cache.Entry<K,V>> queryTwoStep(String space, String type, String sqlQry,
+        Object[] params) {
+        TableDescriptor tblDesc = tableDescriptor(type, space);
+
+        if (tblDesc == null)
+            return new QueryCursorImpl<>(Collections.<Cache.Entry<K,V>>emptyIterator());
+
+        String qry;
+
+        try {
+            qry = generateQuery(sqlQry, tblDesc);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+
+        final QueryCursor<List<?>> res = queryTwoStep(space, qry, params);
+
+        final Iterator<List<?>> iter0 = res.iterator();
+
+        Iterator<Cache.Entry<K,V>> iter = new Iterator<Cache.Entry<K,V>>() {
+            @Override public boolean hasNext() {
+                return iter0.hasNext();
+            }
+
+            @Override public Cache.Entry<K,V> next() {
+                List<?> l = iter0.next();
+
+                return new CacheEntryImpl<>((K)l.get(0),(V)l.get(1));
+            }
+
+            @Override public void remove() {
+                throw new UnsupportedOperationException();
+            }
+        };
+
+        return new QueryCursorImpl<Cache.Entry<K,V>>(iter) {
+            @Override public void close() {
+                res.close();
+            }
+        };
     }
 
     /** {@inheritDoc} */
