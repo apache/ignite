@@ -2681,7 +2681,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().put("key2", 2);
         cache().put("key3", 3);
 
-        cache().removeAll();
+        cache(1).removeAll();
 
         assert cache().isEmpty();
         long entryCount = hugeRemoveAllEntryCount();
