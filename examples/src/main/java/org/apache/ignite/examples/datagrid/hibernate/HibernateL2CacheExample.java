@@ -29,7 +29,7 @@ import java.net.*;
 import java.util.*;
 
 /**
- * This example demonstrates the use of GridGain In-Memory Data Grid as a Hibernate
+ * This example demonstrates the use of Ignite In-Memory Data Ignite cluster as a Hibernate
  * Second-Level cache provider.
  * <p>
  * The Hibernate Second-Level cache (or "L2 cache" shortly) lets you significantly
@@ -40,16 +40,16 @@ import java.util.*;
  * This example defines 2 entity classes: {@link User} and {@link Post}, with
  * 1 <-> N relation, and marks them with appropriate annotations for Hibernate
  * object-relational mapping to SQL tables of an underlying H2 in-memory database.
- * The example launches GridGain node in the same JVM and registers it in
+ * The example launches node in the same JVM and registers it in
  * Hibernate configuration as an L2 cache implementation. It then stores and
  * queries instances of the entity classes to and from the database, having
- * Hibernate SQL output, L2 cache statistics output, and GridGain cache metrics
+ * Hibernate SQL output, L2 cache statistics output, and Ignite cache metrics
  * output enabled.
  * <p>
  * When running example, it's easy to notice that when an object is first
  * put into a database, the L2 cache is not used and it's contents is empty.
  * However, when an object is first read from the database, it is immediately
- * stored in L2 cache (which is GridGain In-Memory Data Grid in fact), which can
+ * stored in L2 cache (which is Ignite In-Memory Data Ignite cluster in fact), which can
  * be seen in stats output. Further requests of the same object only read the data
  * from L2 cache and do not hit the database.
  * <p>
@@ -80,11 +80,11 @@ public class HibernateL2CacheExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
-        // Start the GridGain node, run the example, and stop the node when finished.
-        try (Ignite g = Ignition.start(HibernateL2CacheExampleNodeStartup.configuration())) {
+    public static void main(String[] args) throws IgniteException {
+        // Start the node, run the example, and stop the node when finished.
+        try (Ignite ignite = Ignition.start(HibernateL2CacheExampleNodeStartup.configuration())) {
             // We use a single session factory, but create a dedicated session
             // for each transaction or query. This way we ensure that L1 cache
             // is not used (L1 cache has per-session scope only).
@@ -121,7 +121,7 @@ public class HibernateL2CacheExample {
                 ses.close();
             }
 
-            // Output L2 cache and GridGain cache stats. You may notice that
+            // Output L2 cache and Ignite cache stats. You may notice that
             // at this point the object is not yet stored in L2 cache, because
             // the read was not yet performed.
             printStats(sesFactory);

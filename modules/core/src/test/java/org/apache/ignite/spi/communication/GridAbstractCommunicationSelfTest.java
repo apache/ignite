@@ -43,7 +43,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
     private static long msgId = 1;
 
     /** */
-    private static final Collection<GridTestResources> spiRsrcs = new ArrayList<>();
+    private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
 
     /** */
     private static final Map<UUID, Set<UUID>> msgDestMap = new HashMap<>();
@@ -281,7 +281,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
             GridTestUtils.setFieldValue(spi, "gridName", "grid-" + i);
 
-            GridTestResources rsrcs = new GridTestResources();
+            IgniteTestResources rsrcs = new IgniteTestResources();
 
             GridTestNode node = new GridTestNode(rsrcs.getNodeId());
 
@@ -332,7 +332,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
             spi.spiStop();
         }
 
-        for (GridTestResources rsrcs : spiRsrcs)
+        for (IgniteTestResources rsrcs : spiRsrcs)
             rsrcs.stopThreads();
     }
 }

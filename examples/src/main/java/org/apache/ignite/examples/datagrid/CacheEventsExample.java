@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 
@@ -27,14 +26,14 @@ import java.util.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
- * This examples demonstrates events API. Note that grid events are disabled by default and
+ * This examples demonstrates events API. Note that ignite events are disabled by default and
  * must be specifically enabled, just like in {@code examples/config/example-cache.xml} file.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheEventsExample {
     /** Cache name. */
@@ -44,17 +43,17 @@ public class CacheEventsExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException, InterruptedException {
-        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
+    public static void main(String[] args) throws IgniteException, InterruptedException {
+        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache events example started.");
 
-            final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
+            final IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
 
             // Clean up caches on all nodes before run.
-            cache.globalClearAll(0);
+            cache.clear();
 
             // This optional local callback is called for each event notification
             // that passed remote predicate listener.
@@ -75,18 +74,18 @@ public class CacheEventsExample {
 
                     int key = evt.key();
 
-                    return key >= 10 && cache.affinity().isPrimary(g.cluster().localNode(), key);
+                    return key >= 10 && ignite.affinity(CACHE_NAME).isPrimary(ignite.cluster().localNode(), key);
                 }
             };
 
             // Subscribe to specified cache events on all nodes that have cache running.
             // Cache events are explicitly enabled in examples/config/example-cache.xml file.
-            g.events(g.cluster().forCacheNodes(CACHE_NAME)).remoteListen(locLsnr, rmtLsnr,
+            ignite.events(ignite.cluster().forCacheNodes(CACHE_NAME)).remoteListen(locLsnr, rmtLsnr,
                 EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_READ, EVT_CACHE_OBJECT_REMOVED);
 
             // Generate cache events.
             for (int i = 0; i < 20; i++)
-                cache.putx(i, Integer.toString(i));
+                cache.put(i, Integer.toString(i));
 
             // Wait for a while while callback is notified about remaining puts.
             Thread.sleep(2000);

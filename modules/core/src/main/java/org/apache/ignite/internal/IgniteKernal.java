@@ -3261,7 +3261,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws IgniteCheckedException {
+    @Override public void close() throws IgniteException {
         Ignition.stop(gridName, true);
     }
 

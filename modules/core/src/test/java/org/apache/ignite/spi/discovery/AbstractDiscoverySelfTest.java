@@ -46,7 +46,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
     private static final List<DiscoverySpi> spis = new ArrayList<>();
 
     /** */
-    private static final Collection<GridTestResources> spiRsrcs = new ArrayList<>();
+    private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
 
     /** */
     private static long spiStartTime;
@@ -84,7 +84,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
                 isAllDiscovered = true;
 
-                for (GridTestResources rscrs : spiRsrcs) {
+                for (IgniteTestResources rscrs : spiRsrcs) {
                     UUID nodeId = rscrs.getNodeId();
 
                     if (!nodeId.equals(spi.getLocalNode().id())) {
@@ -267,7 +267,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
             Collection<UUID> nodeIds = new HashSet<>();
 
-            for (GridTestResources rsrc : spiRsrcs) {
+            for (IgniteTestResources rsrc : spiRsrcs) {
                 nodeIds.add(rsrc.getNodeId());
             }
 
@@ -299,7 +299,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
      */
     public void testPing() {
         for (DiscoverySpi spi : spis) {
-            for (GridTestResources rscrs : spiRsrcs) {
+            for (IgniteTestResources rscrs : spiRsrcs) {
                 UUID nodeId = rscrs.getNodeId();
 
                 if (spi.pingNode(nodeId))
@@ -360,7 +360,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
             for (int i = 0; i < getSpiCount(); i++) {
                 DiscoverySpi spi = getSpi(i);
 
-                GridTestResources rsrcMgr = new GridTestResources(getMBeanServer(i));
+                IgniteTestResources rsrcMgr = new IgniteTestResources(getMBeanServer(i));
 
                 rsrcMgr.inject(spi);
 
@@ -453,7 +453,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
             spi.spiStop();
         }
 
-        for (GridTestResources rscrs : spiRsrcs) {
+        for (IgniteTestResources rscrs : spiRsrcs) {
             rscrs.stopThreads();
         }
 
