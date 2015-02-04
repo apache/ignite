@@ -46,9 +46,6 @@ public class IgniteH2IndexingSpiTestSuite extends TestSuite {
         // Index rebuilding.
         suite.addTest(new TestSuite(GridH2IndexRebuildTest.class));
 
-        // Geo.
-        suite.addTestSuite(GridH2IndexingGeoSelfTest.class);
-
         // Tests moved to this suite since they require GridH2IndexingSpi.
         suite.addTestSuite(GridCacheOffHeapAndSwapSelfTest.class);
         suite.addTestSuite(GridIndexingWithNoopSwapSelfTest.class);

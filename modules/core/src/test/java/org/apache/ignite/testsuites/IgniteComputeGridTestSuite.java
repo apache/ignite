@@ -92,6 +92,7 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(GridMultinodeRedeploySharedModeSelfTest.class);
         suite.addTestSuite(GridMultinodeRedeployPrivateModeSelfTest.class);
         suite.addTestSuite(GridMultinodeRedeployIsolatedModeSelfTest.class);
+        suite.addTestSuite(IgniteComputeEmptyClusterGroupTest.class);
 
         return suite;
     }

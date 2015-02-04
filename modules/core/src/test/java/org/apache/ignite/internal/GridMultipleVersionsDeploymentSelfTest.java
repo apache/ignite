@@ -238,7 +238,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             boolean ignoreLocNode = false;
@@ -266,7 +266,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             return results.get(0).getData();
         }
     }
@@ -282,7 +282,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Integer execute() throws IgniteCheckedException {
+        @Override public Integer execute() {
             try {
                 if (log.isInfoEnabled())
                     log.info("GridDeploymentTestJob job started");
@@ -299,7 +299,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
                 return res - 48;
             }
             catch (IOException | InterruptedException e) {
-                throw new IgniteCheckedException("Failed to execute job.", e);
+                throw new IgniteException("Failed to execute job.", e);
             }
         }
     }

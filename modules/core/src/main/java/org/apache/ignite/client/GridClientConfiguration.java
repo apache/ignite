@@ -17,15 +17,15 @@
 
 package org.apache.ignite.client;
 
-import org.apache.ignite.portables.*;
 import org.apache.ignite.client.balancer.*;
 import org.apache.ignite.client.marshaller.*;
 import org.apache.ignite.client.marshaller.jdk.*;
 import org.apache.ignite.client.marshaller.optimized.*;
 import org.apache.ignite.client.ssl.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.portables.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;

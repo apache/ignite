@@ -785,7 +785,7 @@ class VisorTasksCommand {
                 taskFootnote()
             }
             catch {
-                case e: IgniteCheckedException =>
+                case e: IgniteException =>
                     scold(e.getMessage)
 
                     break()
@@ -978,7 +978,7 @@ class VisorTasksCommand {
                 }
             }
             catch {
-                case e: IgniteCheckedException =>
+                case e: IgniteException =>
                     scold(e.getMessage)
 
                     break()
@@ -1110,7 +1110,7 @@ class VisorTasksCommand {
                 evtsT.render()
             }
             catch {
-                case e: IgniteCheckedException =>
+                case e: IgniteException =>
                     scold(e.getMessage)
 
                     break()
@@ -1222,7 +1222,7 @@ class VisorTasksCommand {
                 taskFootnote()
             }
             catch {
-                case e: IgniteCheckedException =>
+                case e: IgniteException =>
                     scold(e.getMessage)
 
                     break()
@@ -1338,7 +1338,7 @@ class VisorTasksCommand {
                 taskFootnote()
             }
             catch {
-                case e: IgniteCheckedException =>
+                case e: IgniteException =>
                     scold(e.getMessage)
 
                     break()

@@ -17,7 +17,10 @@
 
 package org.apache.ignite.visor.commands.gc
 
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
+
 import org.apache.ignite._
+
 import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
 import org.apache.ignite.internal.visor.node.VisorNodeGcTask
 import org.apache.ignite.visor.VisorTag
@@ -164,7 +167,7 @@ class VisorGcCommand {
             }
             catch {
                 case e: ClusterGroupEmptyException => scold("Topology is empty.")
-                case e: IgniteCheckedException => scold(e.getMessage)
+                case e: IgniteException => scold(e.getMessage)
             }
         }
     }

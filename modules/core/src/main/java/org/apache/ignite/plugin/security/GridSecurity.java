@@ -85,7 +85,7 @@ public interface GridSecurity {
      *
      * @return Collection of authenticated subjects.
      */
-    public Collection<GridSecuritySubject> authenticatedSubjects() throws IgniteCheckedException;
+    public Collection<GridSecuritySubject> authenticatedSubjects() throws IgniteException;
 
     /**
      * Gets security subject based on subject ID.
@@ -93,5 +93,5 @@ public interface GridSecurity {
      * @param subjId Subject ID.
      * @return Authorized security subject.
      */
-    public GridSecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException;
+    public GridSecuritySubject authenticatedSubject(UUID subjId) throws IgniteException;
 }

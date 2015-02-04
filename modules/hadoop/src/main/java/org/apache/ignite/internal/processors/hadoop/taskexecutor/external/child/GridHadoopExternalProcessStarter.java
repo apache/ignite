@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external.child;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.logger.log4j.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.logger.log4j.*;
+import org.apache.ignite.marshaller.optimized.*;
 
 import java.io.*;
 import java.net.*;

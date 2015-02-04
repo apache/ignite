@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.util.lang;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
@@ -90,7 +90,7 @@ public class GridPlainFutureAdapter<R> implements GridPlainFuture<R> {
 
         try {
             if (doneLatch.getCount() > 0 && !doneLatch.await(timeout, unit))
-                throw new IgniteFutureTimeoutException("Failed to get future result due to waiting timed out.");
+                throw new IgniteFutureTimeoutCheckedException("Failed to get future result due to waiting timed out.");
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();

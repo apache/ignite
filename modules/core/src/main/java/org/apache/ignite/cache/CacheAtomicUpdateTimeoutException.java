@@ -17,12 +17,12 @@
 
 package org.apache.ignite.cache;
 
-import org.apache.ignite.*;
+import javax.cache.*;
 
 /**
  * Exception thrown when atomic operation timeout occurs.
  */
-public class CacheAtomicUpdateTimeoutException extends IgniteCheckedException {
+public class CacheAtomicUpdateTimeoutException extends CacheException {
     /** */
     private static final long serialVersionUID = 0L;
 

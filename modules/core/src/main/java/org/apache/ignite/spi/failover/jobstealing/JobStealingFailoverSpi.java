@@ -19,11 +19,11 @@ package org.apache.ignite.spi.failover.jobstealing;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.failover.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 
@@ -331,7 +331,7 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
 
             return thief;
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             U.error(log, "Failed to get next balanced node for failover: " + ctx, e);
 
             return null;

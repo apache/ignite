@@ -19,8 +19,8 @@ package org.apache.ignite.cache.spring;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.springframework.cache.*;
 import org.springframework.cache.support.*;
 
@@ -48,8 +48,11 @@ class SpringCache implements Cache, Serializable {
      * @param cache Cache.
      * @param keyFactory Key factory.
      */
-    SpringCache(String name, Ignite ignite, CacheProjection<?, ?> cache,
-                IgniteClosure<Object, Object> keyFactory) {
+    SpringCache(String name,
+        Ignite ignite,
+        CacheProjection<?, ?> cache,
+        IgniteClosure<Object, Object> keyFactory)
+    {
         assert cache != null;
 
         this.name = name;
@@ -138,7 +141,7 @@ class SpringCache implements Cache, Serializable {
         try {
             ignite.compute(cache.gridProjection()).broadcast(new ClearClosure(cache));
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             throw new IgniteException("Failed to clear cache [cacheName=" + cache.name() + ']', e);
         }
     }

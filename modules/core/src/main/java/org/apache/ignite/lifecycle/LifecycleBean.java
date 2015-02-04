@@ -101,7 +101,7 @@ public interface LifecycleBean {
      * This method is called when lifecycle event occurs.
      *
      * @param evt Lifecycle event.
-     * @throws IgniteCheckedException Thrown in case of any errors.
+     * @throws IgniteException Thrown in case of any errors.
      */
-    public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException;
+    public void onLifecycleEvent(LifecycleEventType evt) throws IgniteException;
 }

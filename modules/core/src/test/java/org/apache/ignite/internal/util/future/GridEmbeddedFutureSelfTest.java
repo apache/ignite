@@ -19,8 +19,8 @@ package org.apache.ignite.internal.util.future;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -120,7 +120,7 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
             try {
                 embFut.get(1, SECONDS);
             }
-            catch (IgniteFutureTimeoutException e) {
+            catch (IgniteFutureTimeoutCheckedException e) {
                 fail("Failed with timeout exception: " + e);
             }
             catch (IgniteCheckedException e) {

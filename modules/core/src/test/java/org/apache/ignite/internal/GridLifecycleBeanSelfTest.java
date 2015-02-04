@@ -19,8 +19,8 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -250,7 +250,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
+        @Override public void onLifecycleEvent(LifecycleEventType evt) {
             callsCntr.get(evt).incrementAndGet();
         }
 
@@ -282,10 +282,10 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
+        @Override public void onLifecycleEvent(LifecycleEventType evt) {
             if (evt == errType) {
                 if (gridErr)
-                    throw new IgniteCheckedException("Expected exception for event: " + evt) {
+                    throw new IgniteException("Expected exception for event: " + evt) {
                         @Override public void printStackTrace(PrintStream s) {
                             // No-op.
                         }

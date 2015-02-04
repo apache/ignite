@@ -76,7 +76,7 @@
         </fileSet>
 
         <fileSet>
-            <directory>config/${gridgain.edition}</directory>
+            <directory>config/${ignite.edition}</directory>
             <outputDirectory>/config</outputDirectory>
         </fileSet>
 

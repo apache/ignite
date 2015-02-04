@@ -40,7 +40,7 @@ public class GridP2PEventFilterExternalPath2 implements IgnitePredicate<IgniteEv
 
             ignite.message(ignite.cluster().forRemotes()).send(null, res);
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             throw new RuntimeException(e);
         }
 
