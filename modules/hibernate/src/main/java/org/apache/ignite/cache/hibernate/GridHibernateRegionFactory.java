@@ -60,7 +60,7 @@ public class GridHibernateRegionFactory implements RegionFactory {
     private static final long serialVersionUID = 0L;
 
     /** Hibernate L2 cache grid name property name. */
-    public static final String GRID_NAME_PROPERTY = "org.apache.ignite.hibernate.ignite_name";
+    public static final String GRID_NAME_PROPERTY = "org.apache.ignite.hibernate.grid_name";
 
     /** Default cache property name. */
     public static final String DFLT_CACHE_NAME_PROPERTY = "org.apache.ignite.hibernate.default_cache";
