@@ -22,7 +22,7 @@ package org.apache.ignite.internal;
  */
 public final class IgniteNodeAttributes {
     /** Prefix for internally reserved attribute names. */
-    public static final String ATTR_PREFIX = "org.gridgain";
+    public static final String ATTR_PREFIX = "org.apache.ignite";
 
     /** Node compound version. */
     public static final String ATTR_BUILD_VER = ATTR_PREFIX + ".build.ver";

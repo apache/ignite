@@ -303,7 +303,7 @@ abstract class GridCacheAbstractLoadTest {
 
         impl.setLevel(Level.INFO);
 
-        //Logger.getLogger("org.gridgain").setLevel(Level.INFO);
+        //Logger.getLogger("org.apache.ignite").setLevel(Level.INFO);
         //Logger.getLogger(GridCacheVersionManager.class).setLevel(Level.DEBUG);
 
         return new GridTestLog4jLogger(false);

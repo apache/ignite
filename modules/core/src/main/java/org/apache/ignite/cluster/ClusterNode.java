@@ -56,16 +56,16 @@ import java.util.*;
  * <li>{@code {@link System#getProperties()}} - All system properties.</li>
  * <li>{@code {@link System#getenv(String)}} - All environment properties.</li>
  * <li>{@code org.ignite.build.ver} - Ignite build version.</li>
- * <li>{@code org.gridgain.jit.name} - Name of JIT compiler used.</li>
- * <li>{@code org.gridgain.net.itf.name} - Name of network interface.</li>
- * <li>{@code org.gridgain.user.name} - Operating system user name.</li>
- * <li>{@code org.gridgain.ignite.name} - Grid name (see {@link org.apache.ignite.Ignite#name()}).</li>
+ * <li>{@code org.apache.ignite.jit.name} - Name of JIT compiler used.</li>
+ * <li>{@code org.apache.ignite.net.itf.name} - Name of network interface.</li>
+ * <li>{@code org.apache.ignite.user.name} - Operating system user name.</li>
+ * <li>{@code org.apache.ignite.ignite.name} - Grid name (see {@link org.apache.ignite.Ignite#name()}).</li>
  * <li>
- *      {@code spiName.org.gridgain.spi.class} - SPI implementation class for every SPI,
+ *      {@code spiName.org.apache.ignite.spi.class} - SPI implementation class for every SPI,
  *      where {@code spiName} is the name of the SPI (see {@link org.apache.ignite.spi.IgniteSpi#getName()}.
  * </li>
  * <li>
- *      {@code spiName.org.gridgain.spi.ver} - SPI version for every SPI,
+ *      {@code spiName.org.apache.ignite.spi.ver} - SPI version for every SPI,
  *      where {@code spiName} is the name of the SPI (see {@link org.apache.ignite.spi.IgniteSpi#getName()}.
  * </li>
  * </ul>
@@ -136,7 +136,7 @@ public interface ClusterNode {
      *
      * @param <T> Attribute Type.
      * @param name Attribute name. <b>Note</b> that attribute names starting with
-     *      {@code org.gridgain} are reserved for internal use.
+     *      {@code org.apache.ignite} are reserved for internal use.
      * @return Attribute value or {@code null}.
      */
     @Nullable public <T> T attribute(String name);

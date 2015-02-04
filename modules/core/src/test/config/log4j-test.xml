@@ -79,13 +79,13 @@
         Uncomment to enable GridGain query execution debugging.
     -->
     <!--
-    <category name="org.gridgain.cache.queries">
+    <category name="org.apache.ignite.cache.query">
         <level value="DEBUG"/>
     </category>
     -->
 
     <!-- Enable Gridgain debugging.
-     <category name="org.gridgain">
+     <category name="org.apache.ignite">
          <level value="DEBUG"/>
      </category>
     -->

@@ -269,7 +269,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
             for (Iterator<Map.Entry<String, Object>> i = attrs.entrySet().iterator(); i.hasNext();) {
                 Map.Entry<String, Object> e = i.next();
 
-                if (!e.getKey().startsWith("org.gridgain.") && System.getProperty(e.getKey()) == null) {
+                if (!e.getKey().startsWith("org.apache.ignite.") && System.getProperty(e.getKey()) == null) {
                     i.remove();
 
                     continue;

@@ -1046,7 +1046,7 @@ public class IgniteConfiguration {
      * to grid node attributes also. SPIs may also add node attributes that are
      * used for SPI implementation.
      * <p>
-     * <b>NOTE:</b> attributes names starting with {@code org.gridgain} are reserved
+     * <b>NOTE:</b> attributes names starting with {@code org.apache.ignite} are reserved
      * for internal use.
      *
      * @return User defined attributes for this node.

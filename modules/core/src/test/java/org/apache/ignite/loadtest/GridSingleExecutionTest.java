@@ -165,7 +165,7 @@ public final class GridSingleExecutionTest {
 
         impl.setLevel(Level.INFO);
 
-        Logger.getLogger("org.gridgain").setLevel(Level.DEBUG);
+        Logger.getLogger("org.apache.ignite").setLevel(Level.DEBUG);
 
         return new GridTestLog4jLogger(false);
     }
