@@ -77,7 +77,7 @@ public class IpcSharedMemoryBenchmarkReader implements IpcSharedMemoryBenchmarkP
         });
 
         try (IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint()) {
-            new GridTestResources().inject(srv);
+            new IgniteTestResources().inject(srv);
 
             srv.start();
 

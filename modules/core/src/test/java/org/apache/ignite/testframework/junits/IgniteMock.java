@@ -28,7 +28,7 @@ import java.util.concurrent.*;
 /**
  * Ignite mock.
  */
-public class GridTestIgnite implements Ignite {
+public class IgniteMock implements Ignite {
     /** Ignite name */
     private final String name;
 
@@ -57,7 +57,7 @@ public class GridTestIgnite implements Ignite {
      * @param jmx Jmx Bean Server.
      * @param home Ignite home.
      */
-    public GridTestIgnite(
+    public IgniteMock(
         String name, String locHost, UUID nodeId, IgniteMarshaller marshaller, MBeanServer jmx, String home) {
         this.locHost = locHost;
         this.nodeId = nodeId;
