@@ -3074,7 +3074,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         long expireTime,
         boolean preload,
         long topVer,
-        GridDrType drType) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        GridDrType drType)
+        throws IgniteCheckedException, GridCacheEntryRemovedException {
         if (cctx.isUnmarshalValues() && valBytes != null && val == null && isNewLocked())
             val = cctx.marshaller().<V>unmarshal(valBytes, cctx.deploy().globalLoader());
 
