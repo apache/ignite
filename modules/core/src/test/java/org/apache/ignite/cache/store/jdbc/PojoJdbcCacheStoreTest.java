@@ -38,6 +38,7 @@ import org.springframework.context.support.*;
 import org.springframework.core.io.*;
 
 import javax.cache.*;
+import javax.cache.integration.*;
 import java.io.*;
 import java.net.*;
 import java.sql.*;
@@ -87,6 +88,19 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
     protected JdbcPojoCacheStore store() throws IgniteCheckedException {
         JdbcPojoCacheStore store = new JdbcPojoCacheStore();
 
+//        PGPoolingDataSource ds = new PGPoolingDataSource();
+//        ds.setUser("postgres");
+//        ds.setPassword("1");
+//        ds.setServerName("192.168.1.47");
+//        ds.setDatabaseName("postgres");
+//        store.setDataSource(ds);
+
+//        MysqlDataSource ds = new MysqlDataSource();
+//        ds.setURL("jdbc:mysql://192.168.1.12:3306/test");
+//        ds.setUser("test");
+//        ds.setPassword("1");
+//        store.setDataSource(ds);
+
         store.setDataSource(JdbcConnectionPool.create(DFLT_CONN_URL, "sa", ""));
 
         return store;
@@ -132,7 +146,7 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
 
             store.prepareBuilders(null, typeMeta);
 
-            cacheMappings.put(null, Collections.unmodifiableMap(entryMappings));
+            cacheMappings.put(null, entryMappings);
 
             GridTestUtils.setFieldValue(store, JdbcCacheStore.class, "cacheMappings", cacheMappings);
         }
@@ -150,10 +164,60 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testLoadCache() throws Exception {
-        Connection conn = DriverManager.getConnection(DFLT_CONN_URL, "sa", "");
+    public void testWriteRetry() throws Exception {
+        BasicJdbcDialect dialect = new BasicJdbcDialect() {
+            /** {@inheritDoc} */
+            @Override public String updateQuery(String schema, String tblName, Collection<String> keyCols,
+                Iterable<String> valCols) {
+                return super.updateQuery(schema, tblName, keyCols, valCols) + " AND 1 = 0";
+            }
+        };
 
-        Statement stmt = conn.createStatement();
+        store.setDialect(dialect);
+
+        Map<String, Map<Object, JdbcCacheStore.EntryMapping>> cacheMappings =
+            GridTestUtils.getFieldValue(store, JdbcCacheStore.class, "cacheMappings");
+
+        JdbcCacheStore.EntryMapping em = cacheMappings.get(null).get(OrganizationKey.class);
+
+        CacheTypeMetadata typeMeta = GridTestUtils.getFieldValue(em, JdbcCacheStore.EntryMapping.class, "typeMeta");
+
+        cacheMappings.get(null).put(OrganizationKey.class, new JdbcCacheStore.EntryMapping(dialect, typeMeta));
+
+        Connection conn = store.openConnection(false);
+
+        PreparedStatement orgStmt = conn.prepareStatement("INSERT INTO Organization(id, name, city) VALUES (?, ?, ?)");
+
+        orgStmt.setInt(1, 1);
+        orgStmt.setString(2, "name" + 1);
+        orgStmt.setString(3, "city" + 1);
+
+        orgStmt.executeUpdate();
+
+        U.closeQuiet(orgStmt);
+
+        conn.commit();
+
+        OrganizationKey k1 = new OrganizationKey(1);
+        Organization v1 = new Organization(1, "Name1", "City1");
+
+        ses.newSession(null);
+
+        try {
+            store.write(new CacheEntryImpl<>(k1, v1));
+        }
+        catch (CacheWriterException e) {
+            if (!e.getMessage().startsWith("Failed insert entry in database, violate a unique index or primary key") ||
+                e.getSuppressed().length != 2)
+                throw e;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLoadCache() throws Exception {
+        Connection conn = store.openConnection(false);
 
         PreparedStatement orgStmt = conn.prepareStatement("INSERT INTO Organization(id, name, city) VALUES (?, ?, ?)");
 
@@ -166,6 +230,8 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
         }
 
         orgStmt.executeBatch();
+
+        U.closeQuiet(orgStmt);
 
         conn.commit();
 
@@ -183,7 +249,7 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
 
         conn.commit();
 
-        U.closeQuiet(stmt);
+        U.closeQuiet(prnStmt);
 
         U.closeQuiet(conn);
 
@@ -606,20 +672,26 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        Connection conn = DriverManager.getConnection(DFLT_CONN_URL, "sa", "");
+        Connection conn = store.openConnection(false);
 
         Statement stmt = conn.createStatement();
 
-        stmt.executeUpdate("DROP TABLE IF EXISTS Organization");
-        stmt.executeUpdate("DROP TABLE IF EXISTS Person");
+        try {
+            stmt.executeUpdate("delete from Organization");
+        }
+        catch (SQLException ignore) {
+            // no-op
+        }
 
-        stmt.executeUpdate("CREATE TABLE Organization (id integer PRIMARY KEY, name varchar(50), city varchar(50))");
-        stmt.executeUpdate("CREATE TABLE Person (id integer PRIMARY KEY, org_id integer, name varchar(50))");
+        try {
+            stmt.executeUpdate("delete from Person");
+        }
+        catch (SQLException ignore) {
+            // no-op
+        }
 
-        stmt.executeUpdate("CREATE INDEX Org_Name_IDX On Organization (name)");
-        stmt.executeUpdate("CREATE INDEX Org_Name_City_IDX On Organization (name, city)");
-        stmt.executeUpdate("CREATE INDEX Person_Name_IDX1 On Person (name)");
-        stmt.executeUpdate("CREATE INDEX Person_Name_IDX2 On Person (name desc)");
+        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Organization (id integer not null, name varchar(50), city varchar(50), PRIMARY KEY(id))");
+        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Person (id integer not null, org_id integer, name varchar(50), PRIMARY KEY(id))");
 
         conn.commit();
 

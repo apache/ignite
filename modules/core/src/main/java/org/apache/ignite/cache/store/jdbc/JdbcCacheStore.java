@@ -38,6 +38,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
+import static java.sql.Statement.*;
+
 /**
  * Base {@link CacheStore} implementation backed by JDBC. This implementation stores objects in underlying database
  * using mapping description.
@@ -649,9 +651,9 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
                             nested = nested.getNextException();
                         }
 
-                        // The error with code 23505 is thrown when trying to insert a row that
+                        // The error with code 23505 or 23000 is thrown when trying to insert a row that
                         // would violate a unique index or primary key.
-                        if (sqlState != null && Integer.valueOf(sqlState) == 23505) {
+                        if ("23505".equals(sqlState) || "23000".equals(sqlState)) {
                             if (we == null)
                                 we = new CacheWriterException("Failed insert entry in database, violate a unique" +
                                     " index or primary key [table=" + em.fullTableName() + ", entry=" + entry + "]");
@@ -903,23 +905,39 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
      */
     private void executeBatch(EntryMapping em, Statement stmt, String desc, int fromIdx, int prepared,
         LazyValue<Object[]> lazyObjs) throws SQLException {
-        int[] rowCounts = stmt.executeBatch();
+        try {
+            int[] rowCounts = stmt.executeBatch();
 
-        int numOfRowCnt = rowCounts.length;
+            int numOfRowCnt = rowCounts.length;
 
-        if (numOfRowCnt != prepared)
-            U.warn(log, "Unexpected number of updated rows [table=" + em.fullTableName() + ", expected=" + prepared +
-                ", actual=" + numOfRowCnt + "]");
+            if (numOfRowCnt != prepared)
+                U.warn(log, "Unexpected number of updated rows [table=" + em.fullTableName() + ", expected=" + prepared +
+                    ", actual=" + numOfRowCnt + "]");
 
-        for (int i = 0; i < numOfRowCnt; i++) {
-            int cnt = rowCounts[i];
+            for (int i = 0; i < numOfRowCnt; i++) {
+                int cnt = rowCounts[i];
 
-            if (cnt != 1) {
-                Object[] objs = lazyObjs.value();
+                if (cnt != 1 && cnt != SUCCESS_NO_INFO) {
+                    Object[] objs = lazyObjs.value();
 
-                U.warn(log, "Batch " + desc + " returned unexpected updated row count [table=" + em.fullTableName() +
-                    ", entry=" + objs[fromIdx + i] + ", expected=1, actual=" + cnt + "]");
+                    U.warn(log, "Batch " + desc + " returned unexpected updated row count [table=" + em.fullTableName() +
+                        ", entry=" + objs[fromIdx + i] + ", expected=1, actual=" + cnt + "]");
+                }
             }
+        }
+        catch (BatchUpdateException be) {
+            int[] rowCounts = be.getUpdateCounts();
+
+            for (int i = 0; i < rowCounts.length; i++) {
+                if (rowCounts[i] == EXECUTE_FAILED) {
+                    Object[] objs = lazyObjs.value();
+
+                    U.warn(log, "Batch " + desc + " failed on execution [table=" + em.fullTableName() +
+                        ", entry=" + objs[fromIdx + i] + "]");
+                }
+            }
+
+            throw be;
         }
     }
 
