@@ -166,7 +166,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      */
     public void testGet() throws Exception {
         runTest(new CIX1<IgniteCache<String,Integer>>() {
-            @Override public void applyx(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
+            @Override public void applyx(IgniteCache<String, Integer> cache) {
                 int rnd = random();
 
                 assert cache.get("key" + rnd) == rnd;
@@ -180,7 +180,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      */
     public void testGetAsync() throws Exception {
         runTest(new CIX1<IgniteCache<String,Integer>>() {
-            @Override public void applyx(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
+            @Override public void applyx(IgniteCache<String, Integer> cache) {
                 int rnd = random();
 
                 IgniteCache<String, Integer> cacheAsync = cache.withAsync();
@@ -219,7 +219,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      */
     public void testGetAllAsync() throws Exception {
         runTest(new CIX1<IgniteCache<String,Integer>>() {
-            @Override public void applyx(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
+            @Override public void applyx(IgniteCache<String, Integer> cache) {
                 int rnd1 = random();
                 int rnd2 = random();
 
@@ -238,7 +238,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      */
     public void testRemove() throws Exception {
         runTest(new CIX1<IgniteCache<String,Integer>>() {
-            @Override public void applyx(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
+            @Override public void applyx(IgniteCache<String, Integer> cache) {
                 int rnd1 = random();
                 int rnd2 = random();
 
@@ -262,7 +262,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      */
     public void testRemoveAsync() throws Exception {
         runTest(new CIX1<IgniteCache<String,Integer>>() {
-            @Override public void applyx(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
+            @Override public void applyx(IgniteCache<String, Integer> cache) {
                 int rnd1 = random();
                 int rnd2 = random();
 
@@ -308,21 +308,43 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      * @throws Exception In case of error.
      */
     public void testRemoveAllAsync() throws Exception {
-        runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
+        runTest(new CIX1<IgniteCache<String,Integer>>() {
+            @Override public void applyx(IgniteCache<String, Integer> cache) {
                 int rnd = random();
 
-        return cache.withAsync().<V>future().get();
+                IgniteCache<String, Integer> cacheAsync = cache.withAsync();
+
+                cacheAsync.removeAll(rangeKeys(0, rnd));
+
+                cacheAsync.future().get();
+
+                for (int i = 0; i < rnd; i++)
+                    assert cache.localPeek("key" + i) == null;
+            }
+        });
     }
 
     /**
      * @param cache Cache.
      * @param key Key.
-     * @param val Value.
      */
-    private <K, V> boolean removeAsync(IgniteCache<K, V> cache, K key, V val) throws IgniteCheckedException {
-        cache.withAsync().remove(key, val);
+    private <K, V> V removeAsync(IgniteCache<K, V> cache, K key) {
+        IgniteCache<K, V> cacheAsync = cache.withAsync();
 
-        return cache.withAsync().<Boolean>future().get();
+        cacheAsync.getAndRemove(key);
+
+        return cacheAsync.<V>future().get();
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Key.
+     */
+    private <K, V> boolean removeAsync(IgniteCache<K, V> cache, K key, V val) {
+        IgniteCache<K, V> cacheAsync = cache.withAsync();
+
+        cacheAsync.remove(key, val);
+
+        return cacheAsync.<Boolean>future().get();
     }
 }

@@ -301,12 +301,11 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         nearCache.putAll(vals);
 
-        for (String subKey : subKeys)
-            nearCache.clearLocally(subKey);
+        nearCache.clear(subKeys);
 
         for (String key : subKeys) {
             assertNull(nearCache.localPeek(key));
-            assertNotNull(primary.localPeek(key));
+            assertNull(primary.localPeek(key));
         }
 
         assertEquals(vals.get(lastKey), nearCache.localPeek(lastKey));
