@@ -54,7 +54,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     /**
      * Create cache queries implementation.
      *
-     * @param cctx Сontext.
+     * @param cctx Context.
      * @param prj Optional cache projection.
      * @param delegate Delegate object.
      */
