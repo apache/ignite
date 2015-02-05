@@ -43,21 +43,21 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
      * @throws Exception If failed.
      */
     public void testTaskWithBrokenXML() throws Exception {
-        proceedTest("broken.gar", "gridgain.brokenxml", "brokenxml-task", false);
+        proceedTest("broken.gar", "ignite.brokenxml", "brokenxml-task", false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTaskWithEmptyXML() throws Exception {
-        proceedTest("empty.gar", "gridgain.empty", "emptyxml-task", false);
+        proceedTest("empty.gar", "ignite.empty", "emptyxml-task", false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTaskWithIncorrectRefsXML() throws Exception {
-        proceedTest("incorrefs.gar", "gridgain.incorrefs", "incorrectref-task", false);
+        proceedTest("incorrefs.gar", "ignite.incorrefs", "incorrectref-task", false);
     }
 
     /**
