@@ -32,7 +32,7 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Gridgain Cache Data Structures Test Suite");
+        TestSuite suite = new TestSuite("Ignite Cache Data Structures Test Suite");
 
         // Data structures.
         suite.addTest(new TestSuite(GridCachePartitionedQueueFailoverDataConsistencySelfTest.class));

@@ -655,10 +655,10 @@ public final class GridTestUtils {
         File dir = new File(ggHome);
 
         if (!dir.exists())
-            throw new Exception("Gridgain home does not exist [girdgain-home=" + dir.getAbsolutePath() + ']');
+            throw new Exception("Ignite home does not exist [ignite-home=" + dir.getAbsolutePath() + ']');
 
         if (!dir.isDirectory())
-            throw new Exception("Gridgain home is not a directory [gridgain-home=" + dir.getAbsolutePath() + ']');
+            throw new Exception("Ignite home is not a directory [ignite-home=" + dir.getAbsolutePath() + ']');
 
         return ggHome;
     }

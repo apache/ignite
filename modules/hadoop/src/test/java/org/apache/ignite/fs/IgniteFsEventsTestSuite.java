@@ -62,7 +62,7 @@ public class IgniteFsEventsTestSuite extends TestSuite {
     public static TestSuite suiteNoarchOnly() throws Exception {
         GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
 
-        TestSuite suite = new TestSuite("Gridgain GGFS Events Test Suite Noarch Only");
+        TestSuite suite = new TestSuite("Ignite GGFS Events Test Suite Noarch Only");
 
         suite.addTest(new TestSuite(ldr.loadClass(LoopbackPrivate.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(LoopbackDualSync.class.getName())));

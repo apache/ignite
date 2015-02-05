@@ -1305,7 +1305,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         final GridClientCompute compute = client.compute();
 
         /* Usually this log file is created by log4j, but some times it doesn't exists. */
-        new File(U.getIgniteHome(), "work/log/gridgain.log").createNewFile();
+        new File(U.getIgniteHome(), "work/log/ignite.log").createNewFile();
 
         List<String> log = compute.log(6, 7);
         assertNotNull(log);
@@ -1317,7 +1317,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         assertNotNull(log);
         assertTrue(log.isEmpty());
 
-        String path = "work/log/gridgain.log." + System.currentTimeMillis();
+        String path = "work/log/ignite.log." + System.currentTimeMillis();
 
         File file = new File(U.getIgniteHome(), path);
 

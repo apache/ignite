@@ -1004,7 +1004,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
      * @return Whether name belongs to log file.
      */
     private boolean isSshNodeLogName(String name) {
-        return name.matches("gridgain.[0-9a-z-]+.log");
+        return name.matches("ignite.[0-9a-z-]+.log");
     }
 
     /**

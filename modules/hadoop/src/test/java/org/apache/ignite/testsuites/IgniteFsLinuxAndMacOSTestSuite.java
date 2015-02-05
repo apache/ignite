@@ -38,7 +38,7 @@ public class IgniteFsLinuxAndMacOSTestSuite extends TestSuite {
 
         GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
 
-        TestSuite suite = new TestSuite("Gridgain GGFS Test Suite For Linux And Mac OS");
+        TestSuite suite = new TestSuite("Ignite GGFS Test Suite For Linux And Mac OS");
 
         suite.addTest(new TestSuite(ldr.loadClass(GridGgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest.class.getName())));
 
