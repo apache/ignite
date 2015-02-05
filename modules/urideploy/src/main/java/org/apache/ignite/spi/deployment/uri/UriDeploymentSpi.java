@@ -171,12 +171,12 @@ import java.util.Map.*;
  *  </tr>
  * </table>
  * <h2 class="header">File URI Example</h2>
- * The following example will scan {@code 'c:/Program files/gridgain/deployment'}
+ * The following example will scan {@code 'c:/Program files/ignite/deployment'}
  * folder on local box every {@code '5000'} milliseconds. Note that since path
  * has spaces, {@link #setEncodeUri(boolean) setEncodeUri(boolean)} parameter must
  * be set to {@code true} (which is default behavior).
  * <blockquote class="snippet">
- * {@code file://freq=5000@localhost/c:/Program files/gridgain/deployment}
+ * {@code file://freq=5000@localhost/c:/Program files/ignite/deployment}
  * </blockquote>
  * <a name="classes"></a>
  * <h1 class="header">Classes</h1>
@@ -202,12 +202,12 @@ import java.util.Map.*;
  *  </tr>
  * </table>
  * <h2 class="header">Classes URI Example</h2>
- * The following example will scan {@code 'c:/Program files/gridgain/deployment'}
+ * The following example will scan {@code 'c:/Program files/ignite/deployment'}
  * folder on local box every {@code '5000'} milliseconds. Note that since path
  * has spaces, {@link #setEncodeUri(boolean) setEncodeUri(boolean)} parameter must
  * be set to {@code true} (which is default behavior).
  * <blockquote class="snippet">
- * {@code classes://freq=5000@localhost/c:/Program files/gridgain/deployment}
+ * {@code classes://freq=5000@localhost/c:/Program files/ignite/deployment}
  * </blockquote>
  * <a name="ftp"></a>
  * <h1 class="header">FTP</h1>
@@ -240,17 +240,17 @@ import java.util.Map.*;
  * <h2 class="header">FTP URI Example</h2>
  * Here is an example of an FTP URI that connects identified as
  * {@code username:password} to {@code 'localhost'} on port {@code '21'},
- * with initial path set to {@code 'gridgain/deployment'}
+ * with initial path set to {@code 'ignite/deployment'}
  * <blockquote class="snippet">
- * ftp://username:password;freq=10000@localhost:21/gridgain/deployment
+ * ftp://username:password;freq=10000@localhost:21/ignite/deployment
  * </blockquote>
  * <p>
  * <h2 class="header">HTTP URI Example</h2>
- * The following example will scan {@code 'gridgain/deployment'} folder with
+ * The following example will scan {@code 'ignite/deployment'} folder with
  * on site {@code 'www.mysite.com'} using authentication
  * {@code 'username:password'} every {@code '10000'} milliseconds.
  * <blockquote class="snippet">
- * {@code http://username:password;freq=10000@www.mysite.com:110/gridgain/deployment}
+ * {@code http://username:password;freq=10000@www.mysite.com:110/ignite/deployment}
  * </blockquote>
  * <h2 class="header">Java Example</h2>
  * UriDeploymentSpi needs to be explicitly configured to override default local deployment SPI.
@@ -285,7 +285,7 @@ import java.util.Map.*;
  * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *         ...
  *         &lt;property name="deploymentSpi"&gt;
- *             &lt;bean class="org.gridgain.grid.spi.deployment.uri.UriDeploymentSpi"&gt;
+ *             &lt;bean class="org.apache.ignite.grid.spi.deployment.uri.UriDeploymentSpi"&gt;
  *                 &lt;property name="temporaryDirectoryPath" value="c:/tmp/grid"/&gt;
  *                 &lt;property name="uriList"&gt;
  *                     &lt;list&gt;

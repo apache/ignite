@@ -39,7 +39,7 @@ import org.apache.ignite.testframework.junits.common.*;
  *
  * 1. The JVM is started with following parameters for enable AspectJ online weaving
  *      (replace ${IGNITE_HOME} to you $IGNITE_HOME):
- *      -javaagent:${IGNITE_HOME}/libs/optional/gridgain-aop/aspectjweaver-1.7.2.jar
+ *      -javaagent:${IGNITE_HOME}/libs/optional/ignite-aop/aspectjweaver-1.7.2.jar
  *
  * 2. Classpath should contains the ${IGNITE_HOME}/modules/tests/config/aop/aspectj folder.
  */

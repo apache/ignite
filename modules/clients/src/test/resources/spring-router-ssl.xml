@@ -26,7 +26,7 @@
     org.apache.ignite.client.router.GridHttpRestRouterConfiguration bean definitions.
     First found are used to start corresponding router instances.
 
-    You can also use org.gridgain.client.router.GridRouterFactory to
+    You can also use org.apache.ignite.client.router.GridRouterFactory to
     programmatically start and stop router instances inside your application.
     Please refer to javadoc for more details.
 -->
