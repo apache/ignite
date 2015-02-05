@@ -148,7 +148,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
 
         secondaryConf.setInt("fs.ggfs.block.size", 1024);
 
-        String path = U.getGridGainHome() + SECONDARY_CFG_PATH;
+        String path = U.getIgniteHome() + SECONDARY_CFG_PATH;
 
         File file = new File(path);
 
@@ -225,7 +225,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
     @Override protected void afterTestsStopped() throws Exception {
         G.stopAll(true);
 
-        String path = U.getGridGainHome() + SECONDARY_CFG_PATH;
+        String path = U.getIgniteHome() + SECONDARY_CFG_PATH;
 
         new File(path).delete();
     }

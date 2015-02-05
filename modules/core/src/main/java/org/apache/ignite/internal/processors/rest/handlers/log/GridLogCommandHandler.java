@@ -58,7 +58,7 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
         String[] accessiblePaths = ctx.config().getClientConnectionConfiguration().getRestAccessibleFolders();
 
         if (accessiblePaths == null) {
-            String ggHome = U.getGridGainHome();
+            String ggHome = U.getIgniteHome();
 
             if (ggHome != null)
                 accessiblePaths = new String[] {ggHome};

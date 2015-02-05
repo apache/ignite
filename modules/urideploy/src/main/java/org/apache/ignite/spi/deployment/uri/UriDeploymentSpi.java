@@ -329,7 +329,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
     public static final int DFLT_HTTP_SCAN_FREQUENCY = 300000;
 
     /** Default task description file path and name (value is {@code META-INF/ignite.xml}). */
-    public static final String XML_DESCRIPTOR_PATH = "META-INF/gridgain.xml";
+    public static final String XML_DESCRIPTOR_PATH = "META-INF/ignite.xml";
 
     /**
      * Default temporary directory name relative to file path

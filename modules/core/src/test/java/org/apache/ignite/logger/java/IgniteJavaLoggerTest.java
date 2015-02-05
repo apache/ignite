@@ -38,7 +38,7 @@ public class IgniteJavaLoggerTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testLogInitialize() throws Exception {
-        U.setWorkDirectory(null, U.getGridGainHome());
+        U.setWorkDirectory(null, U.getIgniteHome());
 
         log = new IgniteJavaLogger();
 
