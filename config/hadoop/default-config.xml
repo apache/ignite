@@ -37,8 +37,8 @@
         Optional description.
     -->
     <description>
-        Spring file for GridGain node configuration with GGFS and Apache Hadoop map-reduce support enabled.
-        GridGain node will start with this configuration by default.
+        Spring file for Ignite node configuration with GGFS and Apache Hadoop map-reduce support enabled.
+        Ignite node will start with this configuration by default.
     </description>
 
     <!--
