@@ -47,7 +47,7 @@ import org.jetbrains.annotations.*;
  *        &lt;constructor-arg value="0"/&gt;
  *    &lt;/bean>
  * </pre>
- * By default, all ignite startup scripts ({@code gridgain.sh} or {@code gridgain.bat})
+ * By default, all ignite startup scripts ({@code ignite.sh} or {@code ignite.bat})
  * pick up user version from {@code IGNITE_HOME/config/userversion} folder. Usually, it
  * is just enough to update user version under that folder, however, in case of {@code GAR}
  * or {@code JAR} deployment, you should remember to provide {@code META-INF/ignite.xml}

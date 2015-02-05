@@ -55,7 +55,7 @@ import static org.apache.ignite.transactions.IgniteTxIsolation.*;
  *
  * &lt;!-- You can also specify a custom URL pattern. --&gt;
  * &lt;filter-mapping&gt;
- *     &lt;filter-name&gt;GridGainWebSessionsFilter&lt;/filter-name&gt;
+ *     &lt;filter-name&gt;GridWebSessionFilter&lt;/filter-name&gt;
  *     &lt;url-pattern&gt;/*&lt;/url-pattern&gt;
  * &lt;/filter-mapping&gt;
  * </pre>
@@ -68,7 +68,7 @@ import static org.apache.ignite.transactions.IgniteTxIsolation.*;
  * &lt;/filter&gt;
  *
  * &lt;filter-mapping&gt;
- *     &lt;filter-name&gt;GridGainWebSessionsFilter&lt;/filter-name&gt;
+ *     &lt;filter-name&gt;GridWebSessionFilter&lt;/filter-name&gt;
  *     &lt;servlet-name&gt;YourServletName&lt;/servlet-name&gt;
  * &lt;/filter-mapping&gt;
  * </pre>
