@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -35,7 +34,7 @@ import java.util.*;
 /**
  * Sequence multi node tests.
  */
-public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCommonAbstractTest
+public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends IgniteAtomicsAbstractTest
     implements Externalizable {
     /** */
     protected static final int GRID_CNT = 4;
@@ -44,34 +43,11 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
     protected static final int BATCH_SIZE = 33;
 
     /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     protected static final int RETRIES = 1111;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(GRID_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
-
-        cfg.setLocalHost("127.0.0.1");
-
-        return cfg;
+    @Override protected int gridCount() {
+        return GRID_CNT;
     }
 
     /**
@@ -152,7 +128,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
     public void testMarshalling() throws Exception {
         String seqName = UUID.randomUUID().toString();
 
-        final CacheAtomicSequence seq = grid(0).cache(null).dataStructures().atomicSequence(seqName, 0, true);
+        final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0, true);
 
         grid(1).compute().run(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
@@ -186,10 +162,10 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
         @IgniteLoggerResource
         private IgniteLogger log;
 
-        /* Sequence name. */
+        /** Sequence name. */
         private final String seqName;
 
-        /* */
+        /** */
         private final int retries;
 
         /**
@@ -208,7 +184,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
             if (log.isInfoEnabled())
                 log.info("Running IncrementAndGetJob on node: " + ignite.cluster().localNode().id());
 
-            CacheAtomicSequence seq = ignite.cache(null).dataStructures().atomicSequence(seqName, 0, true);
+            IgniteAtomicSequence seq = ignite.atomicSequence(seqName, 0, true);
 
             assert seq != null;
 
@@ -262,7 +238,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
             if (log.isInfoEnabled())
                 log.info("Running GetAndIncrementJob on node: " + ignite.cluster().localNode().id());
 
-            CacheAtomicSequence seq = ignite.cache(null).dataStructures().atomicSequence(seqName, 0, true);
+            IgniteAtomicSequence seq = ignite.atomicSequence(seqName, 0, true);
 
             assert seq != null;
 

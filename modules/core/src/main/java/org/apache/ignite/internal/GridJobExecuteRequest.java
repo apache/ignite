@@ -104,11 +104,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
     /** Transient since needs to hold local creation time. */
     @GridDirectTransient
-    private long createTime0 = U.currentTimeMillis();
-
-    /** @deprecated need to remove and use only {@link #createTime0}. */
-    @Deprecated
-    private long createTime = createTime0;
+    private long createTime = U.currentTimeMillis();
 
     /** */
     private IgniteUuid clsLdrId;
@@ -299,7 +295,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
      * @return This instance creation time.
      */
     public long getCreateTime() {
-        return createTime0;
+        return createTime;
     }
 
     /**
@@ -447,7 +443,6 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
         _clone.cpSpi = cpSpi;
         _clone.siblings = siblings;
         _clone.siblingsBytes = siblingsBytes;
-        _clone.createTime0 = createTime0;
         _clone.createTime = createTime;
         _clone.clsLdrId = clsLdrId;
         _clone.depMode = depMode;
@@ -531,7 +526,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 commState.idx++;
 
-            case 10:
+            case 9:
                 if (ldrParticipants != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(null, ldrParticipants.size()))
@@ -576,7 +571,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 commState.idx++;
 
             case 12:
-                if (!commState.putBoolean("sesFullSup", sesFullSup))
+                if (!commState.putBoolean(sesFullSup))
                     return false;
 
                 commState.idx++;
@@ -623,7 +618,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 commState.idx++;
 
-            case 20:
+            case 19:
                 if (top != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(null, top.size()))
@@ -749,7 +744,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 commState.idx++;
 
-            case 10:
+            case 9:
                 if (commState.readSize == -1) {
                     commState.readSize = commState.getInt(null);
 
@@ -863,7 +858,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 commState.idx++;
 
-            case 20:
+            case 19:
                 if (commState.readSize == -1) {
                     commState.readSize = commState.getInt(null);
 

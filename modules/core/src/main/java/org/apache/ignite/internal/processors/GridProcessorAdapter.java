@@ -61,6 +61,11 @@ public abstract class GridProcessorAdapter implements GridProcessor {
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override @Nullable public Object collectDiscoveryData(UUID nodeId) {
         return null;
     }

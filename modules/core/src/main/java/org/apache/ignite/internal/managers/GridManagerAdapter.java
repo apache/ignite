@@ -539,7 +539,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                             if (cctx.isNear())
                                 cctx = cctx.near().dht().context();
 
-                            GridCacheSwapEntry e = cctx.swap().read(key);
+                            GridCacheSwapEntry e = cctx.swap().read(key, true, true);
 
                             return e != null ? (V)e.value() : null;
                         }
@@ -579,6 +579,11 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
         for (IgniteSpi spi : spis)
             spi.onContextDestroyed();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return null;
     }
 
     /** {@inheritDoc} */

@@ -100,7 +100,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"SizeReplaceableByIsEmpty"})
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            near(grid(i)).removeAll(F.<CacheEntry<Integer, String>>alwaysTrue());
+            near(grid(i)).removeAll();
 
             assertEquals("Near cache size is not zero for grid: " + i, 0, near(grid(i)).size());
             assertEquals("DHT cache size is not zero for grid: " + i, 0, dht(grid(i)).size());
@@ -178,7 +178,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         assert e0.readers().contains(other.id());
         assert e1 == null || e1.readers().isEmpty();
 
-        assert !near0.clear(key);
+        assert !near0.clearLocally(key);
 
         assertEquals(1, near0.size());
         assertEquals(1, dht0.size());

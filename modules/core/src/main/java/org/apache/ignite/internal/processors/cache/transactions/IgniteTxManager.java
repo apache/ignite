@@ -1197,8 +1197,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
             }
 
             // 3.1 Call dataStructures manager.
-            for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
-                cacheCtx.dataStructures().onTxCommitted(tx);
+            cctx.kernalContext().dataStructures().onTxCommitted(tx);
 
             // 3.2 Add to pessimistic commit buffer if needed.
             addPessimisticRecovery(tx);

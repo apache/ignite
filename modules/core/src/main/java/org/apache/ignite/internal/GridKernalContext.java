@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.email.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
@@ -429,6 +430,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Time source.
      */
     public GridClockSource timeSource();
+
+    /**
+     * Gets data structures processor.
+     *
+     * @return Data structures processor.
+     */
+    public DataStructuresProcessor dataStructures();
 
     /**
      * Sets segmented flag to {@code true} when node is stopped due to segmentation issues.

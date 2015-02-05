@@ -142,69 +142,12 @@ public interface CacheContinuousQuery<K, V> extends AutoCloseable {
      * blocking the thread that called the callback. Otherwise, you
      * can get deadlocks.
      *
-     * @param cb Local callback.
-     * @deprecated Deprecated in favor of {@link #localCallback(IgniteBiPredicate)} method.
-     */
-    @Deprecated
-    public void callback(@Nullable IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb);
-
-    /**
-     * Gets local callback. See {@link #callback(IgniteBiPredicate)} for more information.
-     *
-     * @return Local callback.
-     * @deprecated Deprecated in favor of {@link #localCallback()} method.
-     */
-    @Deprecated
-    public IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> callback();
-
-    /**
-     * Sets optional key-value filter. This filter is called before
-     * entry is sent to the master node.
-     * <p>
-     * <b>WARNING:</b> all operations that involve any kind of JVM-local
-     * or distributed locking (e.g., synchronization or transactional
-     * cache operations), should be executed asynchronously without
-     * blocking the thread that called the filter. Otherwise, you
-     * can get deadlocks.
-     *
-     * @param filter Key-value filter.
-     * @deprecated Deprecated in favor of {@link #remoteFilter(org.apache.ignite.lang.IgnitePredicate)} method.
-     */
-    @Deprecated
-    public void filter(@Nullable IgniteBiPredicate<K, V> filter);
-
-    /**
-     * Gets key-value filter. See {@link #filter(IgniteBiPredicate)} for more information.
-     *
-     * @return Key-value filter.
-     * @deprecated Deprecated in favor of {@link #remoteFilter()} method.
-     */
-    @Deprecated
-    @Nullable public IgniteBiPredicate<K, V> filter();
-
-    /**
-     * Sets local callback. This callback is called only
-     * in local node when new updates are received.
-     * <p>
-     * The callback predicate accepts ID of the node from where updates
-     * are received and collection of received entries. Note that
-     * for removed entries value will be {@code null}.
-     * <p>
-     * If the predicate returns {@code false}, query execution will
-     * be cancelled.
-     * <p>
-     * <b>WARNING:</b> all operations that involve any kind of JVM-local
-     * or distributed locking (e.g., synchronization or transactional
-     * cache operations), should be executed asynchronously without
-     * blocking the thread that called the callback. Otherwise, you
-     * can get deadlocks.
-     *
      * @param locCb Local callback.
      */
     public void localCallback(IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<K, V>>> locCb);
 
     /**
-     * Gets local callback. See {@link #callback(IgniteBiPredicate)} for more information.
+     * Gets local callback. See {@link #localCallback(IgniteBiPredicate)} for more information.
      *
      * @return Local callback.
      */
@@ -225,7 +168,7 @@ public interface CacheContinuousQuery<K, V> extends AutoCloseable {
     public void remoteFilter(@Nullable IgnitePredicate<CacheContinuousQueryEntry<K, V>> filter);
 
     /**
-     * Gets key-value filter. See {@link #filter(IgniteBiPredicate)} for more information.
+     * Gets key-value filter. See {@link #remoteFilter(IgnitePredicate)} for more information.
      *
      * @return Key-value filter.
      */
