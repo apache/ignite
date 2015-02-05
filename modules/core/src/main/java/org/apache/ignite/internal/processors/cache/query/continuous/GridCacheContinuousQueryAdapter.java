@@ -35,7 +35,7 @@ import javax.cache.event.*;
 import java.util.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Continuous query implementation.
@@ -228,27 +228,39 @@ public class GridCacheContinuousQueryAdapter<K, V> implements CacheContinuousQue
         prj = prj.forCacheNodes(ctx.name());
 
         if (prj.nodes().isEmpty())
-            throw new ClusterTopologyCheckedException("Failed to execute query (projection is empty): " + this);
+            throw new ClusterTopologyCheckedException("Failed to continuous execute query (projection is empty): " +
+                this);
 
-        CacheMode mode = ctx.config().getCacheMode();
+        boolean skipPrimaryCheck = false;
 
-        if (mode == LOCAL || mode == REPLICATED) {
-            Collection<ClusterNode> nodes = prj.nodes();
+        Collection<ClusterNode> nodes = prj.nodes();
 
-            ClusterNode node = nodes.contains(ctx.localNode()) ? ctx.localNode() : F.rand(nodes);
+        if (nodes.isEmpty())
+            throw new ClusterTopologyCheckedException("Failed to execute continuous query (empty projection is " +
+                "provided): " + this);
 
-            assert node != null;
+        switch (ctx.config().getCacheMode()) {
+            case LOCAL:
+                if (!nodes.contains(ctx.localNode()))
+                    throw new ClusterTopologyCheckedException("Continuous query for LOCAL cache can be executed " +
+                        "only locally (provided projection contains remote nodes only): " + this);
+                else if (nodes.size() > 1)
+                    U.warn(log, "Continuous query for LOCAL cache will be executed locally (provided projection is " +
+                        "ignored): " + this);
 
-            if (nodes.size() > 1) {
-                if (node.id().equals(ctx.localNodeId()))
-                    U.warn(log, "Continuous query for " + mode + " cache can be run only on local node. " +
-                        "Will execute query locally: " + this);
-                else
-                    U.warn(log, "Continuous query for " + mode + " cache can be run only on single node. " +
-                        "Will execute query on remote node [qry=" + this + ", node=" + node + ']');
-            }
+                prj = prj.forNode(ctx.localNode());
 
-            prj = prj.forNode(node);
+                break;
+
+            case REPLICATED:
+                if (nodes.size() == 1 && F.first(nodes).equals(ctx.localNode())) {
+                    CacheDistributionMode distributionMode = ctx.config().getDistributionMode();
+
+                    if (distributionMode == PARTITIONED_ONLY || distributionMode == NEAR_PARTITIONED)
+                        skipPrimaryCheck = true;
+                }
+
+                break;
         }
 
         closeLock.lock();
@@ -271,6 +283,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements CacheContinuousQue
                 entryLsnr,
                 sync,
                 oldVal,
+                skipPrimaryCheck,
                 taskNameHash,
                 keepPortable);
 
