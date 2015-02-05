@@ -152,20 +152,6 @@ public interface PortableObject extends Serializable, Cloneable {
     @Nullable public <T> T deserialize() throws PortableException;
 
     /**
-     * Creates a copy of this portable object and optionally changes field values
-     * if they are provided in map. If map is empty or {@code null}, clean copy
-     * is created.
-     *
-     * @param fields Fields to modify in copy.
-     * @return Copy of this portable object.
-     * @throws PortableException In case of error.
-     * @deprecated Use {@link PortableBuilder} instead.
-     * @see PortableBuilder
-     */
-    @Deprecated
-    public PortableObject copy(@Nullable Map<String, Object> fields) throws PortableException;
-
-    /**
      * Copies this portable object.
      *
      * @return Copy of this portable object.

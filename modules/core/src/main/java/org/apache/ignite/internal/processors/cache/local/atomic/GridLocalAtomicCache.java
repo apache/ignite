@@ -1127,7 +1127,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             CU.<K, V>empty(),
                             null);
 
-                        CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(entry.key(), old);
+                        CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(ctx, entry.key(), old);
 
                         V updated;
                         CacheInvokeResult invokeRes = null;
