@@ -19,9 +19,8 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.lang.*;
 
 import javax.cache.*;
 import java.util.*;
@@ -56,7 +55,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
 
         // Tests equals query.
         QueryCursor<Cache.Entry<Integer, String>> qry =
-            cache.localQuery(new QuerySqlPredicate<Integer, String>("_val='value1'"));
+            cache.localQuery(new QuerySqlPredicate(String.class, "_val='value1'"));
 
         Iterator<Cache.Entry<Integer, String>> iter = qry.iterator();
 
@@ -69,7 +68,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
         assert "value1".equals(entry.getValue());
 
         // Tests like query.
-        qry = cache.localQuery(new QuerySqlPredicate<Integer, String>("_val like 'value%'"));
+        qry = cache.localQuery(new QuerySqlPredicate(String.class, "_val like 'value%'"));
 
         iter = qry.iterator();
 

@@ -19,9 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -33,18 +32,15 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
 import org.springframework.util.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.lang.reflect.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import javax.cache.*;
-
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
@@ -124,7 +120,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
             assertEquals(0, c.size());
 
             Collection<Cache.Entry<Integer, Integer>> res =
-                c.query(new QuerySqlPredicate<Integer, Integer>("_key >= 5 order by _key")).getAll();
+                c.query(new QuerySqlPredicate(Integer.class, "_key >= 5 order by _key")).getAll();
 
             assertEquals(5, res.size());
 
@@ -158,7 +154,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
         assertEquals(keyCnt, cache3.size());
 
         QueryCursor<Cache.Entry<CacheKey, CacheValue>> qry =
-            cache1.query(new QuerySqlPredicate<CacheKey, CacheValue>("select * from CacheValue", 10, new Object[0]));
+            cache1.query(new QuerySqlPredicate(CacheValue.class, "true"));
 
         Iterator<Cache.Entry<CacheKey, CacheValue>> iter = qry.iterator();
 
@@ -194,7 +190,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
 
             info("Committed transaction: " + tx);
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             tx.rollback();
 
             throw e;
@@ -234,7 +230,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
 
             info("Committed transaction: " + tx);
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             tx.rollback();
 
             throw e;
@@ -243,13 +239,13 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
         latch.await();
 
         QueryCursor<Cache.Entry<CacheKey, CacheValue>> qry =
-            cache1.query(new QuerySqlPredicate<CacheKey, CacheValue>("val > 1 and val < 4"));
+            cache1.query(new QuerySqlPredicate(CacheValue.class, "val > 1 and val < 4"));
 
         // Distributed query.
         assertEquals(6, qry.getAll().size());
 
         // Create new query, old query cannot be modified after it has been executed.
-        qry = cache3.localQuery(new QuerySqlPredicate<CacheKey, CacheValue>("val > 1 and val < 4"));
+        qry = cache3.localQuery(new QuerySqlPredicate(CacheValue.class, "val > 1 and val < 4"));
 
         // Tests execute on node.
         Iterator<Cache.Entry<CacheKey, CacheValue>> iter = qry.iterator();
@@ -298,7 +294,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
         // Create query with key filter.
 
         QueryCursor<Cache.Entry<CacheKey, CacheValue>> qry =
-            cache1.query(new QuerySqlPredicate<CacheKey, CacheValue>("val > 0"));
+            cache1.query(new QuerySqlPredicate(CacheValue.class, "val > 0"));
 
         assertEquals(keyCnt * 3, qry.getAll().size());
 
@@ -318,7 +314,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
 
         for (int i = 0; i < cache.getConfiguration(CacheConfiguration.class).getMaximumQueryIteratorCount() + 1; i++) {
             QueryCursor<Cache.Entry<Integer, Integer>> q =
-                cache.query(new QuerySqlPredicate<Integer, Integer>("_key >= 0 order by _key"));
+                cache.query(new QuerySqlPredicate(Integer.class, "_key >= 0 order by _key"));
 
             assertEquals(0, (int)q.iterator().next().getKey());
 
@@ -355,7 +351,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
                 cache.put(i, i);
 
             QueryCursor<Cache.Entry<Integer, Integer>> q =
-                cache.query(new QuerySqlPredicate<Integer, Integer>("_key >= 0 order by _key", 50, new Object[0]));
+                cache.query(new QuerySqlPredicate(Integer.class, "_key >= 0 order by _key"));
 
             assertEquals(0, (int) q.iterator().next().getKey());
 
@@ -414,7 +410,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
      */
     private void checkQueryResults(IgniteCache<CacheKey, CacheValue> cache) throws Exception {
         QueryCursor<Cache.Entry<CacheKey, CacheValue>> qry =
-            cache.localQuery(new QuerySqlPredicate<CacheKey, CacheValue>("val > 1 and val < 4"));
+            cache.localQuery(new QuerySqlPredicate(CacheValue.class, "val > 1 and val < 4"));
 
         Iterator<Cache.Entry<CacheKey, CacheValue>> iter = qry.iterator();
 

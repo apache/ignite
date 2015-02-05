@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.cache.*;
@@ -98,7 +98,7 @@ public class IgniteCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
      */
     private void checkQuery(IgniteCache<Integer, CacheValue> cache) throws Exception {
         QueryCursor<Cache.Entry<Integer, CacheValue>> qry =
-            cache.query(new QuerySqlPredicate<Integer, CacheValue>("val >= 5"));
+            cache.query(new QuerySqlPredicate("val >= 5"));
 
         Collection<Cache.Entry<Integer, CacheValue>> queried = qry.getAll();
 

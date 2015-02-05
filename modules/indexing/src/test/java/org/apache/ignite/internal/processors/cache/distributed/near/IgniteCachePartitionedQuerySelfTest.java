@@ -63,7 +63,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
         assertEquals(4, cache0.size());
 
         QueryCursor<Cache.Entry<UUID, Person>> qry =
-            cache0.localQuery(new QuerySqlPredicate<UUID, Person>("salary < 2000"));
+            cache0.localQuery(new QuerySqlPredicate(Person.class, "salary < 2000"));
 
         Collection<Cache.Entry<UUID, Person>> entries = qry.getAll();
 
@@ -96,14 +96,14 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
 
         // Fields query
         QueryCursor<List<?>> qry = cache0
-            .queryFields(new QuerySqlPredicate<UUID, Person>("select name from Person where salary > ?", 1600));
+            .queryFields(new QuerySqlPredicate("select name from Person where salary > ?", 1600));
 
         Collection<List<?>> res = qry.getAll();
 
         assertEquals(3, res.size());
 
         // Fields query count(*)
-        qry = cache0.queryFields(new QuerySqlPredicate<UUID, Person>("select count(*) from Person"));
+        qry = cache0.queryFields(new QuerySqlPredicate("select count(*) from Person"));
 
         res = qry.getAll();
 
@@ -136,7 +136,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
         assert grid(0).nodes().size() == gridCount();
 
         QueryCursor<Cache.Entry<UUID, Person>> qry =
-            cache0.query(new QuerySqlPredicate<UUID, Person>("salary < 2000"));
+            cache0.query(new QuerySqlPredicate(Person.class, "salary < 2000"));
 
         // Execute on full projection, duplicates are expected.
         Collection<Cache.Entry<UUID, Person>> entries = qry.getAll();

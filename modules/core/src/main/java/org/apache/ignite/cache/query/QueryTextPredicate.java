@@ -24,17 +24,27 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  */
 public final class QueryTextPredicate extends QueryPredicate {
     /** */
-    private Class<?> type;
+    private String type;
 
     /** SQL clause. */
     private String txt;
 
     /**
+     * @param type Type to query.
      * @param txt Search string.
      */
     public QueryTextPredicate(Class<?> type, String txt) {
-        this.type = type;
-        this.txt = txt;
+        setType(type);
+        setText(txt);
+    }
+
+    /**
+     * @param type Type to query.
+     * @param txt Search string.
+     */
+    public QueryTextPredicate(String type, String txt) {
+        setType(type);
+        setText(txt);
     }
 
     /**
@@ -42,7 +52,7 @@ public final class QueryTextPredicate extends QueryPredicate {
      *
      * @return Type.
      */
-    public Class<?> getType() {
+    public String getType() {
         return type;
     }
 
@@ -52,6 +62,15 @@ public final class QueryTextPredicate extends QueryPredicate {
      * @param type Type.
      */
     public void setType(Class<?> type) {
+        setType(type == null ? null : type.getName());
+    }
+
+    /**
+     * Sets type for query.
+     *
+     * @param type Type.
+     */
+    public void setType(String type) {
         this.type = type;
     }
 
