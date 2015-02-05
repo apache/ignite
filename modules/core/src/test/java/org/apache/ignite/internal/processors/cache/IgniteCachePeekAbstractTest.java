@@ -269,6 +269,20 @@ public abstract class IgniteCachePeekAbstractTest extends IgniteCacheAbstractTes
 
             for (Integer key : swapKeys) {
                 assertEquals(val, cache0.localPeek(key, SWAP));
+                assertEquals(val, cache0.localPeek(key, PRIMARY, SWAP));
+                assertEquals(val, cache0.localPeek(key, ONHEAP, SWAP));
+                assertEquals(val, cache0.localPeek(key, ONHEAP, OFFHEAP, SWAP));
+                assertEquals(val, cache0.localPeek(key, PRIMARY, ONHEAP, SWAP));
+                assertEquals(val, cache0.localPeek(key, PRIMARY, ONHEAP, OFFHEAP, SWAP));
+
+                if (cacheMode() == LOCAL) {
+                    assertEquals(val, cache0.localPeek(key, SWAP, BACKUP));
+                    assertEquals(val, cache0.localPeek(key, SWAP, NEAR));
+                }
+                else {
+                    assertNull(cache0.localPeek(key, SWAP, BACKUP));
+                    assertNull(cache0.localPeek(key, SWAP, NEAR));
+                }
 
                 assertNull(cache0.localPeek(key, ONHEAP));
                 assertNull(cache0.localPeek(key, OFFHEAP));
@@ -276,6 +290,18 @@ public abstract class IgniteCachePeekAbstractTest extends IgniteCacheAbstractTes
 
             for (Integer key : offheapKeys) {
                 assertEquals(val, cache0.localPeek(key, OFFHEAP));
+                assertEquals(val, cache0.localPeek(key, ONHEAP, OFFHEAP));
+                assertEquals(val, cache0.localPeek(key, ONHEAP, SWAP, OFFHEAP));
+                assertEquals(val, cache0.localPeek(key, PRIMARY, OFFHEAP));
+
+                if (cacheMode() == LOCAL) {
+                    assertEquals(val, cache0.localPeek(key, OFFHEAP, BACKUP));
+                    assertEquals(val, cache0.localPeek(key, OFFHEAP, NEAR));
+                }
+                else {
+                    assertNull(cache0.localPeek(key, OFFHEAP, BACKUP));
+                    assertNull(cache0.localPeek(key, OFFHEAP, NEAR));
+                }
 
                 assertNull(cache0.localPeek(key, ONHEAP));
                 assertNull(cache0.localPeek(key, SWAP));
@@ -283,6 +309,18 @@ public abstract class IgniteCachePeekAbstractTest extends IgniteCacheAbstractTes
 
             for (Integer key : heapKeys) {
                 assertEquals(val, cache0.localPeek(key, ONHEAP));
+                assertEquals(val, cache0.localPeek(key, SWAP, ONHEAP));
+                assertEquals(val, cache0.localPeek(key, SWAP, OFFHEAP, ONHEAP));
+                assertEquals(val, cache0.localPeek(key, PRIMARY, ONHEAP));
+
+                if (cacheMode() == LOCAL) {
+                    assertEquals(val, cache0.localPeek(key, ONHEAP, BACKUP));
+                    assertEquals(val, cache0.localPeek(key, ONHEAP, NEAR));
+                }
+                else {
+                    assertNull(cache0.localPeek(key, ONHEAP, BACKUP));
+                    assertNull(cache0.localPeek(key, ONHEAP, NEAR));
+                }
 
                 assertNull(cache0.localPeek(key, SWAP));
                 assertNull(cache0.localPeek(key, OFFHEAP));

@@ -424,7 +424,10 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * @param key Key to read.
      * @param keyBytes Key bytes.
+     * @param part Key partition.
      * @param entryLocked {@code True} if cache entry is locked.
+     * @param readOffheap Read offheap flag.
+     * @param readSwap Read swap flag.
      * @return Value from swap or {@code null}.
      * @throws IgniteCheckedException If failed.
      */
@@ -593,6 +596,8 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * @param entry Entry to read.
      * @param locked {@code True} if cache entry is locked.
+     * @param readOffheap Read offheap flag.
+     * @param readSwap Read swap flag.
      * @return Read value.
      * @throws IgniteCheckedException If read failed.
      */
@@ -642,6 +647,8 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /**
      * @param key Key to read swap entry for.
+     * @param readOffheap Read offheap flag.
+     * @param readSwap Read swap flag.
      * @return Read value.
      * @throws IgniteCheckedException If read failed.
      */
