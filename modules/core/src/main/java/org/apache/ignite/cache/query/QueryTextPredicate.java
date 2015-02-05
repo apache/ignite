@@ -62,7 +62,7 @@ public final class QueryTextPredicate extends QueryPredicate {
      * @param type Type.
      */
     public void setType(Class<?> type) {
-        setType(type == null ? null : type.getName());
+        setType(type == null ? null : type.getSimpleName());
     }
 
     /**

@@ -61,7 +61,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
 
         Cache.Entry<Integer, String> entry = iter.next();
 
-        assert iter.next() == null;
+        assert !iter.hasNext();
 
         assert entry != null;
         assert entry.getKey() == 1;
@@ -77,6 +77,6 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
         assert iter.next() != null;
         assert iter.next() != null;
         assert iter.next() != null;
-        assert iter.next() == null;
+        assert !iter.hasNext();
     }
 }
