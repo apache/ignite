@@ -67,6 +67,17 @@
 
         <plugins>
             <plugin>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <configuration>
+                    <headerDefinitions>
+                        <headerDefinition>../../../licence/headercustomisation.xml</headerDefinition>
+                    </headerDefinitions>
+                    <header>../../../licence/header.txt</header>
+                </configuration>
+            </plugin>
+
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
                 <executions>
