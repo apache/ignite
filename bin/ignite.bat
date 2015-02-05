@@ -40,7 +40,7 @@ goto error_finish
 
 :checkJdkVersion
 "%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr "1\.[78]\." > nul
-if %ERRORLEVEL% equ 0 goto checkGridGainHome1
+if %ERRORLEVEL% equ 0 goto checkIgniteHome1
     echo %0, ERROR:
     echo The version of JAVA installed in %JAVA_HOME% is incorrect.
     echo Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8.
@@ -48,33 +48,33 @@ if %ERRORLEVEL% equ 0 goto checkGridGainHome1
 goto error_finish
 
 :: Check IGNITE_HOME.
-:checkGridGainHome1
-if defined IGNITE_HOME goto checkGridGainHome2
+:checkIgniteHome1
+if defined IGNITE_HOME goto checkIgniteHome2
     pushd "%~dp0"/..
     set IGNITE_HOME=%CD%
     popd
 
-:checkGridGainHome2
+:checkIgniteHome2
 :: Strip double quotes from IGNITE_HOME
 set IGNITE_HOME=%IGNITE_HOME:"=%
 
 :: remove all trailing slashes from IGNITE_HOME.
 if %IGNITE_HOME:~-1,1% == \ goto removeTrailingSlash
 if %IGNITE_HOME:~-1,1% == / goto removeTrailingSlash
-goto checkGridGainHome3
+goto checkIgniteHome3
 
 :removeTrailingSlash
 set IGNITE_HOME=%IGNITE_HOME:~0,-1%
-goto checkGridGainHome2
+goto checkIgniteHome2
 
-:checkGridGainHome3
-if exist "%IGNITE_HOME%\config" goto checkGridGainHome4
+:checkIgniteHome3
+if exist "%IGNITE_HOME%\config" goto checkIgniteHome4
     echo %0, ERROR: GridGain installation folder is not found or IGNITE_HOME environment variable is not valid.
     echo Please create IGNITE_HOME environment variable pointing to location of
     echo GridGain installation folder.
     goto error_finish
 
-:checkGridGainHome4
+:checkIgniteHome4
 
 ::
 :: Set SCRIPTS_HOME - base path to scripts.
