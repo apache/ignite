@@ -337,6 +337,9 @@ public class CacheConfiguration extends MutableConfiguration {
      */
     private boolean readFromBackup = DFLT_READ_FROM_BACKUP;
 
+    /** Collection of type metadata. */
+    private Collection<CacheTypeMetadata> typeMeta;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -419,6 +422,7 @@ public class CacheConfiguration extends MutableConfiguration {
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
         writeSync = cc.getWriteSynchronizationMode();
+        typeMeta = cc.getTypeMetadata();
     }
 
     /**
@@ -1716,6 +1720,25 @@ public class CacheConfiguration extends MutableConfiguration {
     public void setKeepPortableInStore(boolean keepPortableInStore) {
         this.keepPortableInStore = keepPortableInStore;
     }
+
+    /**
+     * Gets collection of type metadata objects.
+     *
+     * @return Collection of type metadata.
+     */
+    public Collection<CacheTypeMetadata> getTypeMetadata() {
+        return typeMeta;
+    }
+
+    /**
+     * Sets collection of type metadata objects.
+     *
+     * @param typeMeta Collection of type metadata.
+     */
+    public void setTypeMetadata(Collection<CacheTypeMetadata> typeMeta) {
+        this.typeMeta = typeMeta;
+    }
+
 
     /**
      * Gets query configuration. Query configuration defines which fields should be indexed for objects
