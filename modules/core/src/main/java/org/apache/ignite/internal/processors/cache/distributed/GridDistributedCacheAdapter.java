@@ -207,11 +207,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
          * {@inheritDoc}
          */
         @Override public Object call() throws Exception {
-            final IgniteKernal grid = (IgniteKernal)ignite;
-
-            final GridCache<K,V> cache = grid.cachex(cacheName);
-
-            GridCacheAdapter<K, V> cacheAdapter = grid.context().cache().internalCache(cacheName);
+            GridCacheAdapter<K, V> cacheAdapter = ((IgniteKernal)ignite).context().cache().internalCache(cacheName);
 
             final GridCacheContext<K, V> ctx = cacheAdapter.context();
 
@@ -223,7 +219,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
             GridDhtCacheAdapter<K, V> dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
 
-            IgniteDataLoader<K, V> dataLdr = grid.dataLoader(cacheName);
+            IgniteDataLoader<K, V> dataLdr = ignite.dataLoader(cacheName);
 
             for (GridDhtLocalPartition<K, V> locPart : dht.topology().currentLocalPartitions()) {
                 if (!locPart.isEmpty() && locPart.primary(topVer)) {
