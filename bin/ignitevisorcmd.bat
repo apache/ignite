@@ -104,7 +104,7 @@ if %ERRORLEVEL% neq 0 (
 ::
 :: Set program name.
 ::
-set PROG_NAME=gridgain.bat
+set PROG_NAME=ignite.bat
 if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 
 ::

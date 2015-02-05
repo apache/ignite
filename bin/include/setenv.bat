@@ -41,7 +41,7 @@ set IGNITE_LIBS=%IGNITE_HOME%\libs\*
 
 for /D %%F in (%IGNITE_HOME%\libs\*) do if not "%%F" == "%IGNITE_HOME%\libs\optional" call :concat %%F\*
 
-if exist %IGNITE_HOME%\libs\gridgain-hadoop set HADOOP_EDITION=1
+if exist %IGNITE_HOME%\libs\ignite-hadoop set HADOOP_EDITION=1
 
 if defined USER_LIBS set IGNITE_LIBS=%USER_LIBS%;%IGNITE_LIBS%
 
