@@ -175,9 +175,6 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     @GridInternal
     private static class GlobalRemoveAllCallable<K,V> implements Callable<Object>, Externalizable {
         /** */
-        private static final long REMOVE_ALL_BATCH_SIZE = 100L;
-
-        /** */
         private static final long serialVersionUID = 0L;
 
         /** Cache name. */
@@ -226,24 +223,16 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
             GridDhtCacheAdapter<K, V> dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
 
-            Collection<K> keys = new ArrayList<>();
+            IgniteDataLoader<K, V> dataLdr = grid.dataLoader(cacheName);
 
             for (GridDhtLocalPartition<K, V> locPart : dht.topology().currentLocalPartitions()) {
                 if (!locPart.isEmpty() && locPart.primary(topVer)) {
-                    for (GridDhtCacheEntry<K, V> o : locPart.entries()) {
-                        keys.add(o.key());
-
-                        if (keys.size() >= REMOVE_ALL_BATCH_SIZE) {
-                            cache.removeAll(keys);
-
-                            keys.clear();
-                        }
-                    }
+                    for (GridDhtCacheEntry<K, V> o : locPart.entries())
+                        dataLdr.removeData(o.key());
                 }
             }
 
-            if (!keys.isEmpty())
-                cache.removeAll(keys);
+            dataLdr.close();
 
             return null;
         }
