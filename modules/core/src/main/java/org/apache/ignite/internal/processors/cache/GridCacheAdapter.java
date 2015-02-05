@@ -4185,21 +4185,30 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         int size = 0;
 
-        if (heap) {
-            if (near)
-                size += nearSize();
+        if (ctx.isLocal()) {
+            primary = true;
+            backup = true;
 
-            GridCacheAdapter cache = ctx.isNear() ? ctx.near().dht() : ctx.cache();
+            if (heap)
+                size += size();
+        }
+        else {
+            if (heap) {
+                if (near)
+                    size += nearSize();
 
-            if (!(primary && backup)) {
-                if (primary)
-                    size += cache.primarySize();
+                GridCacheAdapter cache = ctx.isNear() ? ctx.near().dht() : ctx.cache();
 
-                if (backup)
-                    size += (cache.size() - cache.primarySize());
+                if (!(primary && backup)) {
+                    if (primary)
+                        size += cache.primarySize();
+
+                    if (backup)
+                        size += (cache.size() - cache.primarySize());
+                }
+                else
+                    size += cache.size();
             }
-            else
-                size += cache.size();
         }
 
         // Swap and offheap are disabled for near cache.
