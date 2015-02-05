@@ -15,30 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.hadoop;
+package org.apache.ignite.internal.processors.hadoop;
+
+import java.util.*;
 
 /**
- * Hadoop counter.
+ * Counters store.
  */
-public interface GridHadoopCounter {
+public interface GridHadoopCounters {
     /**
-     * Gets name.
+     * Returns counter for the specified group and counter name. Creates new if it does not exist.
      *
-     * @return Name of the counter.
+     * @param grp Counter group name.
+     * @param name Counter name.
+     * @param cls Class for new instance creation if it's needed.
+     * @return The counter that was found or added or {@code null} if create is false.
      */
-    public String name();
+    <T extends GridHadoopCounter> T counter(String grp, String name, Class<T> cls);
 
     /**
-     * Gets counter group.
+     * Returns all existing counters.
      *
-     * @return Counter group's name.
+     * @return Collection of counters.
      */
-    public String group();
+    Collection<GridHadoopCounter> all();
 
     /**
-     * Merge the given counter to this counter.
+     * Merges all counters from another store with existing counters.
      *
-     * @param cntr Counter to merge into this counter.
+     * @param other Counters to merge with.
      */
-    public void merge(GridHadoopCounter cntr);
+    void merge(GridHadoopCounters other);
 }

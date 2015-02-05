@@ -15,26 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.hadoop;
+package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.*;
 
 /**
- * Task output.
+ * The object that writes some system counters to some storage for each running job. This operation is a part of
+ * whole statistics collection process.
  */
-public interface GridHadoopTaskOutput extends AutoCloseable {
+public interface GridHadoopCounterWriter {
     /**
-     * Writes key and value to the output.
+     * Writes counters of given job to some statistics storage.
      *
-     * @param key Key.
-     * @param val Value.
-     */
-    public void write(Object key, Object val) throws IgniteCheckedException;
-
-    /**
-     * Closes output.
-     *
+     * @param jobInfo Job info.
+     * @param jobId Job id.
+     * @param cntrs Counters.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void close() throws IgniteCheckedException;
+    public void write(GridHadoopJobInfo jobInfo, GridHadoopJobId jobId, GridHadoopCounters cntrs) throws IgniteCheckedException;
 }

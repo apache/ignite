@@ -15,40 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.hadoop;
+package org.apache.ignite.internal.processors.hadoop;
 
-import java.io.*;
+import org.apache.ignite.*;
 
 /**
- * Abstract fragment of an input data source.
+ * Task output.
  */
-public abstract class GridHadoopInputSplit implements Externalizable {
-    /** */
-    protected String[] hosts;
+public interface GridHadoopTaskOutput extends AutoCloseable {
+    /**
+     * Writes key and value to the output.
+     *
+     * @param key Key.
+     * @param val Value.
+     */
+    public void write(Object key, Object val) throws IgniteCheckedException;
 
     /**
-     * Array of hosts where this input split resides.
+     * Closes output.
      *
-     * @return Hosts.
+     * @throws IgniteCheckedException If failed.
      */
-    public String[] hosts() {
-        assert hosts != null;
-
-        return hosts;
-    }
-
-    /**
-     * This method must be implemented for purpose of internal implementation.
-     *
-     * @param obj Another object.
-     * @return {@code true} If objects are equal.
-     */
-    @Override public abstract boolean equals(Object obj);
-
-    /**
-     * This method must be implemented for purpose of internal implementation.
-     *
-     * @return Hash code of the object.
-     */
-    @Override public abstract int hashCode();
+    @Override public void close() throws IgniteCheckedException;
 }

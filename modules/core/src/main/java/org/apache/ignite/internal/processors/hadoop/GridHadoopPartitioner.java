@@ -15,41 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.hadoop;
-
-import org.apache.ignite.*;
-
-import java.util.*;
+package org.apache.ignite.internal.processors.hadoop;
 
 /**
- * Task input.
+ * Partitioner.
  */
-public interface GridHadoopTaskInput extends AutoCloseable {
+public interface GridHadoopPartitioner {
     /**
-     * Moves cursor to the next element.
+     * Gets partition which is actually a reducer index for the given key and value pair.
      *
-     * @return {@code false} If input is exceeded.
+     * @param key Key.
+     * @param val Value.
+     * @param parts Number of partitions.
+     * @return Partition.
      */
-    boolean next();
-
-    /**
-     * Gets current key.
-     *
-     * @return Key.
-     */
-    Object key();
-
-    /**
-     * Gets values for current key.
-     *
-     * @return Values.
-     */
-    Iterator<?> values();
-
-    /**
-     * Closes input.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    @Override public void close() throws IgniteCheckedException;
+    public int partition(Object key, Object val, int parts);
 }
