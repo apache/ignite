@@ -15,7 +15,7 @@
 #  limitations under the License.
 
 #
-# This is a collection of utility functions to be used in other GridGain scripts.
+# This is a collection of utility functions to be used in other Ignite scripts.
 # Before calling any function from this file you have to import it:
 #   if [ "${IGNITE_HOME}" = "" ];
 #       then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
@@ -76,7 +76,7 @@ checkJava() {
 #
 # Discovers IGNITE_HOME environment variable.
 # The function expects IGNITE_HOME_TMP variable is set and points to the directory where the callee script resides.
-# The function exports IGNITE_HOME variable with path to GridGain home directory.
+# The function exports IGNITE_HOME variable with path to Ignite home directory.
 #
 setGridGainHome() {
     #
