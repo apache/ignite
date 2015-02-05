@@ -148,7 +148,7 @@ object scalar extends ScalarConversions {
             " _____ \\ _  ___/_  __ `/__  / _  __ `/__  ___/ " + NL +
             " ____/ / / /__  / /_/ / _  /  / /_/ / _  /     " + NL +
             " /____/  \\___/  \\__,_/  /_/   \\__,_/  /_/      " + NL + NL +
-            " GRIDGAIN SCALAR" +
+            " IGNITE SCALAR" +
             " " + COPYRIGHT + NL
 
         println(s)
