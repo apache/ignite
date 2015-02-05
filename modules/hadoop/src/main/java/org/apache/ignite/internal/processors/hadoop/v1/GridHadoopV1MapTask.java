@@ -21,7 +21,6 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.util.*;
 import org.apache.ignite.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.v2.*;
 

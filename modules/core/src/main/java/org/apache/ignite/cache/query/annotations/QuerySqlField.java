@@ -42,16 +42,6 @@ public @interface QuerySqlField {
     boolean index() default false;
 
     /**
-     * Specifies whether index should be unique or not. This property only
-     * makes sense if {@link #index()} property is set to {@code true}.
-     *
-     * @return {@code True} if field index should be unique.
-     * @deprecated No longer supported, will be ignored.
-     */
-    @Deprecated
-    boolean unique() default false;
-
-    /**
      * Specifies whether index should be in descending order or not. This property only
      * makes sense if {@link #index()} property is set to {@code true}.
      *

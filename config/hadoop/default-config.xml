@@ -94,7 +94,7 @@
             Apache Hadoop Accelerator configuration.
         -->
         <property name="hadoopConfiguration">
-            <bean class="org.apache.ignite.hadoop.GridHadoopConfiguration">
+            <bean class="org.apache.ignite.internal.processors.hadoop.GridHadoopConfiguration">
                 <!-- Information about finished jobs will be kept for 30 seconds. -->
                 <property name="finishedJobInfoTtl" value="30000"/>
             </bean>

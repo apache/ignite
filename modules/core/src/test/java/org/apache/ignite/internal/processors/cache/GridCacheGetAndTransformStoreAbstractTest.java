@@ -61,7 +61,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        cache().clearAll();
+        cache().clear();
 
         store.reset();
     }
@@ -158,7 +158,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
             stopGrid(2);
 
             while (!cache().isEmpty())
-                cache().globalClearAll(Long.MAX_VALUE);
+                cache().clear(Long.MAX_VALUE);
         }
     }
 

@@ -885,10 +885,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridCacheClearAllRunnable<K, V>> splitClearAll() {
+    @Override public List<GridCacheClearAllRunnable<K, V>> splitClearLocally() {
         CacheDistributionMode mode = configuration().getDistributionMode();
 
-        return (mode == PARTITIONED_ONLY || mode == NEAR_PARTITIONED) ? super.splitClearAll() :
+        return (mode == PARTITIONED_ONLY || mode == NEAR_PARTITIONED) ? super.splitClearLocally() :
             Collections.<GridCacheClearAllRunnable<K, V>>emptyList();
     }
 

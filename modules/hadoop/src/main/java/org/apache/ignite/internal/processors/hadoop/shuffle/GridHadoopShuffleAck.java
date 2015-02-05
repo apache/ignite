@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle;
 
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.message.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.apache.ignite.hadoop.*;
-
 /**
  * External test for sorting.
  */

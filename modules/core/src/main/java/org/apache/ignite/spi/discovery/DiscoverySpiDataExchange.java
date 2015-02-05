@@ -33,12 +33,12 @@ public interface DiscoverySpiDataExchange {
      * @param nodeId ID of new node that joins topology.
      * @return Collection of discovery data objects from different components.
      */
-    public List<Object> collect(UUID nodeId);
+    public Map<Integer, Object> collect(UUID nodeId);
 
     /**
      * Notifies discovery manager about data received from remote node.
      *
      * @param data Collection of discovery data objects from different components.
      */
-    public void onExchange(List<Object> data);
+    public void onExchange(Map<Integer, Object> data);
 }

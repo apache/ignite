@@ -21,12 +21,11 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.plugin.*;
 import org.apache.ignite.internal.product.*;
+import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.*;
-import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
 import org.springframework.beans.factory.*;
@@ -299,13 +298,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoop hadoop() {
-        assert g != null;
-
-        return g.hadoop();
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public IgniteStreamer streamer(@Nullable String name) {
         assert g != null;
 
@@ -322,6 +314,71 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
         g.close();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {
+        assert g != null;
+
+        return g.atomicSequence(name, initVal, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
+        assert g != null;
+
+        return g.atomicLong(name, initVal, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteAtomicReference<T> atomicReference(String name,
+        @Nullable T initVal,
+        boolean create)
+    {
+        assert g != null;
+
+        return g.atomicReference(name, initVal, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
+        @Nullable T initVal,
+        @Nullable S initStamp,
+        boolean create)
+    {
+        assert g != null;
+
+        return g.atomicStamped(name, initVal, initStamp, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteCountDownLatch countDownLatch(String name,
+        int cnt,
+        boolean autoDel,
+        boolean create)
+    {
+        assert g != null;
+
+        return g.countDownLatch(name, cnt, autoDel, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteQueue<T> queue(String name,
+        int cap,
+        IgniteCollectionConfiguration cfg)
+    {
+        assert g != null;
+
+        return g.queue(name, cap, cfg);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteSet<T> set(String name,
+        IgniteCollectionConfiguration cfg)
+    {
+        assert g != null;
+
+        return g.set(name, cfg);
     }
 
     /** {@inheritDoc} */

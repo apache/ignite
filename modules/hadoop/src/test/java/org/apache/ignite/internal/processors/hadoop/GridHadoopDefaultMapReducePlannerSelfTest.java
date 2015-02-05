@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.fs.mapreduce.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.fs.*;
@@ -929,6 +928,11 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
             assert F.eq("ggfs", name);
 
             return GGFS;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridHadoop hadoop() {
+            return null;
         }
 
         /** {@inheritDoc} */

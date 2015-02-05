@@ -156,7 +156,7 @@
                         <bean class="org.apache.ignite.cache.query.CacheQueryConfiguration">
                             <property name="typeMetadata">
                                 <list>
-                                    <bean class="org.apache.ignite.cache.query.CacheQueryTypeMetadata">
+                                    <bean class="org.apache.ignite.cache.CacheTypeMetadata">
                                         <property name="type" value="GridPortablePerson"/>
                                         <property name="ascendingFields">
                                             <map>
@@ -174,7 +174,7 @@
                                             </list>
                                         </property>
                                     </bean>
-                                    <bean class="org.apache.ignite.cache.query.CacheQueryTypeMetadata">
+                                    <bean class="org.apache.ignite.cache.CacheTypeMetadata">
                                         <property name="type" value="GridImplicitPortablePerson"/>
                                         <property name="ascendingFields">
                                             <map>
@@ -187,7 +187,7 @@
                                             </map>
                                         </property>
                                     </bean>
-                                    <bean class="org.apache.ignite.cache.query.CacheQueryTypeMetadata">
+                                    <bean class="org.apache.ignite.cache.CacheTypeMetadata">
                                         <property name="type" value="GridNoDefPortablePerson"/>
                                         <property name="ascendingFields">
                                             <map>
