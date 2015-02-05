@@ -17,9 +17,8 @@
 
 package org.apache.ignite.scalar.pimps
 
-import org.apache.ignite._
-import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterNode}
-import org.apache.ignite.lang.{IgniteFuture, IgniteFutureCancelledException, IgnitePredicate}
+import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterGroup, ClusterNode}
+import org.apache.ignite.lang.{IgniteFuture, IgnitePredicate}
 import org.jetbrains.annotations._
 
 /**
@@ -376,7 +375,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      */
     def callAsync$[R](@Nullable s: Seq[Call[R]], @Nullable p: NF):
         IgniteFuture[java.util.Collection[R]] = {
-        val comp = value.ignite().compute(forPredicate(p)).enableAsync()
+        val comp = value.ignite().compute(forPredicate(p)).withAsync()
 
         comp.call[R](toJavaCollection(s, (f: Call[R]) => toCallable(f)))
 
@@ -436,7 +435,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @see `org.apache.ignite.cluster.ClusterGroup.call(...)`
      */
     def runAsync$(@Nullable s: Seq[Run], @Nullable p: NF): IgniteFuture[_] = {
-        val comp = value.ignite().compute(forPredicate(p)).enableAsync()
+        val comp = value.ignite().compute(forPredicate(p)).withAsync()
 
         comp.run(toJavaCollection(s, (f: Run) => toRunnable(f)))
 
@@ -495,7 +494,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
     def reduceAsync$[R1, R2](s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): IgniteFuture[R2] = {
         assert(s != null && r != null)
 
-        val comp = value.ignite().compute(forPredicate(p)).enableAsync()
+        val comp = value.ignite().compute(forPredicate(p)).withAsync()
 
         comp.call(toJavaCollection(s, (f: Call[R1]) => toCallable(f)), r)
 
@@ -599,8 +598,8 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *      Note that in case of dynamic projection this method will take a snapshot of all the
      *      nodes at the time of this call, apply all filtering predicates, if any, and if the
      *      resulting collection of nodes is empty - the exception will be thrown.
-     * @throws IgniteInterruptedException Subclass of `IgniteCheckedException` thrown if the wait was interrupted.
-     * @throws IgniteFutureCancelledException Subclass of `IgniteCheckedException` thrown if computation was cancelled.
+     * @throws IgniteInterruptedException Subclass of `IgniteException` thrown if the wait was interrupted.
+     * @throws IgniteFutureCancelledException Subclass of `IgniteException` thrown if computation was cancelled.
      */
     def affinityRun$(cacheName: String, @Nullable affKey: Any, @Nullable r: Run, @Nullable p: NF) {
         affinityRunAsync$(cacheName, affKey, r, p).get
@@ -639,17 +638,17 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *      If `null` - this method is no-op.
      * @param p Optional filtering predicate. If `null` provided - all nodes in this projection will be used for topology.
      * @throws IgniteCheckedException Thrown in case of any error.
-     * @throws ClusterGroupEmptyException Thrown in case when this projection is empty.
+     * @throws ClusterGroupEmptyCheckedException Thrown in case when this projection is empty.
      *      Note that in case of dynamic projection this method will take a snapshot of all the
      *      nodes at the time of this call, apply all filtering predicates, if any, and if the
      *      resulting collection of nodes is empty - the exception will be thrown.
      * @return Non-cancellable future of this execution.
-     * @throws IgniteInterruptedException Subclass of `IgniteCheckedException` thrown if the wait was interrupted.
-     * @throws IgniteFutureCancelledException Subclass of `IgniteCheckedException` thrown if computation was cancelled.
+     * @throws IgniteInterruptedException Subclass of `IgniteException` thrown if the wait was interrupted.
+     * @throws IgniteFutureCancelledException Subclass of `IgniteException` thrown if computation was cancelled.
      */
     def affinityRunAsync$(cacheName: String, @Nullable affKey: Any, @Nullable r: Run,
         @Nullable p: NF): IgniteFuture[_] = {
-        val comp = value.ignite().compute(forPredicate(p)).enableAsync()
+        val comp = value.ignite().compute(forPredicate(p)).withAsync()
 
         comp.affinityRun(cacheName, affKey, toRunnable(r))
 

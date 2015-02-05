@@ -21,14 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.managed.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -141,8 +141,8 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testSameConfiguration() throws Exception {
         String name = "dupService";
 
-        IgniteManaged svcs1 = randomGrid().managed().enableAsync();
-        IgniteManaged svcs2 = randomGrid().managed().enableAsync();
+        IgniteManaged svcs1 = randomGrid().managed().withAsync();
+        IgniteManaged svcs2 = randomGrid().managed().withAsync();
 
         svcs1.deployClusterSingleton(name, new DummyService());
 
@@ -170,8 +170,8 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testDifferentConfiguration() throws Exception {
         String name = "dupService";
 
-        IgniteManaged svcs1 = randomGrid().managed().enableAsync();
-        IgniteManaged svcs2 = randomGrid().managed().enableAsync();
+        IgniteManaged svcs1 = randomGrid().managed().withAsync();
+        IgniteManaged svcs2 = randomGrid().managed().withAsync();
 
         svcs1.deployClusterSingleton(name, new DummyService());
 
@@ -192,7 +192,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
             fail("Failed to receive mismatching configuration exception.");
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Received mismatching configuration exception: " + e.getMessage());
         }
     }
@@ -255,7 +255,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        IgniteManaged svcs = g.managed().enableAsync();
+        IgniteManaged svcs = g.managed().withAsync();
 
         svcs.deployNodeSingleton(name, new DummyService());
 
@@ -287,7 +287,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        IgniteManaged svcs = g.managed().enableAsync();
+        IgniteManaged svcs = g.managed().withAsync();
 
         svcs.deployClusterSingleton(name, new DummyService());
 
@@ -320,7 +320,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         String name = "serviceAffinity";
 
-        IgniteManaged svcs = g.managed().enableAsync();
+        IgniteManaged svcs = g.managed().withAsync();
 
         svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
                 CACHE_NAME, affKey);
@@ -348,7 +348,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        IgniteManaged svcs = g.managed().enableAsync();
+        IgniteManaged svcs = g.managed().withAsync();
 
         svcs.deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
 
@@ -382,7 +382,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        IgniteManaged svcs = g.managed().enableAsync();
+        IgniteManaged svcs = g.managed().withAsync();
 
         svcs.deployMultiple(name, new DummyService(), cnt, 3);
 

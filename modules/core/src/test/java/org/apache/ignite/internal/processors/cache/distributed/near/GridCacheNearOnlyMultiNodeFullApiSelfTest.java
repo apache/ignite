@@ -23,18 +23,18 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
@@ -233,7 +233,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         for (String key : keys)
             assertEquals(vals.get(key), nearCache.peek(key));
 
-        nearCache.clearAll();
+        nearCache.clear();
 
         for (String key : keys)
             assertNull(nearCache.peek(key));
@@ -248,21 +248,21 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         assertTrue(nearCache.lock(first, 0L));
 
-        nearCache.clearAll();
+        nearCache.clear();
 
         assertEquals(vals.get(first), nearCache.peek(first));
         assertEquals(vals.get(first), primary.peek(first));
 
         nearCache.unlock(first);
 
-        nearCache.projection(gte100).clear(first);
+        nearCache.projection(gte100).clearLocally(first);
 
         assertEquals(vals.get(first), nearCache.peek(first));
         assertEquals(vals.get(first), primary.peek(first));
 
         nearCache.put(first, 101);
 
-        nearCache.projection(gte100).clear(first);
+        nearCache.projection(gte100).clearLocally(first);
 
         assertTrue(nearCache.isEmpty());
         assertFalse(primary.isEmpty());
@@ -280,7 +280,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         nearCache.put(first, 101);
         vals.put(first, 101);
 
-        nearCache.projection(gte100).clear(first);
+        nearCache.projection(gte100).clearLocally(first);
 
         for (String key : keys)
             assertEquals(vals.get(key), primary.peek(key));
@@ -319,7 +319,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         nearCache.putAll(vals);
 
         for (String subKey : subKeys)
-            nearCache.clear(subKey);
+            nearCache.clearLocally(subKey);
 
         for (String key : subKeys) {
             assertNull(nearCache.peek(key));
@@ -328,14 +328,14 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         assertEquals(vals.get(lastKey), nearCache.peek(lastKey));
 
-        nearCache.clearAll();
+        nearCache.clear();
 
         vals.put(lastKey, 102);
 
         nearCache.putAll(vals);
 
         for (String key : keys)
-            nearCache.projection(gte100).clear(key);
+            nearCache.projection(gte100).clearLocally(key);
 
         assertNull(nearCache.peek(lastKey));
 
@@ -345,7 +345,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
     /** {@inheritDoc} */
     @Override public void testGlobalClearAll() throws Exception {
-        // Save entries only on their primary nodes. If we didn't do so, clearAll() will not remove all entries
+        // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
         // because some of them were blocked due to having readers.
         for (int i = 0; i < gridCount(); i++) {
             if (i != nearIdx)
@@ -353,7 +353,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
                     cache(i).put(key, 1);
         }
 
-        cache().globalClearAll();
+        cache().clear();
 
         for (int i = 0; i < gridCount(); i++)
             assertTrue(String.valueOf(cache(i).entrySet()), cache(i).isEmpty());

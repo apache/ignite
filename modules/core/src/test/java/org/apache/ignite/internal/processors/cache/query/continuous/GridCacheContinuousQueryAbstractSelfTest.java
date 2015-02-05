@@ -19,23 +19,24 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.datastructures.*;
+import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.processors.continuous.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
@@ -162,7 +163,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             assertEquals("Cache is not empty: " + grid(i).cache(null).entrySet(), 0, grid(i).cache(null).size());
 
         for (int i = 0; i < gridCount(); i++) {
-            GridContinuousProcessor proc = ((GridKernal)grid(i)).context().continuous();
+            GridContinuousProcessor proc = ((IgniteKernal)grid(i)).context().continuous();
 
             assertEquals(String.valueOf(i), 2, ((Map)U.field(proc, "locInfos")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "rmtInfos")).size());
@@ -173,7 +174,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "pending")).size());
 
             GridCacheContinuousQueryManager mgr =
-                ((GridKernal)grid(i)).context().cache().internalCache().context().continuousQueries();
+                ((IgniteKernal)grid(i)).context().cache().internalCache().context().continuousQueries();
 
             assertEquals(0, ((Map)U.field(mgr, "lsnrs")).size());
         }
@@ -270,7 +271,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
                     return null;
                 }
             },
-            ClusterTopologyException.class,
+            ClusterTopologyCheckedException.class,
             null
         );
 
@@ -1248,7 +1249,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         try {
             qry.execute();
 
-            cache.dataStructures().atomicLong("long", 0, true);
+            cache.putx(new GridCacheInternalKeyImpl("test"), 1);
 
             cache.putx(1, 1);
             cache.putx(2, 2);

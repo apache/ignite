@@ -21,17 +21,16 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -73,7 +72,7 @@ public class GridCacheSharedContext<K, V> {
     private volatile IgniteTxMetricsAdapter txMetrics;
 
     /** Preloaders start future. */
-    private IgniteFuture<Object> preloadersStartFut;
+    private IgniteInternalFuture<Object> preloadersStartFut;
 
     /**
      * @param txMgr Transaction manager.
@@ -195,12 +194,12 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Compound preloaders start future.
      */
-    public IgniteFuture<Object> preloadersStartFuture() {
+    public IgniteInternalFuture<Object> preloadersStartFuture() {
         if (preloadersStartFut == null) {
             GridCompoundFuture<Object, Object> compound = null;
 
             for (GridCacheContext<K, V> cacheCtx : cacheContexts()) {
-                IgniteFuture<Object> startFut = cacheCtx.preloader().startFuture();
+                IgniteInternalFuture<Object> startFut = cacheCtx.preloader().startFuture();
 
                 if (!startFut.isDone()) {
                     if (compound == null)
@@ -381,7 +380,7 @@ public class GridCacheSharedContext<K, V> {
      * @return {@code true} if waiting was successful.
      */
     @SuppressWarnings({"unchecked"})
-    public IgniteFuture<?> partitionReleaseFuture(long topVer) {
+    public IgniteInternalFuture<?> partitionReleaseFuture(long topVer) {
         GridCompoundFuture f = new GridCompoundFuture(kernalCtx);
 
         f.add(mvcc().finishExplicitLocks(topVer));
@@ -399,7 +398,7 @@ public class GridCacheSharedContext<K, V> {
      * @param cacheCtx Cache context.
      * @return {@code True} if cross-cache transaction can include this new cache.
      */
-    public boolean txCompatible(IgniteTxEx<K, V> tx, Iterable<Integer> activeCacheIds, GridCacheContext<K, V> cacheCtx) {
+    public boolean txCompatible(IgniteInternalTx<K, V> tx, Iterable<Integer> activeCacheIds, GridCacheContext<K, V> cacheCtx) {
         if (cacheCtx.system() ^ tx.system())
             return false;
 
@@ -419,7 +418,7 @@ public class GridCacheSharedContext<K, V> {
      * @throws CacheFlagException If given flags are conflicting with given transaction.
      */
     public void checkTxFlags(@Nullable Collection<CacheFlag> flags) throws CacheFlagException {
-        IgniteTxEx tx = tm().userTxx();
+        IgniteInternalTx tx = tm().userTxx();
 
         if (tx == null || F.isEmpty(flags))
             return;
@@ -446,7 +445,7 @@ public class GridCacheSharedContext<K, V> {
      * @param tx Transaction to close.
      * @throws IgniteCheckedException If failed.
      */
-    public void endTx(IgniteTxEx<K, V> tx) throws IgniteCheckedException {
+    public void endTx(IgniteInternalTx<K, V> tx) throws IgniteCheckedException {
         Collection<Integer> cacheIds = tx.activeCacheIds();
 
         if (!cacheIds.isEmpty()) {
@@ -461,7 +460,7 @@ public class GridCacheSharedContext<K, V> {
      * @param tx Transaction to commit.
      * @return Commit future.
      */
-    public IgniteFuture<IgniteTx> commitTxAsync(IgniteTxEx<K, V> tx) {
+    public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(IgniteInternalTx<K, V> tx) {
         Collection<Integer> cacheIds = tx.activeCacheIds();
 
         if (cacheIds.isEmpty())
@@ -483,7 +482,7 @@ public class GridCacheSharedContext<K, V> {
      * @param tx Transaction to rollback.
      * @throws IgniteCheckedException If failed.
      */
-    public IgniteFuture rollbackTxAsync(IgniteTxEx<K, V> tx) throws IgniteCheckedException {
+    public IgniteInternalFuture rollbackTxAsync(IgniteInternalTx<K, V> tx) throws IgniteCheckedException {
         Collection<Integer> cacheIds = tx.activeCacheIds();
 
         if (!cacheIds.isEmpty()) {

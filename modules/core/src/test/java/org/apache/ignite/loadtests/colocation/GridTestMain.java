@@ -20,9 +20,9 @@ package org.apache.ignite.loadtests.colocation;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.springframework.beans.factory.*;
 import org.springframework.context.support.*;
 
@@ -77,7 +77,7 @@ public class GridTestMain {
 
         long start = System.currentTimeMillis();
 
-        IgniteCompute comp = g.compute().enableAsync();
+        IgniteCompute comp = g.compute().withAsync();
 
         // Collocate computations and data.
         for (long i = 0; i < GridTestConstants.ENTRY_COUNT; i++) {

@@ -17,33 +17,33 @@
 
 package org.apache.ignite.scalar.examples
 
+import java.util
+
 import org.apache.ignite.compute.{ComputeJob, ComputeJobResult, ComputeTaskSplitAdapter}
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 
-import java.util
-
 import scala.collection.JavaConversions._
 
 /**
- * Demonstrates use of full grid task API using Scalar. Note that using task-based
- * grid enabling gives you all the advanced features of GridGain such as custom topology
+ * Demonstrates use of full ignite task API using Scalar. Note that using task-based
+ * ignite enabling gives you all the advanced features of Ignite such as custom topology
  * and collision resolution, custom failover, mapping, reduction, load balancing, etc.
  * As a trade off in such cases the more code needs to be written vs. simple closure execution.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
+ * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
  */
 object ScalarTaskExample extends App {
     scalar("examples/config/example-compute.xml") {
-        grid$.compute().execute(classOf[GridHelloWorld], "Hello Cloud World!")
+        ignite$.compute().execute(classOf[IgniteHelloWorld], "Hello Cloud World!")
     }
 
     /**
      * This task encapsulates the logic of MapReduce.
      */
-    class GridHelloWorld extends ComputeTaskSplitAdapter[String, Void] {
-        def split(gridSize: Int, arg: String): java.util.Collection[_ <: ComputeJob] = {
+    class IgniteHelloWorld extends ComputeTaskSplitAdapter[String, Void] {
+        def split(clusterSize: Int, arg: String): java.util.Collection[_ <: ComputeJob] = {
             (for (w <- arg.split(" ")) yield toJob(() => println(w))).toSeq
         }
 

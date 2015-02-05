@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.rest.client.message;
 
 import org.apache.ignite.internal.util.portable.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.portables.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -280,7 +280,7 @@ public class GridClientCacheRequest extends GridClientAbstractMessage {
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        U.writeEnum0(out, op);
+        U.writeEnum(out, op);
 
         U.writeString(out, cacheName);
 
@@ -298,7 +298,7 @@ public class GridClientCacheRequest extends GridClientAbstractMessage {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        op = GridCacheOperation.fromOrdinal(U.readEnumOrdinal0(in));
+        op = GridCacheOperation.fromOrdinal(in.readByte());
 
         cacheName = U.readString(in);
 

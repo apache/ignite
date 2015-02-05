@@ -21,9 +21,9 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.protocol.*;
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.marshaller.optimized.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 
@@ -41,7 +41,7 @@ import static org.apache.ignite.client.hadoop.GridHadoopClientProtocol.*;
  */
 public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
     /** Clients. */
-    private static final ConcurrentHashMap<String, IgniteFuture<GridClient>> cliMap = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, IgniteInternalFuture<GridClient>> cliMap = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public ClientProtocol create(Configuration conf) throws IOException {
@@ -96,12 +96,12 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
      */
     private static GridClient client(String addr) throws IOException {
         try {
-            IgniteFuture<GridClient> fut = cliMap.get(addr);
+            IgniteInternalFuture<GridClient> fut = cliMap.get(addr);
 
             if (fut == null) {
                 GridFutureAdapter<GridClient> fut0 = new GridFutureAdapter<>();
 
-                IgniteFuture<GridClient> oldFut = cliMap.putIfAbsent(addr, fut0);
+                IgniteInternalFuture<GridClient> oldFut = cliMap.putIfAbsent(addr, fut0);
 
                 if (oldFut != null)
                     return oldFut.get();

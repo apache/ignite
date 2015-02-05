@@ -21,9 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.messaging.*;
-import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -87,7 +87,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         // Wait for metrics update.
         latch.await();
 
-        ClusterNodeMetrics metrics = ignite.cluster().localNode().metrics();
+        ClusterMetrics metrics = ignite.cluster().localNode().metrics();
 
         info("Node metrics: " + metrics);
 
@@ -143,7 +143,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         // Wait for metrics update.
         latch.await();
 
-        ClusterNodeMetrics metrics = ignite.cluster().localNode().metrics();
+        ClusterMetrics metrics = ignite.cluster().localNode().metrics();
 
         info("Node metrics: " + metrics);
 
@@ -206,7 +206,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         latch.await();
 
-        ClusterNodeMetrics metrics = ignite0.cluster().localNode().metrics();
+        ClusterMetrics metrics = ignite0.cluster().localNode().metrics();
 
         info("Node 0 metrics: " + metrics);
 

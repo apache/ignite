@@ -28,14 +28,14 @@ public interface LifecycleAware {
     /**
      * Starts grid component, called on grid start.
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    public void start() throws IgniteCheckedException;
+    public void start() throws IgniteException;
 
     /**
      * Stops grid component, called on grid shutdown.
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    public void stop() throws IgniteCheckedException;
+    public void stop() throws IgniteException;
 }

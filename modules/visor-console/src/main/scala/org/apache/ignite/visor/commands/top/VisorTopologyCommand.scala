@@ -18,8 +18,7 @@
 package org.apache.ignite.visor.commands.top
 
 import org.apache.ignite.internal.GridNodeAttributes
-import org.apache.ignite.internal.util.GridUtils
-import org.apache.ignite.internal.util.typedef.internal.U
+import org.apache.ignite.internal.util.IgniteUtils
 import GridNodeAttributes._
 import org.apache.ignite.internal.util.typedef._
 
@@ -193,7 +192,7 @@ class VisorTopologyCommand {
             }
             catch {
                 case e: NumberFormatException => scold(e.getMessage)
-                case e: IgniteCheckedException => scold(e.getMessage)
+                case e: IgniteException => scold(e.getMessage)
             }
         }
     }
@@ -214,7 +213,7 @@ class VisorTopologyCommand {
         if (expr.isDefined)
             (n: ClusterNode) => f(n) && expr.get.apply(v(n))
         else
-            throw new IgniteCheckedException("Invalid expression: " + exprStr)
+            throw new IgniteException("Invalid expression: " + exprStr)
     }
 
     /**
@@ -276,7 +275,7 @@ class VisorTopologyCommand {
             nl()
         }
 
-        val neighborhood = GridUtils.neighborhood(nodes)
+        val neighborhood = IgniteUtils.neighborhood(nodes)
 
         val hostsT = VisorTextTable()
 
@@ -332,17 +331,17 @@ class VisorTopologyCommand {
 
         val m = grid.forNodes(nodes).metrics()
 
-        val freeHeap = (m.getAverageHeapMemoryMaximum - m.getAverageHeapMemoryUsed) * 100 /
-            m.getAverageHeapMemoryMaximum
+        val freeHeap = (m.getHeapMemoryMaximum - m.getHeapMemoryUsed) * 100 /
+          m.getHeapMemoryMaximum
 
         val sumT = VisorTextTable()
 
-        sumT += ("Total hosts", m.getTotalHosts)
-        sumT += ("Total nodes", m.getTotalNodes)
+        sumT += ("Total hosts", IgniteUtils.neighborhood(grid.nodes()).size)
+        sumT += ("Total nodes", grid.nodes().size)
         sumT += ("Total CPUs", m.getTotalCpus)
         sumT += ("Avg. CPU load", safePercent(m.getAverageCpuLoad * 100))
         sumT += ("Avg. free heap", formatDouble(freeHeap) + " %")
-        sumT += ("Avg. Up time", X.timeSpan2HMS(m.getAverageUpTime.toLong))
+        sumT += ("Avg. Up time", X.timeSpan2HMS(m.getUpTime.toLong))
         sumT += ("Snapshot time", formatDateTime(System.currentTimeMillis))
 
         println("Summary:")

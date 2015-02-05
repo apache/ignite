@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.indexing.*;
 import org.h2.engine.*;
 import org.h2.index.*;
 import org.h2.message.*;
@@ -57,7 +57,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param fs Filters.
      */
     public static void setFiltersForThread(GridIndexingQueryFilter fs) {
-        filters.set(fs);
+        if (fs == null)
+            filters.remove();
+        else
+            filters.set(fs);
     }
 
     /**

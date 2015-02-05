@@ -20,16 +20,19 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -40,8 +43,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 
 /**
@@ -273,7 +276,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             if (singleNodeId.equals(nodeId)) {
                 onDone(addFailedKeys(
                     singleReq.keys(),
-                    new ClusterTopologyException("Primary node left grid before response is received: " + nodeId)));
+                    new ClusterTopologyCheckedException("Primary node left grid before response is received: " + nodeId)));
 
                 return true;
             }
@@ -284,7 +287,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         GridNearAtomicUpdateRequest<K, V> req = mappings.get(nodeId);
 
         if (req != null) {
-            addFailedKeys(req.keys(), new ClusterTopologyException("Primary node left grid before response is " +
+            addFailedKeys(req.keys(), new ClusterTopologyCheckedException("Primary node left grid before response is " +
                 "received: " + nodeId));
 
             mappings.remove(nodeId);
@@ -302,7 +305,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         long mapTime0 = mapTime;
 
         if (mapTime0 > 0 && U.currentTimeMillis() > mapTime0 + timeout)
-            onDone(new CacheAtomicUpdateTimeoutException("Cache update timeout out " +
+            onDone(new CacheAtomicUpdateTimeoutCheckedException("Cache update timeout out " +
                 "(consider increasing networkTimeout configuration property)."));
     }
 
@@ -439,8 +442,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 snapshot = fut.topologySnapshot();
             }
             else {
-                fut.listenAsync(new CI1<IgniteFuture<Long>>() {
-                    @Override public void apply(IgniteFuture<Long> t) {
+                fut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                    @Override public void apply(IgniteInternalFuture<Long> t) {
                         mapOnTopology(keys, remap, oldNodeId);
                     }
                 });
@@ -498,7 +501,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 
         if (F.isEmpty(topNodes)) {
-            onDone(new ClusterTopologyException("Failed to map keys for cache (all partition nodes left the grid)."));
+            onDone(new ClusterTopologyCheckedException("Failed to map keys for cache (all partition nodes left the grid)."));
 
             return;
         }
@@ -548,15 +551,19 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
             // We still can get here if user pass map with single element.
             if (key == null) {
-                onDone(new GridCacheReturn<>(null, false));
+                NullPointerException err = new NullPointerException("Null key.");
 
-                return;
+                onDone(err);
+
+                throw err;
             }
 
             if (val == null && op != GridCacheOperation.DELETE) {
-                onDone(new GridCacheReturn<>(null, false));
+                NullPointerException err = new NullPointerException("Null value.");
 
-                return;
+                onDone(err);
+
+                throw err;
             }
 
             if (cctx.portableEnabled()) {
@@ -625,8 +632,13 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
             // Create mappings first, then send messages.
             for (K key : keys) {
-                if (key == null)
-                    continue;
+                if (key == null) {
+                    NullPointerException err = new NullPointerException("Null key.");
+
+                    onDone(err);
+
+                    throw err;
+                }
 
                 Object val;
                 long drTtl;
@@ -638,6 +650,14 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                     drTtl = -1;
                     drExpireTime = -1;
                     drVer = null;
+
+                    if (val == null) {
+                        NullPointerException err = new NullPointerException("Null value.");
+
+                        onDone(err);
+
+                        throw err;
+                    }
                 }
                 else if (drPutVals != null) {
                     GridCacheDrInfo<V> drPutVal =  drPutValsIt.next();

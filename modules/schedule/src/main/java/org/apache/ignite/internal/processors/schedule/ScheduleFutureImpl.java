@@ -20,13 +20,14 @@ package org.apache.ignite.internal.processors.schedule;
 import it.sauronsoftware.cron4j.*;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.scheduler.*;
 import org.apache.ignite.internal.processors.timeout.*;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.scheduler.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -76,8 +77,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
     private final AtomicBoolean descheduled = new AtomicBoolean(false);
 
     /** Listeners. */
-    private Collection<IgniteInClosure<? super IgniteFuture<R>>> lsnrs =
-        new ArrayList<>(1);
+    private Collection<IgniteInClosure<? super IgniteFuture<R>>> lsnrs = new ArrayList<>(1);
 
     /** Statistics. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
@@ -111,10 +111,10 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
     private int lastLsnrExecCnt;
 
     /** Synchronous notification flag. */
-    private volatile boolean syncNotify = IgniteSystemProperties.getBoolean(GG_FUT_SYNC_NOTIFICATION, true);
+    private volatile boolean syncNotify = IgniteSystemProperties.getBoolean(IGNITE_FUT_SYNC_NOTIFICATION, true);
 
     /** Concurrent notification flag. */
-    private volatile boolean concurNotify = IgniteSystemProperties.getBoolean(GG_FUT_CONCURRENT_NOTIFICATION, false);
+    private volatile boolean concurNotify = IgniteSystemProperties.getBoolean(IGNITE_FUT_CONCURRENT_NOTIFICATION, false);
 
     /** Mutex. */
     private final Object mux = new Object();
@@ -214,7 +214,8 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
      * @param latch Latch.
      * @param res Result.
      * @param err Error.
-     * @return {@code False} if future should be unschedule
+     * @param initErr Init error flag.
+     * @return {@code False} if future should be unscheduled.
      */
     private boolean onEnd(CountDownLatch latch, R res, Throwable err, boolean initErr) {
         assert latch != null;
@@ -442,7 +443,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public long[] nextExecutionTimes(int cnt, long start) throws IgniteCheckedException {
+    @Override public long[] nextExecutionTimes(int cnt, long start) {
         assert cnt > 0;
         assert start > 0;
 
@@ -470,8 +471,14 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public long nextExecutionTime() throws IgniteCheckedException {
+    @Override public long nextExecutionTime() {
         return nextExecutionTimes(1, U.currentTimeMillis())[0];
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean cancel(boolean mayInterruptIfRunning) {
+        return mayInterruptIfRunning && cancel();
+
     }
 
     /** {@inheritDoc} */
@@ -551,10 +558,10 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public R last() throws IgniteCheckedException {
+    @Override public R last() throws IgniteException {
         synchronized (mux) {
             if (lastErr != null)
-                throw U.cast(lastErr);
+                throw U.convertException(U.cast(lastErr));
 
             return lastRes;
         }
@@ -605,11 +612,12 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>>... lsnr) {
-        if (!F.isEmpty(lsnr))
-            synchronized (mux) {
-                lsnrs.removeAll(F.asList(lsnr));
-            }
+    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr) {
+        A.notNull(lsnr, "lsnr");
+
+        synchronized (mux) {
+            lsnrs.remove(lsnr);
+        }
     }
 
     /** {@inheritDoc} */
@@ -621,9 +629,29 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
             }
         };
 
-        listenAsync(new GridFutureChainListener<>(ctx, fut, doneCb));
+        listenAsync(new CI1<IgniteFuture<R>>() {
+            @Override public void apply(IgniteFuture<R> fut0) {
+                try {
+                    fut.onDone(doneCb.apply(fut0));
+                }
+                catch (GridClosureException e) {
+                    fut.onDone(e.unwrap());
+                }
+                catch (IgniteException e) {
+                    fut.onDone(e);
+                }
+                catch (RuntimeException | Error e) {
+                    U.warn(null, "Failed to notify chained future (is grid stopped?) [grid=" + ctx.gridName() +
+                        ", doneCb=" + doneCb + ", err=" + e.getMessage() + ']');
 
-        return fut;
+                    fut.onDone(e);
+
+                    throw e;
+                }
+            }
+        });
+
+        return new IgniteFutureImpl<>(fut);
     }
 
     /**
@@ -691,7 +719,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
      * Checks that the future is in valid state for get operation.
      *
      * @return Latch or {@code null} if future has been finished.
-     * @throws org.apache.ignite.lang.IgniteFutureCancelledException If was cancelled.
+     * @throws IgniteFutureCancelledException If was cancelled.
      */
     @Nullable private CountDownLatch ensureGet() throws IgniteFutureCancelledException {
         synchronized (mux) {
@@ -706,7 +734,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public R get() throws IgniteCheckedException {
+    @Nullable @Override public R get() {
         CountDownLatch latch = ensureGet();
 
         if (latch != null) {
@@ -730,12 +758,12 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public R get(long timeout) throws IgniteCheckedException {
+    @Override public R get(long timeout) {
         return get(timeout, MILLISECONDS);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public R get(long timeout, TimeUnit unit) throws IgniteCheckedException {
+    @Nullable @Override public R get(long timeout, TimeUnit unit) throws IgniteException {
         CountDownLatch latch = ensureGet();
 
         if (latch != null) {
@@ -806,9 +834,9 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override public R last() throws IgniteCheckedException {
+        @Override public R last() {
             if (err != null)
-                throw U.cast(err);
+                throw U.convertException(U.cast(err));
 
             return res;
         }
@@ -884,7 +912,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override public long[] nextExecutionTimes(int cnt, long start) throws IgniteCheckedException {
+        @Override public long[] nextExecutionTimes(int cnt, long start) {
             return ref.nextExecutionTimes(cnt, start);
         }
 
@@ -899,23 +927,28 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override public long nextExecutionTime() throws IgniteCheckedException {
+        @Override public long nextExecutionTime() {
             return ref.nextExecutionTime();
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public R get() throws IgniteCheckedException {
+        @Nullable @Override public R get() {
             return ref.get();
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public R get(long timeout) throws IgniteCheckedException {
+        @Override public R get(long timeout) {
             return ref.get(timeout);
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public R get(long timeout, TimeUnit unit) throws IgniteCheckedException {
+        @Nullable @Override public R get(long timeout, TimeUnit unit) {
             return ref.get(timeout, unit);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cancel(boolean mayInterruptIfRunning) {
+            return ref.cancel(mayInterruptIfRunning);
         }
 
         /** {@inheritDoc} */
@@ -939,7 +972,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>>... lsnr) {
+        @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr) {
             ref.stopListenAsync(lsnr);
         }
 

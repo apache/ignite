@@ -18,16 +18,16 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.scheduler.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.concurrent.*;
 
 /**
- * {@link org.apache.ignite.IgniteScheduler} implementation.
+ * {@link IgniteScheduler} implementation.
  */
 public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     /** */
@@ -57,7 +57,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
         guard();
 
         try {
-            return ctx.closure().runLocalSafe(r, false);
+            return new IgniteFutureImpl<>(ctx.closure().runLocalSafe(r, false));
         }
         finally {
             unguard();
@@ -71,7 +71,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
         guard();
 
         try {
-            return ctx.closure().callLocalSafe(c, false);
+            return new IgniteFutureImpl<>(ctx.closure().callLocalSafe(c, false));
         }
         finally {
             unguard();

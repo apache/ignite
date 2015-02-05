@@ -19,11 +19,11 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -80,7 +80,7 @@ public class GridTopologyBuildVersionSelfTest extends GridCommonAbstractTest {
 
         try {
             for (int i = 3; i >= 0; i--) {
-                GridKernal g = (GridKernal)grid(i);
+                IgniteKernal g = (IgniteKernal)grid(i);
 
                 NavigableMap<IgniteProductVersion, Collection<ClusterNode>> verMap = g.context().discovery()
                     .topologyVersionMap();

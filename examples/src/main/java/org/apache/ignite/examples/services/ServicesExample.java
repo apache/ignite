@@ -26,18 +26,24 @@ import org.apache.ignite.resources.*;
 import java.util.*;
 
 /**
- * Example that demonstrates how to deploy distributed services in GridGain.
- * Distributed services are especially useful when deploying singletons on the grid,
+ * Example that demonstrates how to deploy distributed services in Ignite.
+ * Distributed services are especially useful when deploying singletons on the ignite,
  * be that cluster-singleton, or per-node-singleton, etc...
  * <p>
  * To start remote nodes, you must run {@link ComputeNodeStartup} in another JVM
- * which will start GridGain node with {@code examples/config/example-compute.xml} configuration.
+ * which will start node with {@code examples/config/example-compute.xml} configuration.
  * <p>
  * NOTE:<br/>
- * Starting {@code ggstart.sh} directly will not work, as distributed services
+ * Starting {@code ignite.sh} directly will not work, as distributed services
  * cannot be peer-deployed and classes must be on the classpath for every node.
  */
 public class ServicesExample {
+    /**
+     * Executes example.
+     *
+     * @param args Command line arguments, none required.
+     * @throws Exception If example execution failed.
+     */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             ClusterGroup rmts = ignite.cluster().forRemotes();
@@ -81,7 +87,7 @@ public class ServicesExample {
     /**
      * Simple example to demonstrate service proxy invocation of a remotely deployed service.
      *
-     * @param ignite Grid instance.
+     * @param ignite Ignite instance.
      * @throws Exception If failed.
      */
     private static void serviceProxyExample(Ignite ignite) throws Exception {
@@ -111,7 +117,7 @@ public class ServicesExample {
     /**
      * Simple example to demonstrate how to inject service proxy into distributed closures.
      *
-     * @param ignite Grid instance.
+     * @param ignite Ignite instance.
      * @throws Exception If failed.
      */
     private static void serviceInjectionExample(Ignite ignite) throws Exception {

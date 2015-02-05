@@ -18,6 +18,7 @@
 package org.apache.ignite.client.hadoop;
 
 import org.apache.hadoop.conf.*;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.ipc.*;
@@ -32,7 +33,6 @@ import org.apache.hadoop.security.token.*;
 import org.apache.ignite.*;
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.hadoop.counter.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.proto.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

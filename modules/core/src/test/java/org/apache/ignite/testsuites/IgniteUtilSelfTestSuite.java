@@ -20,15 +20,15 @@ package org.apache.ignite.testsuites;
 import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.util.*;
-import org.apache.ignite.util.mbeans.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.*;
-import org.apache.ignite.thread.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.nio.impl.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.discovery.*;
+import org.apache.ignite.thread.*;
+import org.apache.ignite.util.*;
+import org.apache.ignite.util.mbeans.*;
 
 /**
  * Test suite for GridGain utility classes.
@@ -42,7 +42,7 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Util Test Suite");
 
         suite.addTestSuite(GridThreadPoolExecutorServiceSelfTest.class);
-        suite.addTestSuite(GridUtilsSelfTest.class);
+        suite.addTestSuite(IgniteUtilsSelfTest.class);
         suite.addTestSuite(GridSpinReadWriteLockSelfTest.class);
         suite.addTestSuite(GridQueueSelfTest.class);
         suite.addTestSuite(GridStringBuilderFactorySelfTest.class);
@@ -53,7 +53,7 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheUtilsSelfTest.class);
 
         // Metrics.
-        suite.addTestSuite(GridDiscoveryMetricsHelperSelfTest.class);
+        suite.addTestSuite(ClusterMetricsSnapshotSerializeSelfTest.class);
 
         // Unsafe.
         suite.addTestSuite(GridUnsafeMemorySelfTest.class);

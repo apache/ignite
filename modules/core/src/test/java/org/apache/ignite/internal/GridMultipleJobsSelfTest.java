@@ -20,12 +20,13 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -148,11 +149,11 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
                         throw new IgniteCheckedException("Could not instantiate a job.", e);
                     }
 
-                    IgniteCompute comp = ignite1.compute().enableAsync();
+                    IgniteCompute comp = ignite1.compute().withAsync();
 
                     comp.call(job);
 
-                    IgniteFuture<Boolean> fut = comp.future();
+                    ComputeTaskFuture<Boolean> fut = comp.future();
 
                     if (cnt % LOG_MOD == 0)
                         X.println("Submitted jobs: " + cnt);

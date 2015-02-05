@@ -17,12 +17,13 @@
 
 package org.apache.ignite.visor.commands.alert
 
+import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.events.IgniteEventType._
-import org.apache.ignite.events.{IgniteDiscoveryEvent, IgniteEvent, IgniteEventType}
+import org.apache.ignite.events.{IgniteDiscoveryEvent, IgniteEvent}
 import org.apache.ignite.lang.IgnitePredicate
 
 import java.util.UUID
@@ -223,7 +224,7 @@ class VisorAlertCommand {
         if (expr.isDefined)
             (n: ClusterNode) => f(n) && expr.get.apply(value(n))
         else
-            throw new IgniteCheckedException("Invalid expression: " + exprStr)
+            throw new IgniteException("Invalid expression: " + exprStr)
     }
 
     /**
@@ -242,7 +243,7 @@ class VisorAlertCommand {
         if (expr.isDefined)
             () => f() && expr.get.apply(value())
         else
-            throw new IgniteCheckedException("Invalid expression: " + exprStr)
+            throw new IgniteException("Invalid expression: " + exprStr)
     }
 
     /**
@@ -276,8 +277,8 @@ class VisorAlertCommand {
                         n match {
                             // Grid-wide metrics (not node specific).
                             case "cc" if v != null => gf = makeGridFilter(v, gf, grid.metrics().getTotalCpus)
-                            case "nc" if v != null => gf = makeGridFilter(v, gf, grid.metrics().getTotalNodes)
-                            case "hc" if v != null => gf = makeGridFilter(v, gf, grid.metrics().getTotalHosts)
+                            case "nc" if v != null => gf = makeGridFilter(v, gf, grid.nodes().size)
+                            case "hc" if v != null => gf = makeGridFilter(v, gf, U.neighborhood(grid.nodes()).size)
                             case "cl" if v != null => gf = makeGridFilter(v, gf,
                                 () => (grid.metrics().getAverageCpuLoad * 100).toLong)
 
@@ -298,7 +299,7 @@ class VisorAlertCommand {
                             // Other tags.
                             case "t" if v != null => freq = v.toLong
                             case "r" => () // Skipping.
-                            case _ => throw new IgniteCheckedException("Invalid argument: " + makeArg(arg))
+                            case _ => throw new IgniteException("Invalid argument: " + makeArg(arg))
                         }
                     })
                 }

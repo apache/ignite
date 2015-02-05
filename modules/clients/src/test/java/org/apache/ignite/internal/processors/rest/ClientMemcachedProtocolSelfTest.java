@@ -210,11 +210,11 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     public void testIncrement() throws Exception {
         Assert.assertEquals(5, client.incr("incrKey", 3, 2));
 
-        assertEquals(5, cache().dataStructures().atomicLong("incrKey", 0, true).get());
+        assertEquals(5, grid(0).atomicLong("incrKey", 0, true).get());
 
         Assert.assertEquals(15, client.incr("incrKey", 10, 0));
 
-        assertEquals(15, cache().dataStructures().atomicLong("incrKey", 0, true).get());
+        assertEquals(15, grid(0).atomicLong("incrKey", 0, true).get());
     }
 
     /**
@@ -223,11 +223,11 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     public void testDecrement() throws Exception {
         Assert.assertEquals(5, client.decr("decrKey", 10, 15));
 
-        assertEquals(5, cache().dataStructures().atomicLong("decrKey", 0, true).get());
+        assertEquals(5, grid(0).atomicLong("decrKey", 0, true).get());
 
         Assert.assertEquals(2, client.decr("decrKey", 3, 0));
 
-        assertEquals(2, cache().dataStructures().atomicLong("decrKey", 0, true).get());
+        assertEquals(2, grid(0).atomicLong("decrKey", 0, true).get());
     }
 
     /**
@@ -257,7 +257,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
 
         Map<String, String> stats = F.first(map.values());
 
-        Assert.assertEquals(7, stats.size());
+        Assert.assertEquals(4, stats.size());
         Assert.assertTrue(Integer.valueOf(stats.get("writes")) >= 1);
         Assert.assertTrue(Integer.valueOf(stats.get("reads")) >= 1);
 
@@ -270,7 +270,7 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
 
         stats = F.first(map.values());
 
-        Assert.assertEquals(7, stats.size());
+        Assert.assertEquals(4, stats.size());
         Assert.assertTrue(Integer.valueOf(stats.get("writes")) >= 2);
         Assert.assertTrue(Integer.valueOf(stats.get("reads")) >= 2);
     }

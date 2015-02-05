@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 
@@ -31,13 +31,13 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Tests cleanup of orphaned queue items.
  */
-public class GridCacheQueueCleanupSelfTest extends GridCacheAbstractSelfTest {
+public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest {
     /** */
     private static final String QUEUE_NAME1 = "CleanupTestQueue1";
 
@@ -50,36 +50,35 @@ public class GridCacheQueueCleanupSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
-
-        ccfg.setBackups(0);
-
-        return ccfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
+    @Override protected CacheMode collectionCacheMode() {
         return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
+        return TRANSACTIONAL;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected TestCollectionConfiguration collectionConfiguration() {
+        TestCollectionConfiguration colCfg = super.collectionConfiguration();
+
+        colCfg.setBackups(0);
+
+        return colCfg;
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testCleanup() throws Exception {
-        CacheQueue<Integer> queue = cache().dataStructures().queue(QUEUE_NAME1, 0, false, true);
+        IgniteQueue<Integer> queue = grid(0).queue(QUEUE_NAME1, 0, config(false));
 
-        ClusterNode node = grid(0).cache(null).affinity().mapKeyToNode(new GridCacheQueueHeaderKey(QUEUE_NAME1));
+        GridCacheContext cctx = GridTestUtils.getFieldValue(queue, "cctx");
+
+        final String queueCacheName = cctx.name();
+
+        ClusterNode node = grid(0).affinity(queueCacheName).mapKeyToNode(new GridCacheQueueHeaderKey(QUEUE_NAME1));
 
         final Ignite ignite = grid(0).localNode().equals(node) ? grid(1) : grid(0);
 
@@ -160,9 +159,9 @@ public class GridCacheQueueCleanupSelfTest extends GridCacheAbstractSelfTest {
         assertEquals(500, queue.size());
 
         // Remove queue and create queue with the same name.
-        ignite.cache(null).dataStructures().removeQueue(QUEUE_NAME1);
+        queue.close();
 
-        queue = ignite.cache(null).dataStructures().queue(QUEUE_NAME1, 0, false, true);
+        queue = ignite.queue(QUEUE_NAME1, 0, config(false));
 
         assertEquals(0, queue.size());
 
@@ -178,8 +177,10 @@ public class GridCacheQueueCleanupSelfTest extends GridCacheAbstractSelfTest {
                 int cnt = 0;
 
                 for (int i = 0; i < gridCount(); i++) {
-                    Iterator<GridCacheEntryEx<Object, Object>> entries =
-                        ((GridKernal)grid(i)).context().cache().internalCache().map().allEntries0().iterator();
+                    GridCacheAdapter<Object, Object> cache =
+                        ((IgniteKernal)grid(i)).context().cache().internalCache(queueCacheName);
+
+                    Iterator<GridCacheEntryEx<Object, Object>> entries = cache.map().allEntries0().iterator();
 
                     while (entries.hasNext()) {
                         cnt++;
@@ -208,10 +209,10 @@ public class GridCacheQueueCleanupSelfTest extends GridCacheAbstractSelfTest {
      * @param queueName Queue name.
      * @return Future completing when thread finishes.
      */
-    private IgniteFuture<?> startAddPollThread(final Ignite ignite, final AtomicBoolean stop, final String queueName) {
+    private IgniteInternalFuture<?> startAddPollThread(final Ignite ignite, final AtomicBoolean stop, final String queueName) {
         return GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                CacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, 0, false, true);
+                IgniteQueue<Integer> queue = ignite.queue(queueName, 0, config(false));
 
                 assertEquals(0, queue.size());
 

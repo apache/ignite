@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;
@@ -50,7 +51,7 @@ public class GridCacheUpdateAtomicResult<K, V> {
 
     /** DR resolution result. */
     @GridToStringInclude
-    private final GridDrResolveResult<V> drRes;
+    private final GridCacheVersionConflictContextImpl<K, V> drRes;
 
     /** Whether update should be propagated to DHT node. */
     private final boolean sndToDht;
@@ -78,7 +79,7 @@ public class GridCacheUpdateAtomicResult<K, V> {
         long newTtl,
         long drExpireTime,
         @Nullable GridCacheVersion rmvVer,
-        @Nullable GridDrResolveResult<V> drRes,
+        @Nullable GridCacheVersionConflictContextImpl<K, V> drRes,
         boolean sndToDht) {
         this.success = success;
         this.oldVal = oldVal;
@@ -143,7 +144,7 @@ public class GridCacheUpdateAtomicResult<K, V> {
     /**
      * @return DR conflict resolution context.
      */
-    @Nullable public GridDrResolveResult<V> drResolveResult() {
+    @Nullable public GridCacheVersionConflictContextImpl<K, V> drResolveResult() {
         return drRes;
     }
 

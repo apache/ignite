@@ -111,8 +111,8 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
     public void testAffinityProcessor() throws Exception {
         Random rnd = new Random();
 
-        final GridKernal grid1 = (GridKernal)grid(rnd.nextInt(NODES_CNT)); // With cache.
-        GridKernal grid2 = (GridKernal)grid(NODES_CNT + rnd.nextInt(NODES_CNT)); // Without cache.
+        final IgniteKernal grid1 = (IgniteKernal)grid(rnd.nextInt(NODES_CNT)); // With cache.
+        IgniteKernal grid2 = (IgniteKernal)grid(NODES_CNT + rnd.nextInt(NODES_CNT)); // Without cache.
 
         assertEquals(NODES_CNT * 2, grid1.nodes().size());
         assertEquals(NODES_CNT * 2, grid2.nodes().size());
@@ -168,7 +168,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
      * @throws Exception In case of any exception.
      */
     public void testPerformance() throws Exception {
-        GridKernal grid = (GridKernal)grid(0);
+        IgniteKernal grid = (IgniteKernal)grid(0);
         GridAffinityProcessor aff = grid.context().affinity();
 
         int keysSize = 1000000;

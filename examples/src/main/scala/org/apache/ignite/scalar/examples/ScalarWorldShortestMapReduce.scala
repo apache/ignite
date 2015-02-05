@@ -26,14 +26,14 @@ import org.apache.ignite.scalar.scalar._
  * on thousands requiring no special configuration or deployment.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
+ * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
  */
 object ScalarWorldShortestMapReduce extends App {
     scalar("examples/config/example-compute.xml") {
         val input = "World shortest mapreduce application"
 
         println("Non-space characters count: " +
-            grid$.reduce$[Int, Int](for (w <- input.split(" ")) yield () => w.length, _.sum, null)
+            ignite$.reduce$[Int, Int](for (w <- input.split(" ")) yield () => w.length, _.sum, null)
         )
     }
 }

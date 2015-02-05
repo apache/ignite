@@ -19,7 +19,6 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
@@ -69,13 +68,18 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public Object collectDiscoveryData(UUID nodeId) {
-        return plugin.provideDiscoveryData(nodeId);
+        return null;
     }
 
     /** {@inheritDoc} */
     @Override public void onDiscoveryDataReceived(Object data) {
-        plugin.receiveDiscoveryData(data);
+        // No-op.
     }
 
     /** {@inheritDoc} */

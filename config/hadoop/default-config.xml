@@ -21,7 +21,7 @@
     GridGain Spring configuration file.
 
     When starting a standalone GridGain node, you need to execute the following command:
-    {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} path-to-this-file/default-config.xml
+    {IGNITE_HOME}/bin/ignite.{bat|sh} path-to-this-file/default-config.xml
 
     When starting GridGain from Java IDE, pass path to this file into GridGain:
     GridGain.start("path-to-this-file/default-config.xml");
@@ -94,7 +94,7 @@
             Apache Hadoop Accelerator configuration.
         -->
         <property name="hadoopConfiguration">
-            <bean class="org.apache.ignite.hadoop.GridHadoopConfiguration">
+            <bean class="org.apache.ignite.internal.processors.hadoop.GridHadoopConfiguration">
                 <!-- Information about finished jobs will be kept for 30 seconds. -->
                 <property name="finishedJobInfoTtl" value="30000"/>
             </bean>

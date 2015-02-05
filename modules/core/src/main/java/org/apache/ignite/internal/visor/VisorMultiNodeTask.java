@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -37,7 +37,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
  */
 public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTaskArgument<A>, R> {
     @IgniteInstanceResource
-    protected GridEx g;
+    protected IgniteEx g;
 
     /** Debug flag. */
     protected boolean debug;
@@ -55,8 +55,7 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
     protected abstract VisorJob<A, J> job(A arg);
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, VisorTaskArgument<A> arg)
-        throws IgniteCheckedException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, VisorTaskArgument<A> arg) {
         assert arg != null;
 
         start = U.currentTimeMillis();
@@ -77,10 +76,9 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
      * @param arg Task execution argument.
      * @param subgrid Nodes available for this task execution.
      * @return Map of grid jobs assigned to subgrid node.
-     * @throws IgniteCheckedException If mapping could not complete successfully.
+     * @throws IgniteException If mapping could not complete successfully.
      */
-    protected Map<? extends ComputeJob, ClusterNode> map0(List<ClusterNode> subgrid, VisorTaskArgument<A> arg)
-        throws IgniteCheckedException {
+    protected Map<? extends ComputeJob, ClusterNode> map0(List<ClusterNode> subgrid, VisorTaskArgument<A> arg) {
         Collection<UUID> nodeIds = arg.nodes();
 
         Map<ComputeJob, ClusterNode> map = U.newHashMap(nodeIds.size());
@@ -99,8 +97,7 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res,
-        List<ComputeJobResult> rcvd) throws IgniteCheckedException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         // All Visor tasks should handle exceptions in reduce method.
         return ComputeJobResultPolicy.WAIT;
     }
@@ -110,12 +107,12 @@ public abstract class VisorMultiNodeTask<A, R, J> implements ComputeTask<VisorTa
      *
      * @param results Job results.
      * @return Task result.
-     * @throws IgniteCheckedException If reduction or results caused an error.
+     * @throws IgniteException If reduction or results caused an error.
      */
-    @Nullable protected abstract R reduce0(List<ComputeJobResult> results) throws IgniteCheckedException;
+    @Nullable protected abstract R reduce0(List<ComputeJobResult> results) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Nullable @Override public final R reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override public final R reduce(List<ComputeJobResult> results) {
         try {
             return reduce0(results);
         }

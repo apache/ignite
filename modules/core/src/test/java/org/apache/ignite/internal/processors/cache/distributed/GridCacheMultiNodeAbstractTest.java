@@ -21,13 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -232,7 +233,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         addListener(ignite2, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
         addListener(ignite3, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
 
-        IgniteFuture<Boolean> f1 = cache1.lockAsync(1, 0L);
+        IgniteInternalFuture<Boolean> f1 = cache1.lockAsync(1, 0L);
 
         assert f1.get(10000);
 
@@ -274,9 +275,9 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         addListener(ignite2, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
         addListener(ignite3, unlockLsnr, EVT_CACHE_OBJECT_UNLOCKED);
 
-        IgniteFuture<Boolean> f1 = cache1.lockAsync(1, 0L);
-        IgniteFuture<Boolean> f2 = cache2.lockAsync(1, 0L);
-        IgniteFuture<Boolean> f3 = cache3.lockAsync(1, 0L);
+        IgniteInternalFuture<Boolean> f1 = cache1.lockAsync(1, 0L);
+        IgniteInternalFuture<Boolean> f2 = cache2.lockAsync(1, 0L);
+        IgniteInternalFuture<Boolean> f3 = cache3.lockAsync(1, 0L);
 
         boolean l1 = false;
         boolean l2 = false;
@@ -361,9 +362,9 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         addListener(ignite2, lsnr);
         addListener(ignite3, lsnr);
 
-        IgniteFuture<String> f1 = cache1.putAsync(2, "val1");
-        IgniteFuture<String> f2 = cache2.putAsync(2, "val2");
-        IgniteFuture<String> f3 = cache3.putAsync(2, "val3");
+        IgniteInternalFuture<String> f1 = cache1.putAsync(2, "val1");
+        IgniteInternalFuture<String> f2 = cache2.putAsync(2, "val2");
+        IgniteInternalFuture<String> f3 = cache3.putAsync(2, "val3");
 
         String v1 = f1.get(20000);
 
@@ -409,7 +410,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         assert cache2.size() == 3;
         assert cache3.size() == 3;
 
-        cache1.globalClearAll();
+        cache1.clear();
 
         assert cache1.isEmpty();
         assert cache2.isEmpty();

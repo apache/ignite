@@ -19,9 +19,9 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.managed.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -65,7 +65,7 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
     }
 
     /** {@inheritDoc} */
-    @Override public void deployNodeSingleton(String name, ManagedService svc) throws IgniteCheckedException {
+    @Override public void deployNodeSingleton(String name, ManagedService svc) {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
@@ -74,13 +74,16 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
         try {
             saveOrGet(ctx.service().deployNodeSingleton(prj, name, svc));
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             unguard();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void deployClusterSingleton(String name, ManagedService svc) throws IgniteCheckedException {
+    @Override public void deployClusterSingleton(String name, ManagedService svc) {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
@@ -89,14 +92,16 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
         try {
             saveOrGet(ctx.service().deployClusterSingleton(prj, name, svc));
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             unguard();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void deployMultiple(String name, ManagedService svc, int totalCnt, int maxPerNodeCnt)
-        throws IgniteCheckedException {
+    @Override public void deployMultiple(String name, ManagedService svc, int totalCnt, int maxPerNodeCnt) {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
 
@@ -105,6 +110,9 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
         try {
             saveOrGet(ctx.service().deployMultiple(prj, name, svc, totalCnt, maxPerNodeCnt));
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             unguard();
         }
@@ -112,7 +120,7 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
 
     /** {@inheritDoc} */
     @Override public void deployKeyAffinitySingleton(String name, ManagedService svc, @Nullable String cacheName,
-        Object affKey) throws IgniteCheckedException {
+        Object affKey) {
         A.notNull(name, "name");
         A.notNull(svc, "svc");
         A.notNull(affKey, "affKey");
@@ -122,13 +130,16 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
         try {
             saveOrGet(ctx.service().deployKeyAffinitySingleton(name, svc, cacheName, affKey));
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             unguard();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void deploy(ManagedServiceConfiguration cfg) throws IgniteCheckedException {
+    @Override public void deploy(ManagedServiceConfiguration cfg) {
         A.notNull(cfg, "cfg");
 
         guard();
@@ -136,13 +147,16 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
         try {
             saveOrGet(ctx.service().deploy(cfg));
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             unguard();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void cancel(String name) throws IgniteCheckedException {
+    @Override public void cancel(String name) {
         A.notNull(name, "name");
 
         guard();
@@ -150,17 +164,23 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
         try {
             saveOrGet(ctx.service().cancel(name));
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             unguard();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void cancelAll() throws IgniteCheckedException {
+    @Override public void cancelAll() {
         guard();
 
         try {
             saveOrGet(ctx.service().cancelAll());
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -235,7 +255,7 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteManaged enableAsync() {
+    @Override public IgniteManaged withAsync() {
         if (isAsync())
             return this;
 

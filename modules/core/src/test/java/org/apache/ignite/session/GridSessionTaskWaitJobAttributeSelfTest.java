@@ -19,8 +19,8 @@ package org.apache.ignite.session;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -95,7 +95,7 @@ public class GridSessionTaskWaitJobAttributeSelfTest extends GridCommonAbstractT
     private void checkTask(int num) throws IgniteCheckedException {
         Ignite ignite = G.ignite(getTestGridName());
 
-        IgniteCompute comp = ignite.compute().enableAsync();
+        IgniteCompute comp = ignite.compute().withAsync();
 
         comp.execute(GridTaskSessionTestTask.class.getName(), num);
 
@@ -120,7 +120,7 @@ public class GridSessionTaskWaitJobAttributeSelfTest extends GridCommonAbstractT
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) {
             if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
 
@@ -128,7 +128,7 @@ public class GridSessionTaskWaitJobAttributeSelfTest extends GridCommonAbstractT
 
             for (int i = 1; i <= SPLIT_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
-                    @Override public Object execute() throws IgniteCheckedException {
+                    @Override public Object execute() {
                         assert taskSes != null;
 
                         if (log.isInfoEnabled()) {
@@ -149,10 +149,9 @@ public class GridSessionTaskWaitJobAttributeSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received)
-            throws IgniteCheckedException {
-            if (result.getException() != null)
-                throw result.getException();
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) {
+            if (res.getException() != null)
+                throw res.getException();
 
             try {
                 String val = (String)taskSes.waitForAttribute("testName", 20000);
@@ -163,14 +162,14 @@ public class GridSessionTaskWaitJobAttributeSelfTest extends GridCommonAbstractT
                 assert "testVal".equals(val) : "Invalid attribute value: " + val;
             }
             catch (InterruptedException e) {
-                throw new IgniteCheckedException("Failed to get attribute due to interruption.", e);
+                throw new IgniteException("Failed to get attribute due to interruption.", e);
             }
 
             return received.size() == SPLIT_COUNT ? ComputeJobResultPolicy.REDUCE : ComputeJobResultPolicy.WAIT;
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
 

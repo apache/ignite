@@ -19,11 +19,11 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.nio.*;
@@ -109,8 +109,8 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     private void doSend() throws Exception {
-        GridIoManager mgr0 = ((GridKernal)grid(0)).context().io();
-        GridIoManager mgr1 = ((GridKernal)grid(1)).context().io();
+        GridIoManager mgr0 = ((IgniteKernal)grid(0)).context().io();
+        GridIoManager mgr1 = ((IgniteKernal)grid(1)).context().io();
 
         String topic = "test-topic";
 

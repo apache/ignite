@@ -19,9 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 
 import java.util.*;
@@ -72,7 +73,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      * @throws Exception In case of error.
      */
     private void runTest(final IgniteInClosure<GridCache<String, Integer>> c) throws Exception {
-        final IgniteFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new CAX() {
+        final IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 while (true) {
                     int i = cnt.getAndIncrement();
@@ -90,7 +91,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
             }
         }, WRITE_THREAD_CNT, WRITE_THREAD_NAME);
 
-        IgniteFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new CA() {
+        IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new CA() {
             @Override public void apply() {
                 GridCache<String, Integer> cache = cache();
 
@@ -333,28 +334,6 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
                 int rnd = random();
 
                 cache.removeAll(rangeKeys(0, rnd));
-
-                for (int i = 0; i < rnd; i++)
-                    assert cache.peek("key" + i) == null;
-            }
-        });
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    public void testRemoveAllFiltered() throws Exception {
-        runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
-                final int rnd = random();
-
-                cache.removeAll(new P1<CacheEntry<String, Integer>>() {
-                    @Override public boolean apply(CacheEntry<String, Integer> e) {
-                        Integer val = e.peek();
-
-                        return val != null && val < rnd;
-                    }
-                });
 
                 for (int i = 0; i < rnd; i++)
                     assert cache.peek("key" + i) == null;

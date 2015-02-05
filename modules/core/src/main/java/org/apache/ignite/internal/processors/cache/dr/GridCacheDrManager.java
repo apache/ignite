@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.dr;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.dr.*;
 import org.jetbrains.annotations.*;
 
@@ -33,53 +33,9 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
     public byte dataCenterId();
 
     /**
-     * Handles DR for atomic cache.
-     *
-     * @param e Cache entry.
-     * @param op Operation.
-     * @param writeObj New value.
-     * @param valBytes New value byte.
-     * @param ttl TTL.
-     * @param drTtl DR TTL.
-     * @param drExpireTime DR expire time
-     * @param drVer DR version.
-     * @return DR result.
-     * @throws IgniteCheckedException If update failed.
-     * @throws GridCacheEntryRemovedException If entry is obsolete.
+     * @return Cache version conflict resolver.
      */
-    public GridDrResolveResult<V> resolveAtomic(GridCacheEntryEx<K, V> e,
-         GridCacheOperation op,
-         @Nullable Object writeObj,
-         @Nullable byte[] valBytes,
-         @Nullable IgniteCacheExpiryPolicy expiryPlc,
-         long drTtl,
-         long drExpireTime,
-         @Nullable GridCacheVersion drVer) throws IgniteCheckedException, GridCacheEntryRemovedException;
-
-    /**
-     * Handles DR for transactional cache.
-     *
-     * @param e Cache entry.
-     * @param txEntry Transaction entry.
-     * @param newVer Version.
-     * @param op Operation.
-     * @param newVal New value.
-     * @param newValBytes New value bytes.
-     * @param newTtl TTL.
-     * @param newDrExpireTime DR expire time
-     * @return DR result.
-     * @throws IgniteCheckedException If update failed.
-     * @throws GridCacheEntryRemovedException If entry is obsolete.
-     */
-    public GridDrResolveResult<V> resolveTx(
-        GridCacheEntryEx<K, V> e,
-        IgniteTxEntry<K, V> txEntry,
-        GridCacheVersion newVer,
-        GridCacheOperation op,
-        V newVal,
-        byte[] newValBytes,
-        long newTtl,
-        long newDrExpireTime) throws IgniteCheckedException, GridCacheEntryRemovedException;
+    public GridCacheVersionAbstractConflictResolver conflictResolver();
 
     /**
      * Performs replication.
@@ -135,6 +91,15 @@ public interface GridCacheDrManager<K, V> extends GridCacheManager<K, V> {
      * @param entriesCnt Number of received entries.
      */
     public void onReceiveCacheEntriesReceived(int entriesCnt);
+
+    /**
+     * Callback for manual conflict resolution.
+     *
+     * @param useNew Use new.
+     * @param useOld Use old.
+     * @param merge Merge.
+     */
+    public void onReceiveCacheConflictResolved(boolean useNew, boolean useOld, boolean merge);
 
     /**
      * Resets metrics for current cache.

@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.hadoop;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.hadoop.*;
 
 /**
  * Hadoop processor.
@@ -56,7 +54,7 @@ public abstract class IgniteHadoopProcessorAdapter extends GridProcessorAdapter 
      * @param jobInfo Job info to submit.
      * @return Execution future.
      */
-    public abstract IgniteFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo);
+    public abstract IgniteInternalFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo);
 
     /**
      * Gets Hadoop job execution status.
@@ -83,7 +81,7 @@ public abstract class IgniteHadoopProcessorAdapter extends GridProcessorAdapter 
      * @return Job finish future or {@code null}.
      * @throws IgniteCheckedException If failed.
      */
-    public abstract IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws IgniteCheckedException;
+    public abstract IgniteInternalFuture<?> finishFuture(GridHadoopJobId jobId) throws IgniteCheckedException;
 
     /**
      * Kills job.

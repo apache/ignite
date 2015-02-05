@@ -20,14 +20,14 @@ package org.apache.ignite.messaging;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -67,7 +67,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
     private static final Integer I_TOPIC_2 = 2;
 
     /** */
-    public static final String EXT_RESOURCE_CLS_NAME = "org.gridgain.grid.tests.p2p.GridTestUserResource";
+    public static final String EXT_RESOURCE_CLS_NAME = "org.apache.ignite.tests.p2p.TestUserResource";
 
     /** Shared IP finder. */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -1008,7 +1008,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         assertFalse(ignite2.message().isAsync());
 
-        final IgniteMessaging msg = ignite2.message().enableAsync();
+        final IgniteMessaging msg = ignite2.message().withAsync();
 
         assertTrue(msg.isAsync());
 
@@ -1025,9 +1025,9 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
         final String topic = "topic";
 
         UUID id = msg.remoteListen(topic, new P2<UUID, Object>() {
-            @Override
-            public boolean apply(UUID nodeId, Object msg) {
-                System.out.println(Thread.currentThread().getName() + " Listener received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
+            @Override public boolean apply(UUID nodeId, Object msg) {
+                System.out.println(Thread.currentThread().getName() +
+                    " Listener received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
 
                 msgCnt.incrementAndGet();
 

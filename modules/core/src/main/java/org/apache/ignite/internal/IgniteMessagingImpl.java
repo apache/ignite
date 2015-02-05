@@ -19,19 +19,20 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 
 /**
- * {@link org.apache.ignite.IgniteMessaging} implementation.
+ * {@link IgniteMessaging} implementation.
  */
-public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter implements IgniteMessaging, Externalizable {
+public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter<IgniteMessaging>
+    implements IgniteMessaging, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -66,7 +67,7 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public void send(@Nullable Object topic, Object msg) throws IgniteCheckedException {
+    @Override public void send(@Nullable Object topic, Object msg) {
         A.notNull(msg, "msg");
 
         guard();
@@ -79,13 +80,16 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter implements Ig
 
             ctx.io().sendUserMessage(snapshot, msg, topic, false, 0);
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             unguard();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void send(@Nullable Object topic, Collection<?> msgs) throws IgniteCheckedException {
+    @Override public void send(@Nullable Object topic, Collection<?> msgs) {
         A.ensure(!F.isEmpty(msgs), "msgs cannot be null or empty");
 
         guard();
@@ -102,13 +106,16 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter implements Ig
                 ctx.io().sendUserMessage(snapshot, msg, topic, false, 0);
             }
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             unguard();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void sendOrdered(@Nullable Object topic, Object msg, long timeout) throws IgniteCheckedException {
+    @Override public void sendOrdered(@Nullable Object topic, Object msg, long timeout) {
         A.notNull(msg, "msg");
 
         guard();
@@ -123,6 +130,9 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter implements Ig
                 timeout = ctx.config().getNetworkTimeout();
 
             ctx.io().sendUserMessage(snapshot, msg, topic, true, timeout);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -158,7 +168,7 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) throws IgniteCheckedException {
+    @Override public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) {
         A.notNull(p, "p");
 
         guard();
@@ -168,16 +178,29 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter implements Ig
 
             return saveOrGet(ctx.continuous().startRoutine(hnd, 1, 0, false, prj.predicate()));
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             unguard();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void stopRemoteListen(UUID opId) throws IgniteCheckedException {
+    @Override public void stopRemoteListen(UUID opId) {
         A.notNull(opId, "opId");
 
-        saveOrGet(ctx.continuous().stopRoutine(opId));
+        guard();
+
+        try {
+            saveOrGet(ctx.continuous().stopRoutine(opId));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
     }
 
     /**
@@ -195,7 +218,7 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteMessaging enableAsync() {
+    @Override protected IgniteMessaging createAsyncInstance() {
         return new IgniteMessagingImpl(ctx, prj, true);
     }
 

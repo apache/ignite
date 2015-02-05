@@ -21,10 +21,10 @@ import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -161,7 +161,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
             assert false : "Grid with locally executed job with timeout should throw GridComputeTaskTimeoutException.";
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Expected exception caught [taskFuture=" + fut + ", exception=" + e + ']');
         }
 
@@ -233,7 +233,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
     /**
      * Returns timestamp at the method call moment, but sleeps before return,
-     * to allow pass {@link GridUtils#currentTimeMillis()}.
+     * to allow pass {@link IgniteUtils#currentTimeMillis()}.
      *
      * @return Call timestamp.
      * @throws InterruptedException If sleep was interrupted.
@@ -289,7 +289,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     private ComputeTaskFuture<?> generateEvents(@Nullable Long timeout, ComputeJob job) throws Exception {
-        IgniteCompute comp = ignite.compute().enableAsync();
+        IgniteCompute comp = ignite.compute().withAsync();
 
         if (timeout == null)
             comp.execute(GridAllEventsTestTask.class.getName(), job);
@@ -347,7 +347,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override public String execute() throws IgniteCheckedException {
+        @Override public String execute() {
             assert taskSes != null;
 
             taskSes.saveCheckpoint("testCheckpoint", "TestState");
@@ -401,7 +401,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override public String execute() throws IgniteCheckedException {
+        @Override public String execute() {
             assert taskSes != null;
 
             taskSes.saveCheckpoint("testAllCheckpoint", "CheckpointTestState");
@@ -418,12 +418,12 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     @ComputeTaskSessionFullSupport
     private static class GridAllEventsTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return Collections.singleton((ComputeJob)arg);
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) {
             assert results != null;
             assert results.size() == 1;
 

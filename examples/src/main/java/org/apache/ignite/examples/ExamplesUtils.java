@@ -72,7 +72,7 @@ public class ExamplesUtils {
 
         if (prjSize < size) {
             System.out.println();
-            System.out.println(">>> Please start at least " + size + " grid nodes to run example.");
+            System.out.println(">>> Please start at least " + size + " cluster nodes to run example.");
             System.out.println();
 
             return false;
@@ -82,9 +82,9 @@ public class ExamplesUtils {
     }
 
     /**
-     * @param ignite Grid.
+     * @param ignite Ignite.
      * @param name Streamer name.
-     * @return {@code True} if grid has streamer with given name.
+     * @return {@code True} if ignite has streamer with given name.
      */
     public static boolean hasStreamer(Ignite ignite, String name) {
         if (ignite.configuration().getStreamerConfiguration() != null) {

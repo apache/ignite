@@ -20,8 +20,9 @@ package org.apache.ignite.loadtests.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
 
@@ -123,7 +124,7 @@ public class GridCacheSwapLoadTest {
                 }
             }, EVT_CACHE_OBJECT_SWAPPED);
 
-            Collection<IgniteFuture<?>> futs = new ArrayList<>(3);
+            Collection<IgniteInternalFuture<?>> futs = new ArrayList<>(3);
 
             long start = System.currentTimeMillis();
 
@@ -197,7 +198,7 @@ public class GridCacheSwapLoadTest {
     /**
      * @return Future.
      */
-    private static IgniteFuture<?> doPut(final Ignite g) {
+    private static IgniteInternalFuture<?> doPut(final Ignite g) {
         final AtomicInteger putKey = new AtomicInteger(0);
 
         return GridTestUtils.runMultiThreadedAsync(new CAX() {
@@ -226,7 +227,7 @@ public class GridCacheSwapLoadTest {
     /**
      * @return Futures.
      */
-    private static Collection<IgniteFuture<Long>> doGetRemove(final Ignite g) {
+    private static Collection<IgniteInternalFuture<Long>> doGetRemove(final Ignite g) {
         final AtomicBoolean stop = new AtomicBoolean(false);
 
         return F.asList(
@@ -300,9 +301,9 @@ public class GridCacheSwapLoadTest {
     /**
      * @param futs Futures.
      */
-    private static void wait(Iterable<IgniteFuture<?>> futs) {
-        F.forEach(futs, new CIX1<IgniteFuture<?>>() {
-            @Override public void applyx(IgniteFuture<?> fut) throws IgniteCheckedException {
+    private static void wait(Iterable<IgniteInternalFuture<?>> futs) {
+        F.forEach(futs, new CIX1<IgniteInternalFuture<?>>() {
+            @Override public void applyx(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
                 fut.get();
             }
         });

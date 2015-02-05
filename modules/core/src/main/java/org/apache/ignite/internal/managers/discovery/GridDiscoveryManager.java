@@ -21,8 +21,19 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.managers.security.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.jobmetrics.*;
+import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.discovery.*;
 import org.apache.ignite.plugin.security.*;
@@ -30,17 +41,6 @@ import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.thread.*;
-import org.apache.ignite.internal.managers.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.managers.security.*;
-import org.apache.ignite.internal.processors.jobmetrics.*;
-import org.apache.ignite.internal.processors.service.*;
-import org.apache.ignite.internal.util.future.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.worker.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -53,8 +53,8 @@ import java.util.zip.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
 /**
  * Discovery SPI manager.
@@ -240,9 +240,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         getSpi().setMetricsProvider(createMetricsProvider());
 
         getSpi().setAuthenticator(new DiscoverySpiNodeAuthenticator() {
-            @Override public GridSecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred)
-                throws IgniteCheckedException {
-                return ctx.security().authenticateNode(node, cred);
+            @Override public GridSecurityContext authenticateNode(ClusterNode node, GridSecurityCredentials cred) {
+                try {
+                    return ctx.security().authenticateNode(node, cred);
+                }
+                catch (IgniteCheckedException e) {
+                    throw U.convertException(e);
+                }
             }
 
             @Override public boolean isGlobalNodeAuthentication() {
@@ -311,71 +315,41 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         });
 
         getSpi().setDataExchange(new DiscoverySpiDataExchange() {
-            @Override public List<Object> collect(UUID nodeId) {
+            @Override public Map<Integer, Object> collect(UUID nodeId) {
                 assert nodeId != null;
 
-                List<Object> data = new ArrayList<>();
-
-                Object newCompData = null;
+                Map<Integer, Object> data = new HashMap<>();
 
                 for (GridComponent comp : ctx.components()) {
-                    if (appendLast(comp)) {
-                        assert newCompData == null;
+                    Object compData = comp.collectDiscoveryData(nodeId);
 
-                        newCompData = comp.collectDiscoveryData(nodeId);
+                    if (compData != null) {
+                        assert comp.discoveryDataType() != null;
+
+                        data.put(comp.discoveryDataType().ordinal(), compData);
                     }
-                    else
-                        data.add(comp.collectDiscoveryData(nodeId));
                 }
-
-                // Process new grid component last for preserving backward compatibility.
-                if (newCompData != null)
-                    data.add(newCompData);
 
                 return data;
             }
 
-            @Override public void onExchange(List<Object> data) {
-                assert data != null;
+            @Override public void onExchange(Map<Integer, Object> data) {
+                for (Map.Entry<Integer, Object> e : data.entrySet()) {
+                    GridComponent comp = null;
 
-                Iterator<Object> it = data.iterator();
+                    for (GridComponent c : ctx.components()) {
+                        if (c.discoveryDataType() != null && c.discoveryDataType().ordinal() == e.getKey()) {
+                            comp = c;
 
-                GridComponent newComp = null;
-                Object newCompData = null;
-
-                for (GridComponent comp : ctx.components()) {
-                    if (!it.hasNext())
-                        break;
-
-                    if (appendLast(comp)) {
-                        assert newComp == null;
-                        assert newCompData == null;
-
-                        newComp = comp;
-                        newCompData = it.next();
+                            break;
+                        }
                     }
+
+                    if (comp != null)
+                        comp.onDiscoveryDataReceived(e.getValue());
                     else
-                        comp.onDiscoveryDataReceived(it.next());
+                        U.warn(log, "Received discovery data for unknown component: " + e.getKey());
                 }
-
-                // Process new grid component last for preserving backward compatibility.
-                if (newComp != null)
-                    newComp.onDiscoveryDataReceived(newCompData);
-            }
-
-            /**
-             * @param comp Grid component.
-             * @return {@code True} if specified component should collect data after all other components,
-             *      {@code false} otherwise.
-             * @deprecated We shouldn't rely on exact order and size of
-             *      {@link org.apache.ignite.spi.discovery.DiscoverySpiDataExchange#collect(UUID)} output because it may easily break backward
-             *      compatibility (for example, if we will add new grid component in the middle of components startup
-             *      routine). This method should be changed to return map (component id -> collected data)
-             *      in the next major release.
-             */
-            @Deprecated
-            private boolean appendLast(GridComponent comp) {
-                return comp instanceof GridServiceProcessor;
             }
         });
 
@@ -492,10 +466,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             private final long startTime = U.currentTimeMillis();
 
             /** {@inheritDoc} */
-            @Override public ClusterNodeMetrics getMetrics() {
+            @Override public ClusterMetrics metrics() {
                 GridJobMetrics jm = ctx.jobMetric().getJobMetrics();
 
-                DiscoveryNodeMetricsAdapter nm = new DiscoveryNodeMetricsAdapter();
+                ClusterMetricsSnapshot nm = new ClusterMetricsSnapshot();
 
                 nm.setLastUpdateTime(U.currentTimeMillis());
 
@@ -947,7 +921,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param awaitVer Topology version to await.
      * @return Future.
      */
-    public IgniteFuture<Long> topologyFuture(final long awaitVer) {
+    public IgniteInternalFuture<Long> topologyFuture(final long awaitVer) {
         long topVer = topologyVersion();
 
         if (topVer >= awaitVer)
@@ -1533,15 +1507,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private void onSegmentation() {
             GridSegmentationPolicy segPlc = ctx.config().getSegmentationPolicy();
 
+            // Always disconnect first.
+            try {
+                getSpi().disconnect();
+            }
+            catch (IgniteSpiException e) {
+                U.error(log, "Failed to disconnect discovery SPI.", e);
+            }
+
             switch (segPlc) {
                 case RESTART_JVM:
-                    try {
-                        getSpi().disconnect();
-                    }
-                    catch (IgniteSpiException e) {
-                        U.error(log, "Failed to disconnect discovery SPI.", e);
-                    }
-
                     U.warn(log, "Restarting JVM according to configured segmentation policy.");
 
                     restartJvm();
@@ -1549,13 +1524,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     break;
 
                 case STOP:
-                    try {
-                        getSpi().disconnect();
-                    }
-                    catch (IgniteSpiException e) {
-                        U.error(log, "Failed to disconnect discovery SPI.", e);
-                    }
-
                     U.warn(log, "Stopping local node according to configured segmentation policy.");
 
                     stopNode();
@@ -1591,7 +1559,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws IgniteInterruptedException {
+        @Override protected void body() throws IgniteInterruptedCheckedException {
             while (!isCancelled()) {
                 U.sleep(METRICS_UPDATE_FREQ);
 

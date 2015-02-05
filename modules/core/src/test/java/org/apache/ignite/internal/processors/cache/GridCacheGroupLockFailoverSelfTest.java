@@ -23,14 +23,14 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.failover.always.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -320,7 +320,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
         throws IgniteCheckedException {
         ClusterGroup prj = master.cluster().forPredicate(workerNodesFilter);
 
-        IgniteCompute comp = master.compute(prj).enableAsync();
+        IgniteCompute comp = master.compute(prj).withAsync();
 
         comp.execute(new GridCacheGroupLockPutTask(preferredNodeId, CACHE_NAME, optimisticTx()), dataChunk);
 
@@ -335,7 +335,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
                 try {
                     f.get(); //if something went wrong - we'll get exception here
                 }
-                catch (IgniteCheckedException ignore) {
+                catch (IgniteException ignore) {
                     info("Put task failed, going to remap keys: " + dataChunk.size());
 
                     fail = true;

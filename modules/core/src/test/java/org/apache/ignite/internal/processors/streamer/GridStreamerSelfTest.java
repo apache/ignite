@@ -20,17 +20,18 @@ package org.apache.ignite.internal.processors.streamer;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.streamer.*;
-import org.apache.ignite.streamer.router.*;
-import org.apache.ignite.streamer.window.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.streamer.*;
+import org.apache.ignite.streamer.router.*;
+import org.apache.ignite.streamer.window.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -236,7 +237,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
                     try {
                         U.sleep(1000);
                     }
-                    catch (IgniteInterruptedException ignore) {
+                    catch (IgniteInterruptedCheckedException ignore) {
                         // No-op.
                     }
 
@@ -446,7 +447,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
 
         GridTestExternalClassLoader ldr = new GridTestExternalClassLoader(urls);
 
-        Class<?> cls = ldr.loadClass("org.gridgain.grid.tests.p2p.GridCacheDeploymentTestKey");
+        Class<?> cls = ldr.loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestKey");
 
         assert cls != null;
 

@@ -1,11 +1,11 @@
-GridGain Spring Module
-----------------------
+Apache Ignite Spring Module
+---------------------------
 
-GridGain Spring module provides resources injection capabilities and parser for Spring-based
+Apache Ignite Spring module provides resources injection capabilities and parser for Spring-based
 configuration XML files.
 
-To enable Spring module when starting a standalone node, move 'optional/gridgain-spring' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+To enable Spring module when starting a standalone node, move 'optional/ignite-spring' folder to
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing Spring Module In Maven Project
@@ -23,8 +23,8 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-spring</artifactId>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-spring</artifactId>
             <version>${ignite.version}</version>
         </dependency>
         ...

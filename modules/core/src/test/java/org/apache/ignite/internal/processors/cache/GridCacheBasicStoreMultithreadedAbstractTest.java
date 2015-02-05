@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -50,7 +49,7 @@ public abstract class GridCacheBasicStoreMultithreadedAbstractTest extends GridC
         GridCache<?, ?> cache = cache();
 
         if (cache != null)
-            cache.clearAll();
+            cache.clear();
 
         stopAllGrids();
     }

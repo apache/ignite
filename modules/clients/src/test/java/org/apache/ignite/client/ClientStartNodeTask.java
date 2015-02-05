@@ -20,9 +20,9 @@ package org.apache.ignite.client;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
 import org.springframework.beans.factory.*;
 import org.springframework.context.support.*;
 
@@ -60,7 +60,7 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
     private transient Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected Object executeJob(int gridSize, String type) throws IgniteCheckedException {
+    @Override protected Object executeJob(int gridSize, String type) {
         log.info(">>> Starting new grid node [currGridSize=" + gridSize + ", arg=" + type + "]");
 
         if (type == null)
@@ -83,8 +83,7 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
-        throws IgniteCheckedException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         if (res.getException() != null)
             return FAILOVER;
 
@@ -151,7 +150,7 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
     private static void changeTopology(Ignite parent, int add, int rmv, String type) throws IgniteCheckedException {
         Collection<ComputeTaskFuture<?>> tasks = new ArrayList<>();
 
-        IgniteCompute comp = parent.compute().enableAsync();
+        IgniteCompute comp = parent.compute().withAsync();
 
         // Start nodes in parallel.
         while (add-- > 0) {

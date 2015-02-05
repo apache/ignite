@@ -33,23 +33,13 @@ public @interface QuerySqlField {
      * Just like with databases, field indexing may require additional overhead
      * during updates, but makes select operations faster.
      * <p>
-     * When {@gglink org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi} is set as indexing SPI and indexed field is
+     * When indexed field is
      * of type {@code com.vividsolutions.jts.geom.Geometry} (or any subclass of this class) then GridGain will
      * consider this index as spatial providing performance boost for spatial queries.
      *
      * @return {@code True} if index must be created for this field in database.
      */
     boolean index() default false;
-
-    /**
-     * Specifies whether index should be unique or not. This property only
-     * makes sense if {@link #index()} property is set to {@code true}.
-     *
-     * @return {@code True} if field index should be unique.
-     * @deprecated No longer supported, will be ignored.
-     */
-    @Deprecated
-    boolean unique() default false;
 
     /**
      * Specifies whether index should be in descending order or not. This property only

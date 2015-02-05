@@ -23,12 +23,13 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -3187,7 +3188,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
             new GridFutureAdapter<>(), new GridFutureAdapter<>(), new GridFutureAdapter<>()
         };
 
-        for (IgniteFuture fut : futs) {
+        for (IgniteInternalFuture fut : futs) {
             assert !fut.isDone();
         }
 
@@ -3208,7 +3209,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         F.<Object>awaitAll(futs);
 
-        for (IgniteFuture fut : futs) {
+        for (IgniteInternalFuture fut : futs) {
             assert fut.isDone();
         }
     }
@@ -3220,7 +3221,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
     public void testAwaitOne() throws Exception {
         final GridFutureAdapter<?>[] futs = {new GridFutureAdapter(), new GridFutureAdapter(), new GridFutureAdapter()};
 
-        for (IgniteFuture fut : futs) {
+        for (IgniteInternalFuture fut : futs) {
             assert !fut.isDone();
         }
 
@@ -3237,16 +3238,16 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
             }
         }.start();
 
-        IgniteFuture doneFut = F.awaitOne((IgniteFuture[])futs);
+        IgniteInternalFuture doneFut = F.awaitOne((IgniteInternalFuture[])futs);
 
         assert doneFut.isDone();
 
-        for (IgniteFuture fut : futs) {
+        for (IgniteInternalFuture fut : futs) {
             assert doneFut == fut ? fut.isDone() : !fut.isDone();
         }
 
         // Check only NULLs.
-        IgniteFuture<Object> fut = F.awaitOne(Arrays.asList((IgniteFuture<Object>)null, null, null));
+        IgniteInternalFuture<Object> fut = F.awaitOne(Arrays.asList((IgniteInternalFuture<Object>)null, null, null));
 
         assert fut.isDone();
     }

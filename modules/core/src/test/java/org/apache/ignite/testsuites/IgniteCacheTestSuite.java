@@ -21,16 +21,16 @@ import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
-import org.apache.ignite.internal.processors.cache.expiry.*;
-import org.apache.ignite.internal.processors.cache.integration.*;
-import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.*;
+import org.apache.ignite.internal.processors.cache.expiry.*;
+import org.apache.ignite.internal.processors.cache.integration.*;
 import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.dataload.*;
 
@@ -64,10 +64,12 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxInvokeTest.class);
         suite.addTestSuite(IgniteCacheTxNearEnabledInvokeTest.class);
         suite.addTestSuite(IgniteCacheTxLocalInvokeTest.class);
+        suite.addTestSuite(IgniteCrossCacheTxStoreSelfTest.class);
 
         // Affinity tests.
         suite.addTestSuite(GridCachePartitionFairAffinityNodesSelfTest.class);
         suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
+        suite.addTestSuite(IgniteCacheAffinitySelfTest.class);
 
         // Swap tests.
         suite.addTestSuite(GridCacheSwapPreloadSelfTest.class);
@@ -364,6 +366,13 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxNoWriteThroughTest.class);
         suite.addTestSuite(IgniteCacheTxNearEnabledNoWriteThroughTest.class);
         suite.addTestSuite(IgniteCacheTxLocalNoWriteThroughTest.class);
+
+        suite.addTestSuite(IgniteCacheAtomicPeekTest.class);
+        suite.addTestSuite(IgniteCacheAtomicReplicatedPeekTest.class);
+        suite.addTestSuite(IgniteCacheAtomicLocalPeekTest.class);
+        suite.addTestSuite(IgniteCacheTxPeekTest.class);
+        suite.addTestSuite(IgniteCacheTxLocalPeekTest.class);
+        suite.addTestSuite(IgniteCacheTxReplicatedPeekTest.class);
 
         // TODO: IGNITE-114.
         // suite.addTestSuite(IgniteCacheInvokeReadThroughTest.class);

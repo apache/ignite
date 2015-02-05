@@ -21,21 +21,21 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.security.*;
-import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.spi.discovery.*;
-import org.apache.ignite.spi.discovery.tcp.internal.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
-import org.apache.ignite.spi.discovery.tcp.messages.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.discovery.*;
+import org.apache.ignite.spi.discovery.tcp.internal.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
+import org.apache.ignite.spi.discovery.tcp.messages.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -73,7 +73,7 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
  * See the following IP finder implementations for details on configuration:
  * <ul>
  * <li>{@link org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder}</li>
- * <li>{@gglink org.gridgain.grid.spi.discovery.tcp.ipfinder.s3.GridTcpDiscoveryS3IpFinder}</li>
+ * <li>{@ignitelink org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinder}</li>
  * <li>{@link org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.TcpDiscoveryJdbcIpFinder}</li>
  * <li>{@link org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder}</li>
  * <li>{@link org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder} - default</li>
@@ -268,7 +268,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     private final Object mux = new Object();
 
     /** Map with proceeding ping requests. */
-    private final ConcurrentMap<InetSocketAddress, IgniteFuture<IgniteBiTuple<UUID, Boolean>>> pingMap =
+    private final ConcurrentMap<InetSocketAddress, IgniteInternalFuture<IgniteBiTuple<UUID, Boolean>>> pingMap =
         new ConcurrentHashMap8<>();
 
     /** Debug mode. */
@@ -800,7 +800,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             try {
                 U.sleep(2000);
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 throw new IgniteSpiException("Thread has been interrupted.", e);
             }
         }
@@ -891,7 +891,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (log.isDebugEnabled())
                     log.debug("Context has been initialized.");
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 U.warn(log, "Thread has been interrupted while waiting for SPI context initialization.", e);
             }
         }
@@ -1169,7 +1169,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
         GridFutureAdapterEx<IgniteBiTuple<UUID, Boolean>> fut = new GridFutureAdapterEx<>();
 
-        IgniteFuture<IgniteBiTuple<UUID, Boolean>> oldFut = pingMap.putIfAbsent(addr, fut);
+        IgniteInternalFuture<IgniteBiTuple<UUID, Boolean>> oldFut = pingMap.putIfAbsent(addr, fut);
 
         if (oldFut != null)
             return oldFut.get();
@@ -1284,7 +1284,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                     locNode.setAttributes(attrs);
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException | IgniteCheckedException e) {
                     throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
                 }
 
@@ -1370,31 +1370,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
         if (log.isDebugEnabled())
             log.debug("Discovery SPI has been connected to topology with order: " + locNode.internalOrder());
-    }
-
-    /**
-     * @param msg Error message.
-     * @return Remote grid version parsed from error message.
-     * @deprecated This method was created for preserving backward compatibility. During major version update
-     *      parsing of error message should be replaced with new {@link org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage}
-     *      which contains all necessary information.
-     */
-    @Deprecated
-    @Nullable private String parseRemoteVersion(String msg) {
-        msg = msg.replaceAll("\\s", "");
-
-        final String verPrefix = "rmtBuildVer=";
-
-        int startIdx = msg.indexOf(verPrefix);
-        int endIdx = msg.indexOf(',', startIdx);
-
-        if (endIdx < 0)
-            endIdx = msg.indexOf(']', startIdx);
-
-        if (startIdx < 0 || endIdx < 0)
-            return null;
-
-        return msg.substring(startIdx + verPrefix.length() - 1, endIdx);
     }
 
     /**
@@ -1487,7 +1462,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 try {
                     U.sleep(2000);
                 }
-                catch (IgniteInterruptedException e) {
+                catch (IgniteInterruptedCheckedException e) {
                     throw new IgniteSpiException("Thread has been interrupted.", e);
                 }
             }
@@ -1511,7 +1486,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 try {
                     U.sleep(2000);
                 }
-                catch (IgniteInterruptedException e) {
+                catch (IgniteInterruptedCheckedException e) {
                     throw new IgniteSpiException("Thread has been interrupted.", e);
                 }
             }
@@ -3155,7 +3130,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         node.setAttributes(attrs);
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException | IgniteCheckedException e) {
                     LT.error(log, e, "Authentication failed [nodeId=" + node.id() + ", addrs=" +
                         U.addressesAsString(node) + ']');
 
@@ -3610,7 +3585,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 authFailed = false;
                         }
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException | IgniteCheckedException e) {
                         U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
                     }
                     finally {
@@ -3638,7 +3613,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (topChanged) {
                     assert !node.visible() : "Added visible node [node=" + node + ", locNode=" + locNode + ']';
 
-                    List<Object> data = msg.newNodeDiscoveryData();
+                    Map<Integer, Object> data = msg.newNodeDiscoveryData();
 
                     if (data != null)
                         exchange.onExchange(data);
@@ -3653,7 +3628,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             if (msg.verified() && locNodeId.equals(node.id())) {
                 // Discovery data.
-                Collection<List<Object>> dataList;
+                Collection<Map<Integer, Object>> dataList;
 
                 synchronized (mux) {
                     if (spiState == CONNECTING && locNode.internalOrder() != node.internalOrder()) {
@@ -3712,7 +3687,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 // Notify outside of synchronized block.
                 if (dataList != null) {
-                    for (List<Object> discoData : dataList)
+                    for (Map<Integer, Object> discoData : dataList)
                         exchange.onExchange(discoData);
                 }
             }
@@ -4340,7 +4315,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                         updateMetrics(e.getKey(), metricsSet.metrics(), tstamp);
 
-                        for (T2<UUID, ClusterNodeMetrics> t : metricsSet.clientMetrics())
+                        for (T2<UUID, ClusterMetrics> t : metricsSet.clientMetrics())
                             updateMetrics(t.get1(), t.get2(), tstamp);
                     }
                 }
@@ -4350,11 +4325,11 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if ((locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() == null ||
                     !msg.hasMetrics(locNodeId)) && spiStateCopy() == CONNECTED) {
                     // Message is on its first ring or just created on coordinator.
-                    msg.setMetrics(locNodeId, metricsProvider.getMetrics());
+                    msg.setMetrics(locNodeId, metricsProvider.metrics());
 
                     for (Map.Entry<UUID, ClientMessageWorker> e : clientMsgWorkers.entrySet()) {
                         UUID nodeId = e.getKey();
-                        ClusterNodeMetrics metrics = e.getValue().metrics();
+                        ClusterMetrics metrics = e.getValue().metrics();
 
                         if (metrics != null)
                             msg.setClientMetrics(locNodeId, nodeId, metrics);
@@ -4399,7 +4374,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * @param metrics Metrics.
          * @param tstamp Timestamp.
          */
-        private void updateMetrics(UUID nodeId, ClusterNodeMetrics metrics, long tstamp) {
+        private void updateMetrics(UUID nodeId, ClusterMetrics metrics, long tstamp) {
             assert nodeId != null;
             assert metrics != null;
 
@@ -4606,7 +4581,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         }
                     }
 
-                    if (!U.bytesEqual(buf, 0, U.GG_HEADER, 0, 4)) {
+                    if (!U.bytesEqual(buf, 0, U.IGNITE_HEADER, 0, 4)) {
                         if (log.isDebugEnabled())
                             log.debug("Unknown connection detected (is some other software connecting to " +
                                 "this GridGain port?) " +
@@ -5108,7 +5083,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         private final Socket sock;
 
         /** Current client metrics. */
-        private volatile ClusterNodeMetrics metrics;
+        private volatile ClusterMetrics metrics;
 
         /**
          * @param sock Socket.
@@ -5124,7 +5099,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         /**
          * @return Current client metrics.
          */
-        ClusterNodeMetrics metrics() {
+        ClusterMetrics metrics() {
             return metrics;
         }
 

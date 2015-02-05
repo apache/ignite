@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -538,7 +539,7 @@ public class GridCacheMvccCandidate<K> implements Externalizable,
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        GridUtils.writeUuid(out, nodeId);
+        IgniteUtils.writeUuid(out, nodeId);
 
         CU.writeVersion(out, ver);
 
@@ -550,7 +551,7 @@ public class GridCacheMvccCandidate<K> implements Externalizable,
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        nodeId = GridUtils.readUuid(in);
+        nodeId = IgniteUtils.readUuid(in);
 
         ver = CU.readVersion(in);
 

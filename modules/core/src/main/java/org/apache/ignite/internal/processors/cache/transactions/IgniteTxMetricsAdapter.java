@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.transactions.*;
 
 import java.io.*;
 

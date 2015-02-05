@@ -17,7 +17,6 @@
 
 package org.apache.loadtests.direct.singlesplit;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.compute.gridify.*;
 import org.apache.loadtests.gridify.*;
@@ -30,11 +29,10 @@ public class SingleSplitTestJobTarget {
      * @param level Level.
      * @param jobSes Job session.
      * @return ALways returns {@code 1}.
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unused")
     @Gridify(taskClass = GridifyLoadTestTask.class, timeout = 10000)
-    public int executeLoadTestJob(int level, ComputeTaskSession jobSes) throws IgniteCheckedException {
+    public int executeLoadTestJob(int level, ComputeTaskSession jobSes) {
         assert level > 0;
         assert jobSes != null;
 

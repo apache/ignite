@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
+import org.apache.ignite.internal.processors.cache.CacheEntryEvent;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -75,16 +75,6 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        if (intLsnrCnt.get() > 0 || lsnrCnt.get() > 0) {
-            Collection<ClusterNode> nodes = cctx.discovery().cacheNodes(cctx.name(), -1);
-
-            for (ClusterNode n : nodes) {
-                if (!n.version().greaterThanEqual(6, 2, 0))
-                    throw new IgniteCheckedException("Rolling update is not supported for continuous queries " +
-                        "for versions below 6.2.0");
-            }
-        }
-
         Iterable<CacheEntryListenerConfiguration<K, V>> lsnrCfgs = cctx.config().getCacheEntryListenerConfigurations();
 
         if (lsnrCfgs != null) {
@@ -621,7 +611,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
                     assert cache != null : cacheName;
                 }
 
-                return fltr.evaluate(new org.apache.ignite.cache.CacheEntryEvent(cache, evtType, entry));
+                return fltr.evaluate(new CacheEntryEvent(cache, evtType, entry));
             }
             catch (Exception e) {
                 LT.warn(ignite.log(), e, "Cache entry event filter error: " + e);
@@ -738,8 +728,8 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
                         case EXPIRED: {
                             assert expireLsnr != null;
 
-                            org.apache.ignite.cache.CacheEntryEvent evt0 =
-                                new org.apache.ignite.cache.CacheEntryEvent(cache, EXPIRED, entry);
+                            CacheEntryEvent evt0 =
+                                new CacheEntryEvent(cache, EXPIRED, entry);
 
                             expireLsnr.onExpired(Collections.singleton(evt0));
 
@@ -749,8 +739,8 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
                         case REMOVED: {
                             assert rmvLsnr != null;
 
-                            org.apache.ignite.cache.CacheEntryEvent evt0 =
-                                new org.apache.ignite.cache.CacheEntryEvent(cache, REMOVED, entry);
+                            CacheEntryEvent evt0 =
+                                new CacheEntryEvent(cache, REMOVED, entry);
 
                             rmvLsnr.onRemoved(Collections.singleton(evt0));
 
@@ -760,8 +750,8 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
                         case UPDATED: {
                             assert updateLsnr != null;
 
-                            org.apache.ignite.cache.CacheEntryEvent evt0 =
-                                new org.apache.ignite.cache.CacheEntryEvent(cache, UPDATED, entry);
+                            CacheEntryEvent evt0 =
+                                new CacheEntryEvent(cache, UPDATED, entry);
 
                             updateLsnr.onUpdated(Collections.singleton(evt0));
 
@@ -771,8 +761,8 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
                         case CREATED: {
                             assert createLsnr != null;
 
-                            org.apache.ignite.cache.CacheEntryEvent evt0 =
-                                new org.apache.ignite.cache.CacheEntryEvent(cache, CREATED, entry);
+                            CacheEntryEvent evt0 =
+                                new CacheEntryEvent(cache, CREATED, entry);
 
                             createLsnr.onCreated(Collections.singleton(evt0));
 

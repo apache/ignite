@@ -50,7 +50,7 @@ import static javax.cache.Cache.*;
  * <p>
  * Provided implementations may be used for test purposes:
  * <ul>
- *     <li>{@gglink org.gridgain.grid.cache.store.hibernate.GridCacheHibernateBlobStore}</li>
+ *     <li>{@ignitelink org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStore}</li>
  *     <li>{@link CacheJdbcBlobStore}</li>
  * </ul>
  * <p>
@@ -165,7 +165,7 @@ public abstract class CacheStore<K, V> implements CacheLoader<K, V>, CacheWriter
      *
      * @return Session for current cache operation.
      */
-    @Nullable public CacheStoreSession session() {
+    public CacheStoreSession session() {
         return ses;
     }
 

@@ -20,15 +20,15 @@ package org.apache.ignite.testframework;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.discovery.*;
-import org.apache.ignite.spi.swapspace.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.swapspace.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -139,8 +139,8 @@ public class GridSpiTestContext implements IgniteSpiContext {
      * @param activeJobs Active jobs count.
      * @return Metrics adapter.
      */
-    private DiscoveryNodeMetricsAdapter createMetrics(int waitingJobs, int activeJobs) {
-        DiscoveryNodeMetricsAdapter metrics = new DiscoveryNodeMetricsAdapter();
+    private ClusterMetricsSnapshot createMetrics(int waitingJobs, int activeJobs) {
+        ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
 
         metrics.setCurrentWaitingJobs(waitingJobs);
         metrics.setCurrentActiveJobs(activeJobs);
@@ -367,7 +367,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> V get(String cacheName, K key) throws IgniteCheckedException {
+    @Override public <K, V> V get(String cacheName, K key) {
         assert cacheName != null;
         assert key != null;
 
@@ -388,7 +388,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> V put(String cacheName, K key, V val, long ttl) throws IgniteCheckedException {
+    @Override public <K, V> V put(String cacheName, K key, V val, long ttl) {
         assert cacheName != null;
         assert key != null;
         assert ttl >= 0;
@@ -406,7 +406,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl) throws IgniteCheckedException {
+    @Override public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl) {
         V v = get(cacheName, key);
 
         if (v != null)
@@ -416,7 +416,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> V remove(String cacheName, K key) throws IgniteCheckedException {
+    @Override public <K, V> V remove(String cacheName, K key) {
         assert cacheName != null;
         assert key != null;
 
@@ -437,7 +437,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
         try {
             res =  get(cacheName, key) != null;
         }
-        catch (IgniteCheckedException ignored) {
+        catch (IgniteException ignored) {
 
         }
 
@@ -446,31 +446,30 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
     /** {@inheritDoc} */
     @Override public void writeToSwap(String spaceName, Object key, @Nullable Object val,
-        @Nullable ClassLoader ldr) throws IgniteCheckedException {
+        @Nullable ClassLoader ldr) {
         /* No-op. */
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T readFromSwap(String spaceName, SwapKey key, @Nullable ClassLoader ldr)
-        throws IgniteCheckedException {
+    @Override public <T> T readFromSwap(String spaceName, SwapKey key, @Nullable ClassLoader ldr) {
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public <T> T readFromOffheap(String spaceName, int part, Object key, byte[] keyBytes,
-        @Nullable ClassLoader ldr) throws IgniteCheckedException {
+        @Nullable ClassLoader ldr) {
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean removeFromOffheap(@Nullable String spaceName, int part, Object key,
-        @Nullable byte[] keyBytes) throws IgniteCheckedException {
+        @Nullable byte[] keyBytes) {
         return false;
     }
 
     /** {@inheritDoc} */
     @Override public void writeToOffheap(@Nullable String spaceName, int part, Object key, @Nullable byte[] keyBytes,
-        Object val, @Nullable byte[] valBytes, @Nullable ClassLoader ldr) throws IgniteCheckedException {
+        Object val, @Nullable byte[] valBytes, @Nullable ClassLoader ldr) {
         // No-op.
     }
 
@@ -481,7 +480,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
     /** {@inheritDoc} */
     @Override public void removeFromSwap(String spaceName, Object key,
-        @Nullable ClassLoader ldr) throws IgniteCheckedException {
+        @Nullable ClassLoader ldr) {
         // No-op.
     }
 
@@ -501,18 +500,18 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridSecuritySubject> authenticatedSubjects() throws IgniteCheckedException {
+    @Override public Collection<GridSecuritySubject> authenticatedSubjects() {
         return Collections.emptyList();
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException {
+    @Override public GridSecuritySubject authenticatedSubject(UUID subjId) {
         return null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> T readValueFromOffheapAndSwap(@Nullable String spaceName, Object key,
-        @Nullable ClassLoader ldr) throws IgniteCheckedException {
+        @Nullable ClassLoader ldr) {
         return null;
     }
 

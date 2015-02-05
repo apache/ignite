@@ -20,10 +20,11 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.dr.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
@@ -289,7 +290,7 @@ public interface GridCacheEntryEx<K, V> {
      * @throws GridCacheEntryRemovedException If entry was removed.
      * @throws GridCacheFilterFailedException If filter failed.
      */
-    @Nullable public V innerGet(@Nullable IgniteTxEx<K, V> tx,
+    @Nullable public V innerGet(@Nullable IgniteInternalTx<K, V> tx,
         boolean readSwap,
         boolean readThrough,
         boolean failFast,
@@ -338,7 +339,7 @@ public interface GridCacheEntryEx<K, V> {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     public GridCacheUpdateTxResult<V> innerSet(
-        @Nullable IgniteTxEx<K, V> tx,
+        @Nullable IgniteInternalTx<K, V> tx,
         UUID evtNodeId,
         UUID affNodeId,
         @Nullable V val,
@@ -377,7 +378,7 @@ public interface GridCacheEntryEx<K, V> {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     public GridCacheUpdateTxResult<V> innerRemove(
-        @Nullable IgniteTxEx<K, V> tx,
+        @Nullable IgniteInternalTx<K, V> tx,
         UUID evtNodeId,
         UUID affNodeId,
         boolean writeThrough,
@@ -511,7 +512,7 @@ public interface GridCacheEntryEx<K, V> {
      * @throws GridCacheEntryRemovedException If this entry is obsolete.
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
      */
-    public boolean tmLock(IgniteTxEx<K, V> tx, long timeout) throws GridCacheEntryRemovedException,
+    public boolean tmLock(IgniteInternalTx<K, V> tx, long timeout) throws GridCacheEntryRemovedException,
         GridDistributedLockCancelledException;
 
     /**
@@ -520,7 +521,7 @@ public interface GridCacheEntryEx<K, V> {
      * @param tx Cache transaction.
      * @throws GridCacheEntryRemovedException If this entry has been removed from cache.
      */
-    public abstract void txUnlock(IgniteTxEx<K, V> tx) throws GridCacheEntryRemovedException;
+    public abstract void txUnlock(IgniteInternalTx<K, V> tx) throws GridCacheEntryRemovedException;
 
     /**
      * @param ver Removes lock.
@@ -587,6 +588,20 @@ public interface GridCacheEntryEx<K, V> {
     /**
      * Peeks into entry without loading value or updating statistics.
      *
+     * @param heap Read from heap flag.
+     * @param offheap Read from offheap flag.
+     * @param swap Read from swap flag.
+     * @param topVer Topology version..
+     * @return Value.
+     * @throws GridCacheEntryRemovedException If entry has been removed.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public V peek(boolean heap, boolean offheap, boolean swap, long topVer)
+        throws GridCacheEntryRemovedException, IgniteCheckedException;
+
+    /**
+     * Peeks into entry without loading value or updating statistics.
+     *
      * @param modes Peek modes.
      * @param filter Optional filter.
      * @return Value.
@@ -620,7 +635,7 @@ public interface GridCacheEntryEx<K, V> {
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable public GridTuple<V> peek0(boolean failFast, GridCachePeekMode mode,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter, @Nullable IgniteTxEx<K, V> tx)
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter, @Nullable IgniteInternalTx<K, V> tx)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException;
 
     /**
@@ -666,6 +681,14 @@ public interface GridCacheEntryEx<K, V> {
      */
     public boolean initialValue(K key, GridCacheSwapEntry<V> unswapped)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
+
+    /**
+     * Create versioned entry for this cache entry.
+     *
+     * @return Versioned entry.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public GridCacheVersionedEntryEx<K, V> versionedEntry() throws IgniteCheckedException;
 
     /**
      * Sets new value if passed in version matches the current version

@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.clock;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -69,7 +69,7 @@ public class GridTimeSyncProcessorSelfTest extends GridCommonAbstractTest {
 
         try {
             // Check coordinator time deltas.
-            final GridKernal kernal = (GridKernal)grid(0);
+            final IgniteKernal kernal = (IgniteKernal)grid(0);
 
             // Wait for latest time sync history.
             GridTestUtils.waitForCondition(new PA() {
@@ -128,7 +128,7 @@ public class GridTimeSyncProcessorSelfTest extends GridCommonAbstractTest {
             }
 
             // Check coordinator time deltas.
-            final GridKernal kernal = (GridKernal)grid(0);
+            final IgniteKernal kernal = (IgniteKernal)grid(0);
 
             assertEquals(6, kernal.localNode().order());
 
@@ -195,9 +195,9 @@ public class GridTimeSyncProcessorSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
+        @Override public void onLifecycleEvent(LifecycleEventType evt) {
             if (evt == LifecycleEventType.BEFORE_GRID_START)
-                ((GridKernalContextImpl)((GridKernal)g).context()).timeSource(new TimeShiftClockSource(delta));
+                ((GridKernalContextImpl)((IgniteKernal)g).context()).timeSource(new TimeShiftClockSource(delta));
         }
     }
 

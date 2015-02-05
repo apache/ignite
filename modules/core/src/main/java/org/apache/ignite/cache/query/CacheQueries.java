@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.query;
 
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -111,7 +112,7 @@ public interface CacheQueries<K, V> {
      *
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    public IgniteFuture<?> rebuildIndexes(Class<?> cls);
+    public IgniteInternalFuture<?> rebuildIndexes(Class<?> cls);
 
     /**
      * Forces this cache to rebuild all search indexes of given value type. Sometimes indexes
@@ -124,7 +125,7 @@ public interface CacheQueries<K, V> {
      *
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    public IgniteFuture<?> rebuildIndexes(String typeName);
+    public IgniteInternalFuture<?> rebuildIndexes(String typeName);
 
     /**
      * Forces this cache to rebuild search indexes of all types. Sometimes indexes
@@ -135,7 +136,7 @@ public interface CacheQueries<K, V> {
      *
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    public IgniteFuture<?> rebuildAllIndexes();
+    public IgniteInternalFuture<?> rebuildAllIndexes();
 
     /**
      * Accumulated metrics for all queries executed for this cache.

@@ -18,9 +18,10 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.lang.*;
 
 import java.io.*;
 import java.nio.*;

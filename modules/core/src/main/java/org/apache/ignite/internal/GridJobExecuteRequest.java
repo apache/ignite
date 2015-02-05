@@ -19,10 +19,10 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -35,6 +35,9 @@ import java.util.*;
 public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter implements GridTaskMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Subject ID. */
+    private UUID subjId;
 
     /** */
     private IgniteUuid sesId;
@@ -101,11 +104,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
     /** Transient since needs to hold local creation time. */
     @GridDirectTransient
-    private long createTime0 = U.currentTimeMillis();
-
-    /** @deprecated need to remove and use only {@link #createTime0}. */
-    @Deprecated
-    private long createTime = createTime0;
+    private long createTime = U.currentTimeMillis();
 
     /** */
     private IgniteUuid clsLdrId;
@@ -161,32 +160,34 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
      * @param forceLocDep {@code True} If remote node should ignore deployment settings.
      * @param sesFullSup {@code True} if session attributes are disabled.
      * @param internal {@code True} if internal job.
+     * @param subjId Subject ID.
      */
     public GridJobExecuteRequest(
-        IgniteUuid sesId,
-        IgniteUuid jobId,
-        String taskName,
-        String userVer,
-        String taskClsName,
-        byte[] jobBytes,
-        ComputeJob job,
-        long startTaskTime,
-        long timeout,
-        @Nullable Collection<UUID> top,
-        byte[] siblingsBytes,
-        Collection<ComputeJobSibling> siblings,
-        byte[] sesAttrsBytes,
-        Map<Object, Object> sesAttrs,
-        byte[] jobAttrsBytes,
-        Map<? extends Serializable, ? extends Serializable> jobAttrs,
-        String cpSpi,
-        IgniteUuid clsLdrId,
-        IgniteDeploymentMode depMode,
-        boolean dynamicSiblings,
-        Map<UUID, IgniteUuid> ldrParticipants,
-        boolean forceLocDep,
-        boolean sesFullSup,
-        boolean internal) {
+            IgniteUuid sesId,
+            IgniteUuid jobId,
+            String taskName,
+            String userVer,
+            String taskClsName,
+            byte[] jobBytes,
+            ComputeJob job,
+            long startTaskTime,
+            long timeout,
+            @Nullable Collection<UUID> top,
+            byte[] siblingsBytes,
+            Collection<ComputeJobSibling> siblings,
+            byte[] sesAttrsBytes,
+            Map<Object, Object> sesAttrs,
+            byte[] jobAttrsBytes,
+            Map<? extends Serializable, ? extends Serializable> jobAttrs,
+            String cpSpi,
+            IgniteUuid clsLdrId,
+            IgniteDeploymentMode depMode,
+            boolean dynamicSiblings,
+            Map<UUID, IgniteUuid> ldrParticipants,
+            boolean forceLocDep,
+            boolean sesFullSup,
+            boolean internal,
+            UUID subjId) {
         this.top = top;
         assert sesId != null;
         assert jobId != null;
@@ -222,6 +223,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
         this.forceLocDep = forceLocDep;
         this.sesFullSup = sesFullSup;
         this.internal = internal;
+        this.subjId = subjId;
 
         this.cpSpi = cpSpi == null || cpSpi.isEmpty() ? null : cpSpi;
     }
@@ -293,7 +295,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
      * @return This instance creation time.
      */
     public long getCreateTime() {
-        return createTime0;
+        return createTime;
     }
 
     /**
@@ -406,7 +408,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
      * @return Subject ID.
      */
     public UUID getSubjectId() {
-        return null;
+        return subjId;
     }
 
     /** {@inheritDoc} */
@@ -423,6 +425,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
     @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
         GridJobExecuteRequest _clone = (GridJobExecuteRequest)_msg;
 
+        _clone.subjId = subjId;
         _clone.sesId = sesId;
         _clone.jobId = jobId;
         _clone.jobBytes = jobBytes;
@@ -441,7 +444,6 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
         _clone.siblings = siblings;
         _clone.siblingsBytes = siblingsBytes;
         _clone.createTime = createTime;
-        _clone.createTime0 = createTime0;
         _clone.clsLdrId = clsLdrId;
         _clone.depMode = depMode;
         _clone.dynamicSiblings = dynamicSiblings;
@@ -477,54 +479,48 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 commState.idx++;
 
             case 2:
-                if (!commState.putLong(createTime))
-                    return false;
-
-                commState.idx++;
-
-            case 3:
                 if (!commState.putEnum(depMode))
                     return false;
 
                 commState.idx++;
 
-            case 4:
+            case 3:
                 if (!commState.putBoolean(dynamicSiblings))
                     return false;
 
                 commState.idx++;
 
-            case 5:
+            case 4:
                 if (!commState.putBoolean(forceLocDep))
                     return false;
 
                 commState.idx++;
 
-            case 6:
+            case 5:
                 if (!commState.putBoolean(internal))
                     return false;
 
                 commState.idx++;
 
-            case 7:
+            case 6:
                 if (!commState.putByteArray(jobAttrsBytes))
                     return false;
 
                 commState.idx++;
 
-            case 8:
+            case 7:
                 if (!commState.putByteArray(jobBytes))
                     return false;
 
                 commState.idx++;
 
-            case 9:
+            case 8:
                 if (!commState.putGridUuid(jobId))
                     return false;
 
                 commState.idx++;
 
-            case 10:
+            case 9:
                 if (ldrParticipants != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(ldrParticipants.size()))
@@ -562,32 +558,38 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 commState.idx++;
 
-            case 11:
+            case 10:
                 if (!commState.putByteArray(sesAttrsBytes))
                     return false;
 
                 commState.idx++;
 
-            case 12:
+            case 11:
                 if (!commState.putBoolean(sesFullSup))
                     return false;
 
                 commState.idx++;
 
-            case 13:
+            case 12:
                 if (!commState.putGridUuid(sesId))
                     return false;
 
                 commState.idx++;
 
-            case 14:
+            case 13:
                 if (!commState.putByteArray(siblingsBytes))
                     return false;
 
                 commState.idx++;
 
-            case 15:
+            case 14:
                 if (!commState.putLong(startTaskTime))
+                    return false;
+
+                commState.idx++;
+
+            case 15:
+                if (!commState.putUuid(subjId))
                     return false;
 
                 commState.idx++;
@@ -675,14 +677,6 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 commState.idx++;
 
             case 2:
-                if (buf.remaining() < 8)
-                    return false;
-
-                createTime = commState.getLong();
-
-                commState.idx++;
-
-            case 3:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -692,7 +686,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 commState.idx++;
 
-            case 4:
+            case 3:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -700,7 +694,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 commState.idx++;
 
-            case 5:
+            case 4:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -708,7 +702,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 commState.idx++;
 
-            case 6:
+            case 5:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -716,7 +710,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 commState.idx++;
 
-            case 7:
+            case 6:
                 byte[] jobAttrsBytes0 = commState.getByteArray();
 
                 if (jobAttrsBytes0 == BYTE_ARR_NOT_READ)
@@ -726,7 +720,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 commState.idx++;
 
-            case 8:
+            case 7:
                 byte[] jobBytes0 = commState.getByteArray();
 
                 if (jobBytes0 == BYTE_ARR_NOT_READ)
@@ -736,7 +730,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 commState.idx++;
 
-            case 9:
+            case 8:
                 IgniteUuid jobId0 = commState.getGridUuid();
 
                 if (jobId0 == GRID_UUID_NOT_READ)
@@ -746,7 +740,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 commState.idx++;
 
-            case 10:
+            case 9:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -756,7 +750,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 if (commState.readSize >= 0) {
                     if (ldrParticipants == null)
-                        ldrParticipants = U.newHashMap(commState.readSize);
+                        ldrParticipants = new HashMap<>(commState.readSize, 1.0f);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {
@@ -788,7 +782,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 commState.idx++;
 
-            case 11:
+            case 10:
                 byte[] sesAttrsBytes0 = commState.getByteArray();
 
                 if (sesAttrsBytes0 == BYTE_ARR_NOT_READ)
@@ -798,7 +792,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 commState.idx++;
 
-            case 12:
+            case 11:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -806,7 +800,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 commState.idx++;
 
-            case 13:
+            case 12:
                 IgniteUuid sesId0 = commState.getGridUuid();
 
                 if (sesId0 == GRID_UUID_NOT_READ)
@@ -816,7 +810,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 commState.idx++;
 
-            case 14:
+            case 13:
                 byte[] siblingsBytes0 = commState.getByteArray();
 
                 if (siblingsBytes0 == BYTE_ARR_NOT_READ)
@@ -826,11 +820,21 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 commState.idx++;
 
-            case 15:
+            case 14:
                 if (buf.remaining() < 8)
                     return false;
 
                 startTaskTime = commState.getLong();
+
+                commState.idx++;
+
+            case 15:
+                UUID subjId0 = commState.getUuid();
+
+                if (subjId0 == UUID_NOT_READ)
+                    return false;
+
+                subjId = subjId0;
 
                 commState.idx++;
 
@@ -908,7 +912,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 1;
+        return 81;
     }
 
     /** {@inheritDoc} */

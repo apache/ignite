@@ -28,7 +28,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 public class GridCachePartitionedAtomicQueueFailoverDataConsistencySelfTest extends
     GridCacheAbstractQueueFailoverDataConsistencySelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
+    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return ATOMIC;
     }
 }

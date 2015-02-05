@@ -20,18 +20,18 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 
 /**
- * {@link org.apache.ignite.IgniteEvents} implementation.
+ * {@link IgniteEvents} implementation.
  */
-public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements IgniteEvents, Externalizable {
+public class IgniteEventsImpl extends IgniteAsyncSupportAdapter<IgniteEvents> implements IgniteEvents, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -67,13 +67,16 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
 
     /** {@inheritDoc} */
     @Override public <T extends IgniteEvent> List<T> remoteQuery(IgnitePredicate<T> p, long timeout,
-        @Nullable int... types) throws IgniteCheckedException {
+        @Nullable int... types) {
         A.notNull(p, "p");
 
         guard();
 
         try {
             return saveOrGet(ctx.event().remoteEventsAsync(compoundPredicate(p, types), prj.nodes(), timeout));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -82,14 +85,14 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
 
     /** {@inheritDoc} */
     @Override public <T extends IgniteEvent> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
-        @Nullable IgnitePredicate<T> rmtFilter, @Nullable int... types) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<T> rmtFilter, @Nullable int... types) {
         return remoteListen(1, 0, true, locLsnr, rmtFilter, types);
     }
 
     /** {@inheritDoc} */
     @Override public <T extends IgniteEvent> UUID remoteListen(int bufSize, long interval,
         boolean autoUnsubscribe, @Nullable IgniteBiPredicate<UUID, T> locLsnr, @Nullable IgnitePredicate<T> rmtFilter,
-        @Nullable int... types) throws IgniteCheckedException {
+        @Nullable int... types) {
         A.ensure(bufSize > 0, "bufSize > 0");
         A.ensure(interval >= 0, "interval >= 0");
 
@@ -100,19 +103,25 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
                 new GridEventConsumeHandler((IgniteBiPredicate<UUID, IgniteEvent>)locLsnr,
                     (IgnitePredicate<IgniteEvent>)rmtFilter, types), bufSize, interval, autoUnsubscribe, prj.predicate()));
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             unguard();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void stopRemoteListen(UUID opId) throws IgniteCheckedException {
+    @Override public void stopRemoteListen(UUID opId) {
         A.notNull(opId, "consumeId");
 
         guard();
 
         try {
             saveOrGet(ctx.continuous().stopRoutine(opId));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -121,11 +130,14 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
 
     /** {@inheritDoc} */
     @Override public <T extends IgniteEvent> T waitForLocal(@Nullable IgnitePredicate<T> filter,
-        @Nullable int... types) throws IgniteCheckedException {
+        @Nullable int... types) {
         guard();
 
         try {
             return saveOrGet(ctx.event().waitForEvent(filter, types));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -270,10 +282,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteEvents enableAsync() {
-        if (isAsync())
-            return this;
-
+    @Override protected IgniteEvents createAsyncInstance() {
         return new IgniteEventsImpl(ctx, prj, true);
     }
 

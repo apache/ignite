@@ -19,23 +19,25 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 
+import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
-import static org.apache.ignite.cache.GridCachePeekMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
@@ -175,7 +177,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         Collection<? extends K> keys,
         boolean reload,
         boolean skipVals,
-        IgniteTxEx<K, V> tx,
+        IgniteInternalTx<K, V> tx,
         @Nullable UUID subjId,
         String taskName,
         IgniteBiInClosure<K, V> vis
@@ -238,7 +240,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public IgniteFuture<?> reloadAllAsync() {
+    @Override public IgniteInternalFuture<?> reloadAllAsync() {
         GridCompoundFuture fut = new GridCompoundFuture(ctx.kernalContext());
 
         fut.add(super.reloadAllAsync());
@@ -260,7 +262,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param expiryPlc Expiry policy.
      * @return Loaded values.
      */
-    public IgniteFuture<Map<K, V>> loadAsync(@Nullable IgniteTxEx tx,
+    public IgniteInternalFuture<Map<K, V>> loadAsync(@Nullable IgniteInternalTx tx,
         @Nullable Collection<? extends K> keys,
         boolean reload,
         boolean forcePrimary,
@@ -309,15 +311,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> loadCacheAsync(IgniteBiPredicate<K, V> p, long ttl, Object[] args) {
+    @Override public IgniteInternalFuture<?> loadCacheAsync(IgniteBiPredicate<K, V> p, long ttl, Object[] args) {
         return dht().loadCacheAsync(p, ttl, args);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void resetMetrics() {
-        super.resetMetrics();
-
-        dht().resetMetrics();
     }
 
     /**
@@ -544,16 +539,16 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean clear0(K key, @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
-        return super.clear0(key, filter) | dht().clear0(key, filter);
+    public boolean clearLocally0(K key, @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        return super.clearLocally0(key, filter) | dht().clearLocally0(key, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public void clearAll0(Collection<? extends K> keys,
+    @Override public void clearLocally0(Collection<? extends K> keys,
         @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
-        super.clearAll0(keys, filter);
+        super.clearLocally0(keys, filter);
 
-        dht().clearAll0(keys, filter);
+        dht().clearLocally0(keys, filter);
     }
 
     /** {@inheritDoc} */
@@ -645,12 +640,12 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridCacheClearAllRunnable<K, V>> splitClearAll() {
+    @Override public List<GridCacheClearAllRunnable<K, V>> splitClearLocally() {
         switch (configuration().getDistributionMode()) {
             case NEAR_PARTITIONED:
                 GridCacheVersion obsoleteVer = ctx.versions().next();
 
-                List<GridCacheClearAllRunnable<K, V>> dhtJobs = dht().splitClearAll();
+                List<GridCacheClearAllRunnable<K, V>> dhtJobs = dht().splitClearLocally();
 
                 List<GridCacheClearAllRunnable<K, V>> res = new ArrayList<>(dhtJobs.size());
 
@@ -660,7 +655,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
                 return res;
 
             case NEAR_ONLY:
-                return super.splitClearAll();
+                return super.splitClearLocally();
 
             default:
                 assert false : "Invalid partition distribution mode.";

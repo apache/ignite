@@ -19,8 +19,8 @@ package org.apache.ignite.testframework;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.lang.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -53,7 +53,7 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     private Object consistentId = consistentIdCtr.incrementAndGet();
 
     /** */
-    private ClusterNodeMetrics metrics;
+    private ClusterMetrics metrics;
 
     /** */
     private long order;
@@ -84,7 +84,7 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
      * @param id Node ID.
      * @param metrics Node metrics.
      */
-    public GridTestNode(UUID id, ClusterNodeMetrics metrics) {
+    public GridTestNode(UUID id, ClusterMetrics metrics) {
         this.id = id;
         this.metrics = metrics;
 
@@ -182,7 +182,7 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNodeMetrics metrics() {
+    @Override public ClusterMetrics metrics() {
         return metrics;
     }
 
@@ -208,7 +208,7 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
      *
      * @param metrics Node metrics.
      */
-    public void setMetrics(ClusterNodeMetrics metrics) {
+    public void setMetrics(ClusterMetrics metrics) {
         this.metrics = metrics;
     }
 

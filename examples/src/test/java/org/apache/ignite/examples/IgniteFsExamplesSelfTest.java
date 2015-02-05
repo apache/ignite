@@ -17,9 +17,7 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.examples.ggfs.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.examples.fs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -27,38 +25,24 @@ import org.apache.ignite.testframework.junits.common.*;
  * IgniteFs examples self test.
  */
 public class IgniteFsExamplesSelfTest extends GridAbstractExamplesTest {
-    /** Grid name for light client example. */
-    private static final String CLIENT_LIGHT_GRID_NAME = "client-light-grid";
+    /** IgniteFs config with shared memory IPC. */
+    private static final String IGNITEFS_SHMEM_CFG = "modules/core/src/test/config/ggfs-shmem.xml";
 
-    /** GGFS config with shared memory IPC. */
-    private static final String GGFS_SHMEM_CFG = "modules/core/src/test/config/ggfs-shmem.xml";
-
-    /** GGFS config with loopback IPC. */
-    private static final String GGFS_LOOPBACK_CFG = "modules/core/src/test/config/ggfs-loopback.xml";
-
-    /** GGFS no endpoint config. */
-    private static final String GGFS_NO_ENDPOINT_CFG = "modules/core/src/test/config/ggfs-no-endpoint.xml";
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        String cfgPath = gridName == null ? (U.isWindows() ? GGFS_LOOPBACK_CFG : GGFS_SHMEM_CFG) :
-            GGFS_NO_ENDPOINT_CFG;
-
-        IgniteConfiguration cfg = GridGainEx.loadConfiguration(cfgPath).get1();
-
-        cfg.setGridName(gridName);
-
-        return cfg;
-    }
+    /** IgniteFs config with loopback IPC. */
+    private static final String IGNITEFS_LOOPBACK_CFG = "modules/core/src/test/config/ggfs-loopback.xml";
 
     /**
      * @throws Exception If failed.
      */
-    public void testGgfsApiExample() throws Exception {
-        startGrids(3);
+    public void testIgniteFsApiExample() throws Exception {
+        String configPath = U.isWindows() ? IGNITEFS_LOOPBACK_CFG : IGNITEFS_SHMEM_CFG;
 
         try {
-            GgfsExample.main(EMPTY_ARGS);
+            startGrid("test1", configPath);
+            startGrid("test2", configPath);
+            startGrid("test3", configPath);
+
+            IgniteFsExample.main(EMPTY_ARGS);
         }
         finally {
             stopAllGrids();

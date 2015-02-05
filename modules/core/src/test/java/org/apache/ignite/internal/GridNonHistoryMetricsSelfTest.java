@@ -22,9 +22,9 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -83,13 +83,13 @@ public class GridNonHistoryMetricsSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                ClusterNodeMetrics metrics = ignite.cluster().localNode().metrics();
+                ClusterMetrics metrics = ignite.cluster().localNode().metrics();
 
                 return metrics.getTotalExecutedJobs() == 5;
             }
         }, 5000);
 
-        ClusterNodeMetrics metrics = ignite.cluster().localNode().metrics();
+        ClusterMetrics metrics = ignite.cluster().localNode().metrics();
 
         info("Node metrics: " + metrics);
 
@@ -117,7 +117,7 @@ public class GridNonHistoryMetricsSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             return results;
         }
     }

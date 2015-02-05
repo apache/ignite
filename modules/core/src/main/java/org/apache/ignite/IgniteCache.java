@@ -20,7 +20,9 @@ package org.apache.ignite;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.mxbean.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -29,6 +31,7 @@ import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
 
 /**
  * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link Ignite#cache(String)}
@@ -43,20 +46,11 @@ import java.util.concurrent.*;
  *  data based on the optionally passed in arguments.
  * </li>
  * <li>
- *     Method {@link #affinity()} provides {@link org.apache.ignite.cache.affinity.CacheAffinityFunction} service for information on
- *     data partitioning and mapping keys to grid nodes responsible for caching those keys.
- * </li>
- * <li>
- *     Method {@link #dataStructures()} provides {@link org.apache.ignite.cache.datastructures.CacheDataStructures} service for
- *     creating and working with distributed concurrent data structures, such as
- *     {@link IgniteAtomicLong}, {@link IgniteAtomicReference}, {@link org.apache.ignite.cache.datastructures.CacheQueue}, etc.
- * </li>
- * <li>
  *  Methods like {@code 'tx{Un}Synchronize(..)'} witch allow to get notifications for transaction state changes.
  *  This feature is very useful when integrating cache transactions with some other in-house transactions.
  * </li>
  * <li>Method {@link #metrics()} to provide metrics for the whole cache.</li>
- * <li>Method {@link #getConfiguration()} to provide cache configuration bean.</li>
+ * <li>Method {@link #getConfiguration(Class)}} to provide cache configuration bean.</li>
  * </ul>
  *
  * @param <K> Cache key type.
@@ -64,7 +58,7 @@ import java.util.concurrent.*;
  */
 public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncSupport {
     /** {@inheritDoc} */
-    public @Override IgniteCache<K, V> enableAsync();
+    public @Override IgniteCache<K, V> withAsync();
 
     /** {@inheritDoc} */
     public @Override <C extends Configuration<K, V>> C getConfiguration(Class<C> clazz);
@@ -161,48 +155,43 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @Nullable public V getAndPutIfAbsent(K key, V val) throws CacheException;
 
     /**
-     * Return a {@link CacheLock} instance associated with passed key.
+     * Creates a {@link Lock} instance associated with passed key.
      * This method does not acquire lock immediately, you have to call appropriate method on returned instance.
+     * Returned lock does not support {@link Lock#newCondition()} method,
+     * other methods defined in {@link Lock} are supported.
      *
      * @param key Key for lock.
      * @return New lock instance associated with passed key.
-     * @see CacheLock#lock()
-     * @see CacheLock#tryLock(long, TimeUnit)
+     * @see Lock#lock()
+     * @see Lock#tryLock(long, TimeUnit)
      */
-    public CacheLock lock(K key);
+    public Lock lock(K key);
 
     /**
-     * Return a {@link CacheLock} instance associated with passed keys.
+     * Creates a {@link Lock} instance associated with passed keys.
      * This method does not acquire lock immediately, you have to call appropriate method on returned instance.
+     * Returned lock does not support {@link Lock#newCondition()} method,
+     * other methods defined in {@link Lock} are supported.
      *
      * @param keys Keys for lock.
      * @return New lock instance associated with passed key.
-     * @see CacheLock#lock()
-     * @see CacheLock#tryLock(long, TimeUnit)
+     * @see Lock#lock()
+     * @see Lock#tryLock(long, TimeUnit)
      */
-    public CacheLock lockAll(Collection<? extends K> keys);
+    public Lock lockAll(Collection<? extends K> keys);
 
     /**
-     * Checks if any node owns a lock for this key.
+     * Checks if specified key is locked.
      * <p>
      * This is a local in-VM operation and does not involve any network trips
      * or access to persistent storage in any way.
      *
      * @param key Key to check.
+     * @param byCurrThread If {@code true} method will check that current thread owns a lock on this key, other vise
+     *     will check that any thread on any node owns a lock on this key.
      * @return {@code True} if lock is owned by some node.
      */
-    public boolean isLocked(K key);
-
-    /**
-     * Checks if current thread owns a lock on this key.
-     * <p>
-     * This is a local in-VM operation and does not involve any network trips
-     * or access to persistent storage in any way.
-     *
-     * @param key Key to check.
-     * @return {@code True} if key is locked by current thread.
-     */
-    public boolean isLockedByThread(K key);
+    public boolean isLocalLocked(K key, boolean byCurrThread);
 
     public QueryCursor<Entry<K, V>> query(QueryPredicate<K, V> filter);
 
@@ -237,13 +226,13 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public void localEvict(Collection<? extends K> keys);
 
     /**
-     * Peeks at in-memory cached value using default {@link org.apache.ignite.cache.GridCachePeekMode#SMART}
+     * Peeks at in-memory cached value using default {@link GridCachePeekMode#SMART}
      * peek mode.
      * <p>
      * This method will not load value from any persistent store or from a remote node.
      * <h2 class="header">Transactions</h2>
      * This method does not participate in any transactions, however, it will
-     * peek at transactional value according to the {@link org.apache.ignite.cache.GridCachePeekMode#SMART} mode
+     * peek at transactional value according to the {@link GridCachePeekMode#SMART} mode
      * semantics. If you need to look at global cached value even from within transaction,
      * you can use {@link org.apache.ignite.cache.GridCache#peek(Object, Collection)} method.
      *
@@ -432,4 +421,18 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args);
+
+    /**
+     * Gets snapshot metrics (statistics) for this cache.
+     *
+     * @return Cache metrics.
+     */
+    public CacheMetrics metrics();
+
+    /**
+     * Gets MxBean for this cache.
+     *
+     * @return MxBean.
+     */
+    public CacheMetricsMXBean mxBean();
 }

@@ -22,13 +22,13 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.lang.*;
 
 import java.io.*;
 import java.sql.*;
@@ -188,8 +188,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteBiTuple<? extends Exception, VisorQueryResultEx> run(VisorQueryArg arg)
-            throws IgniteCheckedException {
+        @Override protected IgniteBiTuple<? extends Exception, VisorQueryResultEx> run(VisorQueryArg arg) {
             try {
                 Boolean scan = arg.queryTxt().toUpperCase().startsWith("SCAN");
 
@@ -281,7 +280,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
          * @param id Uniq query result id.
          */
         private void scheduleResultSetHolderRemoval(final String id) {
-            ((GridKernal)g).context().timeout()
+            ((IgniteKernal)g).context().timeout()
                 .addTimeoutObject(new GridTimeoutObjectAdapter(VisorQueryUtils.RMV_DELAY) {
                     @Override public void onTimeout() {
                         ClusterNodeLocalMap<String, VisorFutureResultSetHolder> storage = g.nodeLocalMap();

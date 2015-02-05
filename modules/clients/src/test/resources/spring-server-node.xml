@@ -21,7 +21,7 @@
     GridGain Spring configuration file to startup grid cache.
 
     When starting a standalone GridGain node, you need to execute the following command:
-    {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} path-to-this-file/example-cache.xml
+    {IGNITE_HOME}/bin/ignite.{bat|sh} path-to-this-file/example-cache.xml
 
     When starting GridGain from Java IDE, pass path to this file into GridGain:
     GridGain.start("path-to-this-file/example-benchmark.xml");
@@ -156,7 +156,7 @@
                         <bean class="org.apache.ignite.cache.query.CacheQueryConfiguration">
                             <property name="typeMetadata">
                                 <list>
-                                    <bean class="org.apache.ignite.cache.query.CacheQueryTypeMetadata">
+                                    <bean class="org.apache.ignite.cache.CacheTypeMetadata">
                                         <property name="type" value="GridPortablePerson"/>
                                         <property name="ascendingFields">
                                             <map>
@@ -174,7 +174,7 @@
                                             </list>
                                         </property>
                                     </bean>
-                                    <bean class="org.apache.ignite.cache.query.CacheQueryTypeMetadata">
+                                    <bean class="org.apache.ignite.cache.CacheTypeMetadata">
                                         <property name="type" value="GridImplicitPortablePerson"/>
                                         <property name="ascendingFields">
                                             <map>
@@ -187,7 +187,7 @@
                                             </map>
                                         </property>
                                     </bean>
-                                    <bean class="org.apache.ignite.cache.query.CacheQueryTypeMetadata">
+                                    <bean class="org.apache.ignite.cache.CacheTypeMetadata">
                                         <property name="type" value="GridNoDefPortablePerson"/>
                                         <property name="ascendingFields">
                                             <map>

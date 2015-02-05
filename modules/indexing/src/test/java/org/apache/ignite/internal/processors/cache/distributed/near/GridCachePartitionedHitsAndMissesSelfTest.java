@@ -26,8 +26,8 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import javax.cache.processor.*;
 import java.util.*;
@@ -90,6 +90,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         cfg.setDistributionMode(PARTITIONED_ONLY);
         cfg.setPreloadPartitionedDelay(-1);
         cfg.setBackups(1);
+        cfg.setStatisticsEnabled(true);
 
         CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
 
@@ -122,8 +123,8 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
             for (int i = 0; i < GRID_CNT; i++) {
                 CacheMetrics m = grid(i).cache(null).metrics();
 
-                hits += m.hits();
-                misses += m.misses();
+                hits += m.getCacheHits();
+                misses += m.getCacheMisses();
             }
 
             assertEquals(CNT / 2, hits);
@@ -169,8 +170,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         };
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<Integer, Long> cache,
-            Collection<Map.Entry<Integer, Long>> entries) throws IgniteCheckedException {
+        @Override public void update(IgniteCache<Integer, Long> cache, Collection<Map.Entry<Integer, Long>> entries) {
             for (Map.Entry<Integer, Long> entry : entries)
                 cache.invoke(entry.getKey(), INC);
         }

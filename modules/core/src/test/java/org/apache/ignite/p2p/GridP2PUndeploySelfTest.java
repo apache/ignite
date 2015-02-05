@@ -39,14 +39,14 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
     private IgniteDeploymentMode depMode;
 
     /** Class Name of task. */
-    private static final String TEST_TASK_NAME = "org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1";
+    private static final String TEST_TASK_NAME = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1";
 
     /** */
     private Map<String, LocalDeploymentSpi> spis = new HashMap<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName,
-        GridTestResources rsrcs) throws Exception {
+        IgniteTestResources rsrcs) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName, rsrcs);
 
         LocalDeploymentSpi spi = new LocalDeploymentSpi();

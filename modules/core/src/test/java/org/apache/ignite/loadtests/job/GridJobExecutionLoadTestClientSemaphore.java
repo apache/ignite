@@ -20,9 +20,9 @@ package org.apache.ignite.loadtests.job;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.loadtests.util.*;
 import org.apache.ignite.testframework.*;
 import org.jdk8.backport.*;
@@ -65,7 +65,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
 
         ClusterGroup rmts = g.cluster().forRemotes();
 
-        IgniteCompute comp = g.compute(rmts).enableAsync();
+        IgniteCompute comp = g.compute(rmts).withAsync();
 
         while (!finish) {
             tasksSem.acquire();
@@ -216,7 +216,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
                 try {
                     rmts.execute(GridJobExecutionLoadTestTask.class, null);
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     e.printStackTrace();
                 }
 
@@ -232,7 +232,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
                 }
             });
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             throw new IllegalStateException(e);
         }
     }

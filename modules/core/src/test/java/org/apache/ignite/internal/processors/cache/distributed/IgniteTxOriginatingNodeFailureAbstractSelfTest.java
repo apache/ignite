@@ -22,16 +22,15 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.spi.communication.tcp.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.testframework.*;
 
 import java.util.*;
@@ -109,12 +108,12 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
     protected void testTxOriginatingNodeFails(Collection<Integer> keys, final boolean partial) throws Exception {
         assertFalse(keys.isEmpty());
 
-        final Collection<GridKernal> grids = new ArrayList<>();
+        final Collection<IgniteKernal> grids = new ArrayList<>();
 
         ClusterNode txNode = grid(originatingNode()).localNode();
 
         for (int i = 1; i < gridCount(); i++)
-            grids.add((GridKernal)grid(i));
+            grids.add((IgniteKernal)grid(i));
 
         final Map<Integer, String> map = new HashMap<>();
 
@@ -128,7 +127,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
         Map<Integer, Collection<ClusterNode>> nodeMap = new HashMap<>();
 
-        GridCacheAdapter<Integer, String> cache = ((GridKernal)grid(1)).internalCache();
+        GridCacheAdapter<Integer, String> cache = ((IgniteKernal)grid(1)).internalCache();
 
         info("Node being checked: " + grid(1).localNode().id());
 
@@ -143,7 +142,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
         }
 
         info("Starting tx [values=" + map + ", topVer=" +
-            ((GridKernal)grid(1)).context().discovery().topologyVersion() + ']');
+            ((IgniteKernal)grid(1)).context().discovery().topologyVersion() + ']');
 
         if (partial)
             ignoreMessages(grid(1).localNode().id(), ignoreMessageClass());
@@ -158,14 +157,14 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
                 IgniteTxProxyImpl tx = (IgniteTxProxyImpl)cache.txStart();
 
-                IgniteTxEx txEx = GridTestUtils.getFieldValue(tx, "tx");
+                IgniteInternalTx txEx = GridTestUtils.getFieldValue(tx, "tx");
 
                 cache.putAll(map);
 
                 try {
                     txEx.prepareAsync().get(3, TimeUnit.SECONDS);
                 }
-                catch (IgniteFutureTimeoutException ignored) {
+                catch (IgniteFutureTimeoutCheckedException ignored) {
                     info("Failed to wait for prepare future completion: " + partial);
                 }
 
@@ -181,7 +180,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
         boolean txFinished = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                for (GridKernal g : grids) {
+                for (IgniteKernal g : grids) {
                     GridCacheSharedContext<Object, Object> ctx = g.context().cache().context();
 
                     int txNum = ctx.tm().idMapSize();

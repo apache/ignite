@@ -19,15 +19,15 @@
  */
 
 /**
- * This example shows how to use PHP Memcache client for manipulating GridGain cache.
+ * This example shows how to use PHP Memcache client for manipulating Ignite cache.
  *
  * To execute this script you need to have PHP Memcached extension installed.
  * See http://pecl.php.net/package/memcached for details.
  *
  * You can use default cache configuration from examples/config folder to
- * start up an instance of GridGain with cache enabled as follows:
+ * start up an instance of Ignite with cache enabled as follows:
  * ----
- * ${GRIDGAIN_HOME}/bin/ggstart.sh examples/config/example-cache-default.xml
+ * ${IGNITE_HOME}/bin/ignite.sh examples/config/example-cache-default.xml
  * ----
  */
 

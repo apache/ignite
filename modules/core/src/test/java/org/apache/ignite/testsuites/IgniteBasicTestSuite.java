@@ -20,13 +20,13 @@ package org.apache.ignite.testsuites;
 import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.messaging.*;
-import org.apache.ignite.internal.product.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.continuous.*;
+import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.messaging.*;
+import org.apache.ignite.spi.*;
 
 /**
  * Basic test suite.
@@ -68,7 +68,6 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridStopWithCancelSelfTest.class);
         suite.addTestSuite(GridReduceSelfTest.class);
         suite.addTestSuite(GridEventConsumeSelfTest.class);
-        suite.addTestSuite(GridExceptionHelpLinksSelfTest.class);
         suite.addTestSuite(GridSuppressedExceptionSelfTest.class);
         suite.addTestSuite(GridLifecycleAwareSelfTest.class);
         suite.addTestSuite(GridMessageListenSelfTest.class);

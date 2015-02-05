@@ -22,13 +22,14 @@ import com.amazonaws.auth.*;
 import com.amazonaws.services.s3.*;
 import com.amazonaws.services.s3.model.*;
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.checkpoint.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -116,7 +117,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
     private CheckpointListener lsnr;
 
     /** Prefix to use in bucket name generation. */
-    public static final String BUCKET_NAME_PREFIX = "gridgain-checkpoint-";
+    public static final String BUCKET_NAME_PREFIX = "ignite-checkpoint-";
 
     /** Suffix to use in bucket name generation. */
     public static final String DFLT_BUCKET_NAME_SUFFIX = "default-bucket";
@@ -276,7 +277,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
                     try {
                         U.sleep(200);
                     }
-                    catch (IgniteInterruptedException e) {
+                    catch (IgniteInterruptedCheckedException e) {
                         throw new IgniteSpiException("Thread has been interrupted.", e);
                     }
             }
@@ -338,8 +339,8 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
         if (timeoutWrk != null) {
-            GridUtils.interrupt(timeoutWrk);
-            GridUtils.join(timeoutWrk, log);
+            IgniteUtils.interrupt(timeoutWrk);
+            IgniteUtils.join(timeoutWrk, log);
         }
 
         unregisterMBean();

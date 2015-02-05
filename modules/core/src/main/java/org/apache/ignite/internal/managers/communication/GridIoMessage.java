@@ -19,8 +19,8 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.nio.*;
@@ -46,8 +46,8 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
     /** Topic ordinal. */
     private int topicOrd = -1;
 
-    /** Message order. */
-    private long msgId = -1;
+    /** Message ordered flag. */
+    private boolean ordered;
 
     /** Message timeout. */
     private long timeout;
@@ -71,12 +71,19 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
      * @param topic Communication topic.
      * @param topicOrd Topic ordinal value.
      * @param msg Message.
-     * @param msgId Message ID.
+     * @param ordered Message ordered flag.
      * @param timeout Timeout.
      * @param skipOnTimeout Whether message can be skipped on timeout.
      */
-    public GridIoMessage(GridIoPolicy plc, Object topic, int topicOrd, GridTcpCommunicationMessageAdapter msg,
-        long msgId, long timeout, boolean skipOnTimeout) {
+    public GridIoMessage(
+        GridIoPolicy plc,
+        Object topic,
+        int topicOrd,
+        GridTcpCommunicationMessageAdapter msg,
+        boolean ordered,
+        long timeout,
+        boolean skipOnTimeout
+    ) {
         assert plc != null;
         assert topic != null;
         assert topicOrd <= Byte.MAX_VALUE;
@@ -86,7 +93,7 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
         this.msg = msg;
         this.topic = topic;
         this.topicOrd = topicOrd;
-        this.msgId = msgId;
+        this.ordered = ordered;
         this.timeout = timeout;
         this.skipOnTimeout = skipOnTimeout;
     }
@@ -141,13 +148,6 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
     }
 
     /**
-     * @return Message ID.
-     */
-    long messageId() {
-        return msgId;
-    }
-
-    /**
      * @return Message timeout.
      */
     public long timeout() {
@@ -165,30 +165,17 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
      * @return {@code True} if message is ordered, {@code false} otherwise.
      */
     boolean isOrdered() {
-        return msgId > 0;
+        return ordered;
     }
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object obj) {
-        if (obj == this)
-            return true;
-
-        if (!(obj instanceof GridIoMessage))
-            return false;
-
-        GridIoMessage other = (GridIoMessage)obj;
-
-        return topic.equals(other.topic) && msgId == other.msgId;
+        throw new AssertionError();
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int res = topic.hashCode();
-
-        res = 31 * res + (int)(msgId ^ (msgId >>> 32));
-        res = 31 * res + topic.hashCode();
-
-        return res;
+        throw new AssertionError();
     }
 
     /** {@inheritDoc} */
@@ -210,7 +197,7 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
         _clone.topic = topic;
         _clone.topicBytes = topicBytes;
         _clone.topicOrd = topicOrd;
-        _clone.msgId = msgId;
+        _clone.ordered = ordered;
         _clone.timeout = timeout;
         _clone.skipOnTimeout = skipOnTimeout;
         _clone.msg = msg != null ? (GridTcpCommunicationMessageAdapter)msg.clone() : null;
@@ -236,7 +223,7 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                if (!commState.putLong(msgId))
+                if (!commState.putBoolean(ordered))
                     return false;
 
                 commState.idx++;
@@ -293,10 +280,10 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                if (buf.remaining() < 8)
+                if (buf.remaining() < 1)
                     return false;
 
-                msgId = commState.getLong();
+                ordered = commState.getBoolean();
 
                 commState.idx++;
 

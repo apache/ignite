@@ -19,9 +19,9 @@ package org.apache.ignite.loadtests.mergesort;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 
@@ -61,14 +61,14 @@ public class GridMergeSortLoadTask extends ComputeTaskSplitAdapter<int[], int[]>
                 // Task execution result future.
                 private ComputeTaskFuture<int[]> fut;
 
-                @Override public Object execute() throws IgniteCheckedException {
+                @Override public Object execute() {
                     if (arr.length == 1)
                         return arr;
 
                     // Future is null before holdcc() is called and
                     // not null after callcc() is called.
                     if (fut == null) {
-                        IgniteCompute comp = ignite.compute().enableAsync();
+                        IgniteCompute comp = ignite.compute().withAsync();
 
                         // Launch the recursive child task asynchronously.
                         comp.execute(new GridMergeSortLoadTask(), arr);

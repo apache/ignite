@@ -18,9 +18,8 @@
 package org.apache.ignite.internal.processors.rest.protocols.tcp;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.client.marshaller.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.processors.rest.handlers.cache.*;
@@ -177,8 +176,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                 final GridRestRequest req = createRestRequest(ses, msg);
 
                 if (req != null)
-                    hnd.handleAsync(req).listenAsync(new CI1<IgniteFuture<GridRestResponse>>() {
-                        @Override public void apply(IgniteFuture<GridRestResponse> fut) {
+                    hnd.handleAsync(req).listenAsync(new CI1<IgniteInternalFuture<GridRestResponse>>() {
+                        @Override public void apply(IgniteInternalFuture<GridRestResponse> fut) {
                             GridClientResponse res = new GridClientResponse();
 
                             res.requestId(msg.requestId());

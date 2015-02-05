@@ -65,12 +65,12 @@ public class BasicAopSelfTest extends GridCommonAbstractTest {
     private static class TestTask extends GridifyTaskSplitAdapter<Void> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize,
-            GridifyArgument arg) throws IgniteCheckedException {
+            GridifyArgument arg) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

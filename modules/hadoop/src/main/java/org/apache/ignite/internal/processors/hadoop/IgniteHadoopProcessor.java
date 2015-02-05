@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.*;
 import org.apache.ignite.internal.processors.hadoop.planner.*;
 import org.apache.ignite.internal.processors.hadoop.shuffle.*;
@@ -179,7 +177,7 @@ public class IgniteHadoopProcessor extends IgniteHadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
+    @Override public IgniteInternalFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo) {
         return hctx.jobTracker().submit(jobId, jobInfo);
     }
 
@@ -194,7 +192,7 @@ public class IgniteHadoopProcessor extends IgniteHadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<?> finishFuture(GridHadoopJobId jobId) throws IgniteCheckedException {
         return hctx.jobTracker().finishFuture(jobId);
     }
 

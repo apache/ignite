@@ -21,13 +21,13 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
 
@@ -45,10 +45,10 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Test p2p task. */
-    private static final String TEST_TASK = "org.gridgain.grid.tests.p2p.GridSingleSplitTestTask";
+    private static final String TEST_TASK = "org.apache.ignite.tests.p2p.SingleSplitTestTask";
 
     /** Test p2p value. */
-    private static final String TEST_VALUE = "org.gridgain.grid.tests.p2p.GridCacheDeploymentTestValue";
+    private static final String TEST_VALUE = "org.apache.ignite.tests.p2p.CacheDeploymentTestValue";
 
     /** SPIs. */
     private Map<String, MessageCountingCommunicationSpi> commSpis = new ConcurrentHashMap8<>();

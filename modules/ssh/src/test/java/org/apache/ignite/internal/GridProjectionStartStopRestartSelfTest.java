@@ -20,11 +20,11 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.nodestart.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -950,7 +950,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         params.put(PASSWD, passwd);
         params.put(KEY, key);
         params.put(NODES, nodes);
-        params.put(GG_HOME, ggHome);
+        params.put(IGNITE_HOME, ggHome);
         params.put(CFG, cfg);
         params.put(SCRIPT, script);
 
@@ -989,7 +989,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
             params.put(PASSWD, passwd);
             params.put(KEY, key);
             params.put(NODES, nodes);
-            params.put(GG_HOME, ggHome);
+            params.put(IGNITE_HOME, ggHome);
             params.put(CFG, cfg);
             params.put(SCRIPT, script);
 
@@ -1023,7 +1023,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         boolean restart,
         int timeout,
         int maxConn) throws IgniteCheckedException {
-        cluster = cluster.enableAsync();
+        cluster = cluster.withAsync();
 
         assertNull(cluster.startNodes(hosts, dflts, restart, timeout, maxConn));
 

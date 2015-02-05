@@ -19,23 +19,26 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.thread.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.timeout.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
@@ -47,9 +50,9 @@ import java.util.concurrent.locks.*;
 import java.util.concurrent.locks.Lock;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 import static org.jdk8.backport.ConcurrentLinkedDeque8.*;
@@ -475,7 +478,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                 log.debug("Sent eviction response [node=" + nodeId + ", localNode=" + cctx.nodeId() +
                     ", res" + res + ']');
         }
-        catch (ClusterTopologyException ignored) {
+        catch (ClusterTopologyCheckedException ignored) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send eviction response since initiating node left grid " +
                     "[node=" + nodeId + ", localNode=" + cctx.nodeId() + ']');
@@ -666,6 +669,9 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                 notifyPolicy(entry);
 
             cache.removeEntry(entry);
+
+            if (cache.configuration().isStatisticsEnabled())
+                cache.metrics0().onEvict();
 
             if (recordable)
                 cctx.events().addEvent(entry.partition(), entry.key(), cctx.nodeId(), (IgniteUuid)null, null,
@@ -1063,8 +1069,8 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                         // Thread that prepares future should remove it and install listener.
                         curEvictFut.compareAndSet(fut, null);
 
-                        fut.listenAsync(new CI1<IgniteFuture<?>>() {
-                            @Override public void apply(IgniteFuture<?> f) {
+                        fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                            @Override public void apply(IgniteInternalFuture<?> f) {
                                 if (!busyLock.enterBusy()) {
                                     if (log.isDebugEnabled())
                                         log.debug("Will not notify eviction future completion (grid is stopping): " +
@@ -1116,7 +1122,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             try {
                 t = fut.get();
             }
-            catch (IgniteFutureCancelledException ignored) {
+            catch (IgniteFutureCancelledCheckedException ignored) {
                 assert false : "Future has been cancelled, but manager is not stopping: " + fut;
 
                 return;
@@ -1383,7 +1389,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
                 assert !cctx.isNear() && evictSync;
 
@@ -1730,7 +1736,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                 try {
                     cctx.io().send(nodeId, req);
                 }
-                catch (ClusterTopologyException ignored) {
+                catch (ClusterTopologyCheckedException ignored) {
                     // Node left the topology.
                     onNodeLeft(nodeId);
                 }

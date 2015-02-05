@@ -31,12 +31,12 @@ import java.util.*;
  * <pre name="code" class="java">
  * GridEvents evts = GridGain.grid().events();
  * </pre> * <p>
- * Local subscription, defined by {@link #localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method, will add
+ * Local subscription, defined by {@link #localListen(IgnitePredicate, int...)} method, will add
  * a listener for specified events on local node only. This listener will be notified whenever any
  * of subscribed events happen on local node regardless of whether local node belongs to underlying
  * grid projection or not.
  * <p>
- * Remote subscription, defined by {@link #remoteListen(org.apache.ignite.lang.IgniteBiPredicate, org.apache.ignite.lang.IgnitePredicate, int...)}, will add an
+ * Remote subscription, defined by {@link #remoteListen(IgniteBiPredicate, IgnitePredicate, int...)}, will add an
  * event listener for specified events on all nodes in the projection (possibly including local node if
  * it belongs to the projection as well). All projection nodes will then be notified of the subscribed events.
  * If the events pass the remote event filter, the events will be sent to local node for local listener notification.
@@ -69,11 +69,11 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param timeout Maximum time to wait for result, {@code 0} to wait forever.
      * @param types Event types to be queried.
      * @return Collection of grid events returned from specified nodes.
-     * @throws IgniteCheckedException If query failed.
+     * @throws IgniteException If query failed.
      */
     @IgniteAsyncSupported
     public <T extends IgniteEvent> List<T> remoteQuery(IgnitePredicate<T> p, long timeout, @Nullable int... types)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Adds event listener for specified events to all nodes in the projection (possibly including
@@ -97,13 +97,13 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      *      provided remote filter will be sent to local node.
      * @param <T> Type of the event.
      * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
-     * @throws IgniteCheckedException If failed to add listener.
+     * @throws IgniteException If failed to add listener.
      */
     @IgniteAsyncSupported
     public <T extends IgniteEvent> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
         @Nullable IgnitePredicate<T> rmtFilter,
         @Nullable int... types)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Adds event listener for specified events to all nodes in the projection (possibly including
@@ -138,7 +138,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param <T> Type of the event.
      * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
      * @see #stopRemoteListen(UUID)
-     * @throws IgniteCheckedException If failed to add listener.
+     * @throws IgniteException If failed to add listener.
      */
     @IgniteAsyncSupported
     public <T extends IgniteEvent> UUID remoteListen(int bufSize,
@@ -147,7 +147,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
         @Nullable IgniteBiPredicate<UUID, T> locLsnr,
         @Nullable IgnitePredicate<T> rmtFilter,
         @Nullable int... types)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Stops listening to remote events. This will unregister all listeners identified with provided
@@ -156,12 +156,12 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param opId Operation ID that was returned from
-     *      {@link #remoteListen(org.apache.ignite.lang.IgniteBiPredicate, org.apache.ignite.lang.IgnitePredicate, int...)} method.
-     * @see #remoteListen(org.apache.ignite.lang.IgniteBiPredicate, org.apache.ignite.lang.IgnitePredicate, int...)
-     * @throws IgniteCheckedException If failed to stop listeners.
+     *      {@link #remoteListen(IgniteBiPredicate, IgnitePredicate, int...)} method.
+     * @see #remoteListen(IgniteBiPredicate, IgnitePredicate, int...)
+     * @throws IgniteException If failed to stop listeners.
      */
     @IgniteAsyncSupported
-    public void stopRemoteListen(UUID opId) throws IgniteCheckedException;
+    public void stopRemoteListen(UUID opId) throws IgniteException;
 
     /**
      * Waits for the specified events.
@@ -172,11 +172,11 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      *      end the wait.
      * @param types Types of the events to wait for. If not provided, all events will be passed to the filter.
      * @return Grid event.
-     * @throws IgniteCheckedException If wait was interrupted.
+     * @throws IgniteException If wait was interrupted.
      */
     @IgniteAsyncSupported
     public <T extends IgniteEvent> T waitForLocal(@Nullable IgnitePredicate<T> filter, @Nullable int... types)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Queries local node for events using passed-in predicate filter for event selection.
@@ -257,5 +257,5 @@ public interface IgniteEvents extends IgniteAsyncSupport {
     public boolean isEnabled(int type);
 
     /** {@inheritDoc} */
-    @Override IgniteEvents enableAsync();
+    @Override IgniteEvents withAsync();
 }

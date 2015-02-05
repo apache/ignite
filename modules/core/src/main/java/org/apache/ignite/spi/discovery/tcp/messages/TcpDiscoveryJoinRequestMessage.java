@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.discovery.tcp.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -35,7 +35,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
     private TcpDiscoveryNode node;
 
     /** Discovery data. */
-    private List<Object> discoData;
+    private Map<Integer, Object> discoData;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
@@ -50,7 +50,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
      * @param node New node that wants to join.
      * @param discoData Discovery data.
      */
-    public TcpDiscoveryJoinRequestMessage(TcpDiscoveryNode node, List<Object> discoData) {
+    public TcpDiscoveryJoinRequestMessage(TcpDiscoveryNode node, Map<Integer, Object> discoData) {
         super(node.id());
 
         this.node = node;
@@ -69,7 +69,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
     /**
      * @return Discovery data.
      */
-    public List<Object> discoveryData() {
+    public Map<Integer, Object> discoveryData() {
         return discoData;
     }
 
@@ -92,7 +92,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
         super.writeExternal(out);
 
         out.writeObject(node);
-        U.writeCollection(out, discoData);
+        U.writeMap(out, discoData);
     }
 
     /** {@inheritDoc} */
@@ -100,7 +100,7 @@ public class TcpDiscoveryJoinRequestMessage extends TcpDiscoveryAbstractMessage 
         super.readExternal(in);
 
         node = (TcpDiscoveryNode)in.readObject();
-        discoData = U.readList(in);
+        discoData = U.readMap(in);
     }
 
     /** {@inheritDoc} */

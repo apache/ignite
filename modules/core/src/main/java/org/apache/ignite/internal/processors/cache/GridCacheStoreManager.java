@@ -21,14 +21,17 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.store.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.processors.interop.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -164,28 +167,43 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         if (store instanceof LifecycleAware) {
-            // Avoid second start() call on store in case when near cache is enabled.
-            if (cctx.config().isWriteBehindEnabled()) {
-                if (!cctx.isNear())
-                    ((LifecycleAware)store).start();
+            try {
+                // Avoid second start() call on store in case when near cache is enabled.
+                if (cctx.config().isWriteBehindEnabled()) {
+                    if (!cctx.isNear())
+                        ((LifecycleAware)store).start();
+                }
+                else {
+                    if (cctx.isNear() || !CU.isNearEnabled(cctx))
+                        ((LifecycleAware)store).start();
+                }
             }
-            else {
-                if (cctx.isNear() || !CU.isNearEnabled(cctx))
-                    ((LifecycleAware)store).start();
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to start cache store: " + e, e);
             }
         }
 
-        if (!cctx.config().isKeepPortableInStore()) {
-            if (cctx.config().isPortableEnabled()) {
-                if (store instanceof GridInteropAware)
-                    ((GridInteropAware)store).configure(true);
-                else
-                    convertPortable = true;
-            }
-            else
-                U.warn(log, "GridCacheConfiguration.isKeepPortableInStore() configuration property will " +
-                    "be ignored because portable mode is not enabled for cache: " + cctx.namex());
-        }
+        boolean convertPortable = !cctx.config().isKeepPortableInStore();
+
+        if (cctx.config().isPortableEnabled())
+            this.convertPortable = convertPortable;
+        else if (convertPortable)
+            U.warn(log, "CacheConfiguration.isKeepPortableInStore() configuration property will " +
+                "be ignored because portable mode is not enabled for cache: " + cctx.namex());
+    }
+
+    /**
+     * @return Convert-portable flag.
+     */
+    public boolean convertPortable() {
+        return convertPortable;
+    }
+
+    /**
+     * @param convertPortable Convert-portable flag.
+     */
+    public void convertPortable(boolean convertPortable) {
+        this.convertPortable = convertPortable;
     }
 
     /** {@inheritDoc} */
@@ -202,7 +220,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                         ((LifecycleAware)store).stop();
                 }
             }
-            catch (IgniteCheckedException e) {
+            catch (Exception e) {
                 U.error(log(), "Failed to stop cache store.", e);
             }
         }
@@ -231,7 +249,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @throws IgniteCheckedException If data loading failed.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public V loadFromStore(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
+    @Nullable public V loadFromStore(@Nullable IgniteInternalTx tx, K key) throws IgniteCheckedException {
         return (V)loadFromStore(tx, key, true);
     }
 
@@ -244,7 +262,8 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Loaded value, possibly <tt>null</tt>.
      * @throws IgniteCheckedException If data loading failed.
      */
-    @Nullable private Object loadFromStore(@Nullable IgniteTx tx,
+    @SuppressWarnings("unchecked")
+    @Nullable private Object loadFromStore(@Nullable IgniteInternalTx tx,
         K key,
         boolean convert)
         throws IgniteCheckedException {
@@ -298,6 +317,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param val Internal value.
      * @return User value.
      */
+    @SuppressWarnings("unchecked")
     private V convert(Object val) {
         if (val == null)
             return null;
@@ -318,7 +338,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param vis Closure to apply for loaded elements.
      * @throws IgniteCheckedException If data loading failed.
      */
-    public void localStoreLoadAll(@Nullable IgniteTx tx,
+    public void localStoreLoadAll(@Nullable IgniteInternalTx tx,
         Collection<? extends K> keys,
         final GridInClosure3<K, V, GridCacheVersion> vis)
         throws IgniteCheckedException {
@@ -338,11 +358,11 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @throws IgniteCheckedException If data loading failed.
      */
     @SuppressWarnings({"unchecked"})
-    public boolean loadAllFromStore(@Nullable IgniteTx tx,
+    public boolean loadAllFromStore(@Nullable IgniteInternalTx tx,
         Collection<? extends K> keys,
         final IgniteBiInClosure<K, V> vis) throws IgniteCheckedException {
         if (store != null) {
-            loadAllFromStore(null, keys, vis, null);
+            loadAllFromStore(tx, keys, vis, null);
 
             return true;
         }
@@ -362,7 +382,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void loadAllFromStore(@Nullable IgniteTx tx,
+    private void loadAllFromStore(@Nullable IgniteInternalTx tx,
         Collection<? extends K> keys,
         final @Nullable IgniteBiInClosure<K, V> vis,
         final @Nullable GridInClosure3<K, V, GridCacheVersion> verVis)
@@ -404,6 +424,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
             try {
                 CI2<K, Object> c = new CI2<K, Object>() {
+                    @SuppressWarnings("ConstantConditions")
                     @Override public void apply(K k, Object val) {
                         if (convert) {
                             V v = convert(val);
@@ -516,7 +537,8 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return {@code true} If there is a persistent storage.
      * @throws IgniteCheckedException If storage failed.
      */
-    public boolean putToStore(@Nullable IgniteTx tx, K key, V val, GridCacheVersion ver)
+    @SuppressWarnings("unchecked")
+    public boolean putToStore(@Nullable IgniteInternalTx tx, K key, V val, GridCacheVersion ver)
         throws IgniteCheckedException {
         if (store != null) {
             // Never persist internal keys.
@@ -566,7 +588,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return {@code True} if there is a persistent storage.
      * @throws IgniteCheckedException If storage failed.
      */
-    public boolean putAllToStore(@Nullable IgniteTx tx, Map<K, IgniteBiTuple<V, GridCacheVersion>> map)
+    public boolean putAllToStore(@Nullable IgniteInternalTx tx, Map<K, IgniteBiTuple<V, GridCacheVersion>> map)
         throws IgniteCheckedException {
         if (F.isEmpty(map))
             return true;
@@ -626,7 +648,8 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return {@code True} if there is a persistent storage.
      * @throws IgniteCheckedException If storage failed.
      */
-    public boolean removeFromStore(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
+    @SuppressWarnings("unchecked")
+    public boolean removeFromStore(@Nullable IgniteInternalTx tx, K key) throws IgniteCheckedException {
         if (store != null) {
             // Never remove internal key from store as it is never persisted.
             if (key instanceof GridCacheInternal)
@@ -672,7 +695,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @throws IgniteCheckedException If storage failed.
      */
     @SuppressWarnings("unchecked")
-    public boolean removeAllFromStore(@Nullable IgniteTx tx, Collection<?> keys) throws IgniteCheckedException {
+    public boolean removeAllFromStore(@Nullable IgniteInternalTx tx, Collection<?> keys) throws IgniteCheckedException {
         if (F.isEmpty(keys))
             return true;
 
@@ -739,7 +762,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param commit Commit.
      * @throws IgniteCheckedException If failed.
      */
-    public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
+    public void txEnd(IgniteInternalTx tx, boolean commit) throws IgniteCheckedException {
         assert store != null;
 
         initSession(tx);
@@ -773,7 +796,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * @param tx Current transaction.
      */
-    private void initSession(@Nullable IgniteTx tx) {
+    private void initSession(@Nullable IgniteInternalTx<?, ?> tx) {
         SessionData ses;
 
         if (tx != null) {
@@ -784,6 +807,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                 tx.addMeta(SES_ATTR, ses);
             }
+            else
+                // Session cache name may change in cross-cache transaction.
+                ses.cacheName(cctx.name());
         }
         else
             ses = new SessionData(null, cctx.name());
@@ -796,19 +822,21 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      */
     private static class SessionData {
         /** */
-        private final IgniteTx tx;
+        @GridToStringExclude
+        private final IgniteInternalTx tx;
 
         /** */
-        private final String cacheName;
+        private String cacheName;
 
         /** */
+        @GridToStringInclude
         private Map<Object, Object> props;
 
         /**
          * @param tx Current transaction.
          * @param cacheName Cache name.
          */
-        private SessionData(@Nullable IgniteTx tx, @Nullable String cacheName) {
+        private SessionData(@Nullable IgniteInternalTx tx, @Nullable String cacheName) {
             this.tx = tx;
             this.cacheName = cacheName;
         }
@@ -817,7 +845,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
          * @return Transaction.
          */
         @Nullable private IgniteTx transaction() {
-            return tx;
+            return tx != null ? tx.proxy() : null;
         }
 
         /**
@@ -835,6 +863,18 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
          */
         private String cacheName() {
             return cacheName;
+        }
+
+        /**
+         * @param cacheName Cache name.
+         */
+        private void cacheName(String cacheName) {
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SessionData.class, this, "tx", CU.txString(tx));
         }
     }
 
@@ -872,6 +912,11 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             SessionData ses0 = sesHolder.get();
 
             return ses0 != null ? ses0.cacheName() : null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ThreadLocalSession.class, this);
         }
     }
 

@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.visor.misc;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.lang.*;
 
 import java.net.*;
 import java.util.*;
@@ -58,12 +58,12 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<Void, Map<String,
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, String> run(Void arg) throws IgniteCheckedException {
+        @Override protected Map<String, String> run(Void arg) {
             Map<String, String> res = new HashMap<>();
 
             try {
                 IgniteBiTuple<Collection<String>, Collection<String>> addrs =
-                    GridUtils.resolveLocalAddresses(InetAddress.getByName("0.0.0.0"));
+                    IgniteUtils.resolveLocalAddresses(InetAddress.getByName("0.0.0.0"));
 
                 assert(addrs.get1() != null);
                 assert(addrs.get2() != null);
@@ -90,7 +90,7 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<Void, Map<String,
                 }
             }
             catch (Throwable e) {
-                throw new IgniteCheckedException("Failed to resolve host name", e);
+                throw new IgniteException("Failed to resolve host name", e);
             }
 
             return res;

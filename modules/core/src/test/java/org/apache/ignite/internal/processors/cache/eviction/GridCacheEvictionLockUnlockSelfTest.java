@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.eviction;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -30,11 +30,12 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -124,8 +125,10 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
 
                 IgniteCache<Object, Object> cache = jcache(i);
 
-                cache.lock("key").lock();
-                cache.lock("key").unlock();
+                Lock lock = cache.lock("key");
+
+                lock.lock();
+                lock.unlock();
 
                 assertTrue(evictLatch.await(3, SECONDS));
 

@@ -21,31 +21,24 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Sequence multi node tests.
  */
 public class GridCachePartitionedSequenceMultiNodeSelfTest extends GridCacheSequenceMultiNodeAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected CacheMode atomicsCacheMode() {
+        return PARTITIONED;
+    }
 
-        // Default cache configuration.
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+    /** {@inheritDoc} */
+    @Override protected IgniteAtomicConfiguration atomicConfiguration() {
+        IgniteAtomicConfiguration atomicCfg = super.atomicConfiguration();
 
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setBackups(1);
-        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setAtomicSequenceReserveSize(BATCH_SIZE);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
+        atomicCfg.setBackups(1);
+        atomicCfg.setAtomicSequenceReserveSize(BATCH_SIZE);
 
-        cfg.setCacheConfiguration(cacheCfg);
-
-        return cfg;
+        return atomicCfg;
     }
 }

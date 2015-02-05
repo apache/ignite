@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.hadoop.v2;
 
-import org.apache.hadoop.mapred.JobContextImpl;
-import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapreduce.OutputCommitter;
+import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.ignite.*;
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
+import org.apache.ignite.internal.*;
 
 import java.io.*;
 
@@ -58,7 +60,7 @@ public class GridHadoopV2SetupTask extends GridHadoopV2Task {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 }

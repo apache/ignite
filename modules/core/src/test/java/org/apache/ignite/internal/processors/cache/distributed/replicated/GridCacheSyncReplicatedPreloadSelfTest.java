@@ -29,11 +29,11 @@ import org.jetbrains.annotations.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 
 /**
  * Multithreaded tests for replicated cache preloader.
@@ -44,7 +44,6 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
 
     /** */
     private static final boolean DISCO_DEBUG_MODE = false;
-
 
     /**
      * Constructs test.

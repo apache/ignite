@@ -30,7 +30,7 @@ public class GridTestJobResult implements ComputeJobResult {
     private final Serializable data;
 
     /** */
-    private final IgniteCheckedException e;
+    private final IgniteException e;
 
     /** */
     private final ComputeJob job;
@@ -57,7 +57,11 @@ public class GridTestJobResult implements ComputeJobResult {
      * @param node Grid node.
      * @param jobCtx Job context.
      */
-    public GridTestJobResult(Serializable data, IgniteCheckedException e, ComputeJob job, ClusterNode node, ComputeJobContext jobCtx) {
+    public GridTestJobResult(Serializable data,
+        IgniteException e,
+        ComputeJob job,
+        ClusterNode node,
+        ComputeJobContext jobCtx) {
         this.data = data;
         this.e = e;
         this.job = job;
@@ -79,7 +83,7 @@ public class GridTestJobResult implements ComputeJobResult {
 
     /** {@inheritDoc} */ @Override public Serializable getData() { return data; }
 
-    /** {@inheritDoc} */ @Override public IgniteCheckedException getException() { return e; }
+    /** {@inheritDoc} */ @Override public IgniteException getException() { return e; }
 
     /** {@inheritDoc} */ @Override public boolean isCancelled() { return false; }
 

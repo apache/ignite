@@ -61,13 +61,13 @@ public class VisorEmailConfiguration implements Serializable {
     public static VisorEmailConfiguration from(IgniteConfiguration c) {
         VisorEmailConfiguration cfg = new VisorEmailConfiguration();
 
-        cfg.smtpHost(getProperty(GG_SMTP_HOST, c.getSmtpHost()));
-        cfg.smtpPort(intValue(GG_SMTP_PORT, c.getSmtpPort()));
-        cfg.smtpUsername(getProperty(GG_SMTP_USERNAME, c.getSmtpUsername()));
-        cfg.adminEmails(getProperty(GG_ADMIN_EMAILS, compactArray(c.getAdminEmails())));
-        cfg.smtpFromEmail(getProperty(GG_SMTP_FROM, c.getSmtpFromEmail()));
-        cfg.smtpSsl(boolValue(GG_SMTP_SSL, c.isSmtpSsl()));
-        cfg.smtpStartTls(boolValue(GG_SMTP_STARTTLS, c.isSmtpStartTls()));
+        cfg.smtpHost(getProperty(IGNITE_SMTP_HOST, c.getSmtpHost()));
+        cfg.smtpPort(intValue(IGNITE_SMTP_PORT, c.getSmtpPort()));
+        cfg.smtpUsername(getProperty(IGNITE_SMTP_USERNAME, c.getSmtpUsername()));
+        cfg.adminEmails(getProperty(IGNITE_ADMIN_EMAILS, compactArray(c.getAdminEmails())));
+        cfg.smtpFromEmail(getProperty(IGNITE_SMTP_FROM, c.getSmtpFromEmail()));
+        cfg.smtpSsl(boolValue(IGNITE_SMTP_SSL, c.isSmtpSsl()));
+        cfg.smtpStartTls(boolValue(IGNITE_SMTP_STARTTLS, c.isSmtpStartTls()));
 
         return cfg;
     }

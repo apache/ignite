@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.jetbrains.annotations.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
@@ -179,7 +180,7 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tmLock(IgniteTxEx<K, V> tx, long timeout) throws GridCacheEntryRemovedException {
+    @Override public boolean tmLock(IgniteInternalTx<K, V> tx, long timeout) throws GridCacheEntryRemovedException {
         GridCacheMvccCandidate<K> cand = addLocal(
             tx.threadId(),
             tx.xidVersion(),
@@ -275,7 +276,7 @@ public class GridLocalCacheEntry<K, V> extends GridCacheMapEntry<K, V> {
      *
      * @param tx Transaction to unlock.
      */
-    @Override public void txUnlock(IgniteTxEx<K, V> tx) throws GridCacheEntryRemovedException {
+    @Override public void txUnlock(IgniteInternalTx<K, V> tx) throws GridCacheEntryRemovedException {
         removeLock(tx.xidVersion());
     }
 

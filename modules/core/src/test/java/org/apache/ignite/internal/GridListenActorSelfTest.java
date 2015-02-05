@@ -19,9 +19,8 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.messaging.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.messaging.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -52,7 +51,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
     @Override protected void afterTest() throws Exception {
-        ((GridKernal)grid()).context().io().
+        ((IgniteKernal)grid()).context().io().
             removeMessageListener(GridTopic.TOPIC_COMM_USER.name());
     }
 

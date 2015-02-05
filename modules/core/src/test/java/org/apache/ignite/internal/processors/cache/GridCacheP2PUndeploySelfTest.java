@@ -22,22 +22,22 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 
 /**
  *
@@ -184,7 +184,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
      * @return Size.
      * @throws IgniteCheckedException If failed.
      */
-    private long size(String cacheName, GridKernal g) throws IgniteCheckedException {
+    private long size(String cacheName, IgniteKernal g) throws IgniteCheckedException {
         if (offheap)
             return g.cache(cacheName).offHeapEntriesCount();
 
@@ -204,7 +204,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
 
         try {
             Ignite ignite1 = startGrid(1);
-            GridKernal grid2 = (GridKernal)startGrid(2);
+            IgniteKernal grid2 = (IgniteKernal)startGrid(2);
 
             GridCache<Integer, Object> cache1 = ignite1.cache(cacheName);
             GridCache<Integer, Object> cache2 = grid2.cache(cacheName);
@@ -273,7 +273,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
      * @param grid Kernal.
      * @return Name for swap space.
      */
-    private String swapSpaceName(String cacheName, GridKernal grid) {
+    private String swapSpaceName(String cacheName, IgniteKernal grid) {
         GridCacheContext<Object, Object> cctx = grid.internalCache(cacheName).context();
 
         return CU.swapSpaceName(cctx.isNear() ? cctx.near().dht().context() : cctx);

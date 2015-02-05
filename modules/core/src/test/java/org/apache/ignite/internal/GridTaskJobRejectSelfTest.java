@@ -22,9 +22,9 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.collision.fifoqueue.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -116,7 +116,7 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
 
         final ClusterNode node = grid(1).localNode();
 
-        IgniteCompute comp = grid(1).compute().enableAsync();
+        IgniteCompute comp = grid(1).compute().withAsync();
 
         comp.execute(new ComputeTaskAdapter<Void, Void>() {
             @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
@@ -125,7 +125,7 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
             }
 
             /** {@inheritDoc} */
-            @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+            @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
                 return null;
             }
         }, null);

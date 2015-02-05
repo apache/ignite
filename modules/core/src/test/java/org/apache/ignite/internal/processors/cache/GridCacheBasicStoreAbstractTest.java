@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
@@ -34,9 +34,9 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Basic store test.
@@ -62,7 +62,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        cache().clearAll();
+        cache().clear();
 
         store.reset();
     }
@@ -247,7 +247,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
             assert val.equals(Integer.toString(i));
         }
 
-        cache.clearAll();
+        cache.clear();
 
         assert cache.isEmpty();
         assert cache.isEmpty();
@@ -266,7 +266,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         assert cache.size() == 10;
 
-        cache.clearAll();
+        cache.clear();
 
         assert cache.isEmpty();
         assert cache.isEmpty();
@@ -407,7 +407,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
             checkLastMethod(null);
         }
 
-        cache.clearAll();
+        cache.clear();
 
         cache.loadCache(new P2<Integer, String>() {
             @Override public boolean apply(Integer k, String v) {

@@ -19,10 +19,15 @@ package org.apache.ignite.loadtests.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.datastructures.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Cache data structures load test.
@@ -45,6 +50,9 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
 
     /** Count down latch name. */
     private static final String TEST_LATCH_NAME = "test-latch";
+
+    /** */
+    private static final IgniteCollectionConfiguration colCfg = new IgniteCollectionConfiguration();
 
     /** Maximum added value. */
     private static final int MAX_INT = 1000;
@@ -76,11 +84,11 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     }
 
     /** Atomic long write closure. */
-    private final CIX1<CacheProjection<Integer, Integer>> longWriteClos =
-        new CIX1<CacheProjection<Integer, Integer>>() {
-        @Override public void applyx(CacheProjection<Integer, Integer> cache)
+    private final CIX1<Ignite> longWriteClos =
+        new CIX1<Ignite>() {
+        @Override public void applyx(Ignite ignite)
             throws IgniteCheckedException {
-            CacheAtomicLong al = cache.cache().dataStructures().atomicLong(TEST_LONG_NAME, 0, true);
+            IgniteAtomicLong al = ignite.atomicLong(TEST_LONG_NAME, 0, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
                 al.addAndGet(RAND.nextInt(MAX_INT));
@@ -94,11 +102,11 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     };
 
     /** Atomic long read closure. */
-    private final CIX1<CacheProjection<Integer, Integer>> longReadClos =
-        new CIX1<CacheProjection<Integer, Integer>>() {
-        @Override public void applyx(CacheProjection<Integer, Integer> cache)
+    private final CIX1<Ignite> longReadClos =
+        new CIX1<Ignite>() {
+        @Override public void applyx(Ignite ignite)
             throws IgniteCheckedException {
-            CacheAtomicLong al = cache.cache().dataStructures().atomicLong(TEST_LONG_NAME, 0, true);
+            IgniteAtomicLong al = ignite.atomicLong(TEST_LONG_NAME, 0, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
                 al.get();
@@ -112,11 +120,11 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     };
 
     /** Atomic reference write closure. */
-    private final CIX1<CacheProjection<Integer, Integer>> refWriteClos =
-        new CIX1<CacheProjection<Integer, Integer>>() {
-        @Override public void applyx(CacheProjection<Integer, Integer> cache)
+    private final CIX1<Ignite> refWriteClos =
+        new CIX1<Ignite>() {
+        @Override public void applyx(Ignite ignite)
             throws IgniteCheckedException {
-            CacheAtomicReference<Integer> ar = cache.cache().dataStructures().atomicReference(TEST_REF_NAME,
+            IgniteAtomicReference<Integer> ar = ignite.atomicReference(TEST_REF_NAME,
                 null, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
@@ -131,11 +139,11 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     };
 
     /** Atomic reference read closure. */
-    private final CIX1<CacheProjection<Integer, Integer>> refReadClos =
-        new CIX1<CacheProjection<Integer, Integer>>() {
-        @Override public void applyx(CacheProjection<Integer, Integer> cache)
+    private final CIX1<Ignite> refReadClos =
+        new CIX1<Ignite>() {
+        @Override public void applyx(Ignite ignite)
             throws IgniteCheckedException {
-            CacheAtomicReference<Integer> ar = cache.cache().dataStructures().atomicReference(TEST_REF_NAME, null,
+            IgniteAtomicReference<Integer> ar = ignite.atomicReference(TEST_REF_NAME, null,
                 true);
 
             for (int i = 0; i < operationsPerTx; i++) {
@@ -150,11 +158,11 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     };
 
     /** Atomic sequence write closure. */
-    private final CIX1<CacheProjection<Integer, Integer>> seqWriteClos =
-        new CIX1<CacheProjection<Integer, Integer>>() {
-        @Override public void applyx(CacheProjection<Integer, Integer> cache)
+    private final CIX1<Ignite> seqWriteClos =
+        new CIX1<Ignite>() {
+        @Override public void applyx(Ignite ignite)
             throws IgniteCheckedException {
-            CacheAtomicSequence as = cache.cache().dataStructures().atomicSequence(TEST_SEQ_NAME, 0, true);
+            IgniteAtomicSequence as = ignite.atomicSequence(TEST_SEQ_NAME, 0, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
                 as.addAndGet(RAND.nextInt(MAX_INT) + 1);
@@ -168,11 +176,11 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     };
 
     /** Atomic sequence read closure. */
-    private final CIX1<CacheProjection<Integer, Integer>> seqReadClos =
-        new CIX1<CacheProjection<Integer, Integer>>() {
-        @Override public void applyx(CacheProjection<Integer, Integer> cache)
+    private final CIX1<Ignite> seqReadClos =
+        new CIX1<Ignite>() {
+        @Override public void applyx(Ignite ignite)
             throws IgniteCheckedException {
-            CacheAtomicSequence as = cache.cache().dataStructures().atomicSequence(TEST_SEQ_NAME, 0, true);
+            IgniteAtomicSequence as = ignite.atomicSequence(TEST_SEQ_NAME, 0, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
                 as.get();
@@ -186,11 +194,11 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     };
 
     /** Atomic stamped write closure. */
-    private final CIX1<CacheProjection<Integer, Integer>> stampWriteClos =
-        new CIX1<CacheProjection<Integer, Integer>>() {
-        @Override public void applyx(CacheProjection<Integer, Integer> cache)
+    private final CIX1<Ignite> stampWriteClos =
+        new CIX1<Ignite>() {
+        @Override public void applyx(Ignite ignite)
             throws IgniteCheckedException {
-            CacheAtomicStamped<Integer, Integer> as = cache.cache().dataStructures().atomicStamped(TEST_STAMP_NAME,
+            IgniteAtomicStamped<Integer, Integer> as = ignite.atomicStamped(TEST_STAMP_NAME,
                 0, 0, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
@@ -205,11 +213,11 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     };
 
     /** Atomic stamped read closure. */
-    private final CIX1<CacheProjection<Integer, Integer>> stampReadClos =
-        new CIX1<CacheProjection<Integer, Integer>>() {
-        @Override public void applyx(CacheProjection<Integer, Integer> cache)
+    private final CIX1<Ignite> stampReadClos =
+        new CIX1<Ignite>() {
+        @Override public void applyx(Ignite ignite)
             throws IgniteCheckedException {
-            CacheAtomicStamped<Integer, Integer> as = cache.cache().dataStructures().atomicStamped(TEST_STAMP_NAME,
+            IgniteAtomicStamped<Integer, Integer> as = ignite.atomicStamped(TEST_STAMP_NAME,
                 0, 0, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
@@ -224,11 +232,11 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     };
 
     /** Queue write closure. */
-    private final CIX1<CacheProjection<Integer, Integer>> queueWriteClos =
-        new CIX1<CacheProjection<Integer, Integer>>() {
-        @Override public void applyx(CacheProjection<Integer, Integer> cache)
+    private final CIX1<Ignite> queueWriteClos =
+        new CIX1<Ignite>() {
+        @Override public void applyx(Ignite ignite)
             throws IgniteCheckedException {
-            CacheQueue<Integer> q = cache.cache().dataStructures().queue(TEST_QUEUE_NAME, 0, true, true);
+            IgniteQueue<Integer> q = ignite.queue(TEST_QUEUE_NAME, 0, colCfg);
 
             for (int i = 0; i < operationsPerTx; i++) {
                 q.put(RAND.nextInt(MAX_INT));
@@ -242,11 +250,11 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     };
 
     /** Queue read closure. */
-    private final CIX1<CacheProjection<Integer, Integer>> queueReadClos =
-        new CIX1<CacheProjection<Integer, Integer>>() {
-        @Override public void applyx(CacheProjection<Integer, Integer> cache)
+    private final CIX1<Ignite> queueReadClos =
+        new CIX1<Ignite>() {
+        @Override public void applyx(Ignite ignite)
             throws IgniteCheckedException {
-            CacheQueue<Integer> q = cache.cache().dataStructures().queue(TEST_QUEUE_NAME, 0, true, true);
+            IgniteQueue<Integer> q = ignite.queue(TEST_QUEUE_NAME, 0, colCfg);
 
             for (int i = 0; i < operationsPerTx; i++) {
                 q.peek();
@@ -260,12 +268,11 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     };
 
     /** Count down latch write closure. */
-    private final CIX1<CacheProjection<Integer, Integer>> latchWriteClos =
-        new CIX1<CacheProjection<Integer, Integer>>() {
-        @Override public void applyx(CacheProjection<Integer, Integer> cache)
+    private final CIX1<Ignite> latchWriteClos =
+        new CIX1<Ignite>() {
+        @Override public void applyx(Ignite ignite)
             throws IgniteCheckedException {
-            CacheCountDownLatch l = cache.cache().dataStructures().countDownLatch(TEST_LATCH_NAME, LATCH_INIT_CNT,
-                true, true);
+            IgniteCountDownLatch l = ignite.countDownLatch(TEST_LATCH_NAME, LATCH_INIT_CNT, true, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
                 l.countDown();
@@ -279,12 +286,11 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     };
 
     /** Count down latch read closure. */
-    private final CIX1<CacheProjection<Integer, Integer>> latchReadClos =
-        new CIX1<CacheProjection<Integer, Integer>>() {
-        @Override public void applyx(CacheProjection<Integer, Integer> cache)
+    private final CIX1<Ignite> latchReadClos =
+        new CIX1<Ignite>() {
+        @Override public void applyx(Ignite ignite)
             throws IgniteCheckedException {
-            CacheCountDownLatch l = cache.cache().dataStructures().countDownLatch(TEST_LATCH_NAME, LATCH_INIT_CNT,
-                true, true);
+            IgniteCountDownLatch l = ignite.countDownLatch(TEST_LATCH_NAME, LATCH_INIT_CNT, true, true);
 
             for (int i = 0; i < operationsPerTx; i++) {
                 l.count();
@@ -302,7 +308,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
      * @throws IgniteCheckedException In case of error.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        System.setProperty(IgniteSystemProperties.GG_UPDATE_NOTIFIER, "false");
+        System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
 
         System.out.println("Starting master node [params=" + Arrays.toString(args) + ']');
 
@@ -317,7 +323,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
             if (LONG) {
                 info("Testing atomic long...");
 
-                test.loadTest(test.longWriteClos, test.longReadClos);
+                test.loadTestIgnite(test.longWriteClos, test.longReadClos);
             }
 
             System.gc();
@@ -325,7 +331,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
             if (REF) {
                 info("Testing atomic reference...");
 
-                test.loadTest(test.refWriteClos, test.refReadClos);
+                test.loadTestIgnite(test.refWriteClos, test.refReadClos);
             }
 
             System.gc();
@@ -333,7 +339,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
             if (SEQ) {
                 info("Testing atomic sequence...");
 
-                test.loadTest(test.seqWriteClos, test.seqReadClos);
+                test.loadTestIgnite(test.seqWriteClos, test.seqReadClos);
             }
 
             System.gc();
@@ -341,7 +347,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
             if (STAMP) {
                 info("Testing atomic stamped...");
 
-                test.loadTest(test.stampWriteClos, test.stampReadClos);
+                test.loadTestIgnite(test.stampWriteClos, test.stampReadClos);
             }
 
             System.gc();
@@ -349,7 +355,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
             if (QUEUE) {
                 info("Testing queue...");
 
-                test.loadTest(test.queueWriteClos, test.queueReadClos);
+                test.loadTestIgnite(test.queueWriteClos, test.queueReadClos);
             }
 
             System.gc();
@@ -357,8 +363,91 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
             if (LATCH) {
                 info("Testing count down latch...");
 
-                test.loadTest(test.latchWriteClos, test.latchReadClos);
+                test.loadTestIgnite(test.latchWriteClos, test.latchReadClos);
             }
+        }
+    }
+
+    /**
+     * @param writeClos Write closure.
+     * @param readClos ReadClosure.
+     */
+    protected void loadTestIgnite(final CIX1<Ignite> writeClos, final CIX1<Ignite> readClos) {
+        info("Read threads: " + readThreads());
+        info("Write threads: " + writeThreads());
+        info("Test duration (ms): " + testDuration);
+
+        final Ignite ignite = G.ignite();
+
+        final GridCache<Integer, Integer> cache = ignite.cache(null);
+
+        assert cache != null;
+
+        try {
+            IgniteInternalFuture<?> f1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+                @Nullable @Override public Object call() throws Exception {
+                    long start = System.currentTimeMillis();
+
+                    while (!done.get()) {
+                        if (tx) {
+                            try (IgniteTx tx = cache.txStart()) {
+                                writeClos.apply(ignite);
+
+                                tx.commit();
+                            }
+                        }
+                        else
+                            writeClos.apply(ignite);
+                    }
+
+                    writeTime.addAndGet(System.currentTimeMillis() - start);
+
+                    return null;
+                }
+            }, writeThreads(), "cache-load-test-worker");
+
+            IgniteInternalFuture<?> f2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+                @Nullable @Override public Object call() throws Exception {
+                    long start = System.currentTimeMillis();
+
+                    while(!done.get()) {
+                        if (tx) {
+                            try (IgniteTx tx = cache.txStart()) {
+                                readClos.apply(ignite);
+
+                                tx.commit();
+                            }
+                        }
+                        else
+                            readClos.apply(ignite);
+                    }
+
+                    readTime.addAndGet(System.currentTimeMillis() - start);
+
+                    return null;
+                }
+            }, readThreads(), "cache-load-test-worker");
+
+            Thread.sleep(testDuration);
+
+            done.set(true);
+
+            f1.get();
+            f2.get();
+
+            info("Test stats: ");
+            info("    total-threads = " + threads);
+            info("    write-ratio = " + writeRatio);
+            info("    total-runs = " + (reads.get() + writes.get()));
+            info("    total-reads = " + reads);
+            info("    total-writes = " + writes);
+            info("    read-time (ms) = " + readTime);
+            info("    write-time (ms) = " + writeTime);
+            info("    avg-read-time (ms) = " + ((double)readTime.get() / reads.get()));
+            info("    avg-write-time (ms) = " + ((double)writeTime.get() / writes.get()));
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }

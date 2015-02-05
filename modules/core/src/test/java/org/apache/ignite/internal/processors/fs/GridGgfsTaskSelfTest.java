@@ -24,13 +24,13 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.fs.mapreduce.*;
 import org.apache.ignite.fs.mapreduce.records.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -172,7 +172,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
 
         assertFalse(ggfs.isAsync());
 
-        IgniteFs ggfsAsync = ggfs.enableAsync();
+        IgniteFs ggfsAsync = ggfs.withAsync();
 
         assertTrue(ggfsAsync.isAsync());
 
@@ -204,11 +204,6 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
         fut.get();
     }
 
-    // TODO: Remove.
-    @Override protected long getTestTimeout() {
-        return Long.MAX_VALUE;
-    }
-
     /**
      * Generate file with random data and provided argument.
      *
@@ -238,12 +233,12 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
     private static class Task extends IgniteFsTask<String, IgniteBiTuple<Long, Integer>> {
         /** {@inheritDoc} */
         @Override public IgniteFsJob createJob(IgniteFsPath path, IgniteFsFileRange range,
-            IgniteFsTaskArgs<String> args) throws IgniteCheckedException {
+            IgniteFsTaskArgs<String> args) {
             return new Job();
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteBiTuple<Long, Integer> reduce(List<ComputeJobResult> ress) throws IgniteCheckedException {
+        @Override public IgniteBiTuple<Long, Integer> reduce(List<ComputeJobResult> ress) {
             long totalLen = 0;
             int argCnt = 0;
 
@@ -275,7 +270,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object execute(IgniteFs ggfs, IgniteFsFileRange range, IgniteFsInputStream in)
-            throws IgniteCheckedException, IOException {
+            throws IOException {
             assert ignite != null;
             assert ses != null;
             assert ctx != null;

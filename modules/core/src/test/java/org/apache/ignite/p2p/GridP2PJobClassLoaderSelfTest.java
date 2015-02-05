@@ -116,7 +116,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
         private static ClassLoader ldr;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             assert gridSize == 1;
 
             ldr = getClass().getClassLoader();
@@ -124,7 +124,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
             return Collections.singletonList(new ComputeJobAdapter() {
                     /** {@inheritDoc} */
                     @SuppressWarnings({"ObjectEquality"})
-                    public Serializable execute() throws IgniteCheckedException {
+                    public Serializable execute() {
                         assert getClass().getClassLoader() == ldr;
 
                         return null;
@@ -133,7 +133,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             // Nothing to reduce.
             return null;
         }

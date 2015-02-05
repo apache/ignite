@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.util.future;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 /**
  * Future listener to fill chained future with converted result of the source future.
  */
-public class GridFutureChainListener<T, R> implements IgniteInClosure<IgniteFuture<T>> {
+public class GridFutureChainListener<T, R> implements IgniteInClosure<IgniteInternalFuture<T>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -36,7 +36,7 @@ public class GridFutureChainListener<T, R> implements IgniteInClosure<IgniteFutu
     private final GridFutureAdapter<R> fut;
 
     /** Done callback. */
-    private final IgniteClosure<? super IgniteFuture<T>, R> doneCb;
+    private final IgniteClosure<? super IgniteInternalFuture<T>, R> doneCb;
 
     /**
      * Constructs chain listener.
@@ -46,14 +46,14 @@ public class GridFutureChainListener<T, R> implements IgniteInClosure<IgniteFutu
      * @param doneCb Done callback.
      */
     public GridFutureChainListener(GridKernalContext ctx, GridFutureAdapter<R> fut,
-        IgniteClosure<? super IgniteFuture<T>, R> doneCb) {
+        IgniteClosure<? super IgniteInternalFuture<T>, R> doneCb) {
         this.ctx = ctx;
         this.fut = fut;
         this.doneCb = doneCb;
     }
 
     /** {@inheritDoc} */
-    @Override public void apply(IgniteFuture<T> t) {
+    @Override public void apply(IgniteInternalFuture<T> t) {
         try {
             fut.onDone(doneCb.apply(t));
         }

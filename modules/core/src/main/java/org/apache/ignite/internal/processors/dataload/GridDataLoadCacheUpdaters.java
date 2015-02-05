@@ -22,8 +22,8 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.dataload.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -98,10 +98,10 @@ public class GridDataLoadCacheUpdaters {
      * @param cache Cache.
      * @param rmvCol Keys to remove.
      * @param putMap Entries to put.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    protected static <K, V> void updateAll(IgniteCache<K, V> cache, @Nullable Collection<K> rmvCol,
-        Map<K, V> putMap) throws IgniteCheckedException {
+    protected static <K, V> void updateAll(IgniteCache<K, V> cache, @Nullable Set<K> rmvCol,
+        Map<K, V> putMap) {
         assert rmvCol != null || putMap != null;
 
         // Here we assume that there are no key duplicates, so the following calls are valid.
@@ -120,8 +120,7 @@ public class GridDataLoadCacheUpdaters {
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
-            throws IgniteCheckedException {
+        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
             assert cache != null;
             assert !F.isEmpty(entries);
 
@@ -148,13 +147,12 @@ public class GridDataLoadCacheUpdaters {
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
-            throws IgniteCheckedException {
+        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
             assert cache != null;
             assert !F.isEmpty(entries);
 
             Map<K, V> putAll = null;
-            Collection<K> rmvAll = null;
+            Set<K> rmvAll = null;
 
             for (Map.Entry<K, V> entry : entries) {
                 K key = entry.getKey();
@@ -165,7 +163,7 @@ public class GridDataLoadCacheUpdaters {
 
                 if (val == null) {
                     if (rmvAll == null)
-                        rmvAll = new ArrayList<>();
+                        rmvAll = new HashSet<>();
 
                     rmvAll.add(key);
                 }
@@ -189,13 +187,12 @@ public class GridDataLoadCacheUpdaters {
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
-            throws IgniteCheckedException {
+        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
             assert cache != null;
             assert !F.isEmpty(entries);
 
             Map<K, V> putAll = null;
-            Collection<K> rmvAll = null;
+            Set<K> rmvAll = null;
 
             for (Map.Entry<K, V> entry : entries) {
                 K key = entry.getKey();
@@ -230,8 +227,7 @@ public class GridDataLoadCacheUpdaters {
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
-            throws IgniteCheckedException {
+        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
             assert cache != null;
             assert !F.isEmpty(entries);
 
@@ -240,7 +236,7 @@ public class GridDataLoadCacheUpdaters {
             Map<Integer, Integer> partsCounts = new HashMap<>();
 
             // Group by partition ID.
-            Map<Integer, Collection<K>> rmvPartMap = null;
+            Map<Integer, Set<K>> rmvPartMap = null;
             Map<Integer, Map<K, V>> putPartMap = null;
 
             Ignite ignite = cache.unwrap(Ignite.class);
@@ -264,7 +260,7 @@ public class GridDataLoadCacheUpdaters {
                     if (rmvPartMap == null)
                         rmvPartMap = new HashMap<>();
 
-                    F.addIfAbsent(rmvPartMap, part, F.<K>newList()).add(key);
+                    F.addIfAbsent(rmvPartMap, part, F.<K>newSet()).add(key);
                 }
                 else {
                     if (putPartMap == null)

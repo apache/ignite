@@ -22,17 +22,17 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.internal.managers.collision.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -54,7 +54,7 @@ import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
  */
 public class GridJobProcessor extends GridProcessorAdapter {
     /** */
-    private static final int FINISHED_JOBS_COUNT = Integer.getInteger(GG_JOBS_HISTORY_SIZE, 10240);
+    private static final int FINISHED_JOBS_COUNT = Integer.getInteger(IGNITE_JOBS_HISTORY_SIZE, 10240);
 
     /** */
     private final IgniteMarshaller marsh;
@@ -295,7 +295,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param sndReply {@code True} to send reply.
      */
     private void rejectJob(GridJobWorker job, boolean sndReply) {
-        IgniteCheckedException e = new ComputeExecutionRejectedException("Job was cancelled before execution [taskSesId=" +
+        IgniteException e = new ComputeExecutionRejectedException("Job was cancelled before execution [taskSesId=" +
             job.getSession().getId() + ", jobId=" + job.getJobId() + ", job=" + job.getJob() + ']');
 
         job.finishJob(null, e, sndReply);
@@ -362,7 +362,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
         ctx.io().sendOrderedMessage(
             taskNode,
             topic, // Job topic.
-            ctx.io().nextMessageId(topic, taskNode.id()),
             req,
             SYSTEM_POOL,
             timeout,
@@ -1014,9 +1013,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         jobCtx = new GridJobContextImpl(ctx, req.getJobId(), jobAttrs);
                     }
                     catch (IgniteCheckedException e) {
-                        IgniteCheckedException ex = new IgniteCheckedException("Failed to deserialize task attributes [taskName=" +
-                            req.getTaskName() + ", taskClsName=" + req.getTaskClassName() + ", codeVer=" +
-                            req.getUserVersion() + ", taskClsLdr=" + dep.classLoader() + ']', e);
+                        IgniteException ex = new IgniteException("Failed to deserialize task attributes " +
+                            "[taskName=" + req.getTaskName() + ", taskClsName=" + req.getTaskClassName() +
+                            ", codeVer=" + req.getUserVersion() + ", taskClsLdr=" + dep.classLoader() + ']', e);
 
                         U.error(log, ex.getMessage(), e);
 
@@ -1094,7 +1093,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 }
                 else {
                     // Deployment is null.
-                    IgniteCheckedException ex = new IgniteDeploymentException("Task was not deployed or was redeployed since " +
+                    IgniteException ex = new IgniteDeploymentException("Task was not deployed or was redeployed since " +
                         "task execution [taskName=" + req.getTaskName() + ", taskClsName=" + req.getTaskClassName() +
                         ", codeVer=" + req.getUserVersion() + ", clsLdrId=" + req.getClassLoaderId() +
                         ", seqNum=" + req.getClassLoaderId().localId() + ", depMode=" + req.getDeploymentMode() +
@@ -1177,7 +1176,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             // Even if job has been removed from another thread, we need to reject it
             // here since job has never been executed.
-            IgniteCheckedException e2 = new ComputeExecutionRejectedException(
+            IgniteException e2 = new ComputeExecutionRejectedException(
                 "Job was cancelled before execution [jobSes=" + jobWorker.
                     getSession() + ", job=" + jobWorker.getJob() + ']');
 
@@ -1225,7 +1224,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             // Even if job was removed from another thread, we need to reject it
             // here since job has never been executed.
-            IgniteCheckedException e2 = new ComputeExecutionRejectedException("Job has been rejected " +
+            IgniteException e2 = new ComputeExecutionRejectedException("Job has been rejected " +
                 "[jobSes=" + jobWorker.getSession() + ", job=" + jobWorker.getJob() + ']', e);
 
             if (metricsUpdateFreq > -1L)
@@ -1245,7 +1244,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param ex Exception that happened.
      * @param endTime Job end time.
      */
-    private void handleException(ClusterNode node, GridJobExecuteRequest req, IgniteCheckedException ex, long endTime) {
+    private void handleException(ClusterNode node, GridJobExecuteRequest req, IgniteException ex, long endTime) {
         UUID locNodeId = ctx.localNodeId();
 
         ClusterNode sndNode = ctx.discovery().node(node.id());
@@ -1304,14 +1303,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                 // Send response to designated job topic.
                 // Always go through communication to preserve order.
-                long msgId = ctx.io().nextMessageId(topic, sndNode.id());
-
-                ctx.io().removeMessageId(topic);
-
                 ctx.io().sendOrderedMessage(
                     sndNode,
                     topic,
-                    msgId,
                     jobRes,
                     req.isInternal() ? MANAGEMENT_POOL : SYSTEM_POOL,
                     timeout,
@@ -1566,9 +1560,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
             if (worker.getSession().isFullSupport()) {
                 // Unregister session request listener for this jobs.
                 ctx.io().removeMessageListener(worker.getJobTopic());
-
-                // Unregister message IDs used for sending.
-                ctx.io().removeMessageId(worker.getTaskTopic());
             }
         }
 

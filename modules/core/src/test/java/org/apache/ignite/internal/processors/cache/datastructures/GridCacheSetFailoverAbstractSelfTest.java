@@ -19,10 +19,9 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.datastructures.*;
-import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
@@ -31,14 +30,12 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Set failover tests.
  */
-public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfTest {
+public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollectionAbstractTest {
     /** */
     private static final String SET_NAME = "testFailoverSet";
 
@@ -71,21 +68,8 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheStore<?, ?> cacheStore() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
-
-        ccfg.setBackups(1);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
-        ccfg.setCacheStoreFactory(null);
-        ccfg.setCacheMode(PARTITIONED);
-        ccfg.setDistributionMode(PARTITIONED_ONLY);
-
-        return ccfg;
+    @Override protected CacheMode collectionCacheMode() {
+        return PARTITIONED;
     }
 
     /** {@inheritDoc} */
@@ -98,7 +82,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
      */
     @SuppressWarnings("WhileLoopReplaceableByForEach")
     public void testNodeRestart() throws Exception {
-        CacheSet<Integer> set = cache().dataStructures().set(SET_NAME, false, true);
+        IgniteSet<Integer> set = grid(0).set(SET_NAME, config(false));
 
         final int ITEMS = 10_000;
 
@@ -113,7 +97,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
 
         AtomicBoolean stop = new AtomicBoolean();
 
-        IgniteFuture<?> killFut = startNodeKiller(stop);
+        IgniteInternalFuture<?> killFut = startNodeKiller(stop);
 
         long stopTime = System.currentTimeMillis() + TEST_DURATION;
 
@@ -161,13 +145,11 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
 
                 log.info("Remove set.");
 
-                boolean rmv = cache().dataStructures().removeSet(SET_NAME);
-
-                assertTrue(rmv);
+                set.close();
 
                 log.info("Create new set.");
 
-                set = cache().dataStructures().set(SET_NAME, false, true);
+                set = grid(0).set(SET_NAME, config(false));
 
                 set.addAll(items);
             }
@@ -178,9 +160,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
 
         killFut.get();
 
-        boolean rmv = cache().dataStructures().removeSet(SET_NAME);
-
-        assertTrue(rmv);
+        set.close();
 
         if (false) { // TODO GG-8962: enable check when fixed.
             int cnt = 0;
@@ -189,7 +169,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
 
             for (int i = 0; i < gridCount(); i++) {
                 Iterator<GridCacheEntryEx<Object, Object>> entries =
-                    ((GridKernal)grid(i)).context().cache().internalCache().map().allEntries0().iterator();
+                    ((IgniteKernal)grid(i)).context().cache().internalCache().map().allEntries0().iterator();
 
                 while (entries.hasNext()) {
                     GridCacheEntryEx<Object, Object> entry = entries.next();
@@ -219,7 +199,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
      * @param stop Stop flag.
      * @return Future completing when thread finishes.
      */
-    private IgniteFuture<?> startNodeKiller(final AtomicBoolean stop) {
+    private IgniteInternalFuture<?> startNodeKiller(final AtomicBoolean stop) {
         return GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();

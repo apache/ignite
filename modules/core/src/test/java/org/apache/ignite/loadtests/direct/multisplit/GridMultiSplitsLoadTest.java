@@ -20,12 +20,12 @@ package org.apache.ignite.loadtests.direct.multisplit;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.loadtest.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -107,7 +107,7 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
         GridTestUtils.runMultiThreaded(new Runnable() {
             /** {@inheritDoc} */
             @Override public void run() {
-                IgniteCompute comp = ignite.compute().enableAsync();
+                IgniteCompute comp = ignite.compute().withAsync();
 
                 while (end - System.currentTimeMillis() > 0) {
                     int levels = 3;
@@ -131,7 +131,7 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
                         if (taskCnt % 500 == 0)
                             info(stats.toString());
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         error("Failed to execute grid task.", e);
 
                         fail();

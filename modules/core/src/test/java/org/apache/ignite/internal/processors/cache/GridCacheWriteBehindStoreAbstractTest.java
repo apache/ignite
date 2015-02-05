@@ -20,12 +20,12 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
@@ -65,7 +65,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
         GridCache<?, ?> cache = cache();
 
         if (cache != null)
-            cache.clearAll();
+            cache.clear();
 
         store.reset();
     }
@@ -199,7 +199,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
             assert val.equals(Integer.toString(i));
         }
 
-        cache.clearAll();
+        cache.clear();
 
         assert cache.isEmpty();
         assert cache.isEmpty();
@@ -221,7 +221,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         assert cache.size() == 10;
 
-        cache.clearAll();
+        cache.clear();
 
         assert cache.isEmpty();
         assert cache.isEmpty();
@@ -270,7 +270,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         final GridCache<Integer, String> cache = cache();
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @SuppressWarnings({"NullableProblems"})
             @Override public void run() {
                 // Initialize key set for this thread.

@@ -35,5 +35,5 @@ public interface DiscoveryMetricsProvider {
      *
      * @return Up to date metrics data about local node.
      */
-    public ClusterNodeMetrics getMetrics();
+    public ClusterMetrics metrics();
 }

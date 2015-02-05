@@ -24,12 +24,13 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -107,7 +108,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
     public void testTwoTx() throws Exception {
         final GridCache<String, Integer> c = grid(0).cache(null);
 
-        GridKernalContext ctx = ((GridKernal)grid(0)).context();
+        GridKernalContext ctx = ((IgniteKernal)grid(0)).context();
 
         c.put(CNTR_KEY, 0);
 
@@ -158,7 +159,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
 
                         tx.commit();
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         error("Failed tx thread", e);
                     }
                 }
@@ -171,8 +172,10 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
             threads.add(new Thread(new Runnable() {
                 @Override public void run() {
 
+                    Lock lock = c.lock(CNTR_KEY);
+
                     try {
-                        c.lock(CNTR_KEY).lock();
+                        lock.lock();
 
                         int cntr = c.get(CNTR_KEY);
 
@@ -184,7 +187,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
                         error("Failed lock thread", e);
                     }
                     finally {
-                        c.lock(CNTR_KEY).unlock();
+                        lock.unlock();
                     }
                 }
             }));
@@ -224,8 +227,10 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
             threads.add(new Thread(new Runnable() {
                 @Override public void run() {
 
+                    Lock lock = c.lock(CNTR_KEY);
+
                     try {
-                        c.lock(CNTR_KEY).lock();
+                        lock.lock();
 
                         int cntr = c.get(CNTR_KEY);
 
@@ -247,7 +252,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
 
                             tx.commit();
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (IgniteException e) {
                             error("Failed tx thread", e);
                         }
 
@@ -257,7 +262,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
                         error("Failed lock thread", e);
                     }
                     finally {
-                        c.lock(CNTR_KEY).unlock();
+                        lock.unlock();
                     }
                 }
             }));

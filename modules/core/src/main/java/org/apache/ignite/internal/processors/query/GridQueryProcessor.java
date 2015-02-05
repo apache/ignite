@@ -22,16 +22,17 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.portables.*;
+import org.apache.ignite.spi.indexing.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -65,10 +66,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private final GridQueryIndexing idx;
 
     /** Configuration-declared types. */
-    private final Map<TypeName, CacheQueryTypeMetadata> declaredTypesByName = new HashMap<>();
+    private final Map<TypeName, CacheTypeMetadata> declaredTypesByName = new HashMap<>();
 
     /** Configuration-declared types. */
-    private Map<TypeId, CacheQueryTypeMetadata> declaredTypesById;
+    private Map<TypeId, CacheTypeMetadata> declaredTypesById;
 
     /** Portable IDs. */
     private Map<Integer, String> portableIds;
@@ -104,9 +105,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 CacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
 
                 if (qryCfg != null) {
-                    if (!F.isEmpty(qryCfg.getTypeMetadata())) {
-                        for (CacheQueryTypeMetadata meta : qryCfg.getTypeMetadata())
-                            declaredTypesByName.put(new TypeName(ccfg.getName(), meta.getType()), meta);
+                    if (!F.isEmpty(ccfg.getTypeMetadata())) {
+                        for (CacheTypeMetadata meta : ccfg.getTypeMetadata())
+                            declaredTypesByName.put(new TypeName(ccfg.getName(), meta.getValueType()), meta);
                     }
 
                     if (qryCfg.getTypeResolver() != null)
@@ -167,7 +168,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param valTypeName Value type name.
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    public IgniteFuture<?> rebuildIndexes(@Nullable final String space, String valTypeName) {
+    public IgniteInternalFuture<?> rebuildIndexes(@Nullable final String space, String valTypeName) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
 
@@ -184,7 +185,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param desc Type descriptor.
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    private IgniteFuture<?> rebuildIndexes(@Nullable final String space, @Nullable final TypeDescriptor desc) {
+    private IgniteInternalFuture<?> rebuildIndexes(@Nullable final String space, @Nullable final TypeDescriptor desc) {
         if (idx == null)
             return new GridFinishedFuture<>(ctx, new IgniteCheckedException("Indexing is disabled."));
 
@@ -224,7 +225,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
     @SuppressWarnings("unchecked")
-    public IgniteFuture<?> rebuildAllIndexes() {
+    public IgniteInternalFuture<?> rebuildAllIndexes() {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to get space size (grid is stopping).");
 
@@ -232,7 +233,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             GridCompoundFuture<?, ?> fut = new GridCompoundFuture<Object, Object>(ctx);
 
             for (Map.Entry<TypeId, TypeDescriptor> e : types.entrySet())
-                fut.add((IgniteFuture)rebuildIndexes(e.getKey().space, e.getValue()));
+                fut.add((IgniteInternalFuture)rebuildIndexes(e.getKey().space, e.getValue()));
 
             fut.markInitialized();
 
@@ -329,14 +330,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             String typeName = portableName(portableKey.typeId());
 
                             if (typeName != null) {
-                                CacheQueryTypeMetadata keyMeta = declaredType(space, portableKey.typeId());
+                                CacheTypeMetadata keyMeta = declaredType(space, portableKey.typeId());
 
                                 if (keyMeta != null)
                                     processPortableMeta(true, keyMeta, d);
                             }
                         }
                         else {
-                            CacheQueryTypeMetadata keyMeta = declaredType(space, keyCls.getName());
+                            CacheTypeMetadata keyMeta = declaredType(space, keyCls.getName());
 
                             if (keyMeta == null)
                                 processAnnotationsInClass(true, d.keyCls, d, null);
@@ -350,7 +351,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             String typeName = portableName(portableVal.typeId());
 
                             if (typeName != null) {
-                                CacheQueryTypeMetadata valMeta = declaredType(space, portableVal.typeId());
+                                CacheTypeMetadata valMeta = declaredType(space, portableVal.typeId());
 
                                 d.name(typeName);
 
@@ -363,7 +364,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                             d.name(valTypeName);
 
-                            CacheQueryTypeMetadata typeMeta = declaredType(space, valCls.getName());
+                            CacheTypeMetadata typeMeta = declaredType(space, valCls.getName());
 
                             if (typeMeta == null)
                                 processAnnotationsInClass(false, d.valCls, d, null);
@@ -428,6 +429,41 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 return new GridEmptyCloseableIterator<>();
 
             return idx.query(space, clause, params, type, filters);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param space Space name.
+     * @param qry Query.
+     * @return Future.
+     */
+    public IgniteInternalFuture<GridCacheSqlResult> queryTwoStep(String space, GridCacheTwoStepQuery qry) {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+
+        try {
+            return idx.queryTwoStep(space, qry);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param space Space.
+     * @param sqlQry Query.
+     * @param params Parameters.
+     * @return Result.
+     */
+    public IgniteInternalFuture<GridCacheSqlResult> queryTwoStep(String space, String sqlQry, Object[] params) {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+
+        try {
+            return idx.queryTwoStep(space, sqlQry, params);
         }
         finally {
             busyLock.leaveBusy();
@@ -500,8 +536,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 CacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
 
                 if (qryCfg != null) {
-                    for (CacheQueryTypeMetadata meta : qryCfg.getTypeMetadata())
-                        portableIds.put(ctx.portable().typeId(meta.getType()), meta.getType());
+                    for (CacheTypeMetadata meta : ccfg.getTypeMetadata())
+                        portableIds.put(ctx.portable().typeId(meta.getValueType()), meta.getValueType());
                 }
             }
 
@@ -516,8 +552,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param typeId Type ID.
      * @return Type meta data if it was declared in configuration.
      */
-    @Nullable private CacheQueryTypeMetadata declaredType(String space, int typeId) {
-        Map<TypeId, CacheQueryTypeMetadata> declaredTypesById = this.declaredTypesById;
+    @Nullable private CacheTypeMetadata declaredType(String space, int typeId) {
+        Map<TypeId, CacheTypeMetadata> declaredTypesById = this.declaredTypesById;
 
         if (declaredTypesById == null) {
             declaredTypesById = new HashMap<>();
@@ -526,8 +562,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 CacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
 
                 if (qryCfg != null) {
-                    for (CacheQueryTypeMetadata meta : qryCfg.getTypeMetadata())
-                        declaredTypesById.put(new TypeId(ccfg.getName(), ctx.portable().typeId(meta.getType())), meta);
+                    for (CacheTypeMetadata meta : ccfg.getTypeMetadata())
+                        declaredTypesById.put(new TypeId(ccfg.getName(), ctx.portable().typeId(meta.getValueType())), meta);
                 }
             }
 
@@ -542,7 +578,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param typeName Type name.
      * @return Type meta data if it was declared in configuration.
      */
-    @Nullable private CacheQueryTypeMetadata declaredType(String space, String typeName) {
+    @Nullable private CacheTypeMetadata declaredType(String space, String typeName) {
         return declaredTypesByName.get(new TypeName(space, typeName));
     }
 
@@ -780,7 +816,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (!sqlAnn.name().isEmpty())
                 prop.name(sqlAnn.name());
 
-            if (sqlAnn.index() || sqlAnn.unique()) {
+            if (sqlAnn.index()) {
                 String idxName = prop.name() + "_idx";
 
                 desc.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);
@@ -812,7 +848,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param d Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    static void processClassMeta(boolean key, Class<?> cls, CacheQueryTypeMetadata meta, TypeDescriptor d)
+    static void processClassMeta(boolean key, Class<?> cls, CacheTypeMetadata meta, TypeDescriptor d)
         throws IgniteCheckedException {
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
             ClassProperty prop = buildClassProperty(cls, entry.getKey(), entry.getValue());
@@ -885,7 +921,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param d Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    static void processPortableMeta(boolean key, CacheQueryTypeMetadata meta, TypeDescriptor d)
+    static void processPortableMeta(boolean key, CacheTypeMetadata meta, TypeDescriptor d)
         throws IgniteCheckedException {
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
             PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue());
@@ -1303,9 +1339,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /**
          * @return Waits for initialization.
-         * @throws org.apache.ignite.IgniteInterruptedException If thread is interrupted.
+         * @throws IgniteInterruptedCheckedException If thread is interrupted.
          */
-        boolean await() throws IgniteInterruptedException {
+        boolean await() throws IgniteInterruptedCheckedException {
             return initializer.await();
         }
 

@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -136,155 +136,35 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"FloatingPointEquality"})
     private void checkMetrics(ClusterMetrics m) {
-        assert m.getTotalNodes() == NODES_CNT;
-        assert m.getTotalHosts() == 1;
-
-        assert m.getMinimumActiveJobs() == 0;
         assert m.getMaximumActiveJobs() == 0;
         assert m.getAverageActiveJobs() == 0;
 
-        assert m.getMinimumCancelledJobs() == 0;
         assert m.getMaximumCancelledJobs() == 0;
         assert m.getAverageCancelledJobs() == 0;
 
-        assert m.getMinimumRejectedJobs() == 0;
         assert m.getMaximumRejectedJobs() == 0;
         assert m.getAverageRejectedJobs() == 0;
 
-        assert m.getMinimumWaitingJobs() == 0;
         assert m.getMaximumWaitingJobs() == 0;
         assert m.getAverageWaitingJobs() == 0;
 
-        assert m.getMinimumJobExecuteTime() >= 0;
         assert m.getMaximumJobExecuteTime() >= 0;
         assert m.getAverageJobExecuteTime() >= 0;
 
-        assert m.getAverageJobExecuteTime() >= m.getMinimumJobExecuteTime() &&
-            m.getAverageJobExecuteTime() <= m.getMaximumJobExecuteTime();
+        assert m.getAverageJobExecuteTime() <= m.getMaximumJobExecuteTime();
 
-        assert m.getMinimumJobWaitTime() >= 0;
         assert m.getMaximumJobWaitTime() >= 0;
         assert m.getAverageJobWaitTime() >= 0;
 
-        assert m.getAverageJobWaitTime() >= m.getMinimumJobWaitTime() &&
-            m.getAverageJobWaitTime() <= m.getMaximumJobWaitTime();
+        assert m.getAverageJobWaitTime() <= m.getMaximumJobWaitTime();
 
-        assert m.getMinimumDaemonThreadCount() > 0;
-        assert m.getMaximumDaemonThreadCount() > 0;
-        assert m.getAverageDaemonThreadCount() > 0;
-
-        assert m.getAverageDaemonThreadCount() >= m.getMinimumDaemonThreadCount() &&
-            m.getAverageDaemonThreadCount() <= m.getMaximumDaemonThreadCount();
-
-        assert m.getMinimumThreadCount() > 0;
         assert m.getMaximumThreadCount() > 0;
-        assert m.getAverageThreadCount() > 0;
-
-        assert m.getAverageThreadCount() >= m.getMinimumThreadCount() &&
-            m.getAverageThreadCount() <= m.getMaximumThreadCount();
-
-        assert m.getMinimumIdleTime() >= 0;
-        assert m.getMaximumIdleTime() >= 0;
-        assert m.getAverageIdleTime() >= 0;
         assert m.getIdleTimePercentage() >= 0;
         assert m.getIdleTimePercentage() <= 1;
 
-        assert m.getAverageIdleTime() >= m.getMinimumIdleTime() && m.getAverageIdleTime() <= m.getMaximumIdleTime();
-
-        assert m.getMinimumBusyTimePercentage() > 0;
-        assert m.getMaximumBusyTimePercentage() > 0;
-        assert m.getAverageBusyTimePercentage() > 0;
-
-        assert m.getAverageBusyTimePercentage() >= m.getMinimumBusyTimePercentage() &&
-            m.getAverageBusyTimePercentage() <= m.getMaximumBusyTimePercentage();
-
-        assert m.getMinimumCpuLoad() >= 0 || m.getMinimumCpuLoad() == -1.0;
-        assert m.getMaximumCpuLoad() >= 0 || m.getMaximumCpuLoad() == -1.0;
         assert m.getAverageCpuLoad() >= 0 || m.getAverageCpuLoad() == -1.0;
 
-        assert m.getAverageCpuLoad() >= m.getMinimumCpuLoad() && m.getAverageCpuLoad() <= m.getMaximumCpuLoad();
-
-        assert m.getMinimumHeapMemoryCommitted() > 0;
-        assert m.getMaximumHeapMemoryCommitted() > 0;
-        assert m.getAverageHeapMemoryCommitted() > 0;
-
-        assert m.getAverageHeapMemoryCommitted() >= m.getMinimumHeapMemoryCommitted() &&
-            m.getAverageHeapMemoryCommitted() <= m.getMaximumHeapMemoryCommitted();
-
-        assert m.getMinimumHeapMemoryUsed() > 0;
-        assert m.getMaximumHeapMemoryUsed() > 0;
-        assert m.getAverageHeapMemoryUsed() > 0;
-
-        assert m.getAverageHeapMemoryUsed() >= m.getMinimumHeapMemoryUsed() &&
-            m.getAverageHeapMemoryUsed() <= m.getMaximumHeapMemoryUsed();
-
-        assert m.getMinimumHeapMemoryMaximum() > 0;
-        assert m.getMaximumHeapMemoryMaximum() > 0;
-        assert m.getAverageHeapMemoryMaximum() > 0;
-
-        assert m.getAverageHeapMemoryMaximum() >= m.getMinimumHeapMemoryMaximum() &&
-            m.getAverageHeapMemoryMaximum() <= m.getMaximumHeapMemoryMaximum();
-
-        assert m.getMinimumHeapMemoryInitialized() >= 0;
-        assert m.getMaximumHeapMemoryInitialized() >= 0;
-        assert m.getAverageHeapMemoryInitialized() >= 0;
-
-        assert m.getAverageHeapMemoryInitialized() >= m.getMinimumHeapMemoryInitialized() &&
-            m.getAverageHeapMemoryInitialized() <= m.getMaximumHeapMemoryInitialized();
-
-        assert m.getMinimumNonHeapMemoryCommitted() > 0;
-        assert m.getMaximumNonHeapMemoryCommitted() > 0;
-        assert m.getAverageNonHeapMemoryCommitted() > 0;
-
-        assert m.getAverageNonHeapMemoryCommitted() >= m.getMinimumNonHeapMemoryCommitted() &&
-            m.getAverageNonHeapMemoryCommitted() <= m.getMaximumNonHeapMemoryCommitted();
-
-        assert m.getMinimumNonHeapMemoryUsed() > 0;
-        assert m.getMaximumNonHeapMemoryUsed() > 0;
-        assert m.getAverageNonHeapMemoryUsed() > 0;
-
-        assert m.getAverageNonHeapMemoryUsed() >= m.getMinimumNonHeapMemoryUsed() &&
-            m.getAverageNonHeapMemoryUsed() <= m.getMaximumNonHeapMemoryUsed();
-
-        assert m.getMinimumNonHeapMemoryMaximum() > 0;
-        assert m.getMaximumNonHeapMemoryMaximum() > 0;
-        assert m.getAverageNonHeapMemoryMaximum() > 0;
-
-        assert m.getAverageNonHeapMemoryMaximum() >= m.getMinimumNonHeapMemoryMaximum() &&
-            m.getAverageNonHeapMemoryMaximum() <= m.getMaximumNonHeapMemoryMaximum();
-
-        assert m.getMinimumNonHeapMemoryInitialized() > 0;
-        assert m.getMaximumNonHeapMemoryInitialized() > 0;
-        assert m.getAverageNonHeapMemoryInitialized() > 0;
-
-        assert m.getAverageNonHeapMemoryInitialized() >= m.getMinimumNonHeapMemoryInitialized() &&
-            m.getAverageNonHeapMemoryInitialized() <= m.getMaximumNonHeapMemoryInitialized();
-
-        assert m.getYoungestNodeStartTime() > 0;
-        assert m.getOldestNodeStartTime() > 0;
-
-        assert m.getYoungestNodeStartTime() > m.getOldestNodeStartTime();
-
-        assert m.getMinimumUpTime() > 0;
-        assert m.getMaximumUpTime() > 0;
-        assert m.getAverageUpTime() > 0;
-
-        assert m.getAverageUpTime() >= m.getMinimumUpTime() && m.getAverageUpTime() <= m.getMaximumUpTime();
-
-        assert m.getMinimumCpusPerNode() > 0;
-        assert m.getMaximumCpusPerNode() > 0;
-        assert m.getAverageCpusPerNode() > 0;
-
-        assert m.getAverageCpusPerNode() == m.getMinimumCpusPerNode() &&
-            m.getAverageCpusPerNode() == m.getMaximumCpusPerNode();
-
-        assert m.getMinimumNodesPerHost() == NODES_CNT;
-        assert m.getMaximumNodesPerHost() == NODES_CNT;
-        assert m.getAverageNodesPerHost() == NODES_CNT;
-
         assert m.getTotalCpus() > 0;
-        assert m.getTotalHosts() == 1;
-        assert m.getTotalNodes() == NODES_CNT;
     }
 
     /**

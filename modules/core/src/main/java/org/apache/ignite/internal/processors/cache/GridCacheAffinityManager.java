@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
@@ -98,10 +98,10 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version to wait.
      * @return Affinity ready future.
      */
-    public IgniteFuture<Long> affinityReadyFuture(long topVer) {
+    public IgniteInternalFuture<Long> affinityReadyFuture(long topVer) {
         assert !cctx.isLocal();
 
-        IgniteFuture<Long> fut = aff.readyFuture(topVer);
+        IgniteInternalFuture<Long> fut = aff.readyFuture(topVer);
 
         return fut != null ? fut : new GridFinishedFutureEx<>(topVer);
     }
@@ -113,7 +113,7 @@ public class GridCacheAffinityManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param topVer Topology version to wait.
      * @return Affinity ready future or {@code null}.
      */
-    @Nullable public IgniteFuture<Long> affinityReadyFuturex(long topVer) {
+    @Nullable public IgniteInternalFuture<Long> affinityReadyFuturex(long topVer) {
         assert !cctx.isLocal();
 
         return aff.readyFuture(topVer);

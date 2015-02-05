@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.thread.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.thread.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -95,7 +95,7 @@ public class GridGgfsServerManager extends GridGgfsManager {
 
             srvrs.add(ipcSrv);
         }
-        catch (GridIpcEndpointBindException ignored) {
+        catch (IpcEndpointBindException ignored) {
             int port = ipcSrv.getIpcServerEndpoint().getPort();
 
             String portMsg = port != -1 ? " Failed to bind to port (is port already in use?): " + port : "";
@@ -114,9 +114,9 @@ public class GridGgfsServerManager extends GridGgfsManager {
     /**
      * @return Collection of active endpoints.
      */
-    public Collection<GridIpcServerEndpoint> endpoints() {
-        return F.viewReadOnly(srvrs, new C1<GridGgfsServer, GridIpcServerEndpoint>() {
-            @Override public GridIpcServerEndpoint apply(GridGgfsServer e) {
+    public Collection<IpcServerEndpoint> endpoints() {
+        return F.viewReadOnly(srvrs, new C1<GridGgfsServer, IpcServerEndpoint>() {
+            @Override public IpcServerEndpoint apply(GridGgfsServer e) {
                 return e.getIpcServerEndpoint();
             }
         });

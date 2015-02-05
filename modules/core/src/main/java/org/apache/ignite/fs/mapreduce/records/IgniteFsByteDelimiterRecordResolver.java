@@ -20,10 +20,10 @@ package org.apache.ignite.fs.mapreduce.records;
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.fs.mapreduce.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -77,8 +77,8 @@ public class IgniteFsByteDelimiterRecordResolver implements IgniteFsRecordResolv
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFileRange resolveRecords(IgniteFs ggfs, IgniteFsInputStream stream,
-        IgniteFsFileRange suggestedRecord) throws IgniteCheckedException, IOException {
+    @Override public IgniteFsFileRange resolveRecords(IgniteFs fs, IgniteFsInputStream stream,
+        IgniteFsFileRange suggestedRecord) throws IgniteException, IOException {
         long suggestedStart = suggestedRecord.start();
         long suggestedEnd = suggestedStart + suggestedRecord.length();
 

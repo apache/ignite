@@ -37,16 +37,16 @@ import java.net.*;
 @GridCommonTest(group = "P2P")
 public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTest {
     /** Task name. */
-    private static final String TASK_NAME1 = "org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1";
+    private static final String TASK_NAME1 = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1";
 
     /** Task name. */
-    private static final String TASK_NAME2 = "org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath2";
+    private static final String TASK_NAME2 = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath2";
 
     /** Filter name. */
-    private static final String FILTER_NAME1 = "org.gridgain.grid.tests.p2p.GridP2PEventFilterExternalPath1";
+    private static final String FILTER_NAME1 = "org.apache.ignite.tests.p2p.P2PEventFilterExternalPath1";
 
     /** Filter name. */
-    private static final String FILTER_NAME2 = "org.gridgain.grid.tests.p2p.GridP2PEventFilterExternalPath2";
+    private static final String FILTER_NAME2 = "org.apache.ignite.tests.p2p.P2PEventFilterExternalPath2";
 
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
     private IgniteDeploymentMode depMode;
@@ -94,7 +94,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
 
             assert false; // Exception must be thrown.
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             // Throwing exception is a correct behaviour.
             info("Received correct exception: " + e);
         }
@@ -113,7 +113,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
 
             assert false; // Exception must be thrown.
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             // Throwing exception is a correct behaviour.
             info("Received correct exception: " + e);
         }

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.rest.handlers.log;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.rest.handlers.*;
 import org.apache.ignite.internal.processors.rest.request.*;
@@ -42,7 +41,7 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
     private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(LOG);
 
     /** Default log path. */
-    private static final String DFLT_PATH = "work/log/gridgain.log";
+    private static final String DFLT_PATH = "work/log/ignite.log";
 
     /** Approximate line length. */
     private static final int LINE_LENGTH = 120;
@@ -72,7 +71,7 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
                 accessibleFolders.add(new File(accessiblePath));
         }
         else if (log.isDebugEnabled())
-            log.debug("Neither restAccessibleFolders nor GRIDGAIN_HOME properties are not set, will not restrict " +
+            log.debug("Neither restAccessibleFolders nor IGNITE_HOME properties are not set, will not restrict " +
                 "log files access");
     }
 
@@ -82,7 +81,7 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
         assert req instanceof GridRestLogRequest : "Invalid command for topology handler: " + req;
 
         assert SUPPORTED_COMMANDS.contains(req.command());

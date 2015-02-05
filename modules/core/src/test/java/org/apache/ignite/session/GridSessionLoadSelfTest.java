@@ -21,8 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.resources.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -86,7 +87,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkSessionLoad() throws Exception {
-        final Ignite ignite = grid(1);
+        final Ignite ignite = grid(0);
 
         assert ignite != null;
         assert ignite.cluster().nodes().size() == 2;
@@ -95,15 +96,18 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
+                ComputeTaskFuture f = null;
+
                 try {
                     for (int i = 0; i < EXEC_CNT; i++)
                         assertEquals(Boolean.TRUE,
-                            executeAsync(ignite.compute().withName("task-name"),
+                            (f = executeAsync(ignite.compute().withName("task-name"),
                                 SessionLoadTestTask.class,
-                                ignite.cluster().nodes().size() * 2).get(20000));
+                                ignite.cluster().nodes().size() * 2)).get(20000));
                 }
                 catch (Exception e) {
-                    U.error(log, "Test failed.", e);
+                    U.error(log, "Task failed: " +
+                        f != null ? f.getTaskSession().getId() : "N/A", e);
 
                     throw e;
                 }
@@ -133,8 +137,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
         private Map<String, Integer> params;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg)
-            throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) {
             assert taskSes != null;
             assert arg != null;
             assert arg > 1;
@@ -170,7 +173,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Boolean reduce(List<ComputeJobResult> results) {
             assert taskSes != null;
             assert results != null;
             assert params != null;
@@ -201,8 +204,14 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
                         allAttrReceived = false;
                 }
 
-                if (!allAttrReceived)
-                    U.sleep(1000);
+                if (!allAttrReceived) {
+                    try {
+                        U.sleep(1000);
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
             }
 
             if (log.isDebugEnabled()) {
@@ -235,7 +244,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable execute() throws IgniteCheckedException {
+        @Override public Serializable execute() {
             assert taskSes != null;
             assert argument(0) != null;
 

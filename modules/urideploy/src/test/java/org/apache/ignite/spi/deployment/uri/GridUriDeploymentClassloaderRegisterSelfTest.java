@@ -17,10 +17,9 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.spi.*;
 
@@ -30,8 +29,8 @@ import java.util.*;
 /**
  * Test for classloader registering.
  */
-@GridSpiTest(spi = GridUriDeploymentSpi.class, group = "Deployment SPI")
-public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstractTest<GridUriDeploymentSpi> {
+@GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
+public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstractTest<UriDeploymentSpi> {
     /** */
     private static Map<ClassLoader, Set<Class<? extends ComputeTask<?, ?>>>> tasks =
         Collections.synchronizedMap(new HashMap<ClassLoader, Set<Class<? extends ComputeTask<?, ?>>>>());
@@ -132,11 +131,12 @@ public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstrac
      */
     private static class GridFileDeploymentTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return null;
         }
+
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

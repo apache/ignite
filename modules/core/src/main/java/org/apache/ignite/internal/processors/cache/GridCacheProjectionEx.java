@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.dr.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.processors.cache.dr.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
@@ -73,7 +75,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param filter Optional filter.
      * @return Put operation future.
      */
-    public IgniteFuture<V> putAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
+    public IgniteInternalFuture<V> putAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
 
     /**
@@ -100,7 +102,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param filter Optional filter.
      * @return Putx operation future.
      */
-    public IgniteFuture<Boolean> putxAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
+    public IgniteInternalFuture<Boolean> putxAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
 
     /**
@@ -120,7 +122,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If put operation failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteFuture<?> putAllDrAsync(Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException;
+    public IgniteInternalFuture<?> putAllDrAsync(Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException;
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
@@ -142,7 +144,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param filter Optional filter.
      * @return Put operation future.
      */
-    public IgniteFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
+    public IgniteInternalFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
 
     /**
@@ -162,7 +164,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws IgniteCheckedException If remove failed.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteFuture<?> removeAllDrAsync(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException;
+    public IgniteInternalFuture<?> removeAllDrAsync(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException;
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
@@ -184,7 +186,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param filter Optional filter.
      * @return Putx operation future.
      */
-    public IgniteFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
+    public IgniteInternalFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
 
     /**
@@ -210,7 +212,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal);
+    public IgniteInternalFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal);
 
     /**
      * Stores given key-value pair in cache only if only if the previous value is equal to the
@@ -280,7 +282,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @throws NullPointerException if the key or value is {@code null}.
      * @throws CacheFlagException If projection flags validation failed.
      */
-    public IgniteFuture<GridCacheReturn<V>> removexAsync(K key, V val);
+    public IgniteInternalFuture<GridCacheReturn<V>> removexAsync(K key, V val);
 
     /**
      * @param key Key to retrieve the value for.
@@ -308,7 +310,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param key Key to get value for.
      * @return Future with result.
      */
-    public IgniteFuture<V> getForcePrimaryAsync(K key);
+    public IgniteInternalFuture<V> getForcePrimaryAsync(K key);
 
     /**
      * Gets values from cache. Will bypass started transaction, if any, i.e. will not enlist entries
@@ -327,7 +329,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param keys Keys to get values for.
      * @return Future with result.
      */
-    public IgniteFuture<Map<K, V>> getAllOutTxAsync(List<K> keys);
+    public IgniteInternalFuture<Map<K, V>> getAllOutTxAsync(List<K> keys);
 
     /**
      * Checks whether this cache is GGFS data cache.
@@ -408,7 +410,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param args Arguments.
      * @return Future.
      */
-    public <T> IgniteFuture<EntryProcessorResult<T>> invokeAsync(K key,
+    public <T> IgniteInternalFuture<EntryProcessorResult<T>> invokeAsync(K key,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args);
 
@@ -429,7 +431,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param args Arguments.
      * @return Future.
      */
-    public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
+    public <T> IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args);
 
@@ -448,7 +450,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param args Arguments.
      * @return Future.
      */
-    public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
+    public <T> IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
         Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args);
 }

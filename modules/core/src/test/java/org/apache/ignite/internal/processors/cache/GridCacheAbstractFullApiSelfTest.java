@@ -26,13 +26,13 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
-import org.apache.ignite.spi.swapspace.inmemory.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.swapspace.inmemory.*;
 import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -45,12 +45,12 @@ import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePeekMode.*;
+import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
+import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.testframework.GridTestUtils.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.transactions.IgniteTxState.*;
-import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
  * Full API cache test.
@@ -432,9 +432,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().put("key1", 1);
         cache().put("key2", 2);
 
-        IgniteFuture<Integer> fut1 = cache().getAsync("key1");
-        IgniteFuture<Integer> fut2 = cache().getAsync("key2");
-        IgniteFuture<Integer> fut3 = cache().getAsync("wrongKey");
+        IgniteInternalFuture<Integer> fut1 = cache().getAsync("key1");
+        IgniteInternalFuture<Integer> fut2 = cache().getAsync("key2");
+        IgniteInternalFuture<Integer> fut3 = cache().getAsync("wrongKey");
 
         assert fut1.get() == 1;
         assert fut2.get() == 2;
@@ -448,8 +448,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().put("key1", 1);
         cache().put("key2", 100);
 
-        IgniteFuture<Integer> fut1 = cache().projection(gte100).getAsync("key1");
-        IgniteFuture<Integer> fut2 = cache().projection(gte100).getAsync("key2");
+        IgniteInternalFuture<Integer> fut1 = cache().projection(gte100).getAsync("key1");
+        IgniteInternalFuture<Integer> fut2 = cache().projection(gte100).getAsync("key2");
 
         assert fut1.get() == null;
         assert fut2.get() == 100;
@@ -467,7 +467,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (tx != null)
             tx.commit();
 
-        assert cache().getAll(null).isEmpty();
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache().getAll(null).isEmpty();
+
+                return null;
+            }
+        }, NullPointerException.class, null);
+
         assert cache().getAll(Collections.<String>emptyList()).isEmpty();
 
         Map<String, Integer> map1 = cache().getAll(F.asList("key1", "key2", "key9999"));
@@ -494,7 +501,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (txEnabled()) {
             tx = cache().txStart();
 
-            assert cache().getAll(null).isEmpty();
             assert cache().getAll(Collections.<String>emptyList()).isEmpty();
 
             map1 = cache().getAll(F.asList("key1", "key2", "key9999"));
@@ -525,14 +531,20 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testGetAllWithNulls() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        final GridCache<String, Integer> cache = cache();
 
-        Collection<String> c = new LinkedList<>();
+        final Collection<String> c = new LinkedList<>();
 
         c.add("key1");
         c.add(null);
 
-        cache.getAll(c);
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache.getAll(c);
+
+                return null;
+            }
+        }, NullPointerException.class, null);
     }
 
     /**
@@ -654,11 +666,17 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().put("key1", 1);
         cache().put("key2", 2);
 
-        IgniteFuture<Map<String, Integer>> fut1 = cache().getAllAsync(null);
-        IgniteFuture<Map<String, Integer>> fut2 = cache().getAllAsync(Collections.<String>emptyList());
-        IgniteFuture<Map<String, Integer>> fut3 = cache().getAllAsync(F.asList("key1", "key2"));
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache().getAllAsync(null);
 
-        assert fut1.get().isEmpty();
+                return null;
+            }
+        }, NullPointerException.class, null);
+
+        IgniteInternalFuture<Map<String, Integer>> fut2 = cache().getAllAsync(Collections.<String>emptyList());
+        IgniteInternalFuture<Map<String, Integer>> fut3 = cache().getAllAsync(F.asList("key1", "key2"));
+
         assert fut2.get().isEmpty();
         assert fut3.get().size() == 2 : "Invalid map: " + fut3.get();
         assert fut3.get().get("key1") == 1;
@@ -676,8 +694,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         List<String> keys = F.asList("key1", "key2", "key3", "key4");
 
-        IgniteFuture<Map<String, Integer>> fut1 = cache().projection(gte100).getAllAsync(keys);
-        IgniteFuture<Map<String, Integer>> fut2 = cache().projection(gte200).getAllAsync(keys);
+        IgniteInternalFuture<Map<String, Integer>> fut1 = cache().projection(gte100).getAllAsync(keys);
+        IgniteInternalFuture<Map<String, Integer>> fut2 = cache().projection(gte200).getAllAsync(keys);
 
         assert fut1.get().size() == 4 : "Invalid map: " + fut1.get();
         assert fut1.get().get("key1") == 100;
@@ -982,25 +1000,26 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }, NullPointerException.class, null);
 
         {
-            Map<String, Integer> m = new HashMap<>(2);
-
-            m.put("key1", 1);
-            m.put(null, 2);
-
-            // WARN: F.asMap() doesn't work here, because it will throw NPE.
-
-            cache.putAll(m);
-        }
-
-        {
-            Set<String> keys = new HashSet<>(2);
+            final Set<String> keys = new LinkedHashSet<>(2);
 
             keys.add("key1");
             keys.add(null);
 
-            // WARN: F.asSet() doesn't work here, because it will throw NPE.
+            GridTestUtils.assertThrows(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    cache.invokeAll(keys, INCR_PROCESSOR);
 
-            cache.invokeAll(keys, INCR_PROCESSOR);
+                    return null;
+                }
+            }, NullPointerException.class, null);
+
+            GridTestUtils.assertThrows(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    cache.invokeAll(F.asSet("key1"), null);
+
+                    return null;
+                }
+            }, NullPointerException.class, null);
         }
     }
 
@@ -1215,8 +1234,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().put("key1", 1);
         cache().put("key2", 2);
 
-        IgniteFuture<Integer> fut1 = cache().putAsync("key1", 10);
-        IgniteFuture<Integer> fut2 = cache().putAsync("key2", 11);
+        IgniteInternalFuture<Integer> fut1 = cache().putAsync("key1", 10);
+        IgniteInternalFuture<Integer> fut2 = cache().putAsync("key2", 11);
 
         assertEquals((Integer)1, fut1.get(5000));
         assertEquals((Integer)2, fut2.get(5000));
@@ -1229,8 +1248,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testPutAsync0() throws Exception {
-        IgniteFuture<Integer> fut1 = cache().putAsync("key1", 0);
-        IgniteFuture<Integer> fut2 = cache().putAsync("key2", 1);
+        IgniteInternalFuture<Integer> fut1 = cache().putAsync("key1", 0);
+        IgniteInternalFuture<Integer> fut2 = cache().putAsync("key2", 1);
 
         assert fut1.get(5000) == null;
         assert fut2.get(5000) == null;
@@ -1245,7 +1264,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.put("key2", 1);
         cache.put("key3", 3);
 
-        IgniteCache<String, Integer> asyncCache = cache.enableAsync();
+        IgniteCache<String, Integer> asyncCache = cache.withAsync();
 
         assertNull(asyncCache.invoke("key1", INCR_PROCESSOR));
 
@@ -1613,13 +1632,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache().put("key2", 1);
 
-        IgniteFuture<Boolean> fut1 = cache().putxAsync("key1", 10);
-        IgniteFuture<Boolean> fut2 = cache().putxAsync("key2", 11);
+        IgniteInternalFuture<Boolean> fut1 = cache().putxAsync("key1", 10);
+        IgniteInternalFuture<Boolean> fut2 = cache().putxAsync("key2", 11);
 
         IgniteFuture<IgniteTx> f = null;
 
         if (tx != null) {
-            tx = (IgniteTx)tx.enableAsync();
+            tx = (IgniteTx)tx.withAsync();
 
             tx.commit();
 
@@ -1641,12 +1660,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testPutxAsyncFiltered() throws Exception {
-        IgniteFuture<Boolean> f1 = cache().putxAsync("key1", 1);
-        IgniteFuture<Boolean> f2 = cache().putxAsync("key1", 101, F.<String, Integer>cacheHasPeekValue());
-        IgniteFuture<Boolean> f3 = cache().putxAsync("key2", 2);
-        IgniteFuture<Boolean> f4 = cache().putxAsync("key2", 202, F.<String, Integer>cacheHasPeekValue());
-        IgniteFuture<Boolean> f5 = cache().putxAsync("key1", 1, F.<String, Integer>cacheNoPeekValue());
-        IgniteFuture<Boolean> f6 = cache().putxAsync("key2", 2, F.<String, Integer>cacheNoPeekValue());
+        IgniteInternalFuture<Boolean> f1 = cache().putxAsync("key1", 1);
+        IgniteInternalFuture<Boolean> f2 = cache().putxAsync("key1", 101, F.<String, Integer>cacheHasPeekValue());
+        IgniteInternalFuture<Boolean> f3 = cache().putxAsync("key2", 2);
+        IgniteInternalFuture<Boolean> f4 = cache().putxAsync("key2", 202, F.<String, Integer>cacheHasPeekValue());
+        IgniteInternalFuture<Boolean> f5 = cache().putxAsync("key1", 1, F.<String, Integer>cacheNoPeekValue());
+        IgniteInternalFuture<Boolean> f6 = cache().putxAsync("key2", 2, F.<String, Integer>cacheNoPeekValue());
 
         assert f1.get() : "Invalid future1: " + f1;
         assert f2.get() : "Invalid future2: " + f2;
@@ -1689,37 +1708,216 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception In case of error.
      */
+    public void testNullInTx() throws Exception {
+        if (!txEnabled())
+            return;
+
+        final IgniteCache<String, Integer> cache = jcache();
+
+        for (int i = 0; i < 100; i++) {
+            final String key = "key-" + i;
+
+            GridTestUtils.assertThrows(log, new Callable<Void>() {
+                public Void call() throws Exception {
+                    IgniteTransactions txs = grid(0).transactions();
+
+                    try (IgniteTx tx = txs.txStart()) {
+                        cache.put(key, 1);
+
+                        cache.put(null, 2);
+
+                        tx.commit();
+                    }
+
+                    return null;
+                }
+            }, NullPointerException.class, null);
+
+            assertNull(cache.get(key));
+
+            cache.put(key, 1);
+
+            assertEquals(1, (int) cache.get(key));
+
+            GridTestUtils.assertThrows(log, new Callable<Void>() {
+                public Void call() throws Exception {
+                    IgniteTransactions txs = grid(0).transactions();
+
+                    try (IgniteTx tx = txs.txStart()) {
+                        cache.put(key, 2);
+
+                        cache.remove(null);
+
+                        tx.commit();
+                    }
+
+                    return null;
+                }
+            }, NullPointerException.class, null);
+
+            assertEquals(1, (int) cache.get(key));
+
+            cache.put(key, 2);
+
+            assertEquals(2, (int)cache.get(key));
+
+            GridTestUtils.assertThrows(log, new Callable<Void>() {
+                public Void call() throws Exception {
+                    IgniteTransactions txs = grid(0).transactions();
+
+                    Map<String, Integer> map = new LinkedHashMap<String, Integer>();
+
+                    map.put("k1", 1);
+                    map.put("k2", 2);
+                    map.put(null, 3);
+
+                    try (IgniteTx tx = txs.txStart()) {
+                        cache.put(key, 1);
+
+                        cache.putAll(map);
+
+                        tx.commit();
+                    }
+
+                    return null;
+                }
+            }, NullPointerException.class, null);
+
+            assertNull(cache.get("k1"));
+            assertNull(cache.get("k2"));
+
+            assertEquals(2, (int) cache.get(key));
+
+            cache.put(key, 3);
+
+            assertEquals(3, (int)cache.get(key));
+        }
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
     public void testPutAllWithNulls() throws Exception {
-        final GridCache<String, Integer> cache = cache();
+        final IgniteCache<String, Integer> cache = jcache();
 
         {
-            Map<String, Integer> m = new HashMap<>(2);
+            final Map<String, Integer> m = new LinkedHashMap<>(2);
 
             m.put("key1", 1);
             m.put(null, 2);
 
-            // WARN: F.asMap() doesn't work here, because it will throw NPE.
+            GridTestUtils.assertThrows(log, new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    cache.putAll(m);
 
-            cache.putAll(m);
+                    return null;
+                }
+            }, NullPointerException.class, null);
 
-            assertNotNull(cache.get("key1"));
+            cache.put("key1", 1);
+
+            assertEquals(1, (int)cache.get("key1"));
         }
 
         {
-            Map<String, Integer> m = new HashMap<>(2);
+            final Map<String, Integer> m = new LinkedHashMap<>(2);
 
             m.put("key3", 3);
             m.put("key4", null);
 
+            GridTestUtils.assertThrows(log, new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    cache.putAll(m);
+
+                    return null;
+                }
+            }, NullPointerException.class, null);
+
+            m.put("key4", 4);
+
             cache.putAll(m);
 
-            assertNotNull(cache.get("key3"));
-            assertNull(cache.get("key4"));
+            assertEquals(3, (int) cache.get("key3"));
+            assertEquals(4, (int)cache.get("key4"));
         }
 
         assertThrows(log, new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
                 cache.put("key1", null);
+
+                return null;
+            }
+        }, NullPointerException.class, A.NULL_MSG_PREFIX);
+
+        assertThrows(log, new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                cache.getAndPut("key1", null);
+
+                return null;
+            }
+        }, NullPointerException.class, A.NULL_MSG_PREFIX);
+
+        assertThrows(log, new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                cache.put(null, 1);
+
+                return null;
+            }
+        }, NullPointerException.class, A.NULL_MSG_PREFIX);
+
+        assertThrows(log, new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                cache.replace(null, 1);
+
+                return null;
+            }
+        }, NullPointerException.class, A.NULL_MSG_PREFIX);
+
+        assertThrows(log, new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                cache.getAndReplace(null, 1);
+
+                return null;
+            }
+        }, NullPointerException.class, A.NULL_MSG_PREFIX);
+
+        assertThrows(log, new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                cache.replace("key", null);
+
+                return null;
+            }
+        }, NullPointerException.class, A.NULL_MSG_PREFIX);
+
+        assertThrows(log, new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                cache.getAndReplace("key", null);
+
+                return null;
+            }
+        }, NullPointerException.class, A.NULL_MSG_PREFIX);
+
+        assertThrows(log, new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                cache.replace(null, 1, 2);
+
+                return null;
+            }
+        }, NullPointerException.class, A.NULL_MSG_PREFIX);
+
+        assertThrows(log, new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                cache.replace("key", null, 2);
+
+                return null;
+            }
+        }, NullPointerException.class, A.NULL_MSG_PREFIX);
+
+        assertThrows(log, new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                cache.replace("key", 1, null);
 
                 return null;
             }
@@ -1759,12 +1957,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testPutAllAsync() throws Exception {
         Map<String, Integer> map = F.asMap("key1", 1, "key2", 2);
 
-        IgniteFuture<?> f1 = cache().putAllAsync(map);
+        IgniteInternalFuture<?> f1 = cache().putAllAsync(map);
 
         map.put("key1", 10);
         map.put("key2", 20);
 
-        IgniteFuture<?> f2 = cache().putAllAsync(map);
+        IgniteInternalFuture<?> f2 = cache().putAllAsync(map);
 
         f2.get();
         f1.get();
@@ -1781,11 +1979,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testPutAllAsyncFiltered() throws Exception {
         Map<String, Integer> map1 = F.asMap("key1", 1, "key2", 2);
 
-        IgniteFuture<?> f1 = cache().putAllAsync(map1, F.<String, Integer>cacheNoPeekValue());
+        IgniteInternalFuture<?> f1 = cache().putAllAsync(map1, F.<String, Integer>cacheNoPeekValue());
 
         Map<String, Integer> map2 = F.asMap("key1", 10, "key2", 20, "key3", 3);
 
-        IgniteFuture<?> f2 = cache().putAllAsync(map2, F.<String, Integer>cacheNoPeekValue());
+        IgniteInternalFuture<?> f2 = cache().putAllAsync(map2, F.<String, Integer>cacheNoPeekValue());
 
         f2.get();
         f1.get();
@@ -1851,7 +2049,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals((Integer)3, cache().get("key3"));
 
         cache().evict("key2");
-        cache().clear("key3");
+        cache().clearLocally("key3");
 
         // Same checks inside tx.
         tx = txEnabled() ? cache().txStart() : null;
@@ -1879,12 +2077,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
         try {
-            IgniteFuture<Integer> fut1 = cache().putIfAbsentAsync("key", 1);
+            IgniteInternalFuture<Integer> fut1 = cache().putIfAbsentAsync("key", 1);
 
             assert fut1.get() == null;
             assert cache().get("key") != null && cache().get("key") == 1;
 
-            IgniteFuture<Integer> fut2 = cache().putIfAbsentAsync("key", 2);
+            IgniteInternalFuture<Integer> fut2 = cache().putIfAbsentAsync("key", 2);
 
             assert fut2.get() != null && fut2.get() == 1;
             assert cache().get("key") != null && cache().get("key") == 1;
@@ -1910,7 +2108,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals((Integer)3, cache().putIfAbsentAsync("key3", 4).get());
 
         cache().evict("key2");
-        cache().clear("key3");
+        cache().clearLocally("key3");
 
         // Same checks inside tx.
         tx = txEnabled() ? cache().txStart() : null;
@@ -1954,7 +2152,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertFalse(cache().putxIfAbsent("key3", 4));
 
         cache().evict("key2");
-        cache().clear("key3");
+        cache().clearLocally("key3");
 
         // Same checks inside tx.
         IgniteTx tx = txEnabled() ? cache().txStart() : null;
@@ -1995,12 +2193,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     private void checkPutxIfAbsentAsync(boolean inTx) throws Exception {
-        IgniteFuture<Boolean> fut1 = cache().putxIfAbsentAsync("key", 1);
+        IgniteInternalFuture<Boolean> fut1 = cache().putxIfAbsentAsync("key", 1);
 
         assert fut1.get();
         assert cache().get("key") != null && cache().get("key") == 1;
 
-        IgniteFuture<Boolean> fut2 = cache().putxIfAbsentAsync("key", 2);
+        IgniteInternalFuture<Boolean> fut2 = cache().putxIfAbsentAsync("key", 2);
 
         assert !fut2.get();
         assert cache().get("key") != null && cache().get("key") == 1;
@@ -2018,7 +2216,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertFalse(cache().putxIfAbsentAsync("key3", 4).get());
 
         cache().evict("key2");
-        cache().clear("key3");
+        cache().clearLocally("key3");
 
         // Same checks inside tx.
         IgniteTx tx = inTx ? cache().txStart() : null;
@@ -2043,8 +2241,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testPutxIfAbsentAsyncConcurrent() throws Exception {
-        IgniteFuture<Boolean> fut1 = cache().putxIfAbsentAsync("key1", 1);
-        IgniteFuture<Boolean> fut2 = cache().putxIfAbsentAsync("key2", 2);
+        IgniteInternalFuture<Boolean> fut1 = cache().putxIfAbsentAsync("key1", 1);
+        IgniteInternalFuture<Boolean> fut2 = cache().putxIfAbsentAsync("key2", 2);
 
         assert fut1.get();
         assert fut2.get();
@@ -2113,7 +2311,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals((Integer)6, cache().get("key2"));
 
         cache().evict("key");
-        cache().clear("key2");
+        cache().clearLocally("key2");
 
         IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
@@ -2160,7 +2358,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals((Integer)6, cache().get("key2"));
 
         cache().evict("key");
-        cache().clear("key2");
+        cache().clearLocally("key2");
 
         IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
@@ -2221,7 +2419,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals((Integer)6, cache().get("key2"));
 
         cache().evict("key");
-        cache().clear("key2");
+        cache().clearLocally("key2");
 
         IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
@@ -2270,7 +2468,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assert cache().get("key2") == 6;
 
         cache().evict("key");
-        cache().clear("key2");
+        cache().clearLocally("key2");
 
         IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
@@ -2483,23 +2681,81 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().put("key2", 2);
         cache().put("key3", 3);
 
-        cache().removeAll();
+        cache(gridCount() > 1 ? 1 : 0).removeAll();
 
         assert cache().isEmpty();
+        long entryCount = hugeRemoveAllEntryCount();
+
+        for (int i = 0; i < entryCount; i++)
+            cache().put(String.valueOf(i), i);
+
+        for (int i = 0; i < entryCount; i++)
+            assertEquals(Integer.valueOf(i), cache().get(String.valueOf(i)));
+
+        cache().removeAll();
+
+        for (int i = 0; i < entryCount; i++)
+            assertNull(cache().get(String.valueOf(i)));
+    }
+
+    /**
+     * Provides count on entities to be removed in removeAll() test
+     */
+    protected long hugeRemoveAllEntryCount(){
+        return 1000L;
     }
 
     /**
      * @throws Exception In case of error.
      */
     public void testRemoveAllWithNulls() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        final IgniteCache<String, Integer> cache = jcache();
 
-        Collection<String> c = new LinkedList<>();
+        final Set<String> c = new LinkedHashSet<>();
 
         c.add("key1");
         c.add(null);
 
-        cache.removeAll(c);
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                cache.removeAll(c);
+
+                return null;
+            }
+        }, NullPointerException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache.removeAll(null);
+
+                return null;
+            }
+        }, NullPointerException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache.remove(null);
+
+                return null;
+            }
+        }, NullPointerException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache.getAndRemove(null);
+
+                return null;
+            }
+        }, NullPointerException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache.remove("key1", null);
+
+                return null;
+            }
+        }, NullPointerException.class, null);
     }
 
     /**
@@ -2527,43 +2783,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testRemoveAllEmpty() throws Exception {
         cache().removeAll();
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    public void testRemoveAllFiltered() throws Exception {
-        cache().put("key1", 1);
-        cache().put("key2", 2);
-        cache().put("key3", 100);
-        cache().put("key4", 101);
-        cache().put("key5", 102);
-
-        checkSize(F.asSet("key1", "key2", "key3", "key4", "key5"));
-
-        cache().removeAll(F.asList("key2", "key3", "key4"), gte100);
-
-        checkSize(F.asSet("key1", "key2", "key5"));
-
-        checkContainsKey(true, "key1");
-        checkContainsKey(true, "key2");
-        checkContainsKey(true, "key5");
-
-        checkContainsKey(false, "key3");
-        checkContainsKey(false, "key4");
-
-        cache().put("key6", 200);
-        cache().put("key7", 201);
-
-        checkSize(F.asSet("key1", "key2", "key5", "key6", "key7"));
-
-        for (int i = 0; i < gridCount(); i++)
-            cache(i).removeAll(gte200);
-
-        checkSize(F.asSet("key1", "key2", "key5"));
-
-        checkContainsKey(false, "key6");
-        checkContainsKey(false, "key7");
     }
 
     /**
@@ -2716,7 +2935,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertEquals((Integer)1, cache.peek(key));
 
-        cache.clear(key);
+        cache.clearLocally(key);
 
         assertNull(cache.peek(key));
 
@@ -2739,7 +2958,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertEquals((Integer)1, cache.get(key));
 
-        cache.clearAll();
+        cache.clear();
 
         assertNull(cache.peek(key));
 
@@ -2760,7 +2979,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertEquals((Integer)1, cache.get("key"));
 
-        cache.clearAll();
+        cache.clear();
 
         assertNull(cache.projection(entryKeyFilterInv).reload("key"));
         assertEquals((Integer)1, cache.projection(entryKeyFilter).reload("key"));
@@ -2780,7 +2999,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertEquals((Integer)1, cache.get("key"));
 
-        cache.clearAll();
+        cache.clear();
 
         assertNull(cache.projection(entryKeyFilterInv).reloadAsync("key").get());
         assertEquals((Integer) 1, cache.projection(entryKeyFilter).reloadAsync("key").get());
@@ -2814,7 +3033,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (String key : keys)
             assertEquals(vals.get(key), cache.peek(key));
 
-        cache.clearAll();
+        cache.clear();
 
         for (String key : keys)
             assertNull(cache.peek(key));
@@ -2824,7 +3043,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (String key : keys)
             assertEquals(vals.get(key), cache.peek(key));
 
-        cache.clearAll();
+        cache.clear();
 
         for (String key : keys)
             assertNull(cache.peek(key));
@@ -2837,7 +3056,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (String key : keys) {
             assertEquals(vals.get(key), cache.peek(key));
 
-            cache.clear(key);
+            cache.clearLocally(key);
         }
 
         cache.reloadAll(keys);
@@ -2872,7 +3091,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (String key : keys)
             assertEquals(vals.get(key), cache.peek(key));
 
-        cache.clearAll();
+        cache.clear();
 
         for (String key : keys)
             assertNull(cache.peek(key));
@@ -2882,7 +3101,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (String key : keys)
             assertEquals(vals.get(key), cache.peek(key));
 
-        cache.clearAll();
+        cache.clear();
 
         for (String key : keys)
             assertNull(cache.peek(key));
@@ -2898,7 +3117,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (String key : keys) {
             assertEquals(vals.get(key), cache.peek(key));
 
-            cache.clear(key);
+            cache.clearLocally(key);
         }
 
         cache.reloadAllAsync(keys).get();
@@ -2933,7 +3152,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (String key : keys)
             assertEquals(vals.get(key), cache.peek(key));
 
-        cache.clearAll();
+        cache.clear();
 
         for (String key : keys)
             assertNull(cache.peek(key));
@@ -2980,7 +3199,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (String key : keys)
             assertEquals(vals.get(key), cache.peek(key));
 
-        cache.clearAll();
+        cache.clear();
 
         for (String key : keys)
             assertNull(cache.peek(key));
@@ -3005,7 +3224,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testRemoveAfterClear() throws Exception {
-        GridEx grid = grid(0);
+        IgniteEx grid = grid(0);
 
         CacheDistributionMode distroMode = grid.cache(null).configuration().getDistributionMode();
 
@@ -3037,66 +3256,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (Integer k : keys)
             cache.put(k, k);
 
-        cache.clear(keys.get(0));
-        cache.clear(keys.get(1));
+        cache.clear();
 
         for (int g = 0; g < gridCount(); g++) {
             Ignite grid0 = grid(g);
 
             grid0.cache(null).projection(Integer.class, Integer.class).removeAll();
-
-            assertTrue(grid0.cache(null).isEmpty());
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRemoveFilteredAfterClear() throws Exception {
-        GridEx grid = grid(0);
-
-        CacheDistributionMode distroMode = grid.cache(null).configuration().getDistributionMode();
-
-        if (distroMode == CacheDistributionMode.NEAR_ONLY || distroMode == CacheDistributionMode.CLIENT_ONLY) {
-            if (gridCount() < 2)
-                return;
-
-            grid = grid(1);
-        }
-
-        CacheProjection<Integer, Integer> cache = grid.cache(null);
-
-        List<Integer> keys = new ArrayList<>();
-
-        int key = 0;
-
-        for (int k = 0; k < 2; k++) {
-            while (!grid.cache(null).affinity().isPrimary(grid.localNode(), key))
-                key++;
-
-            keys.add(key);
-
-            key++;
-        }
-
-        System.out.println(keys);
-
-        for (Integer k : keys)
-            cache.put(k, k + 1);
-
-        cache.clear(keys.get(0));
-        cache.clear(keys.get(1));
-
-        for (int g = 0; g < gridCount(); g++) {
-            Ignite grid0 = grid(g);
-
-            grid0.cache(null).removeAll(new IgnitePredicate<CacheEntry<Object,Object>>() {
-                @Override public boolean apply(CacheEntry<Object, Object> e) {
-                    Object val = e.peek();
-
-                    return val instanceof Integer && (Integer)val > 0;
-                }
-            });
 
             assertTrue(grid0.cache(null).isEmpty());
         }
@@ -3128,13 +3293,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (String key : keys)
             assertEquals(vals.get(key), peek(cache, key));
 
-        cache.clearAll();
+        cache.clear();
 
         for (String key : keys)
             assertNull(peek(cache, key));
 
         for (i = 0; i < gridCount(); i++)
-            cache(i).clearAll();
+            cache(i).clear();
 
         for (i = 0; i < gridCount(); i++)
             assert cache(i).isEmpty();
@@ -3150,27 +3315,27 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (lockingEnabled()) {
             assertTrue(cache.lock(first, 0));
 
-            cache.clearAll();
+            cache.clear();
 
             assertEquals(vals.get(first), peek(cache, first));
 
             cache.unlock(first);
         }
         else {
-            cache.clearAll();
+            cache.clear();
 
             cache.put(first, vals.get(first));
         }
 
-        cache.projection(gte100).clear(first);
+        cache.projection(gte100).clearLocally(first);
 
         assertNotNull(peek(cache, first));
 
         cache.put(first, 101);
 
-        cache.projection(gte100).clear(first);
+        cache.projection(gte100).clearLocally(first);
 
-        assert cache.isEmpty() : "Values after clear: " + cache.values();
+        assert cache.isEmpty() : "Values after clearLocally: " + cache.values();
 
         i = 0;
 
@@ -3194,7 +3359,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assert cache().isEmpty();
 
-        cache().clearAll();
+        cache().clear();
 
         assert cache().promote("key1") == null;
         assert cache().promote("key2") == null;
@@ -3227,21 +3392,21 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.putAll(vals);
 
         for (String subKey : subKeys)
-            cache.clear(subKey);
+            cache.clearLocally(subKey);
 
         for (String key : subKeys)
             assertNull(cache.peek(key));
 
         assertEquals(vals.get(lastKey), cache.peek(lastKey));
 
-        cache.clearAll();
+        cache.clear();
 
         vals.put(lastKey, 102);
 
         cache.putAll(vals);
 
         for (String key : keys)
-            cache.projection(gte100).clear(key);
+            cache.projection(gte100).clearLocally(key);
 
         assertNull(cache.peek(lastKey));
 
@@ -3253,14 +3418,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testGlobalClearAll() throws Exception {
-        // Save entries only on their primary nodes. If we didn't do so, clearAll() will not remove all entries
+        // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
         // because some of them were blocked due to having readers.
         for (int i = 0; i < gridCount(); i++) {
             for (String key : primaryKeysForCache(cache(i), 3, 100_000))
                 cache(i).put(key, 1);
         }
 
-        cache().globalClearAll();
+        cache().clear();
 
         for (int i = 0; i < gridCount(); i++)
             assert cache(i).isEmpty();
@@ -3321,25 +3486,27 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             cache.put(key, 1);
 
-            assert !cache.isLocked(key);
+            assert !cache.isLocalLocked(key, false);
 
-            cache.lock(key).lock();
+            Lock lock = cache.lock(key);
+
+            lock.lock();
 
             lockCnt.await();
 
-            assert cache.isLocked(key);
+            assert cache.isLocalLocked(key, false);
 
-            cache.lock(key).unlock();
+            lock.unlock();
 
             unlockCnt.await();
 
             for (int i = 0; i < 100; i++)
-                if (cache.isLocked(key))
+                if (cache.isLocalLocked(key, false))
                     Thread.sleep(10);
                 else
                     break;
 
-            assert !cache.isLocked(key);
+            assert !cache.isLocalLocked(key, false);
         }
     }
 
@@ -3351,25 +3518,25 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (lockingEnabled()) {
             IgniteCache<String, Integer> cache = jcache();
 
-            CacheLock lock = cache.lock("key");
+            Lock lock = cache.lock("key");
 
             cache.put("key", 1);
 
-            assert !lock.isLocked();
+            assert !cache.isLocalLocked("key", false);
 
             lock.lock();
 
-            assert lock.isLocked();
+            assert cache.isLocalLocked("key", false);
 
             lock.unlock();
 
             for (int i = 0; i < 100; i++)
-                if (lock.isLocked())
+                if (cache.isLocalLocked("key", false))
                     Thread.sleep(10);
                 else
                     break;
 
-            assert !cache.isLocked("key");
+            assert !cache.isLocalLocked("key", false);
         }
     }
 
@@ -3410,14 +3577,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (lockingEnabled()) {
             jcache().put("key", 1);
 
-            assert !jcache().isLocked("key");
+            assert !jcache().isLocalLocked("key", false);
 
             final Lock lock = jcache().lock("key");
 
             lock.tryLock(2000, MILLISECONDS);
 
-            assert jcache().isLocked("key");
-            assert jcache().isLockedByThread("key");
+            assert jcache().isLocalLocked("key", false);
+            assert jcache().isLocalLocked("key", true);
 
             assert !forLocal(dfltIgnite).call(new Callable<Boolean>() {
                 @Override public Boolean call() throws InterruptedException {
@@ -3467,18 +3634,18 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             cache.put("key", 1);
 
-            final CacheLock lock = cache.lock("key");
+            final Lock lock = cache.lock("key");
 
-            assert !cache.isLocked("key");
+            assert !cache.isLocalLocked("key", false);
 
             lock.tryLock(1000, MILLISECONDS);
 
-            assert cache.isLocked("key");
-            assert cache.isLockedByThread("key");
+            assert cache.isLocalLocked("key", false);
+            assert cache.isLocalLocked("key", true);
 
             final CountDownLatch latch = new CountDownLatch(1);
 
-            IgniteCompute comp = forLocal(dfltIgnite).enableAsync();
+            IgniteCompute comp = forLocal(dfltIgnite).withAsync();
 
             comp.call(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
@@ -3502,21 +3669,21 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 // Let another thread start.
             latch.await();
 
-            assert cache.isLocked("key");
-            assert cache.isLockedByThread("key");
+            assert cache.isLocalLocked("key", false);
+            assert cache.isLocalLocked("key", true);
 
             lock.unlock();
 
             assert f.get();
 
             for (int i = 0; i < 100; i++)
-                if (cache.isLocked("key") || cache.isLockedByThread("key"))
+                if (cache.isLocalLocked("key", false) || cache.isLocalLocked("key", true))
                     Thread.sleep(10);
                 else
                     break;
 
-            assert !cache.isLocked("key");
-            assert !cache.isLockedByThread("key");
+            assert !cache.isLocalLocked("key", false);
+            assert !cache.isLocalLocked("key", true);
         }
     }
 
@@ -3548,19 +3715,19 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             final CountDownLatch syncLatch = new CountDownLatch(1);
 
-            IgniteCompute comp = forLocal(dfltIgnite).enableAsync();
+            IgniteCompute comp = forLocal(dfltIgnite).withAsync();
 
             comp.call(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     syncLatch.countDown();
 
-                    IgniteFuture<Boolean> f = e.lockAsync(1000);
+                    IgniteInternalFuture<Boolean> f = e.lockAsync(1000);
 
                     try {
                         f.get(100);
 
                         fail();
-                    } catch (IgniteFutureTimeoutException ex) {
+                    } catch (IgniteFutureTimeoutCheckedException ex) {
                         info("Caught expected exception: " + ex);
                     }
 
@@ -3704,42 +3871,42 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             cache.put("key1", 1);
             cache.put("key2", 2);
 
-            assert !cache.isLocked("key1");
-            assert !cache.isLocked("key2");
+            assert !cache.isLocalLocked("key1", false);
+            assert !cache.isLocalLocked("key2", false);
 
-            cache.lockAll(ImmutableSet.of("key1", "key2")).lock();
+            Lock lock1_2 = cache.lockAll(ImmutableSet.of("key1", "key2"));
 
-            assert cache.isLocked("key1");
-            assert cache.isLocked("key2");
+            lock1_2.lock();
 
-            cache.lockAll(ImmutableSet.of("key1", "key2")).unlock();
+            assert cache.isLocalLocked("key1", false);
+            assert cache.isLocalLocked("key2", false);
+
+            lock1_2.unlock();
 
             for (int i = 0; i < 100; i++)
-                if (cache.isLocked("key1") || cache.isLocked("key2"))
+                if (cache.isLocalLocked("key1", false) || cache.isLocalLocked("key2", false))
                     Thread.sleep(10);
                 else
                     break;
 
-            assert !cache.isLocked("key1");
-            assert !cache.isLocked("key2");
+            assert !cache.isLocalLocked("key1", false);
+            assert !cache.isLocalLocked("key2", false);
 
-            Lock lock = cache.lockAll(ImmutableSet.of("key1", "key2"));
+            lock1_2.lock();
 
-            lock.lock();
+            assert cache.isLocalLocked("key1", false);
+            assert cache.isLocalLocked("key2", false);
 
-            assert cache.isLocked("key1");
-            assert cache.isLocked("key2");
-
-            lock.unlock();
+            lock1_2.unlock();
 
             for (int i = 0; i < 100; i++)
-                if (cache.isLocked("key1") || cache.isLocked("key2"))
+                if (cache.isLocalLocked("key1", false) || cache.isLocalLocked("key2", false))
                     Thread.sleep(10);
                 else
                     break;
 
-            assert !cache.isLocked("key1");
-            assert !cache.isLocked("key2");
+            assert !cache.isLocalLocked("key1", false);
+            assert !cache.isLocalLocked("key2", false);
         }
     }
 
@@ -4502,7 +4669,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals(cnt, swapEvts.get());
         assertEquals(cnt, unswapEvts.get());
 
-        cache().clearAll();
+        cache().clear();
 
         // Check with multiple arguments.
         cache().put(k1, 1);

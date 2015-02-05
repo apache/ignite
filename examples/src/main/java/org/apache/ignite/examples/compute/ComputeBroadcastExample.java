@@ -25,12 +25,12 @@ import org.apache.ignite.resources.*;
 import java.util.*;
 
 /**
- * Demonstrates broadcasting computations within grid projection.
+ * Demonstrates broadcasting computations within projection.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-compute.xml} configuration.
  */
 public class ComputeBroadcastExample {
@@ -38,9 +38,9 @@ public class ComputeBroadcastExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws IgniteException {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Compute broadcast example started.");
@@ -54,14 +54,14 @@ public class ComputeBroadcastExample {
     }
 
     /**
-     * Print 'Hello' message on all grid nodes.
+     * Print 'Hello' message on all nodes.
      *
-     * @param g Grid instance.
-     * @throws IgniteCheckedException If failed.
+     * @param ignite Ignite instance.
+     * @throws IgniteException If failed.
      */
-    private static void hello(Ignite g) throws IgniteCheckedException {
+    private static void hello(Ignite ignite) throws IgniteException {
         // Print out hello message on all nodes.
-        g.compute().broadcast(
+        ignite.compute().broadcast(
             new IgniteRunnable() {
                 @Override public void run() {
                     System.out.println();
@@ -77,22 +77,22 @@ public class ComputeBroadcastExample {
     /**
      * Gather system info from all nodes and print it out.
      *
-     * @param g Grid instance.
-     * @throws IgniteCheckedException if failed.
+     * @param ignite Ignite instance.
+     * @throws IgniteException if failed.
      */
-    private static void gatherSystemInfo(Ignite g) throws IgniteCheckedException {
+    private static void gatherSystemInfo(Ignite ignite) throws IgniteException {
         // Gather system info from all nodes.
-        Collection<String> res = g.compute().broadcast(
+        Collection<String> res = ignite.compute().broadcast(
             new IgniteCallable<String>() {
-                // Automatically inject grid instance.
+                // Automatically inject ignite instance.
                 @IgniteInstanceResource
-                private Ignite grid;
+                private Ignite ignite;
 
                 @Override public String call() {
                     System.out.println();
-                    System.out.println("Executing task on node: " + grid.cluster().localNode().id());
+                    System.out.println("Executing task on node: " + ignite.cluster().localNode().id());
 
-                    return "Node ID: " + grid.cluster().localNode().id() + "\n" +
+                    return "Node ID: " + ignite.cluster().localNode().id() + "\n" +
                         "OS: " + System.getProperty("os.name") + " " + System.getProperty("os.version") + " " +
                         System.getProperty("os.arch") + "\n" +
                         "User: " + System.getProperty("user.name") + "\n" +

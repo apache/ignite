@@ -19,15 +19,14 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -100,7 +99,7 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
             IgniteCache<Integer, String> cache = jcache(0);
 
             if (async) {
-                IgniteCache<Integer, String> asyncCache = cache.enableAsync();
+                IgniteCache<Integer, String> asyncCache = cache.withAsync();
 
                 asyncCache.localLoadCache(null, PUT_CNT);
 

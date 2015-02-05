@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -34,7 +34,7 @@ public class GridProductImpl implements IgniteProduct, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Copyright blurb. */
-    public static final String COPYRIGHT = "2014 Copyright (C) GridGain Systems";
+    public static final String COPYRIGHT = "2015 Copyright(C) Apache Software Foundation";
 
     /** Enterprise edition flag. */
     public static final boolean ENT;

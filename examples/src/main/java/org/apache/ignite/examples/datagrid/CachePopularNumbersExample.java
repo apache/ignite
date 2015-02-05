@@ -30,16 +30,16 @@ import java.util.*;
  * Real time popular numbers counter.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CachePopularNumbersExample {
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
 
-    /** Count of most popular numbers to retrieve from grid. */
+    /** Count of most popular numbers to retrieve from cluster. */
     private static final int POPULAR_NUMBERS_CNT = 10;
 
     /** Random number generator. */
@@ -55,29 +55,29 @@ public class CachePopularNumbersExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws IgniteException {
         Timer popularNumbersQryTimer = new Timer("numbers-query-worker");
 
-        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache popular numbers example started.");
 
             // Clean up caches on all nodes before run.
-            g.cache(CACHE_NAME).globalClearAll(0);
+            ignite.jcache(CACHE_NAME).clear();
 
-            ClusterGroup prj = g.cluster().forCache(CACHE_NAME);
+            ClusterGroup prj = ignite.cluster().forCacheNodes(CACHE_NAME);
 
             if (prj.nodes().isEmpty()) {
-                System.out.println("Grid does not have cache configured: " + CACHE_NAME);
+                System.out.println("Ignite does not have cache configured: " + CACHE_NAME);
 
                 return;
             }
 
-            TimerTask task = scheduleQuery(g, popularNumbersQryTimer, POPULAR_NUMBERS_CNT);
+            TimerTask task = scheduleQuery(ignite, popularNumbersQryTimer, POPULAR_NUMBERS_CNT);
 
-            streamData(g);
+            streamData(ignite);
 
             // Force one more run to get final counts.
             task.run();
@@ -89,11 +89,11 @@ public class CachePopularNumbersExample {
     /**
      * Populates cache in real time with numbers and keeps count for every number.
      *
-     * @param g Grid.
-     * @throws IgniteCheckedException If failed.
+     * @param ignite Ignite.
+     * @throws IgniteException If failed.
      */
-    private static void streamData(final Ignite g) throws IgniteCheckedException {
-        try (IgniteDataLoader<Integer, Long> ldr = g.dataLoader(CACHE_NAME)) {
+    private static void streamData(final Ignite ignite) throws IgniteException {
+        try (IgniteDataLoader<Integer, Long> ldr = ignite.dataLoader(CACHE_NAME)) {
             // Set larger per-node buffer size since our state is relatively small.
             ldr.perNodeBufferSize(2048);
 
@@ -107,18 +107,18 @@ public class CachePopularNumbersExample {
     /**
      * Schedules our popular numbers query to run every 3 seconds.
      *
-     * @param g Grid.
+     * @param ignite Ignite.
      * @param timer Timer.
      * @param cnt Number of popular numbers to return.
      * @return Scheduled task.
      */
-    private static TimerTask scheduleQuery(final Ignite g, Timer timer, final int cnt) {
+    private static TimerTask scheduleQuery(final Ignite ignite, Timer timer, final int cnt) {
         TimerTask task = new TimerTask() {
             private CacheQuery<List<?>> qry;
 
             @Override public void run() {
                 // Get reference to cache.
-                GridCache<Integer, Long> cache = g.cache(CACHE_NAME);
+                GridCache<Integer, Long> cache = ignite.cache(CACHE_NAME);
 
                 if (qry == null)
                     qry = cache.queries().

@@ -60,19 +60,19 @@ public class GridHibernateRegionFactory implements RegionFactory {
     private static final long serialVersionUID = 0L;
 
     /** Hibernate L2 cache grid name property name. */
-    public static final String GRID_NAME_PROPERTY = "org.gridgain.hibernate.grid_name";
+    public static final String GRID_NAME_PROPERTY = "org.apache.ignite.hibernate.grid_name";
 
     /** Default cache property name. */
-    public static final String DFLT_CACHE_NAME_PROPERTY = "org.gridgain.hibernate.default_cache";
+    public static final String DFLT_CACHE_NAME_PROPERTY = "org.apache.ignite.hibernate.default_cache";
 
     /** Property prefix used to specify region name to cache name mapping. */
-    public static final String REGION_CACHE_PROPERTY = "org.gridgain.hibernate.region_cache.";
+    public static final String REGION_CACHE_PROPERTY = "org.apache.ignite.hibernate.region_cache.";
 
     /** */
-    public static final String DFLT_ACCESS_TYPE_PROPERTY = "org.gridgain.hibernate.default_access_type";
+    public static final String DFLT_ACCESS_TYPE_PROPERTY = "org.apache.ignite.hibernate.default_access_type";
 
     /** */
-    public static final String GRID_CONFIG_PROPERTY = "org.gridgain.hibernate.grid_config";
+    public static final String GRID_CONFIG_PROPERTY = "org.apache.ignite.hibernate.grid_config";
 
     /** Grid providing caches. */
     private Ignite ignite;
@@ -104,7 +104,7 @@ public class GridHibernateRegionFactory implements RegionFactory {
             try {
                 ignite = G.start(gridCfg);
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 throw new CacheException(e);
             }
         }

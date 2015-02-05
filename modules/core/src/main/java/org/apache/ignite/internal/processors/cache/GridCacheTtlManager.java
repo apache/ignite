@@ -19,11 +19,13 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.thread.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.thread.*;
 
 import java.util.*;
 
@@ -107,7 +109,7 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             while (!isCancelled()) {
                 long now = U.currentTimeMillis();
 
@@ -125,6 +127,9 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                         if (wrapper.entry.onTtlExpired(obsoleteVer))
                             wrapper.entry.context().cache().removeEntry(wrapper.entry);
+
+                        if (wrapper.entry.context().cache().configuration().isStatisticsEnabled())
+                            wrapper.entry.context().cache().metrics0().onEvict();
 
                         it.remove();
                     }

@@ -56,7 +56,7 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        cache().clearAll();
+        cache().clear();
 
         assertTrue(cache().isEmpty());
     }
@@ -80,6 +80,8 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
+
+        ccfg.setStatisticsEnabled(true);
 
         cfg.setCacheConfiguration(ccfg);
 

@@ -37,19 +37,19 @@ public class HibernateL2CacheExampleNodeStartup {
      * Start up an empty node with specified cache configuration.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) throws IgniteException {
         Ignition.start(configuration());
     }
 
     /**
-     * Create Grid configuration with GGFS and enabled IPC.
+     * Create Ignite configuration with IgniteFs and enabled IPC.
      *
-     * @return Grid configuration.
-     * @throws IgniteCheckedException If configuration creation failed.
+     * @return Ignite configuration.
+     * @throws IgniteException If configuration creation failed.
      */
-    public static IgniteConfiguration configuration() throws IgniteCheckedException {
+    public static IgniteConfiguration configuration() throws IgniteException {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName("hibernate-grid");
@@ -69,9 +69,9 @@ public class HibernateL2CacheExampleNodeStartup {
         cfg.setCacheConfiguration(
             cacheConfiguration("org.hibernate.cache.spi.UpdateTimestampsCache", ATOMIC),
             cacheConfiguration("org.hibernate.cache.internal.StandardQueryCache", ATOMIC),
-            cacheConfiguration("org.gridgain.examples.datagrid.hibernate.User", TRANSACTIONAL),
-            cacheConfiguration("org.gridgain.examples.datagrid.hibernate.User.posts", TRANSACTIONAL),
-            cacheConfiguration("org.gridgain.examples.datagrid.hibernate.Post", TRANSACTIONAL)
+            cacheConfiguration("org.apache.ignite.examples.datagrid.hibernate.User", TRANSACTIONAL),
+            cacheConfiguration("org.apache.ignite.examples.datagrid.hibernate.User.posts", TRANSACTIONAL),
+            cacheConfiguration("org.apache.ignite.examples.datagrid.hibernate.Post", TRANSACTIONAL)
         );
 
         return cfg;

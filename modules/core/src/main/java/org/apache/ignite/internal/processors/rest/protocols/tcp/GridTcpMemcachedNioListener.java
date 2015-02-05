@@ -19,9 +19,6 @@ package org.apache.ignite.internal.processors.rest.protocols.tcp;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.rest.handlers.cache.*;
 import org.apache.ignite.internal.processors.rest.request.*;
@@ -30,6 +27,8 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.marshaller.jdk.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -120,20 +119,20 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
             return;
         }
 
-        IgniteFuture<GridRestResponse> lastFut = ses.removeMeta(LAST_FUT.ordinal());
+        IgniteInternalFuture<GridRestResponse> lastFut = ses.removeMeta(LAST_FUT.ordinal());
 
         if (lastFut != null && lastFut.isDone())
             lastFut = null;
 
-        IgniteFuture<GridRestResponse> f;
+        IgniteInternalFuture<GridRestResponse> f;
 
         if (lastFut == null)
             f = handleRequest0(ses, req, cmd);
         else {
             f = new GridEmbeddedFuture<>(
                 lastFut,
-                new C2<GridRestResponse, Exception, IgniteFuture<GridRestResponse>>() {
-                    @Override public IgniteFuture<GridRestResponse> apply(GridRestResponse res, Exception e) {
+                new C2<GridRestResponse, Exception, IgniteInternalFuture<GridRestResponse>>() {
+                    @Override public IgniteInternalFuture<GridRestResponse> apply(GridRestResponse res, Exception e) {
                         return handleRequest0(ses, req, cmd);
                     }
                 },
@@ -150,7 +149,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
      * @param cmd Command.
      * @return Future or {@code null} if processed immediately.
      */
-    @Nullable private IgniteFuture<GridRestResponse> handleRequest0(
+    @Nullable private IgniteInternalFuture<GridRestResponse> handleRequest0(
         final GridNioSession ses,
         final GridMemcachedMessage req,
         final GridTuple3<GridRestCommand, Boolean, Boolean> cmd
@@ -165,10 +164,10 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
             return null;
         }
 
-        IgniteFuture<GridRestResponse> f = hnd.handleAsync(createRestRequest(req, cmd.get1()));
+        IgniteInternalFuture<GridRestResponse> f = hnd.handleAsync(createRestRequest(req, cmd.get1()));
 
-        f.listenAsync(new CIX1<IgniteFuture<GridRestResponse>>() {
-            @Override public void applyx(IgniteFuture<GridRestResponse> f) throws IgniteCheckedException {
+        f.listenAsync(new CIX1<IgniteInternalFuture<GridRestResponse>>() {
+            @Override public void applyx(IgniteInternalFuture<GridRestResponse> f) throws IgniteCheckedException {
                 GridRestResponse restRes = f.get();
 
                 // Handle 'Stat' command (special case because several packets are included in response).
@@ -267,38 +266,48 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
      * @return REST request.
      */
     @SuppressWarnings("unchecked")
-    private GridRestCacheRequest createRestRequest(GridMemcachedMessage req, GridRestCommand cmd) {
+    private GridRestRequest createRestRequest(GridMemcachedMessage req, GridRestCommand cmd) {
         assert req != null;
 
-        GridRestCacheRequest restReq = new GridRestCacheRequest();
+        if (cmd == ATOMIC_INCREMENT || cmd == ATOMIC_DECREMENT) {
+            DataStructuresRequest restReq = new DataStructuresRequest();
 
-        restReq.command(cmd);
-        restReq.clientId(req.clientId());
-        restReq.ttl(req.expiration());
-        restReq.delta(req.delta());
-        restReq.initial(req.initial());
-        restReq.cacheName(req.cacheName());
-        restReq.key(req.key());
+            restReq.command(cmd);
+            restReq.key(req.key());
+            restReq.delta(req.delta());
+            restReq.initial(req.initial());
 
-        if (cmd == CACHE_REMOVE_ALL) {
-            Object[] keys = (Object[]) req.value();
-
-            if (keys != null) {
-                Map<Object, Object> map = new HashMap<>();
-
-                for (Object key : keys) {
-                    map.put(key, null);
-                }
-
-                restReq.values(map);
-            }
+            return restReq;
         }
         else {
-            if (req.value() != null)
-                restReq.value(req.value());
-        }
+            GridRestCacheRequest restReq = new GridRestCacheRequest();
 
-        return restReq;
+            restReq.command(cmd);
+            restReq.clientId(req.clientId());
+            restReq.ttl(req.expiration());
+            restReq.cacheName(req.cacheName());
+            restReq.key(req.key());
+
+            if (cmd == CACHE_REMOVE_ALL) {
+                Object[] keys = (Object[]) req.value();
+
+                if (keys != null) {
+                    Map<Object, Object> map = new HashMap<>();
+
+                    for (Object key : keys) {
+                        map.put(key, null);
+                    }
+
+                    restReq.values(map);
+                }
+            }
+            else {
+                if (req.value() != null)
+                    restReq.value(req.value());
+            }
+
+            return restReq;
+        }
     }
 
     /**
@@ -334,11 +343,11 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
 
                 break;
             case 0x05:
-                cmd = CACHE_INCREMENT;
+                cmd = ATOMIC_INCREMENT;
 
                 break;
             case 0x06:
-                cmd = CACHE_DECREMENT;
+                cmd = ATOMIC_DECREMENT;
 
                 break;
             case 0x07:
@@ -404,12 +413,12 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
 
                 break;
             case 0x15:
-                cmd = CACHE_INCREMENT;
+                cmd = ATOMIC_INCREMENT;
                 quiet = true;
 
                 break;
             case 0x16:
-                cmd = CACHE_DECREMENT;
+                cmd = ATOMIC_DECREMENT;
                 quiet = true;
 
                 break;

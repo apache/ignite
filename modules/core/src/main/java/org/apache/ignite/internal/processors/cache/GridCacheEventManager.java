@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -75,7 +75,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param cloClsName Closure class name.
      * @param taskName Task name.
      */
-    public void addEvent(int part, K key, IgniteTx tx, @Nullable GridCacheMvccCandidate<K> owner,
+    public void addEvent(int part, K key, IgniteInternalTx tx, @Nullable GridCacheMvccCandidate<K> owner,
         int type, @Nullable V newVal, boolean hasNewVal, @Nullable V oldVal, boolean hasOldVal, UUID subjId,
         String cloClsName, String taskName) {
         addEvent(part, key, locNodeId, tx, owner, type, newVal, hasNewVal, oldVal, hasOldVal, subjId, cloClsName,
@@ -97,7 +97,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param cloClsName Closure class name.
      * @param taskName Task name.
      */
-    public void addEvent(int part, K key, UUID nodeId, IgniteTx tx, GridCacheMvccCandidate<K> owner,
+    public void addEvent(int part, K key, UUID nodeId, IgniteInternalTx tx, GridCacheMvccCandidate<K> owner,
         int type, V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal, UUID subjId, String cloClsName,
         String taskName) {
         addEvent(part, key, nodeId, tx == null ? null : tx.xid(), owner == null ? null : owner.version(), type,
@@ -121,7 +121,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
     public void addEvent(int part, K key, UUID evtNodeId, @Nullable GridCacheMvccCandidate<K> owner,
         int type, @Nullable V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal, UUID subjId, String cloClsName,
         String taskName) {
-        IgniteTx tx = owner == null ? null : cctx.tm().tx(owner.version());
+        IgniteInternalTx tx = owner == null ? null : cctx.tm().tx(owner.version());
 
         addEvent(part, key, evtNodeId, tx == null ? null : tx.xid(), owner == null ? null : owner.version(), type,
             newVal, hasNewVal, oldVal, hasOldVal, subjId, cloClsName, taskName);
@@ -242,7 +242,9 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return {@code True} if event is recordable.
      */
     public boolean isRecordable(int type) {
-        return !CU.isUtilityCache(cctx.name()) && cctx.gridEvents().isRecordable(type);
+        return !cctx.system() &&
+            !CU.isAtomicsCache(cctx.name()) &&
+            cctx.gridEvents().isRecordable(type);
     }
 
     /** {@inheritDoc} */

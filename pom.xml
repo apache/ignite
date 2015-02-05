@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
     POM file.
@@ -34,7 +34,7 @@
 
     <properties>
         <ignite.version>1.0.0-SNAPSHOT</ignite.version>
-        <gridgain.edition>fabric</gridgain.edition>
+        <ignite.edition>fabric</ignite.edition>
         <hadoop.version>2.4.1</hadoop.version>
         <spring.version>4.1.0.RELEASE</spring.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -105,6 +105,7 @@
         <module>modules/aop</module>
         <module>modules/urideploy</module>
         <module>modules/indexing</module>
+        <module>modules/geospatial</module>
         <module>modules/ssh</module>
         <module>modules/rest-http</module>
         <module>modules/email</module>
@@ -114,6 +115,7 @@
         <module>modules/log4j</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
+        <module>modules/schema-load</module>
     </modules>
 
     <dependencyManagement>
@@ -326,7 +328,7 @@
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/dependencies-${gridgain.edition}.xml</descriptor>
+                                <descriptor>assembly/dependencies-${ignite.edition}.xml</descriptor>
                             </descriptors>
                             <outputDirectory>${basedir}</outputDirectory>
                             <finalName>libs</finalName>
@@ -343,7 +345,7 @@
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/dependencies-optional-${gridgain.edition}.xml</descriptor>
+                                <descriptor>assembly/dependencies-optional-${ignite.edition}.xml</descriptor>
                             </descriptors>
                             <outputDirectory>${basedir}/libs</outputDirectory>
                             <finalName>optional</finalName>
@@ -377,7 +379,7 @@
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/release-${gridgain.edition}.xml</descriptor>
+                                <descriptor>assembly/release-${ignite.edition}.xml</descriptor>
                             </descriptors>
                             <finalName>release-package</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
@@ -592,7 +594,7 @@
                                 <configuration>
                                     <taglets>
                                         <taglet>
-                                            <tagletClass>org.apache.ignite.tools.javadoc.GridLinkTaglet</tagletClass>
+                                            <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
                                             <tagletArtifact>
                                                 <groupId>org.apache.ignite</groupId>
                                                 <artifactId>ignite-tools</artifactId>
@@ -600,8 +602,8 @@
                                             </tagletArtifact>
                                         </taglet>
                                     </taglets>
-                                    <doctitle>GridGain ${ignite.version}</doctitle>
-                                    <windowtitle>GridGain ${ignite.version}</windowtitle>
+                                    <doctitle>Ignite ${ignite.version}</doctitle>
+                                    <windowtitle>Ignite ${ignite.version}</windowtitle>
                                     <breakiterator>true</breakiterator>
                                     <verbose>true</verbose>
                                     <show>protected</show>
@@ -617,7 +619,7 @@
                                     <groups>
                                         <group>
                                             <title>Common Grid APIs</title>
-                                            <packages>org.gridgain.grid:org.gridgain.grid.spi:org.apache.ignite.lang:org.gridgain.grid.resources:org.apache.ignite.thread:org.gridgain.grid.product:org.gridgain.grid.scheduler</packages>
+                                            <packages>org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.spi:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.product:org.apache.ignite.scheduler</packages>
                                         </group>
                                         <group>
                                             <title>Messaging APIs</title>
@@ -625,23 +627,23 @@
                                         </group>
                                         <group>
                                             <title>Event Notification APIs</title>
-                                            <packages>org.gridgain.grid.events</packages>
+                                            <packages>org.apache.ignite.events</packages>
                                         </group>
                                         <group>
                                             <title>Compute Grid APIs</title>
-                                            <packages>org.gridgain.grid.compute:org.gridgain.grid.compute.gridify</packages>
+                                            <packages>org.apache.ignite.compute:org.apache.ignite.compute.gridify</packages>
                                         </group>
                                         <group>
                                             <title>Data Grid APIs</title>
-                                            <packages>org.gridgain.grid.cache:org.gridgain.grid.cache.datastructures:org.gridgain.grid.cache.cloner:org.gridgain.grid.cache.store:org.gridgain.grid.cache.store.hibernate:org.gridgain.grid.cache.store.jdbc:org.gridgain.grid.cache.query:org.gridgain.grid.cache.affinity:org.gridgain.grid.cache.affinity.consistenthash:org.gridgain.grid.cache.affinity.rendezvous:org.gridgain.grid.cache.affinity.fair:org.gridgain.grid.cache.eviction:org.gridgain.grid.cache.eviction.fifo:org.gridgain.grid.cache.eviction.ggfs:org.gridgain.grid.cache.eviction.lru:org.gridgain.grid.cache.eviction.random:org.gridgain.grid.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.gridgain.grid.dataload</packages>
+                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.cloner:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.ggfs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.gridgain.grid.ggfs:org.apache.ignite.fs.hadoop:org.apache.ignite.fs.hadoop.v1:org.apache.ignite.fs.hadoop.v2:org.apache.ignite.fs.mapreduce:org.apache.ignite.fs.mapreduce.records:org.apache.ignite.hadoop</packages>
+                                            <packages>org.apache.ignite.fs:org.apache.ignite.fs.hadoop:org.apache.ignite.fs.hadoop.v1:org.apache.ignite.fs.hadoop.v2:org.apache.ignite.fs.mapreduce:org.apache.ignite.fs.mapreduce.records:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>
-                                            <packages>org.gridgain.grid.streamer:org.gridgain.grid.streamer.router:org.gridgain.grid.streamer.window:org.gridgain.grid.streamer.index:org.gridgain.grid.streamer.index.hash:org.gridgain.grid.streamer.index.tree</packages>
+                                            <packages>org.apache.ignite.streamer:org.apache.ignite.streamer.router:org.apache.ignite.streamer.window:org.apache.ignite.streamer.index:org.apache.ignite.streamer.index.hash:org.apache.ignite.streamer.index.tree</packages>
                                         </group>
                                         <group>
                                             <title>Security APIs</title>
@@ -649,7 +651,11 @@
                                         </group>
                                         <group>
                                             <title>Distributed Services APIs</title>
-                                            <packages>org.gridgain.grid.service</packages>
+                                            <packages>org.apache.ignite.managed</packages>
+                                        </group>
+                                        <group>
+                                            <title>MXBeans classes</title>
+                                            <packages>org.apache.ignite.mbean:org.apache.ignite.mxbean</packages>
                                         </group>
                                         <group>
                                             <title>JDBC Driver</title>
@@ -657,55 +663,59 @@
                                         </group>
                                         <group>
                                             <title>SPI: CheckPoint</title>
-                                            <packages>org.gridgain.grid.spi.checkpoint:org.apache.ignite.spi.checkpoint.jdbc:org.apache.ignite.spi.checkpoint.s3:org.apache.ignite.spi.checkpoint.cache:org.apache.ignite.spi.checkpoint.noop:org.apache.ignite.spi.checkpoint.sharedfs</packages>
+                                            <packages>org.apache.ignite.spi.checkpoint:org.apache.ignite.spi.checkpoint.jdbc:org.apache.ignite.spi.checkpoint.s3:org.apache.ignite.spi.checkpoint.cache:org.apache.ignite.spi.checkpoint.noop:org.apache.ignite.spi.checkpoint.sharedfs</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Collision</title>
-                                            <packages>org.gridgain.grid.spi.collision:org.apache.ignite.spi.collision.fifoqueue:org.apache.ignite.spi.collision.jobstealing:org.apache.ignite.spi.collision.noop:org.apache.ignite.spi.collision.priorityqueue</packages>
+                                            <packages>org.apache.ignite.spi.collision:org.apache.ignite.spi.collision.fifoqueue:org.apache.ignite.spi.collision.jobstealing:org.apache.ignite.spi.collision.noop:org.apache.ignite.spi.collision.priorityqueue</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Indexing</title>
-                                            <packages>org.gridgain.grid.spi.indexing:org.gridgain.grid.spi.indexing.h2</packages>
+                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.h2</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Load Balancing</title>
-                                            <packages>org.gridgain.grid.spi.loadbalancing:org.apache.ignite.spi.loadbalancing.adaptive:org.apache.ignite.spi.loadbalancing.weightedrandom:org.apache.ignite.spi.loadbalancing.roundrobin</packages>
+                                            <packages>org.apache.ignite.spi.loadbalancing:org.apache.ignite.spi.loadbalancing.adaptive:org.apache.ignite.spi.loadbalancing.weightedrandom:org.apache.ignite.spi.loadbalancing.roundrobin</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Communication</title>
-                                            <packages>org.gridgain.grid.spi.communication:org.apache.ignite.spi.communication.tcp</packages>
+                                            <packages>org.apache.ignite.spi.communication:org.apache.ignite.spi.communication.tcp</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Deployment</title>
-                                            <packages>org.gridgain.grid.spi.deployment:org.apache.ignite.spi.deployment.local:org.apache.ignite.spi.deployment.uri</packages>
+                                            <packages>org.apache.ignite.spi.deployment:org.apache.ignite.spi.deployment.local:org.apache.ignite.spi.deployment.uri</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Swap Space</title>
-                                            <packages>org.gridgain.grid.spi.swapspace:org.apache.ignite.spi.swapspace.file:org.apache.ignite.spi.swapspace.noop</packages>
+                                            <packages>org.apache.ignite.spi.swapspace:org.apache.ignite.spi.swapspace.file:org.apache.ignite.spi.swapspace.noop</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Discovery</title>
-                                            <packages>org.gridgain.grid.spi.discovery:org.apache.ignite.spi.discovery.tcp:org.apache.ignite.spi.discovery.tcp.ipfinder:org.apache.ignite.spi.discovery.tcp.ipfinder.s3:org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc:org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs:org.apache.ignite.spi.discovery.tcp.ipfinder.multicast:org.apache.ignite.spi.discovery.tcp.ipfinder.vm:org.apache.ignite.spi.discovery.tcp.metricsstore:org.apache.ignite.spi.discovery.tcp.metricsstore.s3:org.apache.ignite.spi.discovery.tcp.metricsstore.jdbc:org.apache.ignite.spi.discovery.tcp.metricsstore.sharedfs:org.apache.ignite.spi.discovery.tcp.metricsstore.vm</packages>
+                                            <packages>org.apache.ignite.spi.discovery:org.apache.ignite.spi.discovery.tcp:org.apache.ignite.spi.discovery.tcp.ipfinder:org.apache.ignite.spi.discovery.tcp.ipfinder.s3:org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc:org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs:org.apache.ignite.spi.discovery.tcp.ipfinder.multicast:org.apache.ignite.spi.discovery.tcp.ipfinder.vm:org.apache.ignite.spi.discovery.tcp.metricsstore:org.apache.ignite.spi.discovery.tcp.metricsstore.s3:org.apache.ignite.spi.discovery.tcp.metricsstore.jdbc:org.apache.ignite.spi.discovery.tcp.metricsstore.sharedfs:org.apache.ignite.spi.discovery.tcp.metricsstore.vm</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Failover</title>
-                                            <packages>org.gridgain.grid.spi.failover:org.apache.ignite.spi.failover.never:org.apache.ignite.spi.failover.jobstealing:org.apache.ignite.spi.failover.always</packages>
+                                            <packages>org.apache.ignite.spi.failover:org.apache.ignite.spi.failover.never:org.apache.ignite.spi.failover.jobstealing:org.apache.ignite.spi.failover.always</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Event Storage</title>
-                                            <packages>org.gridgain.grid.spi.eventstorage:org.apache.ignite.spi.eventstorage.memory</packages>
+                                            <packages>org.apache.ignite.spi.eventstorage:org.apache.ignite.spi.eventstorage.memory</packages>
                                         </group>
                                         <group>
                                             <title>Segmentation Detection</title>
                                             <packages>org.apache.ignite.plugin.segmentation</packages>
                                         </group>
                                         <group>
+                                            <title>Ignite plugin API</title>
+                                            <packages>org.apache.ignite.plugin:org.apache.ignite.plugin.extensions:org.apache.ignite.plugin.extensions.communication:org.apache.ignite.plugin.extensions.discovery:org.apache.ignite.visor.plugin</packages>
+                                        </group>
+                                        <group>
                                             <title>Logging</title>
-                                            <packages>org.gridgain.grid.logger:org.gridgain.grid.logger.log4j:org.gridgain.grid.logger.java:org.gridgain.grid.logger.tomcat:org.gridgain.grid.logger.jcl:org.gridgain.grid.logger.slf4j:org.gridgain.grid.logger.jboss</packages>
+                                            <packages>org.apache.ignite.logger:org.apache.ignite.logger.log4j:org.apache.ignite.logger.java:org.apache.ignite.logger.tomcat:org.apache.ignite.logger.jcl:org.apache.ignite.logger.slf4j:org.apache.ignite.logger.jboss</packages>
                                         </group>
                                         <group>
                                             <title>Loaders</title>
-                                            <packages>org.gridgain.grid.startup:org.gridgain.grid.startup.cmdline:org.gridgain.grid.startup.servlet:org.gridgain.grid.startup.tomcat</packages>
+                                            <packages>org.apache.ignite.startup:org.apache.ignite.startup.cmdline:org.apache.ignite.startup.servlet:org.apache.ignite.startup.tomcat</packages>
                                         </group>
                                         <group>
                                             <title>Marshallers</title>
@@ -714,7 +724,7 @@
                                     </groups>
                                     <header>
                                         <![CDATA[
-                                    GridGain - In-Memory Data Fabric
+                                    Ignite - In-Memory Data Fabric
                                 ]]>
                                     </header>
                                     <bottom>
@@ -726,7 +736,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                            <a target=_blank href="https://incubator.apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -758,7 +768,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <b>GridGain Fabric</b>
+                                                            <b>Ignite Fabric</b>
                                                         </td>
                                                         <td>:&nbsp;&nbsp;
                                                             ver. <strong>${ignite.version}</strong>
@@ -791,7 +801,7 @@
                                 <configuration>
                                     <taglets>
                                         <taglet>
-                                            <tagletClass>org.apache.ignite.tools.javadoc.GridLinkTaglet</tagletClass>
+                                            <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
                                             <tagletArtifact>
                                                 <groupId>org.apache.ignite</groupId>
                                                 <artifactId>ignite-tools</artifactId>
@@ -801,8 +811,8 @@
                                     </taglets>
                                     <reportOutputDirectory>target/javadoc</reportOutputDirectory>
                                     <destDir>core</destDir>
-                                    <doctitle>GridGain ${ignite.version}</doctitle>
-                                    <windowtitle>GridGain ${ignite.version}</windowtitle>
+                                    <doctitle>Ignite ${ignite.version}</doctitle>
+                                    <windowtitle>Ignite ${ignite.version}</windowtitle>
                                     <breakiterator>true</breakiterator>
                                     <verbose>true</verbose>
                                     <show>protected</show>
@@ -815,11 +825,11 @@
                                         <link>http://hadoop.apache.org/docs/current/api/</link>
                                     </links>
                                     <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
-                                    <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.gridgain.grid.portables</excludePackageNames>
+                                    <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.internal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.apache.ignite.portables:org.apache.ignite.yardstick:org.apache.ignite.schema.*</excludePackageNames>
                                     <groups>
                                         <group>
                                             <title>Common Grid APIs</title>
-                                            <packages>org.gridgain.grid:org.gridgain.grid.spi:org.apache.ignite.lang:org.gridgain.grid.resources:org.apache.ignite.thread:org.gridgain.grid.product:org.gridgain.grid.scheduler</packages>
+                                            <packages>org.apache.ignite:org.apache.ignite.cluster:org.apache.ignite.lifecycle:org.apache.ignite.configuration:org.apache.ignite.spi:org.apache.ignite.lang:org.apache.ignite.resources:org.apache.ignite.thread:org.apache.ignite.product:org.apache.ignite.scheduler</packages>
                                         </group>
                                         <group>
                                             <title>Messaging APIs</title>
@@ -827,23 +837,23 @@
                                         </group>
                                         <group>
                                             <title>Event Notification APIs</title>
-                                            <packages>org.gridgain.grid.events</packages>
+                                            <packages>org.apache.ignite.events</packages>
                                         </group>
                                         <group>
                                             <title>Compute Grid APIs</title>
-                                            <packages>org.gridgain.grid.compute:org.gridgain.grid.compute.gridify</packages>
+                                            <packages>org.apache.ignite.compute:org.apache.ignite.compute.gridify</packages>
                                         </group>
                                         <group>
                                             <title>Data Grid APIs</title>
-                                            <packages>org.gridgain.grid.cache:org.gridgain.grid.cache.datastructures:org.gridgain.grid.cache.cloner:org.gridgain.grid.cache.store:org.gridgain.grid.cache.store.hibernate:org.gridgain.grid.cache.store.jdbc:org.gridgain.grid.cache.query:org.gridgain.grid.cache.affinity:org.gridgain.grid.cache.affinity.consistenthash:org.gridgain.grid.cache.affinity.rendezvous:org.gridgain.grid.cache.affinity.fair:org.gridgain.grid.cache.eviction:org.gridgain.grid.cache.eviction.fifo:org.gridgain.grid.cache.eviction.ggfs:org.gridgain.grid.cache.eviction.lru:org.gridgain.grid.cache.eviction.random:org.gridgain.grid.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.gridgain.grid.dataload</packages>
+                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.cloner:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.store.jdbc.dialect:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.ggfs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.gridgain.grid.ggfs:org.apache.ignite.fs.hadoop:org.apache.ignite.fs.hadoop.v1:org.apache.ignite.fs.hadoop.v2:org.apache.ignite.fs.mapreduce:org.apache.ignite.fs.mapreduce.records:org.apache.ignite.hadoop</packages>
+                                            <packages>org.apache.ignite.fs:org.apache.ignite.fs.hadoop:org.apache.ignite.fs.hadoop.v1:org.apache.ignite.fs.hadoop.v2:org.apache.ignite.fs.mapreduce:org.apache.ignite.fs.mapreduce.records:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>
-                                            <packages>org.gridgain.grid.streamer:org.gridgain.grid.streamer.router:org.gridgain.grid.streamer.window:org.gridgain.grid.streamer.index:org.gridgain.grid.streamer.index.hash:org.gridgain.grid.streamer.index.tree</packages>
+                                            <packages>org.apache.ignite.streamer:org.apache.ignite.streamer.router:org.apache.ignite.streamer.window:org.apache.ignite.streamer.index:org.apache.ignite.streamer.index.hash:org.apache.ignite.streamer.index.tree</packages>
                                         </group>
                                         <group>
                                             <title>Security APIs</title>
@@ -851,63 +861,71 @@
                                         </group>
                                         <group>
                                             <title>Distributed Services APIs</title>
-                                            <packages>org.gridgain.grid.service</packages>
+                                            <packages>org.apache.ignite.managed</packages>
                                         </group>
                                         <group>
                                             <title>JDBC Driver</title>
                                             <packages>org.apache.ignite.jdbc</packages>
                                         </group>
                                         <group>
+                                            <title>MXBeans classes</title>
+                                            <packages>org.apache.ignite.mbean:org.apache.ignite.mxbean</packages>
+                                        </group>
+                                        <group>
                                             <title>SPI: CheckPoint</title>
-                                            <packages>org.gridgain.grid.spi.checkpoint:org.apache.ignite.spi.checkpoint.jdbc:org.apache.ignite.spi.checkpoint.s3:org.apache.ignite.spi.checkpoint.cache:org.apache.ignite.spi.checkpoint.noop:org.apache.ignite.spi.checkpoint.sharedfs</packages>
+                                            <packages>org.apache.ignite.spi.checkpoint:org.apache.ignite.spi.checkpoint.jdbc:org.apache.ignite.spi.checkpoint.s3:org.apache.ignite.spi.checkpoint.cache:org.apache.ignite.spi.checkpoint.noop:org.apache.ignite.spi.checkpoint.sharedfs</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Collision</title>
-                                            <packages>org.gridgain.grid.spi.collision:org.apache.ignite.spi.collision.fifoqueue:org.apache.ignite.spi.collision.jobstealing:org.apache.ignite.spi.collision.noop:org.apache.ignite.spi.collision.priorityqueue</packages>
+                                            <packages>org.apache.ignite.spi.collision:org.apache.ignite.spi.collision.fifoqueue:org.apache.ignite.spi.collision.jobstealing:org.apache.ignite.spi.collision.noop:org.apache.ignite.spi.collision.priorityqueue</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Indexing</title>
-                                            <packages>org.gridgain.grid.spi.indexing:org.gridgain.grid.spi.indexing.h2</packages>
+                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.h2</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Load Balancing</title>
-                                            <packages>org.gridgain.grid.spi.loadbalancing:org.apache.ignite.spi.loadbalancing.adaptive:org.apache.ignite.spi.loadbalancing.weightedrandom:org.apache.ignite.spi.loadbalancing.roundrobin</packages>
+                                            <packages>org.apache.ignite.spi.loadbalancing:org.apache.ignite.spi.loadbalancing.adaptive:org.apache.ignite.spi.loadbalancing.weightedrandom:org.apache.ignite.spi.loadbalancing.roundrobin</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Communication</title>
-                                            <packages>org.gridgain.grid.spi.communication:org.apache.ignite.spi.communication.tcp</packages>
+                                            <packages>org.apache.ignite.spi.communication:org.apache.ignite.spi.communication.tcp</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Deployment</title>
-                                            <packages>org.gridgain.grid.spi.deployment:org.apache.ignite.spi.deployment.local:org.apache.ignite.spi.deployment.uri</packages>
+                                            <packages>org.apache.ignite.spi.deployment:org.apache.ignite.spi.deployment.local:org.apache.ignite.spi.deployment.uri</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Swap Space</title>
-                                            <packages>org.gridgain.grid.spi.swapspace:org.apache.ignite.spi.swapspace.file:org.apache.ignite.spi.swapspace.noop</packages>
+                                            <packages>org.apache.ignite.spi.swapspace:org.apache.ignite.spi.swapspace.file:org.apache.ignite.spi.swapspace.noop</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Discovery</title>
-                                            <packages>org.gridgain.grid.spi.discovery:org.apache.ignite.spi.discovery.tcp:org.apache.ignite.spi.discovery.tcp.ipfinder:org.apache.ignite.spi.discovery.tcp.ipfinder.s3:org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc:org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs:org.apache.ignite.spi.discovery.tcp.ipfinder.multicast:org.apache.ignite.spi.discovery.tcp.ipfinder.vm:org.apache.ignite.spi.discovery.tcp.metricsstore:org.apache.ignite.spi.discovery.tcp.metricsstore.s3:org.apache.ignite.spi.discovery.tcp.metricsstore.jdbc:org.apache.ignite.spi.discovery.tcp.metricsstore.sharedfs:org.apache.ignite.spi.discovery.tcp.metricsstore.vm</packages>
+                                            <packages>org.apache.ignite.spi.discovery:org.apache.ignite.spi.discovery.tcp:org.apache.ignite.spi.discovery.tcp.ipfinder:org.apache.ignite.spi.discovery.tcp.ipfinder.s3:org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc:org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs:org.apache.ignite.spi.discovery.tcp.ipfinder.multicast:org.apache.ignite.spi.discovery.tcp.ipfinder.vm:org.apache.ignite.spi.discovery.tcp.metricsstore:org.apache.ignite.spi.discovery.tcp.metricsstore.s3:org.apache.ignite.spi.discovery.tcp.metricsstore.jdbc:org.apache.ignite.spi.discovery.tcp.metricsstore.sharedfs:org.apache.ignite.spi.discovery.tcp.metricsstore.vm</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Failover</title>
-                                            <packages>org.gridgain.grid.spi.failover:org.apache.ignite.spi.failover.never:org.apache.ignite.spi.failover.jobstealing:org.apache.ignite.spi.failover.always</packages>
+                                            <packages>org.apache.ignite.spi.failover:org.apache.ignite.spi.failover.never:org.apache.ignite.spi.failover.jobstealing:org.apache.ignite.spi.failover.always</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Event Storage</title>
-                                            <packages>org.gridgain.grid.spi.eventstorage:org.apache.ignite.spi.eventstorage.memory</packages>
+                                            <packages>org.apache.ignite.spi.eventstorage:org.apache.ignite.spi.eventstorage.memory</packages>
                                         </group>
                                         <group>
                                             <title>Segmentation Detection</title>
                                             <packages>org.apache.ignite.plugin.segmentation</packages>
                                         </group>
                                         <group>
+                                            <title>Ignite plugin API</title>
+                                            <packages>org.apache.ignite.plugin:org.apache.ignite.plugin.extensions:org.apache.ignite.plugin.extensions.communication:org.apache.ignite.plugin.extensions.discovery:org.apache.ignite.visor.plugin</packages>
+                                        </group>
+                                        <group>
                                             <title>Logging</title>
-                                            <packages>org.gridgain.grid.logger:org.gridgain.grid.logger.log4j:org.gridgain.grid.logger.java:org.gridgain.grid.logger.tomcat:org.gridgain.grid.logger.jcl:org.gridgain.grid.logger.slf4j:org.gridgain.grid.logger.jboss</packages>
+                                            <packages>org.apache.ignite.logger:org.apache.ignite.logger.log4j:org.apache.ignite.logger.java:org.apache.ignite.logger.tomcat:org.apache.ignite.logger.jcl:org.apache.ignite.logger.slf4j:org.apache.ignite.logger.jboss</packages>
                                         </group>
                                         <group>
                                             <title>Loaders</title>
-                                            <packages>org.gridgain.grid.startup:org.gridgain.grid.startup.cmdline:org.gridgain.grid.startup.servlet:org.gridgain.grid.startup.tomcat</packages>
+                                            <packages>org.apache.ignite.startup:org.apache.ignite.startup.cmdline:org.apache.ignite.startup.servlet:org.apache.ignite.startup.tomcat</packages>
                                         </group>
                                         <group>
                                             <title>Marshallers</title>
@@ -919,11 +937,11 @@
                                         </group>
                                         <group>
                                             <title>Spring Caching</title>
-                                            <packages>org.gridgain.grid.cache.spring</packages>
+                                            <packages>org.apache.ignite.cache.spring</packages>
                                         </group>
                                         <group>
-                                            <title>.Net Configuration</title>
-                                            <packages>org.apache.ignite.dotnet</packages>
+                                            <title>Interop</title>
+                                            <packages>org.apache.ignite.interop</packages>
                                         </group>
                                     </groups>
                                     <header>
@@ -940,7 +958,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                            <a target=_blank href="https://incubator.apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -1005,7 +1023,7 @@
                                 <configuration>
                                     <taglets>
                                         <taglet>
-                                            <tagletClass>org.apache.ignite.tools.javadoc.GridLinkTaglet</tagletClass>
+                                            <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
                                             <tagletArtifact>
                                                 <groupId>org.apache.ignite</groupId>
                                                 <artifactId>ignite-tools</artifactId>
@@ -1015,8 +1033,8 @@
                                     </taglets>
                                     <reportOutputDirectory>target/javadoc</reportOutputDirectory>
                                     <destDir>client</destDir>
-                                    <doctitle>GridGain ${ignite.version} - Java Client</doctitle>
-                                    <windowtitle>GridGain ${ignite.version} - Java Client</windowtitle>
+                                    <doctitle>Ignite ${ignite.version} - Java Client</doctitle>
+                                    <windowtitle>Ignite ${ignite.version} - Java Client</windowtitle>
                                     <breakiterator>true</breakiterator>
                                     <verbose>true</verbose>
                                     <show>protected</show>
@@ -1034,7 +1052,7 @@
                                     <groups>
                                         <group>
                                             <title>Client APIs</title>
-                                            <packages>org.gridgain.client:org.apache.ignite.client.balancer:org.apache.ignite.client.ssl:org.apache.ignite.client.hadoop:org.apache.ignite.client.hadoop.counter</packages>
+                                            <packages>org.apache.ignite.client:org.apache.ignite.client.balancer:org.apache.ignite.client.ssl:org.apache.ignite.client.hadoop:org.apache.ignite.client.hadoop.counter</packages>
                                         </group>
                                         <group>
                                             <title>Router APIs</title>
@@ -1059,7 +1077,7 @@
                                             <td>
                                                 <nobr>GridGain&#153; - Java Client, ver. <strong>${ignite.version}</strong></nobr>
                                                 <br>
-                                                <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                <a target=_blank href="https://incubator.apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
                                             </td>
                                             <td width="100%" align="right" valign="center">
                                                 <table border=0>
@@ -1124,24 +1142,22 @@
                                             </fileset>
                                         </copy>
 
-                                        <!-- todo IGNITE-40 Uncomment javadoc checking. -->
+                                        <taskdef name="doctask"
+                                                 classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask"/>
 
-                                        <!--<taskdef name="doctask"-->
-                                                 <!--classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask"/>-->
+                                        <doctask css="dotted" dir="target/javadoc/core">
+                                            <include name="**/*.html"/>
+                                            <exclude name="overview-frame.html"/>
+                                            <exclude name="allclasses-frame.html"/>
+                                            <exclude name="**/class-use/*"/>
+                                        </doctask>
 
-                                        <!--<doctask css="dotted" dir="target/javadoc/core">-->
-                                            <!--<include name="**/*.html"/>-->
-                                            <!--<exclude name="overview-frame.html"/>-->
-                                            <!--<exclude name="allclasses-frame.html"/>-->
-                                            <!--<exclude name="**/class-use/*"/>-->
-                                        <!--</doctask>-->
-
-                                        <!--<doctask css="dotted" dir="target/javadoc/client">-->
-                                            <!--<include name="**/*.html"/>-->
-                                            <!--<exclude name="overview-frame.html"/>-->
-                                            <!--<exclude name="allclasses-frame.html"/>-->
-                                            <!--<exclude name="**/class-use/*"/>-->
-                                        <!--</doctask>-->
+                                        <doctask css="dotted" dir="target/javadoc/client">
+                                            <include name="**/*.html"/>
+                                            <exclude name="overview-frame.html"/>
+                                            <exclude name="allclasses-frame.html"/>
+                                            <exclude name="**/class-use/*"/>
+                                        </doctask>
                                     </target>
                                 </configuration>
                             </execution>
@@ -1163,7 +1179,7 @@
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern='GRIDGAIN_HOME_TMP="\$\(dirname "\$\{GRIDGAIN_HOME_TMP\}"\)"(\s*#.*)?'/>
+                                            <regexp pattern='IGNITE_HOME_TMP="\$\(dirname "\$\{IGNITE_HOME_TMP\}"\)"(\s*#.*)?'/>
                                             <substitution expression=""/>
                                             <fileset dir="target/release-package/bin">
                                                 <include name="**/*.sh"/>
@@ -1171,16 +1187,16 @@
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\os\\bin(\s*&amp;::.*)?'/>
-                                            <substitution expression='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\\\bin'/>
+                                            <regexp pattern='set SCRIPTS_HOME=%IGNITE_HOME%\\os\\bin(\s*&amp;::.*)?'/>
+                                            <substitution expression='set SCRIPTS_HOME=%IGNITE_HOME%\\\\bin'/>
                                             <fileset dir="target/release-package/bin">
                                                 <include name="**/*.bat"/>
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern='SCRIPTS_HOME="\$\{GRIDGAIN_HOME_TMP\}/os/bin"(\s*#.*)?'/>
-                                            <substitution expression='SCRIPTS_HOME="$${GRIDGAIN_HOME_TMP}/bin"'/>
+                                            <regexp pattern='SCRIPTS_HOME="\$\{IGNITE_HOME_TMP\}/os/bin"(\s*#.*)?'/>
+                                            <substitution expression='SCRIPTS_HOME="$${IGNITE_HOME_TMP}/bin"'/>
                                             <fileset dir="target/release-package/bin">
                                                 <include name="**/*.sh"/>
                                             </fileset>
@@ -1236,10 +1252,10 @@
                                             </fileset>
                                         </replace>
 
-                                        <zip destfile="target/ignite-${gridgain.edition}-${ignite.version}.zip"
+                                        <zip destfile="target/ignite-${ignite.edition}-${ignite.version}.zip"
                                              encoding="UTF-8">
                                             <zipfileset dir="target/release-package"
-                                                        prefix="ignite-${gridgain.edition}-${ignite.version}"
+                                                        prefix="ignite-${ignite.edition}-${ignite.version}"
                                                         filemode="755">
                                                 <include name="**/*.sh"/>
                                                 <include name="**/configure"/>
@@ -1248,7 +1264,7 @@
                                                 <include name="**/missing"/>
                                             </zipfileset>
                                             <zipfileset dir="target/release-package"
-                                                        prefix="ignite-${gridgain.edition}-${ignite.version}">
+                                                        prefix="ignite-${ignite.edition}-${ignite.version}">
                                                 <exclude name="**/*.sh"/>
                                                 <exclude name="**/configure"/>
                                                 <exclude name="**/install-sh"/>
@@ -1263,6 +1279,13 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>benchmarks</id>
+            <modules>
+                <module>modules/yardstick</module>
+            </modules>
         </profile>
     </profiles>
 </project>

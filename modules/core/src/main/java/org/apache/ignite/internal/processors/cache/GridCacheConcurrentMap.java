@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -1952,7 +1952,7 @@ public class GridCacheConcurrentMap<K, V> {
 
         /** {@inheritDoc} */
         @Override public void clear() {
-            ctx.cache().clearAll0(new KeySet<>(map, filter), CU.<K, V>empty());
+            ctx.cache().clearLocally0(new KeySet<>(map, filter), CU.<K, V>empty());
         }
 
         /** {@inheritDoc} */

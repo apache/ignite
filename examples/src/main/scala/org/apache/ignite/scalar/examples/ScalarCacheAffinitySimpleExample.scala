@@ -32,7 +32,7 @@ import org.apache.ignite.scalar.scalar._
  * Note also that for affinity routing is enabled for all caches.
  *
  * Remote nodes should always be started with configuration file which includes
- * cache: `'ggstart.sh examples/config/example-cache.xml'`. Local node can
+ * cache: `'ignite.sh examples/config/example-cache.xml'`. Local node can
  * be started with or without cache.
  */
 object ScalarCacheAffinitySimpleExample extends App {
@@ -51,23 +51,23 @@ object ScalarCacheAffinitySimpleExample extends App {
      */
     scalar("examples/config/example-cache.xml") {
         // Clean up caches on all nodes before run.
-        cache$(NAME).get.globalClearAll(0)
+        cache$(NAME).get.clear(0)
 
-        val c = grid$.cache[Int, String](NAME)
+        val c = ignite$.cache[Int, String](NAME)
 
         populate(c)
         visit(c)
     }
 
     /**
-     * Visits every in-memory data grid entry on the remote node it resides by co-locating visiting
+     * Visits every in-memory data ignite entry on the remote node it resides by co-locating visiting
      * closure with the cache key.
      *
      * @param c Cache to use.
      */
     private def visit(c: Cache) {
         (0 until KEY_CNT).foreach(i =>
-            grid$.compute().affinityRun(NAME, i,
+            ignite$.compute().affinityRun(NAME, i,
                 () => println("Co-located [key= " + i + ", value=" + c.peek(i) + ']'))
         )
     }

@@ -24,17 +24,17 @@ import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -160,7 +160,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
                 cache.put(i, i);
 
             for (int i = 0; i < 10; i++) {
-                GridCacheEntryEx<Object, Object> entry = ((GridKernal)g).context().cache().internalCache().peekEx(i);
+                GridCacheEntryEx<Object, Object> entry = ((IgniteKernal)g).context().cache().internalCache().peekEx(i);
 
                 if (entry != null)
                     assertFalse("Entry is locked after implicit transaction commit: " + entry, entry.lockedByAny());

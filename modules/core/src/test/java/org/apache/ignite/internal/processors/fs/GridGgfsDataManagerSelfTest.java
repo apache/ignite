@@ -21,14 +21,15 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
 
@@ -133,9 +134,9 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < NODES_CNT; i++) {
-            grid(i).cachex(META_CACHE_NAME).clearAll();
+            grid(i).cachex(META_CACHE_NAME).clear();
 
-            grid(i).cachex(DATA_CACHE_NAME).clearAll();
+            grid(i).cachex(DATA_CACHE_NAME).clear();
         }
     }
 
@@ -166,7 +167,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
 
             rnd.nextBytes(data);
 
-            IgniteFuture<Boolean> fut = mgr.writeStart(info);
+            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
 
             expectsStoreFail(info, data, "Not enough space reserved to store data");
 
@@ -190,7 +191,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
             for (int j = 0; j < NODES_CNT; j++) {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
                     "ctx");
-                Collection<IgniteTxEx<Object, Object>> txs = ctx.tm().txs();
+                Collection<IgniteInternalTx<Object, Object>> txs = ctx.tm().txs();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }
@@ -253,7 +254,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
 
             info = new GridGgfsFileInfo(info, info.length() + data.length + remainder.length);
 
-            IgniteFuture<Boolean> fut = mgr.writeStart(info);
+            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
 
             GridGgfsFileAffinityRange range = new GridGgfsFileAffinityRange();
 
@@ -278,7 +279,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
             for (int j = 0; j < NODES_CNT; j++) {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
                     "ctx");
-                Collection<IgniteTxEx<Object, Object>> txs = ctx.tm().txs();
+                Collection<IgniteInternalTx<Object, Object>> txs = ctx.tm().txs();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }
@@ -338,7 +339,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
 
             info = new GridGgfsFileInfo(info, info.length() + data.length * writesCnt);
 
-            IgniteFuture<Boolean> fut = mgr.writeStart(info);
+            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
 
             for (int j = 0; j < 64; j++) {
                 Arrays.fill(data, (byte)(j / 4));
@@ -358,7 +359,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
             for (int j = 0; j < NODES_CNT; j++) {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
                     "ctx");
-                Collection<IgniteTxEx<Object, Object>> txs = ctx.tm().txs();
+                Collection<IgniteInternalTx<Object, Object>> txs = ctx.tm().txs();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }
@@ -375,7 +376,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
                 pos += stored.length;
             }
 
-            IgniteFuture<Object> delFut = mgr.delete(info);
+            IgniteInternalFuture<Object> delFut = mgr.delete(info);
 
             delFut.get();
 

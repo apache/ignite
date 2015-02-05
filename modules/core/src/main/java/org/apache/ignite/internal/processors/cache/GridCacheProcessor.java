@@ -29,10 +29,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.LifecycleAware;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
@@ -45,9 +41,13 @@ import org.apache.ignite.internal.processors.cache.local.atomic.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
@@ -56,17 +56,17 @@ import javax.management.*;
 import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.IgniteComponentType.*;
+import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Cache processor.
@@ -88,7 +88,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private final Map<String, GridCache<?, ?>> publicProxies;
 
     /** Map of preload finish futures grouped by preload order. */
-    private final NavigableMap<Integer, IgniteFuture<?>> preloadFuts;
+    private final NavigableMap<Integer, IgniteInternalFuture<?>> preloadFuts;
 
     /** Maximum detected preload order. */
     private int maxPreloadOrder;
@@ -98,12 +98,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** Caches stop sequence. */
     private final Deque<GridCacheAdapter<?, ?>> stopSeq;
-
-    /** MBean server. */
-    private final MBeanServer mBeanSrv;
-
-    /** Cache MBeans. */
-    private final Collection<ObjectName> cacheMBeans = new LinkedList<>();
 
     /** Transaction interface implementation. */
     private IgniteTransactionsImpl transactions;
@@ -122,8 +116,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         sysCaches = new HashSet<>();
         stopSeq = new LinkedList<>();
-
-        mBeanSrv = ctx.config().getMBeanServer();
     }
 
     /**
@@ -587,6 +579,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         sysCaches.add(CU.UTILITY_CACHE_NAME);
 
+        sysCaches.add(CU.ATOMICS_CACHE_NAME);
+
         CacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
 
         sharedCtx = createSharedContext(ctx);
@@ -638,7 +632,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheEvictionManager evictMgr = new GridCacheEvictionManager();
             GridCacheQueryManager qryMgr = queryManager(cfg);
             GridCacheContinuousQueryManager contQryMgr = new GridCacheContinuousQueryManager();
-            GridCacheDataStructuresManager dataStructuresMgr = new GridCacheDataStructuresManager();
+            CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
             GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
 
@@ -891,21 +885,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             jCacheProxies.put(e.getKey(), new IgniteCacheProxy(cache.context(), cache, null, false));
         }
 
-        for (GridCacheAdapter<?, ?> cache : caches.values()) {
-            try {
-                ObjectName mb = U.registerCacheMBean(mBeanSrv, ctx.gridName(), cache.name(), "Cache",
-                    new GridCacheMBeanAdapter(cache.context()), CacheMBean.class);
-
-                cacheMBeans.add(mb);
-
-                if (log.isDebugEnabled())
-                    log.debug("Registered cache MBean: " + mb);
-            }
-            catch (JMException ex) {
-                U.error(log, "Failed to register cache MBean.", ex);
-            }
-        }
-
         // Internal caches which should not be returned to user.
         for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
             GridCacheAdapter cache = e.getValue();
@@ -953,8 +932,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         GridCacheAttributes[] attrVals = new GridCacheAttributes[ctx.config().getCacheConfiguration().length];
 
-        Map<String, Boolean> attrPortable = new HashMap<>();
-
         Map<String, String> interceptors = new HashMap<>();
 
         int i = 0;
@@ -966,15 +943,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             attrVals[i++] = new GridCacheAttributes(cfg, ctx.store().configuredStore());
 
-            attrPortable.put(CU.mask(cfg.getName()), cfg.isPortableEnabled());
-
             if (cfg.getInterceptor() != null)
                 interceptors.put(cfg.getName(), cfg.getInterceptor().getClass().getName());
         }
 
         attrs.put(ATTR_CACHE, attrVals);
-
-        attrs.put(ATTR_CACHE_PORTABLE, attrPortable);
 
         attrs.put(ATTR_TX_CONFIG, ctx.config().getTransactionsConfiguration());
 
@@ -1148,10 +1121,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             "Transaction manager lookup", locAttr.transactionManagerLookupClassName(),
                             rmtAttr.transactionManagerLookupClassName(), false);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "atomicSequenceReserveSize",
-                            "Atomic sequence reserve size", locAttr.sequenceReserveSize(),
-                            rmtAttr.sequenceReserveSize(), false);
-
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultLockTimeout",
                             "Default lock timeout", locAttr.defaultLockTimeout(), rmtAttr.defaultLockTimeout(), false);
 
@@ -1207,12 +1176,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
                             "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
 
-                        Boolean locPortableEnabled = U.portableEnabled(ctx.discovery().localNode(), locAttr.cacheName());
-                        Boolean rmtPortableEnabled = U.portableEnabled(rmt, locAttr.cacheName());
-
-                        if (locPortableEnabled != null && rmtPortableEnabled != null)
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "portableEnabled",
-                                "Portables enabled", locPortableEnabled, rmtPortableEnabled, true);
+                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "portableEnabled",
+                            "Portables enabled", locAttr.portableEnabled(), rmtAttr.portableEnabled(), true);
 
                         if (locAttr.cacheMode() == PARTITIONED) {
                             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictSynchronized",
@@ -1269,7 +1234,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (locTxCfg.isTxSerializableEnabled() != txCfg.isTxSerializableEnabled())
                 throw new IgniteCheckedException("Serializable transactions enabled mismatch " +
-                    "(fix txSerializableEnabled property or set -D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
+                    "(fix txSerializableEnabled property or set -D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
                     "system property) [rmtNodeId=" + rmt.id() +
                     ", locTxSerializableEnabled=" + locTxCfg.isTxSerializableEnabled() +
                     ", rmtTxSerializableEnabled=" + txCfg.isTxSerializableEnabled() + ']');
@@ -1330,7 +1295,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        if (!getBoolean(GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+        if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
             for (ClusterNode n : ctx.discovery().remoteNodes())
                 checkCache(n);
         }
@@ -1358,7 +1323,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        for (IgniteFuture<?> fut : preloadFuts.values())
+        for (IgniteInternalFuture<?> fut : preloadFuts.values())
             ((GridCompoundFuture<Object, Object>)fut).markInitialized();
 
         for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
@@ -1384,20 +1349,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @Override public void onKernalStop(boolean cancel) {
         if (ctx.config().isDaemon())
             return;
-
-        if (!F.isEmpty(cacheMBeans)) {
-            for (ObjectName mb : cacheMBeans) {
-                try {
-                    mBeanSrv.unregisterMBean(mb);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Unregistered cache MBean: " + mb);
-                }
-                catch (JMException e) {
-                    U.error(log, "Failed to unregister cache MBean: " + mb, e);
-                }
-            }
-        }
 
         for (GridCacheAdapter<?, ?> cache : stopSeq) {
             GridCacheContext ctx = cache.context();
@@ -1511,8 +1462,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param order Cache order.
      * @return Compound preload future or {@code null} if order is minimal order found.
      */
-    @Nullable public IgniteFuture<?> orderedPreloadFuture(int order) {
-        Map.Entry<Integer, IgniteFuture<?>> entry = preloadFuts.lowerEntry(order);
+    @Nullable public IgniteInternalFuture<?> orderedPreloadFuture(int order) {
+        Map.Entry<Integer, IgniteInternalFuture<?>> entry = preloadFuts.lowerEntry(order);
 
         return entry == null ? null : entry.getValue();
     }
@@ -1647,6 +1598,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Gets utility cache for atomic data structures.
+     *
+     * @return Utility cache for atomic data structures.
+     */
+    public <K, V> GridCache<K, V> atomicsCache() {
+        return cache(CU.ATOMICS_CACHE_NAME);
+    }
+
+    /**
      * @param name Cache name.
      * @param <K> type of keys.
      * @param <V> type of values.
@@ -1764,13 +1724,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * Callback invoked by deployment manager for whenever a class loader
      * gets undeployed.
      *
-     * @param leftNodeId Left node ID.
      * @param ldr Class loader.
      */
-    public void onUndeployed(@Nullable UUID leftNodeId, ClassLoader ldr) {
+    public void onUndeployed(ClassLoader ldr) {
         if (!ctx.isStopping())
             for (GridCacheAdapter<?, ?> cache : caches.values())
-                cache.onUndeploy(leftNodeId, ldr);
+                cache.onUndeploy(ldr);
     }
 
     /**

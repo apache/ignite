@@ -23,6 +23,8 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
@@ -31,8 +33,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.failover.always.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -50,7 +50,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Size of the test map. */
-    private static final int TEST_MAP_SIZE = 100000;
+    private static final int TEST_MAP_SIZE = 30000;
 
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
@@ -235,7 +235,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             final AtomicBoolean inputExhausted = new AtomicBoolean();
 
-            IgniteCompute comp = compute(master.cluster().forPredicate(workerNodesFilter)).enableAsync();
+            IgniteCompute comp = compute(master.cluster().forPredicate(workerNodesFilter)).withAsync();
 
             for (Integer key : testKeys) {
                 dataChunk.add(key);
@@ -265,7 +265,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
                             try {
                                 taskFut.get(); //if something went wrong - we'll get exception here
                             }
-                            catch (IgniteCheckedException e) {
+                            catch (IgniteException e) {
                                 log.error("Job failed", e);
 
                                 jobFailed.set(true);
@@ -326,7 +326,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             if (!failedWait && !absentKeys.isEmpty()) {
                 // Give some time to preloader.
-                U.sleep(15000);
+                U.sleep(20000);
 
                 absentKeys = findAbsentKeys(runningWorkers.get(0), testKeys);
             }
@@ -402,7 +402,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             final AtomicBoolean inputExhausted = new AtomicBoolean();
 
-            IgniteCompute comp = compute(master.cluster().forPredicate(workerNodesFilter)).enableAsync();
+            IgniteCompute comp = compute(master.cluster().forPredicate(workerNodesFilter)).withAsync();
 
             for (Integer key : testKeys) {
                 ClusterNode mappedNode = master.cluster().mapKeyToNode(CACHE_NAME, key);
@@ -437,7 +437,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
                             try {
                                 taskFut.get(); //if something went wrong - we'll get exception here
                             }
-                            catch (IgniteCheckedException e) {
+                            catch (IgniteException e) {
                                 log.error("Job failed", e);
 
                                 jobFailed.set(true);
@@ -488,7 +488,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
                         try {
                             taskFut.get(); //if something went wrong - we'll get exception here
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (IgniteException e) {
                             log.error("Job failed", e);
 
                             jobFailed.set(true);

@@ -19,11 +19,11 @@ package org.apache.ignite.spi.discovery;
 
 import mx4j.tools.adaptor.http.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.security.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.*;
 import org.apache.ignite.testframework.junits.spi.*;
@@ -46,7 +46,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
     private static final List<DiscoverySpi> spis = new ArrayList<>();
 
     /** */
-    private static final Collection<GridTestResources> spiRsrcs = new ArrayList<>();
+    private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
 
     /** */
     private static long spiStartTime;
@@ -84,7 +84,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
 
                 isAllDiscovered = true;
 
-                for (GridTestResources rscrs : spiRsrcs) {
+                for (IgniteTestResources rscrs : spiRsrcs) {
                     UUID nodeId = rscrs.getNodeId();
 
                     if (!nodeId.equals(spi.getLocalNode().id())) {
@@ -267,7 +267,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
 
             Collection<UUID> nodeIds = new HashSet<>();
 
-            for (GridTestResources rsrc : spiRsrcs) {
+            for (IgniteTestResources rsrc : spiRsrcs) {
                 nodeIds.add(rsrc.getNodeId());
             }
 
@@ -299,7 +299,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
      */
     public void testPing() {
         for (DiscoverySpi spi : spis) {
-            for (GridTestResources rscrs : spiRsrcs) {
+            for (IgniteTestResources rscrs : spiRsrcs) {
                 UUID nodeId = rscrs.getNodeId();
 
                 if (spi.pingNode(nodeId))
@@ -360,7 +360,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
             for (int i = 0; i < getSpiCount(); i++) {
                 DiscoverySpi spi = getSpi(i);
 
-                GridTestResources rsrcMgr = new GridTestResources(getMBeanServer(i));
+                IgniteTestResources rsrcMgr = new IgniteTestResources(getMBeanServer(i));
 
                 rsrcMgr.inject(spi);
 
@@ -380,11 +380,11 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
                 });
 
                 spi.setDataExchange(new DiscoverySpiDataExchange() {
-                    @Override public List<Object> collect(UUID nodeId) {
-                        return new LinkedList<>();
+                    @Override public Map<Integer, Object> collect(UUID nodeId) {
+                        return new HashMap<Integer, Object>();
                     }
 
-                    @Override public void onExchange(List<Object> data) {
+                    @Override public void onExchange(Map<Integer, Object> data) {
                         // No-op.
                     }
                 });
@@ -453,7 +453,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
             spi.spiStop();
         }
 
-        for (GridTestResources rscrs : spiRsrcs) {
+        for (IgniteTestResources rscrs : spiRsrcs) {
             rscrs.stopThreads();
         }
 

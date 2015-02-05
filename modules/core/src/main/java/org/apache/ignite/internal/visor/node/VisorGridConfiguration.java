@@ -19,9 +19,9 @@ package org.apache.ignite.internal.visor.node;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.cache.*;
 import org.apache.ignite.internal.visor.streamer.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -90,7 +90,7 @@ public class VisorGridConfiguration implements Serializable {
      * @param g Grid.
      * @return Fill data transfer object with node configuration data.
      */
-    public VisorGridConfiguration from(GridEx g) {
+    public VisorGridConfiguration from(IgniteEx g) {
         assert g != null;
 
         IgniteConfiguration c = g.configuration();

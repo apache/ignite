@@ -103,7 +103,7 @@ class VisorCacheCompactCommand {
             case Some(name) => name
         }
 
-        val prj = if (node.isDefined) grid.forNode(node.get) else grid.forCache(cacheName)
+        val prj = if (node.isDefined) grid.forNode(node.get) else grid.forCacheNodes(cacheName)
 
         if (prj.nodes().isEmpty) {
             val msg =

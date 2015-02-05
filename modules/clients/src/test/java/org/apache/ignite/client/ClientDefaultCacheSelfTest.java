@@ -17,18 +17,22 @@
 
 package org.apache.ignite.client;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import java.io.*;
+import java.net.*;
+import java.nio.charset.*;
 import java.util.*;
 
-import static org.apache.ignite.client.GridClientProtocol.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.client.GridClientProtocol.*;
 
 /**
  * Tests that client is able to connect to a grid with only default cache enabled.
@@ -52,9 +56,18 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
     /** Http port. */
     private static final int HTTP_PORT = 8081;
 
+    /** Url address to send HTTP request. */
+    private static final String TEST_URL = "http://" + HOST + ":" + HTTP_PORT + "/gridgain";
+
+    /** Used to sent request charset. */
+    private static final String CHARSET = StandardCharsets.UTF_8.name();
+
+    /** Name of node local cache. */
+    private static final String LOCAL_CACHE = "local";
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(GG_JETTY_PORT, String.valueOf(HTTP_PORT));
+        System.setProperty(IGNITE_JETTY_PORT, String.valueOf(HTTP_PORT));
 
         startGrid();
     }
@@ -63,7 +76,7 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         stopGrid();
 
-        System.clearProperty (GG_JETTY_PORT);
+        System.clearProperty(IGNITE_JETTY_PORT);
     }
 
     /** {@inheritDoc} */
@@ -89,7 +102,15 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setCacheConfiguration(defaultCacheConfiguration());
+        CacheConfiguration cLocal = new CacheConfiguration();
+
+        cLocal.setName(LOCAL_CACHE);
+
+        cLocal.setCacheMode(CacheMode.LOCAL);
+
+        cLocal.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+        cfg.setCacheConfiguration(defaultCacheConfiguration(), cLocal);
 
         return cfg;
     }
@@ -132,6 +153,34 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
         return srvs;
     }
 
+    /*
+     * Send HTTP request to Jetty server of node and process result.
+     *
+     * @param query Send query parameters.
+     * @return Processed response string.
+     */
+    private String sendHttp(String query) {
+        String res = "No result";
+
+        try {
+            URLConnection connection = new URL(TEST_URL + "?" + query).openConnection();
+
+            connection.setRequestProperty("Accept-Charset", CHARSET);
+
+            BufferedReader r = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+
+            res = r.readLine();
+
+            r.close();
+        }
+        catch (IOException e) {
+            error("Failed to send HTTP request: " + TEST_URL + "?" + query, e);
+        }
+
+        // Cut node id from response.
+        return res.substring(res.indexOf("\"response\""));
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -152,5 +201,22 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
         finally {
             GridClientFactory.stopAll();
         }
+    }
+
+    /**
+     * Json format string in cache should not transform to Json object on get request.
+     */
+    public void testSkipString2JsonTransformation() {
+        // Put to cache JSON format string value.
+        assertEquals("Incorrect query response", "\"response\":true,\"sessionToken\":\"\",\"successStatus\":0}",
+            sendHttp("cmd=put&cacheName=" + LOCAL_CACHE +
+                "&key=a&val=%7B%22v%22%3A%22my%20Value%22%2C%22t%22%3A1422559650154%7D"));
+
+        // Escape '\' symbols disappear from response string on transformation to JSON object.
+        assertEquals(
+            "Incorrect query response",
+            "\"response\":\"{\\\"v\\\":\\\"my Value\\\",\\\"t\\\":1422559650154}\"," +
+                "\"sessionToken\":\"\",\"successStatus\":0}",
+            sendHttp("cmd=get&cacheName=" + LOCAL_CACHE + "&key=a"));
     }
 }

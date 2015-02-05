@@ -20,21 +20,21 @@ package org.apache.ignite.client;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.client.balancer.*;
+import org.apache.ignite.client.impl.*;
+import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.client.balancer.*;
-import org.apache.ignite.client.impl.*;
-import org.apache.ignite.client.ssl.*;
-import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 import org.junit.*;
@@ -305,7 +305,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
 
             final String val = "v" + i;
 
-            IgniteFuture<?> f = multithreadedAsync(new Callable<Object>() {
+            IgniteInternalFuture<?> f = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     l.await();
 
@@ -333,7 +333,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
 
         final ConcurrentLinkedQueue<String> execQueue = new ConcurrentLinkedQueue<>();
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override
             public void run() {
                 long processed;
@@ -412,7 +412,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
 
         assertEquals(NODES_CNT, client.compute().refreshTopology(false, false).size());
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @SuppressWarnings("OverlyStrongTypeCast")
             @Override public void run() {
                 try {
@@ -497,7 +497,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
         }
 
         for (Ignite g : gridMap.values())
-            g.cache(PARTITIONED_CACHE_NAME).clearAll();
+            g.cache(PARTITIONED_CACHE_NAME).clear();
     }
 
     /**
@@ -506,7 +506,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
     private void printAffinityState(Iterable<Ignite> grids) {
         for (Ignite g : grids) {
             GridAffinityAssignmentCache affCache = getFieldValue(
-                ((GridKernal)g).internalCache(PARTITIONED_CACHE_NAME).context().affinity(),
+                ((IgniteKernal)g).internalCache(PARTITIONED_CACHE_NAME).context().affinity(),
                 "aff");
 
             CacheAffinityFunction aff = getFieldValue(affCache, "aff");
@@ -572,8 +572,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
         private int gridSize;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg)
-            throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             this.gridSize = gridSize;
@@ -592,7 +591,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public String reduce(List<ComputeJobResult> results) {
             int sum = 0;
 
             String locNodeId = null;

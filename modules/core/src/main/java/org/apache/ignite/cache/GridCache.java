@@ -19,9 +19,10 @@ package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.datastructures.*;
-import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
@@ -42,11 +43,6 @@ import java.util.*;
  * <li>
  *     Method {@link #affinity()} provides {@link org.apache.ignite.cache.affinity.CacheAffinityFunction} service for information on
  *     data partitioning and mapping keys to grid nodes responsible for caching those keys.
- * </li>
- * <li>
- *     Method {@link #dataStructures()} provides {@link org.apache.ignite.cache.datastructures.CacheDataStructures} service for
- *     creating and working with distributed concurrent data structures, such as
- *     {@link org.apache.ignite.cache.datastructures.CacheAtomicLong}, {@link org.apache.ignite.cache.datastructures.CacheAtomicReference}, {@link org.apache.ignite.cache.datastructures.CacheQueue}, etc.
  * </li>
  * <li>
  *  Methods like {@code 'tx{Un}Synchronize(..)'} witch allow to get notifications for transaction state changes.
@@ -102,19 +98,18 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
     public CacheAffinity<K> affinity();
 
     /**
-     * Gets data structures service to provide a gateway for creating various
-     * distributed data structures similar in APIs to {@code java.util.concurrent} package.
+     * Gets metrics (statistics) for this cache.
      *
-     * @return Cache data structures service.
+     * @return Cache metrics.
      */
-    public CacheDataStructures dataStructures();
+    public CacheMetrics metrics();
 
     /**
      * Gets metrics (statistics) for this cache.
      *
      * @return Cache metrics.
      */
-    public CacheMetrics metrics();
+    public CacheMetricsMXBean mxBean();
 
     /**
      * Gets size (in bytes) of all entries swapped to disk.
@@ -231,7 +226,7 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      *      {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method.
      * @return Future to be completed whenever loading completes.
      */
-    public IgniteFuture<?> loadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, long ttl, @Nullable Object... args);
+    public IgniteInternalFuture<?> loadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, long ttl, @Nullable Object... args);
 
     /**
      * Gets a random entry out of cache. In the worst cache scenario this method
@@ -269,10 +264,5 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      * <p>
      * @return Future that will be completed when preloading is finished.
      */
-    public IgniteFuture<?> forceRepartition();
-
-    /**
-     * Resets metrics for current cache.
-     */
-    public void resetMetrics();
+    public IgniteInternalFuture<?> forceRepartition();
 }

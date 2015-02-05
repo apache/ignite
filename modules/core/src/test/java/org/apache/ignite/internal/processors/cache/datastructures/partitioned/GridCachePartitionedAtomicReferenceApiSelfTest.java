@@ -22,26 +22,21 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  *  AtomicReference basic tests.
  */
 public class GridCachePartitionedAtomicReferenceApiSelfTest extends GridCacheAtomicReferenceApiSelfAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
+    @Override protected CacheMode atomicsCacheMode() {
+        return PARTITIONED;
+    }
 
-        // Default cache configuration.
-        CacheConfiguration cacheCfg = getCacheConfiguration();
+    /** {@inheritDoc} */
+    @Override protected IgniteAtomicConfiguration atomicConfiguration() {
+        IgniteAtomicConfiguration cfg = super.atomicConfiguration();
 
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setBackups(1);
-        cacheCfg.setPreloadMode(SYNC);
-
-        cfg.setCacheConfiguration(cacheCfg);
+        cfg.setBackups(1);
 
         return cfg;
     }

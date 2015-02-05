@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.fs.common.*;
 import org.jetbrains.annotations.*;
 
@@ -38,7 +38,7 @@ public interface GridGgfsServerHandler {
      * @return Future that will be completed when response is ready or {@code null} if no
      *      response is required.
      */
-    @Nullable public IgniteFuture<GridGgfsMessage> handleAsync(GridGgfsClientSession ses,
+    @Nullable public IgniteInternalFuture<GridGgfsMessage> handleAsync(GridGgfsClientSession ses,
         GridGgfsMessage msg, DataInput in);
 
     /**

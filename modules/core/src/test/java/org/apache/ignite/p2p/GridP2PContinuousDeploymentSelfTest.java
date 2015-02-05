@@ -25,10 +25,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 
 /**
  * Tests for continuous deployment with cache and changing topology.
@@ -44,10 +44,10 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
     private static final String GRID_NAME = "grid-no-cache";
 
     /** First test task name. */
-    private static final String TEST_TASK_1 = "org.gridgain.grid.tests.p2p.GridP2PContinuousDeploymentTask1";
+    private static final String TEST_TASK_1 = "org.apache.ignite.tests.p2p.GridP2PContinuousDeploymentTask1";
 
     /** Second test task name. */
-    private static final String TEST_TASK_2 = "org.gridgain.grid.tests.p2p.GridP2PContinuousDeploymentTask2";
+    private static final String TEST_TASK_2 = "org.apache.ignite.tests.p2p.GridP2PContinuousDeploymentTask2";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

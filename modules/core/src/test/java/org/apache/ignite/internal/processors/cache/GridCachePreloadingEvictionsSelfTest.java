@@ -23,12 +23,12 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -37,8 +37,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
@@ -113,7 +113,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
 
             int oldSize = cache1.size();
 
-            IgniteFuture fut = multithreadedAsync(
+            IgniteInternalFuture fut = multithreadedAsync(
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
                         startLatch.await();
@@ -184,10 +184,10 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @param ignite1 Grid 1.
      * @param ignite2 Grid 2.
      * @param oldSize Old size, stable size should be .
-     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
     private void sleepUntilCashesEqualize(final Ignite ignite1, final Ignite ignite2, final int oldSize)
-        throws IgniteInterruptedException {
+        throws IgniteInterruptedCheckedException {
         info("Sleeping...");
 
         assertTrue(GridTestUtils.waitForCondition(new PA() {
@@ -205,7 +205,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @return Random entry from cache.
      */
     @Nullable private CacheEntry<Integer, Object> randomEntry(Ignite g) {
-        GridKernal g1 = (GridKernal)g;
+        IgniteKernal g1 = (IgniteKernal)g;
 
         return g1.<Integer, Object>internalCache().randomEntry();
     }
@@ -216,8 +216,8 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     private void checkCachesConsistency(Ignite ignite1, Ignite ignite2) throws Exception {
-        GridKernal g1 = (GridKernal) ignite1;
-        GridKernal g2 = (GridKernal) ignite2;
+        IgniteKernal g1 = (IgniteKernal) ignite1;
+        IgniteKernal g2 = (IgniteKernal) ignite2;
 
         GridCacheAdapter<Integer, Object> cache1 = g1.internalCache();
         GridCacheAdapter<Integer, Object> cache2 = g2.internalCache();

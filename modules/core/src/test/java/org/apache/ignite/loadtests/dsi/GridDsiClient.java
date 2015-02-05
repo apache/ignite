@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
 
@@ -102,7 +102,7 @@ public class GridDsiClient implements Callable {
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "InfiniteLoopStatement"})
     @Nullable @Override public Object call() throws Exception {
-        IgniteCompute comp = g.compute(g.cluster().forPredicate(serverNode())).enableAsync();
+        IgniteCompute comp = g.compute(g.cluster().forPredicate(serverNode())).withAsync();
 
         while (!finish.get()) {
             try {
@@ -140,7 +140,7 @@ public class GridDsiClient implements Callable {
                 if (res2 != null)
                     srvStats = res2;
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 e.printStackTrace();
             }
         }

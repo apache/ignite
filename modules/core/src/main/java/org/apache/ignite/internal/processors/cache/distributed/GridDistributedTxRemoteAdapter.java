@@ -19,25 +19,27 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 
 /**
  * Transaction created by system implicitly on remote nodes.
@@ -358,7 +360,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<IgniteTxEx<K, V>> prepareAsync() {
+    @Override public IgniteInternalFuture<IgniteInternalTx<K, V>> prepareAsync() {
         assert false;
         return null;
     }
@@ -508,24 +510,37 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                         if (explicitVer == null)
                                             explicitVer = writeVersion(); // Force write version to be used.
 
-                                        GridDrResolveResult<V> drRes = cacheCtx.dr().resolveTx(cached,
-                                            txEntry,
-                                            explicitVer,
-                                            op,
-                                            val,
-                                            valBytes,
-                                            txEntry.ttl(),
-                                            txEntry.drExpireTime());
+                                        boolean drNeedResolve =
+                                            cacheCtx.conflictNeedResolve(cached.version(), explicitVer);
 
-                                        if (drRes != null) {
-                                            op = drRes.operation();
-                                            val = drRes.value();
-                                            valBytes = drRes.valueBytes();
+                                        if (drNeedResolve) {
+                                            IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContextImpl<K, V>>
+                                                drRes = conflictResolve(op, txEntry.key(), val, valBytes,
+                                                txEntry.ttl(), txEntry.drExpireTime(), explicitVer, cached);
 
-                                            if (drRes.isMerge())
+                                            assert drRes != null;
+
+                                            GridCacheVersionConflictContextImpl<K, V> drCtx = drRes.get2();
+
+                                            if (drCtx.isUseOld())
+                                                op = NOOP;
+                                            else if (drCtx.isUseNew()) {
+                                                txEntry.ttl(drCtx.ttl());
+
+                                                if (drCtx.newEntry().dataCenterId() != cacheCtx.dataCenterId())
+                                                    txEntry.drExpireTime(drCtx.expireTime());
+                                                else
+                                                    txEntry.drExpireTime(-1L);
+                                            }
+                                            else if (drCtx.isMerge()) {
+                                                op = drRes.get1();
+                                                val = drCtx.mergeValue();
+                                                valBytes = null;
                                                 explicitVer = writeVersion();
-                                            else if (op == NOOP)
-                                                txEntry.ttl(-1L);
+
+                                                txEntry.ttl(drCtx.ttl());
+                                                txEntry.drExpireTime(-1L);
+                                            }
                                         }
                                         else
                                             // Nullify explicit version so that innerSet/innerRemove will work as usual.
@@ -703,11 +718,11 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<IgniteTx> commitAsync() {
+    @Override public IgniteInternalFuture<IgniteInternalTx> commitAsync() {
         try {
             commit();
 
-            return new GridFinishedFutureEx<IgniteTx>(this);
+            return new GridFinishedFutureEx<IgniteInternalTx>(this);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFutureEx<>(e);
@@ -734,10 +749,10 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<IgniteTx> rollbackAsync() {
+    @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
         rollback();
 
-        return new GridFinishedFutureEx<IgniteTx>(this);
+        return new GridFinishedFutureEx<IgniteInternalTx>(this);
     }
 
     /** {@inheritDoc} */

@@ -19,14 +19,13 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import javax.cache.configuration.*;
 import java.util.concurrent.*;
@@ -188,7 +187,9 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     public void testSingleLockPut() throws Exception {
         IgniteCache<Integer, String> near = jcache();
 
-        near.lock(1).lock();
+        Lock lock = near.lock(1);
+
+        lock.lock();
 
         try {
             near.put(1, "1");
@@ -200,7 +201,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
             assertEquals("1", one);
         }
         finally {
-            near.lock(1).unlock();
+            lock.unlock();
         }
     }
 
@@ -224,22 +225,24 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
             assertNull(near.localPeek(1));
             assertNull(dht().peek(1));
 
-            assertTrue(near.isLocked(1));
-            assertTrue(near.isLockedByThread(1));
+            assertTrue(near.isLocalLocked(1, false));
+            assertTrue(near.isLocalLocked(1, true));
         }
         finally {
-            near.lock(1).unlock();
+            lock.unlock();
         }
 
-        assertFalse(near.isLocked(1));
-        assertFalse(near.isLockedByThread(1));
+        assertFalse(near.isLocalLocked(1, false));
+        assertFalse(near.isLocalLocked(1, true));
     }
 
     /** @throws Exception If failed. */
     public void testSingleLockReentry() throws Exception {
         IgniteCache<Integer, String> near = jcache();
 
-        near.lock(1).lock();
+        Lock lock = near.lock(1);
+
+        lock.lock();
 
         try {
             near.put(1, "1");
@@ -247,10 +250,10 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
             assertEquals("1", near.localPeek(1));
             assertEquals("1", dht().peek(1));
 
-            assertTrue(near.isLocked(1));
-            assertTrue(near.isLockedByThread(1));
+            assertTrue(near.isLocalLocked(1, false));
+            assertTrue(near.isLocalLocked(1, true));
 
-            near.lock(1).lock(); // Reentry.
+            lock.lock(); // Reentry.
 
             try {
                 assertEquals("1", near.get(1));
@@ -259,22 +262,22 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
                 assertNull(near.localPeek(1));
                 assertNull(dht().peek(1));
 
-                assertTrue(near.isLocked(1));
-                assertTrue(near.isLockedByThread(1));
+                assertTrue(near.isLocalLocked(1, false));
+                assertTrue(near.isLocalLocked(1, true));
             }
             finally {
-                near.lock(1).unlock();
+                lock.unlock();
             }
 
-            assertTrue(near.isLocked(1));
-            assertTrue(near.isLockedByThread(1));
+            assertTrue(near.isLocalLocked(1, false));
+            assertTrue(near.isLocalLocked(1, true));
         }
         finally {
-            near.lock(1).unlock();
+            lock.unlock();
         }
 
-        assertFalse(near.isLocked(1));
-        assertFalse(near.isLockedByThread(1));
+        assertFalse(near.isLocalLocked(1, false));
+        assertFalse(near.isLocalLocked(1, true));
     }
 
     /** @throws Exception If failed. */

@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -83,7 +82,7 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
     private static class TestTask implements ComputeTask<Void, String> {
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Void arg) throws IgniteCheckedException {
+            @Nullable Void arg) {
             return F.asMap(new ComputeJobAdapter() {
                 @IgniteTaskSessionResource
                 private ComputeTaskSession ses;
@@ -95,13 +94,12 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
-            throws IgniteCheckedException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
             return WAIT;
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public String reduce(List<ComputeJobResult> results) {
             return F.first(results).getData();
         }
     }

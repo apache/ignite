@@ -19,12 +19,20 @@ package org.apache.ignite.client.integration;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.client.*;
+import org.apache.ignite.client.balancer.*;
+import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
@@ -32,13 +40,6 @@ import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.client.*;
-import org.apache.ignite.client.balancer.*;
-import org.apache.ignite.client.ssl.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -398,7 +399,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testInvalidateFlag() throws Exception {
-        GridEx g0 = grid(0);
+        IgniteEx g0 = grid(0);
 
         GridCache<String, String> cache = g0.cache(PARTITIONED_CACHE_NAME);
 
@@ -704,8 +705,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         private int gridSize;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg)
-            throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             this.gridSize = gridSize;
@@ -732,7 +732,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public String reduce(List<ComputeJobResult> results) {
             int sum = 0;
 
             String locNodeId = null;
@@ -782,7 +782,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
             if (!(o instanceof GridDistributedLockRequest))
                 return;
 
-            GridKernal g = (GridKernal)G.ignite(ignite.configuration().getNodeId());
+            IgniteKernal g = (IgniteKernal)G.ignite(ignite.configuration().getNodeId());
 
             GridCacheContext<Object, Object> cacheCtx = g.internalCache(REPLICATED_ASYNC_CACHE_NAME).context();
 
@@ -790,7 +790,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
             GridCacheVersion v = ((GridCacheVersionable)o).version();
 
-            IgniteTxEx t = tm.tx(v);
+            IgniteInternalTx t = tm.tx(v);
 
             if (t.hasWriteKey(cacheCtx.txKey("x1")))
                 assertFalse("Invalid tx flags: " + t, t.syncCommit());

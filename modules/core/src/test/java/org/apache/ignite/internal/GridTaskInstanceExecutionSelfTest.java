@@ -19,8 +19,8 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -52,7 +52,7 @@ public class GridTaskInstanceExecutionSelfTest extends GridCommonAbstractTest {
         assert task.getState() != null;
         assert task.getState() == testState;
 
-        IgniteCompute comp = ignite.compute().enableAsync();
+        IgniteCompute comp = ignite.compute().withAsync();
 
         assertNull(comp.execute(task,  "testArg"));
 
@@ -99,7 +99,7 @@ public class GridTaskInstanceExecutionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws IgniteCheckedException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) {
             log.info("Task result state: " + state);
 
             assert state != null;
@@ -109,7 +109,7 @@ public class GridTaskInstanceExecutionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             log.info("Task reduce state: " + state);
 
             assert state != null;

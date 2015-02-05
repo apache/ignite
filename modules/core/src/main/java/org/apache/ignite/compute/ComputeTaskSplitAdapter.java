@@ -19,9 +19,9 @@ package org.apache.ignite.compute;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
 
 import java.util.*;
 
@@ -91,22 +91,21 @@ public abstract class ComputeTaskSplitAdapter<T, R> extends ComputeTaskAdapter<T
      *      available grid nodes. Note that if number of jobs is greater than number of
      *      grid nodes (i.e, grid size), the grid nodes will be reused and some jobs
      *      will end up on the same grid nodes.
-     * @throws IgniteCheckedException Thrown in case of any errors.
+     * @throws IgniteException Thrown in case of any errors.
      *
      * @see ComputeTask#map(List, Object)
      */
-    protected abstract Collection<? extends ComputeJob> split(int gridSize, T arg) throws IgniteCheckedException;
+    protected abstract Collection<? extends ComputeJob> split(int gridSize, T arg) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public final Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, T arg)
-        throws IgniteCheckedException {
+    @Override public final Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, T arg) {
         assert subgrid != null;
         assert !subgrid.isEmpty();
 
         Collection<? extends ComputeJob> jobs = split(subgrid.size(), arg);
 
         if (F.isEmpty(jobs))
-            throw new IgniteCheckedException("Split returned no jobs.");
+            throw new IgniteException("Split returned no jobs.");
 
         Map<ComputeJob, ClusterNode> map = U.newHashMap(jobs.size());
 
@@ -114,7 +113,7 @@ public abstract class ComputeTaskSplitAdapter<T, R> extends ComputeTaskAdapter<T
             ClusterNode old = map.put(job, balancer.getBalancedNode(job, null));
 
             if (old != null)
-                throw new IgniteCheckedException("Failed to map task (same job instance is being mapped more than once) " +
+                throw new IgniteException("Failed to map task (same job instance is being mapped more than once) " +
                     "[job=" + job + ", task=" + this + ']');
         }
 

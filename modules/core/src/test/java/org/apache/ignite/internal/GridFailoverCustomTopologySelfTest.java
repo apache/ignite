@@ -84,7 +84,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
                 ComputeTaskFuture<String> fut;
 
                 synchronized(mux){
-                    IgniteCompute comp = ignite1.compute().enableAsync();
+                    IgniteCompute comp = ignite1.compute().withAsync();
 
                     comp.execute(JobTask.class, null);
 
@@ -99,7 +99,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
                 info("Task result: " + res);
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 info("Got unexpected grid exception: " + e);
             }
 
@@ -127,7 +127,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
             assert ignite != null;
 
             UUID locNodeId = ignite.configuration().getNodeId();
@@ -151,7 +151,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
                 /** {@inheritDoc} */
                 @SuppressWarnings("NakedNotify")
-                @Override public Serializable execute() throws IgniteCheckedException {
+                @Override public Serializable execute() {
                     assert ignite != null;
 
                     UUID nodeId = ignite.configuration().getNodeId();
@@ -179,7 +179,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public String reduce(List<ComputeJobResult> results) {
             assert results.size() == 1;
 
             return results.get(0).getData();

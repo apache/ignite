@@ -17,20 +17,19 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.deployment.*;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.spi.*;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
  * Redundancy for URI deployment test
  */
-@GridSpiTest(spi = GridUriDeploymentSpi.class, group = "Deployment SPI")
+@GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
 public class GridUriDeploymentMd5CheckSelfTest extends GridUriDeploymentAbstractSelfTest {
     /**
      * Used to count number of unit undeployments.

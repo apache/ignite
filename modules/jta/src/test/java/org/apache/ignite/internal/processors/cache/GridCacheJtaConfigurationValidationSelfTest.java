@@ -66,8 +66,9 @@ public class GridCacheJtaConfigurationValidationSelfTest extends GridCommonAbstr
      *
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class TestTxLookup implements GridCacheTmLookup {
-        @Nullable @Override public TransactionManager getTm() throws IgniteCheckedException {
+    public static class TestTxLookup implements CacheTmLookup {
+        /** {@inheritDoc} */
+        @Nullable @Override public TransactionManager getTm() {
             return null;
         }
     }

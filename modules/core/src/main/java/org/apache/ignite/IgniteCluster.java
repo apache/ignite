@@ -17,9 +17,10 @@
 
 package org.apache.ignite;
 
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -108,7 +109,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * <ul>
      * <li>For local caches it returns only local node mapped to all keys.</li>
      * <li>
-     *      For fully replicated caches, {@link org.apache.ignite.cache.affinity.CacheAffinityFunction} is
+     *      For fully replicated caches, {@link CacheAffinityFunction} is
      *      used to determine which keys are mapped to which groups of nodes.
      * </li>
      * <li>For partitioned caches, the returned map represents node-to-key affinity.</li>
@@ -117,10 +118,10 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @param cacheName Cache name, if {@code null}, then default cache instance is used.
      * @param keys Cache keys to map to nodes.
      * @return Map of nodes to cache keys or empty map if there are no alive nodes for this cache.
-     * @throws IgniteCheckedException If failed to map cache keys.
+     * @throws IgniteException If failed to map cache keys.
      */
     public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
-        @Nullable Collection<? extends K> keys) throws IgniteCheckedException;
+        @Nullable Collection<? extends K> keys) throws IgniteException;
 
     /**
      * This method provides ability to detect which cache keys are mapped to which nodes
@@ -131,7 +132,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * <ul>
      * <li>For local caches it returns only local node ID.</li>
      * <li>
-     *      For fully replicated caches first node ID returned by {@link org.apache.ignite.cache.affinity.CacheAffinityFunction}
+     *      For fully replicated caches first node ID returned by {@link CacheAffinityFunction}
      *      is returned.
      * </li>
      * <li>For partitioned caches, the returned node ID is the primary node for the key.</li>
@@ -141,9 +142,9 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @param key Cache key to map to a node.
      * @return Primary node for the key or {@code null} if cache with given name
      *      is not present in the grid.
-     * @throws IgniteCheckedException If failed to map key.
+     * @throws IgniteException If failed to map key.
      */
-    @Nullable public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws IgniteCheckedException;
+    @Nullable public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws IgniteException;
 
     /**
      * Starts one or more nodes on remote host(s).
@@ -170,14 +171,14 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Collection of tuples, each containing host name, result (success of failure)
      *      and error message (if any).
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
     @IgniteAsyncSupported
     public Collection<GridTuple3<String, Boolean, String>> startNodes(File file,
         boolean restart,
         int timeout,
         int maxConn)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Starts one or more nodes on remote host(s).
@@ -234,7 +235,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *             <td><b>ggHome</b></td>
      *             <td>String</td>
      *             <td>
-     *                 Path to GridGain installation folder. If not defined, GRIDGAIN_HOME
+     *                 Path to GridGain installation folder. If not defined, IGNITE_HOME
      *                 environment variable must be set on remote hosts.
      *             </td>
      *         </tr>
@@ -275,7 +276,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Collection of tuples, each containing host name, result (success of failure)
      *      and error message (if any).
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
     @IgniteAsyncSupported
     public Collection<GridTuple3<String, Boolean, String>> startNodes(Collection<Map<String, Object>> hosts,
@@ -283,7 +284,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
         boolean restart,
         int timeout,
         int maxConn)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Stops nodes satisfying optional set of predicates.
@@ -292,9 +293,9 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * stopping node. If you have other applications running in the same JVM along with GridGain,
      * those applications will be stopped as well.
      *
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    public void stopNodes() throws IgniteCheckedException;
+    public void stopNodes() throws IgniteException;
 
     /**
      * Stops nodes defined by provided IDs.
@@ -304,30 +305,30 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * those applications will be stopped as well.
      *
      * @param ids IDs defining nodes to stop.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    public void stopNodes(Collection<UUID> ids) throws IgniteCheckedException;
+    public void stopNodes(Collection<UUID> ids) throws IgniteException;
 
     /**
      * Restarts nodes satisfying optional set of predicates.
      * <p>
      * <b>NOTE:</b> this command only works for grid nodes started with GridGain
-     * {@code ggstart.sh} or {@code ggstart.bat} scripts.
+     * {@code ignite.sh} or {@code ignite.bat} scripts.
      *
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    public void restartNodes() throws IgniteCheckedException;
+    public void restartNodes() throws IgniteException;
 
     /**
      * Restarts nodes defined by provided IDs.
      * <p>
      * <b>NOTE:</b> this command only works for grid nodes started with GridGain
-     * {@code ggstart.sh} or {@code ggstart.bat} scripts.
+     * {@code ignite.sh} or {@code ignite.bat} scripts.
      *
      * @param ids IDs defining nodes to restart.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    public void restartNodes(Collection<UUID> ids) throws IgniteCheckedException;
+    public void restartNodes(Collection<UUID> ids) throws IgniteException;
 
     /**
      * Resets local I/O, job, and task execution metrics.
@@ -335,5 +336,5 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public void resetMetrics();
 
     /** {@inheritDoc} */
-    public IgniteCluster enableAsync();
+    public IgniteCluster withAsync();
 }

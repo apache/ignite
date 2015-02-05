@@ -21,10 +21,10 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.messaging.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -55,10 +55,10 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     private static final int MSG_CNT = 3;
 
     /** */
-    private static final String TOPIC_CLS_NAME = "org.gridgain.grid.tests.p2p.GridTestMessageTopic";
+    private static final String TOPIC_CLS_NAME = "org.apache.ignite.tests.p2p.GridTestMessageTopic";
 
     /** */
-    private static final String LSNR_CLS_NAME = "org.gridgain.grid.tests.p2p.GridTestMessageListener";
+    private static final String LSNR_CLS_NAME = "org.apache.ignite.tests.p2p.GridTestMessageListener";
 
     /** */
     private static boolean include;

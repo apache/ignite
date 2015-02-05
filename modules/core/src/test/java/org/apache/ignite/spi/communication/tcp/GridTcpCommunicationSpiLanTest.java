@@ -19,10 +19,11 @@ package org.apache.ignite.spi.communication.tcp;
 
 import mx4j.tools.adaptor.http.*;
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.communication.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.*;
@@ -48,7 +49,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
     private AtomicLong msgId = new AtomicLong();
 
     /** SPI resource. */
-    private GridTestResources spiRsrc;
+    private IgniteTestResources spiRsrc;
 
     /** SPI */
     private TcpCommunicationSpi spi;
@@ -165,7 +166,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
 
         long start = System.currentTimeMillis();
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     while (cntr.getAndIncrement() < msgCnt) {
@@ -176,7 +177,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
                         spi.sendMessage(remoteNode, msg);
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     fail("Unable to send message: " + e.getMessage());
                 }
             }
@@ -208,7 +209,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
     @Override protected void beforeTestsStarted() throws Exception {
         spi = createSpi();
 
-        spiRsrc = new GridTestResources(getMBeanServer());
+        spiRsrc = new IgniteTestResources(getMBeanServer());
 
         locNode = new GridTestNode(spiRsrc.getNodeId());
 
@@ -232,7 +233,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
 
         spi.onContextInitialized(ctx);
 
-        GridTestResources remoteRsrc = new GridTestResources();
+        IgniteTestResources remoteRsrc = new IgniteTestResources();
 
         remoteNode = new GridTestNode(remoteRsrc.getNodeId());
 

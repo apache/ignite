@@ -1,10 +1,10 @@
-GridGain SSH Module
--------------------
+Apache Ignite SSH Module
+------------------------
 
-GridGain SSH module provides capabilities to start GridGain nodes on remote machines via SSH.
+Apache Ignite SSH module provides capabilities to start Apache Ignite nodes on remote machines via SSH.
 
-To enable SSH module when starting a standalone node, move 'optional/gridgain-ssh' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+To enable SSH module when starting a standalone node, move 'optional/ignite-ssh' folder to
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing SSH Module In Maven Project
@@ -22,8 +22,8 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-ssh</artifactId>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-ssh</artifactId>
             <version>${ignite.version}</version>
         </dependency>
         ...

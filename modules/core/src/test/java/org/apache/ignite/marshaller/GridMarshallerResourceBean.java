@@ -20,10 +20,10 @@ package org.apache.ignite.marshaller;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.managers.loadbalancer.*;
 import org.apache.ignite.logger.java.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.thread.*;
-import org.apache.ignite.internal.managers.loadbalancer.*;
 import org.springframework.context.*;
 import org.springframework.context.support.*;
 

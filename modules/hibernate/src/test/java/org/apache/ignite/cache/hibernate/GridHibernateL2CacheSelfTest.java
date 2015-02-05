@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -45,6 +44,8 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.cache.hibernate.GridHibernateRegionFactory.*;
 import static org.hibernate.cfg.Environment.*;
+
+import org.apache.ignite.cache.hibernate.GridHibernateL2CacheSelfTest.Entity;
 
 /**
  *
@@ -1918,6 +1919,6 @@ public class GridHibernateL2CacheSelfTest extends GridCommonAbstractTest {
         sesFactory2 = null;
 
         for (GridCache<?, ?> cache : grid(0).caches())
-            cache.globalClearAll();
+            cache.clear();
     }
 }

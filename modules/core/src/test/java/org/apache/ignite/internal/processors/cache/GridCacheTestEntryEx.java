@@ -19,11 +19,12 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.dr.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
@@ -401,7 +402,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public V innerGet(@Nullable IgniteTxEx<K, V> tx,
+    @Override public V innerGet(@Nullable IgniteInternalTx<K, V> tx,
         boolean readSwap,
         boolean readThrough,
         boolean failFast,
@@ -422,7 +423,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public GridCacheUpdateTxResult<V> innerSet(@Nullable IgniteTxEx<K, V> tx, UUID evtNodeId, UUID affNodeId,
+    @Override public GridCacheUpdateTxResult<V> innerSet(@Nullable IgniteInternalTx<K, V> tx, UUID evtNodeId, UUID affNodeId,
         @Nullable V val, @Nullable byte[] valBytes, boolean writeThrough, boolean retval, long ttl,
         boolean evt, boolean metrics, long topVer, IgnitePredicate<CacheEntry<K, V>>[] filter, GridDrType drType,
         long drExpireTime, @Nullable GridCacheVersion drVer, UUID subjId, String taskName) throws IgniteCheckedException,
@@ -486,7 +487,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public GridCacheUpdateTxResult<V> innerRemove(@Nullable IgniteTxEx<K, V> tx, UUID evtNodeId,
+    @Override public GridCacheUpdateTxResult<V> innerRemove(@Nullable IgniteInternalTx<K, V> tx, UUID evtNodeId,
         UUID affNodeId, boolean writeThrough, boolean retval, boolean evt, boolean metrics, long topVer,
         IgnitePredicate<CacheEntry<K, V>>[] filter, GridDrType drType, @Nullable GridCacheVersion drVer, UUID subjId,
         String taskName)
@@ -513,12 +514,12 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public boolean tmLock(IgniteTxEx<K, V> tx, long timeout) {
+    @Override public boolean tmLock(IgniteInternalTx<K, V> tx, long timeout) {
         assert false; return false;
     }
 
     /** @inheritDoc */
-    @Override public void txUnlock(IgniteTxEx<K, V> tx) {
+    @Override public void txUnlock(IgniteInternalTx<K, V> tx) {
         assert false;
     }
 
@@ -590,7 +591,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
 
     /** @inheritDoc */
     @Override public GridTuple<V> peek0(boolean failFast, GridCachePeekMode mode,
-        IgnitePredicate<CacheEntry<K, V>>[] filter, IgniteTxEx<K, V> tx)
+        IgnitePredicate<CacheEntry<K, V>>[] filter, IgniteInternalTx<K, V> tx)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException {
         return F.t(val);
     }
@@ -626,6 +627,11 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     /** @inheritDoc */
     @Override public boolean initialValue(K key, GridCacheSwapEntry<V> unswapped) {
         assert false; return false;
+    }
+
+    /** @inheritDoc */
+    @Override public GridCacheVersionedEntryEx<K, V> versionedEntry() throws IgniteCheckedException {
+        return null;
     }
 
     /** @inheritDoc */
@@ -815,5 +821,11 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     /** {@inheritDoc} */
     @Override public long startVersion() {
         return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public V peek(boolean heap, boolean offheap, boolean swap, long topVer)
+        throws GridCacheEntryRemovedException, IgniteCheckedException {
+        return null;
     }
 }

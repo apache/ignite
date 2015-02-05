@@ -17,10 +17,10 @@
 
 package org.apache.ignite.scalar.examples
 
+import java.util
+
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
-
-import java.util
 
 import scala.util.control.Breaks._
 
@@ -28,9 +28,9 @@ import scala.util.control.Breaks._
  * Prime Number calculation example based on Scalar.
  *
  * ==Starting Remote Nodes==
- * To try this example you should (but don't have to) start remote grid instances.
+ * To try this example you should (but don't have to) start remote ignite instances.
  * You can start as many as you like by executing the following script:
- * `{GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-compute.xml`
+ * `{IGNITE_HOME}/bin/ignite.{bat|sh} examples/config/example-compute.xml`
  *
  * Once remote instances are started, you can execute this example from
  * Eclipse, IntelliJ IDEA, or NetBeans (and any other Java IDE) by simply hitting run
@@ -39,7 +39,7 @@ import scala.util.control.Breaks._
  * output).
  *
  * Note that when running this example on a multi-core box, simply
- * starting additional grid node on the same box will speed up
+ * starting additional cluster node on the same box will speed up
  * prime number calculation by a factor of 2.
  */
 object ScalarPrimeExample {
@@ -58,7 +58,7 @@ object ScalarPrimeExample {
             println(">>>")
             println(">>> Starting to check the following numbers for primes: " + util.Arrays.toString(checkVals))
 
-            val g = grid$
+            val g = ignite$
 
             checkVals.foreach(checkVal => {
                 val divisor = g.reduce$[Option[Long], Option[Option[Long]]](
@@ -85,15 +85,15 @@ object ScalarPrimeExample {
      * Closures checks if the value passed in is divisible by any of
      * the divisors in the range.
      *
-     * @param gridSize Size of the grid.
+     * @param clusterSize Size of the cluster.
      * @param checkVal Value to check.
      * @return Collection of closures.
      */
-    private def closures(gridSize: Int, checkVal: Long): Seq[() => Option[Long]] = {
+    private def closures(clusterSize: Int, checkVal: Long): Seq[() => Option[Long]] = {
         var cls = Seq.empty[() => Option[Long]]
 
         val taskMinRange = 2L
-        val numbersPerTask = if (checkVal / gridSize < 10) 10L else checkVal / gridSize
+        val numbersPerTask = if (checkVal / clusterSize < 10) 10L else checkVal / clusterSize
 
         var minRange = 0L
         var maxRange = 0L

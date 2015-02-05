@@ -27,8 +27,8 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 import static org.apache.ignite.cache.CacheConfiguration.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Cache attributes.
@@ -102,9 +102,6 @@ public class GridCacheAttributes implements Externalizable {
     /** Maximum batch size for write-behind cache store. */
     private int writeBehindBatchSize;
 
-    /** Default batch size for all cache's sequences. */
-    private int seqReserveSize;
-
     /** Name of SPI to use for indexing. */
     private String indexingSpiName;
 
@@ -159,6 +156,9 @@ public class GridCacheAttributes implements Externalizable {
     /** Store load previous value flag. */
     private boolean loadPrevVal;
 
+    /** Portable enabled flag. */
+    private boolean portableEnabled;
+
     /**
      * @param cfg Cache configuration.
      * @param store Cache store.
@@ -175,11 +175,11 @@ public class GridCacheAttributes implements Externalizable {
         loadPrevVal = cfg.isLoadPreviousValue();
         name = cfg.getName();
         partDistro = GridCacheUtils.distributionMode(cfg);
+        portableEnabled = cfg.isPortableEnabled();
         preloadBatchSize = cfg.getPreloadBatchSize();
         preloadMode = cfg.getPreloadMode();
         qryIdxEnabled = cfg.isQueryIndexEnabled();
         readThrough = cfg.isReadThrough();
-        seqReserveSize = cfg.getAtomicSequenceReserveSize();
         storeValBytes = cfg.isStoreValueBytes();
         swapEnabled = cfg.isSwapEnabled();
         ttl = cfg.getDefaultTimeToLive();
@@ -514,23 +514,23 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Default batch size for all cache's sequences.
-     */
-    public int sequenceReserveSize() {
-        return seqReserveSize;
-    }
-
-    /**
      * @return Name of SPI to use for indexing.
      */
     public String indexingSpiName() {
         return indexingSpiName;
     }
 
+    /**
+     * @return Portable enabled flag.
+     */
+    public boolean portableEnabled() {
+        return portableEnabled;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeEnum0(out, atomicityMode);
-        U.writeEnum0(out, cacheMode);
+        U.writeEnum(out, atomicityMode);
+        U.writeEnum(out, cacheMode);
         out.writeLong(dfltLockTimeout);
         out.writeLong(dfltQryTimeout);
         out.writeFloat(evictMaxOverflowRatio);
@@ -539,12 +539,11 @@ public class GridCacheAttributes implements Externalizable {
         U.writeString(out, indexingSpiName);
         out.writeBoolean(loadPrevVal);
         U.writeString(out, name);
-        U.writeEnum0(out, partDistro);
+        U.writeEnum(out, partDistro);
         out.writeInt(preloadBatchSize);
-        U.writeEnum0(out, preloadMode);
+        U.writeEnum(out, preloadMode);
         out.writeBoolean(qryIdxEnabled);
         out.writeBoolean(readThrough);
-        out.writeInt(seqReserveSize);
         out.writeBoolean(storeValBytes);
         out.writeBoolean(swapEnabled);
         out.writeLong(ttl);
@@ -553,7 +552,7 @@ public class GridCacheAttributes implements Externalizable {
         out.writeLong(writeBehindFlushFreq);
         out.writeInt(writeBehindFlushSize);
         out.writeInt(writeBehindFlushThreadCnt);
-        U.writeEnum0(out, writeSyncMode);
+        U.writeEnum(out, writeSyncMode);
         out.writeBoolean(writeThrough);
 
         U.writeString(out, affClsName);
@@ -575,8 +574,8 @@ public class GridCacheAttributes implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        atomicityMode = CacheAtomicityMode.fromOrdinal(U.readEnumOrdinal0(in));
-        cacheMode = CacheMode.fromOrdinal(U.readEnumOrdinal0(in));
+        atomicityMode = CacheAtomicityMode.fromOrdinal(in.readByte());
+        cacheMode = CacheMode.fromOrdinal(in.readByte());
         dfltLockTimeout = in.readLong();
         dfltQryTimeout = in.readLong();
         evictMaxOverflowRatio = in.readFloat();
@@ -585,12 +584,11 @@ public class GridCacheAttributes implements Externalizable {
         indexingSpiName = U.readString(in);
         loadPrevVal = in.readBoolean();
         name = U.readString(in);
-        partDistro = CacheDistributionMode.fromOrdinal(U.readEnumOrdinal0(in));
+        partDistro = CacheDistributionMode.fromOrdinal(in.readByte());
         preloadBatchSize = in.readInt();
-        preloadMode = CachePreloadMode.fromOrdinal(U.readEnumOrdinal0(in));
+        preloadMode = CachePreloadMode.fromOrdinal(in.readByte());
         qryIdxEnabled = in.readBoolean();
         readThrough = in.readBoolean();
-        seqReserveSize = in.readInt();
         storeValBytes = in.readBoolean();
         swapEnabled = in.readBoolean();
         ttl = in.readLong();
@@ -599,7 +597,7 @@ public class GridCacheAttributes implements Externalizable {
         writeBehindFlushFreq = in.readLong();
         writeBehindFlushSize = in.readInt();
         writeBehindFlushThreadCnt = in.readInt();
-        writeSyncMode = CacheWriteSynchronizationMode.fromOrdinal(U.readEnumOrdinal0(in));
+        writeSyncMode = CacheWriteSynchronizationMode.fromOrdinal(in.readByte());
         writeThrough = in.readBoolean();
 
         affClsName = U.readString(in);

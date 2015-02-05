@@ -19,9 +19,10 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.timeout.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -57,7 +58,7 @@ public class GridCachePerThreadTxCommitBuffer<K, V> implements GridCacheTxCommit
     }
 
     /** {@inheritDoc} */
-    @Override public void addCommittedTx(IgniteTxEx<K, V> tx) {
+    @Override public void addCommittedTx(IgniteInternalTx<K, V> tx) {
         long threadId = tx.threadId();
 
         StoreKey key = new StoreKey(tx.eventNodeId(), threadId);

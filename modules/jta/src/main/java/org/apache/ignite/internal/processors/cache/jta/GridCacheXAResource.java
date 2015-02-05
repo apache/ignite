@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.cache.jta;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.transactions.*;
 
 import javax.transaction.xa.*;
 import java.util.concurrent.atomic.*;
@@ -42,7 +42,7 @@ public final class GridCacheXAResource implements XAResource {
     private GridCacheContext cctx;
 
     /** Cache transaction. */
-    private IgniteTxEx cacheTx;
+    private IgniteInternalTx cacheTx;
 
     /** */
     private IgniteLogger log;
@@ -54,7 +54,7 @@ public final class GridCacheXAResource implements XAResource {
      * @param cacheTx Cache jta.
      * @param cctx Cache context.
      */
-    public GridCacheXAResource(IgniteTxEx cacheTx, GridCacheContext cctx) {
+    public GridCacheXAResource(IgniteInternalTx cacheTx, GridCacheContext cctx) {
         assert cacheTx != null;
         assert cctx != null;
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 
@@ -30,10 +29,10 @@ import java.util.*;
  * example is to provide the simplest code example of this logic.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public final class CacheAffinityExample {
     /** Cache name. */
@@ -46,39 +45,37 @@ public final class CacheAffinityExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
-        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
+    public static void main(String[] args) throws IgniteException {
+        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache affinity example started.");
 
-            GridCache<Integer, String> cache = g.cache(CACHE_NAME);
+            IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
 
             // Clean up caches on all nodes before run.
-            cache.globalClearAll(0);
+            cache.clear();
 
             for (int i = 0; i < KEY_CNT; i++)
-                cache.putx(i, Integer.toString(i));
+                cache.put(i, Integer.toString(i));
 
-            // Co-locates jobs with data using GridCompute.affinityRun(...) method.
+            // Co-locates jobs with data using IgniteCompute.affinityRun(...) method.
             visitUsingAffinityRun();
 
-            // Co-locates jobs with data using Grid.mapKeysToNodes(...) method.
+            // Co-locates jobs with data using IgniteCluster.mapKeysToNodes(...) method.
             visitUsingMapKeysToNodes();
         }
     }
 
     /**
-     * Collocates jobs with keys they need to work on using {@link org.apache.ignite.IgniteCompute#affinityRun(String, Object, Runnable)}
+     * Collocates jobs with keys they need to work on using {@link IgniteCompute#affinityRun(String, Object, Runnable)}
      * method.
-     *
-     * @throws IgniteCheckedException If failed.
      */
-    private static void visitUsingAffinityRun() throws IgniteCheckedException {
-        Ignite g = Ignition.ignite();
+    private static void visitUsingAffinityRun() {
+        Ignite ignite = Ignition.ignite();
 
-        final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
+        final IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
 
         for (int i = 0; i < KEY_CNT; i++) {
             final int key = i;
@@ -86,25 +83,23 @@ public final class CacheAffinityExample {
             // This runnable will execute on the remote node where
             // data with the given key is located. Since it will be co-located
             // we can use local 'peek' operation safely.
-            g.compute().affinityRun(CACHE_NAME, key, new IgniteRunnable() {
+            ignite.compute().affinityRun(CACHE_NAME, key, new IgniteRunnable() {
                 @Override public void run() {
                     // Peek is a local memory lookup, however, value should never be 'null'
                     // as we are co-located with node that has a given key.
-                    System.out.println("Co-located using affinityRun [key= " + key + ", value=" + cache.peek(key) + ']');
+                    System.out.println("Co-located using affinityRun [key= " + key + ", value=" + cache.localPeek(key) + ']');
                 }
             });
         }
     }
 
     /**
-     * Collocates jobs with keys they need to work on using {@link org.apache.ignite.IgniteCluster#mapKeysToNodes(String, Collection)}
+     * Collocates jobs with keys they need to work on using {@link IgniteCluster#mapKeysToNodes(String, Collection)}
      * method. The difference from {@code affinityRun(...)} method is that here we process multiple keys
      * in a single job.
-     *
-     * @throws IgniteCheckedException If failed.
      */
-    private static void visitUsingMapKeysToNodes() throws IgniteCheckedException {
-        final Ignite g = Ignition.ignite();
+    private static void visitUsingMapKeysToNodes() {
+        final Ignite ignite = Ignition.ignite();
 
         Collection<Integer> keys = new ArrayList<>(KEY_CNT);
 
@@ -112,7 +107,7 @@ public final class CacheAffinityExample {
             keys.add(i);
 
         // Map all keys to nodes.
-        Map<ClusterNode, Collection<Integer>> mappings = g.cluster().mapKeysToNodes(CACHE_NAME, keys);
+        Map<ClusterNode, Collection<Integer>> mappings = ignite.cluster().mapKeysToNodes(CACHE_NAME, keys);
 
         for (Map.Entry<ClusterNode, Collection<Integer>> mapping : mappings.entrySet()) {
             ClusterNode node = mapping.getKey();
@@ -121,15 +116,15 @@ public final class CacheAffinityExample {
 
             if (node != null) {
                 // Bring computations to the nodes where the data resides (i.e. collocation).
-                g.compute(g.cluster().forNode(node)).run(new IgniteRunnable() {
+                ignite.compute(ignite.cluster().forNode(node)).run(new IgniteRunnable() {
                     @Override public void run() {
-                        GridCache<Integer, String> cache = g.cache(CACHE_NAME);
+                        IgniteCache<Integer, String> cache = ignite.jcache(CACHE_NAME);
 
                         // Peek is a local memory lookup, however, value should never be 'null'
                         // as we are co-located with node that has a given key.
                         for (Integer key : mappedKeys)
                             System.out.println("Co-located using mapKeysToNodes [key= " + key +
-                                ", value=" + cache.peek(key) + ']');
+                                ", value=" + cache.localPeek(key) + ']');
                     }
                 });
             }

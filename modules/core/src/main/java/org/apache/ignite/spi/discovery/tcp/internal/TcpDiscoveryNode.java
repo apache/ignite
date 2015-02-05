@@ -19,12 +19,12 @@ package org.apache.ignite.spi.discovery.tcp.internal;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.discovery.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -71,7 +71,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
     /** Node metrics. */
     @GridToStringExclude
-    private volatile ClusterNodeMetrics metrics;
+    private volatile ClusterMetrics metrics;
 
     /** Node order in the topology. */
     private volatile long order;
@@ -138,7 +138,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
         consistentId = U.consistentId(addrs, discPort);
 
-        metrics = metricsProvider.getMetrics();
+        metrics = metricsProvider.metrics();
         sockAddrs = U.toSocketAddresses(this, discPort);
     }
 
@@ -191,9 +191,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNodeMetrics metrics() {
+    @Override public ClusterMetrics metrics() {
         if (metricsProvider != null)
-            metrics = metricsProvider.getMetrics();
+            metrics = metricsProvider.metrics();
 
         return metrics;
     }
@@ -203,7 +203,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
      *
      * @param metrics Node metrics.
      */
-    public void setMetrics(ClusterNodeMetrics metrics) {
+    public void setMetrics(ClusterMetrics metrics) {
         assert metrics != null;
 
         this.metrics = metrics;
@@ -396,9 +396,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         byte[] mtr = null;
 
         if (metrics != null) {
-            mtr = new byte[DiscoveryMetricsHelper.METRICS_SIZE];
+            mtr = new byte[ClusterMetricsSnapshot.METRICS_SIZE];
 
-            DiscoveryMetricsHelper.serialize(mtr, 0, metrics);
+            ClusterMetricsSnapshot.serialize(mtr, 0, metrics);
         }
 
         U.writeByteArray(out, mtr);
@@ -425,7 +425,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         byte[] mtr = U.readByteArray(in);
 
         if (mtr != null)
-            metrics = DiscoveryMetricsHelper.deserialize(mtr, 0);
+            metrics = ClusterMetricsSnapshot.deserialize(mtr, 0);
 
         order = in.readLong();
         intOrder = in.readLong();

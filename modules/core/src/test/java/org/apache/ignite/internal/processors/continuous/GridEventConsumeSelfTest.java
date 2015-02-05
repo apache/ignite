@@ -23,11 +23,11 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -101,7 +101,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         assertEquals(GRID_CNT, grid(0).nodes().size());
 
         for (int i = 0; i < GRID_CNT; i++) {
-            GridKernal grid = (GridKernal)grid(i);
+            IgniteKernal grid = (IgniteKernal)grid(i);
 
             GridContinuousProcessor proc = grid.context().continuous();
 
@@ -523,7 +523,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             assert false : "Exception was not thrown.";
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             assertTrue(e.getMessage().startsWith(
                 "Failed to register remote continuous listener (projection is empty)."));
         }
@@ -958,13 +958,13 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         final Random rnd = new Random();
 
-        IgniteFuture<?> starterFut = multithreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> starterFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 for (int i = 0; i < CONSUME_CNT; i++) {
                     int idx = rnd.nextInt(GRID_CNT);
 
                     try {
-                        IgniteEvents evts = grid(idx).events().enableAsync();
+                        IgniteEvents evts = grid(idx).events().withAsync();
 
                         evts.remoteListen(new P2<UUID, IgniteEvent>() {
                             @Override public boolean apply(UUID uuid, IgniteEvent evt) {
@@ -991,7 +991,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             }
         }, 8, "consume-starter");
 
-        IgniteFuture<?> stopperFut = multithreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> stopperFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 while (!stop.get()) {
                     IgniteBiTuple<Integer, UUID> t = queue.poll(1, SECONDS);
@@ -1003,7 +1003,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     UUID consumeId = t.get2();
 
                     try {
-                        IgniteEvents evts = grid(idx).events().enableAsync();
+                        IgniteEvents evts = grid(idx).events().withAsync();
 
                         evts.stopRemoteListen(consumeId);
 
@@ -1020,7 +1020,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             }
         }, 4, "consume-stopper");
 
-        IgniteFuture<?> nodeRestarterFut = multithreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> nodeRestarterFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 while (!stop.get()) {
                     startGrid("anotherGrid");
@@ -1031,19 +1031,19 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             }
         }, 1, "node-restarter");
 
-        IgniteFuture<?> jobRunnerFut = multithreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> jobRunnerFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 while (!stop.get()) {
                     int idx = rnd.nextInt(GRID_CNT);
 
                     try {
-                        IgniteCompute comp = grid(idx).compute().enableAsync();
+                        IgniteCompute comp = grid(idx).compute().withAsync();
 
                         comp.run(F.noop());
 
                         comp.future().get(3000);
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         // Ignore all job execution related errors.
                     }
                 }
@@ -1063,7 +1063,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             int idx = t.get1();
             UUID consumeId = t.get2();
 
-            IgniteEvents evts = grid(idx).events().enableAsync();
+            IgniteEvents evts = grid(idx).events().withAsync();
 
             evts.stopRemoteListen(consumeId);
 

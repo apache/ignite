@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop.proto;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 
 /**
  * Task to get the next job ID.
@@ -30,7 +29,7 @@ public class GridHadoopProtocolNextTaskIdTask extends GridHadoopProtocolTaskAdap
 
     /** {@inheritDoc} */
     @Override public GridHadoopJobId run(ComputeJobContext jobCtx, GridHadoop hadoop,
-        GridHadoopProtocolTaskArguments args) throws IgniteCheckedException {
+        GridHadoopProtocolTaskArguments args) {
         return hadoop.nextJobId();
     }
 }

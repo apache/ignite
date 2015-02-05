@@ -21,16 +21,16 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
@@ -101,8 +101,8 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
      */
     @SuppressWarnings("deprecation")
     public void testThroughput() throws Exception {
-        final GridKernal sndKernal = (GridKernal)grid(0);
-        final GridKernal rcvKernal = (GridKernal)grid(1);
+        final IgniteKernal sndKernal = (IgniteKernal)grid(0);
+        final IgniteKernal rcvKernal = (IgniteKernal)grid(1);
 
         final ClusterNode sndNode = sndKernal.localNode();
         final ClusterNode rcvNode = rcvKernal.localNode();
@@ -159,7 +159,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
 
         final AtomicBoolean finish = new AtomicBoolean();
 
-        IgniteFuture<?> f = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> f = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 try {
                     IgniteUuid msgId = IgniteUuid.randomUuid();
@@ -197,8 +197,8 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
      */
     @SuppressWarnings("deprecation")
     public void testLatency() throws Exception {
-        final GridKernal sndKernal = (GridKernal)grid(0);
-        final GridKernal rcvKernal = (GridKernal)grid(1);
+        final IgniteKernal sndKernal = (IgniteKernal)grid(0);
+        final IgniteKernal rcvKernal = (IgniteKernal)grid(1);
 
         final ClusterNode sndNode = sndKernal.localNode();
         final ClusterNode rcvNode = rcvKernal.localNode();
@@ -251,7 +251,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
 
         final AtomicBoolean finish = new AtomicBoolean();
 
-        IgniteFuture<?> f = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> f = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 try {
                     IgniteUuid msgId = IgniteUuid.randomUuid();
@@ -293,8 +293,8 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
      */
     @SuppressWarnings("deprecation")
     public void testVariableLoad() throws Exception {
-        final GridKernal sndKernal = (GridKernal)grid(0);
-        final GridKernal rcvKernal = (GridKernal)grid(1);
+        final IgniteKernal sndKernal = (IgniteKernal)grid(0);
+        final IgniteKernal rcvKernal = (IgniteKernal)grid(1);
 
         final ClusterNode sndNode = sndKernal.localNode();
         final ClusterNode rcvNode = rcvKernal.localNode();
@@ -341,7 +341,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         final AtomicBoolean finish = new AtomicBoolean();
         final AtomicReference<CountDownLatch> latchRef = new AtomicReference<>();
 
-        IgniteFuture<?> f = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> f = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 while (!finish.get()) {
                     CountDownLatch latch = latchRef.get();
@@ -360,7 +360,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
             }
         }, THREADS, "send-thread");
 
-        IgniteFuture<?> f1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> f1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             private long ts = System.currentTimeMillis();
 
             @Override public Object call() throws Exception {
@@ -413,7 +413,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
             }
         }, 1, "load-dispatcher");
 
-        IgniteFuture<?> f2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> f2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 while (!finish.get()) {
                     U.sleep(1000);

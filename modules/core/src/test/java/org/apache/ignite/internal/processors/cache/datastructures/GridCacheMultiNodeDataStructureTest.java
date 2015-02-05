@@ -19,14 +19,13 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.internal.util.typedef.*;
 
 /**
  * Starts up an node with cache configuration.
  * You can also must start a stand-alone GridGain instance by passing the path
- * to configuration file to {@code 'ggstart.{sh|bat}'} script, like so:
- * {@code 'ggstart.sh examples/config/example-cache.xml'}.
+ * to configuration file to {@code 'ignite.{sh|bat}'} script, like so:
+ * {@code 'ignite.sh examples/config/example-cache.xml'}.
  */
 public class GridCacheMultiNodeDataStructureTest {
     /** Ensure singleton. */
@@ -57,11 +56,9 @@ public class GridCacheMultiNodeDataStructureTest {
      * @throws IgniteCheckedException If failed.
      */
     private static void sample(Ignite g, String cacheName) throws IgniteCheckedException {
-        GridCache<Long, Object> cache = g.cache(cacheName);
+        IgniteAtomicLong atomicLong = g.atomicLong("keygen", 0, true);
 
-        CacheAtomicLong atomicLong = cache.dataStructures().atomicLong("keygen", 0, true);
-
-        CacheAtomicSequence seq = cache.dataStructures().atomicSequence("keygen", 0, true);
+        IgniteAtomicSequence seq = g.atomicSequence("keygen", 0, true);
 
         seq.incrementAndGet();
         seq.incrementAndGet();

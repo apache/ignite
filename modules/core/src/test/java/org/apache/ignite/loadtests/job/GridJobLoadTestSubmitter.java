@@ -64,7 +64,7 @@ public class GridJobLoadTestSubmitter implements Runnable {
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
     @Override public void run() {
-        IgniteCompute comp = ignite.compute().enableAsync();
+        IgniteCompute comp = ignite.compute().withAsync();
 
         while (true) {
             checkCompletion();
@@ -83,7 +83,7 @@ public class GridJobLoadTestSubmitter implements Runnable {
 
                 futures.add(comp.<Integer>future());
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 // Should not be thrown since uses asynchronous execution.
                 throw new IgniteException(e);
             }
@@ -109,7 +109,7 @@ public class GridJobLoadTestSubmitter implements Runnable {
                 catch (IgniteFutureCancelledException ignored) {
                     ignite.log().info(">>> Task cancelled: " + fut.getTaskSession().getId());
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     ignite.log().warning(
                         ">>> Get operation for completed task failed: " + fut.getTaskSession().getId(), e);
                 }
@@ -132,9 +132,10 @@ public class GridJobLoadTestSubmitter implements Runnable {
 
             try {
                 futToCancel.cancel();
+
                 ignite.log().info("Task canceled: " + futToCancel.getTaskSession().getId());
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 ignite.log().warning(">>> Future cancellation failed: " + futToCancel.getTaskSession().getId(), e);
             }
         }
