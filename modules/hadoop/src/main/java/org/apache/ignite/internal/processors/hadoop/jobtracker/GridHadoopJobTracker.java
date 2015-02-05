@@ -171,28 +171,28 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         CacheContinuousQuery<GridHadoopJobId, GridHadoopJobMetadata> qry = jobMetaCache().queries().createContinuousQuery();
 
-        qry.callback(new IgniteBiPredicate<UUID,
-                            Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>>>() {
-            @Override public boolean apply(UUID nodeId,
-                final Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> evts) {
-                if (!busyLock.tryReadLock())
-                    return false;
+        qry.localCallback(
+            new IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<GridHadoopJobId, GridHadoopJobMetadata>>>() {
+                @Override public boolean apply(UUID nodeId,
+                    final Collection<CacheContinuousQueryEntry<GridHadoopJobId, GridHadoopJobMetadata>> evts) {
+                    if (!busyLock.tryReadLock())
+                        return false;
 
-                try {
-                    // Must process query callback in a separate thread to avoid deadlocks.
-                    evtProcSvc.submit(new EventHandler() {
-                        @Override protected void body() throws IgniteCheckedException {
-                            processJobMetadataUpdates(evts);
-                        }
-                    });
+                    try {
+                        // Must process query callback in a separate thread to avoid deadlocks.
+                        evtProcSvc.submit(new EventHandler() {
+                            @Override protected void body() throws IgniteCheckedException {
+                                processJobMetadataUpdates(evts);
+                            }
+                        });
 
-                    return true;
+                        return true;
+                    }
+                    finally {
+                        busyLock.readUnlock();
+                    }
                 }
-                finally {
-                    busyLock.readUnlock();
-                }
-            }
-        });
+            });
 
         qry.execute();
 
@@ -628,7 +628,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param updated Updated cache entries.
      * @throws IgniteCheckedException If failed.
      */
-    private void processJobMetadataUpdates(Iterable<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> updated)
+    private void processJobMetadataUpdates(
+        Iterable<CacheContinuousQueryEntry<GridHadoopJobId, GridHadoopJobMetadata>> updated)
         throws IgniteCheckedException {
         UUID locNodeId = ctx.localNodeId();
 

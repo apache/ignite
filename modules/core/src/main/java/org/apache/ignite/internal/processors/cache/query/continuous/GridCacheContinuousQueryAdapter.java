@@ -107,38 +107,6 @@ public class GridCacheContinuousQueryAdapter<K, V> implements CacheContinuousQue
     }
 
     /** {@inheritDoc} */
-    @Override public void callback(final IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb) {
-        if (cb != null) {
-            this.cb = cb;
-
-            localCallback(new CallbackWrapper<>(cb));
-        }
-        else
-            localCallback(null);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> callback() {
-        return cb;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void filter(final IgniteBiPredicate<K, V> filter) {
-        if (filter != null) {
-            this.filter = filter;
-
-            remoteFilter(new FilterWrapper<>(filter));
-        }
-        else
-            remoteFilter(null);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public IgniteBiPredicate<K, V> filter() {
-        return filter;
-    }
-
-    /** {@inheritDoc} */
     @Override public void localCallback(IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<K, V>>> locCb) {
         if (!guard.enterBusy())
             throw new IllegalStateException("Continuous query can't be changed after it was executed.");
@@ -333,53 +301,5 @@ public class GridCacheContinuousQueryAdapter<K, V> implements CacheContinuousQue
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheContinuousQueryAdapter.class, this);
-    }
-
-    /**
-     * Deprecated callback wrapper.
-     */
-    static class CallbackWrapper<K, V> implements IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<K, V>>> {
-        /** Serialization ID. */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb;
-
-        /**
-         * @param cb Deprecated callback.
-         */
-        private CallbackWrapper(IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb) {
-            this.cb = cb;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public boolean apply(UUID nodeId, Collection<CacheContinuousQueryEntry<K, V>> entries) {
-            return cb.apply(nodeId, (Collection<Map.Entry<K,V>>)(Collection)entries);
-        }
-    }
-
-    /**
-     * Deprecated filter wrapper.
-     */
-    static class FilterWrapper<K, V> implements IgnitePredicate<CacheContinuousQueryEntry<K, V>> {
-        /** Serialization ID. */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final IgniteBiPredicate<K, V> filter;
-
-        /**
-         * @param filter Deprecated callback.
-         */
-        FilterWrapper(IgniteBiPredicate<K, V> filter) {
-            this.filter = filter;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public boolean apply(CacheContinuousQueryEntry<K, V> entry) {
-            return filter.apply(entry.getKey(), entry.getValue());
-        }
     }
 }

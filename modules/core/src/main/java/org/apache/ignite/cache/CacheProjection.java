@@ -473,6 +473,13 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
     @Nullable public V peek(K key);
 
     /**
+     * @param key Key.
+     * @param peekModes Peek modes.
+     * @return Value.
+     */
+    @Nullable public V localPeek(K key, CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
      * Peeks at cached value using optional set of peek modes. This method will sequentially
      * iterate over given peek modes in the order passed in, and try to peek at value using
      * each peek mode. Once a {@code non-null} value is found, it will be immediately returned.

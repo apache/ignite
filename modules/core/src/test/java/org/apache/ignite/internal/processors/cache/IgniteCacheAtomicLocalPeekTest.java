@@ -15,35 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query;
+package org.apache.ignite.internal.processors.cache;
 
-import java.lang.annotation.*;
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Describes group index.
+ *
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface CacheQueryGroupIndex {
-    /**
-     * Group index name.
-     *
-     * @return Name.
-     */
-    String name();
+public class IgniteCacheAtomicLocalPeekTest extends IgniteCachePeekAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
+    }
 
-    /**
-     * List of group indexes for type.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.TYPE)
-    public static @interface List {
-        /**
-         * Gets array of group indexes.
-         *
-         * @return Array of group indexes.
-         */
-        CacheQueryGroupIndex[] value();
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return LOCAL;
     }
 }

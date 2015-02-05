@@ -47,11 +47,11 @@ public class GridTcpDiscoverySpiStartStopSelfTest extends GridSpiStartStopAbstra
     @GridSpiTestConfig
     public DiscoverySpiDataExchange getDataExchange() {
         return new DiscoverySpiDataExchange() {
-            @Override public List<Object> collect(UUID nodeId) {
+            @Override public Map<Integer, Object> collect(UUID nodeId) {
                 return null;
             }
 
-            @Override public void onExchange(List<Object> data) {
+            @Override public void onExchange(Map<Integer, Object> data) {
                 // No-op.
             }
         };

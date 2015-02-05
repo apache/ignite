@@ -315,71 +315,41 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         });
 
         getSpi().setDataExchange(new DiscoverySpiDataExchange() {
-            @Override public List<Object> collect(UUID nodeId) {
+            @Override public Map<Integer, Object> collect(UUID nodeId) {
                 assert nodeId != null;
 
-                List<Object> data = new ArrayList<>();
-
-                Object newCompData = null;
+                Map<Integer, Object> data = new HashMap<>();
 
                 for (GridComponent comp : ctx.components()) {
-                    if (appendLast(comp)) {
-                        assert newCompData == null;
+                    Object compData = comp.collectDiscoveryData(nodeId);
 
-                        newCompData = comp.collectDiscoveryData(nodeId);
+                    if (compData != null) {
+                        assert comp.discoveryDataType() != null;
+
+                        data.put(comp.discoveryDataType().ordinal(), compData);
                     }
-                    else
-                        data.add(comp.collectDiscoveryData(nodeId));
                 }
-
-                // Process new grid component last for preserving backward compatibility.
-                if (newCompData != null)
-                    data.add(newCompData);
 
                 return data;
             }
 
-            @Override public void onExchange(List<Object> data) {
-                assert data != null;
+            @Override public void onExchange(Map<Integer, Object> data) {
+                for (Map.Entry<Integer, Object> e : data.entrySet()) {
+                    GridComponent comp = null;
 
-                Iterator<Object> it = data.iterator();
+                    for (GridComponent c : ctx.components()) {
+                        if (c.discoveryDataType() != null && c.discoveryDataType().ordinal() == e.getKey()) {
+                            comp = c;
 
-                GridComponent newComp = null;
-                Object newCompData = null;
-
-                for (GridComponent comp : ctx.components()) {
-                    if (!it.hasNext())
-                        break;
-
-                    if (appendLast(comp)) {
-                        assert newComp == null;
-                        assert newCompData == null;
-
-                        newComp = comp;
-                        newCompData = it.next();
+                            break;
+                        }
                     }
+
+                    if (comp != null)
+                        comp.onDiscoveryDataReceived(e.getValue());
                     else
-                        comp.onDiscoveryDataReceived(it.next());
+                        U.warn(log, "Received discovery data for unknown component: " + e.getKey());
                 }
-
-                // Process new grid component last for preserving backward compatibility.
-                if (newComp != null)
-                    newComp.onDiscoveryDataReceived(newCompData);
-            }
-
-            /**
-             * @param comp Grid component.
-             * @return {@code True} if specified component should collect data after all other components,
-             *      {@code false} otherwise.
-             * @deprecated We shouldn't rely on exact order and size of
-             *      {@link org.apache.ignite.spi.discovery.DiscoverySpiDataExchange#collect(UUID)} output because it may easily break backward
-             *      compatibility (for example, if we will add new grid component in the middle of components startup
-             *      routine). This method should be changed to return map (component id -> collected data)
-             *      in the next major release.
-             */
-            @Deprecated
-            private boolean appendLast(GridComponent comp) {
-                return comp instanceof GridServiceProcessor;
             }
         });
 
