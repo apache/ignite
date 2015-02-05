@@ -61,7 +61,7 @@ public final class CacheAtomicReferenceExample {
             System.out.println("Atomic reference initial value : " + ref.get() + '.');
 
             // Make closure for checking atomic reference value on cluster.
-            Runnable c = new ReferenceClosure(CACHE_NAME, refName);
+            IgniteRunnable c = new ReferenceClosure(CACHE_NAME, refName);
 
             // Check atomic reference on all cluster nodes.
             ignite.compute().run(c);

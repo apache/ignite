@@ -64,7 +64,7 @@ public final class CacheAtomicStampedExample {
             System.out.println("Atomic stamped initial [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');
 
             // Make closure for checking atomic stamped on ignite.
-            Runnable c = new StampedUpdateClosure(CACHE_NAME, stampedName);
+            IgniteRunnable c = new StampedUpdateClosure(CACHE_NAME, stampedName);
 
             // Check atomic stamped on all cluster nodes.
             ignite.compute().run(c);

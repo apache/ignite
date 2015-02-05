@@ -135,7 +135,7 @@ public class StreamingCheckInExample {
 
             // Reset all streamers on all nodes to make sure that
             // consecutive executions start from scratch.
-            ignite.compute().broadcast(new Runnable() {
+            ignite.compute().broadcast(new IgniteRunnable() {
                 @Override public void run() {
                     if (!ExamplesUtils.hasStreamer(ignite, STREAMER_NAME))
                         System.err.println("Default streamer not found (is example-streamer.xml " +

@@ -657,7 +657,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         try (Ignite g1 = G.start(cfg)) {
             IgniteCompute compute = compute(grid().forNode(g1.cluster().localNode()));
 
-            compute.run(new Runnable() {
+            compute.run(new IgniteRunnable() {
                 @Override
                 public void run() {
                     // No-op.

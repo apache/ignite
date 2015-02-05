@@ -606,7 +606,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     /**
      * Tests queue serialization.
      */
-    private static class QueueJob implements Callable<Integer>, Serializable {
+    private static class QueueJob implements IgniteCallable<Integer> {
         /** */
         private CacheQueue<Integer> queue;
 

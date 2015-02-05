@@ -883,7 +883,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
         }, threadCnt, "test-thread");
 
         while (!fut.isDone()) {
-            grid(0).compute().call(new Callable<Object>() {
+            grid(0).compute().call(new IgniteCallable<Object>() {
                     /** */
                     @IgniteInstanceResource
                     private Ignite g;
