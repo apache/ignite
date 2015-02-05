@@ -147,7 +147,7 @@ public class GridGgfsAttributes implements Externalizable {
         out.writeInt(grpSize);
         U.writeString(out, metaCacheName);
         U.writeString(out, dataCacheName);
-        U.writeEnum0(out, dfltMode);
+        U.writeEnum(out, dfltMode);
         out.writeBoolean(fragmentizerEnabled);
 
         if (pathModes != null) {
@@ -157,7 +157,7 @@ public class GridGgfsAttributes implements Externalizable {
 
             for (Map.Entry<String, IgniteFsMode> pathMode : pathModes.entrySet()) {
                 U.writeString(out, pathMode.getKey());
-                U.writeEnum0(out, pathMode.getValue());
+                U.writeEnum(out, pathMode.getValue());
             }
         }
         else
@@ -171,7 +171,7 @@ public class GridGgfsAttributes implements Externalizable {
         grpSize = in.readInt();
         metaCacheName = U.readString(in);
         dataCacheName = U.readString(in);
-        dfltMode = IgniteFsMode.fromOrdinal(U.readEnumOrdinal0(in));
+        dfltMode = IgniteFsMode.fromOrdinal(in.readByte());
         fragmentizerEnabled = in.readBoolean();
 
         if (in.readBoolean()) {
@@ -180,7 +180,7 @@ public class GridGgfsAttributes implements Externalizable {
             pathModes = new HashMap<>(size, 1.0f);
 
             for (int i = 0; i < size; i++)
-                pathModes.put(U.readString(in), IgniteFsMode.fromOrdinal(U.readEnumOrdinal0(in)));
+                pathModes.put(U.readString(in), IgniteFsMode.fromOrdinal(in.readByte()));
         }
     }
 }

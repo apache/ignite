@@ -362,6 +362,13 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxNearEnabledNoWriteThroughTest.class);
         suite.addTestSuite(IgniteCacheTxLocalNoWriteThroughTest.class);
 
+        suite.addTestSuite(IgniteCacheAtomicPeekTest.class);
+        suite.addTestSuite(IgniteCacheAtomicReplicatedPeekTest.class);
+        suite.addTestSuite(IgniteCacheAtomicLocalPeekTest.class);
+        suite.addTestSuite(IgniteCacheTxPeekTest.class);
+        suite.addTestSuite(IgniteCacheTxLocalPeekTest.class);
+        suite.addTestSuite(IgniteCacheTxReplicatedPeekTest.class);
+
         // TODO: IGNITE-114.
         // suite.addTestSuite(IgniteCacheInvokeReadThroughTest.class);
 

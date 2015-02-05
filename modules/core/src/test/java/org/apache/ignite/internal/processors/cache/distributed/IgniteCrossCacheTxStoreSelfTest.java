@@ -75,6 +75,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
         cfg.setName(cacheName);
 
         cfg.setBackups(1);
+
         if (store != null) {
             cfg.setCacheStoreFactory(
                 new FactoryBuilder.SingletonFactory<CacheStore<? super Object, ? super Object>>(store));
@@ -110,7 +111,17 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     public void testWriteThrough() throws Exception {
         IgniteEx grid = grid(0);
 
-        TestStore firstStore = (TestStore)grid(0).configuration().getCacheConfiguration()[1].getCacheStoreFactory().create();
+        TestStore firstStore = null;
+
+        for (CacheConfiguration ccfg : grid(0).configuration().getCacheConfiguration()) {
+            if (ccfg.getCacheStoreFactory() != null) {
+                firstStore = (TestStore)ccfg.getCacheStoreFactory().create();
+
+                break;
+            }
+        }
+
+        assertNotNull(firstStore);
 
         Collection<String> evts = firstStore.events();
 

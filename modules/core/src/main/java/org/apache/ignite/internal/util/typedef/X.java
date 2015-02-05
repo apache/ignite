@@ -186,25 +186,6 @@ public final class X {
     }
 
     /**
-     * Gets either system property or environment variable with given name.
-     *
-     * @param name Name of the system property or environment variable.
-     * @param dflt Default value.
-     * @return Value of the system property or environment variable.
-     *         Returns the default value if neither can be found for given name.
-     * @deprecated This method will be removed in the next major release.
-     *             Use {@link org.apache.ignite.IgniteSystemProperties#getString(String)} instead.
-     */
-    @Deprecated
-    @Nullable public static String getSystemOrEnv(String name, String dflt) {
-        assert name != null;
-
-        String v = getSystemOrEnv(name);
-
-        return F.isEmpty(v) ? dflt : v;
-    }
-
-    /**
      * Creates string presentation of given time {@code span} in hh:mm:ss:msec {@code HMSM} format.
      *
      * @param span Time span.
@@ -484,42 +465,6 @@ public final class X {
                 if (hasSuppressed(th, cls))
                     return true;
             }
-        }
-
-        return false;
-    }
-
-    /**
-     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy
-     * <b>excluding</b> that throwable itself.
-     * <p>
-     * Note that this method follows includes {@link Throwable#getSuppressed()}
-     * into check.
-     *
-     * @param t Throwable to check (if {@code null}, {@code false} is returned).
-     * @param cls Cause classes to check (if {@code null} or empty, {@code false} is returned).
-     * @return {@code True} if one of the causing exception is an instance of passed in classes,
-     *      {@code false} otherwise.
-     */
-    public static boolean hasCauseExcludeRoot(@Nullable Throwable t, @Nullable Class<? extends Throwable>... cls) {
-        if (t == null || F.isEmpty(cls))
-            return false;
-
-        assert cls != null;
-
-        for (Throwable th = t.getCause(); th != null; th = th.getCause()) {
-            for (Class<? extends Throwable> c : cls) {
-                if (c.isAssignableFrom(th.getClass()))
-                    return true;
-            }
-
-            if (th.getCause() == th)
-                break;
-        }
-
-        for (Throwable n : t.getSuppressed()) {
-            if (hasCause(n, cls))
-                return true;
         }
 
         return false;

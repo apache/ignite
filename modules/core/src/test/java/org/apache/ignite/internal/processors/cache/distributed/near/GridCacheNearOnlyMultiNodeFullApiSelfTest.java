@@ -301,7 +301,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         nearCache.putAll(vals);
 
-        nearCache.clear(subKeys);
+        for (String subKey : subKeys)
+            nearCache.clearLocally(subKey);
 
         for (String key : subKeys) {
             assertNull(nearCache.localPeek(key));
@@ -313,7 +314,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
     /** {@inheritDoc} */
     @Override public void testGlobalClearAll() throws Exception {
-        // Save entries only on their primary nodes. If we didn't do so, clearAll() will not remove all entries
+        // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
         // because some of them were blocked due to having readers.
         for (int i = 0; i < gridCount(); i++) {
             if (i != nearIdx)

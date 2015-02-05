@@ -308,26 +308,9 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      * @throws Exception In case of error.
      */
     public void testRemoveAllAsync() throws Exception {
-        runTest(new CIX1<IgniteCache<String,Integer>>() {
-            @Override public void applyx(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
+        runTest(new CIX1<GridCache<String,Integer>>() {
+            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 int rnd = random();
-
-                cache.withAsync().removeAll(rangeKeys(0, rnd));
-
-                cache.withAsync().future().get();
-
-                for (int i = 0; i < rnd; i++)
-                    assert cache.localPeek("key" + i) == null;
-            }
-        });
-    }
-
-    /**
-     * @param cache Cache.
-     * @param key Key.
-     */
-    private <K, V> V removeAsync(IgniteCache<K, V> cache, K key) throws IgniteCheckedException {
-        cache.withAsync().getAndRemove(key);
 
         return cache.withAsync().<V>future().get();
     }

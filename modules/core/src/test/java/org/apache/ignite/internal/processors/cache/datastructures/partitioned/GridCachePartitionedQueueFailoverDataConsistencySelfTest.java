@@ -17,11 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  * Queue failover test for transactional cache.
  */
 public class GridCachePartitionedQueueFailoverDataConsistencySelfTest extends
     GridCacheAbstractQueueFailoverDataConsistencySelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
+        return TRANSACTIONAL;
+    }
 }

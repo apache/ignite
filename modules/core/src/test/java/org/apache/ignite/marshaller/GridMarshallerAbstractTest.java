@@ -20,7 +20,6 @@ package org.apache.ignite.marshaller;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -29,7 +28,6 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.executor.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.affinity.*;
-import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.product.*;
@@ -801,36 +799,6 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
             outBean.checkNullResources();
         }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDataStructures() throws Exception {
-        CacheDataStructures dataStructures = grid().cache(CACHE_NAME).dataStructures();
-
-        CacheAtomicLong atomicLong = dataStructures.atomicLong("test", 0, true);
-
-        assert atomicLong != null;
-
-        atomicLong.addAndGet(1);
-
-        GridMarshallerTestBean inBean = newTestBean(dataStructures);
-
-        byte[] buf = marshal(inBean);
-
-        GridMarshallerTestBean outBean = unmarshal(buf);
-
-        assert inBean.getObjectField() != null;
-        assert outBean.getObjectField() != null;
-
-        assert inBean.getObjectField().getClass().equals(GridCacheDataStructuresProxy.class);
-        assert outBean.getObjectField().getClass().equals(GridCacheDataStructuresProxy.class);
-
-        assert inBean != outBean;
-        assert inBean.equals(outBean);
-
-        outBean.checkNullResources();
     }
 
     /**

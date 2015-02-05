@@ -809,7 +809,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 changed |= cacheCtx.topology().afterExchange(exchFut.exchangeId());
 
                                 // Preload event notification.
-                                if (!cacheCtx.system() && cctx.gridEvents().isRecordable(EVT_CACHE_PRELOAD_STARTED)) {
+                                if (cacheCtx.events().isRecordable(EVT_CACHE_PRELOAD_STARTED)) {
                                     if (!cacheCtx.isReplicated() || !startEvtFired) {
                                         IgniteDiscoveryEvent discoEvt = exchFut.discoveryEvent();
 

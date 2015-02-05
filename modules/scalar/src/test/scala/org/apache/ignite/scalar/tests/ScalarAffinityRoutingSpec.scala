@@ -17,6 +17,7 @@
 
 package org.apache.ignite.scalar.tests
 
+import org.apache.ignite.Ignition
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 import org.junit.runner.RunWith
@@ -38,11 +39,11 @@ class ScalarAffinityRoutingSpec extends FlatSpec with ShouldMatchers with Before
         c += (1 -> 1)
         c += (2 -> 2)
 
-        val cnt = c.dataStructures().atomicLong("affinityRun", 0, true)
+        val cnt = Ignition.ignite.atomicLong("affinityRun", 0, true)
 
-        grid$.affinityRun$(CACHE_NAME, 0, () => { cnt.incrementAndGet() }, null)
-        grid$.affinityRun$(CACHE_NAME, 1, () => { cnt.incrementAndGet() }, null)
-        grid$.affinityRun$(CACHE_NAME, 2, () => { cnt.incrementAndGet() }, null)
+        ignite$.affinityRun$(CACHE_NAME, 0, () => { cnt.incrementAndGet() }, null)
+        ignite$.affinityRun$(CACHE_NAME, 1, () => { cnt.incrementAndGet() }, null)
+        ignite$.affinityRun$(CACHE_NAME, 2, () => { cnt.incrementAndGet() }, null)
 
         assert(cnt.get === 3)
     }
@@ -54,11 +55,11 @@ class ScalarAffinityRoutingSpec extends FlatSpec with ShouldMatchers with Before
         c += (1 -> 1)
         c += (2 -> 2)
 
-        val cnt = c.dataStructures().atomicLong("affinityRunAsync", 0, true)
+        val cnt = Ignition.ignite.atomicLong("affinityRunAsync", 0, true)
 
-        grid$.affinityRunAsync$(CACHE_NAME, 0, () => { cnt.incrementAndGet() }, null).get
-        grid$.affinityRunAsync$(CACHE_NAME, 1, () => { cnt.incrementAndGet() }, null).get
-        grid$.affinityRunAsync$(CACHE_NAME, 2, () => { cnt.incrementAndGet() }, null).get
+        ignite$.affinityRunAsync$(CACHE_NAME, 0, () => { cnt.incrementAndGet() }, null).get
+        ignite$.affinityRunAsync$(CACHE_NAME, 1, () => { cnt.incrementAndGet() }, null).get
+        ignite$.affinityRunAsync$(CACHE_NAME, 2, () => { cnt.incrementAndGet() }, null).get
 
         assert(cnt.get === 3)
     }

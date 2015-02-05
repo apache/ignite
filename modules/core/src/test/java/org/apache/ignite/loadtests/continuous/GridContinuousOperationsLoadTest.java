@@ -24,6 +24,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
@@ -98,8 +99,8 @@ public class GridContinuousOperationsLoadTest {
                 if (useQry) {
                     CacheContinuousQuery<Object, Object> qry = cache.queries().createContinuousQuery();
 
-                    qry.callback(new PX2<UUID, Collection<Map.Entry<Object, Object>>>() {
-                        @Override public boolean applyx(UUID uuid, Collection<Map.Entry<Object, Object>> entries)
+                    qry.localCallback(new PX2<UUID, Collection<CacheContinuousQueryEntry<Object, Object>>>() {
+                        @Override public boolean applyx(UUID uuid, Collection<CacheContinuousQueryEntry<Object, Object>> entries)
                             throws IgniteInterruptedCheckedException {
                             if (cbSleepMs > 0)
                                 U.sleep(cbSleepMs);
@@ -110,8 +111,8 @@ public class GridContinuousOperationsLoadTest {
                         }
                     });
 
-                    qry.filter(new PX2<Object, Object>() {
-                        @Override public boolean applyx(Object key, Object val) throws IgniteInterruptedCheckedException {
+                    qry.remoteFilter(new IgnitePredicateX<CacheContinuousQueryEntry<Object, Object>>() {
+                        @Override public boolean applyx(CacheContinuousQueryEntry e) throws IgniteInterruptedCheckedException {
                             if (filterSleepMs > 0)
                                 U.sleep(filterSleepMs);
 
