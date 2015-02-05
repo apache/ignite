@@ -330,21 +330,28 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
      * @throws SQLException If a database access error occurs or this method is called.
      */
     protected Object getColumnValue(ResultSet rs, int colIdx, Class<?> type) throws SQLException {
-        if (type == boolean.class)
-            return rs.getBoolean(colIdx);
         if (type == int.class)
             return rs.getInt(colIdx);
-        else if (type == long.class)
+
+        if (type == long.class)
             return rs.getLong(colIdx);
-        else if (type == double.class)
+
+        if (type == double.class)
             return rs.getDouble(colIdx);
-        else if (type == byte.class)
+
+        if (type == boolean.class)
+            return rs.getBoolean(colIdx);
+
+        if (type == byte.class)
             return rs.getByte(colIdx);
-        else if (type == short.class)
+
+        if (type == short.class)
             return rs.getShort(colIdx);
-        else if (type == float.class)
+
+        if (type == float.class)
             return rs.getFloat(colIdx);
-        else if (type == Integer.class || type == Long.class || type == Double.class ||
+
+        if (type == Integer.class || type == Long.class || type == Double.class ||
             type == Byte.class || type == Short.class ||  type == Float.class) {
             Object val = rs.getObject(colIdx);
 
