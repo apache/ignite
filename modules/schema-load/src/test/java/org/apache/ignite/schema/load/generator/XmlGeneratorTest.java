@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Tests for XML generator.
  */
-public class XmlGeneratorSelfTest extends BaseSchemaLoaderSelfTest {
+public class XmlGeneratorTest extends AbstractSchemaLoaderTest {
     /**
      * Test that XML generated correctly.
      */

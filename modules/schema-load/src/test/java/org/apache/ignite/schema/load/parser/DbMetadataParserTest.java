@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Tests for metadata parsing.
  */
-public class DbMetadataParserSelfTest extends BaseSchemaLoaderSelfTest {
+public class DbMetadataParserTest extends AbstractSchemaLoaderTest {
     /**
      * Check that field is correspond to expected.
      *
