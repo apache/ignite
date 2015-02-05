@@ -198,7 +198,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         clientCfg.setRestTcpPort(BINARY_PORT);
 
         clientCfg.setRestAccessibleFolders(
-            U.getGridGainHome() + "/work/log",
+            U.getIgniteHome() + "/work/log",
             U.resolveGridGainPath("modules/core/src/test/resources/log").getAbsolutePath());
 
         if (useSsl()) {
@@ -1305,7 +1305,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         final GridClientCompute compute = client.compute();
 
         /* Usually this log file is created by log4j, but some times it doesn't exists. */
-        new File(U.getGridGainHome(), "work/log/gridgain.log").createNewFile();
+        new File(U.getIgniteHome(), "work/log/gridgain.log").createNewFile();
 
         List<String> log = compute.log(6, 7);
         assertNotNull(log);
@@ -1319,7 +1319,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         String path = "work/log/gridgain.log." + System.currentTimeMillis();
 
-        File file = new File(U.getGridGainHome(), path);
+        File file = new File(U.getIgniteHome(), path);
 
         assert !file.exists();
 
@@ -1400,7 +1400,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
             log(),
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    new File(U.getGridGainHome(), "work/security.log").createNewFile();
+                    new File(U.getIgniteHome(), "work/security.log").createNewFile();
 
                     compute.log("work/log/../security.log", -1, -1);
 

@@ -118,7 +118,7 @@ public final class GridSingleExecutionTest {
 
         impl.removeAllAppenders();
 
-        String fileName =  U.getGridGainHome() + "/work/log/" + log;
+        String fileName =  U.getIgniteHome() + "/work/log/" + log;
 
         // Configure output that should go to System.out
         RollingFileAppender fileApp;

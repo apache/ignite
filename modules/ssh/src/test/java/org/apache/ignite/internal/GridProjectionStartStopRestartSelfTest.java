@@ -180,7 +180,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 1, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 1, U.getIgniteHome(), CFG_NO_ATTR, null),
                 null, false, 0, 16);
 
         assert res.size() == 1;
@@ -210,7 +210,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
                 null, false, DFLT_TIMEOUT, 1);
 
         assert res.size() == 3;
@@ -240,7 +240,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
                 null, false, 0, 16);
 
         assert res.size() == 3;
@@ -262,7 +262,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         assert ignite.cluster().nodes().size() == 3;
 
         res = startNodes(ignite.cluster(),
-            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
             null, false, 0, 16);
 
         assert res.isEmpty();
@@ -281,7 +281,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
                 null, false, 0, 16);
 
         assert res.size() == 3;
@@ -303,7 +303,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         assert ignite.cluster().nodes().size() == 3;
 
         res = startNodes(ignite.cluster(),
-            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 1, U.getGridGainHome(), CFG_NO_ATTR, null),
+            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 1, U.getIgniteHome(), CFG_NO_ATTR, null),
             null, false, 0, 16);
 
         assert res.isEmpty();
@@ -322,7 +322,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
                 null, false, 0, 16);
 
         assert res.size() == 3;
@@ -346,7 +346,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         joinedLatch = new CountDownLatch(2);
 
         res = startNodes(ignite.cluster(),
-            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 5, U.getGridGainHome(), CFG_NO_ATTR, null),
+            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 5, U.getIgniteHome(), CFG_NO_ATTR, null),
             null, false, 0, 16);
 
         assert res.size() == 2;
@@ -376,8 +376,8 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             startNodes(ignite.cluster(),
-                F.asList(map(HOST, SSH_UNAME, pwd, key, 2, U.getGridGainHome(), CFG_NO_ATTR, null),
-                    map(HOST, SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null)),
+                F.asList(map(HOST, SSH_UNAME, pwd, key, 2, U.getIgniteHome(), CFG_NO_ATTR, null),
+                    map(HOST, SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null)),
                 null, false, 0, 16);
 
         assert res.size() == 5;
@@ -407,7 +407,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
                 null, false, 0, 16);
 
         assert res.size() == 3;
@@ -432,7 +432,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         leftLatch = new CountDownLatch(3);
 
         res = startNodes(ignite.cluster(),
-            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
             null, true, 0, 16);
 
         assert res.size() == 3;
@@ -463,11 +463,11 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         String script = U.isWindows() ? CUSTOM_SCRIPT_WIN : CUSTOM_SCRIPT_LINUX;
 
-        script = Paths.get(U.getGridGainHome()).relativize(U.resolveGridGainPath(script).toPath()).toString();
+        script = Paths.get(U.getIgniteHome()).relativize(U.resolveGridGainPath(script).toPath()).toString();
 
         Collection<GridTuple3<String, Boolean, String>> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 1, U.getGridGainHome(), null, script),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 1, U.getIgniteHome(), null, script),
                 null, false, 0, 16);
 
         assert res.size() == 1;
@@ -499,7 +499,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, null, 3, U.getGridGainHome(), CFG_NO_ATTR,
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, null, 3, U.getIgniteHome(), CFG_NO_ATTR,
                 null), null, false, 0, 16);
 
         assert res.size() == 3;
@@ -534,7 +534,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 2, U.getGridGainHome(), CFG_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 2, U.getIgniteHome(), CFG_ATTR, null),
                 null, false, 0, 16);
 
         assert res.size() == 2;
@@ -553,7 +553,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         joinedLatch = new CountDownLatch(1);
 
         res = startNodes(ignite.cluster(),
-            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
             null, false, 0, 16);
 
         assert res.size() == 1;
@@ -597,7 +597,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
                 null, false, 0, 16);
 
         assert res.size() == 3;
@@ -632,7 +632,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
                 null, false, 0, 16);
 
         assert res.size() == 3;
@@ -674,7 +674,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
                 null, false, 0, 16);
 
         assert res.size() == 3;
@@ -711,7 +711,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
                 null, false, 0, 16);
 
         assert res.size() == 3;
@@ -748,7 +748,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 2, U.getGridGainHome(), CFG_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 2, U.getIgniteHome(), CFG_ATTR, null),
                 null, false, 0, 16);
 
         assert res.size() == 2;
@@ -767,7 +767,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         joinedLatch = new CountDownLatch(1);
 
         res = startNodes(ignite.cluster(),
-            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+            maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
             null, false, 0, 16);
 
         assert res.size() == 1;
@@ -814,7 +814,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
                 null, false, 0, 16);
 
         assert res.size() == 3;
@@ -851,7 +851,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
                 null, false, 0, 16);
 
         assert res.size() == 3;
@@ -890,7 +890,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         Collection<GridTuple3<String, Boolean, String>> res =
             startNodes(ignite.cluster(),
-                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getGridGainHome(), CFG_NO_ATTR, null),
+                maps(Collections.singleton(HOST), SSH_UNAME, pwd, key, 3, U.getIgniteHome(), CFG_NO_ATTR, null),
                 null, false, 0, 16);
 
         assert res.size() == 3;

@@ -282,7 +282,7 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridGgfsCommonA
     public void testLogDirectory() throws Exception {
         startUp();
 
-        assertEquals(Paths.get(U.getGridGainHome()).normalize().toString(),
+        assertEquals(Paths.get(U.getIgniteHome()).normalize().toString(),
             ggfs.clientLogDirectory());
     }
 
@@ -302,7 +302,7 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridGgfsCommonA
         if (logging)
             fsCfg.setBoolean(String.format(PARAM_GGFS_LOG_ENABLED, "ggfs:ggfs-grid@"), logging);
 
-        fsCfg.setStrings(String.format(PARAM_GGFS_LOG_DIR, "ggfs:ggfs-grid@"), U.getGridGainHome());
+        fsCfg.setStrings(String.format(PARAM_GGFS_LOG_DIR, "ggfs:ggfs-grid@"), U.getIgniteHome());
 
         return (GridGgfsHadoopFileSystem)FileSystem.get(new URI("ggfs://ggfs:ggfs-grid@/"), fsCfg);
     }

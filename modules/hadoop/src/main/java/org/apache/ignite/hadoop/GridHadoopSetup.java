@@ -73,7 +73,7 @@ public class GridHadoopSetup {
      * </ul>
      */
     private static void configureHadoop() {
-        String gridgainHome = U.getGridGainHome();
+        String gridgainHome = U.getIgniteHome();
 
         println("IGNITE_HOME is set to '" + gridgainHome + "'.");
 

@@ -1355,10 +1355,10 @@ public class IgnitionEx {
 
             // Set Ignite home.
             if (ggHome == null)
-                ggHome = U.getGridGainHome();
+                ggHome = U.getIgniteHome();
             else
                 // If user provided IGNITE_HOME - set it as a system property.
-                U.setGridGainHome(ggHome);
+                U.setIgniteHome(ggHome);
 
             U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
 

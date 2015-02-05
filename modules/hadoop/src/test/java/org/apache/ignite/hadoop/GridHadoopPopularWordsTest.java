@@ -46,7 +46,7 @@ import static java.util.Collections.*;
  */
 public class GridHadoopPopularWordsTest {
     /** Ignite home. */
-    private static final String IGNITE_HOME = U.getGridGainHome();
+    private static final String IGNITE_HOME = U.getIgniteHome();
 
     /** The path to the input directory. ALl files in that directory will be processed. */
     private static final Path BOOKS_LOCAL_DIR =

@@ -51,7 +51,7 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
         // Next grid in the same VM shouldn't use cached values produced by these tests.
         nullifyHomeDirectory();
 
-        U.getGridGainHome();
+        U.getIgniteHome();
     }
 
     /**
@@ -60,15 +60,15 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
     public void testStartStopWithUndefinedGridGainHome() throws Exception {
         IgniteUtils.nullifyHomeDirectory();
 
-        // We can't use U.getGridGainHome() here because
+        // We can't use U.getIgniteHome() here because
         // it will initialize cached value which is forbidden to override.
         String ggHome = IgniteSystemProperties.getString(IGNITE_HOME);
 
         assert ggHome != null;
 
-        U.setGridGainHome(null);
+        U.setIgniteHome(null);
 
-        String ggHome0 = U.getGridGainHome();
+        String ggHome0 = U.getIgniteHome();
 
         assert ggHome0 == null;
 
@@ -95,7 +95,7 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
             try (Ignite g = G.start(cfg)) {
                 assert g != null;
 
-                ggHome0 = U.getGridGainHome();
+                ggHome0 = U.getIgniteHome();
 
                 assert ggHome0 == null;
 

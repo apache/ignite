@@ -76,7 +76,7 @@ public class GridHadoopExternalProcessStarter {
      * @throws Exception
      */
     public void run() throws Exception {
-        U.setWorkDirectory(args.workDir, U.getGridGainHome());
+        U.setWorkDirectory(args.workDir, U.getIgniteHome());
 
         File outputDir = outputDirectory();
 

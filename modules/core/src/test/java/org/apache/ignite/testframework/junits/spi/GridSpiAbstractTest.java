@@ -419,7 +419,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
      * @throws Exception If failed.
      */
     protected void spiStart(IgniteSpi spi) throws Exception {
-        U.setWorkDirectory(null, U.getGridGainHome());
+        U.setWorkDirectory(null, U.getIgniteHome());
 
         // Start SPI with unique grid name.
         spi.spiStart(getTestGridName());

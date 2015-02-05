@@ -825,7 +825,7 @@ public final class GridTestUtils {
         File file = new File(path).getAbsoluteFile();
 
         if (!file.exists()) {
-            String home = ggHome != null ? ggHome : U.getGridGainHome();
+            String home = ggHome != null ? ggHome : U.getIgniteHome();
 
             if (home == null)
                 return null;
@@ -1433,6 +1433,6 @@ public final class GridTestUtils {
      * @return Path to apache ignite.
      */
     public static String apacheIgniteTestPath() {
-        return System.getProperty("IGNITE_TEST_PATH", U.getGridGainHome() + "/target/ignite");
+        return System.getProperty("IGNITE_TEST_PATH", U.getIgniteHome() + "/target/ignite");
     }
 }

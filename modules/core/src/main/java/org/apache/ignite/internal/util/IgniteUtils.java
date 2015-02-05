@@ -2474,7 +2474,7 @@ public abstract class IgniteUtils {
      *
      * @return {@code IGNITE_HOME} property.
      */
-    @Nullable public static String getGridGainHome() {
+    @Nullable public static String getIgniteHome() {
         GridTuple<String> ggHomeTup = ggHome;
 
         String ggHome0;
@@ -2504,7 +2504,7 @@ public abstract class IgniteUtils {
     /**
      * @param path Ignite home. May be {@code null}.
      */
-    public static void setGridGainHome(@Nullable String path) {
+    public static void setIgniteHome(@Nullable String path) {
         GridTuple<String> ggHomeTup = ggHome;
 
         String ggHome0;
@@ -2543,7 +2543,7 @@ public abstract class IgniteUtils {
      * If not, check if path is absolute.
      * If all checks fail, then {@code null} is returned.
      * <p>
-     * See {@link #getGridGainHome()} for information on how {@code IGNITE_HOME} is retrieved.
+     * See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
      * @param path Path to resolve.
      * @return Resolved path as file, or {@code null} if path cannot be resolved.
@@ -2555,7 +2555,7 @@ public abstract class IgniteUtils {
          * 1. Check relative to IGNITE_HOME specified in configuration, if any.
          */
 
-        String home = getGridGainHome();
+        String home = getIgniteHome();
 
         if (home != null) {
             File file = new File(home, path);
@@ -2590,11 +2590,11 @@ public abstract class IgniteUtils {
      * If all checks fail,
      * then {@code null} is returned, otherwise URL representing path is returned.
      * <p>
-     * See {@link #getGridGainHome()} for information on how {@code IGNITE_HOME} is retrieved.
+     * See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
      * @param path Path to resolve.
      * @return Resolved path as URL, or {@code null} if path cannot be resolved.
-     * @see #getGridGainHome()
+     * @see #getIgniteHome()
      */
     @Nullable public static URL resolveGridGainUrl(String path) {
         return resolveGridGainUrl(path, true);
@@ -2607,12 +2607,12 @@ public abstract class IgniteUtils {
      * If all checks fail,
      * then {@code null} is returned, otherwise URL representing path is returned.
      * <p>
-     * See {@link #getGridGainHome()} for information on how {@code IGNITE_HOME} is retrieved.
+     * See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
      * @param path Path to resolve.
      * @param metaInf Flag to indicate whether META-INF folder should be checked or class path root.
      * @return Resolved path as URL, or {@code null} if path cannot be resolved.
-     * @see #getGridGainHome()
+     * @see #getIgniteHome()
      */
     @SuppressWarnings({"UnusedCatchParameter"})
     @Nullable public static URL resolveGridGainUrl(String path, boolean metaInf) {
