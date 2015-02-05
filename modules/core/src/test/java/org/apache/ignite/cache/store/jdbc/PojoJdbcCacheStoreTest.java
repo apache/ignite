@@ -165,11 +165,11 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWriteRetry() throws Exception {
+        // Special dialect that will skip updates, to test write retry.
         BasicJdbcDialect dialect = new BasicJdbcDialect() {
             /** {@inheritDoc} */
-            @Override public String updateQuery(String schema, String tblName, Collection<String> keyCols,
-                Iterable<String> valCols) {
-                return super.updateQuery(schema, tblName, keyCols, valCols) + " AND 1 = 0";
+            @Override public String updateQuery(String tblName, Collection<String> keyCols, Iterable<String> valCols) {
+                return super.updateQuery(tblName, keyCols, valCols) + " AND 1 = 0";
             }
         };
 
