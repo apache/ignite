@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.gridgain.grid.util.direct.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
@@ -44,7 +45,7 @@ public class GridTcpCommunicationMessageState {
     private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
 
     /** */
-    private MessageWriter writer;
+    private final MessageWriter writer = new GridTcpCommunicationMessageWriter();
 
     /** */
     private MessageReader reader;
@@ -74,8 +75,8 @@ public class GridTcpCommunicationMessageState {
      * @param writer Writer.
      */
     public final void setWriter(MessageWriter writer) {
-        if (this.writer == null)
-            this.writer = writer;
+//        if (this.writer == null)
+//            this.writer = writer;
     }
 
     /**

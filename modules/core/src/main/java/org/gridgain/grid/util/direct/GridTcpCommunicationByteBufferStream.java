@@ -391,7 +391,7 @@ public class GridTcpCommunicationByteBufferStream {
     public void writeMessage(GridTcpCommunicationMessageAdapter msg) {
         assert msg != null;
 
-        lastFinished = msg.writeTo(buf);
+        lastFinished = buf.hasRemaining() && msg.writeTo(buf);
     }
 
     /** {@inheritDoc} */
