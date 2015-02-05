@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
+package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
@@ -23,7 +23,7 @@ import org.apache.ignite.cache.query.*;
 import javax.cache.event.*;
 
 /**
- * Implementation of {@link org.apache.ignite.cache.CacheEntryEvent}.
+ * Implementation of {@link javax.cache.event.CacheEntryEvent}.
  */
 public class CacheEntryEvent<K, V> extends javax.cache.event.CacheEntryEvent<K, V> {
     /** */
