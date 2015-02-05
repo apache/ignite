@@ -105,7 +105,7 @@ public interface DiscoverySpi extends IgniteSpi {
 
     /**
      * Sets discovery metrics provider. Use metrics provided by
-     * {@link DiscoveryMetricsProvider#getMetrics()} method to exchange
+     * {@link DiscoveryMetricsProvider#metrics()} method to exchange
      * dynamic metrics between nodes.
      *
      * @param metricsProvider Provider of metrics data.
@@ -117,7 +117,7 @@ public interface DiscoverySpi extends IgniteSpi {
      * {@link #spiStop()} with accounting that it is not a full stop,
      * but disconnect due to segmentation.
      *
-     * @throws org.apache.ignite.spi.IgniteSpiException If any error occurs.
+     * @throws IgniteSpiException If any error occurs.
      */
     public void disconnect() throws IgniteSpiException;
 

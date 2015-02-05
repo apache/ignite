@@ -20,29 +20,22 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 import org.apache.commons.collections.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueMultiNodeAbstractSelfTest.*;
 
 /**
  * Consistency test for cache queue in multi node environment.
  */
-public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstractTest {
+public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollectionAbstractTest {
     /** */
     protected static final int GRID_CNT = 3;
-
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     protected static final int RETRIES = 20;
@@ -57,39 +50,47 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
     private boolean stopRandomGrid;
 
     /** */
-    private CacheConfiguration cc = new CacheConfiguration();
+    private int backups;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return GRID_CNT;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheMode collectionCacheMode() {
+        return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
+        return TRANSACTIONAL;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected TestCollectionConfiguration collectionConfiguration() {
+        TestCollectionConfiguration colCfg = super.collectionConfiguration();
+
+        colCfg.setBackups(backups);
+
+        return colCfg;
+    }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
-
-        c.setDiscoverySpi(spi);
-
-        cc.setCacheMode(PARTITIONED);
-        cc.setQueryIndexEnabled(true);
-        cc.setSwapEnabled(false);
-
-        c.setCacheConfiguration(cc);
-
-        return c;
-    }
-
     /**
      * @throws Exception If failed.
      */
-    public void testIteratorIfNoPreloadingAndBackupDisabled() throws Exception {
-        cc.setBackups(0);
-        cc.setPreloadPartitionedDelay(-1);
-        cc.setPreloadMode(CachePreloadMode.NONE);
+    public void testIteratorIfBackupDisabled() throws Exception {
+        backups = 0;
 
         checkCacheQueue();
     }
@@ -98,9 +99,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
      * @throws Exception If failed.
      */
     public void testIteratorIfNoPreloadingAndBackupDisabledAndRepartitionForced() throws Exception {
-        cc.setBackups(0);
-        cc.setPreloadPartitionedDelay(-1);
-        cc.setPreloadMode(CachePreloadMode.NONE);
+        backups = 0;
 
         forceRepartition = true;
 
@@ -110,9 +109,8 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
-    public void testIteratorIfPreloadingIsSyncAndBackupDisabled() throws Exception {
-        cc.setBackups(0);
-        cc.setPreloadMode(CachePreloadMode.SYNC);
+    public void testIteratorIfBackupEnabled() throws Exception {
+        backups = 1;
 
         checkCacheQueue();
     }
@@ -120,73 +118,8 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
-    public void testIteratorIfPreloadingIsAsyncAndBackupDisabled() throws Exception {
-        cc.setBackups(0);
-        cc.setPreloadMode(CachePreloadMode.ASYNC);
-
-        checkCacheQueue();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testIteratorIfPreloadingIsSyncAndPartitionedDelayAndBackupDisabled() throws Exception {
-        cc.setBackups(0);
-        cc.setPreloadPartitionedDelay(PRELOAD_DELAY);
-        cc.setPreloadMode(CachePreloadMode.SYNC);
-
-        checkCacheQueue();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testIteratorIfPreloadingIsAsyncAndPartitionedDelayAndBackupDisabled() throws Exception {
-        cc.setBackups(0);
-        cc.setPreloadPartitionedDelay(PRELOAD_DELAY);
-        cc.setPreloadMode(CachePreloadMode.ASYNC);
-
-        checkCacheQueue();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testIteratorIfPreloadingIsSyncAndBackupEnabled() throws Exception {
-        cc.setBackups(1);
-        cc.setPreloadMode(CachePreloadMode.SYNC);
-
-        checkCacheQueue();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testIteratorIfPreloadingIsAsyncAndBackupEnabled() throws Exception {
-        cc.setBackups(1);
-        cc.setPreloadMode(CachePreloadMode.ASYNC);
-
-        checkCacheQueue();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testIteratorIfPreloadingIsSyncAndBackupEnabledAndOneNodeIsKilled() throws Exception {
-        cc.setBackups(1);
-        cc.setPreloadMode(CachePreloadMode.SYNC);
-
-        stopRandomGrid = true;
-
-        checkCacheQueue();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testIteratorIfPreloadingIsAsyncAndBackupEnabledAndOneNodeIsKilled() throws Exception {
-        cc.setBackups(1);
-        cc.setPreloadMode(CachePreloadMode.ASYNC);
+    public void testIteratorIfBackupEnabledAndOneNodeIsKilled() throws Exception {
+        backups = 1;
 
         stopRandomGrid = true;
 
@@ -204,8 +137,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
 
         final String queueName = UUID.randomUUID().toString();
 
-        CacheQueue<Integer> queue0 = grid(0).cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
-            false, true);
+        IgniteQueue<Integer> queue0 = grid(0).queue(queueName, QUEUE_CAPACITY, config(false));
 
         assertTrue(queue0.isEmpty());
 
@@ -223,7 +155,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
         Ignite newIgnite = startGrid(GRID_CNT + 1);
 
         // Intentionally commented code cause in this way inconsistent queue problem doesn't appear.
-        // CacheQueue<Integer> newQueue = newGrid.cache().queue(queueName);
+        // IgniteQueue<Integer> newQueue = newGrid.cache().queue(queueName);
         // assertTrue(CollectionUtils.isEqualCollection(queue0, newQueue));
 
         Collection<Integer> locQueueContent = compute(newIgnite.cluster().forLocal()).call(new IgniteCallable<Collection<Integer>>() {
@@ -236,8 +168,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
 
                 grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
 
-                CacheQueue<Integer> locQueue = grid.cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
-                    false, true);
+                IgniteQueue<Integer> locQueue = grid.queue(queueName, QUEUE_CAPACITY, config(false));
 
                 grid.log().info("Queue size " + locQueue.size());
 
@@ -250,6 +181,6 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
 
         assertTrue(CollectionUtils.isEqualCollection(queue0, locQueueContent));
 
-        grid(0).cache(null).dataStructures().removeQueue(queueName);
+        queue0.close();
     }
 }

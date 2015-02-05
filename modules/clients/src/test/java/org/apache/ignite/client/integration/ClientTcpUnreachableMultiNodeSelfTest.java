@@ -89,18 +89,6 @@ public class ClientTcpUnreachableMultiNodeSelfTest extends ClientTcpMultiNodeSel
                     return node.replicaCount();
                 }
 
-                @Override public List<String> jettyAddresses() {
-                    return node.jettyAddresses();
-                }
-
-                @Override public List<String> jettyHostNames() {
-                    return node.jettyHostNames();
-                }
-
-                @Override public int httpPort() {
-                    return node.httpPort();
-                }
-
                 @Override public List<String> tcpAddresses() {
                     return node.tcpAddresses();
                 }

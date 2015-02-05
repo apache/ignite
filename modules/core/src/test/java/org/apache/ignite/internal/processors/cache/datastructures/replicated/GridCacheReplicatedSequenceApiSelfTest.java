@@ -18,29 +18,16 @@
 package org.apache.ignite.internal.processors.cache.datastructures.replicated;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Cache sequence basic tests.
  */
 public class GridCacheReplicatedSequenceApiSelfTest extends GridCacheSequenceApiSelfAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
-
-        // Default cache configuration.
-        CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
-
-        dfltCacheCfg.setCacheMode(REPLICATED);
-        dfltCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        dfltCacheCfg.setAtomicSequenceReserveSize(BATCH_SIZE);
-
-        cfg.setCacheConfiguration(dfltCacheCfg);
-
-        return cfg;
+    @Override protected CacheMode atomicsCacheMode() {
+        return REPLICATED;
     }
 }

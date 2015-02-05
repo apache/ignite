@@ -1373,31 +1373,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     }
 
     /**
-     * @param msg Error message.
-     * @return Remote grid version parsed from error message.
-     * @deprecated This method was created for preserving backward compatibility. During major version update
-     *      parsing of error message should be replaced with new {@link org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage}
-     *      which contains all necessary information.
-     */
-    @Deprecated
-    @Nullable private String parseRemoteVersion(String msg) {
-        msg = msg.replaceAll("\\s", "");
-
-        final String verPrefix = "rmtBuildVer=";
-
-        int startIdx = msg.indexOf(verPrefix);
-        int endIdx = msg.indexOf(',', startIdx);
-
-        if (endIdx < 0)
-            endIdx = msg.indexOf(']', startIdx);
-
-        if (startIdx < 0 || endIdx < 0)
-            return null;
-
-        return msg.substring(startIdx + verPrefix.length() - 1, endIdx);
-    }
-
-    /**
      * Tries to send join request message to a random node presenting in topology.
      * Address is provided by {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} and message is
      * sent to first node connection succeeded to.
@@ -3638,7 +3613,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (topChanged) {
                     assert !node.visible() : "Added visible node [node=" + node + ", locNode=" + locNode + ']';
 
-                    List<Object> data = msg.newNodeDiscoveryData();
+                    Map<Integer, Object> data = msg.newNodeDiscoveryData();
 
                     if (data != null)
                         exchange.onExchange(data);
@@ -3653,7 +3628,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             if (msg.verified() && locNodeId.equals(node.id())) {
                 // Discovery data.
-                Collection<List<Object>> dataList;
+                Collection<Map<Integer, Object>> dataList;
 
                 synchronized (mux) {
                     if (spiState == CONNECTING && locNode.internalOrder() != node.internalOrder()) {
@@ -3712,7 +3687,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 // Notify outside of synchronized block.
                 if (dataList != null) {
-                    for (List<Object> discoData : dataList)
+                    for (Map<Integer, Object> discoData : dataList)
                         exchange.onExchange(discoData);
                 }
             }

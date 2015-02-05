@@ -325,7 +325,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                         m.put(i, val);
 
-                        cache.dataStructures().atomicLong("testLong" + i, 0, true).incrementAndGet();
+                        g.atomicLong("testLong" + i, 0, true).incrementAndGet();
                     }
 
                     cache.putAll(m);

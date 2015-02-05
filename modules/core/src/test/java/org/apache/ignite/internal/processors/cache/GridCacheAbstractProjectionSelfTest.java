@@ -348,7 +348,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
 
         assert locPrj.containsKey("key");
 
-        locPrj.clear("key");
+        locPrj.clearLocally("key");
 
         assert !locPrj.containsKey("key");
     }
@@ -488,7 +488,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
 
         assertFlagException(new CA() {
             @Override public void apply() {
-                readPrj.clear("key");
+                readPrj.clearLocally("key");
             }
         });
 
@@ -853,32 +853,5 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         });
 
         tx.commit();
-    }
-
-    /**
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void testTypedProjection() throws Exception {
-        GridCache<Object, Object> cache = grid(0).cache(null);
-
-        cache.putx("1", "test string");
-        cache.putx("2", 0);
-
-        final CacheProjection<String, String> prj = cache.projection(String.class, String.class);
-
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        prj.removeAll(new P1<CacheEntry<String, String>>() {
-            @Override
-            public boolean apply(CacheEntry<String, String> e) {
-                info(" --> " + e.peek().getClass());
-
-                latch.countDown();
-
-                return true;
-            }
-        });
-
-        assertTrue(latch.await(1, SECONDS));
     }
 }

@@ -19,11 +19,11 @@ package org.apache.ignite.internal.processors.hadoop.proto;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 
 import java.util.*;
 
-import static org.apache.ignite.hadoop.GridHadoopJobPhase.*;
+import static org.apache.ignite.internal.processors.hadoop.GridHadoopJobPhase.*;
 
 /**
  * Submit job task.

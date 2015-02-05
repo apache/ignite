@@ -21,10 +21,6 @@ package org.apache.ignite.client;
  * Protocol that will be used when client connections are created.
  */
 public enum GridClientProtocol {
-    /** Communication via HTTP protocol. */
-    @Deprecated
-    HTTP,
-
     /** Communication via tcp binary protocol. */
     TCP
 }

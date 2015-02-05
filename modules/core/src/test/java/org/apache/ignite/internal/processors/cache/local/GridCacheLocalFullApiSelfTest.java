@@ -21,8 +21,9 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -102,7 +103,7 @@ public class GridCacheLocalFullApiSelfTest extends GridCacheAbstractFullApiSelfT
         final AtomicLong cntr = new AtomicLong();
 
         // Some counter.
-        myCache.dataStructures().atomicLong("some_counter", 0L, true).incrementAndGet();
+        grid(0).jcache(null).put(new GridCacheInternalKeyImpl("test"), 1);
 
         // I would like to filter from key set all entities which key name is not started with "a_".
         IgnitePredicate<CacheEntry<String, Integer>> aPred = new IgnitePredicate<CacheEntry<String, Integer>>() {
