@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -45,8 +44,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.hadoop.GridHadoopJobPhase.*;
-import static org.apache.ignite.hadoop.GridHadoopTaskType.*;
+import static org.apache.ignite.internal.processors.hadoop.GridHadoopJobPhase.*;
+import static org.apache.ignite.internal.processors.hadoop.GridHadoopTaskType.*;
 import static org.apache.ignite.internal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
 
 /**

@@ -33,7 +33,6 @@ import org.apache.hadoop.security.token.*;
 import org.apache.ignite.*;
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.hadoop.counter.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.proto.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

@@ -237,7 +237,8 @@ public class IgniteFutureImplTest extends GridCommonAbstractTest {
             fut.listenAsync(lsnr1);
             fut.listenAsync(lsnr2);
 
-            fut.stopListenAsync(lsnr2, lsnr1);
+            fut.stopListenAsync(lsnr2);
+            fut.stopListenAsync(lsnr1);
 
             fut0.onDone("test");
 
