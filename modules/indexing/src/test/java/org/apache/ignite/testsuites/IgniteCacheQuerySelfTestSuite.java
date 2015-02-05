@@ -43,37 +43,36 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridQueryParsingTest.class);
 
         // Queries tests.
-        suite.addTestSuite(GridCacheQueryLoadSelfTest.class);
-        suite.addTestSuite(GridCacheQueryMetricsSelfTest.class);
-        suite.addTestSuite(GridCacheLocalQuerySelfTest.class);
-        suite.addTestSuite(GridCacheLocalAtomicQuerySelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedQuerySelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedQueryP2PDisabledSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedQuerySelfTest.class);
-        suite.addTestSuite(GridCacheAtomicQuerySelfTest.class);
-        suite.addTestSuite(GridCacheAtomicNearEnabledQuerySelfTest.class);
-        suite.addTestSuite(GridCachePartitionedQueryP2PDisabledSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedQueryMultiThreadedSelfTest.class);
-        suite.addTestSuite(GridCacheQueryIndexSelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryLoadSelfTest.class);
+        suite.addTestSuite(IgniteCacheLocalQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheLocalAtomicQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedQueryP2PDisabledSelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionedQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheAtomicQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheAtomicNearEnabledQuerySelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionedQueryP2PDisabledSelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionedQueryMultiThreadedSelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryIndexSelfTest.class);
         suite.addTestSuite(GridCacheQueryInternalKeysSelfTest.class);
-        suite.addTestSuite(GridCacheQueryMultiThreadedSelfTest.class);
-        suite.addTestSuite(GridCacheQueryEvictsMultiThreadedSelfTest.class);
-        suite.addTestSuite(GridCacheQueryOffheapMultiThreadedSelfTest.class);
-        suite.addTestSuite(GridCacheQueryOffheapEvictsMultiThreadedSelfTest.class);
-        suite.addTestSuite(GridCacheQueryNodeRestartSelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryMultiThreadedSelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryEvictsMultiThreadedSelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryOffheapMultiThreadedSelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryOffheapEvictsMultiThreadedSelfTest.class);
+        suite.addTestSuite(IgniteCacheQueryNodeRestartSelfTest.class);
         suite.addTestSuite(GridCacheReduceQueryMultithreadedSelfTest.class);
         suite.addTestSuite(GridCacheCrossCacheQuerySelfTest.class);
-        suite.addTestSuite(GridCacheSqlQueryMultiThreadedSelfTest.class);
+        suite.addTestSuite(IgniteCacheSqlQueryMultiThreadedSelfTest.class);
 
         // Fields queries.
-        suite.addTestSuite(GridCacheLocalFieldsQuerySelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedFieldsQuerySelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedFieldsQueryP2PDisabledSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedFieldsQuerySelfTest.class);
-        suite.addTestSuite(GridCacheAtomicFieldsQuerySelfTest.class);
-        suite.addTestSuite(GridCacheAtomicNearEnabledFieldsQuerySelfTest.class);
-        suite.addTestSuite(GridCachePartitionedFieldsQueryP2PDisabledSelfTest.class);
-        suite.addTestSuite(GridCacheFieldsQueryNoDataSelfTest.class);
+        suite.addTestSuite(IgniteCacheLocalFieldsQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedFieldsQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedFieldsQueryP2PDisabledSelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionedFieldsQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheAtomicFieldsQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheAtomicNearEnabledFieldsQuerySelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionedFieldsQueryP2PDisabledSelfTest.class);
+        suite.addTestSuite(IgniteCacheFieldsQueryNoDataSelfTest.class);
 
         // Continuous queries.
         suite.addTestSuite(GridCacheContinuousQueryLocalSelfTest.class);

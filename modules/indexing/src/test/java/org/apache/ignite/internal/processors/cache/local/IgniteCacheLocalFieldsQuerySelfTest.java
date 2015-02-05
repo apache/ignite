@@ -15,14 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.local;
+
+import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
+
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Multi-threaded tests for cache queries.
+ * Tests for fields queries.
  */
-public class GridCacheQueryOffheapEvictsMultiThreadedSelfTest extends GridCacheQueryOffheapMultiThreadedSelfTest {
+public class IgniteCacheLocalFieldsQuerySelfTest extends IgniteCacheAbstractFieldsQuerySelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean evictsEnabled() {
-        return true;
+    @Override protected CacheMode cacheMode() {
+        return LOCAL;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 1;
     }
 }

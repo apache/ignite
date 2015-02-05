@@ -17,49 +17,44 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.query.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Tests for fields queries.
  */
-public class GridCacheAtomicFieldsQuerySelfTest extends GridCachePartitionedFieldsQuerySelfTest {
+public class IgniteCachePartitionedFieldsQuerySelfTest extends IgniteCacheAbstractFieldsQuerySelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testCacheMetaData() throws Exception {
-        // No-op.
+    @Override protected CacheMode cacheMode() {
+        return PARTITIONED;
     }
 
     /**
-     *
+     * @return Distribution.
      */
-    public void testUnsupportedOperations() {
-        CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery(
-            "update Person set name = ?");
+    protected CacheDistributionMode distributionMode() {
+        return NEAR_PARTITIONED;
+    }
 
-        try {
-            qry.execute("Mary Poppins").get();
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 3;
+    }
 
-            fail("We don't support updates.");
-        }
-        catch (IgniteCheckedException e) {
-            X.println("___ " + e.getMessage());
-        }
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cache(@Nullable String name, @Nullable String spiName) {
+        CacheConfiguration cc = super.cache(name, spiName);
+
+        cc.setDistributionMode(distributionMode());
+
+        return cc;
     }
 }

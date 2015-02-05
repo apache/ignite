@@ -37,6 +37,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import javax.cache.*;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
@@ -44,7 +46,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  * Test for distributed queries with node restarts.
  */
-public class GridCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest {
+public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest {
     /** */
     private static final int GRID_CNT = 3;
 
@@ -105,7 +107,7 @@ public class GridCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest
         final long nodeLifeTime = 2 * 1000;
         final int logFreq = 20;
 
-        final GridCache<Integer, Integer> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         assert cache != null;
 
@@ -121,13 +123,10 @@ public class GridCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 while (!done.get()) {
-                    CacheQuery<Map.Entry<Integer, Integer>> qry =
-                        cache.queries().createSqlQuery(Integer.class, "_val >= 0");
+                    Collection<Cache.Entry<Integer, Integer>> res =
+                        cache.query(new QuerySqlPredicate<Integer, Integer>("_val >= 0")).getAll();
 
-                    qry.includeBackups(true);
-                    qry.keepAll(true);
-
-                    assertFalse(qry.execute().get().isEmpty());
+                    assertFalse(res.isEmpty());
 
                     int c = qryCnt.incrementAndGet();
 

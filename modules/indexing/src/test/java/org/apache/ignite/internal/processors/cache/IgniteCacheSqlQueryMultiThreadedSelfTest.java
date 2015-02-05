@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
@@ -27,6 +28,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -38,7 +40,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  *
  */
-public class GridCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstractTest {
+public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -85,7 +87,7 @@ public class GridCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testQuery() throws Exception {
-        final GridCache<Integer, Person> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Person> cache = grid(0).jcache(null);
 
         for (int i = 0; i < 2000; i++)
             cache.put(i, new Person(i));
@@ -93,19 +95,13 @@ public class GridCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstractTe
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 for (int i = 0; i < 100; i++) {
-                    CacheQuery<Map.Entry<Integer, Person>> qry =
-                        cache.queries().createSqlQuery("Person", "age >= 0");
-
-                    qry.includeBackups(false);
-                    qry.enableDedup(true);
-                    qry.keepAll(true);
-                    qry.pageSize(50);
-
-                    CacheQueryFuture<Map.Entry<Integer, Person>> fut = qry.execute();
+                    Iterator<Cache.Entry<Integer, Person>> iter =
+                        cache.query(new QuerySqlPredicate<Integer, Person>("Person", "age >= 0", 50, new Object[0]))
+                        .iterator();
 
                     int cnt = 0;
 
-                    while (fut.next() != null)
+                    while (iter.next() != null)
                         cnt++;
 
                     assertEquals(2000, cnt);

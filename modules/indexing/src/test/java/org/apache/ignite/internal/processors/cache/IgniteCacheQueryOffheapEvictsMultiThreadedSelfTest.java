@@ -15,20 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
-
-import org.apache.ignite.configuration.*;
+package org.apache.ignite.internal.processors.cache;
 
 /**
- * Tests for fields queries.
+ * Multi-threaded tests for cache queries.
  */
-public class GridCachePartitionedFieldsQueryP2PDisabledSelfTest extends GridCachePartitionedFieldsQuerySelfTest {
+public class IgniteCacheQueryOffheapEvictsMultiThreadedSelfTest extends IgniteCacheQueryOffheapMultiThreadedSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
-
-        c.setPeerClassLoadingEnabled(false);
-
-        return c;
+    @Override protected boolean evictsEnabled() {
+        return true;
     }
 }

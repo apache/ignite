@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache;
 
 /**
- * Multi-threaded tests for cache queries.
+ * Queries over off-heap indexes.
  */
-public class GridCacheQueryEvictsMultiThreadedSelfTest extends GridCacheQueryMultiThreadedSelfTest {
+public class IgniteCacheQueryOffheapMultiThreadedSelfTest extends IgniteCacheQueryMultiThreadedSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean evictsEnabled() {
+    @Override protected boolean offheapEnabled() {
         return true;
     }
 }

@@ -19,18 +19,12 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Tests for atomic cache with near cache enabled.
  */
-public class GridCacheAtomicNearEnabledQuerySelfTest extends GridCachePartitionedQuerySelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
-
+public class IgniteCacheAtomicNearEnabledFieldsQuerySelfTest extends IgniteCacheAtomicFieldsQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected CacheDistributionMode distributionMode() {
         return NEAR_PARTITIONED;

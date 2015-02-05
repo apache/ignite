@@ -34,6 +34,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 
@@ -43,7 +44,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 /**
  * Test that entries are indexed on load/reload methods.
  */
-public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
+public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -54,7 +55,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     private static final Map<Integer, ValueObject> STORE_MAP = new HashMap<>();
 
     /** */
-    public GridCacheQueryLoadSelfTest() {
+    public IgniteCacheQueryLoadSelfTest() {
         super(true);
     }
 
@@ -112,14 +113,14 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCache() throws Exception {
-        GridCache<Integer, ValueObject> cache = cache();
+        IgniteCache<Integer, ValueObject> cache = grid(0).jcache(null);
 
         cache.loadCache(null, 0);
 
         assert cache.size() == PUT_CNT;
 
-        Collection<Map.Entry<Integer, ValueObject>> res =
-            cache.queries().createSqlQuery(ValueObject.class, "val >= 0").execute().get();
+        Collection<Cache.Entry<Integer, ValueObject>> res =
+            cache.query(new QuerySqlPredicate<Integer, ValueObject>("val >= 0")).getAll();
 
         assertNotNull(res);
         assertEquals(PUT_CNT, res.size());
@@ -130,14 +131,16 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheAsync() throws Exception {
-        GridCache<Integer, ValueObject> cache = cache();
+        IgniteCache<Integer, ValueObject> cache = grid(0).jcache(null);
 
-        cache.loadCacheAsync(null, 0).get();
+        cache.withAsync().loadCache(null, 0);
+
+        cache.future().get();
 
         assert cache.size() == PUT_CNT;
 
-        Collection<Map.Entry<Integer, ValueObject>> res =
-            cache.queries().createSqlQuery(ValueObject.class, "val >= 0").execute().get();
+        Collection<Cache.Entry<Integer, ValueObject>> res =
+            cache.query(new QuerySqlPredicate<Integer, ValueObject>("val >= 0")).getAll();
 
         assert res != null;
         assert res.size() == PUT_CNT;
@@ -148,7 +151,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheFiltered() throws Exception {
-        GridCache<Integer, ValueObject> cache = cache();
+        IgniteCache<Integer, ValueObject> cache = grid(0).jcache(null);
 
         cache.loadCache(new P2<Integer, ValueObject>() {
             @Override public boolean apply(Integer key, ValueObject val) {
@@ -158,8 +161,8 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
         assert cache.size() == PUT_CNT - 5;
 
-        Collection<Map.Entry<Integer, ValueObject>> res =
-            cache.queries().createSqlQuery(ValueObject.class, "val >= 0").execute().get();
+        Collection<Cache.Entry<Integer, ValueObject>> res =
+            cache.query(new QuerySqlPredicate<Integer, ValueObject>("val >= 0")).getAll();
 
         assert res != null;
         assert res.size() == PUT_CNT - 5;
@@ -170,45 +173,24 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheAsyncFiltered() throws Exception {
-        GridCache<Integer, ValueObject> cache = cache();
+        IgniteCache<Integer, ValueObject> cache = grid(0).jcache(null);
 
-        cache.loadCacheAsync(new P2<Integer, ValueObject>() {
+        cache.withAsync().loadCache(new P2<Integer, ValueObject>() {
             @Override public boolean apply(Integer key, ValueObject val) {
                 return key >= 5;
             }
-        }, 0).get();
+        }, 0);
+
+        cache.future().get();
 
         assert cache.size() == PUT_CNT - 5;
 
-        Collection<Map.Entry<Integer, ValueObject>> res =
-            cache.queries().createSqlQuery(ValueObject.class, "val >= 0").execute().get();
+        Collection<Cache.Entry<Integer, ValueObject>> res =
+            cache.query(new QuerySqlPredicate<Integer, ValueObject>("val >= 0")).getAll();
 
         assert res != null;
         assert res.size() == PUT_CNT - 5;
         assert size(ValueObject.class) == PUT_CNT - 5;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReload() throws Exception {
-        STORE_MAP.put(1, new ValueObject(1));
-
-        GridCache<Integer, ValueObject> cache = cache();
-
-        ValueObject vo = cache.reload(1);
-
-        assertNotNull(vo);
-
-        assertEquals(1, vo.value());
-        assertEquals(1, cache.size());
-
-        Collection<Map.Entry<Integer, ValueObject>> res =
-            cache.queries().createSqlQuery(ValueObject.class, "val >= 0").execute().get();
-
-        assert res != null;
-        assert res.size() == 1;
-        assert size(ValueObject.class) == 1;
     }
 
     /**
@@ -267,125 +249,6 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         assertEquals(PUT_CNT - 5, cache.size());
 
         res = cache.queries().createSqlQuery(ValueObject.class, "val >= 0").execute().get();
-
-        assert res != null;
-        assert res.size() == PUT_CNT - 5;
-        assert size(ValueObject.class) == PUT_CNT - 5;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReloadAllAsync() throws Exception {
-        for (int i = 0; i < PUT_CNT; i++)
-            STORE_MAP.put(i, new ValueObject(i));
-
-        GridCache<Integer, ValueObject> cache = cache();
-
-        Integer[] keys = new Integer[PUT_CNT - 5];
-
-        for (int i = 0; i < PUT_CNT - 5; i++)
-            keys[i] = i + 5;
-
-        cache.reloadAllAsync(F.asList(keys)).get();
-
-        assert cache.size() == PUT_CNT - 5;
-
-        Collection<Map.Entry<Integer, ValueObject>> res =
-            cache.queries().createSqlQuery(ValueObject.class, "val >= 0").execute().get();
-
-        assert res != null;
-        assert res.size() == PUT_CNT - 5;
-        assert size(ValueObject.class) == PUT_CNT - 5;
-
-        // Invalidate will remove entries.
-        for (Integer key : keys)
-            cache.clear(key);
-
-        assert cache.isEmpty();
-        assertEquals(0, cache.size());
-
-        cache.reloadAllAsync(Arrays.asList(keys)).get();
-
-        assertEquals(PUT_CNT - 5, cache.size());
-
-        res = cache.queries().createSqlQuery(ValueObject.class, "val >= 0").execute().get();
-
-        assert res != null;
-        assert res.size() == PUT_CNT - 5;
-        assert size(ValueObject.class) == PUT_CNT - 5;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReloadAllFiltered() throws Exception {
-        GridCache<Integer, ValueObject> cache = cache();
-
-        for (int i = 0; i < PUT_CNT; i++)
-            assert cache.putx(i, new ValueObject(i));
-
-        assert cache.size() == PUT_CNT;
-
-        Integer[] keys = new Integer[PUT_CNT];
-
-        for (int i = 0; i < PUT_CNT; i++)
-            keys[i] = i;
-
-        for (Integer key : keys)
-            cache.clear(key);
-
-        assert cache.isEmpty();
-        assertEquals(0, cache.size());
-
-        cache.projection(new P1<CacheEntry<Integer, ValueObject>>() {
-            @Override public boolean apply(CacheEntry<Integer, ValueObject> e) {
-                return e.getKey() >= 5;
-            }
-        }).reloadAll(Arrays.asList(keys));
-
-        assert cache.size() == PUT_CNT - 5;
-
-        Collection<Map.Entry<Integer, ValueObject>> res =
-            cache.queries().createSqlQuery(ValueObject.class, "val >= 0").execute().get();
-
-        assert res != null;
-        assert res.size() == PUT_CNT - 5;
-        assert size(ValueObject.class) == PUT_CNT - 5;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReloadAllAsyncFiltered() throws Exception {
-        GridCache<Integer, ValueObject> cache = cache();
-
-        for (int i = 0; i < PUT_CNT; i++)
-            assert cache.putx(i, new ValueObject(i));
-
-        assert cache.size() == PUT_CNT;
-
-        Integer[] keys = new Integer[PUT_CNT];
-
-        for (int i = 0; i < PUT_CNT; i++)
-            keys[i] = i;
-
-        for (Integer key : keys)
-            cache.clear(key);
-
-        assert cache.isEmpty();
-        assertEquals(0, cache.size());
-
-        cache.projection(new P1<CacheEntry<Integer, ValueObject>>() {
-            @Override public boolean apply(CacheEntry<Integer, ValueObject> e) {
-                return e.getKey() >= 5;
-            }
-        }).reloadAllAsync(Arrays.asList(keys)).get();
-
-        assertEquals(5, cache.size());
-
-        Collection<Map.Entry<Integer, ValueObject>> res =
-            cache.queries().createSqlQuery(ValueObject.class, "val >= 0").execute().get();
 
         assert res != null;
         assert res.size() == PUT_CNT - 5;

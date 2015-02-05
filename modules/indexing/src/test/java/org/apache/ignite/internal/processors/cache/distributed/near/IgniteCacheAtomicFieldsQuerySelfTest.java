@@ -17,15 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.util.typedef.*;
+
+import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
- * Tests for partitioned cache queries.
+ * Tests for fields queries.
  */
-public class GridCacheAtomicQuerySelfTest extends GridCachePartitionedQuerySelfTest {
+public class IgniteCacheAtomicFieldsQuerySelfTest extends IgniteCachePartitionedFieldsQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
@@ -34,5 +39,22 @@ public class GridCacheAtomicQuerySelfTest extends GridCachePartitionedQuerySelfT
     /** {@inheritDoc} */
     @Override protected CacheDistributionMode distributionMode() {
         return PARTITIONED_ONLY;
+    }
+
+    /**
+     *
+     */
+    public void testUnsupportedOperations() {
+        try {
+            QueryCursor<List<?>> qry = grid(0).jcache(null).queryFields(new QuerySqlPredicate<>(
+                "update Person set name = ?", "Mary Poppins"));
+
+            qry.getAll();
+
+            fail("We don't support updates.");
+        }
+        catch (Exception e) {
+            X.println("___ " + e.getMessage());
+        }
     }
 }

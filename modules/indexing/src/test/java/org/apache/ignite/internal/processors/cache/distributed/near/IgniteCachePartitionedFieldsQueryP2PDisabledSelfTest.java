@@ -15,18 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.local;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import org.apache.ignite.configuration.*;
 
 /**
- * Tests query for local cache in atomic mode.
+ * Tests for fields queries.
  */
-public class GridCacheLocalAtomicQuerySelfTest extends GridCacheLocalQuerySelfTest {
+public class IgniteCachePartitionedFieldsQueryP2PDisabledSelfTest extends IgniteCachePartitionedFieldsQuerySelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(gridName);
+
+        c.setPeerClassLoadingEnabled(false);
+
+        return c;
     }
 }
