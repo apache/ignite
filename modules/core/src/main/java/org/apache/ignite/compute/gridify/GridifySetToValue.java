@@ -175,7 +175,7 @@ public @interface GridifySetToValue {
      * <p>
      * This value should be greater than zero and can be less, equal or greater than {@link #threshold()}
      * value. In most cases, however, the optimal value for the split size is the {@link #threshold()} value.
-     * For example, if input collection size is 100, number of nodes 10 and split size is set to 5 - Ignition
+     * For example, if input collection size is 100, number of nodes 10 and split size is set to 5 - Ignite
      * will submit 2 sub-collections of 5 elements each to each node (provided in order by load
      * balancing SPI).
      * <p>

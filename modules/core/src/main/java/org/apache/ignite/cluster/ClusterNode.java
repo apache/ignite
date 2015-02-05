@@ -178,7 +178,7 @@ public interface ClusterNode {
      * <p>
      * If {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()} value isn't {@code null} node will try to use that
      * address for all communications and returned collection will contain only that address.
-     * If it is {@code null} then local wildcard address will be used, and Ignition
+     * If it is {@code null} then local wildcard address will be used, and Ignite
      * will make the best effort to supply all addresses of that node in returned collection.
      *
      * @return Collection of addresses.

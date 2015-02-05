@@ -53,7 +53,7 @@ import java.util.*;
  *          Job will be rejected. In this case the {@link ComputeJobResult} passed into
  *          {@link ComputeTask#result(ComputeJobResult, List)} method will contain
  *          {@link ComputeExecutionRejectedException} exception. If you are using any
- *          of the task adapters shipped with Ignition, then job will be failed
+ *          of the task adapters shipped with Ignite, then job will be failed
  *          over automatically for execution on another node.
  *      </li>
  *      </ul>
