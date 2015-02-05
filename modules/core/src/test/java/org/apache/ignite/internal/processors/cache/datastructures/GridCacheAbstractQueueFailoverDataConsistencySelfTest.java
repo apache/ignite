@@ -114,7 +114,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     private void testAddFailover(boolean collocated) throws Exception {
         IgniteCollectionConfiguration colCfg = config(collocated);
 
-        IgniteQueue<Integer> queue = grid(0).queue(QUEUE_NAME, colCfg, 0,true);
+        IgniteQueue<Integer> queue = grid(0).queue(QUEUE_NAME, 0, colCfg);
 
         assertNotNull(queue);
         assertEquals(0, queue.size());
@@ -131,7 +131,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
         log.info("Test node: " + testNodeIdx) ;
         log.info("Header primary node: " + primaryNode) ;
 
-        queue = grid(testNodeIdx).queue(QUEUE_NAME, null, 0, false);
+        queue = grid(testNodeIdx).queue(QUEUE_NAME, 0, null);
 
         assertNotNull(queue);
 
@@ -209,7 +209,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     private void testPollFailover(boolean collocated) throws Exception {
         IgniteCollectionConfiguration colCfg = config(collocated);
 
-        IgniteQueue<Integer> queue = grid(0).queue(QUEUE_NAME, colCfg, 0, true);
+        IgniteQueue<Integer> queue = grid(0).queue(QUEUE_NAME, 0, colCfg);
 
         assertNotNull(queue);
         assertEquals(0, queue.size());
@@ -226,7 +226,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
         log.info("Test node: " + testNodeIdx) ;
         log.info("Primary node: " + primaryNode) ;
 
-        queue = grid(testNodeIdx).queue(QUEUE_NAME, null, 0, false);
+        queue = grid(testNodeIdx).queue(QUEUE_NAME, 0, null);
 
         assertNotNull(queue);
 

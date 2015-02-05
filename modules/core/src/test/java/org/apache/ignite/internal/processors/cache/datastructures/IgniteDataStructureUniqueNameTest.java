@@ -128,7 +128,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                ignite.queue(name, config(false), 0, true);
+                ignite.queue(name, 0, config(false));
 
                 return null;
             }
@@ -136,7 +136,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                ignite.queue(name, null, 0, false);
+                ignite.queue(name, 0, null);
 
                 return null;
             }
@@ -144,7 +144,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                ignite.set(name, config(false), true);
+                ignite.set(name, config(false));
 
                 return null;
             }
@@ -152,7 +152,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                ignite.set(name, null, false);
+                ignite.set(name, null);
 
                 return null;
             }
@@ -160,25 +160,26 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
 
         atomicLong.close();
 
-        IgniteQueue<Integer> q = ignite.queue(name, config(false), 0, true);
+        IgniteQueue<Integer> q = ignite.queue(name, 0, config(false));
 
         assertNotNull(q);
 
-        assertSame(q, ignite.queue(name, config(false), 0, true));
+        assertSame(q, ignite.queue(name, 0, config(false)));
 
-        assertSame(q, ignite.queue(name, null, 0, false));
+        assertSame(q, ignite.queue(name, 0, null));
 
         q.close();
 
-        assertNull(ignite.set(name, null, false));
+        assertNull(ignite.set(name, null));
 
-        IgniteSet<Integer> set = ignite.set(name, config(false), true);
+        IgniteSet<Integer> set = ignite.set(name, config(false));
 
         assertNotNull(set);
 
-        assertSame(set, ignite.set(name, config(false), true));
+        assertSame(set, ignite.set(name, config(false)));
 
-        assertSame(set, ignite.set(name, null, false));
+        assertSame(set, ignite.set(name, null));
+
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 ignite.atomicReference(name, 0, false);
@@ -189,7 +190,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                ignite.queue(name, config(false), 0, true);
+                ignite.queue(name, 0, config(false));
 
                 return null;
             }
@@ -198,7 +199,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override
             public Void call() throws Exception {
-                ignite.queue(name, null, 0, false);
+                ignite.queue(name, 0, null);
 
                 return null;
             }
@@ -284,14 +285,14 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
                                 case 5:
                                     log.info("Create queue, grid: " + ignite.name());
 
-                                    res = ignite.queue(name, config(false), 0, true);
+                                    res = ignite.queue(name, 0, config(false));
 
                                     break;
 
                                 case 6:
                                     log.info("Create set, grid: " + ignite.name());
 
-                                    res = ignite.set(name, config(false), true);
+                                    res = ignite.set(name, config(false));
 
                                     break;
 

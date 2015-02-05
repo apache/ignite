@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.datastructures.*;
@@ -517,7 +516,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
     @SuppressWarnings("unchecked")
     @Nullable private <T> T retryPutIfAbsent(final GridCache cache, final Object key, final T val)
         throws IgniteCheckedException {
-        return CacheDataStructuresProcessor.retry(log, new Callable<T>() {
+        return DataStructuresProcessor.retry(log, new Callable<T>() {
             @Nullable @Override public T call() throws Exception {
                 return (T)cache.putIfAbsent(key, val);
             }
@@ -532,7 +531,7 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
     @SuppressWarnings("unchecked")
     private void retryRemoveAll(final GridCache cache, final Collection<GridCacheSetItemKey> keys)
         throws IgniteCheckedException {
-        CacheDataStructuresProcessor.retry(log, new Callable<Void>() {
+        DataStructuresProcessor.retry(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
                 cache.removeAll(keys);
 

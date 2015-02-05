@@ -58,7 +58,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends IgniteCol
     public void testTakeFromJoined() throws Exception {
         String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<Integer> queue = grid(0).queue(queueName, config(true), 0, true);
+        IgniteQueue<Integer> queue = grid(0).queue(queueName, 0, config(true));
 
         assertNotNull(queue);
 
@@ -156,7 +156,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends IgniteCol
                 ", job=" + getClass().getSimpleName() + "]");
 
             try {
-                IgniteQueue<Integer> queue = ignite.queue(queueName, null, 0, false);
+                IgniteQueue<Integer> queue = ignite.queue(queueName, 0, null);
 
                 assertNotNull(queue);
 
@@ -250,7 +250,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends IgniteCol
             Integer lastPolled = null;
 
             try {
-                IgniteQueue<Integer> queue = ignite.queue(queueName, null, 0, false);
+                IgniteQueue<Integer> queue = ignite.queue(queueName, 0, null);
 
                 assertNotNull(queue);
 

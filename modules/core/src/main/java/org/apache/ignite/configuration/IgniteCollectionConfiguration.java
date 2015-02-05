@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Configuration for Ignite collections.
@@ -57,5 +58,10 @@ public class IgniteCollectionConfiguration {
      */
     public void setCacheName(String cacheName) {
         this.cacheName = cacheName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgniteCollectionConfiguration.class, this);
     }
 }

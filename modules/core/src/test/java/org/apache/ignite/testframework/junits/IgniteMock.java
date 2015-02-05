@@ -254,17 +254,15 @@ public class IgniteMock implements Ignite {
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteQueue<T> queue(String name,
-        IgniteCollectionConfiguration cfg,
         int cap,
-        boolean create)
+        IgniteCollectionConfiguration cfg)
     {
         return null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteSet<T> set(String name,
-        IgniteCollectionConfiguration cfg,
-        boolean create)
+        IgniteCollectionConfiguration cfg)
     {
         return null;
     }

@@ -108,9 +108,8 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
                     Ignite ignite = grid(0);
 
                     IgniteQueue<Integer> queue = ignite.queue(queueName,
-                        config(true),
                         QUEUE_CAP,
-                        true);
+                        config(true));
 
                     for (int i = 0; i < QUEUE_CAP * 2; i++) {
                         if (i == QUEUE_CAP) {
@@ -149,10 +148,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
                 @Override public Void call() throws IgniteCheckedException {
                     Ignite ignite = grid(GRID_CNT);
 
-                    IgniteQueue<Integer> queue = ignite.queue(queueName,
-                        config(true),
-                        Integer.MAX_VALUE,
-                        true);
+                    IgniteQueue<Integer> queue = ignite.queue(queueName, Integer.MAX_VALUE, config(true));
 
                     int cnt = 0;
 

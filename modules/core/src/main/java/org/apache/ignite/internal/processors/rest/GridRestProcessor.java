@@ -562,13 +562,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 break;
 
-            // TODO IGNITE-6.
-            case ATOMIC_INCREMENT:
-            case ATOMIC_DECREMENT:
-                perm = GridSecurityPermission.CACHE_PUT;
-
-                break;
-
             case CACHE_PUT:
             case CACHE_ADD:
             case CACHE_PUT_ALL:

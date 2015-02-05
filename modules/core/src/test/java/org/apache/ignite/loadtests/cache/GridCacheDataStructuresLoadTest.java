@@ -236,7 +236,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
         new CIX1<Ignite>() {
         @Override public void applyx(Ignite ignite)
             throws IgniteCheckedException {
-            IgniteQueue<Integer> q = ignite.queue(TEST_QUEUE_NAME, colCfg, 0, true);
+            IgniteQueue<Integer> q = ignite.queue(TEST_QUEUE_NAME, 0, colCfg);
 
             for (int i = 0; i < operationsPerTx; i++) {
                 q.put(RAND.nextInt(MAX_INT));
@@ -254,7 +254,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
         new CIX1<Ignite>() {
         @Override public void applyx(Ignite ignite)
             throws IgniteCheckedException {
-            IgniteQueue<Integer> q = ignite.queue(TEST_QUEUE_NAME, colCfg, 0, true);
+            IgniteQueue<Integer> q = ignite.queue(TEST_QUEUE_NAME, 0, colCfg);
 
             for (int i = 0; i < operationsPerTx; i++) {
                 q.peek();

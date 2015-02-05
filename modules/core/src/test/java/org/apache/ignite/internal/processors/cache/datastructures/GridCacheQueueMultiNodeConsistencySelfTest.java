@@ -137,7 +137,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
 
         final String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<Integer> queue0 = grid(0).queue(queueName, config(false), QUEUE_CAPACITY, true);
+        IgniteQueue<Integer> queue0 = grid(0).queue(queueName, QUEUE_CAPACITY, config(false));
 
         assertTrue(queue0.isEmpty());
 
@@ -168,7 +168,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
 
                 grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
 
-                IgniteQueue<Integer> locQueue = grid.queue(queueName, config(false), QUEUE_CAPACITY, true);
+                IgniteQueue<Integer> locQueue = grid.queue(queueName, QUEUE_CAPACITY, config(false));
 
                 grid.log().info("Queue size " + locQueue.size());
 

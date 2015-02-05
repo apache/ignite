@@ -82,7 +82,7 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
      */
     @SuppressWarnings("WhileLoopReplaceableByForEach")
     public void testNodeRestart() throws Exception {
-        IgniteSet<Integer> set = grid(0).set(SET_NAME, config(false), true);
+        IgniteSet<Integer> set = grid(0).set(SET_NAME, config(false));
 
         final int ITEMS = 10_000;
 
@@ -149,7 +149,7 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
 
                 log.info("Create new set.");
 
-                set = grid(0).set(SET_NAME, config(false), true);
+                set = grid(0).set(SET_NAME, config(false));
 
                 set.addAll(items);
             }

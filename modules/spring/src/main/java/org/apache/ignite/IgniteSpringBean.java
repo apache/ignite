@@ -364,23 +364,21 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteQueue<T> queue(String name,
-        IgniteCollectionConfiguration cfg,
         int cap,
-        boolean create)
+        IgniteCollectionConfiguration cfg)
     {
         assert g != null;
 
-        return g.queue(name, cfg, cap, create);
+        return g.queue(name, cap, cfg);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteSet<T> set(String name,
-        IgniteCollectionConfiguration cfg,
-        boolean create)
+        IgniteCollectionConfiguration cfg)
     {
         assert g != null;
 
-        return g.set(name, cfg, create);
+        return g.set(name, cfg);
     }
 
     /** {@inheritDoc} */

@@ -72,7 +72,7 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
      * @throws Exception If failed.
      */
     public void testCleanup() throws Exception {
-        IgniteQueue<Integer> queue = grid(0).queue(QUEUE_NAME1, config(false), 0, true);
+        IgniteQueue<Integer> queue = grid(0).queue(QUEUE_NAME1, 0, config(false));
 
         GridCacheContext cctx = GridTestUtils.getFieldValue(queue, "cctx");
 
@@ -161,7 +161,7 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
         // Remove queue and create queue with the same name.
         queue.close();
 
-        queue = ignite.queue(QUEUE_NAME1, config(false), 0, true);
+        queue = ignite.queue(QUEUE_NAME1, 0, config(false));
 
         assertEquals(0, queue.size());
 
@@ -212,7 +212,7 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
     private IgniteInternalFuture<?> startAddPollThread(final Ignite ignite, final AtomicBoolean stop, final String queueName) {
         return GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                IgniteQueue<Integer> queue = ignite.queue(queueName, config(false), 0, true);
+                IgniteQueue<Integer> queue = ignite.queue(queueName, 0, config(false));
 
                 assertEquals(0, queue.size());
 

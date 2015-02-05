@@ -52,7 +52,7 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
 
         cfg.setDiscoverySpi(spi);
 
-        // TODO IGNITE-45: remove cache configuration when dynamic cache start is implemented.
+        // TODO IGNITE-180: remove cache configuration when dynamic cache start is implemented.
         TestCollectionConfiguration colCfg = collectionConfiguration();
 
         assertNotNull(colCfg);
@@ -129,7 +129,7 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
     }
 
     /**
-     * TODO IGNITE-45: move properties to IgniteCollectionConfiguration.
+     * TODO IGNITE-180: move properties to IgniteCollectionConfiguration.
      */
     public static class TestCollectionConfiguration {
         /** Default backups number. */

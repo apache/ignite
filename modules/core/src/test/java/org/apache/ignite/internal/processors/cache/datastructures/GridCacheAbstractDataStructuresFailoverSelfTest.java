@@ -613,20 +613,20 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testFifoQueueTopologyChange() throws Exception {
         try {
-            grid(0).queue(STRUCTURE_NAME, config(false), 0, true).put(10);
+            grid(0).queue(STRUCTURE_NAME, 0, config(false)).put(10);
 
             Ignite g = startGrid(NEW_GRID_NAME);
 
-            assert g.<Integer>queue(STRUCTURE_NAME, null, 0, false).poll() == 10;
+            assert g.<Integer>queue(STRUCTURE_NAME, 0, null).poll() == 10;
 
-            g.queue(STRUCTURE_NAME, null, 0, false).put(20);
+            g.queue(STRUCTURE_NAME, 0, null).put(20);
 
             stopGrid(NEW_GRID_NAME);
 
-            assert grid(0).<Integer>queue(STRUCTURE_NAME, null, 0, false).peek() == 20;
+            assert grid(0).<Integer>queue(STRUCTURE_NAME, 0, null).peek() == 20;
         }
         finally {
-            grid(0).<Integer>queue(STRUCTURE_NAME, null, 0, false).close();
+            grid(0).<Integer>queue(STRUCTURE_NAME, 0, null).close();
         }
     }
 
@@ -634,7 +634,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testQueueConstantTopologyChange() throws Exception {
-        try (IgniteQueue<Integer> s = grid(0).queue(STRUCTURE_NAME, config(false), 0, true)) {
+        try (IgniteQueue<Integer> s = grid(0).queue(STRUCTURE_NAME, 0, config(false))) {
             s.put(1);
 
             IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
@@ -646,7 +646,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                             try {
                                 Ignite g = startGrid(name);
 
-                                assert g.<Integer>queue(STRUCTURE_NAME, null, 0, false).peek() > 0;
+                                assert g.<Integer>queue(STRUCTURE_NAME, 0, null).peek() > 0;
                             }
                             finally {
                                 if (i != TOP_CHANGE_CNT - 1)
@@ -670,7 +670,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
             fut.get();
 
             for (Ignite g : G.allGrids())
-                assert g.<Integer>queue(STRUCTURE_NAME, null, 0, false).peek() == origVal;
+                assert g.<Integer>queue(STRUCTURE_NAME, 0, null).peek() == origVal;
         }
     }
 
@@ -678,7 +678,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testQueueConstantMultipleTopologyChange() throws Exception {
-        try (IgniteQueue<Integer> s = grid(0).queue(STRUCTURE_NAME, config(false), 0, true)) {
+        try (IgniteQueue<Integer> s = grid(0).queue(STRUCTURE_NAME, 0, config(false))) {
             s.put(1);
 
             IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
@@ -695,7 +695,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                                     Ignite g = startGrid(name);
 
-                                    assert g.<Integer>queue(STRUCTURE_NAME, null, 0, false).peek() > 0;
+                                    assert g.<Integer>queue(STRUCTURE_NAME, 0, null).peek() > 0;
                                 }
                             }
                             finally {
@@ -721,7 +721,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
             fut.get();
 
             for (Ignite g : G.allGrids())
-                assert g.<Integer>queue(STRUCTURE_NAME, null, 0, false).peek() == origVal;
+                assert g.<Integer>queue(STRUCTURE_NAME, 0, null).peek() == origVal;
         }
     }
 

@@ -40,14 +40,14 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
-import static org.apache.ignite.internal.processors.datastructures.CacheDataStructuresProcessor.DataStructureType.*;
+import static org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor.DataStructureType.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Manager of data structures.
  */
-public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
+public final class DataStructuresProcessor extends GridProcessorAdapter {
     /** */
     public static final CacheDataStructuresConfigurationKey DATA_STRUCTURES_KEY =
         new CacheDataStructuresConfigurationKey();
@@ -94,7 +94,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
     /**
      * @param ctx Context.
      */
-    public CacheDataStructuresProcessor(GridKernalContext ctx) {
+    public DataStructuresProcessor(GridKernalContext ctx) {
         super(ctx);
 
         dsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
@@ -672,23 +672,19 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
      * Gets a queue from cache or creates one if it's not cached.
      *
      * @param name Name of queue.
-     * @param cfg Queue configuration.
      * @param cap Max size of queue.
-     * @param create If {@code true} queue will be created in case it is not in cache.
+     * @param cfg Non-null queue configuration if new queue should be created.
      * @return Instance of queue.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     public final <T> IgniteQueue<T> queue(final String name,
-        @Nullable final IgniteCollectionConfiguration cfg,
         int cap,
-        final boolean create)
+        @Nullable final IgniteCollectionConfiguration cfg)
         throws IgniteCheckedException {
         A.notNull(name, "name");
 
-        if (create) {
-            A.notNull(cfg, "cfg");
-
+        if (cfg != null) {
             if (cap <= 0)
                 cap = Integer.MAX_VALUE;
 
@@ -698,9 +694,11 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
 
         DataStructureInfo dsInfo = new DataStructureInfo(name,
             QUEUE,
-            create ? new QueueInfo(cfg.getCacheName(), cfg.isCollocated(), cap) : null);
+            cfg != null ? new QueueInfo(cfg.getCacheName(), cfg.isCollocated(), cap) : null);
 
         final int cap0 = cap;
+
+        final boolean create = cfg != null;
 
         return getCollection(new IgniteClosureX<GridCacheContext, IgniteQueue<T>>() {
             @Override public IgniteQueue<T> applyx(GridCacheContext ctx) throws IgniteCheckedException {
@@ -1051,28 +1049,26 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
      * Gets a set from cache or creates one if it's not cached.
      *
      * @param name Set name.
-     * @param cfg Set configuration.
-     * @param create If {@code true} set will be created in case it is not in cache.
+     * @param cfg Set configuration if new set should be created.
      * @return Set instance.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     @Nullable public <T> IgniteSet<T> set(final String name,
-        @Nullable final IgniteCollectionConfiguration cfg,
-        final boolean create)
+        @Nullable final IgniteCollectionConfiguration cfg)
         throws IgniteCheckedException {
         A.notNull(name, "name");
 
-        if (create) {
-            A.notNull(cfg, "cfg");
-
+        if (cfg != null) {
             if (ctx.cache().publicCache(cfg.getCacheName()) == null)
                 throw new IgniteCheckedException("Cache for collection is not configured: " + cfg.getCacheName());
         }
 
         DataStructureInfo dsInfo = new DataStructureInfo(name,
             SET,
-            create ? new CollectionInfo(cfg.getCacheName(), cfg.isCollocated()) : null);
+            cfg != null ? new CollectionInfo(cfg.getCacheName(), cfg.isCollocated()) : null);
+
+        final boolean create = cfg != null;
 
         return getCollection(new CX1<GridCacheContext, IgniteSet<T>>() {
             @Override public IgniteSet<T> applyx(GridCacheContext cctx) throws IgniteCheckedException {

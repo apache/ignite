@@ -385,7 +385,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      */
     private <R> R retry(Callable<R> call) {
         try {
-            return CacheDataStructuresProcessor.retry(log, call);
+            return DataStructuresProcessor.retry(log, call);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

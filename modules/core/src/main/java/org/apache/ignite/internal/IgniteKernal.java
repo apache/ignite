@@ -759,7 +759,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 IgniteComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
                 IgniteComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)), attrs);
             startProcessor(ctx, new GridServiceProcessor(ctx), attrs);
-            startProcessor(ctx, new CacheDataStructuresProcessor(ctx), attrs);
+            startProcessor(ctx, new DataStructuresProcessor(ctx), attrs);
 
             // Start plugins.
             for (PluginProvider provider : ctx.plugins().allProviders()) {
@@ -3366,14 +3366,13 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteQueue<T> queue(String name,
-        IgniteCollectionConfiguration cfg,
         int cap,
-        boolean create)
+        IgniteCollectionConfiguration cfg)
     {
         guard();
 
         try {
-            return ctx.dataStructures().queue(name, cfg, cap, create);
+            return ctx.dataStructures().queue(name, cap, cfg);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -3385,13 +3384,12 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteSet<T> set(String name,
-        IgniteCollectionConfiguration cfg,
-        boolean create)
+        IgniteCollectionConfiguration cfg)
     {
         guard();
 
         try {
-            return ctx.dataStructures().set(name, cfg, create);
+            return ctx.dataStructures().set(name, cfg);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

@@ -84,7 +84,7 @@ public class IgniteQueueExample {
         colCfg.setCacheName(CACHE_NAME);
 
         // Initialize new FIFO queue.
-        IgniteQueue<String> queue = ignite.queue(queueName, colCfg, 0, true);
+        IgniteQueue<String> queue = ignite.queue(queueName, 0, colCfg);
 
         // Initialize queue items.
         // We will be use blocking operation and queue size must be appropriated.
@@ -179,7 +179,7 @@ public class IgniteQueueExample {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            IgniteQueue<String> queue = Ignition.ignite().queue(queueName, null, 0, false);
+            IgniteQueue<String> queue = Ignition.ignite().queue(queueName, 0, null);
 
             if (put) {
                 UUID locId = Ignition.ignite().cluster().localNode().id();

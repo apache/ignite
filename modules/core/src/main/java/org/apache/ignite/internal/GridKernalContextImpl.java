@@ -259,7 +259,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private CacheDataStructuresProcessor dataStructuresProc;
+    private DataStructuresProcessor dataStructuresProc;
 
     /** */
     @GridToStringExclude
@@ -448,8 +448,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             pluginProc = (IgnitePluginProcessor)comp;
         else if (comp instanceof GridQueryProcessor)
             qryProc = (GridQueryProcessor)comp;
-        else if (comp instanceof CacheDataStructuresProcessor)
-            dataStructuresProc = (CacheDataStructuresProcessor)comp;
+        else if (comp instanceof DataStructuresProcessor)
+            dataStructuresProc = (DataStructuresProcessor)comp;
         else
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
@@ -702,7 +702,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public CacheDataStructuresProcessor dataStructures() {
+    @Override public DataStructuresProcessor dataStructures() {
         return dataStructuresProc;
     }
 

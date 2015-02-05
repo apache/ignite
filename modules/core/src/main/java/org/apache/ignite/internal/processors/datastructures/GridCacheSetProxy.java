@@ -546,7 +546,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         try {
             IgniteBiTuple<GridKernalContext, String> t = stash.get();
 
-            return t.get1().dataStructures().set(t.get2(), null, false);
+            return t.get1().dataStructures().set(t.get2(), null);
         }
         catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

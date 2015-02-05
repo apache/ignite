@@ -361,41 +361,36 @@ public interface Ignite extends AutoCloseable {
         throws IgniteException;
 
     /**
-     * Will get a named queue from cache and create one if it has not been created yet and {@code create} flag
-     * is {@code true}.
-     * If queue is present in cache already, queue properties will not be changed. Use
+     * Will get a named queue from cache and create one if it has not been created yet and {@code cfg} is not
+     * {@code null}.
+     * If queue is present already, queue properties will not be changed. Use
      * collocation for {@link CacheMode#PARTITIONED} caches if you have lots of relatively
      * small queues as it will make fetching, querying, and iteration a lot faster. If you have
      * few very large queues, then you should consider turning off collocation as they simply
-     * may not fit in a single node's memory. However note that in this case
-     * to get a single element off the queue all nodes may have to be queried.
+     * may not fit in a single node's memory.
      *
      * @param name Name of queue.
-     * @param cfg Queue configuration. Ignored if {@code create} flag is {@code false}.
-     * @param cap Capacity of queue, {@code 0} for unbounded queue. Ignored if {@code create} flag is {@code false}.
-     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @param cap Capacity of queue, {@code 0} for unbounded queue. Ignored if {@code cfg} is {@code null}.
+     * @param cfg Queue configuration if new queue should be created.
      * @return Queue with given properties.
      * @throws IgniteException If queue could not be fetched or created.
      */
     @Nullable public <T> IgniteQueue<T> queue(String name,
-        IgniteCollectionConfiguration cfg,
         int cap,
-        boolean create)
+        @Nullable IgniteCollectionConfiguration cfg)
         throws IgniteException;
 
     /**
-     * Will get a named set from cache and create one if it has not been created yet and {@code create} flag
-     * is {@code true}.
+     * Will get a named set from cache and create one if it has not been created yet and {@code cfg} is not
+     * {@code null}.
      *
      * @param name Set name.
-     * @param cfg Set configuration. Ignored if {@code create} flag is {@code false}.
-     * @param create Flag indicating whether set should be created if does not exist.
+     * @param cfg Set configuration if new set should be created.
      * @return Set with given properties.
      * @throws IgniteException If set could not be fetched or created.
      */
     @Nullable public <T> IgniteSet<T> set(String name,
-        IgniteCollectionConfiguration cfg,
-        boolean create)
+        @Nullable IgniteCollectionConfiguration cfg)
         throws IgniteException;
 
     /**

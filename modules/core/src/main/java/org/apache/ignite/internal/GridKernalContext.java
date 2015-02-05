@@ -437,7 +437,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Data structures processor.
      */
-    public CacheDataStructuresProcessor dataStructures();
+    public DataStructuresProcessor dataStructures();
 
     /**
      * Sets segmented flag to {@code true} when node is stopped due to segmentation issues.

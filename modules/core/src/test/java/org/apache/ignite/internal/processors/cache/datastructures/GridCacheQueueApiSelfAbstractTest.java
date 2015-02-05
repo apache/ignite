@@ -52,9 +52,9 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
         IgniteCollectionConfiguration colCfg = config(false);
 
-        IgniteQueue queue1 = grid(0).queue(queueName1, colCfg, 0, true);
-        IgniteQueue queue2 = grid(0).queue(queueName2, colCfg, 0, true);
-        IgniteQueue queue3 = grid(0).queue(queueName1, colCfg, 0, true);
+        IgniteQueue queue1 = grid(0).queue(queueName1, 0, colCfg);
+        IgniteQueue queue2 = grid(0).queue(queueName2, 0, colCfg);
+        IgniteQueue queue3 = grid(0).queue(queueName1, 0, colCfg);
 
         assertNotNull(queue1);
         assertNotNull(queue2);
@@ -67,8 +67,8 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         queue2.close();
         queue3.close();
 
-        assertNull(grid(0).queue(queueName1, null, 0, false));
-        assertNull(grid(0).queue(queueName2, null, 0, false));
+        assertNull(grid(0).queue(queueName1, 0, null));
+        assertNull(grid(0).queue(queueName2, 0, null));
     }
 
     /**
@@ -82,7 +82,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
         String val = UUID.randomUUID().toString();
 
-        IgniteQueue<String> queue = grid(0).queue(queueName, config(false), 0, true);
+        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
 
         assert queue.add(val);
 
@@ -100,7 +100,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
         String val = UUID.randomUUID().toString();
 
-        IgniteQueue<String> queue = grid(0).queue(queueName, config(false), 0, true);
+        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
 
         assert queue.add(val);
 
@@ -118,7 +118,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<SameHashItem> queue = grid(0).queue(queueName, config(false), 0, true);
+        IgniteQueue<SameHashItem> queue = grid(0).queue(queueName, 0, config(false));
 
         int retries = 100;
 
@@ -194,7 +194,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<String> queue = grid(0).queue(queueName, config(false), 0, true);
+        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
 
         assert queue.add("1");
 
@@ -216,7 +216,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<String> queue = grid(0).queue(queueName, config(false), 0, true);
+        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
 
         String item1 = "1";
         assert queue.add(item1);
@@ -241,7 +241,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<String> queue = grid(0).queue(queueName, config(false), 0, true);
+        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
 
         for (int i = 0; i < 100; i++)
             assert queue.add(Integer.toString(i));
@@ -297,7 +297,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<String> queue = grid(0).queue(queueName, config(false), QUEUE_CAPACITY, true);
+        IgniteQueue<String> queue = grid(0).queue(queueName, QUEUE_CAPACITY, config(false));
 
         String thName = Thread.currentThread().getName();
 
@@ -319,7 +319,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        final IgniteQueue<String> queue = grid(0).queue(queueName, config(false), QUEUE_CAPACITY, true);
+        final IgniteQueue<String> queue = grid(0).queue(queueName, QUEUE_CAPACITY, config(false));
 
         multithreaded(new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -347,7 +347,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        final IgniteQueue<String> queue = grid(0).queue(queueName, config(false), QUEUE_CAPACITY, true);
+        final IgniteQueue<String> queue = grid(0).queue(queueName, QUEUE_CAPACITY, config(false));
 
         multithreaded(new Callable<String>() {
                 @Override public String call() throws Exception {
@@ -374,7 +374,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         // Random queue name.
         final String queueName = UUID.randomUUID().toString();
 
-        final IgniteQueue<String> queue = grid(0).queue(queueName, config(false), QUEUE_CAPACITY, true);
+        final IgniteQueue<String> queue = grid(0).queue(queueName, QUEUE_CAPACITY, config(false));
 
         final CountDownLatch putLatch = new CountDownLatch(THREAD_NUM);
 
@@ -413,7 +413,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
             Thread th = new Thread(new Runnable() {
                 @Override public void run() {
                     try {
-                        IgniteQueue<String> queue = grid(0).queue(queueName, null, 0, false);
+                        IgniteQueue<String> queue = grid(0).queue(queueName, 0, null);
 
                         if (queue != null)
                             queue.close();
@@ -454,7 +454,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<String> queue = grid(0).queue(queueName, config(false), 0, true);
+        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
 
         String thread = Thread.currentThread().getName();
 
@@ -479,7 +479,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        final IgniteQueue<String> queue = grid(0).queue(queueName, config(false), 0, true);
+        final IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
 
         multithreaded(
             new Callable<String>() {

@@ -19,6 +19,7 @@ package org.apache.ignite.configuration;
 
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 
@@ -95,5 +96,10 @@ public class IgniteAtomicConfiguration {
      */
     public void setAtomicSequenceReserveSize(int seqReserveSize) {
         this.seqReserveSize = seqReserveSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgniteAtomicConfiguration.class, this);
     }
 }

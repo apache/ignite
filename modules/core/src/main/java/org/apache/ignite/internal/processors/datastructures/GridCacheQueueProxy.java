@@ -754,7 +754,7 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
         try {
             IgniteBiTuple<GridKernalContext, String> t = stash.get();
 
-            return t.get1().dataStructures().queue(t.get2(), null, 0, false);
+            return t.get1().dataStructures().queue(t.get2(), 0, null);
         }
         catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

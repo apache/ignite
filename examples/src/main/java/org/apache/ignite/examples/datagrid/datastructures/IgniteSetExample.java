@@ -78,7 +78,7 @@ public class IgniteSetExample {
         setCfg.setCacheName(CACHE_NAME);
 
         // Initialize new set.
-        IgniteSet<String> set = ignite.set(setName, setCfg, true);
+        IgniteSet<String> set = ignite.set(setName, setCfg);
 
         // Initialize set items.
         for (int i = 0; i < 10; i++)
@@ -170,7 +170,7 @@ public class IgniteSetExample {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            IgniteSet<String> set = Ignition.ignite().set(setName, null, false);
+            IgniteSet<String> set = Ignition.ignite().set(setName, null);
 
             UUID locId = Ignition.ignite().cluster().localNode().id();
 

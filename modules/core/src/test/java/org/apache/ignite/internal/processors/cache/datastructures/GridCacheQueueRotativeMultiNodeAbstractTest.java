@@ -90,7 +90,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
         String queueName = UUID.randomUUID().toString();
 
         IgniteQueue<Integer> queue =
-            grid(0).queue(queueName, config(true), QUEUE_CAPACITY, true);
+            grid(0).queue(queueName, QUEUE_CAPACITY, config(true));
 
         assertTrue(queue.isEmpty());
 
@@ -105,7 +105,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
                 stopGrid(i);
         }
 
-        queue = grid((GRID_CNT * 3) - 1).queue(queueName, null, 0, false);
+        queue = grid((GRID_CNT * 3) - 1).queue(queueName, 0, null);
 
         assertEquals(RETRIES * GRID_CNT * 2, queue.size());
     }
@@ -119,7 +119,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
         String queueName = UUID.randomUUID().toString();
 
         IgniteQueue<Integer> queue =
-                grid(0).queue(queueName, config(true), QUEUE_CAPACITY, true);
+                grid(0).queue(queueName, QUEUE_CAPACITY, config(true));
 
         assertTrue(queue.isEmpty());
 
@@ -134,7 +134,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
                 stopGrid(i);
         }
 
-        queue = grid((GRID_CNT * 3) - 1).queue(queueName, config(true), QUEUE_CAPACITY, true);
+        queue = grid((GRID_CNT * 3) - 1).queue(queueName, QUEUE_CAPACITY, config(true));
 
         assertEquals(0, queue.size());
     }
@@ -150,7 +150,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
         final String queueName = UUID.randomUUID().toString();
 
         final IgniteQueue<Integer> queue =
-                grid(0).queue(queueName, config(true), QUEUE_CAPACITY, true);
+                grid(0).queue(queueName, QUEUE_CAPACITY, config(true));
 
         assertTrue(queue.isEmpty());
 
@@ -219,7 +219,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            IgniteQueue<Integer> queue = ignite.queue(queueName, colCfg, QUEUE_CAPACITY, true);
+            IgniteQueue<Integer> queue = ignite.queue(queueName, QUEUE_CAPACITY, colCfg);
 
             assertNotNull(queue);
 
@@ -255,6 +255,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
 
         /**
          * @param queueName Queue name.
+         * @param colCfg Queue configuration.
          * @param retries  Number of operations.
          */
         PutTakeJob(String queueName, IgniteCollectionConfiguration colCfg, int retries) {
@@ -269,7 +270,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + ']');
 
-            IgniteQueue<Integer> queue = ignite.queue(queueName, colCfg, QUEUE_CAPACITY, true);
+            IgniteQueue<Integer> queue = ignite.queue(queueName, QUEUE_CAPACITY, colCfg);
 
             assertNotNull(queue);
 
@@ -321,7 +322,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + ']');
 
-            IgniteQueue<Integer> queue = ignite.queue(queueName, colCfg, QUEUE_CAPACITY, true);
+            IgniteQueue<Integer> queue = ignite.queue(queueName, QUEUE_CAPACITY, colCfg);
 
             assertNotNull(queue);
 
@@ -368,7 +369,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            IgniteQueue<Integer> queue = ignite.queue(queueName, null, 0, false);
+            IgniteQueue<Integer> queue = ignite.queue(queueName, 0, null);
 
             assert queue != null;
 
