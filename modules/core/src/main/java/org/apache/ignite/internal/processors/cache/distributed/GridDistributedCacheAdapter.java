@@ -142,13 +142,14 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 topVer = ctx.affinity().affinityTopologyVersion();
 
                 // Send job to all nodes.
-                Collection<ClusterNode> nodes = ctx.grid().forCacheNodes(name()).nodes();
+                Collection<ClusterNode> nodes = ctx.grid().forDataNodes(name()).nodes();
 
                 if (!nodes.isEmpty()) {
                     ctx.closures().callAsyncNoFailover(BROADCAST,
                         new GlobalRemoveAllCallable<>(name(), topVer), nodes, true).get();
                 }
-            } while (ctx.affinity().affinityTopologyVersion() > topVer);
+            }
+            while (ctx.affinity().affinityTopologyVersion() > topVer);
         }
         catch (ClusterGroupEmptyCheckedException ignore) {
             if (log.isDebugEnabled())
@@ -209,7 +210,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
          * {@inheritDoc}
          */
         @Override public Object call() throws Exception {
-            final IgniteKernal grid = (IgniteKernal) ignite;
+            final IgniteKernal grid = (IgniteKernal)ignite;
 
             final GridCache<K,V> cache = grid.cachex(cacheName);
 
@@ -221,9 +222,9 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 return null; // Ignore this remove request because remove request will be sent again.
 
             if (cacheAdapter instanceof GridNearCacheAdapter)
-                cacheAdapter = ((GridNearCacheAdapter)cacheAdapter).dht();
+                cacheAdapter = ((GridNearCacheAdapter<K, V>)cacheAdapter).dht();
 
-            GridDhtCacheAdapter<K, V> dht = (GridDhtCacheAdapter)cacheAdapter;
+            GridDhtCacheAdapter<K, V> dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
 
             Collection<K> keys = new ArrayList<>();
 
