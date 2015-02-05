@@ -110,7 +110,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
         spi.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(spi);
-        cfg.setRestEnabled(false);
+        cfg.setClientConnectionConfiguration(null);
 
         cfg.setExecutorService(
             new ThreadPoolExecutor(

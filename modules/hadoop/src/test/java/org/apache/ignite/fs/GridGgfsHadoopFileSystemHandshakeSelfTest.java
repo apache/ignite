@@ -192,7 +192,7 @@ public class GridGgfsHadoopFileSystemHandshakeSelfTest extends GridGgfsCommonAbs
         IgniteConfiguration cfg = super.getConfiguration(dfltGridName ? null : GRID_NAME);
 
         cfg.setLocalHost("127.0.0.1");
-        cfg.setRestEnabled(false);
+        cfg.setClientConnectionConfiguration(null);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

@@ -1432,14 +1432,8 @@ public class IgnitionEx {
 
             ClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
 
-            if (clientCfg == null) {
-                // If client config is not provided then create config copying values from GridConfiguration.
-                if (cfg.isRestEnabled())
-                    clientCfg = new ClientConnectionConfiguration();
-            }
-            else
+            if (clientCfg != null)
                 clientCfg = new ClientConnectionConfiguration(clientCfg);
-
 
             String ntfStr = IgniteSystemProperties.getString(IGNITE_LIFECYCLE_EMAIL_NOTIFY);
 
@@ -1582,24 +1576,22 @@ public class IgnitionEx {
                     new LinkedBlockingQueue<Runnable>());
             }
 
-            restExecSvc = clientCfg != null ? clientCfg.getExecutorService() : null;
+            if (clientCfg != null) {
+                restExecSvc = clientCfg.getExecutorService();
 
-            if (restExecSvc != null && !cfg.isRestEnabled()) {
-                U.warn(log, "REST executor service is configured, but REST is disabled in configuration " +
-                    "(safely ignoring).");
-            }
-            else if (restExecSvc == null && clientCfg != null) {
-                isAutoRestSvc = true;
+                if (restExecSvc == null) {
+                    isAutoRestSvc = true;
 
-                restExecSvc = new IgniteThreadPoolExecutor(
-                    "rest-" + cfg.getGridName(),
-                    DFLT_CORE_THREAD_CNT,
-                    DFLT_MAX_THREAD_CNT,
-                    DFLT_KEEP_ALIVE_TIME,
-                    new LinkedBlockingQueue<Runnable>(DFLT_THREADPOOL_QUEUE_CAP)
-                );
+                    restExecSvc = new IgniteThreadPoolExecutor(
+                        "rest-" + cfg.getGridName(),
+                        DFLT_CORE_THREAD_CNT,
+                        DFLT_MAX_THREAD_CNT,
+                        DFLT_KEEP_ALIVE_TIME,
+                        new LinkedBlockingQueue<Runnable>(DFLT_THREADPOOL_QUEUE_CAP)
+                    );
 
-                clientCfg.setExecutorService(restExecSvc);
+                    clientCfg.setExecutorService(restExecSvc);
+                }
             }
 
             utilityCacheExecSvc = new IgniteThreadPoolExecutor(

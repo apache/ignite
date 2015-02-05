@@ -21,20 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.fs.*;
-import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.managed.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.spi.authentication.*;
-import org.apache.ignite.spi.indexing.*;
-import org.apache.ignite.streamer.*;
-import org.apache.ignite.client.ssl.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.portables.*;
@@ -50,7 +44,6 @@ import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.securesession.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.streamer.*;
 
 import javax.management.*;
@@ -257,9 +250,6 @@ public class IgniteConfiguration {
     /** Daemon flag. */
     private boolean daemon;
 
-    /** {@code REST} flag. */
-    private boolean restEnabled = true;
-
     /** Whether or not peer class loading is enabled. */
     private boolean p2pEnabled = DFLT_P2P_ENABLED;
 
@@ -436,7 +426,7 @@ public class IgniteConfiguration {
     private GridHadoopConfiguration hadoopCfg;
 
     /** Client access configuration. */
-    private ClientConnectionConfiguration clientCfg;
+    private ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
 
     /** Portable configuration. */
     private PortableConfiguration portableCfg;
@@ -528,7 +518,6 @@ public class IgniteConfiguration {
         pluginCfgs = cfg.getPluginConfigurations();
         portableCfg = cfg.getPortableConfiguration();
         qryCfg = cfg.getQueryConfiguration();
-        restEnabled = cfg.isRestEnabled();
         securityCred = cfg.getSecurityCredentialsProvider();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
@@ -2211,31 +2200,6 @@ public class IgniteConfiguration {
      */
     public void setIncludeEventTypes(int... inclEvtTypes) {
         this.inclEvtTypes = inclEvtTypes;
-    }
-
-    /**
-     * Gets flag indicating whether external {@code REST} access is enabled or not. By default,
-     * external {@code REST} access is turned on.
-     *
-     * @return Flag indicating whether external {@code REST} access is enabled or not.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_HOST
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_PORT
-     * @deprecated Use {@link ClientConnectionConfiguration}.
-     */
-    @Deprecated
-    public boolean isRestEnabled() {
-        return restEnabled;
-    }
-
-    /**
-     * Sets flag indicating whether external {@code REST} access is enabled or not.
-     *
-     * @param restEnabled Flag indicating whether external {@code REST} access is enabled or not.
-     * @deprecated Use {@link ClientConnectionConfiguration}.
-     */
-    @Deprecated
-    public void setRestEnabled(boolean restEnabled) {
-        this.restEnabled = restEnabled;
     }
 
     /**

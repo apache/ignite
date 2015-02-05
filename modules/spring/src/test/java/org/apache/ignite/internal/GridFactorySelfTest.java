@@ -152,7 +152,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         cfg.setLifecycleBeans(bean1, bean2);
         cfg.setGridName(gridName);
 
-        cfg.setRestEnabled(false);
+        cfg.setClientConnectionConfiguration(null);
 
         try (Ignite g = IgniteSpring.start(cfg, new GenericApplicationContext())) {
             bean1.checkState(gridName, true);
@@ -268,7 +268,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                         try {
                             IgniteConfiguration cfg = new IgniteConfiguration();
 
-                            cfg.setRestEnabled(false);
+                            cfg.setClientConnectionConfiguration(null);
 
                             G.start(cfg);
                         }
@@ -306,7 +306,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                             IgniteConfiguration cfg = new IgniteConfiguration();
 
                             cfg.setGridName("TEST_NAME");
-                            cfg.setRestEnabled(false);
+                            cfg.setClientConnectionConfiguration(null);
 
                             G.start(cfg);
                         }
@@ -431,7 +431,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                 @Nullable @Override public Object call() throws Exception {
                     IgniteConfiguration cfg = new IgniteConfiguration();
 
-                    cfg.setRestEnabled(false);
+                    cfg.setClientConnectionConfiguration(null);
 
                     cfg.setDiscoverySpi(new TcpDiscoverySpi() {
                         @Override public void spiStart(String gridName) throws IgniteSpiException {
@@ -749,7 +749,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     public void testStopCancel() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setRestEnabled(false);
+        cfg.setClientConnectionConfiguration(null);
 
         Ignite ignite = G.start(cfg);
 

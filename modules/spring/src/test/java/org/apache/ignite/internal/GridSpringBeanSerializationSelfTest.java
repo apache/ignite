@@ -66,7 +66,7 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
 
         cfg.setUserAttributes(F.asMap(ATTR_KEY, true));
 
-        cfg.setRestEnabled(false);
+        cfg.setClientConnectionConfiguration(null);
 
         return cfg;
     }

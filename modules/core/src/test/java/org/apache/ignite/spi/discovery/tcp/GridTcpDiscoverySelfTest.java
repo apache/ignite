@@ -109,7 +109,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
             spi.setHeartbeatFrequency(40000);
         }
 
-        cfg.setRestEnabled(false);
+        cfg.setClientConnectionConfiguration(null);
 
         if (nodeId != null)
             cfg.setNodeId(nodeId);
