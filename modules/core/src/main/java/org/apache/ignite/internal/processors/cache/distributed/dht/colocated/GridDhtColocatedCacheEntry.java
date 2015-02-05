@@ -46,16 +46,6 @@ public class GridDhtColocatedCacheEntry<K, V> extends GridDhtCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheEntry<K, V> wrap(boolean prjAware) {
-        GridCacheProjectionImpl<K, V> prjPerCall = cctx.projectionPerCall();
-
-        if (prjPerCall != null && prjAware)
-            return new GridPartitionedCacheEntryImpl<>(prjPerCall, cctx, key, this);
-
-        return new GridDhtCacheEntryImpl<>(null, cctx, key, this);
-    }
-
-    /** {@inheritDoc} */
     @Override protected String cacheName() {
         return cctx.colocated().name();
     }

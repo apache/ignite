@@ -30,6 +30,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -39,7 +40,7 @@ import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 /**
  * Entry wrapper that never obscures obsolete entries from user.
  */
-public class GridCacheEvictionEntry<K, V> implements CacheEntry<K, V>, Externalizable {
+public class GridCacheEvictionEntry<K, V> implements Entry<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

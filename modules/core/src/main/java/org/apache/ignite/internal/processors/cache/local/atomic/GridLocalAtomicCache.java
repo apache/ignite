@@ -35,6 +35,7 @@ import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
+import javax.cache.Cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
@@ -78,13 +79,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         map.setEntryFactory(new GridCacheMapEntryFactory<K, V>() {
             @Override public GridCacheMapEntry<K, V> create(GridCacheContext<K, V> ctx, long topVer, K key, int hash,
                 V val, @Nullable GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
-                return new GridLocalCacheEntry<K, V>(ctx, key, hash, val, next, ttl, hdrId) {
-                    @Override public CacheEntry<K, V> wrapFilterLocked() throws IgniteCheckedException {
-                        assert Thread.holdsLock(this);
-
-                        return new GridCacheFilterEvaluationEntry<>(key, rawGetOrUnmarshalUnlocked(true), this);
-                    }
-                };
+                return new GridLocalCacheEntry<K, V>(ctx, key, hash, val, next, ttl, hdrId);
             }
         });
     }
@@ -110,7 +105,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         V val,
         @Nullable GridCacheEntryEx<K, V> cached,
         long ttl,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Entry<K, V>>[] filter) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
 
         ctx.denyOnLocalRead();
