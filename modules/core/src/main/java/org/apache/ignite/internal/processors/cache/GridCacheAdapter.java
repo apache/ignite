@@ -31,6 +31,7 @@ import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.processors.cache.affinity.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -5228,7 +5229,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         /**
          * @param cacheName Cache name.
          * @param topVer Topology version.
-         * @param rmvBatchSz Remove batch size.
          */
         private GlobalRemoveAllCallable(String cacheName, long topVer) {
             this.cacheName = cacheName;
@@ -5245,25 +5245,50 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             final GridCache<K,V> cache = grid.cachex(cacheName);
 
-            final GridCacheContext<K, V> ctx = grid.context().cache().<K, V>internalCache(cacheName).context();
+            GridCacheAdapter<K, V> cacheAdapter = grid.context().cache().internalCache(cacheName);
+
+            final GridCacheContext<K, V> ctx = cacheAdapter.context();
 
             if (ctx.affinity().affinityTopologyVersion() != topVer)
                 return null; // Ignore this remove request because remove request will be sent again.
 
-            assert cache != null;
+            if (cacheAdapter instanceof GridNearCacheAdapter)
+                cacheAdapter = ((GridNearCacheAdapter)cacheAdapter).dht();
 
-            for (K k : cache.keySet()) {
-                if (ctx.affinity().primary(ctx.localNode(), k, topVer))
-                    keys.add(k);
+            if (cacheAdapter instanceof GridDhtCacheAdapter) {
+                GridDhtCacheAdapter<K, V> dht = (GridDhtCacheAdapter)cacheAdapter;
 
-                if (keys.size() >= REMOVE_ALL_BATCH_SIZE) {
-                    cache.removeAll(keys);
+                for (GridDhtLocalPartition<K, V> locPart : dht.topology().currentLocalPartitions()) {
+                    if (locPart.primary(topVer)) {
+                        for (GridDhtCacheEntry<K, V> o : locPart.entries()) {
+                            keys.add(o.key());
 
-                    keys.clear();
+                            if (keys.size() >= REMOVE_ALL_BATCH_SIZE) {
+                                cache.removeAll(keys);
+
+                                keys.clear();
+                            }
+                        }
+                    }
+                }
+            }
+            else {
+                assert cache != null;
+
+                for (K k : cache.keySet()) {
+                    if (ctx.affinity().primary(ctx.localNode(), k, topVer))
+                        keys.add(k);
+
+                    if (keys.size() >= REMOVE_ALL_BATCH_SIZE) {
+                        cache.removeAll(keys);
+
+                        keys.clear();
+                    }
                 }
             }
 
-            cache.removeAll(keys);
+            if (!keys.isEmpty())
+                cache.removeAll(keys);
 
             return null;
         }
