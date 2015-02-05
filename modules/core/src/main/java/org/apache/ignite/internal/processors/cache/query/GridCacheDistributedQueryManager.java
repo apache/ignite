@@ -653,9 +653,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param req Request.
      * @param nodes Nodes.
      * @throws IgniteCheckedException In case of error.
-     * @deprecated Need to remove nodes filtration after breaking compatibility.
      */
-    @Deprecated
     @SuppressWarnings("unchecked")
     private void sendRequest(
         final GridCacheDistributedQueryFuture<?, ?, ?> fut,

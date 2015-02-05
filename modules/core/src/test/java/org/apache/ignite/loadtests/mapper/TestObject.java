@@ -17,7 +17,6 @@
 
 package org.apache.ignite.loadtests.mapper;
 
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 
 import java.io.*;

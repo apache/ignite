@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.internal.util.typedef.*;
 
 /**
@@ -57,11 +56,9 @@ public class GridCacheMultiNodeDataStructureTest {
      * @throws IgniteCheckedException If failed.
      */
     private static void sample(Ignite g, String cacheName) throws IgniteCheckedException {
-        GridCache<Long, Object> cache = g.cache(cacheName);
+        IgniteAtomicLong atomicLong = g.atomicLong("keygen", 0, true);
 
-        CacheAtomicLong atomicLong = cache.dataStructures().atomicLong("keygen", 0, true);
-
-        CacheAtomicSequence seq = cache.dataStructures().atomicSequence("keygen", 0, true);
+        IgniteAtomicSequence seq = g.atomicSequence("keygen", 0, true);
 
         seq.incrementAndGet();
         seq.incrementAndGet();

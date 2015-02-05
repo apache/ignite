@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.email.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.job.*;
@@ -758,6 +759,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 IgniteComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
                 IgniteComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)), attrs);
             startProcessor(ctx, new GridServiceProcessor(ctx), attrs);
+            startProcessor(ctx, new DataStructuresProcessor(ctx), attrs);
 
             // Start plugins.
             for (PluginProvider provider : ctx.plugins().allProviders()) {
@@ -2244,18 +2246,18 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
     /**
      * Whether or not SMTP is configured. Note that SMTP is considered configured if
-     * SMTP host is provided in configuration (see {@link org.apache.ignite.configuration.IgniteConfiguration#getSmtpHost()}.
+     * SMTP host is provided in configuration (see {@link IgniteConfiguration#getSmtpHost()}.
      * <p>
      * If SMTP is not configured all emails notifications will be disabled.
      *
      * @return {@code True} if SMTP is configured - {@code false} otherwise.
-     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpFromEmail()
-     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpHost()
-     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpPassword()
-     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpPort()
-     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpUsername()
-     * @see org.apache.ignite.configuration.IgniteConfiguration#isSmtpSsl()
-     * @see org.apache.ignite.configuration.IgniteConfiguration#isSmtpStartTls()
+     * @see IgniteConfiguration#getSmtpFromEmail()
+     * @see IgniteConfiguration#getSmtpHost()
+     * @see IgniteConfiguration#getSmtpPassword()
+     * @see IgniteConfiguration#getSmtpPort()
+     * @see IgniteConfiguration#getSmtpUsername()
+     * @see IgniteConfiguration#isSmtpSsl()
+     * @see IgniteConfiguration#isSmtpStartTls()
      * @see #sendAdminEmailAsync(String, String, boolean)
      */
     @Override public boolean isSmtpEnabled() {
@@ -2538,7 +2540,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
      *      completes ok and its result value is {@code true} email was successfully sent. In all
      *      other cases - sending process has failed.
      * @see #isSmtpEnabled()
-     * @see org.apache.ignite.configuration.IgniteConfiguration#getAdminEmails()
+     * @see IgniteConfiguration#getAdminEmails()
      */
     @Override public IgniteInternalFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html) {
         A.notNull(subj, "subj");
@@ -3276,6 +3278,127 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         return ctx.affinity().affinityProxy(cacheName);
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {
+        guard();
+
+        try {
+            return ctx.dataStructures().sequence(name, initVal, create);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
+        guard();
+
+        try {
+            return ctx.dataStructures().atomicLong(name, initVal, create);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteAtomicReference<T> atomicReference(String name,
+        @Nullable T initVal,
+        boolean create)
+    {
+        guard();
+
+        try {
+            return ctx.dataStructures().atomicReference(name, initVal, create);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
+        @Nullable T initVal,
+        @Nullable S initStamp,
+        boolean create)
+    {
+        guard();
+
+        try {
+            return ctx.dataStructures().atomicStamped(name, initVal, initStamp, create);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteCountDownLatch countDownLatch(String name,
+        int cnt,
+        boolean autoDel,
+        boolean create)
+    {
+        guard();
+
+        try {
+            return ctx.dataStructures().countDownLatch(name, cnt, autoDel, create);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteQueue<T> queue(String name,
+        int cap,
+        IgniteCollectionConfiguration cfg)
+    {
+        guard();
+
+        try {
+            return ctx.dataStructures().queue(name, cap, cfg);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteSet<T> set(String name,
+        IgniteCollectionConfiguration cfg)
+    {
+        guard();
+
+        try {
+            return ctx.dataStructures().set(name, cfg);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
     /**
      * Creates optional component.
      *
@@ -3284,7 +3407,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
      * @return Created component.
      * @throws IgniteCheckedException If failed to create component.
      */
-    private static <T extends GridComponent> T createComponent(Class<T> cls, GridKernalContext ctx) throws IgniteCheckedException {
+    private static <T extends GridComponent> T createComponent(Class<T> cls, GridKernalContext ctx)
+        throws IgniteCheckedException {
         assert cls.isInterface() : cls;
 
         T comp = ctx.plugins().createComponent(cls);

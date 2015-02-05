@@ -264,7 +264,7 @@ import java.util.Date;
  *         &lt;bean class="CacheQueryConfiguration"&gt;
  *             &lt;property name="typeMetadata"&gt;
  *                 &lt;list&gt;
- *                     &lt;bean class="CacheQueryTypeMetadata"&gt;
+ *                     &lt;bean class="CacheTypeMetadata"&gt;
  *                         &lt;property name="type" value="Employee"/&gt;
  *
  *                         &lt;!-- Fields to index in ascending order. --&gt;

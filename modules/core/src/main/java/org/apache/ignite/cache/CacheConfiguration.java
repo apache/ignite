@@ -44,9 +44,6 @@ import java.util.*;
  */
 @SuppressWarnings("RedundantFieldInitialization")
 public class CacheConfiguration extends MutableConfiguration {
-    /** Default atomic sequence reservation size. */
-    public static final int DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE = 1000;
-
     /** Default size of preload thread pool. */
     public static final int DFLT_PRELOAD_THREAD_POOL_SIZE = 2;
 
@@ -158,27 +155,14 @@ public class CacheConfiguration extends MutableConfiguration {
     /** Default value for load previous value flag. */
     public static final boolean DFLT_LOAD_PREV_VAL = false;
 
-    /** Default continuous query buffers queue size. */
-    @SuppressWarnings("UnusedDeclaration")
-    @Deprecated
-    public static final int DFLT_CONT_QUERY_QUEUE_SIZE = 1024 * 1024;
-
     /** Default memory mode. */
     public static final CacheMemoryMode DFLT_MEMORY_MODE = CacheMemoryMode.ONHEAP_TIERED;
-
-    /** Default continuous query max buffer size. */
-    @SuppressWarnings("UnusedDeclaration")
-    @Deprecated
-    public static final int DFLT_CONT_QUERY_MAX_BUF_SIZE = 1024;
 
     /** Default value for 'readFromBackup' flag. */
     public static final boolean DFLT_READ_FROM_BACKUP = true;
 
     /** Cache name. */
     private String name;
-
-    /** Default batch size for all cache's sequences. */
-    private int seqReserveSize = DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE;
 
     /** Preload thread pool size. */
     private int preloadPoolSize = DFLT_PRELOAD_THREAD_POOL_SIZE;
@@ -342,6 +326,9 @@ public class CacheConfiguration extends MutableConfiguration {
      */
     private boolean readFromBackup = DFLT_READ_FROM_BACKUP;
 
+    /** Collection of type metadata. */
+    private Collection<CacheTypeMetadata> typeMeta;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -412,7 +399,6 @@ public class CacheConfiguration extends MutableConfiguration {
         qryCfg = cc.getQueryConfiguration();
         qryIdxEnabled = cc.isQueryIndexEnabled();
         readFromBackup = cc.isReadFromBackup();
-        seqReserveSize = cc.getAtomicSequenceReserveSize();
         startSize = cc.getStartSize();
         storeFactory = cc.getCacheStoreFactory();
         storeValBytes = cc.isStoreValueBytes();
@@ -425,6 +411,7 @@ public class CacheConfiguration extends MutableConfiguration {
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
         writeSync = cc.getWriteSynchronizationMode();
+        typeMeta = cc.getTypeMetadata();
     }
 
     /**
@@ -1347,31 +1334,6 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * Gets default number of sequence values reserved for {@link org.apache.ignite.cache.datastructures.CacheAtomicSequence} instances. After
-     * a certain number has been reserved, consequent increments of sequence will happen locally,
-     * without communication with other nodes, until the next reservation has to be made.
-     * <p>
-     * Default value is {@link #DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE}.
-     *
-     * @return Atomic sequence reservation size.
-     */
-    public int getAtomicSequenceReserveSize() {
-        return seqReserveSize;
-    }
-
-    /**
-     * Sets default number of sequence values reserved for {@link org.apache.ignite.cache.datastructures.CacheAtomicSequence} instances. After a certain
-     * number has been reserved, consequent increments of sequence will happen locally, without communication with other
-     * nodes, until the next reservation has to be made.
-     *
-     * @param seqReserveSize Atomic sequence reservation size.
-     * @see #getAtomicSequenceReserveSize()
-     */
-    public void setAtomicSequenceReserveSize(int seqReserveSize) {
-        this.seqReserveSize = seqReserveSize;
-    }
-
-    /**
      * Gets size of preloading thread pool. Note that size serves as a hint and implementation
      * may create more threads for preloading than specified here (but never less threads).
      * <p>
@@ -1601,32 +1563,6 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * Gets maximum number of entries that can be accumulated before back-pressure
-     * is enabled to postpone cache updates until query listeners are notified.
-     * If your system is configured properly, then this number should never be reached.
-     * <p>
-     * Default value is {@link #DFLT_CONT_QUERY_QUEUE_SIZE}.
-     *
-     * @return Continuous query queue size.
-     * @deprecated Ignored in current version.
-     */
-    @Deprecated
-    public int getContinuousQueryQueueSize() {
-        return 0;
-    }
-
-    /**
-     * Sets continuous query queue size.
-     *
-     * @param contQryQueueSize Continuous query queue size.
-     * @deprecated Ignored in current version.
-     */
-    @Deprecated
-    public void setContinuousQueryQueueSize(int contQryQueueSize) {
-        // No-op.
-    }
-
-    /**
      * Gets memory mode for cache. Memory mode helps control whether value is stored in on-heap memory,
      * off-heap memory, or swap space. Refer to {@link CacheMemoryMode} for more info.
      * <p>
@@ -1645,33 +1581,6 @@ public class CacheConfiguration extends MutableConfiguration {
      */
     public void setMemoryMode(CacheMemoryMode memMode) {
         this.memMode = memMode;
-    }
-
-    /**
-     * Gets the maximum buffer size for continuous queries. When the current
-     * number of entries in buffer exceeds the maximum buffer size, the buffer
-     * is flushed to the notification queue. Greater buffer size may improve throughput,
-     * but also may increase latency.
-     * <p>
-     * Default value is either {@link #DFLT_CONT_QUERY_MAX_BUF_SIZE}.
-     *
-     * @return Maximum buffer size for continuous queries.
-     * @deprecated Ignored in current version.
-     */
-    @Deprecated
-    public int getContinuousQueryMaximumBufferSize() {
-        return 0;
-    }
-
-    /**
-     * Sets maximum buffer size for continuous queries.
-     *
-     * @param contQryMaxBufSize Maximum buffer size for continuous queries.
-     * @deprecated Ignored in current version.
-     */
-    @Deprecated
-    public void setContinuousQueryMaximumBufferSize(int contQryMaxBufSize) {
-        // No-op.
     }
 
     /**
@@ -1747,6 +1656,25 @@ public class CacheConfiguration extends MutableConfiguration {
     public void setKeepPortableInStore(boolean keepPortableInStore) {
         this.keepPortableInStore = keepPortableInStore;
     }
+
+    /**
+     * Gets collection of type metadata objects.
+     *
+     * @return Collection of type metadata.
+     */
+    public Collection<CacheTypeMetadata> getTypeMetadata() {
+        return typeMeta;
+    }
+
+    /**
+     * Sets collection of type metadata objects.
+     *
+     * @param typeMeta Collection of type metadata.
+     */
+    public void setTypeMetadata(Collection<CacheTypeMetadata> typeMeta) {
+        this.typeMeta = typeMeta;
+    }
+
 
     /**
      * Gets query configuration. Query configuration defines which fields should be indexed for objects

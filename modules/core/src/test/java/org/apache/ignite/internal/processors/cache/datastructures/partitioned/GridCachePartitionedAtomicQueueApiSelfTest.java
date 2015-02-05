@@ -18,9 +18,7 @@
 package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
@@ -28,14 +26,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
  */
 public class GridCachePartitionedAtomicQueueApiSelfTest extends GridCachePartitionedQueueApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
-
-        CacheConfiguration ccfg = cfg.getCacheConfiguration()[0];
-
-        ccfg.setAtomicityMode(ATOMIC);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
-
-        return cfg;
+    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
+        return ATOMIC;
     }
 }

@@ -122,7 +122,7 @@ public final class GridConfigurationFinder {
                         if (line.contains("http://www.springframework.org/schema/beans"))
                             springCfg = true;
 
-                        if (line.contains("class=\"org.gridgain.grid.GridConfiguration\""))
+                        if (line.contains("class=\"org.apache.ignite.configuration.IgniteConfiguration\""))
                             ggCfg = true;
 
                         if (springCfg && ggCfg)

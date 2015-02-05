@@ -20,11 +20,10 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.datastructures.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.affinity.*;
-import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -70,9 +69,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     /** Cache queries. */
     private CacheQueries<K, V> qry;
 
-    /** Data structures. */
-    private CacheDataStructures dataStructures;
-
     /** Affinity. */
     private CacheAffinity<K> aff;
 
@@ -101,7 +97,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         cache = ctx.cache();
 
         qry = new GridCacheQueriesProxy<>(ctx, prj, (GridCacheQueriesEx<K, V>)delegate.queries());
-        dataStructures = new GridCacheDataStructuresProxy<>(ctx, ctx.cache().dataStructures());
         aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
     }
 
@@ -149,11 +144,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     /** {@inheritDoc} */
     @Override public CacheAffinity<K> affinity() {
         return aff;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheDataStructures dataStructures() {
-        return dataStructures;
     }
 
     /** {@inheritDoc} */
@@ -1216,6 +1206,18 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public V localPeek(K key, CachePeekMode[] peekModes) throws IgniteCheckedException {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.localPeek(key, peekModes);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -1900,7 +1902,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         cache = ctx.cache();
 
         qry = new GridCacheQueriesProxy<>(ctx, prj, (GridCacheQueriesEx<K, V>)delegate.queries());
-        dataStructures = new GridCacheDataStructuresProxy<>(ctx, ctx.cache().dataStructures());
         aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
     }
 

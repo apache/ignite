@@ -20,7 +20,6 @@ package org.apache.ignite.configuration;
 import org.apache.ignite.cache.query.*;
 
 import java.io.*;
-import java.util.*;
 
 /**
  * Configuration for embedded indexing facilities.
@@ -61,7 +60,6 @@ public class CacheQueryConfiguration implements Serializable {
      * @param cfg Configuration to copy.
      */
     public CacheQueryConfiguration(CacheQueryConfiguration cfg) {
-        typeMeta = cfg.getTypeMetadata();
         typeRslvr = cfg.getTypeResolver();
         idxPrimitiveKey = cfg.isIndexPrimitiveKey();
         idxPrimitiveVal = cfg.isIndexPrimitiveValue();

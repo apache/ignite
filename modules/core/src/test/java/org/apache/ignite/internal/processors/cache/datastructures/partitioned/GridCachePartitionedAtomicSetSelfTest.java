@@ -18,32 +18,15 @@
 package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.datastructures.*;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Set tests.
  */
-public class GridCachePartitionedAtomicSetSelfTest extends GridCacheSetAbstractSelfTest {
+public class GridCachePartitionedAtomicSetSelfTest extends GridCachePartitionedSetSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
-
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
-
-        return ccfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
+    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return ATOMIC;
     }
 }
