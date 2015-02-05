@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.swapspace.inmemory.*;
 
@@ -78,6 +79,8 @@ public abstract class IgniteCachePeekAbstractTest extends IgniteCacheAbstractTes
      * @throws Exception If failed.
      */
     public void testLocalPeek() throws Exception {
+        checkAffinity();
+
         checkStorage();
     }
 
@@ -157,27 +160,56 @@ public abstract class IgniteCachePeekAbstractTest extends IgniteCacheAbstractTes
 
         assertTrue(swapKeys.size() + HEAP_ENTRIES < 100);
 
-        List<Integer> offheapKeys = new ArrayList<>(keys);
+        Set<Integer> offheapKeys = new HashSet<>();
+
+        GridCacheAdapter<Integer, String> internalCache =
+            ((IgniteKernal)ignite(0)).context().cache().<Integer, String>internalCache();
+
+        Iterator<Map.Entry<Integer, String>> offheapIt =
+            internalCache.context().near().dht().context().swap().lazyOffHeapIterator();
+
+        while (offheapIt.hasNext()) {
+            Map.Entry<Integer, String> e = offheapIt.next();
+
+            assertTrue(offheapKeys.add(e.getKey()));
+
+            assertFalse(swapKeys.contains(e.getKey()));
+        }
+
+        assertFalse(offheapKeys.isEmpty());
+
+        Set<Integer> heapKeys = new HashSet<>(keys);
+
+        heapKeys.removeAll(offheapKeys);
+        heapKeys.removeAll(swapKeys);
+
+        assertFalse(heapKeys.isEmpty());
+
+        log.info("Keys [swap=" + swapKeys.size() +
+            ", offheap=" + offheapKeys.size() +
+            ", heap=" + heapKeys.size() + ']');
+
+        assertEquals(100, swapKeys.size() + offheapKeys.size() + heapKeys.size());
 
         for (Integer key : swapKeys) {
             assertEquals(val, cache0.localPeek(key, SWAP));
 
             assertNull(cache0.localPeek(key, ONHEAP));
             assertNull(cache0.localPeek(key, OFFHEAP));
-
-            offheapKeys.remove(key);
         }
 
-        for (int i = 0; i < HEAP_ENTRIES; i++) {
-            Integer key = keys.get(keys.size() - i - 1);
+        for (Integer key : offheapKeys) {
+            assertEquals(val, cache0.localPeek(key, OFFHEAP));
 
-            assertFalse(swapKeys.contains(key));
+            assertNull(cache0.localPeek(key, ONHEAP));
+            assertNull(cache0.localPeek(key, SWAP));
+        }
+
+        for (Integer key : heapKeys) {
             assertEquals(val, cache0.localPeek(key, ONHEAP));
 
             assertNull(cache0.localPeek(key, SWAP));
             assertNull(cache0.localPeek(key, OFFHEAP));
-
-            offheapKeys.remove(key);
         }
     }
 }

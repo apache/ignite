@@ -812,7 +812,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             V val = null;
 
             if (heap) {
-                GridCacheEntryEx<K, V> e = peekEx(key);
+                GridCacheEntryEx<K, V> e = nearKey ? peekEx(key) :
+                    (ctx.isNear() ? ctx.near().dht().peekEx(key) : peekEx(key));
 
                 if (e != null) {
                     val = e.peek(heap, offheap, swap, topVer);
