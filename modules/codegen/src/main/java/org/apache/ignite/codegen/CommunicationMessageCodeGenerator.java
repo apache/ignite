@@ -129,7 +129,9 @@ public class CommunicationMessageCodeGenerator {
         CommunicationMessageCodeGenerator gen = new CommunicationMessageCodeGenerator();
 
         try {
-            gen.generateAll(true);
+            gen.generateAndWrite(GridJobExecuteRequest.class);
+
+            //gen.generateAll(true);
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -145,15 +147,13 @@ public class CommunicationMessageCodeGenerator {
     public void generateAll(boolean write) throws Exception {
         Collection<Class<? extends GridTcpCommunicationMessageAdapter>> classes = classes();
 
-        byte type = 0;
-
         for (Class<? extends GridTcpCommunicationMessageAdapter> cls : classes) {
             boolean isAbstract = Modifier.isAbstract(cls.getModifiers());
 
             System.out.println("Processing class: " + cls.getName() + (isAbstract ? " (abstract)" : ""));
 
             if (write)
-                generateAndWrite(cls, isAbstract ? -1 : type++);
+                generateAndWrite(cls);
             else
                 generate(cls);
         }
@@ -179,7 +179,7 @@ public class CommunicationMessageCodeGenerator {
      * @throws Exception In case of error.
      */
     @SuppressWarnings("ConstantConditions")
-    private void generateAndWrite(Class<? extends GridTcpCommunicationMessageAdapter> cls, byte type) throws Exception {
+    private void generateAndWrite(Class<? extends GridTcpCommunicationMessageAdapter> cls) throws Exception {
         assert cls != null;
 
         generate(cls);
