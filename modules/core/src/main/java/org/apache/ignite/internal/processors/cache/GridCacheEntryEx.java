@@ -590,6 +590,18 @@ public interface GridCacheEntryEx<K, V> {
     /**
      * Peeks into entry without loading value or updating statistics.
      *
+     * @param heap Read from heap flag.
+     * @param offheap Read from offheap flag.
+     * @param swap Read from swap flag.
+     * @return Value.
+     * @throws GridCacheEntryRemovedException If entry has been removed.
+     */
+    @Nullable public V peek(boolean heap, boolean offheap, boolean swap, long topVer)
+        throws GridCacheEntryRemovedException, IgniteCheckedException;
+
+    /**
+     * Peeks into entry without loading value or updating statistics.
+     *
      * @param modes Peek modes.
      * @param filter Optional filter.
      * @return Value.

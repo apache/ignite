@@ -429,13 +429,20 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable GridCacheSwapEntry<V> read(K key, byte[] keyBytes, boolean entryLocked) throws IgniteCheckedException {
+    @Nullable private GridCacheSwapEntry<V> read(K key,
+        byte[] keyBytes,
+        int part,
+        boolean entryLocked,
+        boolean readOffheap,
+        boolean readSwap)
+        throws IgniteCheckedException
+    {
+        assert readOffheap || readSwap;
+
         if (!offheapEnabled && !swapEnabled)
             return null;
 
         checkIteratorQueue();
-
-        int part = cctx.affinity().partition(key);
 
         KeySwapListener<K, V> lsnr = null;
 
@@ -447,14 +454,14 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
             }
 
             // First check off-heap store.
-            if (offheapEnabled) {
+            if (readOffheap && offheapEnabled) {
                 byte[] bytes = offheap.get(spaceName, part, key, keyBytes);
 
                 if (bytes != null)
                     return swapEntry(unmarshalSwapEntry(bytes));
             }
 
-            if (!swapEnabled)
+            if (!swapEnabled || !readSwap)
                 return null;
 
             assert key != null;
@@ -589,11 +596,21 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Read value.
      * @throws IgniteCheckedException If read failed.
      */
-    @Nullable GridCacheSwapEntry<V> read(GridCacheEntryEx<K, V> entry, boolean locked) throws IgniteCheckedException {
+    @Nullable GridCacheSwapEntry<V> read(GridCacheEntryEx<K, V> entry,
+        boolean locked,
+        boolean readOffheap,
+        boolean readSwap)
+        throws IgniteCheckedException
+    {
         if (!offheapEnabled && !swapEnabled)
             return null;
 
-        return read(entry.key(), entry.getOrMarshalKeyBytes(), locked);
+        return read(entry.key(),
+            entry.getOrMarshalKeyBytes(),
+            entry.partition(),
+            locked,
+            readOffheap,
+            readSwap);
     }
 
     /**
@@ -628,11 +645,17 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Read value.
      * @throws IgniteCheckedException If read failed.
      */
-    @Nullable public GridCacheSwapEntry<V> read(K key) throws IgniteCheckedException {
+    @Nullable public GridCacheSwapEntry<V> read(K key,
+        boolean readOffheap,
+        boolean readSwap)
+        throws IgniteCheckedException
+    {
         if (!offheapEnabled && !swapEnabled)
             return null;
 
-        return read(key, CU.marshal(cctx.shared(), key), false);
+        int part = cctx.affinity().partition(key);
+
+        return read(key, CU.marshal(cctx.shared(), key), part, false, readOffheap, readSwap);
     }
 
     /**
