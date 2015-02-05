@@ -39,9 +39,16 @@ public class SampleValue implements Externalizable {
     }
 
     /**
+     * @param id Id.
+     */
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    /**
      * @return Id.
      */
-    public int id() {
+    public int getId() {
         return id;
     }
 

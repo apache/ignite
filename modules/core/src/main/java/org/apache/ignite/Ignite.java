@@ -21,12 +21,11 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
-import org.apache.ignite.hadoop.*;
-import org.apache.ignite.internal.product.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.fs.IgniteFsConfiguration;
 import org.apache.ignite.plugin.*;
+import org.apache.ignite.internal.product.*;
 import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -276,13 +275,6 @@ public interface Ignite extends AutoCloseable {
      * @return Collection of grid file systems instances.
      */
     public Collection<IgniteFs> fileSystems();
-
-    /**
-     * Gets an instance of Hadoop.
-     *
-     * @return Hadoop instance.
-     */
-    public GridHadoop hadoop();
 
     /**
      * Gets an instance of streamer by name, if one does not exist then

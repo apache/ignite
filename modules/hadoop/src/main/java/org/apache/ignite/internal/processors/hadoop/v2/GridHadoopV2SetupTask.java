@@ -21,7 +21,7 @@ import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapreduce.OutputCommitter;
 import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.ignite.*;
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.*;
 
 import java.io.*;

@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.query;
 
 import java.io.*;
-import java.util.*;
 
 /**
  * Query configuration object.
@@ -26,9 +25,6 @@ import java.util.*;
 public class CacheQueryConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Collection of query type metadata. */
-    private Collection<CacheQueryTypeMetadata> typeMeta;
 
     /** Query type resolver. */
     private CacheQueryTypeResolver typeRslvr;
@@ -56,30 +52,11 @@ public class CacheQueryConfiguration implements Serializable {
      * @param cfg Configuration to copy.
      */
     public CacheQueryConfiguration(CacheQueryConfiguration cfg) {
-        typeMeta = cfg.getTypeMetadata();
         typeRslvr = cfg.getTypeResolver();
         idxPrimitiveKey = cfg.isIndexPrimitiveKey();
         idxPrimitiveVal = cfg.isIndexPrimitiveValue();
         idxFixedTyping = cfg.isIndexFixedTyping();
         escapeAll = cfg.isEscapeAll();
-    }
-
-    /**
-     * Gets collection of query type metadata objects.
-     *
-     * @return Collection of query type metadata.
-     */
-    public Collection<CacheQueryTypeMetadata> getTypeMetadata() {
-        return typeMeta;
-    }
-
-    /**
-     * Sets collection of query type metadata objects.
-     *
-     * @param typeMeta Collection of query type metadata.
-     */
-    public void setTypeMetadata(Collection<CacheQueryTypeMetadata> typeMeta) {
-        this.typeMeta = typeMeta;
     }
 
     /**
