@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.visor.streamer;
 
 import org.apache.ignite.*;
-import org.apache.ignite.streamer.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.streamer.*;
 
 import java.io.*;
 import java.util.*;

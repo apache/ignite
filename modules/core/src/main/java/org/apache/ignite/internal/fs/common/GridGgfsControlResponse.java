@@ -334,18 +334,18 @@ public class GridGgfsControlResponse extends GridGgfsMessage {
     private int errorCode(IgniteCheckedException e, boolean checkIo) {
         if (X.hasCause(e, IgniteFsFileNotFoundException.class))
             return ERR_FILE_NOT_FOUND;
-        else if (IgniteFsPathAlreadyExistsException.class.isInstance(e))
+        else if (e.hasCause(IgniteFsPathAlreadyExistsException.class))
             return ERR_PATH_ALREADY_EXISTS;
-        else if (GridGgfsDirectoryNotEmptyException.class.isInstance(e))
+        else if (e.hasCause(GridGgfsDirectoryNotEmptyException.class))
             return ERR_DIRECTORY_NOT_EMPTY;
-        else if (IgniteFsParentNotDirectoryException.class.isInstance(e))
+        else if (e.hasCause(IgniteFsParentNotDirectoryException.class))
             return ERR_PARENT_NOT_DIRECTORY;
-        else if (IgniteFsInvalidHdfsVersionException.class.isInstance(e))
+        else if (e.hasCause(IgniteFsInvalidHdfsVersionException.class))
             return ERR_INVALID_HDFS_VERSION;
-        else if (X.hasCause(e, IgniteFsCorruptedFileException.class))
+        else if (e.hasCause(IgniteFsCorruptedFileException.class))
             return ERR_CORRUPTED_FILE;
             // This check should be the last.
-        else if (IgniteFsException.class.isInstance(e))
+        else if (e.hasCause(IgniteFsException.class))
             return ERR_GGFS_GENERIC;
 
         return ERR_GENERIC;

@@ -18,7 +18,6 @@
 package org.apache.ignite.compute;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -159,9 +158,9 @@ public interface ComputeTaskSession {
      * job siblings will be requested from task node for each apply.
      *
      * @return Collection of grid job siblings executing within this task.
-     * @throws IgniteCheckedException If job siblings can not be received from task node.
+     * @throws IgniteException If job siblings can not be received from task node.
      */
-    public Collection<ComputeJobSibling> getJobSiblings() throws IgniteCheckedException;
+    public Collection<ComputeJobSibling> getJobSiblings() throws IgniteException;
 
     /**
      * Refreshes collection of job siblings. This method has no effect when invoked
@@ -171,9 +170,9 @@ public interface ComputeTaskSession {
      * will re-request list of siblings from originating node.
      *
      * @return Refreshed collection of job siblings.
-     * @throws IgniteCheckedException If refresh failed.
+     * @throws IgniteException If refresh failed.
      */
-    public Collection<ComputeJobSibling> refreshJobSiblings() throws IgniteCheckedException;
+    public Collection<ComputeJobSibling> refreshJobSiblings() throws IgniteException;
 
     /**
      * Gets job sibling for a given ID.
@@ -184,9 +183,9 @@ public interface ComputeTaskSession {
      *
      * @param jobId Job ID to get the sibling for.
      * @return Grid job sibling for a given ID.
-     * @throws IgniteCheckedException If job sibling can not be received from task node.
+     * @throws IgniteException If job sibling can not be received from task node.
      */
-    @Nullable public ComputeJobSibling getJobSibling(IgniteUuid jobId) throws IgniteCheckedException;
+    @Nullable public ComputeJobSibling getJobSibling(IgniteUuid jobId) throws IgniteException;
 
     /**
      * Sets session attributed. Note that task session is distributed and
@@ -199,9 +198,9 @@ public interface ComputeTaskSession {
      *
      * @param key Attribute key.
      * @param val Attribute value. Can be {@code null}.
-     * @throws IgniteCheckedException If sending of attribute message failed.
+     * @throws IgniteException If sending of attribute message failed.
      */
-    public void setAttribute(Object key, @Nullable Object val) throws IgniteCheckedException;
+    public void setAttribute(Object key, @Nullable Object val) throws IgniteException;
 
     /**
      * Gets an attribute set by {@link #setAttribute(Object, Object)} or {@link #setAttributes(Map)}
@@ -226,9 +225,9 @@ public interface ComputeTaskSession {
      * This method is no-op if the session has finished.
      *
      * @param attrs Attributes to set.
-     * @throws IgniteCheckedException If sending of attribute message failed.
+     * @throws IgniteException If sending of attribute message failed.
      */
-    public void setAttributes(Map<?, ?> attrs) throws IgniteCheckedException;
+    public void setAttributes(Map<?, ?> attrs) throws IgniteException;
 
     /**
      * Gets all attributes.
@@ -324,12 +323,12 @@ public interface ComputeTaskSession {
      *
      * @param key Key to be used to load this checkpoint in future.
      * @param state Intermediate job state to save.
-     * @throws IgniteCheckedException If failed to save intermediate job state.
+     * @throws IgniteException If failed to save intermediate job state.
      * @see #loadCheckpoint(String)
      * @see #removeCheckpoint(String)
      * @see org.apache.ignite.spi.checkpoint.CheckpointSpi
      */
-    public void saveCheckpoint(String key, Object state) throws IgniteCheckedException;
+    public void saveCheckpoint(String key, Object state) throws IgniteException;
 
     /**
      * Saves intermediate state of a job to a storage. The storage implementation is defined
@@ -353,13 +352,13 @@ public interface ComputeTaskSession {
      *      timeout expires.
      * @param timeout Maximum time this state should be kept by the underlying storage. Value {@code 0} means that
      *       timeout will never expire.
-     * @throws IgniteCheckedException If failed to save intermediate job state.
+     * @throws IgniteException If failed to save intermediate job state.
      * @see #loadCheckpoint(String)
      * @see #removeCheckpoint(String)
      * @see org.apache.ignite.spi.checkpoint.CheckpointSpi
      */
     public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Saves intermediate state of a job or task to a storage. The storage implementation is defined
@@ -384,13 +383,13 @@ public interface ComputeTaskSession {
      * @param timeout Maximum time this state should be kept by the underlying storage. Value <tt>0</tt> means that
      *      timeout will never expire.
      * @param overwrite Whether or not overwrite checkpoint if it already exists.
-     * @throws IgniteCheckedException If failed to save intermediate job state.
+     * @throws IgniteException If failed to save intermediate job state.
      * @see #loadCheckpoint(String)
      * @see #removeCheckpoint(String)
      * @see org.apache.ignite.spi.checkpoint.CheckpointSpi
      */
     public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout,
-        boolean overwrite) throws IgniteCheckedException;
+        boolean overwrite) throws IgniteException;
 
     /**
      * Loads job's state previously saved via {@link #saveCheckpoint(String, Object, ComputeTaskSessionScope, long)}
@@ -405,11 +404,11 @@ public interface ComputeTaskSession {
      * @param key Key for intermediate job state to load.
      * @param <T> Type of the checkpoint state.
      * @return Previously saved state or {@code null} if no state was found for a given {@code key}.
-     * @throws IgniteCheckedException If failed to load job state.
+     * @throws IgniteException If failed to load job state.
      * @see #removeCheckpoint(String)
      * @see org.apache.ignite.spi.checkpoint.CheckpointSpi
      */
-    @Nullable public <T> T loadCheckpoint(String key) throws IgniteCheckedException;
+    @Nullable public <T> T loadCheckpoint(String key) throws IgniteException;
 
     /**
      * Removes previously saved job's state for a given {@code key} from an underlying storage.
@@ -421,11 +420,11 @@ public interface ComputeTaskSession {
      *
      * @param key Key for intermediate job state to load.
      * @return {@code true} if job state was removed, {@code false} if state was not found.
-     * @throws IgniteCheckedException If failed to remove job state.
+     * @throws IgniteException If failed to remove job state.
      * @see #loadCheckpoint(String)
      * @see org.apache.ignite.spi.checkpoint.CheckpointSpi
      */
-    public boolean removeCheckpoint(String key) throws IgniteCheckedException;
+    public boolean removeCheckpoint(String key) throws IgniteException;
 
     /**
      * Gets a collection of grid nodes IDs.
@@ -440,5 +439,5 @@ public interface ComputeTaskSession {
      *
      * @return Future that will be completed when task "<tt>map</tt>" step has completed.
      */
-    public IgniteInternalFuture<?> mapFuture();
+    public IgniteFuture<?> mapFuture();
 }

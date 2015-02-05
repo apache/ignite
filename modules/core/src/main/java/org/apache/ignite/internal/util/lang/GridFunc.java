@@ -24,10 +24,10 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -496,13 +496,6 @@ public class GridFunc {
 
         @Override public String toString() {
             return "UUID to ID8 transformer closure.";
-        }
-    };
-
-    /** */
-    private static final IgnitePredicate<IgniteInternalFuture<?>> FINISHED_FUTURE = new IgnitePredicate<IgniteInternalFuture<?>>() {
-        @Override public boolean apply(IgniteInternalFuture<?> f) {
-            return f.isDone();
         }
     };
 
@@ -2777,10 +2770,10 @@ public class GridFunc {
                 try {
                     return fut.get();
                 }
-                catch (IgniteFutureCancelledException ignore) {
+                catch (IgniteFutureCancelledCheckedException ignore) {
                     throw new CancellationException("The computation was cancelled.");
                 }
-                catch (IgniteInterruptedException ignore) {
+                catch (IgniteInterruptedCheckedException ignore) {
                     throw new InterruptedException("The computation was interrupted.");
                 }
                 catch (IgniteCheckedException e) {
@@ -2793,13 +2786,13 @@ public class GridFunc {
                 try {
                     return fut.get(timeout, unit);
                 }
-                catch (IgniteFutureCancelledException ignore) {
+                catch (IgniteFutureCancelledCheckedException ignore) {
                     throw new CancellationException("The computation was cancelled.");
                 }
-                catch (IgniteInterruptedException ignore) {
+                catch (IgniteInterruptedCheckedException ignore) {
                     throw new InterruptedException("The computation was interrupted.");
                 }
-                catch (IgniteFutureTimeoutException e) {
+                catch (IgniteFutureTimeoutCheckedException e) {
                     throw new TimeoutException("The computation timed out: " + e.getMessage());
                 }
                 catch (IgniteCheckedException e) {
@@ -8499,7 +8492,7 @@ public class GridFunc {
                 long left = end - U.currentTimeMillis();
 
                 if (left <= 0 && !fut.isDone())
-                    throw new IgniteFutureTimeoutException("Timed out waiting for all futures: " + futs);
+                    throw new IgniteFutureTimeoutCheckedException("Timed out waiting for all futures: " + futs);
 
                 if (fut.isDone() && left < 0)
                     left = 0;
@@ -8587,15 +8580,6 @@ public class GridFunc {
         assert f != null;
 
         return f;
-    }
-
-    /**
-     * Returns predicate for filtering finished futures.
-     *
-     * @return Predicate for filtering finished futures.
-     */
-    public static IgnitePredicate<IgniteInternalFuture<?>> finishedFutures() {
-        return FINISHED_FUTURE;
     }
 
     /**

@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
 /**
  * This exception indicates that grid task was cancelled.
  */
-public class ComputeTaskCancelledException extends IgniteCheckedException {
+public class ComputeTaskCancelledException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 

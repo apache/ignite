@@ -20,12 +20,11 @@ package org.apache.ignite.logger.log4j;
 import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.logger.log4j.*;
-import org.apache.log4j.*;
-import org.apache.log4j.varia.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.log4j.*;
+import org.apache.log4j.varia.*;
 
 import java.io.*;
 import java.util.*;

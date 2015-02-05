@@ -22,6 +22,7 @@ import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.util.*;
 import org.apache.ignite.*;
 import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.jetbrains.annotations.*;
 
@@ -72,7 +73,7 @@ public class GridHadoopV2Splitter {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 

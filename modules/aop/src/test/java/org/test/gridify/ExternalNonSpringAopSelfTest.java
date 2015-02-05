@@ -17,11 +17,11 @@
 
 package org.test.gridify;
 
-import org.apache.ignite.gridify.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.gridify.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.deployment.local.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**

@@ -19,10 +19,10 @@ package org.apache.ignite.internal.visor.ggfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.fs.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.lang.*;
 
 /**
  * Task to set GGFS instance sampling state.
@@ -50,14 +50,17 @@ public class VisorGgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<S
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(IgniteBiTuple<String, Boolean> arg) throws IgniteCheckedException {
+        @Override protected Void run(IgniteBiTuple<String, Boolean> arg) {
             try {
-                ((GridGgfsEx) g.fileSystem(arg.get1())).globalSampling(arg.get2());
+                ((GridGgfsEx)g.fileSystem(arg.get1())).globalSampling(arg.get2());
 
                 return null;
             }
             catch (IllegalArgumentException iae) {
-                throw new IgniteCheckedException("Failed to set sampling state for GGFS: " + arg.get1(), iae);
+                throw new IgniteException("Failed to set sampling state for GGFS: " + arg.get1(), iae);
+            }
+            catch(IgniteCheckedException e) {
+                throw U.convertException(e);
             }
         }
 

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.authentication;
 
-import org.apache.ignite.spi.*;
 import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.spi.*;
 
 /**
  * Authentication SPI used for authenticating grid nodes and remote clients. This SPI

@@ -20,8 +20,8 @@ package org.apache.ignite.spi.swapspace.file;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import java.io.File;
-import java.nio.ByteBuffer;
+import java.io.*;
+import java.nio.*;
 import java.util.*;
 
 /**

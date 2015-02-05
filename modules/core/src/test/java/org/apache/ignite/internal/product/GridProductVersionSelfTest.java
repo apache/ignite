@@ -20,8 +20,8 @@ package org.apache.ignite.internal.product;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import static org.junit.Assert.*;
 import static org.apache.ignite.internal.GridProductImpl.*;
+import static org.junit.Assert.*;
 
 /**
  * Versions test.

@@ -36,7 +36,7 @@ public interface IgniteDataLoadCacheUpdater<K, V> extends Serializable {
      *
      * @param cache Cache.
      * @param entries Collection of entries.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) throws IgniteCheckedException;
+    public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) throws IgniteException;
 }

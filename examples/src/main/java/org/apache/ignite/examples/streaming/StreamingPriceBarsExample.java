@@ -165,7 +165,7 @@ public class StreamingPriceBarsExample {
 
                     System.out.println("-----------------");
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     e.printStackTrace();
                 }
             }
@@ -378,8 +378,7 @@ public class StreamingPriceBarsExample {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Quote> quotes)
-            throws IgniteCheckedException {
+        @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Quote> quotes) {
             StreamerWindow win = ctx.window("stage1");
 
             // Add numbers to window.
@@ -419,8 +418,7 @@ public class StreamingPriceBarsExample {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Bar> bars)
-            throws IgniteCheckedException {
+        @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Bar> bars) {
             ConcurrentMap<String, Bar> loc = ctx.localSpace();
 
             StreamerWindow win = ctx.window("stage2");

@@ -24,15 +24,15 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.portables.*;
+import org.apache.ignite.spi.indexing.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -1339,9 +1339,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /**
          * @return Waits for initialization.
-         * @throws org.apache.ignite.IgniteInterruptedException If thread is interrupted.
+         * @throws IgniteInterruptedCheckedException If thread is interrupted.
          */
-        boolean await() throws IgniteInterruptedException {
+        boolean await() throws IgniteInterruptedCheckedException {
             return initializer.await();
         }
 

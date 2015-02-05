@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 import java.io.*;
 import java.nio.*;
@@ -67,7 +67,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
      * @param originatingThreadId Originating thread ID.
      * @param futId Future ID.
      */
-    public GridCachePessimisticCheckCommittedTxRequest(IgniteTxEx<K, V> tx, long originatingThreadId, IgniteUuid futId,
+    public GridCachePessimisticCheckCommittedTxRequest(IgniteInternalTx<K, V> tx, long originatingThreadId, IgniteUuid futId,
         boolean nearOnlyCheck) {
         super(tx.xidVersion(), 0);
 

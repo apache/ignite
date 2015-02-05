@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.service;
 
 import junit.framework.*;
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.lang.*;
 
 import java.util.concurrent.*;
 
@@ -48,7 +48,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         svcs.deployClusterSingleton(name, new DummyService());
 
-        IgniteInternalFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -96,7 +96,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
         svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
             CACHE_NAME, affKey);
 
-        IgniteInternalFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -134,7 +134,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         svcs.deployNodeSingleton(name, new DummyService());
 
-        IgniteInternalFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 

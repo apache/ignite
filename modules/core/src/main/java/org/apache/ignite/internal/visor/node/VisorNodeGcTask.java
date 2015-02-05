@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -43,8 +42,7 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Void, Map<UUID, IgniteBi
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Map<UUID, IgniteBiTuple<Long, Long>> reduce0(List<ComputeJobResult> results)
-        throws IgniteCheckedException {
+    @Nullable @Override protected Map<UUID, IgniteBiTuple<Long, Long>> reduce0(List<ComputeJobResult> results) {
         Map<UUID, IgniteBiTuple<Long, Long>> total = new HashMap<>();
 
         for (ComputeJobResult res: results) {
@@ -72,7 +70,7 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Void, Map<UUID, IgniteBi
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteBiTuple<Long, Long> run(Void arg) throws IgniteCheckedException {
+        @Override protected IgniteBiTuple<Long, Long> run(Void arg) {
             ClusterNode locNode = g.localNode();
 
             long before = freeHeap(locNode);

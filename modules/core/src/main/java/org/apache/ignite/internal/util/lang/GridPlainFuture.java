@@ -40,7 +40,7 @@ public interface GridPlainFuture<R> {
      * @param unit Timeout interval unit to wait future completes.
      * @return Completed future result.
      * @throws IgniteCheckedException In case of error.
-     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException If timed out before future finishes.
+     * @throws org.apache.ignite.internal.IgniteFutureTimeoutCheckedException If timed out before future finishes.
      */
     public R get(long timeout, TimeUnit unit) throws IgniteCheckedException;
 

@@ -19,8 +19,8 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.nio.*;

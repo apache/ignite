@@ -51,7 +51,7 @@ public class CacheJndiTmLookup implements CacheTmLookup {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public TransactionManager getTm() throws IgniteCheckedException {
+    @Nullable @Override public TransactionManager getTm() throws IgniteException {
         assert jndiNames != null;
         assert !jndiNames.isEmpty();
 
@@ -66,7 +66,7 @@ public class CacheJndiTmLookup implements CacheTmLookup {
             }
         }
         catch (NamingException e) {
-            throw new IgniteCheckedException("Unable to lookup TM by: " + jndiNames, e);
+            throw new IgniteException("Unable to lookup TM by: " + jndiNames, e);
         }
 
         return null;

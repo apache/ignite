@@ -104,7 +104,7 @@ public final class DeploymentExample {
     @ComputeTaskName(TASK_NAME)
     public static class ExampleTask extends ComputeTaskSplitAdapter<String, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
             Collection<ComputeJob> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
@@ -122,7 +122,7 @@ public final class DeploymentExample {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

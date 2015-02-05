@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder;
 
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.lang.reflect.*;

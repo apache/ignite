@@ -17,9 +17,8 @@
 
 package org.apache.ignite.loadtests.streamer.average;
 
-import org.apache.ignite.*;
-import org.apache.ignite.streamer.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.streamer.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -34,8 +33,7 @@ class TestStage implements StreamerStage<Integer> {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Integer> evts)
-        throws IgniteCheckedException {
+    @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Integer> evts) {
         ConcurrentMap<String, TestAverage> loc = ctx.localSpace();
 
         TestAverage avg = loc.get("avg");

@@ -1400,7 +1400,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
                         return true;
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }
@@ -1456,7 +1456,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
                         return true;
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }
@@ -1508,7 +1508,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
                         return true;
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }
@@ -1523,7 +1523,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
                         return true;
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }
@@ -1568,7 +1568,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
                         return true;
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }
@@ -1583,7 +1583,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
                         return true;
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }

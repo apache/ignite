@@ -19,8 +19,8 @@ package org.apache.ignite.internal.visor.ggfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
 
 import java.util.*;
 
@@ -53,13 +53,13 @@ public class VisorGgfsResetMetricsTask extends VisorOneNodeTask<Set<String>, Voi
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Set<String> ggfsNames) throws IgniteCheckedException {
+        @Override protected Void run(Set<String> ggfsNames) {
             for (String ggfsName: ggfsNames)
                 try {
                     g.fileSystem(ggfsName).resetMetrics();
                 }
                 catch (IllegalArgumentException iae) {
-                    throw new IgniteCheckedException("Failed to reset metrics for GGFS: " + ggfsName, iae);
+                    throw new IgniteException("Failed to reset metrics for GGFS: " + ggfsName, iae);
                 }
 
             return null;

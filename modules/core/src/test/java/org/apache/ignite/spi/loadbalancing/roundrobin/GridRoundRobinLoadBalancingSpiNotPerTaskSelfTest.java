@@ -122,7 +122,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
         try {
             getSpi().getBalancedNode(ses, notInTop, new GridTestJob());
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             assertTrue(e.getMessage().contains("Task topology does not have alive nodes"));
         }
     }

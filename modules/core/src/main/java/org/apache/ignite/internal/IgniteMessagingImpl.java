@@ -67,7 +67,7 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter<IgniteMessagi
     }
 
     /** {@inheritDoc} */
-    @Override public void send(@Nullable Object topic, Object msg) throws IgniteCheckedException {
+    @Override public void send(@Nullable Object topic, Object msg) {
         A.notNull(msg, "msg");
 
         guard();
@@ -80,13 +80,16 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter<IgniteMessagi
 
             ctx.io().sendUserMessage(snapshot, msg, topic, false, 0);
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             unguard();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void send(@Nullable Object topic, Collection<?> msgs) throws IgniteCheckedException {
+    @Override public void send(@Nullable Object topic, Collection<?> msgs) {
         A.ensure(!F.isEmpty(msgs), "msgs cannot be null or empty");
 
         guard();
@@ -103,13 +106,16 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter<IgniteMessagi
                 ctx.io().sendUserMessage(snapshot, msg, topic, false, 0);
             }
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             unguard();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void sendOrdered(@Nullable Object topic, Object msg, long timeout) throws IgniteCheckedException {
+    @Override public void sendOrdered(@Nullable Object topic, Object msg, long timeout) {
         A.notNull(msg, "msg");
 
         guard();
@@ -124,6 +130,9 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter<IgniteMessagi
                 timeout = ctx.config().getNetworkTimeout();
 
             ctx.io().sendUserMessage(snapshot, msg, topic, true, timeout);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();
@@ -159,8 +168,7 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter<IgniteMessagi
     }
 
     /** {@inheritDoc} */
-    @Override public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p)
-        throws IgniteCheckedException {
+    @Override public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) {
         A.notNull(p, "p");
 
         guard();
@@ -170,16 +178,29 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter<IgniteMessagi
 
             return saveOrGet(ctx.continuous().startRoutine(hnd, 1, 0, false, prj.predicate()));
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             unguard();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void stopRemoteListen(UUID opId) throws IgniteCheckedException {
+    @Override public void stopRemoteListen(UUID opId) {
         A.notNull(opId, "opId");
 
-        saveOrGet(ctx.continuous().stopRoutine(opId));
+        guard();
+
+        try {
+            saveOrGet(ctx.continuous().stopRoutine(opId));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
     }
 
     /**

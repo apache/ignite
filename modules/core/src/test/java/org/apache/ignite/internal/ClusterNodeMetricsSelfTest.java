@@ -21,9 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.messaging.*;
-import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;

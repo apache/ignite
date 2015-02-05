@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testframework.config;
 
-import org.apache.log4j.xml.*;
 import org.apache.ignite.testframework.*;
+import org.apache.log4j.xml.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

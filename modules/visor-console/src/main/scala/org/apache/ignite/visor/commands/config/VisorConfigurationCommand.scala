@@ -212,7 +212,7 @@ class VisorConfigurationCommand {
                     .withNoFailover()
                     .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
             catch {
-                case e: IgniteCheckedException =>
+                case e: IgniteException =>
                     scold(e.getMessage)
 
                     break()

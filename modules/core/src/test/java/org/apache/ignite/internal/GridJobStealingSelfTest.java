@@ -21,12 +21,12 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
 import org.apache.ignite.spi.failover.jobstealing.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -322,7 +322,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @SuppressWarnings("ForLoopReplaceableByForEach")
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Object arg) throws IgniteCheckedException {
+            @Nullable Object arg) {
             //assert subgrid.size() == 2 : "Invalid subgrid size: " + subgrid.size();
 
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
@@ -342,7 +342,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings("SuspiciousMethodCalls")
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             for (ComputeJobResult res : results) {
                 log.info("Job result: " + res.getData());
             }
@@ -371,8 +371,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings("ForLoopReplaceableByForEach")
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Object arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
             assert subgrid.size() > 1 : "Invalid subgrid size: " + subgrid.size();
 
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
@@ -405,7 +404,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable execute() throws IgniteCheckedException {
+        @Override public Serializable execute() {
             log.info("Started job on node: " + ignite.cluster().localNode().id());
 
             if (!jobDistrMap.containsKey(ignite.cluster().localNode().id())) {
@@ -427,7 +426,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
             catch (InterruptedException e) {
                 log.info("Job got interrupted on node: " + ignite.cluster().localNode().id());
 
-                throw new IgniteCheckedException("Job got interrupted.", e);
+                throw new IgniteException("Job got interrupted.", e);
             }
             finally {
                 log.info("Job finished on node: " + ignite.cluster().localNode().id());

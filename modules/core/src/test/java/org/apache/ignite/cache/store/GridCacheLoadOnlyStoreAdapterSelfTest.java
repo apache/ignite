@@ -19,8 +19,8 @@ package org.apache.ignite.cache.store;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;

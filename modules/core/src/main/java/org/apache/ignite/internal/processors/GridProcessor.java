@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 
-import java.util.Map;
+import java.util.*;
 
 /**
  * Interface for all processors.
