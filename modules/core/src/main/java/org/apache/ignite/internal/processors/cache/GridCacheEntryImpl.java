@@ -396,7 +396,7 @@ public class GridCacheEntryImpl<K, V> implements CacheEntry<K, V>, Externalizabl
 
     /** {@inheritDoc} */
     @Override public boolean clear() {
-        return proxy.clear(key);
+        return proxy.clearLocally(key);
     }
 
     /** {@inheritDoc} */

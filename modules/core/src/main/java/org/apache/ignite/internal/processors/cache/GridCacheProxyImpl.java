@@ -1010,6 +1010,18 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
+    @Override public Set<K> keySet(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.keySet(filter);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public Set<K> primaryKeySet() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -1278,11 +1290,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void clearAll() {
+    @Override public void clearLocally() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            delegate.clearAll();
+            delegate.clearLocally();
         }
         finally {
             gate.leave(prev);
@@ -1290,11 +1302,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void globalClearAll() throws IgniteCheckedException {
+    @Override public void clear() throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            delegate.globalClearAll(0);
+            delegate.clear(0);
         }
         finally {
             gate.leave(prev);
@@ -1302,11 +1314,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void globalClearAll(long timeout) throws IgniteCheckedException {
+    @Override public void clear(long timeout) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            delegate.globalClearAll(timeout);
+            delegate.clear(timeout);
         }
         finally {
             gate.leave(prev);
@@ -1314,11 +1326,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public boolean clear(K key) {
+    @Override public boolean clearLocally(K key) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.clear(key);
+            return delegate.clearLocally(key);
         }
         finally {
             gate.leave(prev);
@@ -1576,12 +1588,12 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(@Nullable IgnitePredicate<CacheEntry<K, V>>[] filter)
+    @Override public void removeAll()
         throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            delegate.removeAll(filter);
+            delegate.removeAll();
         }
         finally {
             gate.leave(prev);
