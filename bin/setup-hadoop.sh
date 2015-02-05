@@ -15,7 +15,7 @@
 #  limitations under the License.
 
 #
-# Run this script to configure Hadoop client to work with GridGain.
+# Run this script to configure Hadoop client to work with Ignite.
 #
 
 HADOOP_COMMON_HOME=

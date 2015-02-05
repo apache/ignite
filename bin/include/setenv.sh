@@ -15,7 +15,7 @@
 #  limitations under the License.
 
 #
-# Exports IGNITE_LIBS variable containing classpath for GridGain.
+# Exports IGNITE_LIBS variable containing classpath for Ignite.
 # Expects IGNITE_HOME to be set.
 # Can be used like:
 #       . "${IGNITE_HOME}"/bin/include/setenv.sh

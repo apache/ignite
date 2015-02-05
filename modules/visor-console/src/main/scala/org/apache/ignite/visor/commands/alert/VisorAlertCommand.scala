@@ -476,7 +476,7 @@ class VisorAlertCommand {
         assert(n != null)
 
         val subj = "Visor alert triggered: '" + a.spec + '\''
-        val headline = "GridGain ver. " + grid.product().version()
+        val headline = "Ignite ver. " + grid.product().version()
 
         val stat = stats(a.id)
 
@@ -761,7 +761,7 @@ object VisorAlertCommand {
                 "Note that only one of the '-u' or '-r' is allowed.",
                 "If neither '-u' or '-r' provided - all alerts will be printed.",
                 "",
-                "NOTE: Email settings can be specified in GridGain configuration file.",
+                "NOTE: Email settings can be specified in Ignite configuration file.",
                 "      Email notification will be sent for the alert only when all",
                 "      provided mnemonic predicates evaluate to 'true'."
             ),

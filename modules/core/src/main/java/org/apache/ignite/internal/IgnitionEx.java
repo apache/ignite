@@ -140,7 +140,7 @@ public class IgnitionEx {
         // Check 1.8 just in case for forward compatibility.
         if (!U.jdkVersion().contains("1.7") &&
             !U.jdkVersion().contains("1.8"))
-            throw new IllegalStateException("GridGain requires Java 7 or above. Current Java version " +
+            throw new IllegalStateException("Ignite requires Java 7 or above. Current Java version " +
                 "is not supported: " + U.jdkVersion());
 
         // To avoid nasty race condition in UUID.randomUUID() in JDK prior to 6u34.
@@ -1396,7 +1396,7 @@ public class IgnitionEx {
                 File ggHomeFile = new File(ggHome);
 
                 if (!ggHomeFile.exists() || !ggHomeFile.isDirectory())
-                    throw new IgniteCheckedException("Invalid GridGain installation home folder: " + ggHome);
+                    throw new IgniteCheckedException("Invalid Ignite installation home folder: " + ggHome);
             }
 
             myCfg.setIgniteHome(ggHome);

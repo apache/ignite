@@ -931,7 +931,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                     // This exception thrown here means that grace period, if any,
                     // has expired and license violation is still unresolved.
                     catch (IgniteProductLicenseException ignored) {
-                        U.error(log, "License violation is unresolved. GridGain node will shutdown in " +
+                        U.error(log, "License violation is unresolved. Ignite node will shutdown in " +
                             (SHUTDOWN_DELAY / 1000) + " sec.");
                         U.error(log, "  ^-- Contact your support for immediate assistance (!)");
 
@@ -1070,10 +1070,10 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             IgniteProductLicense lic = ctx.license().license();
 
             String body =
-                "GridGain node started with the following parameters:" + NL +
+                "Ignite node started with the following parameters:" + NL +
                 NL +
                 "----" + NL +
-                "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
+                "Ignite ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
                 "Grid name: " + gridName + NL +
                 "Node ID: " + nid + NL +
                 "Node order: " + localNode().order() + NL +
@@ -1106,7 +1106,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 "| " + SITE + NL +
                 "| support@gridgain.com" + NL;
 
-            sendAdminEmailAsync("GridGain node started: " + nid8, body, false);
+            sendAdminEmailAsync("Ignite node started: " + nid8, body, false);
         }
     }
 
@@ -1303,9 +1303,9 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
         // Warn about loopback.
         if (ips.isEmpty() && macs.isEmpty())
-            U.warn(log, "GridGain is starting on loopback address... Only nodes on the same physical " +
+            U.warn(log, "Ignite is starting on loopback address... Only nodes on the same physical " +
                 "computer can participate in topology.",
-                "GridGain is starting on loopback address...");
+                "Ignite is starting on loopback address...");
 
         // Stick in network context into attributes.
         add(attrs, ATTR_IPS, (ips.isEmpty() ? "" : ips));
@@ -1749,14 +1749,14 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     private void ackStart(RuntimeMXBean rtBean) {
         if (log.isQuiet()) {
             U.quiet(false, "");
-            U.quiet(false, "GridGain node started OK (id=" + U.id8(localNode().id()) +
+            U.quiet(false, "Ignite node started OK (id=" + U.id8(localNode().id()) +
                 (F.isEmpty(gridName) ? "" : ", grid=" + gridName) + ')');
         }
 
         if (log.isInfoEnabled()) {
             log.info("");
 
-            String ack = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH;
+            String ack = "Ignite ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH;
 
             String dash = U.dash(ack.length());
 
@@ -1782,7 +1782,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                     ">>> Local node addresses: " + U.addressesAsString(localNode()) + NL +
                     ">>> Local ports: " + sb + NL;
 
-            str += ">>> GridGain documentation: http://" + SITE + "/documentation" + NL;
+            str += ">>> Ignite documentation: http://" + SITE + "/documentation" + NL;
 
             log.info(str);
         }
@@ -2013,16 +2013,16 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             // Ack stop.
             if (log.isQuiet()) {
                 if (!errOnStop)
-                    U.quiet(false, "GridGain node stopped OK [uptime=" +
+                    U.quiet(false, "Ignite node stopped OK [uptime=" +
                         X.timeSpan2HMSM(U.currentTimeMillis() - startTime) + ']');
                 else
-                    U.quiet(true, "GridGain node stopped wih ERRORS [uptime=" +
+                    U.quiet(true, "Ignite node stopped wih ERRORS [uptime=" +
                         X.timeSpan2HMSM(U.currentTimeMillis() - startTime) + ']');
             }
 
             if (log.isInfoEnabled())
                 if (!errOnStop) {
-                    String ack = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH +
+                    String ack = "Ignite ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH +
                         " stopped OK";
 
                     String dash = U.dash(ack.length());
@@ -2037,7 +2037,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                         NL);
                 }
                 else {
-                    String ack = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH +
+                    String ack = "Ignite ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH +
                         " stopped with ERRORS";
 
                     String dash = U.dash(ack.length());
@@ -2059,16 +2059,16 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             if (isSmtpEnabled() && isAdminEmailsSet() && cfg.isLifeCycleEmailNotification()) {
                 String errOk = errOnStop ? "with ERRORS" : "OK";
 
-                String headline = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR +
+                String headline = "Ignite ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR +
                     " stopped " + errOk + ":";
-                String subj = "GridGain node stopped " + errOk + ": " + nid8;
+                String subj = "Ignite node stopped " + errOk + ": " + nid8;
 
                 IgniteProductLicense lic = ctx.license() != null ? ctx.license().license() : null;
 
                 String body =
                     headline + NL + NL +
                     "----" + NL +
-                    "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
+                    "Ignite ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
                     "Grid name: " + gridName + NL +
                     "Node ID: " + nid + NL +
                     "Node uptime: " + X.timeSpan2HMSM(U.currentTimeMillis() - startTime) + NL;

@@ -71,7 +71,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
                 return CommandLineTransformer.transform("-J-Xmx1g", "-J-XX:OnError=\"dir c:\\\"");
             }
         }, RuntimeException.class, CommandLineTransformer.JVM_OPTION_PREFIX +
-            " JVM parameters for GridGain batch scripts " +
+            " JVM parameters for Ignite batch scripts " +
             "with double quotes are not supported. " +
             "Use JVM_OPTS environment variable to pass any custom JVM option.");
 
@@ -80,7 +80,7 @@ public class GridCommandLineTransformerSelfTest extends GridCommonAbstractTest {
                 return CommandLineTransformer.transform("-J-Xmx1g", "-J-XX:OnOutOfMemoryError=\"dir c:\\\"");
             }
         }, RuntimeException.class, CommandLineTransformer.JVM_OPTION_PREFIX +
-            " JVM parameters for GridGain batch scripts " +
+            " JVM parameters for Ignite batch scripts " +
             "with double quotes are not supported. " +
             "Use JVM_OPTS environment variable to pass any custom JVM option.");
     }

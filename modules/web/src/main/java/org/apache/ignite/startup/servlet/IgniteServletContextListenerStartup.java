@@ -124,7 +124,7 @@ public class IgniteServletContextListenerStartup implements ServletContextListen
                 t = IgnitionEx.loadConfigurations(cfgUrl);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to load GridGain configuration.", e);
+                throw new IgniteException("Failed to load Ignite configuration.", e);
             }
 
             cfgs = t.get1();
@@ -163,7 +163,7 @@ public class IgniteServletContextListenerStartup implements ServletContextListen
             for (String name : gridNames)
                 G.stop(name, true);
 
-            throw new IgniteException("Failed to start GridGain.", e);
+            throw new IgniteException("Failed to start Ignite.", e);
         }
     }
 

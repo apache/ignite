@@ -4609,12 +4609,12 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     if (!U.bytesEqual(buf, 0, U.IGNITE_HEADER, 0, 4)) {
                         if (log.isDebugEnabled())
                             log.debug("Unknown connection detected (is some other software connecting to " +
-                                "this GridGain port?) " +
+                                "this Ignite port?) " +
                                 "[rmtAddr=" + sock.getRemoteSocketAddress() +
                                 ", locAddr=" + sock.getLocalSocketAddress() + ']');
 
                         LT.warn(log, null, "Unknown connection detected (is some other software connecting to " +
-                            "this GridGain port?) [rmtAddr=" + sock.getRemoteSocketAddress() +
+                            "this Ignite port?) [rmtAddr=" + sock.getRemoteSocketAddress() +
                             ", locAddr=" + sock.getLocalSocketAddress() + ']');
 
                         return;

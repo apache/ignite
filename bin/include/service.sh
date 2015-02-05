@@ -15,7 +15,7 @@
 #  limitations under the License.
 
 ####################################################################
-#            GridGain Hadoop service start/stop script.
+#            Ignite Hadoop service start/stop script.
 # Supposed to be called from unix `init.d` script. Environment must
 # be set via the call of /etc/default/{hadoop,gridgain-hadoop}
 ####################################################################
@@ -43,10 +43,10 @@ case "$1" in
         # Is needed for setenv
         SCRIPTS_HOME=${IGNITE_HOME}/bin
 
-        # Load GridGain functions.
+        # Load Ignite functions.
         source "${SCRIPTS_HOME}/include/functions.sh"
 
-        # Configure GridGain environment.
+        # Configure Ignite environment.
         source "${SCRIPTS_HOME}/include/setenv.sh"
 
         # Set default JVM options if they was not passed.

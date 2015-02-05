@@ -133,7 +133,7 @@ public class GridNodeStartUtils {
                 }
                 else if (l.contains("=")) {
                     if (section == null)
-                        throw new IgniteCheckedException("GridGain ini format doesn't support unnamed section.");
+                        throw new IgniteCheckedException("Ignite ini format doesn't support unnamed section.");
 
                     String key = l.substring(0, l.indexOf('='));
                     String val = line.substring(line.indexOf('=') + 1);

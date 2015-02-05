@@ -878,7 +878,7 @@ public final class X {
         if (var != null)
             return var;
         else
-            throw new IgniteCheckedException("Failed to resolve GridGain home folder " +
+            throw new IgniteCheckedException("Failed to resolve Ignite home folder " +
                 "(please set 'IGNITE_HOME' environment or system variable)");
     }
 

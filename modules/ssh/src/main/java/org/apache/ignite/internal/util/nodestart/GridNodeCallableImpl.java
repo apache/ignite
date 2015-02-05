@@ -146,7 +146,7 @@ public class GridNodeCallableImpl implements GridNodeCallable {
 
                 UUID id = UUID.randomUUID();
 
-                String svcName = "GridGain-" + id;
+                String svcName = "Ignite-" + id;
                 String svcPath = ggHome + '\\' + SVC_EXE;
 
                 startNodeCmd = new SB().

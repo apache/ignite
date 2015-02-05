@@ -165,7 +165,7 @@ public class IgniteServletStartup extends HttpServlet {
             for (String name: gridNames)
                 G.stop(name, true);
 
-            throw new ServletException("Failed to start GridGain.", e);
+            throw new ServletException("Failed to start Ignite.", e);
         }
 
         loaded = true;

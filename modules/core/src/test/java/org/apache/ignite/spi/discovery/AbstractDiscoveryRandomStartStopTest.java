@@ -135,7 +135,7 @@ public abstract class AbstractDiscoveryRandomStartStopTest<T extends DiscoverySp
                     new JLabel("Test started."),
                     new JLabel("Press OK to stop test.")
                 },
-                "GridGain",
+                "Ignite",
                 JOptionPane.INFORMATION_MESSAGE
             );
 

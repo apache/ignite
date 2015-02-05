@@ -107,7 +107,7 @@ class IgniteJdbcStatement implements Statement {
             }
         }
         catch (GridClientException e) {
-            throw new SQLException("Failed to query GridGain.", e);
+            throw new SQLException("Failed to query Ignite.", e);
         }
     }
 

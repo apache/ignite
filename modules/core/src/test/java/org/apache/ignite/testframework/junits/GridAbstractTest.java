@@ -694,7 +694,7 @@ public abstract class GridAbstractTest extends TestCase {
         try {
             Ignite ignite = G.ignite(gridName);
 
-            assert ignite != null : "GridGain returned null grid for name: " + gridName;
+            assert ignite != null : "Ignite returned null grid for name: " + gridName;
 
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() + ']');
 
@@ -921,7 +921,7 @@ public abstract class GridAbstractTest extends TestCase {
         try {
             Ignite ignite = G.ignite(gridName);
 
-            assert ignite != null : "GridGain returned null grid for name: " + gridName;
+            assert ignite != null : "Ignite returned null grid for name: " + gridName;
 
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() + ']');
 

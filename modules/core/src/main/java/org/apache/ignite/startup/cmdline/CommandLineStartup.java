@@ -111,7 +111,7 @@ public final class CommandLineStartup {
                 new Class<?>[] {aboutHndCls},
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
-                        AboutDialog.centerShow("GridGain Node", bannerUrl.toExternalForm(), VER,
+                        AboutDialog.centerShow("Ignite Node", bannerUrl.toExternalForm(), VER,
                             releaseDate, COPYRIGHT);
 
                         return null;
@@ -248,7 +248,7 @@ public final class CommandLineStartup {
      */
     public static void main(String[] args) {
         if (!QUITE) {
-            X.println("GridGain Command Line Startup, ver. " + ACK_VER);
+            X.println("Ignite Command Line Startup, ver. " + ACK_VER);
             X.println(COPYRIGHT);
             X.println();
         }

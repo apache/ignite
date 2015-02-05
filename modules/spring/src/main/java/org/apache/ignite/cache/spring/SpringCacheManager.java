@@ -203,7 +203,7 @@ public class SpringCacheManager implements CacheManager, InitializingBean {
 
         if (cfgPath != null && cfg != null) {
             throw new IllegalArgumentException("Both 'configurationPath' and 'configuration' are " +
-                "provided. Set only one of these properties if you need to start a GridGain node inside of " +
+                "provided. Set only one of these properties if you need to start a Ignite node inside of " +
                 "GridSpringCacheManager. If you already have a node running, omit both of them and set" +
                 "'gridName' property.");
         }

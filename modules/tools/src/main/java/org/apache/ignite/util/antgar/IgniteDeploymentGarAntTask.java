@@ -118,7 +118,7 @@ public class IgniteDeploymentGarAntTask extends Zip {
             // File was defined in source.
             if (desc != null) {
                 if (descDir != null) {
-                    throw new BuildException("GridGain descriptor '" + DESC_NAME + "' is already " +
+                    throw new BuildException("Ignite descriptor '" + DESC_NAME + "' is already " +
                         "defined in source folder.");
                 }
             }
@@ -133,7 +133,7 @@ public class IgniteDeploymentGarAntTask extends Zip {
                 descFile = new File(getFullPath(descDir.getAbsolutePath(), DESC_NAME));
 
                 if (!descFile.exists()) {
-                    throw new BuildException("Folder doesn't contain GridGain descriptor [path=" +
+                    throw new BuildException("Folder doesn't contain Ignite descriptor [path=" +
                             descDir.getAbsolutePath() + ']');
                 }
             }

@@ -144,7 +144,7 @@ public final class GridRandomCommandLineLoader {
      * Prints logo.
      */
     private static void logo() {
-        echo("GridGain Random Command Line Loader, ver. " + VER);
+        echo("Ignite Random Command Line Loader, ver. " + VER);
         echo(COPYRIGHT);
         echo("");
     }
