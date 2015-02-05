@@ -18,7 +18,7 @@
 package org.apache.ignite.scalar
 
 import org.apache.ignite.cache.GridCache
-import org.apache.ignite.cache.query.{CacheQuerySqlField, CacheQueryTextField}
+import org.apache.ignite.cache.query.annotations.{QuerySqlField, QueryTextField}
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.internal.GridProductImpl
@@ -131,10 +131,10 @@ object scalar extends ScalarConversions {
     private val COPYRIGHT = GridProductImpl.COPYRIGHT
 
     /** Type alias for `CacheQuerySqlField`. */
-    type ScalarCacheQuerySqlField = CacheQuerySqlField @field
+    type ScalarCacheQuerySqlField = QuerySqlField @field
 
     /** Type alias for `CacheQueryTextField`. */
-    type ScalarCacheQueryTextField = CacheQueryTextField @field
+    type ScalarCacheQueryTextField = QueryTextField @field
 
     /**
      * Prints Scalar ASCII-logo.

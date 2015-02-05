@@ -66,8 +66,7 @@ public class IgniteCacheReplicatedFieldsQuerySelfTest extends IgniteCacheAbstrac
         final QueryCursor<List<?>> qry0 = qry;
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 int i = 0;
 
                 for (List<?> row : qry0)
