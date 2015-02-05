@@ -79,7 +79,7 @@ class VisorCacheCompactCommandSpec extends VisorRuntimeBaseSpec(2) {
     it should "show correct result for default cache" in {
         Ignition.ignite("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        Ignition.ignite("node-1").cache[Int, Int](null).clear(1)
+        Ignition.ignite("node-1").cache[Int, Int](null).clearLocally(1)
 
         VisorCacheCompactCommand().compact(Nil, None)
     }
@@ -87,7 +87,7 @@ class VisorCacheCompactCommandSpec extends VisorRuntimeBaseSpec(2) {
     it should "show correct result for named cache" in {
         Ignition.ignite("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        Ignition.ignite("node-1").cache[Int, Int]("cache").clear(1)
+        Ignition.ignite("node-1").cache[Int, Int]("cache").clearLocally(1)
 
         visor.cache("-compact -c=cache")
     }

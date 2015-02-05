@@ -923,6 +923,11 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public Set<K> keySet(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        return cache.keySet(filter);
+    }
+
+    /** {@inheritDoc} */
     @Override public Set<K> primaryKeySet() {
         return cache.primaryKeySet(entryFilter(true));
     }
@@ -1037,23 +1042,23 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void clearAll() {
-        cache.clearAll();
+    @Override public void clearLocally() {
+        cache.clearLocally();
     }
 
     /** {@inheritDoc} */
-    @Override public void globalClearAll() throws IgniteCheckedException {
-        cache.globalClearAll();
+    @Override public void clear() throws IgniteCheckedException {
+        cache.clear();
     }
 
     /** {@inheritDoc} */
-    @Override public void globalClearAll(long timeout) throws IgniteCheckedException {
-        cache.globalClearAll(timeout);
+    @Override public void clear(long timeout) throws IgniteCheckedException {
+        cache.clear(timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean clear(K key) {
-        return cache.clear0(key, entryFilter(true));
+    @Override public boolean clearLocally(K key) {
+        return cache.clearLocally0(key, entryFilter(true));
     }
 
     /** {@inheritDoc} */
@@ -1174,9 +1179,9 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
+    @Override public void removeAll()
         throws IgniteCheckedException {
-        cache.removeAll(and(filter, false));
+        cache.removeAll();
     }
 
     /** {@inheritDoc} */

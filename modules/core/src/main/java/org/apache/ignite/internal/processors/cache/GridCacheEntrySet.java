@@ -66,7 +66,7 @@ public class GridCacheEntrySet<K, V> extends AbstractSet<CacheEntry<K, V>> {
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        ctx.cache().clearAll0(F.viewReadOnly(set, F.<K>mapEntry2Key(), filter), CU.<K, V>empty());
+        ctx.cache().clearLocally0(F.viewReadOnly(set, F.<K>mapEntry2Key(), filter), CU.<K, V>empty());
 
         set.clear();
     }
