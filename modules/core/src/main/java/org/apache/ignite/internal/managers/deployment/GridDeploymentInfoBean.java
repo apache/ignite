@@ -272,10 +272,11 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
 
             case 3:
                 if (commState.readSize == -1) {
-                    commState.readSize = commState.getInt(null);
+                    int _val = commState.getInt(null);
 
                     if (!commState.lastRead())
                         return false;
+                    commState.readSize = _val;
                 }
 
                 if (commState.readSize >= 0) {

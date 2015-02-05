@@ -567,10 +567,11 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
             case 25:
                 if (commState.readSize == -1) {
-                    commState.readSize = commState.getInt(null);
+                    int _val = commState.getInt(null);
 
                     if (!commState.lastRead())
                         return false;
+                    commState.readSize = _val;
                 }
 
                 if (commState.readSize >= 0) {
@@ -604,10 +605,11 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
             case 27:
                 if (commState.readSize == -1) {
-                    commState.readSize = commState.getInt(null);
+                    int _val = commState.getInt(null);
 
                     if (!commState.lastRead())
                         return false;
+                    commState.readSize = _val;
                 }
 
                 if (commState.readSize >= 0) {

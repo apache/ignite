@@ -634,10 +634,11 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         switch (commState.idx) {
             case 8:
                 if (commState.readSize == -1) {
-                    commState.readSize = commState.getInt(null);
+                    int _val = commState.getInt(null);
 
                     if (!commState.lastRead())
                         return false;
+                    commState.readSize = _val;
                 }
 
                 if (commState.readSize >= 0) {
@@ -713,10 +714,11 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
             case 15:
                 if (commState.readSize == -1) {
-                    commState.readSize = commState.getInt(null);
+                    int _val = commState.getInt(null);
 
                     if (!commState.lastRead())
                         return false;
+                    commState.readSize = _val;
                 }
 
                 if (commState.readSize >= 0) {

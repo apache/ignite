@@ -129,9 +129,7 @@ public class CommunicationMessageCodeGenerator {
         CommunicationMessageCodeGenerator gen = new CommunicationMessageCodeGenerator();
 
         try {
-            gen.generateAndWrite(GridJobExecuteRequest.class);
-
-            //gen.generateAll(true);
+            gen.generateAll(true);
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -844,7 +842,9 @@ public class CommunicationMessageCodeGenerator {
 
             indent++;
 
-            returnFalseIfReadFailed(int.class, READ_SIZE_VAR, null, null, null, true);
+            returnFalseIfReadFailed(int.class, null, null, null, null, true);
+
+            read.add(builder().a(READ_SIZE_VAR).a(" = ").a(DFLT_LOC_VAR).a(";").toString());
 
             indent--;
 
@@ -911,7 +911,9 @@ public class CommunicationMessageCodeGenerator {
 
             indent++;
 
-            returnFalseIfReadFailed(int.class, READ_SIZE_VAR, null, null, null, true);
+            returnFalseIfReadFailed(int.class, null, null, null, null, true);
+
+            read.add(builder().a(READ_SIZE_VAR).a(" = ").a(DFLT_LOC_VAR).a(";").toString());
 
             indent--;
 

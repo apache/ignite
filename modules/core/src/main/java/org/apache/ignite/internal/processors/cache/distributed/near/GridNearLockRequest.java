@@ -518,10 +518,11 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
             case 25:
                 if (commState.readSize == -1) {
-                    commState.readSize = commState.getInt(null);
+                    int _val = commState.getInt(null);
 
                     if (!commState.lastRead())
                         return false;
+                    commState.readSize = _val;
                 }
 
                 if (commState.readSize >= 0) {
@@ -547,10 +548,11 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
             case 26:
                 if (commState.readSize == -1) {
-                    commState.readSize = commState.getInt(null);
+                    int _val = commState.getInt(null);
 
                     if (!commState.lastRead())
                         return false;
+                    commState.readSize = _val;
                 }
 
                 if (commState.readSize >= 0) {

@@ -854,10 +854,11 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
             case 5:
                 if (commState.readSize == -1) {
-                    commState.readSize = commState.getInt(null);
+                    int _val = commState.getInt(null);
 
                     if (!commState.lastRead())
                         return false;
+                    commState.readSize = _val;
                 }
 
                 if (commState.readSize >= 0) {
@@ -899,10 +900,11 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
             case 8:
                 if (commState.readSize == -1) {
-                    commState.readSize = commState.getInt(null);
+                    int _val = commState.getInt(null);
 
                     if (!commState.lastRead())
                         return false;
+                    commState.readSize = _val;
                 }
 
                 if (commState.readSize >= 0) {
@@ -944,10 +946,11 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
             case 11:
                 if (commState.readSize == -1) {
-                    commState.readSize = commState.getInt(null);
+                    int _val = commState.getInt(null);
 
                     if (!commState.lastRead())
                         return false;
+                    commState.readSize = _val;
                 }
 
                 if (commState.readSize >= 0) {
@@ -973,10 +976,11 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
             case 12:
                 if (commState.readSize == -1) {
-                    commState.readSize = commState.getInt(null);
+                    int _val = commState.getInt(null);
 
                     if (!commState.lastRead())
                         return false;
+                    commState.readSize = _val;
                 }
 
                 if (commState.readSize >= 0) {
@@ -1046,10 +1050,11 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
             case 18:
                 if (commState.readSize == -1) {
-                    commState.readSize = commState.getInt(null);
+                    int _val = commState.getInt(null);
 
                     if (!commState.lastRead())
                         return false;
+                    commState.readSize = _val;
                 }
 
                 if (commState.readSize >= 0) {
