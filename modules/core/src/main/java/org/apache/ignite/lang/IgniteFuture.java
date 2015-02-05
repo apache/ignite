@@ -35,7 +35,7 @@ public interface IgniteFuture<V> extends Future<V> {
      *
      * @return Computation result.
      * @throws IgniteInterruptedException Subclass of {@link IgniteException} thrown if the wait was interrupted.
-     * @throws IgniteFutureCancelledException Subclass of {@link IgniteException} throws if computation was cancelled.
+     * @throws IgniteFutureCancelledException Subclass of {@link IgniteException} thrown if computation was cancelled.
      * @throws IgniteException If computation failed.
      */
     @Override public V get() throws IgniteException;
@@ -48,7 +48,7 @@ public interface IgniteFuture<V> extends Future<V> {
      * @param timeout The maximum time to wait in milliseconds.
      * @return Computation result.
      * @throws IgniteInterruptedException Subclass of {@link IgniteException} thrown if the wait was interrupted.
-     * @throws IgniteFutureCancelledException Subclass of {@link IgniteException} throws if computation was cancelled.
+     * @throws IgniteFutureCancelledException Subclass of {@link IgniteException} thrown if computation was cancelled.
      * @throws IgniteFutureTimeoutException Subclass of {@link IgniteException} thrown if the wait was timed out.
      * @throws IgniteException If computation failed.
      */
@@ -62,7 +62,7 @@ public interface IgniteFuture<V> extends Future<V> {
      * @param unit The time unit of the {@code timeout} argument.
      * @return Computation result.
      * @throws IgniteInterruptedException Subclass of {@link IgniteException} thrown if the wait was interrupted.
-     * @throws IgniteFutureCancelledException Subclass of {@link IgniteException} throws if computation was cancelled.
+     * @throws IgniteFutureCancelledException Subclass of {@link IgniteException} thrown if computation was cancelled.
      * @throws IgniteFutureTimeoutException Subclass of {@link IgniteException} thrown if the wait was timed out.
      * @throws IgniteException If computation failed.
      */
