@@ -74,7 +74,7 @@ import java.util.*;
  * <h2 class="header">Spring Example</h2>
  * {@link S3CheckpointSpi} can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.IgniteConfiguration" singleton="true"&gt;
+ * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *        &lt;property name=&quot;checkpointSpi&quot;&gt;
  *            &lt;bean class=&quot;org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpi&quot;&gt;
