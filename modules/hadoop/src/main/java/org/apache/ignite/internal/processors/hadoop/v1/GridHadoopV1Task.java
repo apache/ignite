@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.hadoop.v1;
 
 import org.apache.hadoop.mapred.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.v2.*;
 import org.jetbrains.annotations.*;

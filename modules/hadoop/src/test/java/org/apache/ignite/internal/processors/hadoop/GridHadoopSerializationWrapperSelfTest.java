@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.serializer.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.v2.*;
 import org.apache.ignite.testframework.junits.common.*;
 

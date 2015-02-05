@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.hadoop.taskexecutor;
 
 import org.apache.ignite.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.counter.*;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.*;
@@ -28,8 +27,8 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.hadoop.GridHadoopJobProperty.*;
-import static org.apache.ignite.hadoop.GridHadoopTaskType.*;
+import static org.apache.ignite.internal.processors.hadoop.GridHadoopJobProperty.*;
+import static org.apache.ignite.internal.processors.hadoop.GridHadoopTaskType.*;
 
 /**
  * Runnable task.
