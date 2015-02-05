@@ -184,7 +184,7 @@ public abstract class AbstractJdbcCacheStoreMultithreadedSelfTest<T extends Jdbc
                             map.put(new PersonKey(id), new Person(id, rnd.nextInt(), "Name" + id));
                     }
 
-                    GridCache<Object, Object> cache = cache();
+                    IgniteCache<Object, Object> cache = jcache();
 
                     cache.putAll(map);
                 }

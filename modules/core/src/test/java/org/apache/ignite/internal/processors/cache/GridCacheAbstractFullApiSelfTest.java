@@ -243,7 +243,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testContainsKey() throws Exception {
-        cache().put("testContainsKey", 1);
+        jcache().put("testContainsKey", 1);
 
         checkContainsKey(true, "testContainsKey");
         checkContainsKey(false, "testContainsKeyWrongKey");
@@ -305,21 +305,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             assertEquals(F.sumInt(vals), sum1.get());
         }
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    public void testForAll() throws Exception {
-        assert cache().forAll(F.<CacheEntry<String, Integer>>alwaysTrue());
-        assert cache().isEmpty() || !cache().forAll(F.<CacheEntry<String, Integer>>alwaysFalse());
-
-        cache().put("key1", 100);
-        cache().put("key2", 101);
-        cache().put("key3", 200);
-        cache().put("key4", 201);
-
-        assert cache().forAll(gte100);
     }
 
     /**
@@ -2014,11 +1999,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (cacheMode() != LOCAL && cacheMode() != REPLICATED) {
             int cnt = 3;
 
-            for (int i = 0; i < cnt; i++)
-                cache().put(String.valueOf(i), i);
+            IgniteCache<String, Integer> cache = jcache();
 
             for (int i = 0; i < cnt; i++)
-                cache().remove(String.valueOf(i));
+                cache.put(String.valueOf(i), i);
+
+            for (int i = 0; i < cnt; i++)
+                cache.remove(String.valueOf(i));
 
             for (int g = 0; g < gridCount(); g++) {
                 for (int i = 0; i < cnt; i++) {
@@ -2029,7 +2016,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     GridCacheEntryEx<String, Integer> entry = cctx.isNear() ? cctx.near().dht().peekEx(key) :
                         cctx.cache().peekEx(key);
 
-                    if (cache().affinity().mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode())) {
+                    if (grid(0).affinity(null).mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode())) {
                         assertNotNull(entry);
                         assertTrue(entry.deleted());
                     }
@@ -2473,12 +2460,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.localEvict(Sets.union(ImmutableSet.of("key1", "key2"), keys));
 
-        assert cache().isEmpty();
+        assert cache.size() == 0;
 
-        cache().clear();
+        cache.clear();
 
-        assert cache().promote("key1") == null;
-        assert cache().promote("key2") == null;
+        cache.localPromote(ImmutableSet.of("key2", "key1"));
+
+        assert cache.localPeek("key1") == null;
+        assert cache.localPeek("key2") == null;
     }
 
     /**
