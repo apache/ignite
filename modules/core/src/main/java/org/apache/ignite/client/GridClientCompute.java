@@ -413,7 +413,7 @@ public interface GridClientCompute {
     public GridClientFuture<List<GridClientNode>> refreshTopologyAsync(boolean includeAttrs, boolean includeMetrics);
 
     /**
-     * Gets contents of default log file ({@code IGNITE_HOME/work/log/gridgain.log}).
+     * Gets contents of default log file ({@code IGNITE_HOME/work/log/ignite.log}).
      * Note that backward reading (with negative line indexes) supported for only 8-bit character encodings.
      *
      * @param lineFrom Index of line from which log is get, inclusive. Negative values mean line numbers
@@ -429,7 +429,7 @@ public interface GridClientCompute {
 
     /**
      * Asynchronously gets contents of default log file
-     * ({@code IGNITE_HOME/work/log/gridgain.log}).
+     * ({@code IGNITE_HOME/work/log/ignite.log}).
      * Note that backward reading (with negative line indexes) supported for only 8-bit character encodings.
      *
      * @param lineFrom Index of line from which log is get, inclusive. Negative values mean line numbers

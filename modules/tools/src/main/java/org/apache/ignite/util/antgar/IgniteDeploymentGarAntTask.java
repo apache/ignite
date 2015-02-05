@@ -38,7 +38,7 @@ import java.io.*;
  * </ul>
  */
 public class IgniteDeploymentGarAntTask extends Zip {
-    /** GAR descriptor name. Its value is {@code gridgain.xml}. */
+    /** GAR descriptor name. Its value is {@code ignite.xml}. */
     public static final String DESC_NAME = "ignite.xml";
 
     /**  Default descriptor path. */

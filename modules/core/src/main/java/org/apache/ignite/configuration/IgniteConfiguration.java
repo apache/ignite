@@ -261,10 +261,10 @@ public class IgniteConfiguration {
     /** Executor service. */
     private ExecutorService p2pSvc;
 
-    /** Gridgain installation folder. */
+    /** Ignite installation folder. */
     private String ggHome;
 
-    /** Gridgain work folder. */
+    /** Ignite work folder. */
     private String ggWork;
 
     /** MBean server. */

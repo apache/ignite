@@ -31,7 +31,7 @@ import java.util.*;
  * with default configuration which allows all nodes in local network
  * (with enabled multicast) to discover each other.
  * <p>
- * Gridgain provides the following {@code GridDeploymentSpi} implementation:
+ * Ignite provides the following {@code GridDeploymentSpi} implementation:
  * <ul>
  * <li>{@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}</li>
  * </ul>

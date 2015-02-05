@@ -84,7 +84,7 @@
     </category>
     -->
 
-    <!-- Enable Gridgain debugging.
+    <!-- Enable Ignite debugging.
      <category name="org.apache.ignite">
          <level value="DEBUG"/>
      </category>

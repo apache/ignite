@@ -64,7 +64,7 @@ import static org.apache.ignite.internal.fs.hadoop.GridGgfsHadoopUtils.*;
  * distribution:
  * <pre name="code" class="bash">
  * export IGNITE_HOME=/path/to/Ignite/distribution
- * export HADOOP_CLASSPATH=$IGNITE_HOME/gridgain*.jar
+ * export HADOOP_CLASSPATH=$IGNITE_HOME/ignite*.jar
  *
  * for f in $IGNITE_HOME/libs/*.jar; do
  *  export HADOOP_CLASSPATH=$HADOOP_CLASSPATH:$f;

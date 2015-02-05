@@ -28,7 +28,7 @@ import org.apache.ignite.spi.*;
  * The default authentication SPI is {@link org.apache.ignite.spi.authentication.noop.NoopAuthenticationSpi}
  * which permits any request.
  * <p>
- * Gridgain provides the following {@code GridAuthenticationSpi} implementations:
+ * Ignite provides the following {@code GridAuthenticationSpi} implementations:
  * <ul>
  * <li>
  *     {@link org.apache.ignite.spi.authentication.noop.NoopAuthenticationSpi} - permits any request.
