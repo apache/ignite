@@ -345,6 +345,18 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
+    @Override public boolean containsKeys(Collection<? extends K> keys) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.containsKeys(keys);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> containsKeyAsync(K key) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -357,7 +369,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Map<K, Boolean>> containsKeysAsync(Collection<? extends K> keys) {
+    @Override public IgniteInternalFuture<Boolean> containsKeysAsync(Collection<? extends K> keys) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

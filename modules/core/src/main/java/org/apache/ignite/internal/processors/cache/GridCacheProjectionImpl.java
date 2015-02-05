@@ -621,7 +621,12 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Map<K, Boolean>> containsKeysAsync(Collection<? extends K> keys) {
+    @Override public boolean containsKeys(Collection<? extends K> keys) {
+        return cache.containsKeys(keys);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Boolean> containsKeysAsync(Collection<? extends K> keys) {
         return cache.containsKeysAsync(keys);
     }
 

@@ -648,6 +648,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> containsKeyAsync(final K key) {
+        A.notNull(key, "key");
+
         return getAllAsync(
             Collections.singletonList(key),
             /*force primary*/false,
@@ -665,9 +667,41 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Map<K, Boolean>> containsKeysAsync(Collection<? extends K> keys) {
-        // TODO ignite-52;
-        return null;
+    @Override public boolean containsKeys(Collection<? extends K> keys) {
+        try {
+            return containsKeysAsync(keys).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Boolean> containsKeysAsync(Collection<? extends K> keys) {
+        A.notNull(keys, "keys");
+
+        return getAllAsync(
+            keys,
+            /*force primary*/false,
+            /*skip tx*/false,
+            /*entry*/null,
+            /*subj id*/null,
+            /*task name*/null,
+            /*deserialize portable*/false,
+            /*skip values*/true
+        ).chain(new CX1<IgniteInternalFuture<Map<K, V>>, Boolean>() {
+            @Override public Boolean applyx(IgniteInternalFuture<Map<K, V>> fut) throws IgniteCheckedException {
+                Map<K, V> kvMap = fut.get();
+
+                Map<K, Boolean> res = U.newHashMap(kvMap.size());
+
+                for (Map.Entry<K, V> entry : kvMap.entrySet())
+                    if (entry.getValue() == null)
+                        return false;
+
+                return true;
+            }
+        });
     }
 
     /** {@inheritDoc} */

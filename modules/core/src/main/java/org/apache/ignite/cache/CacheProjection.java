@@ -348,10 +348,16 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
     public IgniteInternalFuture<Boolean> containsKeyAsync(K key);
 
     /**
+     * @param keys Keys,
+     * @return {@code True} if cache contains all keys.
+     */
+    public boolean containsKeys(Collection<? extends K> keys);
+
+    /**
      * @param keys Keys to check.
      * @return Future.
      */
-    public IgniteFuture<Map<K, Boolean>> containsKeysAsync(Collection<? extends K> keys);
+    public IgniteInternalFuture<Boolean> containsKeysAsync(Collection<? extends K> keys);
 
     /**
      * Returns {@code true} if this cache contains given value.
