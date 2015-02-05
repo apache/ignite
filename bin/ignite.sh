@@ -41,7 +41,7 @@ checkJava
 #
 # Discover IGNITE_HOME environment variable.
 #
-setGridGainHome
+setIgniteHome
 
 if [ "${DEFAULT_CONFIG}" == "" ]; then
     DEFAULT_CONFIG=config/default-config.xml

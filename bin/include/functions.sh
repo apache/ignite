@@ -78,7 +78,7 @@ checkJava() {
 # The function expects IGNITE_HOME_TMP variable is set and points to the directory where the callee script resides.
 # The function exports IGNITE_HOME variable with path to Ignite home directory.
 #
-setGridGainHome() {
+setIgniteHome() {
     #
     # Set IGNITE_HOME, if needed.
     #
