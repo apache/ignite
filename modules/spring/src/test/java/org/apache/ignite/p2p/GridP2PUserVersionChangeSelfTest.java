@@ -132,7 +132,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             GridTestExternalClassLoader ldr = new GridTestExternalClassLoader(
                 new URL[] { new URL(GridTestProperties.getProperty("p2p.uri.cls")) },
-                Collections.singletonMap("META-INF/gridgain.xml", makeUserVersion("1").getBytes()));
+                Collections.singletonMap("META-INF/ignite.xml", makeUserVersion("1").getBytes()));
 
             Class task1 = ldr.loadClass(TEST_TASK_NAME);
 
@@ -152,7 +152,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             stopGrid(1);
 
-            ldr.setResourceMap(Collections.singletonMap("META-INF/gridgain.xml", makeUserVersion("2").getBytes()));
+            ldr.setResourceMap(Collections.singletonMap("META-INF/ignite.xml", makeUserVersion("2").getBytes()));
 
             ignite1 = startGrid(1);
 
@@ -285,7 +285,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             GridTestExternalClassLoader ldr = new GridTestExternalClassLoader(
                 new URL[] { new URL(GridTestProperties.getProperty("p2p.uri.cls")) },
-                Collections.singletonMap("META-INF/gridgain.xml", makeUserVersion("1").getBytes()));
+                Collections.singletonMap("META-INF/ignite.xml", makeUserVersion("1").getBytes()));
 
             Class rcrsCls = ldr.loadClass(TEST_RCRS_NAME);
 
@@ -311,7 +311,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
             stopGrid("testCacheRedeployVersionChangeContinuousMode1");
 
             // Increase the user version of the test class.
-            ldr.setResourceMap(Collections.singletonMap("META-INF/gridgain.xml", makeUserVersion("2").getBytes()));
+            ldr.setResourceMap(Collections.singletonMap("META-INF/ignite.xml", makeUserVersion("2").getBytes()));
 
             ignite1 = startGrid("testCacheRedeployVersionChangeContinuousMode1");
 
@@ -337,10 +337,10 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Creates content of META-INF/gridgain.xml for specified user version.
+     * Creates content of META-INF/ignite.xml for specified user version.
      *
      * @param userVer Version to create.
-     * @return content of META-INF/gridgain.xml.
+     * @return content of META-INF/ignite.xml.
      */
     private String makeUserVersion(String userVer) {
         return "<?xml version=\"1.0\" encoding=\"UTF-8\"?> " +
