@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
@@ -162,6 +163,16 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
             fut.get(); // Wait for completion.
 
         for (int i = 0; i < GRID_CNT; i++) {
+            info("Running iteration: " + i);
+
+            for (int g = 0; g < GRID_CNT; g++) {
+                info("Will check grid: " + g);
+
+                GridCacheEntryEx<Object, Object> testEntry = ((IgniteKernal)grid(i)).internalCache(null).peekEx("TestKey");
+
+                info("Entry: " + testEntry);
+            }
+
             CacheProjection<String, int[]> c = grid(i).cache(null).projection(String.class, int[].class);
 
             // Do within transaction to make sure that lock is acquired

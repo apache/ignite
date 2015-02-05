@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -485,7 +486,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         GridDistributedTxMapping<K, V> cur = null;
 
         for (IgniteTxEntry<K, V> read : reads) {
-            GridDistributedTxMapping<K, V> updated = map(read, topVer, cur);
+            GridDistributedTxMapping<K, V> updated = map(read, topVer, cur, false);
 
             if (cur != updated) {
                 mappings.offer(updated);
@@ -502,7 +503,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         }
 
         for (IgniteTxEntry<K, V> write : writes) {
-            GridDistributedTxMapping<K, V> updated = map(write, topVer, cur);
+            GridDistributedTxMapping<K, V> updated = map(write, topVer, cur, true);
 
             if (cur != updated) {
                 mappings.offer(updated);
@@ -746,8 +747,12 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * @throws IgniteCheckedException If transaction is group-lock and local node is not primary for key.
      * @return Mapping.
      */
-    private GridDistributedTxMapping<K, V> map(IgniteTxEntry<K, V> entry, long topVer,
-        GridDistributedTxMapping<K, V> cur) throws IgniteCheckedException {
+    private GridDistributedTxMapping<K, V> map(
+        IgniteTxEntry<K, V> entry,
+        long topVer,
+        GridDistributedTxMapping<K, V> cur,
+        boolean waitLock
+    ) throws IgniteCheckedException {
         GridCacheContext<K, V> cacheCtx = entry.context();
 
         List<ClusterNode> nodes = cacheCtx.affinity().nodes(entry.key(), topVer);
@@ -769,14 +774,19 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 " key)[key=" + entry.key() + ", primaryNodeId=" + primary.id() + ']');
 
         // Must re-initialize cached entry while holding topology lock.
-        if (cacheCtx.isNear())
+        if (cacheCtx.isNear()) {
             entry.cached(cacheCtx.nearTx().entryExx(entry.key(), topVer), entry.keyBytes());
+
+            if (waitLock && entry.explicitVersion() == null)
+                lockKeys.add(entry.txKey());
+        }
         else if (!cacheCtx.isLocal())
             entry.cached(cacheCtx.colocated().entryExx(entry.key(), topVer, true), entry.keyBytes());
         else {
             entry.cached(cacheCtx.local().entryEx(entry.key(), topVer), entry.keyBytes());
 
-            lockKeys.add(entry.txKey());
+            if (waitLock && entry.explicitVersion() == null)
+                lockKeys.add(entry.txKey());
         }
 
         if (cur == null || !cur.node().id().equals(primary.id()) || cur.near() != cacheCtx.isNear()) {
@@ -791,9 +801,6 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         entry.nodeId(primary.id());
 
         if (cacheCtx.isNear()) {
-            if (entry.explicitVersion() == null)
-                lockKeys.add(entry.txKey());
-
             while (true) {
                 try {
                     GridNearCacheEntry<K, V> cached = (GridNearCacheEntry<K, V>)entry.cached();
@@ -942,6 +949,13 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                                     nearEntry.resetFromPrimary(tup.get2(), tup.get3(), tx.xidVersion(),
                                         tup.get1(), m.node().id());
+                                }
+                                else if (txEntry.cached().detached()) {
+                                    GridDhtDetachedCacheEntry<K, V> detachedEntry = (GridDhtDetachedCacheEntry<K, V>)txEntry.cached();
+
+                                    GridTuple3<GridCacheVersion, V, byte[]> tup = entry.getValue();
+
+                                    detachedEntry.resetFromPrimary(tup.get2(), tup.get3(), tx.xidVersion());
                                 }
 
                                 break;

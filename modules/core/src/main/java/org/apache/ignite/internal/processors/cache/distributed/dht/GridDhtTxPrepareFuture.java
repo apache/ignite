@@ -811,6 +811,9 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 }
 
                 tx.needsCompletedVersions(hasRemoteNodes);
+
+                tx.addDhtMapping(futDhtMap);
+                tx.addNearMapping(futNearMap);
             }
 
             if (isDone())

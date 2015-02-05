@@ -612,22 +612,16 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * Sets mappings into entry.
      *
      * @param ver Version.
-     * @param mappings Mappings to set.
      * @return Candidate, if one existed for the version, or {@code null} if candidate was not found.
      * @throws GridCacheEntryRemovedException If removed.
      */
-    @Nullable public synchronized GridCacheMvccCandidate<K> mappings(GridCacheVersion ver, Collection<UUID> mappings)
+    @Nullable public synchronized GridCacheMvccCandidate<K> mappings(GridCacheVersion ver)
         throws GridCacheEntryRemovedException {
         checkObsolete();
 
         GridCacheMvcc<K> mvcc = mvccExtras();
 
-        GridCacheMvccCandidate<K> cand = mvcc == null ? null : mvcc.candidate(ver);
-
-        if (cand != null)
-            cand.mappedNodeIds(mappings);
-
-        return cand;
+        return mvcc == null ? null : mvcc.candidate(ver);
     }
 
     /** {@inheritDoc} */
