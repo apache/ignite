@@ -62,7 +62,7 @@ import java.util.*;
  * <ol>
  *     <li>Add Ignite libraries in Tomcat common loader.
  *         Add in file {@code $TOMCAT_HOME/conf/catalina.properties} for property {@code shared.loader}
- *         the following {@code $IGNITE_HOME/gridgain.jar,$IGNITE_HOME/libs/*.jar}
+ *         the following {@code $IGNITE_HOME/ignite.jar,$IGNITE_HOME/libs/*.jar}
  *         (replace {@code $IGNITE_HOME} with absolute path).
  *     </li>
  *     <li>Configure startup in {@code $TOMCAT_HOME/conf/web.xml}

@@ -329,7 +329,7 @@ public class GridTestLog4jLogger implements IgniteLogger, IgniteLoggerNodeIdAwar
                 // Console appender not found => we've looked through all categories up to root.
                 assert rootCategory != null;
 
-                // User launched gridgain in verbose mode and did not add console appender with INFO level
+                // User launched ignite in verbose mode and did not add console appender with INFO level
                 // to configuration and did not set IGNITE_CONSOLE_APPENDER to false.
                 if (errAppender != null) {
                     rootCategory.addAppender(createConsoleAppender(Level.INFO));

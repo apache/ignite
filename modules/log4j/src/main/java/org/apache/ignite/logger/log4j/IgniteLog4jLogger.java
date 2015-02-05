@@ -42,7 +42,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * Here is a typical example of configuring log4j logger in Ignite configuration file:
  * <pre name="code" class="xml">
  *      &lt;property name="gridLogger"&gt;
- *          &lt;bean class="org.gridgain.grid.logger.log4j.GridLog4jLogger"&gt;
+ *          &lt;bean class="org.apache.ignite.grid.logger.log4j.GridLog4jLogger"&gt;
  *              &lt;constructor-arg type="java.lang.String" value="config/ignite-log4j.xml"/&gt;
  *          &lt;/bean>
  *      &lt;/property&gt;

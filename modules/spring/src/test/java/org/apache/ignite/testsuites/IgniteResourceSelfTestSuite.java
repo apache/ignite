@@ -21,7 +21,7 @@ import junit.framework.*;
 import org.apache.ignite.internal.processors.resource.*;
 
 /**
- * Gridgain resource injection test Suite.
+ * Ignite resource injection test Suite.
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared"})
 public class IgniteResourceSelfTestSuite extends TestSuite {

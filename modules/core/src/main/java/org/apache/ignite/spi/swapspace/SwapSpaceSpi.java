@@ -34,7 +34,7 @@ import java.util.*;
  * The default swap space SPI is {@link org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi} which stores values on disk in files and keeps keys in
  * memory.
  * <p>
- * Gridgain provides the following {@code GridSwapSpaceSpi} implementations:
+ * Ignite provides the following {@code GridSwapSpaceSpi} implementations:
  * <ul>
  * <li>
  *     {@link org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi} - pure Java implementation with in-memory keys. This SPI is used by default.

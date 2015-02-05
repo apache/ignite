@@ -83,7 +83,7 @@
         Uncomment to enable Ignite debugging.
     -->
     <!--
-    <category name="org.gridgain">
+    <category name="org.apache.ignite">
         <level value="DEBUG"/>
     </category>
     -->
@@ -93,7 +93,7 @@
         query execution tracing.
     -->
     <!--
-    <category name="org.gridgain.cache.queries">
+    <category name="org.apache.ignite.cache.queries">
         <level value="DEBUG"/>
     </category>
     -->
@@ -102,7 +102,7 @@
         Uncomment to enable DGC tracing.
     -->
     <!--
-    <category name="org.gridgain.grid.kernal.processors.cache.GridCacheDgcManager.trace">
+    <category name="org.apache.ignite.grid.kernal.processors.cache.GridCacheDgcManager.trace">
         <level value="DEBUG"/>
     </category>
     -->

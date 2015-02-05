@@ -32,7 +32,7 @@ import java.util.*;
  * The default secure session SPI is {@link org.apache.ignite.spi.securesession.noop.NoopSecureSessionSpi}
  * which permits any request.
  * <p>
- * Gridgain provides the following {@code GridSecureSessionSpi} implementations:
+ * Ignite provides the following {@code GridSecureSessionSpi} implementations:
  * <ul>
  * <li>
  *     {@link org.apache.ignite.spi.securesession.noop.NoopSecureSessionSpi} - permits any request.

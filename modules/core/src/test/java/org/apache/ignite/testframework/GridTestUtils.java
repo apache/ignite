@@ -806,7 +806,7 @@ public final class GridTestUtils {
     }
 
     /**
-     * @param ggHome Optional gridgain home path.
+     * @param ggHome Optional ignite home path.
      * @param path Path to resolve.
      * @return Resolved path, or {@code null} if file cannot be resolved.
      */
@@ -817,7 +817,7 @@ public final class GridTestUtils {
     }
 
     /**
-     * @param ggHome Optional gridgain home path.
+     * @param ggHome Optional ignite home path.
      * @param path Path to resolve.
      * @return Resolved path, or {@code null} if file cannot be resolved.
      */

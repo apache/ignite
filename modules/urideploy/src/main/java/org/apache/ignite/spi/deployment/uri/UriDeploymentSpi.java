@@ -71,7 +71,7 @@ import java.util.Map.*;
  *   <pre class="snippet">
  *      META-INF/
  *              |
- *               - gridgain.xml
+ *               - ignite.xml
  *               - ...
  *      lib/
  *         |
@@ -81,7 +81,7 @@ import java.util.Map.*;
  *      ...</pre>
  * <ul>
  * <li>
- * {@code META-INF/} entry may contain {@code gridgain.xml} file which is a
+ * {@code META-INF/} entry may contain {@code ignite.xml} file which is a
  * task descriptor file. The purpose of task descriptor XML file is to specify
  * all tasks to be deployed. This file is a regular
  * <a href="http://www.springframework.org/documentation">Spring</a> XML
@@ -328,7 +328,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
     /** Default scan frequency for {@code http://} protocol (value is {@code 300000}). */
     public static final int DFLT_HTTP_SCAN_FREQUENCY = 300000;
 
-    /** Default task description file path and name (value is {@code META-INF/gridgain.xml}). */
+    /** Default task description file path and name (value is {@code META-INF/ignite.xml}). */
     public static final String XML_DESCRIPTOR_PATH = "META-INF/gridgain.xml";
 
     /**

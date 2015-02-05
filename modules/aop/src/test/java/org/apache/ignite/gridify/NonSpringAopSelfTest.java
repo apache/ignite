@@ -25,8 +25,8 @@ import org.apache.ignite.testframework.junits.common.*;
  * 1. The JVM is started with following parameters to enable jboss online weaving
  *      (replace ${IGNITE_HOME} to you $IGNITE_HOME):
  *      -javaagent:${IGNITE_HOME}libs/jboss-aop-jdk50-4.0.4.jar
- *      -Djboss.aop.class.path=[path to grid compiled classes (Idea out folder) or path to gridgain.jar]
- *      -Djboss.aop.exclude=org,com -Djboss.aop.include=org.gridgain
+ *      -Djboss.aop.class.path=[path to grid compiled classes (Idea out folder) or path to ignite.jar]
+ *      -Djboss.aop.exclude=org,com -Djboss.aop.include=org.apache.ignite
  *
  * 2. The following jars should be in a classpath:
  *      ${IGNITE_HOME}libs/javassist-3.x.x.jar

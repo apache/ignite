@@ -73,7 +73,7 @@ import java.util.logging.*;
  * configuration properties can be applied to JDBC connection.
  * <p>
  * JDBC connection URL has the following pattern:
- * {@code jdbc:gridgain://<hostname>:<port>/<cache_name>?nodeId=<UUID>}<br>
+ * {@code jdbc:ignite://<hostname>:<port>/<cache_name>?nodeId=<UUID>}<br>
  * Note the following:
  * <ul>
  *     <li>Hostname is required.</li>
@@ -203,7 +203,7 @@ import java.util.logging.*;
  * Class.forName("org.apache.ignite.jdbc.IgniteJdbcDriver");
  *
  * // Open JDBC connection.
- * Connection conn = DriverManager.getConnection("jdbc:gridgain://localhost/cache");
+ * Connection conn = DriverManager.getConnection("jdbc:ignite://localhost/cache");
  *
  * // Query persons' names
  * ResultSet rs = conn.createStatement().executeQuery("select name from Person");
