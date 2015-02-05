@@ -64,9 +64,7 @@ import java.lang.annotation.*;
  * serialized and sent out to remote node. Therefore the class must implement
  * {@link Serializable} interface. If you cannot make the class {@code Serializable},
  * then you must implement custom grid task which will take care of proper state
- * initialization (see
- * <a target="github" href="https://github.com/gridgain/gridgain/tree/master/examples/java/org/gridgain/examples/helloworld/gridify/state">HelloWorld - Gridify With State</a>
- * example). In either case, Ignite must be able to serialize the state passed to remote node.
+ * initialization. In either case, Ignite must be able to serialize the state passed to remote node.
  * <p>
  * <h1 class="header">Java Example</h1>
  * <p>
