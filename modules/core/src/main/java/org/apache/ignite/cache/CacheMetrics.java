@@ -168,7 +168,7 @@ public interface CacheMetrics {
     public long getOffHeapAllocatedSize();
 
     /**
-     * Returns number of non-{@code null} values in the cache.
+     * Gets number of non-{@code null} values in the cache.
      *
      * @return Number of non-{@code null} values in the cache.
      */
