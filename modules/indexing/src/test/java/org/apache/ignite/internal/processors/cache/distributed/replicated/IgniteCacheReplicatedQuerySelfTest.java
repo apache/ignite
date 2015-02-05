@@ -176,7 +176,7 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
      * @throws Exception If test failed.
      */
     public void testLocalQuery() throws Exception {
-        cache1.removeAll();
+        cache1.clear();
 
         IgniteTx tx = ignite1.transactions().txStart();
 

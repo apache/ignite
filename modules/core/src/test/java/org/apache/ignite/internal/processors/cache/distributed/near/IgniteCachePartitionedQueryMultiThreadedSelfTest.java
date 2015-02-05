@@ -103,7 +103,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
 
         // Clean up all caches.
         for (int i = 0; i < GRID_CNT; i++)
-            grid(i).cache(null).removeAll(F.<CacheEntry<Object, Object>>alwaysTrue());
+            grid(i).cache(null).removeAll();
     }
 
     /** {@inheritDoc} */

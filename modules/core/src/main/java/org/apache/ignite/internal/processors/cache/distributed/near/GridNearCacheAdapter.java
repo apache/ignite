@@ -553,16 +553,16 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean clear0(K key, @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
-        return super.clear0(key, filter) | dht().clear0(key, filter);
+    public boolean clearLocally0(K key, @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        return super.clearLocally0(key, filter) | dht().clearLocally0(key, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public void clearAll0(Collection<? extends K> keys,
+    @Override public void clearLocally0(Collection<? extends K> keys,
         @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
-        super.clearAll0(keys, filter);
+        super.clearLocally0(keys, filter);
 
-        dht().clearAll0(keys, filter);
+        dht().clearLocally0(keys, filter);
     }
 
     /** {@inheritDoc} */
@@ -654,12 +654,12 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridCacheClearAllRunnable<K, V>> splitClearAll() {
+    @Override public List<GridCacheClearAllRunnable<K, V>> splitClearLocally() {
         switch (configuration().getDistributionMode()) {
             case NEAR_PARTITIONED:
                 GridCacheVersion obsoleteVer = ctx.versions().next();
 
-                List<GridCacheClearAllRunnable<K, V>> dhtJobs = dht().splitClearAll();
+                List<GridCacheClearAllRunnable<K, V>> dhtJobs = dht().splitClearLocally();
 
                 List<GridCacheClearAllRunnable<K, V>> res = new ArrayList<>(dhtJobs.size());
 
@@ -669,7 +669,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
                 return res;
 
             case NEAR_ONLY:
-                return super.splitClearAll();
+                return super.splitClearLocally();
 
             default:
                 assert false : "Invalid partition distribution mode.";

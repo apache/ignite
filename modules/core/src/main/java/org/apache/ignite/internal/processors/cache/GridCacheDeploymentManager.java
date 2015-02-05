@@ -301,10 +301,10 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         if (log.isDebugEnabled())
             log.debug("Finished searching keys for undeploy [keysCnt=" + keys.size() + ']');
 
-        cache.clearAll(keys, true);
+        cache.clearLocally(keys, true);
 
         if (cacheCtx.isNear())
-            cacheCtx.near().dht().clearAll(keys, true);
+            cacheCtx.near().dht().clearLocally(keys, true);
 
         GridCacheQueryManager<K, V> qryMgr = cacheCtx.queries();
 

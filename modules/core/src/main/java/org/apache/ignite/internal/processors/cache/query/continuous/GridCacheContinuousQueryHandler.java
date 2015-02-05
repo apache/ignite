@@ -87,6 +87,9 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** Keep portable flag. */
     private boolean keepPortable;
 
+    /** Whether to skip primary check for REPLICATED cache. */
+    private transient boolean skipPrimaryCheck;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -106,6 +109,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      * @param entryLsnr {@code True} if query created for {@link CacheEntryListener}.
      * @param sync {@code True} if query created for synchronous {@link CacheEntryListener}.
      * @param oldVal {@code True} if old value is required.
+     * @param skipPrimaryCheck Whether to skip primary check for REPLICATED cache.
      * @param taskHash Task name hash code.
      */
     GridCacheContinuousQueryHandler(@Nullable String cacheName,
@@ -117,6 +121,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         boolean entryLsnr,
         boolean sync,
         boolean oldVal,
+        boolean skipPrimaryCheck,
         int taskHash,
         boolean keepPortable) {
         assert topic != null;
@@ -134,6 +139,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         this.oldVal = oldVal;
         this.taskHash = taskHash;
         this.keepPortable = keepPortable;
+        this.skipPrimaryCheck = skipPrimaryCheck;
     }
 
     /** {@inheritDoc} */
@@ -187,16 +193,21 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             }
 
             @Override public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e, boolean recordEvt) {
+                GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+                if (cctx.isReplicated() && !skipPrimaryCheck && !e.primary())
+                    return;
+
                 boolean notify;
 
-                CacheFlag[] f = cacheContext(ctx).forceLocalRead();
+                CacheFlag[] f = cctx.forceLocalRead();
 
                 try {
                     notify = (prjPred == null || checkProjection(e)) &&
                         (filter == null || filter.apply(e));
                 }
                 finally {
-                    cacheContext(ctx).forceFlags(f);
+                    cctx.forceFlags(f);
                 }
 
                 if (notify) {

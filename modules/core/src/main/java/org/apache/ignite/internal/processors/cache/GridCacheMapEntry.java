@@ -1167,8 +1167,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             CacheMode mode = cctx.config().getCacheMode();
 
-            if (mode == CacheMode.LOCAL || mode == CacheMode.REPLICATED ||
-                (tx != null && tx.local() && !isNear()))
+            if (cctx.isLocal() || cctx.isReplicated() || (tx != null && tx.local() && !isNear()))
                 cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes, false);
 
             cctx.dataStructures().onEntryUpdated(key, false);
@@ -1329,8 +1328,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
                 CacheMode mode = cctx.config().getCacheMode();
 
-                if (mode == CacheMode.LOCAL || mode == CacheMode.REPLICATED ||
-                    (tx != null && tx.local() && !isNear()))
+                if (cctx.isLocal() || cctx.isReplicated() || (tx != null && tx.local() && !isNear()))
                     cctx.continuousQueries().onEntryUpdate(this, key, null, null, old, oldBytes, false);
 
                 cctx.dataStructures().onEntryUpdated(key, true);
@@ -2144,7 +2142,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (res)
                 updateMetrics(op, metrics);
 
-            if (primary || cctx.isReplicated())
+            if (primary)
                 cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes, false);
 
             cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE);
@@ -3143,7 +3141,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 drReplicate(drType, val, valBytes, ver);
 
                 if (!skipQryNtf) {
-                    if (cctx.isReplicated() || cctx.affinity().primary(cctx.localNode(), key, topVer)) {
+                    if (cctx.affinity().primary(cctx.localNode(), key, topVer)) {
                         cctx.continuousQueries().onEntryUpdate(this,
                             key,
                             val,

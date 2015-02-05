@@ -238,8 +238,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         assert res.size() == PUT_CNT - 5;
         assert size(ValueObject.class) == PUT_CNT - 5;
 
-        for (Integer key : keys)
-            cache.clear(key);
+        cache.clear();
 
         assert cache.isEmpty();
         assertEquals(0, cache.size());
