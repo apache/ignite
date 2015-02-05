@@ -294,8 +294,8 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                 readThrough,
                 deserializePortable,
                 accessPolicy(cacheCtx, keys),
-                skipVals).chain(new C1<IgniteFuture<Map<K, V>>, Boolean>() {
-                @Override public Boolean apply(IgniteFuture<Map<K, V>> f) {
+                skipVals).chain(new C1<IgniteInternalFuture<Map<K, V>>, Boolean>() {
+                @Override public Boolean apply(IgniteInternalFuture<Map<K, V>> f) {
                     try {
                         Map<K, V> map = f.get();
 
@@ -324,8 +324,8 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                 resolveTaskName(),
                 deserializePortable,
                 accessPolicy(cacheCtx, keys),
-                skipVals).chain(new C1<IgniteFuture<Map<K, V>>, Boolean>() {
-                    @Override public Boolean apply(IgniteFuture<Map<K, V>> f) {
+                skipVals).chain(new C1<IgniteInternalFuture<Map<K, V>>, Boolean>() {
+                    @Override public Boolean apply(IgniteInternalFuture<Map<K, V>> f) {
                         try {
                             Map<K, V> map = f.get();
 

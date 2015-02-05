@@ -616,7 +616,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> containsKeyAsync(K key) {
+    @Override public IgniteInternalFuture<Boolean> containsKeyAsync(K key) {
         return cache.containsKeyAsync(key);
     }
 
@@ -646,8 +646,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> reloadAsync(K key) {
-        return cache.reloadAsync(key, entryFilter(false));
+    @Override public IgniteInternalFuture<V> reloadAsync(K key) {
+        return cache.reloadAsync(key);
     }
 
     /** {@inheritDoc} */
@@ -656,7 +656,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> reloadAllAsync() {
+    @Override public IgniteInternalFuture<?> reloadAllAsync() {
         return cache.reloadAllAsync();
     }
 
@@ -666,7 +666,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys) {
+    @Override public IgniteInternalFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys) {
         return cache.reloadAllAsync(keys);
     }
 
@@ -682,7 +682,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> getAsync(K key) {
+    @Override public IgniteInternalFuture<V> getAsync(K key) {
         return cache.getAsync(key, deserializePortables());
     }
 
@@ -737,7 +737,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys) {
+    @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys) {
         return cache.getAllAsync(keys, deserializePortables());
     }
 

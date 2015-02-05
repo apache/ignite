@@ -647,7 +647,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> containsKeyAsync(final K key) {
+    @Override public IgniteInternalFuture<Boolean> containsKeyAsync(final K key) {
         return getAllAsync(
             Collections.singletonList(key),
             /*force primary*/false,
@@ -657,8 +657,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             /*task name*/null,
             /*deserialize portable*/false,
             /*skip values*/true
-        ).chain(new CX1<IgniteFuture<Map<K, V>>, Boolean>() {
-                @Override public Boolean applyx(IgniteFuture<Map<K, V>> fut) throws IgniteCheckedException {
+        ).chain(new CX1<IgniteInternalFuture<Map<K, V>>, Boolean>() {
+                @Override public Boolean applyx(IgniteInternalFuture<Map<K, V>> fut) throws IgniteCheckedException {
                     return fut.get().get(key) != null;
                 }
             });
@@ -1626,8 +1626,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         String taskName = ctx.kernalContext().job().currentTaskName();
 
         return getAllAsync(Collections.singletonList(key), /*force primary*/true, /*skip tx*/false, null, null,
-            taskName, true, false).chain(new CX1<IgniteFuture<Map<K, V>>, V>() {
-            @Override public V applyx(IgniteFuture<Map<K, V>> e) throws IgniteCheckedException {
+            taskName, true, false).chain(new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
+            @Override public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
                 return e.get().get(key);
             }
         });
@@ -1717,7 +1717,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param ret Return flag.
      * @return Future.
      */
-    public IgniteFuture<Map<K, V>> reloadAllAsync(@Nullable Collection<? extends K> keys, boolean ret, boolean skipVals,
+    public IgniteInternalFuture<Map<K, V>> reloadAllAsync(@Nullable Collection<? extends K> keys, boolean ret, boolean skipVals,
         @Nullable UUID subjId, String taskName) {
         ctx.denyOnFlag(READ);
 
@@ -1773,7 +1773,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             final Collection<K> loadedKeys = new GridConcurrentHashSet<>();
 
-            IgniteFuture<Object> readFut =
+            IgniteInternalFuture<Object> readFut =
                 readThroughAllAsync(absentKeys, true, skipVals, null, subjId, taskName, new CI2<K, V>() {
                     /** Version for all loaded entries. */
                     private GridCacheVersion nextVer = ctx.versions().next();
@@ -1842,8 +1842,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     }
                 });
 
-            return readFut.chain(new CX1<IgniteFuture<Object>, Map<K, V>>() {
-                @Override public Map<K, V> applyx(IgniteFuture<Object> e) throws IgniteCheckedException {
+            return readFut.chain(new CX1<IgniteInternalFuture<Object>, Map<K, V>>() {
+                @Override public Map<K, V> applyx(IgniteInternalFuture<Object> e) throws IgniteCheckedException {
                     // Touch all not loaded keys.
                     for (K key : absentKeys) {
                         if (!loadedKeys.contains(key)) {
@@ -1908,16 +1908,14 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> getAsync(final K key) {
+    @Override public IgniteInternalFuture<V> getAsync(final K key) {
         A.notNull(key, "key");
         
-        IgniteFuture<V> fut = getAsync(key, true);
-
         final boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        IgniteInternalFuture<V> fut = getAsync(key, true, null);
+        IgniteInternalFuture<V> fut = getAsync(key, true);
 
         if (ctx.config().getInterceptor() != null)
             fut =  fut.chain(new CX1<IgniteInternalFuture<V>, V>() {
@@ -1952,14 +1950,14 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys) {
+    @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys) {
         A.notNull(keys, "keys");
         
         final boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        IgniteFuture<Map<K, V>> fut = getAllAsync(keys, true);
+        IgniteInternalFuture<Map<K, V>> fut = getAllAsync(keys, true);
 
         if (ctx.config().getInterceptor() != null)
             return fut.chain(new CX1<IgniteInternalFuture<Map<K, V>>, Map<K, V>>() {
@@ -2302,7 +2300,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             final GridCacheEntryEx<K, V> cached0 = cached;
 
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
-                @Override public IgniteFuture<Map<K, V>> op(IgniteTxLocalAdapter<K, V> tx) {
+                @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter<K, V> tx) {
                     return ctx.wrapCloneMap(tx.getAllAsync(ctx, keys, cached0, deserializePortable, skipVals));
                 }
             });
@@ -2582,8 +2580,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         IgniteInternalFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut0 =
             (IgniteInternalFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>)fut;
 
-        return fut0.chain(new CX1<IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>, EntryProcessorResult<T>>() {
-            @Override public EntryProcessorResult<T> applyx(IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut)
+        return fut0.chain(new CX1<IgniteInternalFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>, EntryProcessorResult<T>>() {
+            @Override public EntryProcessorResult<T> applyx(IgniteInternalFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut)
                 throws IgniteCheckedException {
                 GridCacheReturn<Map<K, EntryProcessorResult<T>>> ret = fut.get();
 
@@ -2631,8 +2629,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         IgniteInternalFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut0 =
             (IgniteInternalFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>)fut;
 
-        return fut0.chain(new CX1<IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>, Map<K, EntryProcessorResult<T>>>() {
-            @Override public Map<K, EntryProcessorResult<T>> applyx(IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut)
+        return fut0.chain(new CX1<IgniteInternalFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>, Map<K, EntryProcessorResult<T>>>() {
+            @Override public Map<K, EntryProcessorResult<T>> applyx(IgniteInternalFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut)
                 throws IgniteCheckedException {
                 GridCacheReturn<Map<K, EntryProcessorResult<T>>> ret = fut.get();
 
@@ -2667,8 +2665,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         IgniteInternalFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut0 =
             (IgniteInternalFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>)fut;
 
-        return fut0.chain(new CX1<IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>, Map<K, EntryProcessorResult<T>>>() {
-            @Override public Map<K, EntryProcessorResult<T>> applyx(IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut)
+        return fut0.chain(new CX1<IgniteInternalFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>, Map<K, EntryProcessorResult<T>>>() {
+            @Override public Map<K, EntryProcessorResult<T>> applyx(IgniteInternalFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut)
                 throws IgniteCheckedException {
                 GridCacheReturn<Map<K, EntryProcessorResult<T>>> ret = fut.get();
 
@@ -3157,7 +3155,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             @Override public IgniteInternalFuture<V> op(IgniteTxLocalAdapter<K, V> tx) {
                 // TODO should we invoke interceptor here?
                 return tx.removeAllAsync(ctx, Collections.singletonList(key), null, true, filter)
-                    .chain((IgniteClosure<IgniteFuture<GridCacheReturn<V>>, V>) RET2VAL);
+                    .chain((IgniteClosure<IgniteInternalFuture<GridCacheReturn<V>>, V>) RET2VAL);
             }
 
             @Override public String toString() {
@@ -4082,16 +4080,16 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             }
 
             @Override protected void remove(Cache.Entry<K, V> item) {
-                GridCacheProjectionImpl<K, V> prev = ctx.gate().enter(prj);
+                ctx.gate().enter();
 
                 try {
-                    GridCacheAdapter.this.removex(item.getKey());
+                    removex(item.getKey());
                 }
                 catch (IgniteCheckedException e) {
                     throw new CacheException(e);
                 }
                 finally {
-                    ctx.gate().leave(prev);
+                    ctx.gate().leave();
                 }
             }
         });
@@ -4855,7 +4853,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param key Key.
      * @return Read operation future.
      */
-    public final IgniteFuture<V> getAsync(final K key, boolean deserializePortable) {
+    public final IgniteInternalFuture<V> getAsync(final K key, boolean deserializePortable) {
         ctx.denyOnFlag(LOCAL);
 
         try {
@@ -4866,9 +4864,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         }
 
         return getAllAsync(Collections.singletonList(key), deserializePortable).chain(
-            new CX1<IgniteFuture<Map<K, V>>, V>() {
+            new CX1<IgniteInternalFuture<Map<K, V>>, V>() {
                 @Override
-                public V applyx(IgniteFuture<Map<K, V>> e) throws IgniteCheckedException {
+                public V applyx(IgniteInternalFuture<Map<K, V>> e) throws IgniteCheckedException {
                     return e.get().get(key);
                 }
             });
@@ -4924,7 +4922,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param keys Keys.
      * @return Reload future.
      */
-    @Override public IgniteFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys) {
+    @Override public IgniteInternalFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys) {
         UUID subjId = ctx.subjectIdPerCall(null);
 
         String taskName = ctx.kernalContext().job().currentTaskName();
@@ -4936,7 +4934,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param key Key.
      * @return Reload future.
      */
-    @Override public IgniteFuture<V> reloadAsync(final K key) {
+    @Override public IgniteInternalFuture<V> reloadAsync(final K key) {
         ctx.denyOnFlags(F.asList(LOCAL, READ));
 
         return ctx.closures().callLocalSafe(ctx.projectSafe(new Callable<V>() {
@@ -4951,7 +4949,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param deserializePortable Deserialize portable flag.
      * @return Read future.
      */
-    public IgniteFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys,
+    public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys,
         boolean deserializePortable) {
         String taskName = ctx.kernalContext().job().currentTaskName();
 

@@ -119,7 +119,7 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
     private boolean txContainsKey(IgniteTx tx, String key) {
         IgniteTxProxyImpl<String, Integer> proxy = (IgniteTxProxyImpl<String, Integer>)tx;
 
-        IgniteTxEx<String, Integer> txEx = proxy.tx();
+        IgniteInternalTx<String, Integer> txEx = proxy.tx();
 
         IgniteTxEntry entry = txEx.entry(context(0).txKey(key));
 

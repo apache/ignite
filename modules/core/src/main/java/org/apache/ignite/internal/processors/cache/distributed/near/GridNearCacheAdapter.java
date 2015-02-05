@@ -173,7 +173,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantCast"})
-    @Override public IgniteFuture<Object> readThroughAllAsync(
+    @Override public IgniteInternalFuture<Object> readThroughAllAsync(
         Collection<? extends K> keys,
         boolean reload,
         boolean skipVals,
@@ -182,7 +182,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         String taskName,
         IgniteBiInClosure<K, V> vis
     ) {
-        return (IgniteFuture)loadAsync(tx,
+        return (IgniteInternalFuture)loadAsync(tx,
             keys,
             reload,
             false,
@@ -202,7 +202,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys) {
+    @Override public IgniteInternalFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys) {
         GridCompoundFuture fut = new GridCompoundFuture(ctx.kernalContext());
 
         fut.add(super.reloadAllAsync(keys));
