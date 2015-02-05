@@ -338,7 +338,7 @@ public class IgniteBasicWarmupClosure implements IgniteInClosure<IgniteConfigura
 
         IgniteConfiguration cp = new IgniteConfiguration();
 
-        cp.setClientConnectionConfiguration(null);
+        cp.setConnectorConfiguration(null);
 
         Collection<CacheConfiguration> reduced = new ArrayList<>();
 

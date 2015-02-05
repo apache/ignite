@@ -160,9 +160,9 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
 
         c.setLocalHost(HOST);
 
-        assert c.getClientConnectionConfiguration() == null;
+        assert c.getConnectorConfiguration() == null;
 
-        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
+        ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
         clientCfg.setPort(REST_TCP_PORT_BASE);
 
@@ -172,7 +172,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
             clientCfg.setSslContextFactory(sslContextFactory());
         }
 
-        c.setClientConnectionConfiguration(clientCfg);
+        c.setConnectorConfiguration(clientCfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 

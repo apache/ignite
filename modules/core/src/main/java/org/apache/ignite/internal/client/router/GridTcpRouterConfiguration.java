@@ -68,7 +68,7 @@ public class GridTcpRouterConfiguration {
     private boolean noDelay = DFLT_TCP_NODELAY;
 
     /** Idle timeout. */
-    private long idleTimeout = ClientConnectionConfiguration.DFLT_IDLE_TIMEOUT;
+    private long idleTimeout = ConnectorConfiguration.DFLT_IDLE_TIMEOUT;
 
     /** Client auth. */
     private boolean sslClientAuth;
@@ -138,7 +138,7 @@ public class GridTcpRouterConfiguration {
      * Gets timeout in milliseconds to consider connection idle. If no messages sent by client
      * within this interval router closes idling connection.
      * <p/>
-     * If not specified, default value is {@link ClientConnectionConfiguration#DFLT_IDLE_TIMEOUT}.
+     * If not specified, default value is {@link org.apache.ignite.configuration.ConnectorConfiguration#DFLT_IDLE_TIMEOUT}.
      *
      * @return Idle timeout.
      */

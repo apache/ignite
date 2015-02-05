@@ -101,9 +101,9 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
         }
 
         if (restEnabled()) {
-            cfg.setClientConnectionConfiguration(new ClientConnectionConfiguration());
+            cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
-            cfg.getClientConnectionConfiguration().setPort(restPort++);
+            cfg.getConnectorConfiguration().setPort(restPort++);
         }
 
         cfg.setLocalHost("127.0.0.1");

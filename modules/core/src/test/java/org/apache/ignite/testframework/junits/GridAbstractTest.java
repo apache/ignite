@@ -1109,7 +1109,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setCheckpointSpi(cpSpi);
 
-        cfg.setClientConnectionConfiguration(null);
+        cfg.setConnectorConfiguration(null);
 
         cfg.setIncludeEventTypes(IgniteEventType.EVTS_ALL);
 

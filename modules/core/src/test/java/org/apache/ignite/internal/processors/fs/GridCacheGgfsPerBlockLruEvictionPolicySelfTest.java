@@ -133,7 +133,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
         cfg.setGgfsConfiguration(ggfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
-        cfg.setClientConnectionConfiguration(null);
+        cfg.setConnectorConfiguration(null);
 
         Ignite g = G.start(cfg);
 
@@ -191,7 +191,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
         cfg.setGgfsConfiguration(ggfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
-        cfg.setClientConnectionConfiguration(null);
+        cfg.setConnectorConfiguration(null);
 
         Ignite g = G.start(cfg);
 

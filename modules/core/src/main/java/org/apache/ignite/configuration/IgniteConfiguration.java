@@ -426,7 +426,7 @@ public class IgniteConfiguration {
     private GridHadoopConfiguration hadoopCfg;
 
     /** Client access configuration. */
-    private ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
+    private ConnectorConfiguration connectorCfg = new ConnectorConfiguration();
 
     /** Portable configuration. */
     private PortableConfiguration portableCfg;
@@ -477,7 +477,7 @@ public class IgniteConfiguration {
         daemon = cfg.isDaemon();
         cacheCfg = cfg.getCacheConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
-        clientCfg = cfg.getClientConnectionConfiguration();
+        connectorCfg = cfg.getConnectorConfiguration();
         clockSyncFreq = cfg.getClockSyncFrequency();
         clockSyncSamples = cfg.getClockSyncSamples();
         deployMode = cfg.getDeploymentMode();
@@ -2390,17 +2390,17 @@ public class IgniteConfiguration {
     }
 
     /**
-     * @return Client connection configuration.
+     * @return Connector configuration.
      */
-    public ClientConnectionConfiguration getClientConnectionConfiguration() {
-        return clientCfg;
+    public ConnectorConfiguration getConnectorConfiguration() {
+        return connectorCfg;
     }
 
     /**
-     * @param clientCfg Client connection configuration.
+     * @param connectorCfg Connector configuration.
      */
-    public void setClientConnectionConfiguration(ClientConnectionConfiguration clientCfg) {
-        this.clientCfg = clientCfg;
+    public void setConnectorConfiguration(ConnectorConfiguration connectorCfg) {
+        this.connectorCfg = connectorCfg;
     }
 
     /**

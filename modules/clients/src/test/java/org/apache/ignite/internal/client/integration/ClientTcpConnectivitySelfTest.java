@@ -33,9 +33,9 @@ public class ClientTcpConnectivitySelfTest extends ClientAbstractConnectivitySel
         throws Exception {
         IgniteConfiguration cfg = getConfiguration(name);
 
-        assert cfg.getClientConnectionConfiguration() == null;
+        assert cfg.getConnectorConfiguration() == null;
 
-        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
+        ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
         if (addr != null)
             clientCfg.setHost(addr);
@@ -43,7 +43,7 @@ public class ClientTcpConnectivitySelfTest extends ClientAbstractConnectivitySel
         if (port != null)
             clientCfg.setPort(port);
 
-        cfg.setClientConnectionConfiguration(clientCfg);
+        cfg.setConnectorConfiguration(clientCfg);
 
         return G.start(cfg);
     }

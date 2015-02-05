@@ -66,13 +66,13 @@ public class ClientPreferDirectSelfTest extends GridCommonAbstractTest {
 
         c.setLocalHost(HOST);
 
-        assert c.getClientConnectionConfiguration() == null;
+        assert c.getConnectorConfiguration() == null;
 
-        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
+        ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
         clientCfg.setPort(REST_TCP_PORT_BASE);
 
-        c.setClientConnectionConfiguration(clientCfg);
+        c.setConnectorConfiguration(clientCfg);
 
         return c;
     }

@@ -35,9 +35,9 @@ public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstract
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        assert cfg.getClientConnectionConfiguration() != null;
+        assert cfg.getConnectorConfiguration() != null;
 
-        cfg.getClientConnectionConfiguration().setSecretKey(REST_SECRET_KEY);
+        cfg.getConnectorConfiguration().setSecretKey(REST_SECRET_KEY);
 
         return cfg;
     }

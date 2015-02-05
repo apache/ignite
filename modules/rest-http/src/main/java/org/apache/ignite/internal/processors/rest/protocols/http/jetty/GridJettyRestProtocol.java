@@ -103,7 +103,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
     @Override public void start(GridRestProtocolHandler hnd) throws IgniteCheckedException {
-        assert ctx.config().getClientConnectionConfiguration() != null;
+        assert ctx.config().getConnectorConfiguration() != null;
 
         InetAddress locHost;
 

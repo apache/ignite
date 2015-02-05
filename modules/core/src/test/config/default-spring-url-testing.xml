@@ -38,6 +38,6 @@
         -->
         <property name="gridName" value="grid_with_url_config"/>
 
-        <property name="restEnabled" value="false" />
+        <property name="connectorConfiguration"><null/></property>
     </bean>
 </beans>

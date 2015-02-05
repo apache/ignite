@@ -234,7 +234,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
         cfg.setDiscoverySpi(discoSpi);
         cfg.setLocalHost("127.0.0.1");
         cfg.setCacheConfiguration(ccfg);
-        cfg.setClientConnectionConfiguration(null);
+        cfg.setConnectorConfiguration(null);
 
         return cfg;
     }

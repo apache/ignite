@@ -189,9 +189,9 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         cfg.setLocalHost(HOST);
 
-        assert cfg.getClientConnectionConfiguration() == null;
+        assert cfg.getConnectorConfiguration() == null;
 
-        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
+        ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
         clientCfg.setPort(BINARY_PORT);
 
@@ -201,7 +201,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
             clientCfg.setSslContextFactory(sslContextFactory());
         }
 
-        cfg.setClientConnectionConfiguration(clientCfg);
+        cfg.setConnectorConfiguration(clientCfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -212,7 +212,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(cacheConfiguration(null), cacheConfiguration("replicated"),
             cacheConfiguration("partitioned"), cacheConfiguration(CACHE_NAME));
 
-        clientCfg.setMessageInterceptor(new ClientMessageInterceptor() {
+        clientCfg.setMessageInterceptor(new ConnectorMessageInterceptor() {
             @Override
             public Object onReceive(@Nullable Object obj) {
                 if (obj != null)

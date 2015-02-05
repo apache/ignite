@@ -75,7 +75,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        c.setClientConnectionConfiguration(null);
+        c.setConnectorConfiguration(null);
 
         return c;
     }

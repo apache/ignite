@@ -105,7 +105,7 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
 
         cfg.setGridName(gridName);
         cfg.setGridLogger(new IgniteLog4jLogger());
-        cfg.setClientConnectionConfiguration(null);
+        cfg.setConnectorConfiguration(null);
 
         return cfg;
     }

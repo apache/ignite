@@ -64,7 +64,7 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName(getTestGridName(0));
-        cfg.setClientConnectionConfiguration(null);
+        cfg.setConnectorConfiguration(null);
         cfg.setCacheConfiguration(new CacheConfiguration());
 
         final Ignite g0 = G.start(cfg);

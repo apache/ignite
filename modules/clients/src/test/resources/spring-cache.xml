@@ -48,8 +48,8 @@
         <property name="localHost" value="127.0.0.1"/>
 
         <!-- Client configuration. -->
-        <property name="clientConnectionConfiguration">
-            <bean class="org.apache.ignite.configuration.ClientConnectionConfiguration"/>
+        <property name="connectorConfiguration">
+            <bean class="org.apache.ignite.configuration.ConnectorConfiguration"/>
         </property>
 
         <property name="cacheConfiguration">

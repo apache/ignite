@@ -35,13 +35,13 @@ public class ClientTcpTaskExecutionAfterTopologyRestartSelfTest extends GridComm
 
         cfg.setLocalHost("127.0.0.1");
 
-        assert cfg.getClientConnectionConfiguration() == null;
+        assert cfg.getConnectorConfiguration() == null;
 
-        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
+        ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
         clientCfg.setPort(PORT);
 
-        cfg.setClientConnectionConfiguration(clientCfg);
+        cfg.setConnectorConfiguration(clientCfg);
 
         return cfg;
     }

@@ -154,7 +154,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     @Override public void start(final GridRestProtocolHandler hnd) throws IgniteCheckedException {
         assert hnd != null;
 
-        ClientConnectionConfiguration cfg = ctx.config().getClientConnectionConfiguration();
+        ConnectorConfiguration cfg = ctx.config().getConnectorConfiguration();
 
         assert cfg != null;
 
@@ -238,7 +238,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      * @throws IOException If failed to resolve REST host.
      */
     private InetAddress resolveRestTcpHost(IgniteConfiguration cfg) throws IOException {
-        String host = cfg.getClientConnectionConfiguration().getHost();
+        String host = cfg.getConnectorConfiguration().getHost();
 
         if (host == null)
             host = cfg.getLocalHost();
@@ -259,7 +259,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
      *      server was unable to start.
      */
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridClientMessage> lsnr,
-        GridNioParser parser, @Nullable SSLContext sslCtx, ClientConnectionConfiguration cfg) {
+        GridNioParser parser, @Nullable SSLContext sslCtx, ConnectorConfiguration cfg) {
         try {
             GridNioFilter codec = new GridNioCodecFilter(parser, log, true);
 

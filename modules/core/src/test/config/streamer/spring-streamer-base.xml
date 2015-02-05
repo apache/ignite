@@ -43,7 +43,7 @@
     <bean id="base.grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" abstract="true">
         <property name="deploymentMode" value="SHARED"/>
 
-        <property name="restEnabled" value="false"/>
+        <property name="connectorConfiguration"><null/></property>
 
         <property name="localHost" ref="localHost"/>
 

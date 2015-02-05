@@ -35,11 +35,11 @@ import javax.net.ssl.*;
 public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /**
      */
-    private static class TestClientMessageInterceptor extends TestLifecycleAware
-        implements ClientMessageInterceptor {
+    private static class TestConnectorMessageInterceptor extends TestLifecycleAware
+        implements ConnectorMessageInterceptor {
         /**
          */
-        TestClientMessageInterceptor() {
+        TestConnectorMessageInterceptor() {
             super(null);
         }
 
@@ -151,13 +151,13 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
     @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TestClientMessageInterceptor interceptor = new TestClientMessageInterceptor();
+        TestConnectorMessageInterceptor interceptor = new TestConnectorMessageInterceptor();
 
-        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
+        ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
         clientCfg.setMessageInterceptor(interceptor);
 
-        cfg.setClientConnectionConfiguration(clientCfg);
+        cfg.setConnectorConfiguration(clientCfg);
 
         lifecycleAwares.add(interceptor);
 

@@ -1518,7 +1518,7 @@ object visor extends VisorTag {
                 if (cpuCnt < 4)
                     cpuCnt = 4
 
-                cfg.setClientConnectionConfiguration(null)
+                cfg.setConnectorConfiguration(null)
 
                 def createExecutor = new IgniteThreadPoolExecutor(cpuCnt, cpuCnt, Long.MaxValue, new LinkedBlockingQueue[Runnable])
 

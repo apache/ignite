@@ -64,7 +64,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
 
         c.setDiscoverySpi(disco);
 
-        c.setClientConnectionConfiguration(null);
+        c.setConnectorConfiguration(null);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 

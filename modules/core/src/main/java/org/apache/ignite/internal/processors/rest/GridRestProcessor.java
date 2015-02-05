@@ -327,14 +327,14 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Applies {@link org.apache.ignite.configuration.ClientMessageInterceptor}
-     * from {@link org.apache.ignite.configuration.ClientConnectionConfiguration#getMessageInterceptor()}
+     * Applies {@link org.apache.ignite.configuration.ConnectorMessageInterceptor}
+     * from {@link org.apache.ignite.configuration.ConnectorConfiguration#getMessageInterceptor()}
      * to all user parameters in the request.
      *
      * @param req Client request.
      */
     private void interceptRequest(GridRestRequest req) {
-        ClientMessageInterceptor interceptor = config().getMessageInterceptor();
+        ConnectorMessageInterceptor interceptor = config().getMessageInterceptor();
 
         if (interceptor == null)
             return;
@@ -374,15 +374,15 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Applies {@link org.apache.ignite.configuration.ClientMessageInterceptor} from
-     * {@link org.apache.ignite.configuration.ClientConnectionConfiguration#getMessageInterceptor()}
+     * Applies {@link org.apache.ignite.configuration.ConnectorMessageInterceptor} from
+     * {@link org.apache.ignite.configuration.ConnectorConfiguration#getMessageInterceptor()}
      * to all user objects in the response.
      *
      * @param res Response.
      * @param req Request.
      */
     private void interceptResponse(GridRestResponse res, GridRestRequest req) {
-        ClientMessageInterceptor interceptor = config().getMessageInterceptor();
+        ConnectorMessageInterceptor interceptor = config().getMessageInterceptor();
 
         if (interceptor != null && res.getResponse() != null) {
             switch (req.command()) {
@@ -426,7 +426,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @param interceptor Interceptor to apply.
      * @return Intercepted object.
      */
-    private static Object interceptSendObject(Object obj, ClientMessageInterceptor interceptor) {
+    private static Object interceptSendObject(Object obj, ConnectorMessageInterceptor interceptor) {
         if (obj instanceof Map) {
             Map<Object, Object> original = (Map<Object, Object>)obj;
 
@@ -609,7 +609,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
      * @return Whether or not REST is enabled.
      */
     private boolean isRestEnabled() {
-        return !ctx.config().isDaemon() && ctx.config().getClientConnectionConfiguration() != null;
+        return !ctx.config().isDaemon() && ctx.config().getConnectorConfiguration() != null;
     }
 
     /**
@@ -664,8 +664,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
     /**
      * @return Client configuration.
      */
-    private ClientConnectionConfiguration config() {
-        return ctx.config().getClientConnectionConfiguration();
+    private ConnectorConfiguration config() {
+        return ctx.config().getConnectorConfiguration();
     }
 
     /**

@@ -27,7 +27,7 @@ import java.util.concurrent.*;
 /**
  * REST access configuration.
  */
-public class ClientConnectionConfiguration {
+public class ConnectorConfiguration {
     /** Default TCP server port. */
     public static final int DFLT_TCP_PORT = 11211;
 
@@ -110,12 +110,12 @@ public class ClientConnectionConfiguration {
     private boolean execSvcShutdown = true;
 
     /** Client message interceptor. */
-    private ClientMessageInterceptor msgInterceptor;
+    private ConnectorMessageInterceptor msgInterceptor;
 
     /**
      * Creates client connection configuration with all default values.
      */
-    public ClientConnectionConfiguration() {
+    public ConnectorConfiguration() {
         // No-op.
     }
 
@@ -125,7 +125,7 @@ public class ClientConnectionConfiguration {
      *
      * @param cfg Client configuration.
      */
-    public ClientConnectionConfiguration(ClientConnectionConfiguration cfg) {
+    public ConnectorConfiguration(ConnectorConfiguration cfg) {
         assert cfg != null;
 
         msgInterceptor = cfg.getMessageInterceptor();
@@ -529,10 +529,10 @@ public class ClientConnectionConfiguration {
      * <p>
      * Default value is {@code null}.
      *
-     * @see ClientMessageInterceptor
+     * @see ConnectorMessageInterceptor
      * @return Interceptor.
      */
-    @Nullable public ClientMessageInterceptor getMessageInterceptor() {
+    @Nullable public ConnectorMessageInterceptor getMessageInterceptor() {
         return msgInterceptor;
     }
 
@@ -546,7 +546,7 @@ public class ClientConnectionConfiguration {
      *
      * @param interceptor Interceptor.
      */
-    public void setMessageInterceptor(ClientMessageInterceptor interceptor) {
+    public void setMessageInterceptor(ConnectorMessageInterceptor interceptor) {
         msgInterceptor = interceptor;
     }
 }

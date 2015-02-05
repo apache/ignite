@@ -113,7 +113,7 @@ public class GridNioServer<T> {
     private volatile long writeTimeout = DFLT_SES_WRITE_TIMEOUT;
 
     /** Idle timeout. */
-    private volatile long idleTimeout = ClientConnectionConfiguration.DFLT_IDLE_TIMEOUT;
+    private volatile long idleTimeout = ConnectorConfiguration.DFLT_IDLE_TIMEOUT;
 
     /** For test purposes only. */
     @SuppressWarnings("UnusedDeclaration")
@@ -515,7 +515,7 @@ public class GridNioServer<T> {
 
     /**
      * Gets configurable idle timeout for this session. If not set, default value is
-     * {@link ClientConnectionConfiguration#DFLT_IDLE_TIMEOUT}.
+     * {@link org.apache.ignite.configuration.ConnectorConfiguration#DFLT_IDLE_TIMEOUT}.
      *
      * @return Idle timeout in milliseconds.
      */

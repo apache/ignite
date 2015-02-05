@@ -65,9 +65,9 @@ public class ClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTest {
 
         c.setLocalHost(getTestResources().getLocalHost());
 
-        assert c.getClientConnectionConfiguration() == null;
+        assert c.getConnectorConfiguration() == null;
 
-        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
+        ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
         clientCfg.setPort(REST_TCP_PORT);
         clientCfg.setSslEnabled(true);
@@ -81,7 +81,7 @@ public class ClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTest {
 
         clientCfg.setSslContextFactory(factory);
 
-        c.setClientConnectionConfiguration(clientCfg);
+        c.setConnectorConfiguration(clientCfg);
 
         return c;
     }

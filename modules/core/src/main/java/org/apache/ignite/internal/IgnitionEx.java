@@ -85,7 +85,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.configuration.ClientConnectionConfiguration.*;
+import static org.apache.ignite.configuration.ConnectorConfiguration.*;
 import static org.apache.ignite.configuration.IgniteConfiguration.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
@@ -1430,10 +1430,10 @@ public class IgnitionEx {
             myCfg.setTransactionsConfiguration(new TransactionsConfiguration(cfg.getTransactionsConfiguration()));
             myCfg.setQueryConfiguration(cfg.getQueryConfiguration());
 
-            ClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
+            ConnectorConfiguration clientCfg = cfg.getConnectorConfiguration();
 
             if (clientCfg != null)
-                clientCfg = new ClientConnectionConfiguration(clientCfg);
+                clientCfg = new ConnectorConfiguration(clientCfg);
 
             String ntfStr = IgniteSystemProperties.getString(IGNITE_LIFECYCLE_EMAIL_NOTIFY);
 
@@ -1767,7 +1767,7 @@ public class IgnitionEx {
             myCfg.setAdminEmails(cfg.getAdminEmails());
 
             // REST configuration.
-            myCfg.setClientConnectionConfiguration(clientCfg);
+            myCfg.setConnectorConfiguration(clientCfg);
 
             // Portable configuration.
             myCfg.setPortableConfiguration(cfg.getPortableConfiguration());

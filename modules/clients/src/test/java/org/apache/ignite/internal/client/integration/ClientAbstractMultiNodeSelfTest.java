@@ -131,10 +131,10 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
         c.setLocalHost(HOST);
 
-        assert c.getClientConnectionConfiguration() == null;
+        assert c.getConnectorConfiguration() == null;
 
         if (restEnabled) {
-            ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
+            ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
             clientCfg.setPort(REST_TCP_PORT_BASE);
 
@@ -145,7 +145,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
                 clientCfg.setSslContextFactory(sslCtxFactory);
             }
 
-            c.setClientConnectionConfiguration(clientCfg);
+            c.setConnectorConfiguration(clientCfg);
         }
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
