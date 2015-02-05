@@ -199,11 +199,11 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         // Force reload on primary node.
         for (int i = 0; i < gridCount(); i++) {
             if (ignite(i).affinity(null).isPrimary(ignite(i).cluster().localNode(), key))
-                jcache(i).loadAll(Collections.singleton(key), true, null);
+                load(jcache(i), key, true);
         }
 
         // Will do near get request.
-        cache.loadAll(Collections.singleton(key), true, null);
+        load(cache, key, true);
 
         assertEquals(null, cache.localPeek(key));
     }
@@ -232,7 +232,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         assert cache.localPeek(key2) == null;
         assert cache.localPeek(key3) == null;
 
-        cache.loadAll(ImmutableSet.of(key1, key2), true, null);
+        loadAll(cache, ImmutableSet.of(key1, key2), true);
 
         assert cache.localPeek(key1) == null;
         assert cache.localPeek(key2) == null;
@@ -244,7 +244,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         assert cache.localPeek(key2) == null;
         assert cache.localPeek(key3) == null;
 
-        cache.loadAll(ImmutableSet.of(key1, key2), true, null);
+        loadAll(cache, ImmutableSet.of(key1, key2), true);
 
         assert cache.localPeek(key1) == null;
         assert cache.localPeek(key2) == null;
@@ -279,45 +279,6 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         assert c.localPeek(key) == null;
 
         assert c.localSize() == 0 : "Cache is not empty.";
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testEvict() throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
-
-        List<String> keys = primaryKeysForCache(jcache(), 2);
-
-        String key = keys.get(0);
-        String key2 = keys.get(1);
-
-        cache.put(key, 1);
-
-        assertEquals((Integer)1, cache.get(key));
-
-        cache.localEvict(Collections.<String>singleton(key));
-
-        assertNull(cache.localPeek(key));
-
-        cache.loadAll(Collections.singleton(key), true, null);
-
-        assertEquals(null, cache.localPeek(key));
-
-        cache.remove(key);
-
-        cache.put(key, 1);
-        cache.put(key2, 102);
-
-        cache.localEvict(Collections.<String>singleton(key));
-
-        assertEquals((Integer)1, cache.get(key));
-
-        cache.localEvict(Collections.<String>singleton(key2));
-
-        assertNull(cache.localPeek(key2));
-
-        cache.localEvict(Collections.<String>singleton(key));
-
-        assertNull(cache.localPeek(key));
     }
 
     /** {@inheritDoc} */

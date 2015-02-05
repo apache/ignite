@@ -37,8 +37,11 @@ import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
+import javax.cache.integration.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -188,6 +191,43 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         assertEquals("Cache is not empty", 0, jcache().size());
 
         resetStore();
+    }
+
+    /**
+     * @param cache Cache.
+     * @param keys Keys.
+     * @param replaceExistingValues Replace existing values.
+     */
+    protected static <K> void loadAll(Cache<K, ?> cache, Set<K> keys, boolean replaceExistingValues) throws Exception {
+        final AtomicReference<Exception> ex = new AtomicReference<>();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        cache.loadAll(keys, replaceExistingValues, new CompletionListener() {
+            @Override public void onCompletion() {
+                latch.countDown();
+            }
+
+            @Override public void onException(Exception e) {
+                ex.set(e);
+
+                latch.countDown();
+            }
+        });
+
+        latch.await();
+
+        if (ex.get() != null)
+            throw ex.get();
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Keys.
+     * @param replaceExistingValues Replace existing values.
+     */
+    protected static <K> void load(Cache<K, ?> cache, K key, boolean replaceExistingValues) throws Exception {
+        loadAll(cache, Collections.singleton(key), replaceExistingValues);
     }
 
     /**

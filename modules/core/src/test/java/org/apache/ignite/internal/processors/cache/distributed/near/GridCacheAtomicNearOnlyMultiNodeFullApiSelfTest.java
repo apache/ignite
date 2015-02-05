@@ -143,11 +143,11 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
         // Force reload on primary node.
         for (int i = 0; i < gridCount(); i++) {
             if (ignite(i).affinity(null).isPrimary(ignite(i).cluster().localNode(), key))
-                jcache(i).loadAll(Collections.singleton(key), true, null);
+                load(jcache(i), key, true);
         }
 
         // Will do near get request.
-        cache.loadAll(Collections.singleton(key), true, null);
+        load(cache, key, true);
 
         assertEquals((Integer)1, cache.localPeek(key));
     }

@@ -354,11 +354,6 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         assertEquals(0, cache2.projection(prjFilter).size() - cache2.projection(prjFilter).nearSize());
     }
 
-    /** {@inheritDoc} */
-    @Override public void testLockAsyncWithTimeoutEntry() throws Exception {
-        // No-op, since all cases are tested separately.
-    }
-
     /**
      * @throws Exception If failed.
      */

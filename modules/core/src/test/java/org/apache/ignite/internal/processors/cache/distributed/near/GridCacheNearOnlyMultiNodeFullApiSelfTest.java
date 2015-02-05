@@ -180,42 +180,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
-    @Override public void testReload() throws Exception {
-        // Not needed for near-only cache.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testReloadAsync() throws Exception {
-        // Not needed for near-only cache.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testReloadFiltered() throws Exception {
-        // Not needed for near-only cache.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testReloadAsyncFiltered() throws Exception {
-        // Not needed for near-only cache.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testReloadAll() throws Exception {
-        // Not needed for near-only cache.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testReloadAllAsync() throws Exception {
-        // Not needed for near-only cache.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testReloadAllFiltered() throws Exception {
-        // Not needed for near-only cache.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testReloadAllAsyncFiltered() throws Exception {
+    @Override public void testLoadAll() throws Exception {
         // Not needed for near-only cache.
     }
 
@@ -305,7 +270,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         for (String key : subKeys) {
             assertNull(nearCache.localPeek(key));
-            assertNull(primary.localPeek(key));
+            assertNotNull(primary.localPeek(key));
         }
 
         assertEquals(vals.get(lastKey), nearCache.localPeek(lastKey));
