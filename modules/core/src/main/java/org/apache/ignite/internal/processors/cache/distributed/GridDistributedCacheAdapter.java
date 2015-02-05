@@ -211,24 +211,33 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
 
             final GridCacheContext<K, V> ctx = cacheAdapter.context();
 
-            if (ctx.affinity().affinityTopologyVersion() != topVer)
-                return null; // Ignore this remove request because remove request will be sent again.
+            ctx.affinity().affinityReadyFuture(topVer).get();
 
-            if (cacheAdapter instanceof GridNearCacheAdapter)
-                cacheAdapter = ((GridNearCacheAdapter<K, V>)cacheAdapter).dht();
+            ctx.gate().enter();
 
-            GridDhtCacheAdapter<K, V> dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
+            try {
+                if (ctx.affinity().affinityTopologyVersion() != topVer)
+                    return null; // Ignore this remove request because remove request will be sent again.
 
-            IgniteDataLoader<K, V> dataLdr = ignite.dataLoader(cacheName);
+                GridDhtCacheAdapter<K, V> dht;
 
-            for (GridDhtLocalPartition<K, V> locPart : dht.topology().currentLocalPartitions()) {
-                if (!locPart.isEmpty() && locPart.primary(topVer)) {
-                    for (GridDhtCacheEntry<K, V> o : locPart.entries())
-                        dataLdr.removeData(o.key());
+                if (cacheAdapter instanceof GridNearCacheAdapter)
+                    dht = ((GridNearCacheAdapter<K, V>)cacheAdapter).dht();
+                else
+                    dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
+
+                try (IgniteDataLoader<K, V> dataLdr = ignite.dataLoader(cacheName)) {
+                    for (GridDhtLocalPartition<K, V> locPart : dht.topology().currentLocalPartitions()) {
+                        if (!locPart.isEmpty() && locPart.primary(topVer)) {
+                            for (GridDhtCacheEntry<K, V> o : locPart.entries())
+                                dataLdr.removeData(o.key());
+                        }
+                    }
                 }
             }
-
-            dataLdr.close();
+            finally {
+                ctx.gate().leave();
+            }
 
             return null;
         }
