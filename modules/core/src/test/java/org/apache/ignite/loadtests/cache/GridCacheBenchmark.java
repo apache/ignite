@@ -118,7 +118,7 @@ public class GridCacheBenchmark {
                     }
                 }, THREADS, WARM_UP_TIME);
 
-                cache.clearAll();
+                cache.clear();
 
                 System.gc();
 

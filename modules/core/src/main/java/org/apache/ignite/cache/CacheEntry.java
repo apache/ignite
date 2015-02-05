@@ -19,6 +19,7 @@ package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
@@ -448,9 +449,9 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
 
     /**
      * This method has the same semantic as
-     * {@link CacheProjection#clear(Object)} method.
+     * {@link CacheProjection#clearLocally(Object)} method.
      *
-     * @return See {@link CacheProjection#clear(Object)}.
+     * @return See {@link CacheProjection#clearLocally(Object)}.
      */
     public boolean clear();
 

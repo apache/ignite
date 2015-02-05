@@ -100,7 +100,7 @@ public class GridDataLoadCacheUpdaters {
      * @param putMap Entries to put.
      * @throws IgniteException If failed.
      */
-    protected static <K, V> void updateAll(IgniteCache<K, V> cache, @Nullable Collection<K> rmvCol,
+    protected static <K, V> void updateAll(IgniteCache<K, V> cache, @Nullable Set<K> rmvCol,
         Map<K, V> putMap) {
         assert rmvCol != null || putMap != null;
 
@@ -152,7 +152,7 @@ public class GridDataLoadCacheUpdaters {
             assert !F.isEmpty(entries);
 
             Map<K, V> putAll = null;
-            Collection<K> rmvAll = null;
+            Set<K> rmvAll = null;
 
             for (Map.Entry<K, V> entry : entries) {
                 K key = entry.getKey();
@@ -163,7 +163,7 @@ public class GridDataLoadCacheUpdaters {
 
                 if (val == null) {
                     if (rmvAll == null)
-                        rmvAll = new ArrayList<>();
+                        rmvAll = new HashSet<>();
 
                     rmvAll.add(key);
                 }
@@ -192,7 +192,7 @@ public class GridDataLoadCacheUpdaters {
             assert !F.isEmpty(entries);
 
             Map<K, V> putAll = null;
-            Collection<K> rmvAll = null;
+            Set<K> rmvAll = null;
 
             for (Map.Entry<K, V> entry : entries) {
                 K key = entry.getKey();
@@ -236,7 +236,7 @@ public class GridDataLoadCacheUpdaters {
             Map<Integer, Integer> partsCounts = new HashMap<>();
 
             // Group by partition ID.
-            Map<Integer, Collection<K>> rmvPartMap = null;
+            Map<Integer, Set<K>> rmvPartMap = null;
             Map<Integer, Map<K, V>> putPartMap = null;
 
             Ignite ignite = cache.unwrap(Ignite.class);
@@ -260,7 +260,7 @@ public class GridDataLoadCacheUpdaters {
                     if (rmvPartMap == null)
                         rmvPartMap = new HashMap<>();
 
-                    F.addIfAbsent(rmvPartMap, part, F.<K>newList()).add(key);
+                    F.addIfAbsent(rmvPartMap, part, F.<K>newSet()).add(key);
                 }
                 else {
                     if (putPartMap == null)

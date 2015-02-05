@@ -22,7 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.fs.*;
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -30,6 +30,12 @@ import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.managed.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
+import org.apache.ignite.portables.*;
+import org.apache.ignite.spi.authentication.*;
+import org.apache.ignite.spi.indexing.*;
+import org.apache.ignite.streamer.*;
+import org.apache.ignite.client.ssl.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.portables.*;
@@ -45,6 +51,7 @@ import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.securesession.*;
 import org.apache.ignite.spi.swapspace.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.streamer.*;
 
 import javax.management.*;
@@ -523,6 +530,9 @@ public class IgniteConfiguration {
     /** */
     private IgniteQueryConfiguration qryCfg;
 
+    /** */
+    private IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -560,6 +570,7 @@ public class IgniteConfiguration {
         addrRslvr = cfg.getAddressResolver();
         adminEmails = cfg.getAdminEmails();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
+        atomicCfg = cfg.getAtomicConfiguration();
         daemon = cfg.isDaemon();
         cacheCfg = cfg.getCacheConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
@@ -3154,6 +3165,20 @@ public class IgniteConfiguration {
      */
     public void setQueryConfiguration(IgniteQueryConfiguration qryCfg) {
         this.qryCfg = qryCfg;
+    }
+
+    /**
+     * @return Atomic data structures configuration.
+     */
+    public IgniteAtomicConfiguration getAtomicConfiguration() {
+        return atomicCfg;
+    }
+
+    /**
+     * @param atomicCfg Atomic data structures configuration.
+     */
+    public void setAtomicConfiguration(IgniteAtomicConfiguration atomicCfg) {
+        this.atomicCfg = atomicCfg;
     }
 
     /** {@inheritDoc} */

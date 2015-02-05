@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external;
 
 import org.apache.ignite.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.*;

@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.hadoop;
 import com.google.common.base.*;
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.hadoop.counter.*;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.*;

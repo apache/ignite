@@ -79,8 +79,8 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         client.shutdown();
 
-        grid().cache(null).clearAll();
-        grid().cache(CACHE_NAME).clearAll();
+        grid().cache(null).clear();
+        grid().cache(CACHE_NAME).clear();
     }
 
     /** {@inheritDoc} */
@@ -313,7 +313,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         assertTrue(grid().cache(null).putx("key2", "val1"));
         assertTrue(client.cacheReplace(null, "key2", "val2"));
 
-        grid().cache(null).clearAll();
+        grid().cache(null).clear();
 
         assertFalse(client.cacheReplace(CACHE_NAME, "key1", "val1"));
         assertTrue(grid().cache(CACHE_NAME).putx("key1", "val1"));

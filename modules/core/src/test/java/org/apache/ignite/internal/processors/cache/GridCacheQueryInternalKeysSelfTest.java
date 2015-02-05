@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
@@ -70,7 +70,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
             GridCache<Object, Object> cache = grid(0).cache(null);
 
             for (int i = 0; i < ENTRY_CNT; i++)
-                cache.dataStructures().queue("queue" + i, Integer.MAX_VALUE, false, true);
+                cache.put(new GridCacheQueueHeaderKey("queue" + i), 1);
 
             startGrid(GRID_CNT); // Start additional node.
 

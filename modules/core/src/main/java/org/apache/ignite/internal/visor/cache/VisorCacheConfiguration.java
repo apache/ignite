@@ -145,9 +145,7 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.mode(ccfg.getCacheMode());
         cfg.distributionMode(ccfg.getDistributionMode());
         cfg.atomicityMode(ccfg.getAtomicityMode());
-        cfg.atomicSequenceReserveSize(ccfg.getAtomicSequenceReserveSize());
         cfg.atomicWriteOrderMode(ccfg.getAtomicWriteOrderMode());
-        cfg.atomicSequenceReserveSize(ccfg.getAtomicSequenceReserveSize());
         cfg.eagerTtl(ccfg.isEagerTtl());
         cfg.writeSynchronizationMode(ccfg.getWriteSynchronizationMode());
         cfg.swapEnabled(ccfg.isSwapEnabled());

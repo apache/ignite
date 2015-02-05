@@ -530,7 +530,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
 
         c.put(key, val);
 
-        assertNull(c.localPeek(key));
+        assertNull(c.localPeek(key, CachePeekMode.ONHEAP));
 
         Lock lock = c.lock(key);
 
@@ -542,7 +542,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
 
         assertFalse(c.isLocalLocked(key, false));
 
-        assertNull(c.localPeek(key));
+        assertNull(c.localPeek(key, CachePeekMode.ONHEAP));
 
         checkValue(key, val);
     }

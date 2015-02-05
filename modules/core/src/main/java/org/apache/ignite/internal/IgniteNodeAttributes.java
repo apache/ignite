@@ -64,10 +64,6 @@ public final class IgniteNodeAttributes {
     public static final String ATTR_TX_CONFIG = ATTR_PREFIX + ".tx";
 
     /** Internal attribute name constant. */
-    @Deprecated
-    public static final String ATTR_CACHE_PORTABLE = ATTR_PREFIX + ".cache.portable";
-
-    /** Internal attribute name constant. */
     public static final String ATTR_GGFS = ATTR_PREFIX + ".ggfs";
 
     /** Internal attribute name constant. */
