@@ -14,7 +14,7 @@
 ::  limitations under the License.
 
 ::
-:: Starts GridGain Visor Console.
+:: Starts Ignite Visor Console.
 ::
 
 @echo off
@@ -65,9 +65,9 @@ goto checkIgniteHome2
 
 :checkIgniteHome3
 if exist "%IGNITE_HOME%\config" goto checkIgniteHome4
-    echo %0, ERROR: GridGain installation folder is not found or IGNITE_HOME environment variable is not valid.
+    echo %0, ERROR: Ignite installation folder is not found or IGNITE_HOME environment variable is not valid.
     echo Please create IGNITE_HOME environment variable pointing to location of
-    echo GridGain installation folder.
+    echo Ignite installation folder.
     goto error_finish
 
 :checkIgniteHome4

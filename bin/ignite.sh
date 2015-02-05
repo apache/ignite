@@ -75,7 +75,7 @@ findAvailableJmxPort
 osname=`uname`
 
 if [ "${DOCK_OPTS}" == "" ]; then
-    DOCK_OPTS="-Xdock:name=GridGain Node"
+    DOCK_OPTS="-Xdock:name=Ignite Node"
 fi
 
 #
