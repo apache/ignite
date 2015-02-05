@@ -801,31 +801,31 @@ public final class GridTestUtils {
      * @return Resolved path, or {@code null} if file cannot be resolved.
      * @see #getIgniteHome()
      */
-    @Nullable public static File resolveGridGainPath(String path) {
-        return resolveGridGainPath(null, path);
+    @Nullable public static File resolveIgnitePath(String path) {
+        return resolveIgnitePath(null, path);
     }
 
     /**
-     * @param ggHome Optional ignite home path.
+     * @param igniteHome Optional ignite home path.
      * @param path Path to resolve.
      * @return Resolved path, or {@code null} if file cannot be resolved.
      */
-    @Nullable public static File resolveGridGainPath(@Nullable String ggHome, String path) {
-        File file = resolvePath(ggHome, path);
+    @Nullable public static File resolveIgnitePath(@Nullable String igniteHome, String path) {
+        File file = resolvePath(igniteHome, path);
 
-        return file != null ? file : resolvePath(ggHome, "os/" + path);
+        return file != null ? file : resolvePath(igniteHome, "os/" + path);
     }
 
     /**
-     * @param ggHome Optional ignite home path.
+     * @param igniteHome Optional ignite home path.
      * @param path Path to resolve.
      * @return Resolved path, or {@code null} if file cannot be resolved.
      */
-    @Nullable private static File resolvePath(@Nullable String ggHome, String path) {
+    @Nullable private static File resolvePath(@Nullable String igniteHome, String path) {
         File file = new File(path).getAbsoluteFile();
 
         if (!file.exists()) {
-            String home = ggHome != null ? ggHome : U.getIgniteHome();
+            String home = igniteHome != null ? igniteHome : U.getIgniteHome();
 
             if (home == null)
                 return null;

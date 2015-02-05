@@ -159,7 +159,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         try {
             String urlPath = "/testDownloadUrl/";
             srv = GridEmbeddedHttpServer.startHttpServer().withFileDownloadingHandler(urlPath,
-                GridTestUtils.resolveGridGainPath("/modules/core/src/test/config/tests.properties"));
+                GridTestUtils.resolveIgnitePath("/modules/core/src/test/config/tests.properties"));
 
             File file = new File(System.getProperty("java.io.tmpdir") + File.separator + "url-http.file");
 
@@ -182,7 +182,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         try {
             String urlPath = "/testDownloadUrl/";
             srv = GridEmbeddedHttpServer.startHttpsServer().withFileDownloadingHandler(urlPath,
-                GridTestUtils.resolveGridGainPath("modules/core/src/test/config/tests.properties"));
+                GridTestUtils.resolveIgnitePath("modules/core/src/test/config/tests.properties"));
 
             File file = new File(System.getProperty("java.io.tmpdir") + File.separator + "url-http.file");
 
@@ -204,7 +204,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         File file = new File(System.getProperty("java.io.tmpdir") + File.separator + "url-http.file");
 
         file = U.downloadUrl(
-            GridTestUtils.resolveGridGainPath("modules/core/src/test/config/tests.properties").toURI().toURL(), file);
+            GridTestUtils.resolveIgnitePath("modules/core/src/test/config/tests.properties").toURI().toURL(), file);
 
         assert file.exists();
         assert file.delete();

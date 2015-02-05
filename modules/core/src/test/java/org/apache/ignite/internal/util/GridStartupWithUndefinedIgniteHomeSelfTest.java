@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.*;
  * independent from {@link GridCommonAbstractTest} stuff.
  * 2. Do not replace native Java asserts with JUnit ones - test won't fall on TeamCity.
  */
-public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
+public class GridStartupWithUndefinedIgniteHomeSelfTest extends TestCase {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -57,7 +57,7 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    public void testStartStopWithUndefinedGridGainHome() throws Exception {
+    public void testStartStopWithUndefinedIgniteHome() throws Exception {
         IgniteUtils.nullifyHomeDirectory();
 
         // We can't use U.getIgniteHome() here because

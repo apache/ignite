@@ -26,13 +26,13 @@
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
-    <description>Gridgain Spring configuration file in gar-file.</description>
+    <description>Ignite Spring configuration file in gar-file.</description>
 
     <!--
         Test tasks specification.
     -->
     <util:list id="tasks">
-        <value>org.gridgain.grid.tests.p2p.GridP2PTestTask</value>
+        <value>org.apache.ignite.grid.tests.p2p.GridP2PTestTask</value>
         <value>org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestWithNameTask0</value>
     </util:list>
 </beans>

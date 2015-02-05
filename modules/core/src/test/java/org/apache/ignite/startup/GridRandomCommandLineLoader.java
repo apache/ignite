@@ -293,7 +293,7 @@ public final class GridRandomCommandLineLoader {
         throws IgniteCheckedException {
         assert springCfgPath != null;
 
-        File path = GridTestUtils.resolveGridGainPath(springCfgPath);
+        File path = GridTestUtils.resolveIgnitePath(springCfgPath);
 
         if (path == null)
             throw new IgniteCheckedException("Spring XML configuration file path is invalid: " + new File(springCfgPath) +
