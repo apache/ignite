@@ -77,8 +77,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
     private final AtomicBoolean descheduled = new AtomicBoolean(false);
 
     /** Listeners. */
-    private Collection<IgniteInClosure<? super IgniteFuture<R>>> lsnrs =
-        new ArrayList<>(1);
+    private Collection<IgniteInClosure<? super IgniteFuture<R>>> lsnrs = new ArrayList<>(1);
 
     /** Statistics. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
@@ -613,11 +612,12 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>>... lsnr) {
-        if (!F.isEmpty(lsnr))
-            synchronized (mux) {
-                lsnrs.removeAll(F.asList(lsnr));
-            }
+    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr) {
+        A.notNull(lsnr, "lsnr");
+
+        synchronized (mux) {
+            lsnrs.remove(lsnr);
+        }
     }
 
     /** {@inheritDoc} */
@@ -972,7 +972,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>>... lsnr) {
+        @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr) {
             ref.stopListenAsync(lsnr);
         }
 
