@@ -32,7 +32,7 @@
         <relativePath>../..</relativePath>
     </parent>
 
-    <artifactId>ignite-tools</artifactId>
+    <artifactId>ignite-codegen</artifactId>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -42,37 +42,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.jodd</groupId>
-            <artifactId>jodd-lagarto</artifactId>
-            <version>3.4.8</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.ant</groupId>
-            <artifactId>ant</artifactId>
-            <version>1.8.2</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <version>${ignite.version}</version>
         </dependency>
     </dependencies>
-
-    <!-- http://maven.apache.org/general.html#tools-jar-dependency -->
-    <profiles>
-        <profile>
-            <id>default-tools.jar</id>
-            <activation>
-                <property>
-                    <name>java.vendor</name>
-                    <value>Oracle Corporation</value>
-                </property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.sun</groupId>
-                    <artifactId>tools</artifactId>
-                    <version>${java.version}</version>
-                    <scope>system</scope>
-                    <systemPath>${java.home}/../lib/tools.jar</systemPath>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
 </project>

@@ -116,6 +116,7 @@
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
         <module>modules/schema-load</module>
+        <module>modules/codegen</module>
     </modules>
 
     <dependencyManagement>
