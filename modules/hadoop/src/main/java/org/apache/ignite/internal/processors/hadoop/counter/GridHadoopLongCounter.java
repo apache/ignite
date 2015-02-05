@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.counter;
 
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 
 import java.io.*;
 
