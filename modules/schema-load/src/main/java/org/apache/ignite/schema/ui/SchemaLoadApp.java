@@ -145,6 +145,12 @@ public class SchemaLoadApp extends Application {
     private TableView<PojoDescriptor> pojosTbl;
 
     /** */
+    private TableView<PojoField> fieldsTbl;
+
+    /** */
+    private Node curTbl;
+
+    /** */
     private TextField outFolderTf;
 
     /** */
@@ -288,6 +294,10 @@ public class SchemaLoadApp extends Application {
 
                 if (!pojos.isEmpty())
                     pojosTbl.getSelectionModel().select(pojos.get(0));
+
+                curTbl = pojosTbl;
+
+                pojosTbl.requestFocus();
 
                 unlockUI(connLayerPnl, connPnl, nextBtn);
 
@@ -782,7 +792,7 @@ public class SchemaLoadApp extends Application {
         TableColumn<PojoField, String> javaTypeNameCol = customColumn("Java Type", "javaTypeName",
             "Field java type in POJO class", JavaTypeCell.cellFactory());
 
-        final TableView<PojoField> fieldsTbl = tableView("Select table to see table columns",
+        fieldsTbl = tableView("Select table to see table columns",
             useFldCol, keyCol, akCol, dbNameCol, dbTypeNameCol, javaNameCol, javaTypeNameCol);
 
         genPnl.add(splitPane(pojosTbl, fieldsTbl, 0.6), 3);
@@ -850,13 +860,15 @@ public class SchemaLoadApp extends Application {
 
                         String sel = replaceCb.getSelectionModel().getSelectedItem();
 
-                        boolean renFields = "Java names".equals(sel);
+                        boolean isFields = "Java names".equals(sel) && curTbl == fieldsTbl;
 
-                        String src = (renFields ? "fields" : "tables");
+                        String src = isFields ? "fields" : "tables";
 
                         String target = "\"" + sel + "\"";
 
-                        Collection<PojoDescriptor> selPojos = pojosTbl.getSelectionModel().getSelectedItems();
+                        Collection<PojoDescriptor> selPojos = isFields
+                            ? Collections.singleton(curPojo)
+                            : pojosTbl.getSelectionModel().getSelectedItems();
 
                         if (selPojos.isEmpty()) {
                             MessageBox.warningDialog(owner, "Please select " + src + " to rename " + target + "!");
@@ -897,7 +909,7 @@ public class SchemaLoadApp extends Application {
 
                     boolean renFields = "Java names".equals(sel);
 
-                    String src = (renFields ? "fields" : "tables");
+                    String src = (renFields && curTbl == fieldsTbl ? "fields" : "tables");
 
                     String target = "\"" + sel + "\"";
 
@@ -946,6 +958,37 @@ public class SchemaLoadApp extends Application {
 
                     keyValPnl.setDisable(true);
                 }
+            }
+        });
+
+        pojosTbl.focusedProperty().addListener(new ChangeListener<Boolean>() {
+            @Override public void changed(ObservableValue<? extends Boolean> val, Boolean oldVal, Boolean newVal) {
+                if (newVal)
+                    curTbl = pojosTbl;
+            }
+        });
+
+        fieldsTbl.getSelectionModel().selectedIndexProperty().addListener(new ChangeListener<Number>() {
+            @Override public void changed(ObservableValue<? extends Number> val, Number oldVal, Number newVal) {
+                if (curPojo != null) {
+                    TableView.TableViewSelectionModel<PojoDescriptor> selMdl = pojosTbl.getSelectionModel();
+
+                    List<Integer> idxs = new ArrayList<>(selMdl.getSelectedIndices());
+
+                    if (idxs.size() > 1) {
+                        for (Integer idx : idxs) {
+                            if (pojos.get(idx) != curPojo)
+                                selMdl.clearSelection(idx);
+                        }
+                    }
+                }
+            }
+        });
+
+        fieldsTbl.focusedProperty().addListener(new ChangeListener<Boolean>() {
+            @Override public void changed(ObservableValue<? extends Boolean> val, Boolean oldVal, Boolean newVal) {
+                if (newVal)
+                    curTbl = fieldsTbl;
             }
         });
 
