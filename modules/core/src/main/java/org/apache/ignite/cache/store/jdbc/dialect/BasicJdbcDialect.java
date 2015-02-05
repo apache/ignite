@@ -146,15 +146,15 @@ public class BasicJdbcDialect implements JdbcDialect {
     }
 
     /** {@inheritDoc} */
-    @Override public String loadCacheSelectRangeQuery(String schema, String tblName, Collection<String> keyCols) {
+    @Override public String loadCacheSelectRangeQuery(String fullTblName, Collection<String> keyCols) {
         String cols = mkString(keyCols, ",");
 
-        return String.format("SELECT %s FROM (SELECT %s, ROWNUM() AS rn FROM %s.%s ORDER BY %s) WHERE mod(rn, ?) = 0",
-            cols, cols, schema, tblName, cols);
+        return String.format("SELECT %s FROM (SELECT %s, ROWNUM() AS rn FROM %s ORDER BY %s) WHERE mod(rn, ?) = 0",
+            cols, cols, fullTblName, cols);
     }
 
     /** {@inheritDoc} */
-    @Override public String loadCacheRangeQuery(String schema, String tblName,
+    @Override public String loadCacheRangeQuery(String fullTblName,
         Collection<String> keyCols, Iterable<String> uniqCols, boolean appendLowerBound, boolean appendUpperBound) {
         assert appendLowerBound || appendUpperBound;
 
@@ -197,35 +197,35 @@ public class BasicJdbcDialect implements JdbcDialect {
             sb.a(")");
         }
 
-        return String.format("SELECT %s FROM %s.%s WHERE %s", mkString(uniqCols, ","), schema, tblName, sb.toString());
+        return String.format("SELECT %s FROM %s WHERE %s", mkString(uniqCols, ","), fullTblName, sb.toString());
     }
 
     /** {@inheritDoc} */
-    @Override public String loadCacheQuery(String schema, String tblName, Iterable<String> uniqCols) {
-        return String.format("SELECT %s FROM %s.%s", mkString(uniqCols, ","), schema, tblName);
+    @Override public String loadCacheQuery(String fullTblName, Iterable<String> uniqCols) {
+        return String.format("SELECT %s FROM %s", mkString(uniqCols, ","), fullTblName);
     }
 
     /** {@inheritDoc} */
-    @Override public String loadQuery(String schema, String tblName, Collection<String> keyCols, Iterable<String> cols,
+    @Override public String loadQuery(String fullTblName, Collection<String> keyCols, Iterable<String> cols,
         int keyCnt) {
         assert !keyCols.isEmpty();
 
         String params = where(keyCols, keyCnt);
 
-        return String.format("SELECT %s FROM %s.%s WHERE %s", mkString(cols, ","), schema, tblName, params);
+        return String.format("SELECT %s FROM %s WHERE %s", mkString(cols, ","), fullTblName, params);
     }
 
     /** {@inheritDoc} */
-    @Override public String insertQuery(String schema, String tblName, Collection<String> keyCols,
+    @Override public String insertQuery(String fullTblName, Collection<String> keyCols,
         Collection<String> valCols) {
         Collection<String> cols = F.concat(false, keyCols, valCols);
 
-        return String.format("INSERT INTO %s.%s(%s) VALUES(%s)", schema, tblName, mkString(cols, ","),
+        return String.format("INSERT INTO %s(%s) VALUES(%s)", fullTblName, mkString(cols, ","),
             repeat("?", cols.size(), "", ",", ""));
     }
 
     /** {@inheritDoc} */
-    @Override public String updateQuery(String schema, String tblName, Collection<String> keyCols,
+    @Override public String updateQuery(String fullTblName, Collection<String> keyCols,
         Iterable<String> valCols) {
         String params = mkString(valCols, new C1<String, String>() {
             @Override public String apply(String s) {
@@ -233,7 +233,7 @@ public class BasicJdbcDialect implements JdbcDialect {
             }
         }, "", ",", "");
 
-        return String.format("UPDATE %s.%s SET %s WHERE %s", schema, tblName, params, where(keyCols, 1));
+        return String.format("UPDATE %s SET %s WHERE %s", fullTblName, params, where(keyCols, 1));
     }
 
     /** {@inheritDoc} */
@@ -242,20 +242,20 @@ public class BasicJdbcDialect implements JdbcDialect {
     }
 
     /** {@inheritDoc} */
-    @Override public String mergeQuery(String schema, String tblName, Collection<String> keyCols,
+    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols,
         Collection<String> uniqCols) {
         return "";
     }
 
     /** {@inheritDoc} */
-    @Override public String removeQuery(String schema, String tblName, Iterable<String> keyCols) {
+    @Override public String removeQuery(String fullTblName, Iterable<String> keyCols) {
         String whereParams = mkString(keyCols, new C1<String, String>() {
             @Override public String apply(String s) {
                 return s + "=?";
             }
         }, "", " AND ", "");
 
-        return String.format("DELETE FROM %s.%s WHERE %s", schema, tblName, whereParams);
+        return String.format("DELETE FROM %s WHERE %s", fullTblName, whereParams);
     }
 
     /** {@inheritDoc} */

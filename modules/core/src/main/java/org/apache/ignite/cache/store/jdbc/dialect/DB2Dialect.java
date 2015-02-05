@@ -31,7 +31,7 @@ public class DB2Dialect extends BasicJdbcDialect {
     }
 
     /** {@inheritDoc} */
-    @Override public String mergeQuery(String schema, String tblName, Collection<String> keyCols,
+    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols,
         Collection<String> uniqCols) {
 
         Collection<String> cols = F.concat(false, keyCols, uniqCols);
@@ -56,13 +56,13 @@ public class DB2Dialect extends BasicJdbcDialect {
             }
         }, "", ", ", "");
 
-        return String.format("MERGE INTO %s.%s t" +
+        return String.format("MERGE INTO %s t" +
                 " USING (VALUES(%s)) AS v (%s)" +
                 "  ON %s" +
                 " WHEN MATCHED THEN" +
                 "  UPDATE SET %s" +
                 " WHEN NOT MATCHED THEN" +
-                "  INSERT (%s) VALUES (%s)", schema, tblName, repeat("?", cols.size(), "", ",", ""), colsLst,
+                "  INSERT (%s) VALUES (%s)", fullTblName, repeat("?", cols.size(), "", ",", ""), colsLst,
             match, setCols, colsLst, valuesCols);
     }
 }

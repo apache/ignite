@@ -31,7 +31,7 @@ public class MySQLDialect extends BasicJdbcDialect {
     }
 
     /** {@inheritDoc} */
-    @Override public String mergeQuery(String schema, String tblName, Collection<String> keyCols,
+    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols,
         Collection<String> uniqCols) {
 
         Collection<String> cols = F.concat(false, keyCols, uniqCols);
@@ -42,7 +42,7 @@ public class MySQLDialect extends BasicJdbcDialect {
             }
         }, "", ", ", "");
 
-        return String.format("INSERT INTO %s.%s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s", schema, tblName,
+        return String.format("INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s", fullTblName,
             mkString(cols, ", "), repeat("?", cols.size(), "", ",", ""), updPart);
     }
 }

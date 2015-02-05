@@ -31,7 +31,7 @@ public class OracleDialect extends BasicJdbcDialect {
     }
 
     /** {@inheritDoc} */
-    @Override public String mergeQuery(String schema, String tblName, Collection<String> keyCols,
+    @Override public String mergeQuery(String fullTblName, Collection<String> keyCols,
         Collection<String> uniqCols) {
         Collection<String> cols = F.concat(false, keyCols, uniqCols);
 
@@ -61,12 +61,12 @@ public class OracleDialect extends BasicJdbcDialect {
             }
         }, "", ", ", "");
 
-        return String.format("MERGE INTO %s.%s t" +
+        return String.format("MERGE INTO %s t" +
             " USING (SELECT %s FROM dual) v" +
             "  ON %s" +
             " WHEN MATCHED THEN" +
             "  UPDATE SET %s" +
             " WHEN NOT MATCHED THEN" +
-            "  INSERT (%s) VALUES (%s)", schema, tblName, selCols, match, setCols, colsLst, valuesCols);
+            "  INSERT (%s) VALUES (%s)", fullTblName, selCols, match, setCols, colsLst, valuesCols);
     }
 }
