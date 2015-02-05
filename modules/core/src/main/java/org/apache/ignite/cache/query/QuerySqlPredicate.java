@@ -134,7 +134,22 @@ public final class QuerySqlPredicate extends QueryPredicate {
      * @param type Type.
      */
     public void setType(Class<?> type) {
-        this.type = type == null ? null : type.getSimpleName();
+        setType(name(type));
+    }
+
+    /**
+     * @param type Type class.
+     * @return Type name.
+     */
+    static String name(Class<?> type) {
+        if (type == null)
+            return null;
+
+        String name = type.getName();
+
+        int dot = name.lastIndexOf('.');
+
+        return dot == -1 ? name : name.substring(dot + 1);
     }
 
     /** {@inheritDoc} */

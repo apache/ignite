@@ -321,6 +321,12 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             return query(filter, null);
         }
+        catch (Exception e) {
+            if (e instanceof CacheException)
+                throw e;
+
+            throw new CacheException(e);
+        }
         finally {
             gate.leave(prev);
         }
@@ -334,6 +340,12 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
         try {
             return ctx.kernalContext().query().queryTwoStep(ctx.name(), filter.getSql(), filter.getArgs());
+        }
+        catch (Exception e) {
+            if (e instanceof CacheException)
+                throw e;
+
+            throw new CacheException(e);
         }
         finally {
             gate.leave(prev);
@@ -356,6 +368,12 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             return query(filter, ctx.kernalContext().grid().forLocal());
         }
+        catch (Exception e) {
+            if (e instanceof CacheException)
+                throw e;
+
+            throw new CacheException(e);
+        }
         finally {
             gate.leave(prev);
         }
@@ -370,6 +388,12 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
         try {
             return new QueryCursorImpl<>(ctx.kernalContext().query().queryLocalFields(
                 ctx.name(), filter.getSql(), filter.getArgs()));
+        }
+        catch (Exception e) {
+            if (e instanceof CacheException)
+                throw e;
+
+            throw new CacheException(e);
         }
         finally {
             gate.leave(prev);

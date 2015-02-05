@@ -19,6 +19,8 @@ package org.apache.ignite.cache.query;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import static org.apache.ignite.cache.query.QuerySqlPredicate.name;
+
 /**
  * Predicate for Lucene based fulltext search.
  */
@@ -62,7 +64,7 @@ public final class QueryTextPredicate extends QueryPredicate {
      * @param type Type.
      */
     public void setType(Class<?> type) {
-        setType(type == null ? null : type.getSimpleName());
+        setType(name(type));
     }
 
     /**

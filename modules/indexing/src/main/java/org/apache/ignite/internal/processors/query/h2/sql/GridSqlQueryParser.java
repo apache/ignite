@@ -130,6 +130,12 @@ public class GridSqlQueryParser {
     private static final Getter<Aggregate, Expression> ON = getter(Aggregate.class, "on");
 
     /** */
+    private static final Getter<RangeTable, Expression> RANGE_MIN = getter(RangeTable.class, "min");
+
+    /** */
+    private static final Getter<RangeTable, Expression> RANGE_MAX = getter(RangeTable.class, "max");
+
+    /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
     /**
@@ -160,6 +166,12 @@ public class GridSqlQueryParser {
                 assert0(qry instanceof Select, qry);
 
                 res = new GridSqlSubquery(parse((Select)qry));
+            }
+            else if (tbl instanceof RangeTable) {
+                res = new GridSqlFunction("SYSTEM_RANGE");
+
+                res.addChild(parseExpression(RANGE_MIN.get((RangeTable)tbl)));
+                res.addChild(parseExpression(RANGE_MAX.get((RangeTable)tbl)));
             }
             else
                 throw new IgniteException("Unsupported query: " + filter);
@@ -424,6 +436,17 @@ public class GridSqlQueryParser {
             if (f.getFunctionType() == Function.CAST || f.getFunctionType() == Function.CONVERT)
                 res.setCastType(new Column(null, f.getType(), f.getPrecision(), f.getScale(), f.getDisplaySize())
                     .getCreateSQL());
+
+            return res;
+        }
+
+        if (expression instanceof JavaFunction) {
+            JavaFunction f = (JavaFunction)expression;
+
+            GridSqlFunction res = new GridSqlFunction(f.getName());
+
+            for (Expression arg : f.getArgs())
+                res.addChild(parseExpression(arg));
 
             return res;
         }

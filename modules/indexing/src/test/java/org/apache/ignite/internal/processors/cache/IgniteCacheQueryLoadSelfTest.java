@@ -113,7 +113,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCache() throws Exception {
-        IgniteCache<Integer, ValueObject> cache = grid(0).jcache(null);
+        IgniteCache<Integer, ValueObject> cache = grid().jcache(null);
 
         cache.loadCache(null, 0);
 
@@ -151,7 +151,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheFiltered() throws Exception {
-        IgniteCache<Integer, ValueObject> cache = grid(0).jcache(null);
+        IgniteCache<Integer, ValueObject> cache = grid().jcache(null);
 
         cache.loadCache(new P2<Integer, ValueObject>() {
             @Override public boolean apply(Integer key, ValueObject val) {
@@ -173,7 +173,7 @@ public class IgniteCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheAsyncFiltered() throws Exception {
-        IgniteCache<Integer, ValueObject> cache = grid(0).jcache(null);
+        IgniteCache<Integer, ValueObject> cache = grid().jcache(null);
 
         cache.withAsync().loadCache(new P2<Integer, ValueObject>() {
             @Override public boolean apply(Integer key, ValueObject val) {
