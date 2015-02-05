@@ -46,7 +46,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 
@@ -54,9 +53,6 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
  * Data loader implementation.
  */
 public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delayed {
-    /** */
-    public static final IgniteProductVersion COMPACT_MAP_ENTRIES_SINCE = IgniteProductVersion.fromString("1.0.0");
-
     /** Cache updater. */
     private IgniteDataLoadCacheUpdater<K, V> updater = GridDataLoadCacheUpdaters.individual();
 
@@ -984,21 +980,8 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
                 try {
                     if (compact) {
-                        if (node.version().compareTo(COMPACT_MAP_ENTRIES_SINCE) < 0) {
-                            Collection<Map.Entry<K, V>> entries0 = new ArrayList<>(entries.size());
-
-                            GridPortableProcessor portable = ctx.portable();
-
-                            for (Map.Entry<K, V> entry : entries)
-                                entries0.add(new Entry0<>(
-                                    portableEnabled ? (K)portable.marshalToPortable(entry.getKey()) : entry.getKey(),
-                                    portableEnabled ? (V)portable.marshalToPortable(entry.getValue()) : entry.getValue()));
-
-                            entriesBytes = ctx.config().getMarshaller().marshal(entries0);
-                        }
-                        else
-                            entriesBytes = ctx.config().getMarshaller()
-                                .marshal(new Entries0<>(entries, portableEnabled ? ctx.portable() : null));
+                        entriesBytes = ctx.config().getMarshaller()
+                            .marshal(new Entries0<>(entries, portableEnabled ? ctx.portable() : null));
                     }
                     else
                         entriesBytes = ctx.config().getMarshaller().marshal(entries);

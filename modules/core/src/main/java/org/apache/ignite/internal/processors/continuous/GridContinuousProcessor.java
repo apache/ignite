@@ -311,8 +311,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryDataType discoveryDataType() {
-        return DiscoveryDataType.CONTINUOUS_PROC;
+    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return DiscoveryDataExchangeType.CONTINUOUS_PROC;
     }
 
     /** {@inheritDoc} */

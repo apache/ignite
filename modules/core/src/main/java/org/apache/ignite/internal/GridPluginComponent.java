@@ -68,7 +68,7 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryDataType discoveryDataType() {
+    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
         return null;
     }
 

@@ -581,7 +581,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryDataType discoveryDataType() {
+    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
         return null;
     }
 

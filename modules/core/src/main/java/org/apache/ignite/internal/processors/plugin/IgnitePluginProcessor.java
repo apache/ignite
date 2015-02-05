@@ -171,8 +171,8 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public DiscoveryDataType discoveryDataType() {
-        return DiscoveryDataType.PLUGIN;
+    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return DiscoveryDataExchangeType.PLUGIN;
     }
 
     /** {@inheritDoc} */

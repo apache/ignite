@@ -31,7 +31,7 @@ public interface GridComponent {
     /**
      * Unique component type for discovery data exchange.
      */
-    enum DiscoveryDataType {
+    enum DiscoveryDataExchangeType {
         /** */
         CONTINUOUS_PROC,
 
@@ -111,5 +111,5 @@ public interface GridComponent {
      *
      * @return Unique component type for discovery data exchange.
      */
-    @Nullable public DiscoveryDataType discoveryDataType();
+    @Nullable public DiscoveryDataExchangeType discoveryDataType();
 }
