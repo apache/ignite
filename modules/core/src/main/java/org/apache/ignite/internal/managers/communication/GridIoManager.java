@@ -1186,7 +1186,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         if (!ordered)
             assert F.find(nodes, null, F.localNode(locNodeId)) == null :
-                "Internal GridGain code should never call the method with local node in a node list.";
+                "Internal Ignite code should never call the method with local node in a node list.";
 
         try {
             // Small optimization, as communication SPIs may have lighter implementation for sending

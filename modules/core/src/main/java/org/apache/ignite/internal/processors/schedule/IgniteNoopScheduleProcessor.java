@@ -48,7 +48,7 @@ public class IgniteNoopScheduleProcessor extends IgniteScheduleProcessorAdapter 
      * @return No-op processor usage exception;
      */
     private IgniteException processorException() {
-        return new IgniteException("Current GridGain configuration does not support schedule functionality " +
+        return new IgniteException("Current Ignite configuration does not support schedule functionality " +
             "(consider adding gridgain-schedule module to classpath).");
     }
 }

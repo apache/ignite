@@ -86,7 +86,7 @@ class IgniteJdbcConnection implements Connection {
             client = GridClientFactory.start(cfg);
         }
         catch (GridClientException e) {
-            throw new SQLException("Failed to start GridGain client.", e);
+            throw new SQLException("Failed to start Ignite client.", e);
         }
 
         if (!isValid(2))

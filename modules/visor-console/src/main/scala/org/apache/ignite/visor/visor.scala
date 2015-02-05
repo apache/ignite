@@ -390,7 +390,7 @@ object visor extends VisorTag {
             "should be enabled on all nodes.",
             " ",
             "If neither '-cpath' or '-d' are provided, command will ask",
-            "user to select GridGain configuration file in interactive mode."
+            "user to select Ignite configuration file in interactive mode."
         ),
         spec = Seq(
             "open -cpath=<path>",
@@ -398,21 +398,21 @@ object visor extends VisorTag {
         ),
         args = Seq(
             "-cpath=<path>" -> Seq(
-                "GridGain configuration path.",
-                "Can be absolute, relative to GridGain home folder or any well formed URL."
+                "Ignite configuration path.",
+                "Can be absolute, relative to Ignite home folder or any well formed URL."
             ),
             "-d" -> Seq(
-                "Flag forces the command to connect to grid using default GridGain configuration file.",
+                "Flag forces the command to connect to grid using default Ignite configuration file.",
                 "without interactive mode."
             )
         ),
         examples = Seq(
             "open" ->
-                "Prompts user to select GridGain configuration file in interactive mode.",
+                "Prompts user to select Ignite configuration file in interactive mode.",
             "open -d" ->
-                "Connects Visor console to grid using default GridGain configuration file.",
+                "Connects Visor console to grid using default Ignite configuration file.",
             "open -cpath=/gg/config/mycfg.xml" ->
-                "Connects Visor console to grid using GridGain configuration from provided file."
+                "Connects Visor console to grid using Ignite configuration from provided file."
         ),
         ref = VisorConsoleCommand(open, open)
     )
@@ -448,7 +448,7 @@ object visor extends VisorTag {
             "Logging starts by default when Visor starts.",
             " ",
             "Events are logged to a file. If path is not provided,",
-            "it will log into '<GridGain home folder>/work/visor/visor-log'.",
+            "it will log into '<Ignite home folder>/work/visor/visor-log'.",
             " ",
             "File is always opened in append mode.",
             "If file doesn't exist, it will be created.",
@@ -477,7 +477,7 @@ object visor extends VisorTag {
             ),
             "-f=<path>" -> Seq(
                 "Provides path to the file.",
-                "Path to the file can be absolute or relative to GridGain home folder."
+                "Path to the file can be absolute or relative to Ignite home folder."
             ),
             "-p=<num>" -> Seq(
                 "Provides period of querying events (in seconds).",
@@ -502,15 +502,15 @@ object visor extends VisorTag {
             "log -l -f=/home/user/visor-log" ->
                 "Starts logging to file 'visor-log' located at '/home/user'.",
             "log -l -f=log/visor-log" ->
-                "Starts logging to file 'visor-log' located at '<GridGain home folder>/log'.",
+                "Starts logging to file 'visor-log' located at '<Ignite home folder>/log'.",
             ("log -l -p=20",
-                "Starts logging to file '<GridGain home folder>/work/visor/visor-log' " +
+                "Starts logging to file '<Ignite home folder>/work/visor/visor-log' " +
                 "with querying events period of 20 seconds."),
             ("log -l -t=30",
-                "Starts logging to file '<GridGain home folder>/work/visor/visor-log' " +
+                "Starts logging to file '<Ignite home folder>/work/visor/visor-log' " +
                 "with topology snapshot logging period of 30 seconds."),
             ("log -l -dl",
-                "Starts logging to file '<GridGain home folder>/work/visor/visor-log' " +
+                "Starts logging to file '<Ignite home folder>/work/visor/visor-log' " +
                 "with disabled collection events from remote nodes."),
             "log -s" ->
                 "Stops logging."

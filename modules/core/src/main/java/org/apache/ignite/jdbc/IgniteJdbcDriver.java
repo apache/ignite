@@ -269,7 +269,7 @@ public class IgniteJdbcDriver implements Driver {
             DriverManager.registerDriver(new IgniteJdbcDriver());
         }
         catch (SQLException e) {
-            throw new RuntimeException("Failed to register GridGain JDBC driver.", e);
+            throw new RuntimeException("Failed to register Ignite JDBC driver.", e);
         }
     }
 
@@ -311,14 +311,14 @@ public class IgniteJdbcDriver implements Driver {
             "SunX509"), "Key manager algorithm.");
         props[10] = new PropertyInfo("gg.client.ssl.keystore.location",
             info.getProperty("gg.client.ssl.keystore.location", ""),
-            "Key store to be used by client to connect with GridGain topology.");
+            "Key store to be used by client to connect with Ignite topology.");
         props[11] = new PropertyInfo("gg.client.ssl.keystore.password",
             info.getProperty("gg.client.ssl.keystore.password", ""), "Key store password.");
         props[12] = new PropertyInfo("gg.client.ssl.keystore.type", info.getProperty("gg.client.ssl.keystore.type",
             "jks"), "Key store type.");
         props[13] = new PropertyInfo("gg.client.ssl.truststore.location",
             info.getProperty("gg.client.ssl.truststore.location", ""),
-            "Trust store to be used by client to connect with GridGain topology.");
+            "Trust store to be used by client to connect with Ignite topology.");
         props[14] = new PropertyInfo("gg.client.ssl.keystore.password",
             info.getProperty("gg.client.ssl.truststore.password", ""), "Trust store password.");
         props[15] = new PropertyInfo("gg.client.ssl.truststore.type", info.getProperty("gg.client.ssl.truststore.type",

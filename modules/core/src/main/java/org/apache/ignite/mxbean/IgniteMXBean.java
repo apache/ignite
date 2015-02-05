@@ -46,7 +46,7 @@ public interface IgniteMXBean {
      *
      * @return Copyright statement for Ignite product.
      */
-    @IgniteMXBeanDescription("Copyright statement for GridGain product.")
+    @IgniteMXBeanDescription("Copyright statement for Ignite product.")
     public String getCopyright();
 
     /**
@@ -114,7 +114,7 @@ public interface IgniteMXBean {
      *
      * @return Ignite installation home.
      */
-    @IgniteMXBeanDescription("GridGain installation home folder.")
+    @IgniteMXBeanDescription("Ignite installation home folder.")
     public String getIgniteHome();
 
     /**

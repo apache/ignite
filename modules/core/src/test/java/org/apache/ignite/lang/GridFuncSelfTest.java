@@ -837,7 +837,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         Collection<String> strs = new ArrayList<>();
 
-        strs.add("GridGain");
+        strs.add("Ignite");
         strs.add("Cloud");
         strs.add("Compute");
         strs.add("Data");

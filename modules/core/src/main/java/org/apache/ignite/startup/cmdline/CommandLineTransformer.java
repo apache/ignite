@@ -195,7 +195,7 @@ public class CommandLineTransformer {
                 String jvmOpt = arg.substring(JVM_OPTION_PREFIX.length());
 
                 if (!checkJVMOptionIsSupported(jvmOpt))
-                    throw new RuntimeException(JVM_OPTION_PREFIX + " JVM parameters for GridGain batch scripts " +
+                    throw new RuntimeException(JVM_OPTION_PREFIX + " JVM parameters for Ignite batch scripts " +
                         "with double quotes are not supported. " +
                         "Use JVM_OPTS environment variable to pass any custom JVM option.");
 

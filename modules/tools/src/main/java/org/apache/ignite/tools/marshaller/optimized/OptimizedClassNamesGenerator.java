@@ -290,7 +290,7 @@ public class OptimizedClassNamesGenerator {
             String home = home();
 
             if (home == null)
-                throw new Exception("Failed to find GridGain home.");
+                throw new Exception("Failed to find Ignite home.");
 
             dir = new File(home, "/os/modules/core/src/main/java/org/apache/ignite/marshaller/optimized");
         }
