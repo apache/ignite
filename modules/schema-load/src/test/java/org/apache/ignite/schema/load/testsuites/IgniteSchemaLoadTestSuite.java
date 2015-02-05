@@ -38,5 +38,4 @@ public class IgniteSchemaLoadTestSuite {
 
         return suite;
     }
-
 }
