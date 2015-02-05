@@ -426,7 +426,7 @@ public class IgnitionEx {
      *      also if default grid has already been started.
      */
     public static Ignite start(@Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
-        URL url = U.resolveGridGainUrl(DFLT_CFG);
+        URL url = U.resolveIgniteUrl(DFLT_CFG);
 
         if (url != null)
             return start(DFLT_CFG, null, springCtx);
@@ -577,7 +577,7 @@ public class IgnitionEx {
             url = new URL(springCfgPath);
         }
         catch (MalformedURLException e) {
-            url = U.resolveGridGainUrl(springCfgPath);
+            url = U.resolveIgniteUrl(springCfgPath);
 
             if (url == null)
                 throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
@@ -810,7 +810,7 @@ public class IgnitionEx {
             url = new URL(springCfgPath);
         }
         catch (MalformedURLException e) {
-            url = U.resolveGridGainUrl(springCfgPath);
+            url = U.resolveIgniteUrl(springCfgPath);
 
             if (url == null)
                 throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
@@ -2018,7 +2018,7 @@ public class IgnitionEx {
 
                     if (log4jCls != null) {
                         try {
-                            URL url = U.resolveGridGainUrl("config/ignite-log4j.xml");
+                            URL url = U.resolveIgniteUrl("config/ignite-log4j.xml");
 
                             if (url == null) {
                                 File cfgFile = new File("config/ignite-log4j.xml");

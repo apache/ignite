@@ -51,7 +51,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * <pre name="code" class="java">
  *      GridConfiguration cfg = new GridConfiguration();
  *      ...
- *      URL xml = U.resolveGridGainUrl("config/custom-log4j.xml");
+ *      URL xml = U.resolveIgniteUrl("config/custom-log4j.xml");
  *      GridLogger log = new GridLog4jLogger(xml);
  *      ...
  *      cfg.setGridLogger(log);
@@ -165,7 +165,7 @@ public class IgniteLog4jLogger implements IgniteLogger, IgniteLoggerNodeIdAware,
 
         this.path = path;
 
-        final URL cfgUrl = U.resolveGridGainUrl(path);
+        final URL cfgUrl = U.resolveIgniteUrl(path);
 
         if (cfgUrl == null)
             throw new IgniteCheckedException("Log4j configuration path was not found: " + path);

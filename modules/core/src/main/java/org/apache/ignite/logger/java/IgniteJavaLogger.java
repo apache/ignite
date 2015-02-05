@@ -127,7 +127,7 @@ public class IgniteJavaLogger implements IgniteLogger, IgniteLoggerNodeIdAware {
      * Reads default JUL configuration.
      */
     private void defaultConfiguration() {
-        final URL cfgUrl = U.resolveGridGainUrl(DFLT_CONFIG_PATH);
+        final URL cfgUrl = U.resolveIgniteUrl(DFLT_CONFIG_PATH);
 
         if (cfgUrl == null) {
             error("Failed to resolve default logging config file: " + DFLT_CONFIG_PATH);

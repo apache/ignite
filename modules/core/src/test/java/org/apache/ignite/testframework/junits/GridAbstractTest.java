@@ -864,7 +864,7 @@ public abstract class GridAbstractTest extends TestCase {
      */
     @SuppressWarnings("deprecation")
     protected IgniteConfiguration loadConfiguration(String springCfgPath) throws IgniteCheckedException {
-        URL cfgLocation = U.resolveGridGainUrl(springCfgPath);
+        URL cfgLocation = U.resolveIgniteUrl(springCfgPath);
 
         assert cfgLocation != null;
 

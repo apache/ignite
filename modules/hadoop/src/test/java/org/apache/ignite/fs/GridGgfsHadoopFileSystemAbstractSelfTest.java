@@ -2102,7 +2102,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
     private FileSystem local(Path home) throws IOException {
         Configuration cfg = new Configuration();
 
-        cfg.addResource(U.resolveGridGainUrl(HADOOP_FS_CFG));
+        cfg.addResource(U.resolveIgniteUrl(HADOOP_FS_CFG));
 
         return FileSystem.get(home.toUri(), cfg);
     }

@@ -112,7 +112,7 @@ public class IgniteServletContextListenerStartup implements ServletContextListen
 
             if (cfgUrl == null)
                 // Try with IGNITE_HOME and with context class loader.
-                cfgUrl = U.resolveGridGainUrl(cfgFile);
+                cfgUrl = U.resolveIgniteUrl(cfgFile);
 
             if (cfgUrl == null)
                 throw new IgniteException("Failed to find Spring configuration file (path provided should be " +

@@ -1475,7 +1475,7 @@ object visor extends VisorTag {
                         new URL(path)
                     catch {
                         case e: Exception =>
-                            val url = IgniteUtils.resolveGridGainUrl(path)
+                            val url = IgniteUtils.resolveIgniteUrl(path)
 
                             if (url == null)
                                 throw new IgniteException("Ignite configuration path is invalid: " + path, e)

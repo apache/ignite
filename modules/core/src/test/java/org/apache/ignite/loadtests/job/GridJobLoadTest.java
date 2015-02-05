@@ -41,7 +41,7 @@ public class GridJobLoadTest implements Runnable {
      */
     static {
         try {
-            TEST_CONF_DIR = new File(U.resolveGridGainUrl("/modules/core/src/test/config/job-loadtest").toURI());
+            TEST_CONF_DIR = new File(U.resolveIgniteUrl("/modules/core/src/test/config/job-loadtest").toURI());
         }
         catch (URISyntaxException e) {
             throw new RuntimeException("Failed to initialize directory.", e);

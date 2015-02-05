@@ -341,7 +341,7 @@ public final class GridRandomCommandLineLoader {
         assert cfg != null;
 
         if (logCfgPath != null)
-            cfg.setGridLogger(new GridTestLog4jLogger(U.resolveGridGainUrl(logCfgPath)));
+            cfg.setGridLogger(new GridTestLog4jLogger(U.resolveIgniteUrl(logCfgPath)));
 
         return cfg;
     }

@@ -32,7 +32,7 @@ import org.jetbrains.annotations.*;
  * <pre name="code" class="java">
  *      GridConfiguration cfg = new GridConfiguration();
  *      ...
- *      URL xml = U.resolveGridGainUrl("config/custom-log4j.xml");
+ *      URL xml = U.resolveIgniteUrl("config/custom-log4j.xml");
  *      GridLogger log = new GridLog4jLogger(xml);
  *      ...
  *      cfg.setGridLogger(log);

@@ -147,7 +147,7 @@ public class GridHadoopExternalProcessStarter {
      * @return Logger.
      */
     private IgniteLogger logger(final File outputDir) {
-        final URL url = U.resolveGridGainUrl(DFLT_LOG4J_CONFIG);
+        final URL url = U.resolveIgniteUrl(DFLT_LOG4J_CONFIG);
 
         IgniteLog4jLogger logger;
 

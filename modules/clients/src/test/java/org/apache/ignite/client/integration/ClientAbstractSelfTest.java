@@ -199,7 +199,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         clientCfg.setRestAccessibleFolders(
             U.getIgniteHome() + "/work/log",
-            U.resolveGridGainPath("modules/core/src/test/resources/log").getAbsolutePath());
+            U.resolveIgnitePath("modules/core/src/test/resources/log").getAbsolutePath());
 
         if (useSsl()) {
             clientCfg.setRestTcpSslEnabled(true);

@@ -295,7 +295,7 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridGgfsCommonA
     private GridGgfsHadoopFileSystem fileSystem() throws Exception {
         Configuration fsCfg = new Configuration();
 
-        fsCfg.addResource(U.resolveGridGainUrl("modules/core/src/test/config/hadoop/core-site-loopback.xml"));
+        fsCfg.addResource(U.resolveIgniteUrl("modules/core/src/test/config/hadoop/core-site-loopback.xml"));
 
         fsCfg.setBoolean("fs.ggfs.impl.disable.cache", true);
 

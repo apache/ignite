@@ -133,7 +133,7 @@ public class IgniteServletStartup extends HttpServlet {
         if (cfgFile == null)
             throw new ServletException("Failed to read property: " + cfgFilePathParam);
 
-        URL cfgUrl = U.resolveGridGainUrl(cfgFile);
+        URL cfgUrl = U.resolveIgniteUrl(cfgFile);
 
         if (cfgUrl == null)
             throw new ServletException("Failed to find Spring configuration file (path provided should be " +

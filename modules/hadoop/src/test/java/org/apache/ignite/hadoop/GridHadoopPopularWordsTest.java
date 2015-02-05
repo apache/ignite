@@ -180,7 +180,7 @@ public class GridHadoopPopularWordsTest {
 
         // Use explicit configuration of distributed file system, if provided.
         if (DFS_CFG != null)
-            cfg.addResource(U.resolveGridGainUrl(DFS_CFG));
+            cfg.addResource(U.resolveIgniteUrl(DFS_CFG));
 
         jobCfg.setJobName("HadoopPopularWordExample");
         jobCfg.setJarByClass(GridHadoopPopularWordsTest.class);

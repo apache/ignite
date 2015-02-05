@@ -164,7 +164,7 @@ public class GridTestLog4jLogger implements IgniteLogger, IgniteLoggerNodeIdAwar
 
         this.path = path;
 
-        final URL cfgUrl = U.resolveGridGainUrl(path);
+        final URL cfgUrl = U.resolveIgniteUrl(path);
 
         if (cfgUrl == null)
             throw new IgniteCheckedException("Log4j configuration path was not found: " + path);

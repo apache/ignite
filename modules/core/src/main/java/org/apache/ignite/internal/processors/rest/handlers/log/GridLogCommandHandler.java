@@ -118,7 +118,7 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
      * @throws IOException If file couldn't be accessed or read failed.
      */
     private List<String> readLog(String path, int from, int to) throws IgniteCheckedException, IOException {
-        URL url = U.resolveGridGainUrl(path);
+        URL url = U.resolveIgniteUrl(path);
 
         if (url == null)
             throw new IgniteCheckedException("Log file not found: " + path);

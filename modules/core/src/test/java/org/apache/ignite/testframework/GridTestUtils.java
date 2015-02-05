@@ -1323,7 +1323,7 @@ public final class GridTestUtils {
 
         KeyStore keyStore = KeyStore.getInstance("JKS");
 
-        keyStore.load(new FileInputStream(U.resolveGridGainPath(GridTestProperties.getProperty("ssl.keystore.path"))),
+        keyStore.load(new FileInputStream(U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path"))),
             storePass);
 
         keyMgrFactory.init(keyStore, storePass);
@@ -1343,7 +1343,7 @@ public final class GridTestUtils {
         GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
 
         factory.setKeyStoreFilePath(
-            U.resolveGridGainPath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
+            U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
         factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
 
         factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());

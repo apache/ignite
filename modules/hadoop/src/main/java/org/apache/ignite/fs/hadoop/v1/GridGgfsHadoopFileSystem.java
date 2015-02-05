@@ -238,7 +238,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
             // Get log directory.
             String logDirCfg = parameter(cfg, PARAM_GGFS_LOG_DIR, uriAuthority, DFLT_GGFS_LOG_DIR);
 
-            File logDirFile = U.resolveGridGainPath(logDirCfg);
+            File logDirFile = U.resolveIgnitePath(logDirCfg);
 
             String logDir = logDirFile != null ? logDirFile.getAbsolutePath() : null;
 
@@ -295,7 +295,7 @@ public class GridGgfsHadoopFileSystem extends FileSystem {
                 try {
                     secondaryUri = new URI(secUri);
 
-                    URL secondaryCfgUrl = U.resolveGridGainUrl(secConfPath);
+                    URL secondaryCfgUrl = U.resolveIgniteUrl(secConfPath);
 
                     Configuration conf = new Configuration();
 

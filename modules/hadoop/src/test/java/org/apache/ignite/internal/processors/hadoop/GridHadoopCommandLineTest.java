@@ -157,9 +157,9 @@ public class GridHadoopCommandLineTest extends GridCommonAbstractTest {
 
         testWorkDir = Files.createTempDirectory("hadoop-cli-test").toFile();
 
-        U.copy(U.resolveGridGainPath("docs/core-site.ignite.xml"), new File(testWorkDir, "core-site.xml"), false);
+        U.copy(U.resolveIgnitePath("docs/core-site.ignite.xml"), new File(testWorkDir, "core-site.xml"), false);
 
-        File srcFile = U.resolveGridGainPath("docs/mapred-site.ignite.xml");
+        File srcFile = U.resolveIgnitePath("docs/mapred-site.ignite.xml");
         File dstFile = new File(testWorkDir, "mapred-site.xml");
 
         try (BufferedReader in = new BufferedReader(new FileReader(srcFile));

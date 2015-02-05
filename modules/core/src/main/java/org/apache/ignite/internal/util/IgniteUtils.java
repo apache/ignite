@@ -2548,7 +2548,7 @@ public abstract class IgniteUtils {
      * @param path Path to resolve.
      * @return Resolved path as file, or {@code null} if path cannot be resolved.
      */
-    @Nullable public static File resolveGridGainPath(String path) {
+    @Nullable public static File resolveIgnitePath(String path) {
         assert path != null;
 
         /*
@@ -2596,8 +2596,8 @@ public abstract class IgniteUtils {
      * @return Resolved path as URL, or {@code null} if path cannot be resolved.
      * @see #getIgniteHome()
      */
-    @Nullable public static URL resolveGridGainUrl(String path) {
-        return resolveGridGainUrl(path, true);
+    @Nullable public static URL resolveIgniteUrl(String path) {
+        return resolveIgniteUrl(path, true);
     }
 
     /**
@@ -2615,11 +2615,11 @@ public abstract class IgniteUtils {
      * @see #getIgniteHome()
      */
     @SuppressWarnings({"UnusedCatchParameter"})
-    @Nullable public static URL resolveGridGainUrl(String path, boolean metaInf) {
-        File f = resolveGridGainPath(path);
+    @Nullable public static URL resolveIgniteUrl(String path, boolean metaInf) {
+        File f = resolveIgnitePath(path);
 
         if (f == null)
-            f = resolveGridGainPath("os/" + path);
+            f = resolveIgnitePath("os/" + path);
 
         if (f != null) {
             try {

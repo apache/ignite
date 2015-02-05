@@ -66,7 +66,7 @@ public class VisorLatestTextFilesTask extends VisorOneNodeTask<IgniteBiTuple<Str
             assert path != null;
             assert regexp != null;
 
-            URL url = U.resolveGridGainUrl(path);
+            URL url = U.resolveIgniteUrl(path);
 
             if (url == null)
                 return null;

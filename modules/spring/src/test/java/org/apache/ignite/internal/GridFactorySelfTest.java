@@ -709,7 +709,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         try {
             GenericApplicationContext ctx = new GenericApplicationContext();
 
-            new XmlBeanDefinitionReader(ctx).loadBeanDefinitions(new UrlResource(U.resolveGridGainUrl(path)));
+            new XmlBeanDefinitionReader(ctx).loadBeanDefinitions(new UrlResource(U.resolveIgniteUrl(path)));
 
             ctx.refresh();
 

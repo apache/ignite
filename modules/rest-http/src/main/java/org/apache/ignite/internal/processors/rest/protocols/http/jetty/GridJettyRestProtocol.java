@@ -133,7 +133,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 log.debug("Jetty configuration file is not provided, using defaults.");
         }
         else {
-            cfgUrl = U.resolveGridGainUrl(jettyPath);
+            cfgUrl = U.resolveIgniteUrl(jettyPath);
 
             if (cfgUrl == null)
                 throw new IgniteSpiException("Invalid Jetty configuration file: " + jettyPath);

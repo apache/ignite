@@ -463,7 +463,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
 
         String script = U.isWindows() ? CUSTOM_SCRIPT_WIN : CUSTOM_SCRIPT_LINUX;
 
-        script = Paths.get(U.getIgniteHome()).relativize(U.resolveGridGainPath(script).toPath()).toString();
+        script = Paths.get(U.getIgniteHome()).relativize(U.resolveIgnitePath(script).toPath()).toString();
 
         Collection<GridTuple3<String, Boolean, String>> res =
             startNodes(ignite.cluster(),
