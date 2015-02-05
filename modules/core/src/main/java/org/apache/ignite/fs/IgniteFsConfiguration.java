@@ -536,13 +536,13 @@ public class IgniteFsConfiguration {
      * If path doesn't correspond to any specified prefix or mappings are not provided, then
      * {@link #getDefaultMode()} is used.
      * <p>
-     * Several folders under {@code '/gridgain'} folder have predefined mappings which cannot be overridden.
-     * <li>{@code /gridgain/primary} and all it's sub-folders will always work in {@code PRIMARY} mode.</li>
+     * Several folders under {@code '/apache/ignite'} folder have predefined mappings which cannot be overridden.
+     * <li>{@code /apache/ignite/primary} and all it's sub-folders will always work in {@code PRIMARY} mode.</li>
      * <p>
      * And in case secondary file system URI is provided:
-     * <li>{@code /gridgain/proxy} and all it's sub-folders will always work in {@code PROXY} mode.</li>
-     * <li>{@code /gridgain/sync} and all it's sub-folders will always work in {@code DUAL_SYNC} mode.</li>
-     * <li>{@code /gridgain/async} and all it's sub-folders will always work in {@code DUAL_ASYNC} mode.</li>
+     * <li>{@code /apache/ignite/proxy} and all it's sub-folders will always work in {@code PROXY} mode.</li>
+     * <li>{@code /apache/ignite/sync} and all it's sub-folders will always work in {@code DUAL_SYNC} mode.</li>
+     * <li>{@code /apache/ignite/async} and all it's sub-folders will always work in {@code DUAL_ASYNC} mode.</li>
      *
      * @return Map of paths to {@code GGFS} modes.
      */

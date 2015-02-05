@@ -22,8 +22,8 @@
 
     This file is automatically scanned by
     $IGNITE_HOME/bin/igniterouter.sh and $IGNITE_HOME/bin/igniterouter.bat
-    for org.gridgain.client.router.GridTcpRestRouterConfiguration and
-    org.gridgain.client.router.GridHttpRestRouterConfiguration bean definitions.
+    for org.apache.ignite.client.router.GridTcpRestRouterConfiguration and
+    org.apache.ignite.client.router.GridHttpRestRouterConfiguration bean definitions.
     First found are used to start corresponding router instances.
 
     You can also use org.gridgain.client.router.GridRouterFactory to

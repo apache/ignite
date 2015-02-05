@@ -47,10 +47,10 @@ import org.jetbrains.annotations.*;
  *        &lt;constructor-arg value="0"/&gt;
  *    &lt;/bean>
  * </pre>
- * By default, all gridgain startup scripts ({@code gridgain.sh} or {@code gridgain.bat})
+ * By default, all ignite startup scripts ({@code gridgain.sh} or {@code gridgain.bat})
  * pick up user version from {@code IGNITE_HOME/config/userversion} folder. Usually, it
  * is just enough to update user version under that folder, however, in case of {@code GAR}
- * or {@code JAR} deployment, you should remember to provide {@code META-INF/gridgain.xml}
+ * or {@code JAR} deployment, you should remember to provide {@code META-INF/ignite.xml}
  * file with desired user version in it.
  * <p>
  * <h1 class="header">Always-Local Development</h1>
@@ -131,7 +131,7 @@ public enum IgniteDeploymentMode {
      * <p>
      * Note that classes deployed in this mode will be undeployed if
      * all master nodes left grid or if user version changed. User version can
-     * be specified in {@code META-INF/gridgain.xml} file as a Spring bean
+     * be specified in {@code META-INF/ignite.xml} file as a Spring bean
      * property with name {@code userVersion}. This file has to be in the class
      * path of the class used for task execution.
      * <p>
@@ -160,7 +160,7 @@ public enum IgniteDeploymentMode {
      * <p>
      * Note that classes deployed in <tt>CONTINUOUS</tt> mode will be undeployed
      * only if user version changes. User version can be specified in
-     * {@code META-INF/gridgain.xml} file as a Spring bean property with name
+     * {@code META-INF/ignite.xml} file as a Spring bean property with name
      * {@code userVersion}. This file has to be in the class
      * path of the class used for task execution.
      */

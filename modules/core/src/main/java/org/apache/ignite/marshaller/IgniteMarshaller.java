@@ -27,7 +27,7 @@ import java.io.*;
  * serialization/deserialization mechanism for all instances that are sent across networks
  * or are otherwise serialized.
  * <p>
- * Gridgain provides the following {@code GridMarshaller} implementations:
+ * Ignite provides the following {@code GridMarshaller} implementations:
  * <ul>
  * <li>{@link org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller} - default</li>
  * <li>{@link org.apache.ignite.marshaller.jdk.IgniteJdkMarshaller}</li>

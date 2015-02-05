@@ -238,7 +238,7 @@ public abstract class IgniteUtils {
     /** Name of the JVM implementation. */
     private static String jvmImplName;
 
-    /** JMX domain as 'xxx.gridgain'. */
+    /** JMX domain as 'xxx.apache.ignite'. */
     public static final String JMX_DOMAIN = IgniteUtils.class.getName().substring(0, IgniteUtils.class.getName().
         indexOf('.', IgniteUtils.class.getName().indexOf('.') + 1));
 

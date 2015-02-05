@@ -264,7 +264,7 @@
             Use passcode authentication SPI.
         - ->
         <property name="authenticationSpi">
-            <bean class="org.gridgain.grid.spi.authentication.passcode.GridPasscodeAuthenticationSpi">
+            <bean class="org.apache.ignite.grid.spi.authentication.passcode.GridPasscodeAuthenticationSpi">
                 <property name="passcodes">
                     <map>
                         <entry key="REMOTE_NODE" value="s3cret"/>
