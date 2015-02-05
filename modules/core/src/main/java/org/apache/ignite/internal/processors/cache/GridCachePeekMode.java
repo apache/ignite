@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
+package org.apache.ignite.internal.processors.cache;
 
 import org.jetbrains.annotations.*;
 
@@ -24,8 +24,8 @@ import java.util.*;
 /**
  * Enumeration of all supported cache peek modes. Peek modes can be passed into various
  * {@code 'CacheProjection.peek(..)'} and {@code CacheEntry.peek(..)} methods,
- * such as {@link CacheProjection#peek(Object, Collection)},
- * {@link CacheEntry#peek()}, and others.
+ * such as {@link org.apache.ignite.cache.CacheProjection#peek(Object, Collection)},
+ * {@link org.apache.ignite.cache.CacheEntry#peek()}, and others.
  * <p>
  * The following modes are supported:
  * <ul>
@@ -58,14 +58,14 @@ public enum GridCachePeekMode {
 
     /**
      * Peek value from near cache only (don't peek from partitioned cache).
-     * In case of {@link CacheMode#LOCAL} or {@link CacheMode#REPLICATED} cache,
+     * In case of {@link org.apache.ignite.cache.CacheMode#LOCAL} or {@link org.apache.ignite.cache.CacheMode#REPLICATED} cache,
      * behaves as {@link #GLOBAL} mode.
      */
     NEAR_ONLY,
 
     /**
      * Peek value from partitioned cache only (skip near cache).
-     * In case of {@link CacheMode#LOCAL} or {@link CacheMode#REPLICATED} cache,
+     * In case of {@link org.apache.ignite.cache.CacheMode#LOCAL} or {@link org.apache.ignite.cache.CacheMode#REPLICATED} cache,
      * behaves as {@link #GLOBAL} mode.
      */
     PARTITIONED_ONLY;

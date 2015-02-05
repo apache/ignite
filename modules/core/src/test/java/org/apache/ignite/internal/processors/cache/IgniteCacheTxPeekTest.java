@@ -15,17 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store;
+package org.apache.ignite.internal.processors.cache;
 
-import java.lang.annotation.*;
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Annotation for local {@link CacheStore} implementation. "Local" here means that there is no global
- * database behind the grid but each node has an independent one.
+ *
  */
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE})
-public @interface CacheLocalStore {
-    // No-op.
+public class IgniteCacheTxPeekTest extends IgniteCachePeekAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 4;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
+        return PRIMARY;
+    }
 }

@@ -932,8 +932,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         GridCacheAttributes[] attrVals = new GridCacheAttributes[ctx.config().getCacheConfiguration().length];
 
-        Map<String, Boolean> attrPortable = new HashMap<>();
-
         Map<String, String> interceptors = new HashMap<>();
 
         int i = 0;
@@ -945,15 +943,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             attrVals[i++] = new GridCacheAttributes(cfg, ctx.store().configuredStore());
 
-            attrPortable.put(CU.mask(cfg.getName()), cfg.isPortableEnabled());
-
             if (cfg.getInterceptor() != null)
                 interceptors.put(cfg.getName(), cfg.getInterceptor().getClass().getName());
         }
 
         attrs.put(ATTR_CACHE, attrVals);
-
-        attrs.put(ATTR_CACHE_PORTABLE, attrPortable);
 
         attrs.put(ATTR_TX_CONFIG, ctx.config().getTransactionsConfiguration());
 
@@ -1182,12 +1176,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
                             "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
 
-                        Boolean locPortableEnabled = U.portableEnabled(ctx.discovery().localNode(), locAttr.cacheName());
-                        Boolean rmtPortableEnabled = U.portableEnabled(rmt, locAttr.cacheName());
-
-                        if (locPortableEnabled != null && rmtPortableEnabled != null)
-                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "portableEnabled",
-                                "Portables enabled", locPortableEnabled, rmtPortableEnabled, true);
+                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "portableEnabled",
+                            "Portables enabled", locAttr.portableEnabled(), rmtAttr.portableEnabled(), true);
 
                         if (locAttr.cacheMode() == PARTITIONED) {
                             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictSynchronized",

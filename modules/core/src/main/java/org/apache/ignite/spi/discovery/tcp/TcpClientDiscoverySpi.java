@@ -888,10 +888,10 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                         if (msg.topologyHistory() != null)
                             topHist.putAll(msg.topologyHistory());
 
-                        Collection<List<Object>> dataList = msg.oldNodesDiscoveryData();
+                        Collection<Map<Integer, Object>> dataList = msg.oldNodesDiscoveryData();
 
                         if (dataList != null) {
-                            for (List<Object> discoData : dataList)
+                            for (Map<Integer, Object> discoData : dataList)
                                 exchange.onExchange(discoData);
                         }
 
@@ -912,7 +912,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     if (log.isDebugEnabled())
                         log.debug("Added new node to topology: " + node);
 
-                    List<Object> data = msg.newNodeDiscoveryData();
+                    Map<Integer, Object> data = msg.newNodeDiscoveryData();
 
                     if (data != null)
                         exchange.onExchange(data);

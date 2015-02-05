@@ -15,35 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.query;
+package org.apache.ignite.internal.processors.cache.store;
 
 import java.lang.annotation.*;
 
 /**
- * Describes group index.
+ * Annotation for local {@link org.apache.ignite.cache.store.CacheStore} implementation. "Local" here means that there is no global
+ * database behind the grid but each node has an independent one.
  */
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface CacheQueryGroupIndex {
-    /**
-     * Group index name.
-     *
-     * @return Name.
-     */
-    String name();
-
-    /**
-     * List of group indexes for type.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target(ElementType.TYPE)
-    public static @interface List {
-        /**
-         * Gets array of group indexes.
-         *
-         * @return Array of group indexes.
-         */
-        CacheQueryGroupIndex[] value();
-    }
+@Target({ElementType.TYPE})
+public @interface CacheLocalStore {
+    // No-op.
 }

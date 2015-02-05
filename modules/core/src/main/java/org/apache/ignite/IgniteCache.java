@@ -20,6 +20,7 @@ package org.apache.ignite;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
 import org.jetbrains.annotations.*;
@@ -45,15 +46,11 @@ import java.util.concurrent.locks.*;
  *  data based on the optionally passed in arguments.
  * </li>
  * <li>
- *     Method {@link #affinity()} provides {@link org.apache.ignite.cache.affinity.CacheAffinityFunction} service for information on
- *     data partitioning and mapping keys to grid nodes responsible for caching those keys.
- * </li>
- * <li>
  *  Methods like {@code 'tx{Un}Synchronize(..)'} witch allow to get notifications for transaction state changes.
  *  This feature is very useful when integrating cache transactions with some other in-house transactions.
  * </li>
  * <li>Method {@link #metrics()} to provide metrics for the whole cache.</li>
- * <li>Method {@link #getConfiguration()} to provide cache configuration bean.</li>
+ * <li>Method {@link #getConfiguration(Class)}} to provide cache configuration bean.</li>
  * </ul>
  *
  * @param <K> Cache key type.
@@ -229,13 +226,13 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public void localEvict(Collection<? extends K> keys);
 
     /**
-     * Peeks at in-memory cached value using default {@link org.apache.ignite.cache.GridCachePeekMode#SMART}
+     * Peeks at in-memory cached value using default {@link GridCachePeekMode#SMART}
      * peek mode.
      * <p>
      * This method will not load value from any persistent store or from a remote node.
      * <h2 class="header">Transactions</h2>
      * This method does not participate in any transactions, however, it will
-     * peek at transactional value according to the {@link org.apache.ignite.cache.GridCachePeekMode#SMART} mode
+     * peek at transactional value according to the {@link GridCachePeekMode#SMART} mode
      * semantics. If you need to look at global cached value even from within transaction,
      * you can use {@link org.apache.ignite.cache.GridCache#peek(Object, Collection)} method.
      *
