@@ -1351,7 +1351,7 @@ public class IgnitionEx {
 
             IgniteConfiguration myCfg = new IgniteConfiguration();
 
-            String ggHome = cfg.getGridGainHome();
+            String ggHome = cfg.getIgniteHome();
 
             // Set Ignite home.
             if (ggHome == null)
@@ -1399,7 +1399,7 @@ public class IgnitionEx {
                     throw new IgniteCheckedException("Invalid GridGain installation home folder: " + ggHome);
             }
 
-            myCfg.setGridGainHome(ggHome);
+            myCfg.setIgniteHome(ggHome);
 
             // Copy values that don't need extra processing.
             myCfg.setLicenseUrl(cfg.getLicenseUrl());

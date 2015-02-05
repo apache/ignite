@@ -1057,7 +1057,7 @@ public abstract class GridAbstractTest extends TestCase {
         cfg.setGridLogger(rsrcs.getLogger());
         cfg.setMarshaller(rsrcs.getMarshaller());
         cfg.setNodeId(rsrcs.getNodeId());
-        cfg.setGridGainHome(rsrcs.getGridgainHome());
+        cfg.setIgniteHome(rsrcs.getGridgainHome());
         cfg.setMBeanServer(rsrcs.getMBeanServer());
         cfg.setPeerClassLoadingEnabled(true);
         cfg.setMetricsLogFrequency(0);

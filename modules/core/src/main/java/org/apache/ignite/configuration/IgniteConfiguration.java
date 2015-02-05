@@ -571,7 +571,7 @@ public class IgniteConfiguration {
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         execSvc = cfg.getExecutorService();
         execSvcShutdown = cfg.getExecutorServiceShutdown();
-        ggHome = cfg.getGridGainHome();
+        ggHome = cfg.getIgniteHome();
         ggWork = cfg.getWorkDirectory();
         gridName = cfg.getGridName();
         ggfsCfg = cfg.getGgfsConfiguration();
@@ -1350,7 +1350,7 @@ public class IgniteConfiguration {
      *      infer it automatically.
      * @see org.apache.ignite.IgniteSystemProperties#IGNITE_HOME
      */
-    public String getGridGainHome() {
+    public String getIgniteHome() {
         return ggHome;
     }
 
@@ -1358,22 +1358,22 @@ public class IgniteConfiguration {
      * Sets Ignite installation folder.
      *
      * @param ggHome {@code Ignition} installation folder.
-     * @see IgniteConfiguration#getGridGainHome()
+     * @see IgniteConfiguration#getIgniteHome()
      * @see org.apache.ignite.IgniteSystemProperties#IGNITE_HOME
      */
-    public void setGridGainHome(String ggHome) {
+    public void setIgniteHome(String ggHome) {
         this.ggHome = ggHome;
     }
 
     /**
      * Gets Ignite work folder. If not provided, the method will use work folder under
-     * {@code IGNITE_HOME} specified by {@link IgniteConfiguration#setGridGainHome(String)} or
+     * {@code IGNITE_HOME} specified by {@link IgniteConfiguration#setIgniteHome(String)} or
      * {@code IGNITE_HOME} environment variable or system property.
      * <p>
      * If {@code IGNITE_HOME} is not provided, then system temp folder is used.
      *
      * @return Ignite work folder or {@code null} to make the system attempt to infer it automatically.
-     * @see IgniteConfiguration#getGridGainHome()
+     * @see IgniteConfiguration#getIgniteHome()
      * @see org.apache.ignite.IgniteSystemProperties#IGNITE_HOME
      */
     public String getWorkDirectory() {

@@ -65,7 +65,7 @@ public interface IgniteSpiManagementMBean {
      * @return Ignite installation home folder.
      */
     @IgniteMXBeanDescription("Gridgain installation home folder.")
-    public String getGridGainHome();
+    public String getIgniteHome();
 
     /**
      * Gets ID of the local node.

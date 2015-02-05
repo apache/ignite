@@ -436,10 +436,10 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public String getGridGainHome() {
+    @Override public String getIgniteHome() {
         assert cfg != null;
 
-        return cfg.getGridGainHome();
+        return cfg.getIgniteHome();
     }
 
     /** {@inheritDoc} */
@@ -643,8 +643,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         final GridUpdateNotifier verChecker = verChecker0;
 
         // Ack 3-rd party licenses location.
-        if (log.isInfoEnabled() && cfg.getGridGainHome() != null)
-            log.info("3-rd party licenses can be found at: " + cfg.getGridGainHome() + File.separatorChar + "libs" +
+        if (log.isInfoEnabled() && cfg.getIgniteHome() != null)
+            log.info("3-rd party licenses can be found at: " + cfg.getIgniteHome() + File.separatorChar + "libs" +
                 File.separatorChar + "licenses");
 
         // Check that user attributes are not conflicting
@@ -2398,7 +2398,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
         // Ack IGNITE_HOME and VM arguments.
         if (log.isInfoEnabled()) {
-            log.info("IGNITE_HOME=" + cfg.getGridGainHome());
+            log.info("IGNITE_HOME=" + cfg.getIgniteHome());
             log.info("VM arguments: " + rtBean.getInputArguments());
         }
     }

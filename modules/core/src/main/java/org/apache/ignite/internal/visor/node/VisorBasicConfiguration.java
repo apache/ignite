@@ -111,7 +111,7 @@ public class VisorBasicConfiguration implements Serializable {
         VisorBasicConfiguration cfg = new VisorBasicConfiguration();
 
         cfg.gridName(c.getGridName());
-        cfg.ggHome(getProperty(IGNITE_HOME, c.getGridGainHome()));
+        cfg.ggHome(getProperty(IGNITE_HOME, c.getIgniteHome()));
         cfg.localHost(getProperty(IGNITE_LOCAL_HOST, c.getLocalHost()));
         cfg.nodeId(g.localNode().id());
         cfg.marshaller(compactClass(c.getMarshaller()));
