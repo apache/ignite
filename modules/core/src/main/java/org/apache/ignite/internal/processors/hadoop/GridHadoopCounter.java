@@ -15,22 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.hadoop;
-
-import org.apache.ignite.*;
+package org.apache.ignite.internal.processors.hadoop;
 
 /**
- * The object that writes some system counters to some storage for each running job. This operation is a part of
- * whole statistics collection process.
+ * Hadoop counter.
  */
-public interface GridHadoopCounterWriter {
+public interface GridHadoopCounter {
     /**
-     * Writes counters of given job to some statistics storage.
+     * Gets name.
      *
-     * @param jobInfo Job info.
-     * @param jobId Job id.
-     * @param cntrs Counters.
-     * @throws IgniteCheckedException If failed.
+     * @return Name of the counter.
      */
-    public void write(GridHadoopJobInfo jobInfo, GridHadoopJobId jobId, GridHadoopCounters cntrs) throws IgniteCheckedException;
+    public String name();
+
+    /**
+     * Gets counter group.
+     *
+     * @return Counter group's name.
+     */
+    public String group();
+
+    /**
+     * Merge the given counter to this counter.
+     *
+     * @param cntr Counter to merge into this counter.
+     */
+    public void merge(GridHadoopCounter cntr);
 }

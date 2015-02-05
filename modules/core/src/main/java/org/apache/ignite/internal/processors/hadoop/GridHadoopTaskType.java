@@ -15,24 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.hadoop;
+package org.apache.ignite.internal.processors.hadoop;
+
+import org.jetbrains.annotations.*;
 
 /**
- * Job run phase.
- */
-public enum GridHadoopJobPhase {
-    /** Job is running setup task. */
-    PHASE_SETUP,
+* Task type.
+*/
+public enum GridHadoopTaskType {
+    /** Setup task. */
+    SETUP,
 
-    /** Job is running map and combine tasks. */
-    PHASE_MAP,
+    /** Map task. */
+    MAP,
 
-    /** Job has finished all map tasks and running reduce tasks. */
-    PHASE_REDUCE,
+    /** Reduce task. */
+    REDUCE,
 
-    /** Job is stopping due to exception during any of the phases. */
-    PHASE_CANCELLING,
+    /** Combine task. */
+    COMBINE,
 
-    /** Job has finished execution. */
-    PHASE_COMPLETE
+    /** Commit task. */
+    COMMIT,
+
+    /** Abort task. */
+    ABORT;
+
+    /** Enumerated values. */
+    private static final GridHadoopTaskType[] VALS = values();
+
+    /**
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value.
+     */
+    @Nullable public static GridHadoopTaskType fromOrdinal(byte ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }

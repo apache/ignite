@@ -25,7 +25,6 @@ import org.apache.hadoop.mapred.JobID;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.split.*;
 import org.apache.ignite.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.fs.*;
 import org.apache.ignite.internal.processors.hadoop.v1.*;
