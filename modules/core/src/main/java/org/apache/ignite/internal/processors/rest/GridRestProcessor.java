@@ -597,6 +597,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case QUIT:
             case GET_PORTABLE_METADATA:
             case PUT_PORTABLE_METADATA:
+            case ATOMIC_INCREMENT:
+            case ATOMIC_DECREMENT:
                 break;
 
             default:
