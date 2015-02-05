@@ -538,7 +538,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                             if (cctx.isNear())
                                 cctx = cctx.near().dht().context();
 
-                            GridCacheSwapEntry e = cctx.swap().read(key);
+                            GridCacheSwapEntry e = cctx.swap().read(key, true, true);
 
                             return e != null ? (V)e.value() : null;
                         }

@@ -507,7 +507,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     }
                 }
                 else
-                    e = detached() ? cctx.swap().read(this, true) : cctx.swap().readAndRemove(this);
+                    e = detached() ? cctx.swap().read(this, true, true, true) : cctx.swap().readAndRemove(this);
 
                 if (log.isDebugEnabled())
                     log.debug("Read swap entry [swapEntry=" + e + ", cacheEntry=" + this + ']');
@@ -2691,6 +2691,38 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public V peek(boolean heap,
+        boolean offheap,
+        boolean swap,
+        long topVer)
+        throws GridCacheEntryRemovedException, IgniteCheckedException
+    {
+        assert heap || offheap || swap;
+
+        try {
+            if (heap) {
+                GridTuple<V> val = peekGlobal(false, topVer, null);
+
+                if (val != null)
+                    return val.get();
+            }
+
+            if (offheap || swap) {
+                GridCacheSwapEntry<V>  e = cctx.swap().read(this, false, offheap, swap);
+
+                return e != null ? e.value() : null;
+            }
+
+            return null;
+        }
+        catch (GridCacheFilterFailedException ignored) {
+            assert false;
+
+            return null;
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public V peek(Collection<GridCachePeekMode> modes, IgnitePredicate<CacheEntry<K, V>>[] filter)
         throws GridCacheEntryRemovedException {
         assert modes != null;
@@ -2949,7 +2981,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 return null;
         }
 
-        GridCacheSwapEntry<V> e = cctx.swap().read(this, false);
+        GridCacheSwapEntry<V> e = cctx.swap().read(this, false, true, true);
 
         return e != null ? F.t(e.value()) : null;
     }
