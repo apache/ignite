@@ -28,9 +28,6 @@ public class CacheQueryConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Collection of query type metadata. */
-    private Collection<QueryTypeMetadata> typeMeta;
-
     /** Query type resolver. */
     private QueryTypeResolver typeRslvr;
 
@@ -65,24 +62,6 @@ public class CacheQueryConfiguration implements Serializable {
         idxPrimitiveVal = cfg.isIndexPrimitiveValue();
         idxFixedTyping = cfg.isIndexFixedTyping();
         escapeAll = cfg.isEscapeAll();
-    }
-
-    /**
-     * Gets collection of query type metadata objects.
-     *
-     * @return Collection of query type metadata.
-     */
-    public Collection<QueryTypeMetadata> getTypeMetadata() {
-        return typeMeta;
-    }
-
-    /**
-     * Sets collection of query type metadata objects.
-     *
-     * @param typeMeta Collection of query type metadata.
-     */
-    public void setTypeMetadata(Collection<QueryTypeMetadata> typeMeta) {
-        this.typeMeta = typeMeta;
     }
 
     /**
