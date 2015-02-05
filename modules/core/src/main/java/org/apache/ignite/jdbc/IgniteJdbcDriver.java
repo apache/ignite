@@ -250,7 +250,7 @@ public class IgniteJdbcDriver implements Driver {
     static final String PROP_NODE_ID = PROP_PREFIX + PARAM_NODE_ID;
 
     /** URL prefix. */
-    private static final String URL_PREFIX = "jdbc:gridgain://";
+    private static final String URL_PREFIX = "jdbc:ignite://";
 
     /** Default port. */
     private static final int DFLT_PORT = 11211;
