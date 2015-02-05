@@ -29,6 +29,7 @@ import org.apache.ignite.spi.swapspace.inmemory.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePeekMode.*;
 
 /**
@@ -79,137 +80,216 @@ public abstract class IgniteCachePeekAbstractTest extends IgniteCacheAbstractTes
      * @throws Exception If failed.
      */
     public void testLocalPeek() throws Exception {
-        checkAffinity();
+        if (cacheMode() == LOCAL) {
+            checkAffinityLocalCache();
 
-        checkStorage();
+            checkStorage(0);
+        }
+        else {
+            checkAffinityPeek(0);
+
+            checkAffinityPeek(1);
+
+            checkStorage(0);
+
+            checkStorage(1);
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void checkAffinity() throws Exception {
+    private void checkAffinityLocalCache() throws Exception {
         IgniteCache<Integer, String> cache0 = jcache(0);
-
-        Integer key = nearKey(cache0);
 
         final String val = "1";
 
-        cache0.put(key, val);
+        for (int i = 0; i < HEAP_ENTRIES; i++)
+            cache0.put(i, val);
 
-        assertEquals(val, cache(0).peek(key));
-        assertEquals(val, cache0.localPeek(key, NEAR));
-        assertEquals(val, cache0.localPeek(key, ALL));
-        assertNull(cache0.localPeek(key, PRIMARY));
-        assertNull(cache0.localPeek(key, BACKUP));
-
-        CacheAffinity<Integer> aff = ignite(0).affinity(null);
-
-        for (int i = 1; i < gridCount(); i++) {
-            IgniteCache<Integer, String> cache = jcache(i);
-
-            assertNull(cache.localPeek(key, NEAR));
-
-            if (aff.isPrimary(ignite(i).cluster().localNode(), key)) {
-                assertEquals(val, cache.localPeek(key, PRIMARY));
-                assertEquals(val, cache.localPeek(key, ALL));
-                assertNull(cache.localPeek(key, BACKUP));
-                assertNull(cache.localPeek(key, NEAR));
+        try {
+            for (int i = 0; i < HEAP_ENTRIES; i++) {
+                assertEquals(val, cache0.localPeek(i));
+                assertEquals(val, cache0.localPeek(i, ALL));
+                assertEquals(val, cache0.localPeek(i, PRIMARY));
+                assertEquals(val, cache0.localPeek(i, BACKUP));
+                assertEquals(val, cache0.localPeek(i, NEAR));
             }
-            else if (aff.isBackup(ignite(i).cluster().localNode(), key)) {
-                assertEquals(val, cache.localPeek(key, BACKUP));
-                assertEquals(val, cache.localPeek(key, ALL));
-                assertNull(cache.localPeek(key, PRIMARY));
-                assertNull(cache.localPeek(key, NEAR));
-            }
-            else {
-                assertNull(cache.localPeek(key, ALL));
-                assertNull(cache.localPeek(key, PRIMARY));
-                assertNull(cache.localPeek(key, BACKUP));
-                assertNull(cache.localPeek(key, NEAR));
-            }
+        }
+        finally {
+            for (int i = 0; i < HEAP_ENTRIES; i++)
+                cache0.remove(i);
         }
     }
 
     /**
+     * @param nodeIdx Node index.
      * @throws Exception If failed.
      */
-    private void checkStorage() throws Exception {
-        IgniteCache<Integer, String> cache0 = jcache(0);
+    private void checkAffinityPeek(int nodeIdx) throws Exception {
+        IgniteCache<Integer, String> cache0 = jcache(nodeIdx);
+
+        final String val = "1";
+
+        Integer key = null;
+
+        try {
+            if (cacheMode() == REPLICATED) {
+                key = backupKey(cache0);
+
+                cache0.put(key, val);
+
+                assertEquals(val, cache0.localPeek(key, ALL));
+                assertEquals(val, cache0.localPeek(key, BACKUP));
+                assertNull(cache0.localPeek(key, NEAR));
+                assertNull(cache0.localPeek(key, PRIMARY));
+            }
+            else {
+                key = nearKey(cache0);
+
+                cache0.put(key, val);
+
+                boolean hasNearCache = nodeIdx == 0 ;
+
+                if (hasNearCache) {
+                    assertEquals(val, cache0.localPeek(key, NEAR));
+                    assertEquals(val, cache0.localPeek(key, ALL));
+                }
+                else {
+                    assertNull(cache0.localPeek(key, NEAR));
+                    assertNull(cache0.localPeek(key, ALL));
+                }
+
+                assertNull(cache0.localPeek(key, PRIMARY));
+                assertNull(cache0.localPeek(key, BACKUP));
+            }
+
+            CacheAffinity<Integer> aff = ignite(0).affinity(null);
+
+            for (int i = 0; i < gridCount(); i++) {
+                if (i == nodeIdx)
+                    continue;
+
+                IgniteCache<Integer, String> cache = jcache(i);
+
+                assertNull(cache.localPeek(key, NEAR));
+
+                if (aff.isPrimary(ignite(i).cluster().localNode(), key)) {
+                    assertEquals(val, cache.localPeek(key, PRIMARY));
+                    assertEquals(val, cache.localPeek(key, ALL));
+                    assertNull(cache.localPeek(key, BACKUP));
+                    assertNull(cache.localPeek(key, NEAR));
+                }
+                else if (aff.isBackup(ignite(i).cluster().localNode(), key)) {
+                    assertEquals(val, cache.localPeek(key, BACKUP));
+                    assertEquals(val, cache.localPeek(key, ALL));
+                    assertNull(cache.localPeek(key, PRIMARY));
+                    assertNull(cache.localPeek(key, NEAR));
+                }
+                else {
+                    assertNull(cache.localPeek(key, ALL));
+                    assertNull(cache.localPeek(key, PRIMARY));
+                    assertNull(cache.localPeek(key, BACKUP));
+                    assertNull(cache.localPeek(key, NEAR));
+                }
+            }
+        }
+        finally {
+            if (key != null)
+                cache0.remove(key);
+        }
+    }
+
+    /**
+     * @param nodeIdx Node index.
+     * @throws Exception If failed.
+     */
+    private void checkStorage(int nodeIdx) throws Exception {
+        IgniteCache<Integer, String> cache0 = jcache(nodeIdx);
 
         List<Integer> keys = primaryKeys(cache0, 100, 10_000);
 
-        final String val = "test_value";
+        try {
+            final String val = "test_value";
 
-        for (Integer key : keys)
-            cache0.put(key, val);
+            for (Integer key : keys)
+                cache0.put(key, val);
 
-        GridTestSwapSpaceSpi swap = (GridTestSwapSpaceSpi)ignite(0).configuration().getSwapSpaceSpi();
+            GridTestSwapSpaceSpi swap = (GridTestSwapSpaceSpi)ignite(nodeIdx).configuration().getSwapSpaceSpi();
 
-        Set<Integer> swapKeys = new HashSet<>();
+            Set<Integer> swapKeys = new HashSet<>();
 
-        final String spaceName = "gg-swap-cache-dflt";
+            final String spaceName = "gg-swap-cache-dflt";
 
-        IgniteSpiCloseableIterator<Integer> it = swap.keyIterator(spaceName, null);
+            IgniteSpiCloseableIterator<Integer> it = swap.keyIterator(spaceName, null);
 
-        assertNotNull(it);
+            assertNotNull(it);
 
-        while (it.hasNext())
-            assertTrue(swapKeys.add(it.next()));
+            while (it.hasNext())
+                assertTrue(swapKeys.add(it.next()));
 
-        assertFalse(swapKeys.isEmpty());
+            assertFalse(swapKeys.isEmpty());
 
-        assertTrue(swapKeys.size() + HEAP_ENTRIES < 100);
+            assertTrue(swapKeys.size() + HEAP_ENTRIES < 100);
 
-        Set<Integer> offheapKeys = new HashSet<>();
+            Set<Integer> offheapKeys = new HashSet<>();
 
-        GridCacheAdapter<Integer, String> internalCache =
-            ((IgniteKernal)ignite(0)).context().cache().<Integer, String>internalCache();
+            GridCacheAdapter<Integer, String> internalCache =
+                ((IgniteKernal)ignite(nodeIdx)).context().cache().internalCache();
 
-        Iterator<Map.Entry<Integer, String>> offheapIt =
-            internalCache.context().near().dht().context().swap().lazyOffHeapIterator();
+            Iterator<Map.Entry<Integer, String>> offheapIt;
 
-        while (offheapIt.hasNext()) {
-            Map.Entry<Integer, String> e = offheapIt.next();
+            if (internalCache.context().isNear())
+                offheapIt = internalCache.context().near().dht().context().swap().lazyOffHeapIterator();
+            else
+                offheapIt = internalCache.context().swap().lazyOffHeapIterator();
 
-            assertTrue(offheapKeys.add(e.getKey()));
+            while (offheapIt.hasNext()) {
+                Map.Entry<Integer, String> e = offheapIt.next();
 
-            assertFalse(swapKeys.contains(e.getKey()));
+                assertTrue(offheapKeys.add(e.getKey()));
+
+                assertFalse(swapKeys.contains(e.getKey()));
+            }
+
+            assertFalse(offheapKeys.isEmpty());
+
+            Set<Integer> heapKeys = new HashSet<>(keys);
+
+            heapKeys.removeAll(offheapKeys);
+            heapKeys.removeAll(swapKeys);
+
+            assertFalse(heapKeys.isEmpty());
+
+            log.info("Keys [swap=" + swapKeys.size() +
+                ", offheap=" + offheapKeys.size() +
+                ", heap=" + heapKeys.size() + ']');
+
+            assertEquals(100, swapKeys.size() + offheapKeys.size() + heapKeys.size());
+
+            for (Integer key : swapKeys) {
+                assertEquals(val, cache0.localPeek(key, SWAP));
+
+                assertNull(cache0.localPeek(key, ONHEAP));
+                assertNull(cache0.localPeek(key, OFFHEAP));
+            }
+
+            for (Integer key : offheapKeys) {
+                assertEquals(val, cache0.localPeek(key, OFFHEAP));
+
+                assertNull(cache0.localPeek(key, ONHEAP));
+                assertNull(cache0.localPeek(key, SWAP));
+            }
+
+            for (Integer key : heapKeys) {
+                assertEquals(val, cache0.localPeek(key, ONHEAP));
+
+                assertNull(cache0.localPeek(key, SWAP));
+                assertNull(cache0.localPeek(key, OFFHEAP));
+            }
         }
-
-        assertFalse(offheapKeys.isEmpty());
-
-        Set<Integer> heapKeys = new HashSet<>(keys);
-
-        heapKeys.removeAll(offheapKeys);
-        heapKeys.removeAll(swapKeys);
-
-        assertFalse(heapKeys.isEmpty());
-
-        log.info("Keys [swap=" + swapKeys.size() +
-            ", offheap=" + offheapKeys.size() +
-            ", heap=" + heapKeys.size() + ']');
-
-        assertEquals(100, swapKeys.size() + offheapKeys.size() + heapKeys.size());
-
-        for (Integer key : swapKeys) {
-            assertEquals(val, cache0.localPeek(key, SWAP));
-
-            assertNull(cache0.localPeek(key, ONHEAP));
-            assertNull(cache0.localPeek(key, OFFHEAP));
-        }
-
-        for (Integer key : offheapKeys) {
-            assertEquals(val, cache0.localPeek(key, OFFHEAP));
-
-            assertNull(cache0.localPeek(key, ONHEAP));
-            assertNull(cache0.localPeek(key, SWAP));
-        }
-
-        for (Integer key : heapKeys) {
-            assertEquals(val, cache0.localPeek(key, ONHEAP));
-
-            assertNull(cache0.localPeek(key, SWAP));
-            assertNull(cache0.localPeek(key, OFFHEAP));
+        finally {
+            cache0.removeAll(new HashSet<>(keys));
         }
     }
 }

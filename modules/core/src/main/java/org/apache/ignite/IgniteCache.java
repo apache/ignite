@@ -234,13 +234,13 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public void localEvict(Collection<? extends K> keys);
 
     /**
-     * Peeks at in-memory cached value using default {@link org.apache.ignite.cache.GridCachePeekMode#SMART}
+     * Peeks at in-memory cached value using default {@link org.apache.ignite.internal.processors.cache.GridCachePeekMode#SMART}
      * peek mode.
      * <p>
      * This method will not load value from any persistent store or from a remote node.
      * <h2 class="header">Transactions</h2>
      * This method does not participate in any transactions, however, it will
-     * peek at transactional value according to the {@link org.apache.ignite.cache.GridCachePeekMode#SMART} mode
+     * peek at transactional value according to the {@link org.apache.ignite.internal.processors.cache.GridCachePeekMode#SMART} mode
      * semantics. If you need to look at global cached value even from within transaction,
      * you can use {@link org.apache.ignite.cache.GridCache#peek(Object, Collection)} method.
      *

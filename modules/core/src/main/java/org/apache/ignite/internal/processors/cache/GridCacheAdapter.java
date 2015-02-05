@@ -64,7 +64,7 @@ import java.util.concurrent.locks.*;
 
 import static java.util.Collections.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.cache.GridCachePeekMode.*;
+import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.GridClosureCallMode.*;
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
@@ -703,6 +703,14 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                 switch (peekMode) {
                     case ALL:
+                        near = true;
+                        primary = true;
+                        backup = true;
+
+                        heap = true;
+                        offheap = true;
+                        swap = true;
+
                         break;
 
                     case BACKUP:
@@ -760,76 +768,80 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             if (ctx.portableEnabled())
                 key = (K)ctx.marshalToPortable(key);
 
-            long topVer = ctx.affinity().affinityTopologyVersion();
+            V val = null;
 
-            int part = ctx.affinity().partition(key);
+            if (!ctx.isLocal()) {
+                long topVer = ctx.affinity().affinityTopologyVersion();
 
-            boolean nearKey;
+                int part = ctx.affinity().partition(key);
 
-            if (!(near && primary && backup)) {
-                boolean keyPrimary = ctx.affinity().primary(ctx.localNode(), part, topVer);
+                boolean nearKey;
 
-                if (keyPrimary) {
-                    if (!primary)
-                        return null;
+                if (!(near && primary && backup)) {
+                    boolean keyPrimary = ctx.affinity().primary(ctx.localNode(), part, topVer);
 
-                    nearKey = false;
-                }
-                else {
-                    boolean keyBackup = ctx.affinity().belongs(ctx.localNode(), part, topVer);
-
-                    if (keyBackup) {
-                        if (!backup)
+                    if (keyPrimary) {
+                        if (!primary)
                             return null;
 
                         nearKey = false;
                     }
                     else {
-                        if (!near)
-                            return null;
+                        boolean keyBackup = ctx.affinity().belongs(ctx.localNode(), part, topVer);
 
-                        nearKey = true;
+                        if (keyBackup) {
+                            if (!backup)
+                                return null;
 
+                            nearKey = false;
+                        }
+                        else {
+                            if (!near)
+                                return null;
+
+                            nearKey = true;
+
+                            // Swap and offheap are disabled for near cache.
+                            offheap = false;
+                            swap = false;
+                        }
+                    }
+                }
+                else {
+                    nearKey = !ctx.affinity().belongs(ctx.localNode(), part, topVer);
+
+                    if (nearKey) {
                         // Swap and offheap are disabled for near cache.
                         offheap = false;
                         swap = false;
                     }
                 }
-            }
-            else {
-                nearKey = !ctx.affinity().belongs(ctx.localNode(), part, topVer);
 
-                if (nearKey) {
-                    // Swap and offheap are disabled for near cache.
-                    offheap = false;
-                    swap = false;
+                if (nearKey && !ctx.isNear())
+                    return null;
+
+                if (heap) {
+                    GridCacheEntryEx<K, V> e = nearKey ? peekEx(key) :
+                        (ctx.isNear() ? ctx.near().dht().peekEx(key) : peekEx(key));
+
+                    if (e != null) {
+                        val = e.peek(heap, offheap, swap, topVer);
+
+                        offheap = false;
+                        swap = false;
+                    }
+                }
+
+                if (offheap || swap) {
+                    GridCacheSwapManager<K, V> swapMgr = ctx.isNear() ? ctx.near().dht().context().swap() : ctx.swap();
+
+                    GridCacheSwapEntry<V> swapEntry = swapMgr.read(key, offheap, swap);
+
+                    val = swapEntry != null ? swapEntry.value() : null;
                 }
             }
-
-            if (nearKey && !ctx.isNear())
-                return null;
-
-            V val = null;
-
-            if (heap) {
-                GridCacheEntryEx<K, V> e = nearKey ? peekEx(key) :
-                    (ctx.isNear() ? ctx.near().dht().peekEx(key) : peekEx(key));
-
-                if (e != null) {
-                    val = e.peek(heap, offheap, swap, topVer);
-
-                    offheap = false;
-                    swap = false;
-                }
-            }
-
-            if (offheap || swap) {
-                GridCacheSwapManager<K, V> swapMgr = ctx.isNear() ? ctx.near().dht().context().swap() : ctx.swap();
-
-                GridCacheSwapEntry<V> swapEntry = swapMgr.read(key, offheap, swap);
-
-                val = swapEntry != null ? swapEntry.value() : null;
-            }
+            else
+                val = localCachePeek0(key, heap, offheap, swap);
 
             if (ctx.portableEnabled())
                 val = (V)ctx.unwrapPortableIfNeeded(val, ctx.keepPortable());
@@ -842,6 +854,38 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             return null;
         }
+    }
+
+    /**
+     * @param key Key.
+     * @param heap Read heap flag.
+     * @param offheap Read offheap flag.
+     * @param swap Read swap flag.
+     * @return Value.
+     * @throws GridCacheEntryRemovedException If entry removed.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable private V localCachePeek0(K key, boolean heap, boolean offheap, boolean swap)
+        throws GridCacheEntryRemovedException, IgniteCheckedException {
+        assert ctx.isLocal();
+        assert heap || offheap || swap;
+
+        if (heap) {
+            GridCacheEntryEx<K, V> e = peekEx(key);
+
+            if (e != null)
+                return e.peek(heap, offheap, swap, -1);
+        }
+
+        if (offheap || swap) {
+            GridCacheSwapManager<K, V> swapMgr = ctx.isNear() ? ctx.near().dht().context().swap() : ctx.swap();
+
+            GridCacheSwapEntry<V> swapEntry = swapMgr.read(key, offheap, swap);
+
+            return swapEntry != null ? swapEntry.value() : null;
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */
