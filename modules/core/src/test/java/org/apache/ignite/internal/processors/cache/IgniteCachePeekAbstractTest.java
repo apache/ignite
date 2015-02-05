@@ -24,7 +24,7 @@ import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.swapspace.inmemory.*;
+import org.apache.ignite.spi.swapspace.file.*;
 
 import java.util.*;
 
@@ -43,7 +43,7 @@ public abstract class IgniteCachePeekAbstractTest extends IgniteCacheAbstractTes
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
+        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
         return cfg;
     }
@@ -215,7 +215,7 @@ public abstract class IgniteCachePeekAbstractTest extends IgniteCacheAbstractTes
             for (Integer key : keys)
                 cache0.put(key, val);
 
-            GridTestSwapSpaceSpi swap = (GridTestSwapSpaceSpi)ignite(nodeIdx).configuration().getSwapSpaceSpi();
+            FileSwapSpaceSpi swap = (FileSwapSpaceSpi)ignite(nodeIdx).configuration().getSwapSpaceSpi();
 
             Set<Integer> swapKeys = new HashSet<>();
 

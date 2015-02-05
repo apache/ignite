@@ -209,6 +209,16 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
     }
 
     /** {@inheritDoc} */
+    @Override public long size(Set<Integer> parts) {
+        int cnt = 0;
+
+        for (Integer part : parts)
+            cnt += mapFor(part).size();
+
+        return cnt;
+    }
+
+    /** {@inheritDoc} */
     @Override public long memorySize() {
         return mem.totalSize();
     }

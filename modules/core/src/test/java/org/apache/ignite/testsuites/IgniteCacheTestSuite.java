@@ -374,6 +374,13 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxLocalPeekTest.class);
         suite.addTestSuite(IgniteCacheTxReplicatedPeekTest.class);
 
+        suite.addTestSuite(IgniteCacheAtomicSizeTest.class);
+        suite.addTestSuite(IgniteCacheAtomicReplicatedSizeTest.class);
+        suite.addTestSuite(IgniteCacheAtomicLocalSizeTest.class);
+        suite.addTestSuite(IgniteCacheTxSizeTest.class);
+        suite.addTestSuite(IgniteCacheTxReplicatedSizeTest.class);
+        suite.addTestSuite(IgniteCacheTxLocalSizeTest.class);
+
         // TODO: IGNITE-114.
         // suite.addTestSuite(IgniteCacheInvokeReadThroughTest.class);
 

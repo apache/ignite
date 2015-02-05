@@ -4079,16 +4079,163 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public int localSize(CachePeekMode... peekModes) throws IgniteCheckedException {
-        boolean primary;
-        boolean backup;
-        boolean near;
+    @Override public int size(CachePeekMode[] peekModes) throws IgniteCheckedException {
+        if (isLocal())
+            return localSize(peekModes);
 
-        boolean heap;
-        boolean offheap;
-        boolean swap;
+        return sizeAsync(peekModes).get();
+    }
 
-        return 0;
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Integer> sizeAsync(CachePeekMode[] peekModes) {
+        assert peekModes != null;
+
+        Collection<ClusterNode> nodes = ctx.grid().forDataNodes(name()).nodes();
+
+        if (nodes.isEmpty())
+            return new GridFinishedFuture<>(ctx.kernalContext(), 0);
+
+        IgniteInternalFuture<Collection<Integer>> fut =
+            ctx.closures().broadcastNoFailover(new SizeCallable(ctx.name(), peekModes), null, nodes);
+
+        return fut.chain(new CX1<IgniteInternalFuture<Collection<Integer>>, Integer>() {
+            @Override public Integer applyx(IgniteInternalFuture<Collection<Integer>> fut) throws IgniteCheckedException {
+                Collection<Integer> res = fut.get();
+
+                int totalSize = 0;
+
+                for (Integer size : res)
+                    totalSize += size;
+
+                return totalSize;
+            }
+        });
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    @Override public int localSize(CachePeekMode[] peekModes) throws IgniteCheckedException {
+        assert peekModes != null;
+
+        boolean near = false;
+        boolean primary = false;
+        boolean backup = false;
+
+        boolean heap = false;
+        boolean offheap = false;
+        boolean swap = false;
+
+        if (peekModes.length == 0) {
+            near = true;
+            primary = true;
+            backup = true;
+
+            heap = true;
+            offheap = true;
+            swap = true;
+        }
+        else {
+            for (int i = 0; i < peekModes.length; i++) {
+                CachePeekMode peekMode = peekModes[i];
+
+                A.notNull(peekMode, "peekMode");
+
+                switch (peekMode) {
+                    case ALL:
+                        near = true;
+                        primary = true;
+                        backup = true;
+
+                        heap = true;
+                        offheap = true;
+                        swap = true;
+
+                        break;
+
+                    case BACKUP:
+                        backup = true;
+
+                        break;
+
+                    case PRIMARY:
+                        primary = true;
+
+                        break;
+
+                    case NEAR:
+                        near = true;
+
+                        break;
+
+                    case ONHEAP:
+                        heap = true;
+
+                        break;
+
+                    case OFFHEAP:
+                        offheap = true;
+
+                        break;
+
+                    case SWAP:
+                        swap = true;
+
+                        break;
+
+                    default:
+                        assert false : peekMode;
+                }
+            }
+        }
+
+        if (!(heap || offheap || swap)) {
+            heap = true;
+            offheap = true;
+            swap = true;
+        }
+
+        if (!(primary || backup || near)) {
+            primary = true;
+            backup = true;
+            near = true;
+        }
+
+        assert heap || offheap || swap;
+        assert primary || backup || near;
+
+        int size = 0;
+
+        if (heap) {
+            if (near)
+                size += nearSize();
+
+            GridCacheAdapter cache = ctx.isNear() ? ctx.near().dht() : ctx.cache();
+
+            if (!(primary && backup)) {
+                if (primary)
+                    size += cache.primarySize();
+
+                if (backup)
+                    size += (cache.size() - cache.primarySize());
+            }
+            else
+                size += cache.size();
+        }
+
+        // Swap and offheap are disabled for near cache.
+        if (primary || backup) {
+            long topVer = ctx.affinity().affinityTopologyVersion();
+
+            GridCacheSwapManager<K, V> swapMgr = ctx.isNear() ? ctx.near().dht().context().swap() : ctx.swap();
+
+            if (swap)
+                size += swapMgr.swapEntriesCount(primary, backup, topVer);
+
+            if (offheap)
+                size += swapMgr.offheapEntriesCount(primary, backup, topVer);
+        }
+
+        return size;
     }
 
     /** {@inheritDoc} */
@@ -5460,7 +5607,79 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /**
-     * Internal callable which performs {@link org.apache.ignite.cache.CacheProjection#size()} or {@link org.apache.ignite.cache.CacheProjection#primarySize()}
+     * Internal callable for global size calculation.
+     */
+    @GridInternal
+    private static class SizeCallable extends IgniteClosureX<Object, Integer> implements Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Cache name. */
+        private String cacheName;
+
+        /** Peek modes. */
+        private CachePeekMode[] peekModes;
+
+        /** Injected grid instance. */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public SizeCallable() {
+            // No-op.
+        }
+
+        /**
+         * @param cacheName Cache name.
+         * @param peekModes Cache peek modes.
+         */
+        private SizeCallable(String cacheName, CachePeekMode[] peekModes) {
+            this.cacheName = cacheName;
+            this.peekModes = peekModes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer applyx(Object o) throws IgniteCheckedException {
+            GridCache<Object, Object> cache = ((IgniteEx)ignite).cachex(cacheName);
+
+            assert cache != null : cacheName;
+
+            return cache.localSize(peekModes);
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("ForLoopReplaceableByForEach")
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeString(out, cacheName);
+
+            out.writeInt(peekModes.length);
+
+            for (int i = 0; i < peekModes.length; i++)
+                U.writeEnum(out, peekModes[i]);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            cacheName = U.readString(in);
+
+            int len = in.readInt();
+
+            peekModes = new CachePeekMode[len];
+
+            for (int i = 0; i < len; i++)
+                peekModes[i] = CachePeekMode.fromOrdinal(in.readByte());
+        }
+
+        /** {@inheritDoc} */
+        public String toString() {
+            return S.toString(SizeCallable.class, this);
+        }
+    }
+
+    /**
+     * Internal callable which performs {@link CacheProjection#size()} or {@link CacheProjection#primarySize()}
      * operation on a cache with the given name.
      */
     @GridInternal

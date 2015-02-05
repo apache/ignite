@@ -585,6 +585,21 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public int localSize(CachePeekMode[] peekModes) throws IgniteCheckedException {
+        return cache.localSize(peekModes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size(CachePeekMode[] peekModes) throws IgniteCheckedException {
+        return cache.size(peekModes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Integer> sizeAsync(CachePeekMode[] peekModes) {
+        return cache.sizeAsync(peekModes);
+    }
+
+    /** {@inheritDoc} */
     @Override public int globalSize() throws IgniteCheckedException {
         return cache.globalSize();
     }

@@ -171,6 +171,52 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /**
+     * @param primary If {@code true} includes primary entries.
+     * @param backup If {@code true} includes backup entries.
+     * @param topVer Topology version.
+     * @return Number of swap entries.
+     * @throws IgniteCheckedException If failed.
+     */
+    public int swapEntriesCount(boolean primary, boolean backup, long topVer) throws IgniteCheckedException {
+        assert primary || backup;
+
+        if (!swapEnabled)
+            return 0;
+
+        if (!(primary && backup)) {
+            Set<Integer> parts = primary ? cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer) :
+                cctx.affinity().backupPartitions(cctx.localNodeId(), topVer);
+
+            return (int)swapMgr.swapKeys(spaceName, parts);
+        }
+        else
+            return (int)swapMgr.swapKeys(spaceName);
+    }
+
+    /**
+     * @param primary If {@code true} includes primary entries.
+     * @param backup If {@code true} includes backup entries.
+     * @param topVer Topology version.
+     * @return Number of offheap entries.
+     * @throws IgniteCheckedException If failed.
+     */
+    public int offheapEntriesCount(boolean primary, boolean backup, long topVer) throws IgniteCheckedException {
+        assert primary || backup;
+
+        if (!offheapEnabled)
+            return 0;
+
+        if (!(primary && backup)) {
+            Set<Integer> parts = primary ? cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer) :
+                cctx.affinity().backupPartitions(cctx.localNodeId(), topVer);
+
+            return (int)offheap.entriesCount(spaceName, parts);
+        }
+        else
+            return (int)offheap.entriesCount(spaceName);
+    }
+
+    /**
      * Gets number of swap entries (keys).
      *
      * @return Swap keys count.

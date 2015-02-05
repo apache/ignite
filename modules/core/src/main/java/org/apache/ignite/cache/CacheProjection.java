@@ -1865,7 +1865,20 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @return Local cache size.
      * @throws IgniteCheckedException If failed.
      */
-    public int localSize(CachePeekMode... peekModes) throws IgniteCheckedException;
+    public int localSize(CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
+     * @param peekModes Peek modes.
+     * @return Global cache size.
+     * @throws IgniteCheckedException If failed.
+     */
+    public int size(CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
+     * @param peekModes Peek modes.
+     * @return Future.
+     */
+    public IgniteInternalFuture<Integer> sizeAsync(CachePeekMode[] peekModes);
 
     /**
      * Gets the number of all entries cached across all nodes.
