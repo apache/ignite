@@ -77,7 +77,7 @@ public class GridHadoopSetup {
 
         println("IGNITE_HOME is set to '" + igniteHome + "'.");
 
-        checkGridGainHome(igniteHome);
+        checkIgniteHome(igniteHome);
 
         String homeVar = "HADOOP_HOME";
         String hadoopHome = System.getenv(homeVar);
@@ -292,7 +292,7 @@ public class GridHadoopSetup {
      *
      * @param ggHome Ignite home.
      */
-    private static void checkGridGainHome(String ggHome) {
+    private static void checkIgniteHome(String ggHome) {
         URL jarUrl = U.class.getProtectionDomain().getCodeSource().getLocation();
 
         try {

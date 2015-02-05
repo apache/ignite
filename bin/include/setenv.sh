@@ -26,9 +26,9 @@
 # Check IGNITE_HOME.
 #
 if [ "${IGNITE_HOME}" = "" ]; then
-    echo $0", ERROR: GridGain installation folder is not found."
+    echo $0", ERROR: Ignite installation folder is not found."
     echo "Please create IGNITE_HOME variable pointing to location of"
-    echo "GridGain installation folder."
+    echo "Ignite installation folder."
 
     exit 1
 fi
@@ -60,7 +60,7 @@ do
         IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/*
     fi
 
-    if [ -d ${file} ] && [ "${file}" == "${IGNITE_HOME}"/libs/gridgain-hadoop ]; then
+    if [ -d ${file} ] && [ "${file}" == "${IGNITE_HOME}"/libs/ignite-hadoop ]; then
         HADOOP_EDITION=1
     fi
 done

@@ -91,8 +91,8 @@ setIgniteHome() {
     #
     if [ ! -d "${IGNITE_HOME}/config" ]; then
         echo $0", ERROR:"
-        echo "GridGain installation folder is not found or IGNITE_HOME environment variable is not valid."
-        echo "Please create IGNITE_HOME environment variable pointing to location of GridGain installation folder."
+        echo "Ignite installation folder is not found or IGNITE_HOME environment variable is not valid."
+        echo "Please create IGNITE_HOME environment variable pointing to location of Ignite installation folder."
 
         exit 1
     fi

@@ -17,7 +17,7 @@
 ####################################################################
 #            Ignite Hadoop service start/stop script.
 # Supposed to be called from unix `init.d` script. Environment must
-# be set via the call of /etc/default/{hadoop,gridgain-hadoop}
+# be set via the call of /etc/default/{hadoop,ignite-hadoop}
 ####################################################################
 
 # Stop script on error.
