@@ -1952,7 +1952,7 @@ public class GridCacheConcurrentMap<K, V> {
 
         /** {@inheritDoc} */
         @Override public void clear() {
-            ctx.cache().clearAll0(new KeySet<>(map, filter), CU.<K, V>empty());
+            ctx.cache().clearLocally0(new KeySet<>(map, filter), CU.<K, V>empty());
         }
 
         /** {@inheritDoc} */

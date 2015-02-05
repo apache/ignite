@@ -175,7 +175,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).cache(null).clearAll();
+        grid(0).cache(null).clear();
     }
 
     /** Resets event counters. */

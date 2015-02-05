@@ -51,7 +51,7 @@ public class CacheContinuousQueryExample {
             GridCache<Integer, String> cache = ignite.cache(CACHE_NAME);
 
             // Clean up caches on all nodes before run.
-            cache.globalClearAll(0);
+            cache.clear(0);
 
             int keyCnt = 20;
 

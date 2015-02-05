@@ -51,7 +51,7 @@ object ScalarCacheAffinitySimpleExample extends App {
      */
     scalar("examples/config/example-cache.xml") {
         // Clean up caches on all nodes before run.
-        cache$(NAME).get.globalClearAll(0)
+        cache$(NAME).get.clear(0)
 
         val c = ignite$.cache[Int, String](NAME)
 
