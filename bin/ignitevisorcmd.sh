@@ -37,7 +37,7 @@ checkJava
 #
 # Discover IGNITE_HOME environment variable.
 #
-setGridGainHome
+setIgniteHome
 
 #
 # Parse command line parameters.

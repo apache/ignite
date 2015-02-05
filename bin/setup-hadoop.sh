@@ -47,7 +47,7 @@ source "${SCRIPTS_HOME}"/include/functions.sh
 #
 # Discover IGNITE_HOME environment variable.
 #
-setGridGainHome
+setIgniteHome
 
 #
 # Set utility environment.
