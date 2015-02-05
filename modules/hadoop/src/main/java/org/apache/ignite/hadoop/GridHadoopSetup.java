@@ -73,11 +73,11 @@ public class GridHadoopSetup {
      * </ul>
      */
     private static void configureHadoop() {
-        String gridgainHome = U.getIgniteHome();
+        String igniteHome = U.getIgniteHome();
 
-        println("IGNITE_HOME is set to '" + gridgainHome + "'.");
+        println("IGNITE_HOME is set to '" + igniteHome + "'.");
 
-        checkGridGainHome(gridgainHome);
+        checkGridGainHome(igniteHome);
 
         String homeVar = "HADOOP_HOME";
         String hadoopHome = System.getenv(homeVar);
@@ -171,15 +171,15 @@ public class GridHadoopSetup {
             processCmdFiles(hadoopDir, "bin", "sbin", "libexec");
         }
 
-        File gridgainLibs = new File(new File(gridgainHome), "libs");
+        File igniteLibs = new File(new File(igniteHome), "libs");
 
-        if (!gridgainLibs.exists())
+        if (!igniteLibs.exists())
             exit("Ignite 'libs' folder is not found.", null);
 
         Collection<File> jarFiles = new ArrayList<>();
 
-        addJarsInFolder(jarFiles, gridgainLibs);
-        addJarsInFolder(jarFiles, new File(gridgainLibs, "gridgain-hadoop"));
+        addJarsInFolder(jarFiles, igniteLibs);
+        addJarsInFolder(jarFiles, new File(igniteLibs, "gridgain-hadoop"));
 
         boolean jarsLinksCorrect = true;
 
@@ -195,11 +195,11 @@ public class GridHadoopSetup {
         if (!jarsLinksCorrect) {
             if (ask("Ignite JAR files are not found in Hadoop 'lib' directory. " +
                 "Create appropriate symbolic links?")) {
-                File[] oldGridGainJarFiles = hadoopCommonLibDir.listFiles(IGNITE_JARS);
+                File[] oldIgniteJarFiles = hadoopCommonLibDir.listFiles(IGNITE_JARS);
 
-                if (oldGridGainJarFiles.length > 0 && ask("The Hadoop 'lib' directory contains JARs from other Ignite " +
+                if (oldIgniteJarFiles.length > 0 && ask("The Hadoop 'lib' directory contains JARs from other Ignite " +
                     "installation. They must be deleted to continue. Continue?")) {
-                    for (File file : oldGridGainJarFiles) {
+                    for (File file : oldIgniteJarFiles) {
                         println("Deleting file '" + file.getAbsolutePath() + "'.");
 
                         if (!file.delete())
@@ -232,17 +232,17 @@ public class GridHadoopSetup {
 
         File hadoopEtc = new File(hadoopDir, "etc" + File.separator + "hadoop");
 
-        File gridgainDocs = new File(gridgainHome, "docs");
+        File igniteDocs = new File(igniteHome, "docs");
 
-        if (!gridgainDocs.canRead())
-            exit("Failed to read Ignite 'docs' folder at '" + gridgainDocs.getAbsolutePath() + "'.", null);
+        if (!igniteDocs.canRead())
+            exit("Failed to read Ignite 'docs' folder at '" + igniteDocs.getAbsolutePath() + "'.", null);
 
         if (hadoopEtc.canWrite()) { // TODO Bigtop
             if (ask("Replace 'core-site.xml' and 'mapred-site.xml' files with preconfigured templates " +
                 "(existing files will be backed up)?")) {
-                replaceWithBackup(new File(gridgainDocs, "core-site.ignite.xml"), new File(hadoopEtc, "core-site.xml"));
+                replaceWithBackup(new File(igniteDocs, "core-site.ignite.xml"), new File(hadoopEtc, "core-site.xml"));
 
-                replaceWithBackup(new File(gridgainDocs, "mapred-site.ignite.xml"), new File(hadoopEtc, "mapred-site.xml"));
+                replaceWithBackup(new File(igniteDocs, "mapred-site.ignite.xml"), new File(hadoopEtc, "mapred-site.xml"));
             }
             else
                 println("Ok. You can configure them later, the templates are available at Ignite's 'docs' directory...");
@@ -255,7 +255,7 @@ public class GridHadoopSetup {
                 warn("Can not write to '" + hiveConfDir.getAbsolutePath() + "'. To run Hive queries you have to " +
                     "configure 'hive-site.xml' manually. The template is available at Ignite's 'docs' directory.");
             else if (ask("Replace 'hive-site.xml' with preconfigured template (existing file will be backed up)?"))
-                replaceWithBackup(new File(gridgainDocs, "hive-site.ignite.xml"), new File(hiveConfDir, "hive-site.xml"));
+                replaceWithBackup(new File(igniteDocs, "hive-site.ignite.xml"), new File(hiveConfDir, "hive-site.xml"));
             else
                 println("Ok. You can configure it later, the template is available at Ignite's 'docs' directory...");
         }

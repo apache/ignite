@@ -26,7 +26,7 @@
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
-    <description>Gridgain Spring configuration file in gar-file.</description>
+    <description>Ignite Spring configuration file in gar-file.</description>
 
     <!--
         Optional test tasks specification. If not provided, then all

@@ -139,7 +139,7 @@ public class IgniteNode implements BenchmarkServer {
             if (url == null)
                 throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
                     ". Note that this path should be either absolute or a relative local file system path, " +
-                    "relative to META-INF in classpath or valid URL to GRIDGAIN_HOME.", e);
+                    "relative to META-INF in classpath or valid URL to IGNITE_HOME.", e);
         }
 
         GenericApplicationContext springCtx;

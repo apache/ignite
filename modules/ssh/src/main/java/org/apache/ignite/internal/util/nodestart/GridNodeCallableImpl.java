@@ -139,7 +139,7 @@ public class GridNodeCallableImpl implements GridNodeCallable {
             if (win) {
                 String logDir = ggHome + '\\' + LOG_DIR_WIN;
                 String tmpDir = env(ses, "%TMP%", logDir);
-                String scriptOutputDir = tmpDir + "\\gridgain-startNodes";
+                String scriptOutputDir = tmpDir + "\\ignite-startNodes";
 
                 shell(ses, "mkdir " + logDir);
                 shell(ses, "mkdir " + scriptOutputDir);
@@ -158,7 +158,7 @@ public class GridNodeCallableImpl implements GridNodeCallable {
                     a(" ").a(svcName).
                     a(" \"").a(ggHome).a('\\').a(script).
                     a(" ").a(cfg).a("\"").
-                    a(" \"").a(logDir).a("\\gridgain.").a(id).
+                    a(" \"").a(logDir).a("\\ignite.").a(id).
                     a(".log\" > ").a(scriptOutputDir).a("\\").a(scriptOutputFileName).
                     toString();
             }
@@ -169,7 +169,7 @@ public class GridNodeCallableImpl implements GridNodeCallable {
                 String scriptArgs = spaceIdx > -1 ? script.substring(spaceIdx + 1) : "";
                 String rmtLogArgs = buildRemoteLogArguments(spec.username(), spec.host());
                 String tmpDir = env(ses, "$TMPDIR", "/tmp/");
-                String scriptOutputDir = tmpDir + "gridgain-startNodes";
+                String scriptOutputDir = tmpDir + "ignite-startNodes";
 
                 shell(ses, "mkdir " + scriptOutputDir);
 
