@@ -18,27 +18,22 @@
 package org.apache.ignite.internal.processors.cache.datastructures.local;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Queue tests with local cache.
  */
 public class GridCacheLocalQueueApiSelfTest extends GridCacheQueueApiSelfAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
+    @Override protected CacheMode collectionCacheMode() {
+        return LOCAL;
+    }
 
-        // Default cache configuration.
-        CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
-
-        dfltCacheCfg.setCacheMode(LOCAL);
-        dfltCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setCacheConfiguration(dfltCacheCfg);
-
-        return cfg;
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
+        return TRANSACTIONAL;
     }
 }

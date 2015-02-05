@@ -21,19 +21,13 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Set failover tests.
  */
 public class GridCachePartitionedAtomicSetFailoverSelfTest extends GridCacheSetFailoverAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
+    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return ATOMIC;
     }
 }

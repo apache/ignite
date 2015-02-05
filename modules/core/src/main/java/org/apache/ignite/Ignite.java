@@ -293,6 +293,107 @@ public interface Ignite extends AutoCloseable {
     public Collection<IgniteStreamer> streamers();
 
     /**
+     * Will get an atomic sequence from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Sequence name.
+     * @param initVal Initial value for sequence. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Sequence for the given name.
+     * @throws IgniteException If sequence could not be fetched or created.
+     */
+    @Nullable public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)
+        throws IgniteException;
+
+    /**
+     * Will get a atomic long from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Name of atomic long.
+     * @param initVal Initial value for atomic long. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic long.
+     * @throws IgniteException If atomic long could not be fetched or created.
+     */
+    @Nullable public IgniteAtomicLong atomicLong(String name, long initVal, boolean create)
+        throws IgniteException;
+
+    /**
+     * Will get a atomic reference from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Atomic reference name.
+     * @param initVal Initial value for atomic reference. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic reference for the given name.
+     * @throws IgniteException If atomic reference could not be fetched or created.
+     */
+    @Nullable public <T> IgniteAtomicReference<T> atomicReference(String name, @Nullable T initVal, boolean create)
+        throws IgniteException;
+
+    /**
+     * Will get a atomic stamped from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Atomic stamped name.
+     * @param initVal Initial value for atomic stamped. Ignored if {@code create} flag is {@code false}.
+     * @param initStamp Initial stamp for atomic stamped. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic stamped for the given name.
+     * @throws IgniteException If atomic stamped could not be fetched or created.
+     */
+    @Nullable public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, @Nullable T initVal,
+        @Nullable S initStamp, boolean create) throws IgniteException;
+
+    /**
+     * Gets or creates count down latch. If count down latch is not found in cache and {@code create} flag
+     * is {@code true}, it is created using provided name and count parameter.
+     *
+     * @param name Name of the latch.
+     * @param cnt Count for new latch creation. Ignored if {@code create} flag is {@code false}.
+     * @param autoDel {@code True} to automatically delete latch from cache when its count reaches zero.
+     *        Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Count down latch for the given name.
+     * @throws IgniteException If latch could not be fetched or created.
+     */
+    @Nullable public IgniteCountDownLatch countDownLatch(String name, int cnt, boolean autoDel, boolean create)
+        throws IgniteException;
+
+    /**
+     * Will get a named queue from cache and create one if it has not been created yet and {@code cfg} is not
+     * {@code null}.
+     * If queue is present already, queue properties will not be changed. Use
+     * collocation for {@link CacheMode#PARTITIONED} caches if you have lots of relatively
+     * small queues as it will make fetching, querying, and iteration a lot faster. If you have
+     * few very large queues, then you should consider turning off collocation as they simply
+     * may not fit in a single node's memory.
+     *
+     * @param name Name of queue.
+     * @param cap Capacity of queue, {@code 0} for unbounded queue. Ignored if {@code cfg} is {@code null}.
+     * @param cfg Queue configuration if new queue should be created.
+     * @return Queue with given properties.
+     * @throws IgniteException If queue could not be fetched or created.
+     */
+    @Nullable public <T> IgniteQueue<T> queue(String name,
+        int cap,
+        @Nullable IgniteCollectionConfiguration cfg)
+        throws IgniteException;
+
+    /**
+     * Will get a named set from cache and create one if it has not been created yet and {@code cfg} is not
+     * {@code null}.
+     *
+     * @param name Set name.
+     * @param cfg Set configuration if new set should be created.
+     * @return Set with given properties.
+     * @throws IgniteException If set could not be fetched or created.
+     */
+    @Nullable public <T> IgniteSet<T> set(String name,
+        @Nullable IgniteCollectionConfiguration cfg)
+        throws IgniteException;
+
+    /**
      * Gets an instance of deployed Ignite plugin.
      *
      * @param name Plugin name.

@@ -26,7 +26,7 @@ import java.io.*;
  */
 public class TestObject implements Serializable {
     /** ID. */
-    @CacheQuerySqlField(unique = true)
+    @CacheQuerySqlField
     private int id;
 
     /** Text. */

@@ -18,56 +18,26 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
 
 /**
  * Queue basic tests.
  */
-public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstractTest {
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
+public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollectionAbstractTest {
     /** */
     private static final int QUEUE_CAPACITY = 3;
 
     /** */
     private static final int THREAD_NUM = 2;
 
-    /** */
-    private static AtomicInteger cntr = new AtomicInteger();
-
-    /**
-     * Default constructor.
-     *
-     */
-    protected GridCacheQueueApiSelfAbstractTest() {
-        super(true /** Start grid. */);
-    }
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
-
-        cfg.setLocalHost("127.0.0.1");
-
-        return cfg;
+    @Override protected int gridCount() {
+        return 1;
     }
 
     /**
@@ -80,9 +50,11 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         String queueName1 = UUID.randomUUID().toString();
         String queueName2 = UUID.randomUUID().toString();
 
-        CacheQueue queue1 = grid().cache(null).dataStructures().queue(queueName1, 0, false, true);
-        CacheQueue queue2 = grid().cache(null).dataStructures().queue(queueName2, 0, false, true);
-        CacheQueue queue3 = grid().cache(null).dataStructures().queue(queueName1, 0, false, true);
+        IgniteCollectionConfiguration colCfg = config(false);
+
+        IgniteQueue queue1 = grid(0).queue(queueName1, 0, colCfg);
+        IgniteQueue queue2 = grid(0).queue(queueName2, 0, colCfg);
+        IgniteQueue queue3 = grid(0).queue(queueName1, 0, colCfg);
 
         assertNotNull(queue1);
         assertNotNull(queue2);
@@ -91,10 +63,12 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         assert queue3.equals(queue1);
         assert !queue3.equals(queue2);
 
-        assert grid().cache(null).dataStructures().removeQueue(queueName1);
-        assert grid().cache(null).dataStructures().removeQueue(queueName2);
-        assert !grid().cache(null).dataStructures().removeQueue(queueName1);
-        assert !grid().cache(null).dataStructures().removeQueue(queueName2);
+        queue1.close();
+        queue2.close();
+        queue3.close();
+
+        assertNull(grid(0).queue(queueName1, 0, null));
+        assertNull(grid(0).queue(queueName2, 0, null));
     }
 
     /**
@@ -108,7 +82,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
 
         String val = UUID.randomUUID().toString();
 
-        CacheQueue<String> queue = grid().cache(null).dataStructures().queue(queueName, 0, false, true);
+        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
 
         assert queue.add(val);
 
@@ -126,7 +100,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
 
         String val = UUID.randomUUID().toString();
 
-        CacheQueue<String> queue = grid().cache(null).dataStructures().queue(queueName, 0, false, true);
+        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
 
         assert queue.add(val);
 
@@ -144,8 +118,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        // TODO was LIFO
-        CacheQueue<SameHashItem> queue = grid().cache(null).dataStructures().queue(queueName, 0, false, true);
+        IgniteQueue<SameHashItem> queue = grid(0).queue(queueName, 0, config(false));
 
         int retries = 100;
 
@@ -221,7 +194,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        CacheQueue<String> queue = grid().cache(null).dataStructures().queue(queueName, 0, false, true);
+        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
 
         assert queue.add("1");
 
@@ -243,7 +216,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        CacheQueue<String> queue = grid().cache(null).dataStructures().queue(queueName, 0, true, true);
+        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
 
         String item1 = "1";
         assert queue.add(item1);
@@ -268,7 +241,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        CacheQueue<String> queue = grid().cache(null).dataStructures().queue(queueName, 0, false, true);
+        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
 
         for (int i = 0; i < 100; i++)
             assert queue.add(Integer.toString(i));
@@ -324,8 +297,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        CacheQueue<String> queue = grid().cache(null).dataStructures()
-            .queue(queueName, QUEUE_CAPACITY, false, true);
+        IgniteQueue<String> queue = grid(0).queue(queueName, QUEUE_CAPACITY, config(false));
 
         String thName = Thread.currentThread().getName();
 
@@ -347,11 +319,10 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        final CacheQueue<String> queue = grid().cache(null).dataStructures()
-            .queue(queueName, QUEUE_CAPACITY, false, true);
+        final IgniteQueue<String> queue = grid(0).queue(queueName, QUEUE_CAPACITY, config(false));
 
-        multithreaded(new Callable<String>() {
-                @Override public String call() throws Exception {
+        multithreaded(new Callable<Void>() {
+                @Override public Void call() throws Exception {
                     String thName = Thread.currentThread().getName();
 
                     for (int i = 0; i < 5; i++) {
@@ -360,7 +331,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
                         queue.take();
                     }
 
-                    return "";
+                    return null;
                 }
             }, THREAD_NUM);
 
@@ -376,8 +347,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        final CacheQueue<String> queue = grid().cache(null).dataStructures()
-            .queue(queueName, QUEUE_CAPACITY, false, true);
+        final IgniteQueue<String> queue = grid(0).queue(queueName, QUEUE_CAPACITY, config(false));
 
         multithreaded(new Callable<String>() {
                 @Override public String call() throws Exception {
@@ -404,10 +374,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         // Random queue name.
         final String queueName = UUID.randomUUID().toString();
 
-        final AtomicInteger rmvNum = new AtomicInteger(0);
-
-        final CacheQueue<String> queue = grid().cache(null).dataStructures()
-            .queue(queueName, QUEUE_CAPACITY, false, true);
+        final IgniteQueue<String> queue = grid(0).queue(queueName, QUEUE_CAPACITY, config(false));
 
         final CountDownLatch putLatch = new CountDownLatch(THREAD_NUM);
 
@@ -446,17 +413,13 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
             Thread th = new Thread(new Runnable() {
                 @Override public void run() {
                     try {
-                        if (grid().cache(null).dataStructures().removeQueue(queueName, 0)) {
-                            rmvNum.incrementAndGet();
+                        IgniteQueue<String> queue = grid(0).queue(queueName, 0, null);
 
-                            if (log.isDebugEnabled())
-                                log.debug("Queue removed [queue " + queue + ']');
-                        }
+                        if (queue != null)
+                            queue.close();
                     }
-                    catch (IgniteCheckedException e) {
-                        info("Caught expected exception: " + e.getMessage());
-
-                        assert queue.removed();
+                    catch (Exception e) {
+                        fail("Unexpected exception: " + e);
                     }
                     finally {
                         clearLatch.countDown();
@@ -470,96 +433,6 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
 
         assert clearLatch.await(3, TimeUnit.MINUTES);
 
-        assert rmvNum.get() == 1 : "Expected 1 but was " + rmvNum.get();
-
-        try {
-            assert queue.isEmpty() : queue.size();
-            fail("Queue must be removed.");
-        }
-        catch (IgniteException e) {
-            assert e.getMessage().contains("removed");
-
-            assert queue.removed();
-        }
-    }
-
-    /**
-     * JUnit.
-     *
-     * @throws Exception If failed.
-     */
-    public void testQueueRemoveMultithreadUnbounded() throws Exception {
-        // Random queue name.
-        final String queueName = UUID.randomUUID().toString();
-
-        final AtomicInteger rmvNum = new AtomicInteger(0);
-
-        final CacheQueue<String> queue = grid().cache(null).dataStructures()
-            .queue(queueName, QUEUE_CAPACITY, false, true);
-
-        final CountDownLatch takeLatch = new CountDownLatch(THREAD_NUM);
-
-        final CountDownLatch clearLatch = new CountDownLatch(THREAD_NUM);
-
-        for (int t = 0; t < THREAD_NUM; t++) {
-            Thread th = new Thread(new Runnable() {
-                @Override public void run() {
-                    if (log.isDebugEnabled())
-                        log.debug("Thread has been started." + Thread.currentThread().getName());
-
-                    try {
-                        // Thread must be blocked on take operation.
-                        for (int i = 0; i < (QUEUE_CAPACITY * THREAD_NUM); i++) {
-                            queue.poll(3, TimeUnit.MINUTES);
-
-                            fail("Queue failed");
-                        }
-                    }
-                    catch (IgniteException e) {
-                        takeLatch.countDown();
-
-                        assert e.getMessage().contains("removed");
-
-                        assert queue.removed();
-
-                        if (log.isDebugEnabled())
-                            log.debug("Thread has been stopped." + Thread.currentThread().getName());
-                    }
-                }
-            });
-            th.start();
-        }
-
-        for (int t = 0; t < THREAD_NUM; t++) {
-            Thread th = new Thread(new Runnable() {
-                @Override public void run() {
-                    try {
-                        if (grid().cache(null).dataStructures().removeQueue(queueName, 0)) {
-                            rmvNum.incrementAndGet();
-
-                            if (log.isDebugEnabled())
-                                log.debug("Queue has been removed." + queue);
-                        }
-                    }
-                    catch (IgniteCheckedException e) {
-                        info("Caught expected exception: " + e.getMessage());
-
-                        assert queue.removed();
-                    }
-                    finally {
-                        clearLatch.countDown();
-                    }
-                }
-            });
-            th.start();
-        }
-
-        assert takeLatch.await(3, TimeUnit.MINUTES);
-
-        assert clearLatch.await(3, TimeUnit.MINUTES);
-
-        assert rmvNum.get() == 1 : "Expected 1 but was " + rmvNum.get();
-
         try {
             assert queue.isEmpty() : queue.size();
 
@@ -569,40 +442,6 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
             assert e.getMessage().contains("removed");
 
             assert queue.removed();
-        }
-    }
-
-    /**
-     * JUnit.
-     *
-     * @throws Exception If failed.
-     */
-    public void testPutRemoveAll() throws Exception {
-        final Collection<Integer> keys = new LinkedList<>();
-
-        for (int j = 0; j < QUEUE_CAPACITY; j++) {
-            for (int i = 0; i < QUEUE_CAPACITY; i++) {
-                int key = cntr.getAndIncrement();
-
-                keys.add(key);
-
-                grid().cache(null).put(key, "123");
-            }
-
-            multithreaded(
-                new Callable<String>() {
-                    @Override public String call() throws Exception {
-                        info("Removing all keys: " + keys);
-
-                        grid().cache(null).removeAll(keys);
-
-                        info("Thread finished for keys: " + keys);
-
-                        return "";
-                    }
-                },
-                THREAD_NUM
-            );
         }
     }
 
@@ -615,8 +454,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        CacheQueue<String> queue = grid().cache(null).dataStructures()
-            .queue(queueName, 0, false, true);
+        IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
 
         String thread = Thread.currentThread().getName();
 
@@ -641,8 +479,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        final CacheQueue<String> queue = grid().cache(null).dataStructures()
-            .queue(queueName, 0, false, true);
+        final IgniteQueue<String> queue = grid(0).queue(queueName, 0, config(false));
 
         multithreaded(
             new Callable<String>() {
@@ -688,23 +525,26 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
             return s;
         }
 
+        /** {@inheritDoc} */
         @Override public int hashCode() {
             return 0;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            {
-                if (this == o)
-                    return true;
-                if (o instanceof SameHashItem) {
-                    SameHashItem i = (SameHashItem)o;
-                    return s.equals(i.s);
-                }
+            if (this == o)
+                return true;
 
-                return false;
+            if (o instanceof SameHashItem) {
+                SameHashItem i = (SameHashItem)o;
+
+                return s.equals(i.s);
             }
+
+            return false;
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(SameHashItem.class, this);
         }
