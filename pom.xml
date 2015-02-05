@@ -1163,6 +1163,51 @@
                             </execution>
 
                             <execution>
+                                <id>optimized-classnames-generation</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>process-resources</phase>
+                                <configuration>
+                                    <target>
+                                        <property name="plugin_classpath" refid="maven.plugin.classpath"/>
+
+                                        <echo message="compile classpath: ${plugin_classpath}"/>
+                                        <java
+                                                classname="org.apache.ignite.tools.marshaller.optimized.OptimizedClassNamesGenerator"
+                                                fork="true"
+                                                failonerror="true"
+                                                maxmemory="1g">
+                                            <classpath>
+                                                <path location="${project.basedir}/modules/core/target/classes"/>
+                                                <path location="${project.basedir}/modules/aop/target/classes"/>
+                                                <path location="${project.basedir}/modules/aws/target/classes"/>
+                                                <path location="${project.basedir}/modules/email/target/classes"/>
+                                                <path location="${project.basedir}/modules/hadoop/target/classes"/>
+                                                <path location="${project.basedir}/modules/hibernate/target/classes"/>
+                                                <path location="${project.basedir}/modules/indexing/target/classes"/>
+                                                <path location="${project.basedir}/modules/jcl/target/classes"/>
+                                                <path location="${project.basedir}/modules/jta/target/classes"/>
+                                                <path location="${project.basedir}/modules/log4j/target/classes"/>
+                                                <path location="${project.basedir}/modules/rest-http/target/classes"/>
+                                                <path location="${project.basedir}/modules/schedule/target/classes"/>
+                                                <path location="${project.basedir}/modules/slf4j/target/classes"/>
+                                                <path location="${project.basedir}/modules/spring/target/classes"/>
+                                                <path location="${project.basedir}/modules/ssh/target/classes"/>
+                                                <path location="${project.basedir}/modules/urideploy/target/classes"/>
+                                                <path location="${project.basedir}/modules/web/target/classes"/>
+                                                <path location="${project.basedir}/modules/scalar/target/classes"/>
+                                                <path location="${project.basedir}/modules/visor-console/target/classes"/>
+                                                <path refid="maven.plugin.classpath"/>
+                                            </classpath>
+                                            <arg value="${project.basedir}/modules/core/target/classes"/>
+                                            <jvmarg value="-XX:MaxPermSize=1g"/>
+                                        </java>
+                                    </target>
+                                </configuration>
+                            </execution>
+
+                            <execution>
                                 <id>release-postprocessing</id>
                                 <goals>
                                     <goal>run</goal>
