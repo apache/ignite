@@ -9,7 +9,6 @@
 
 package org.apache.ignite.codegen;
 
-import com.sun.istack.internal.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
@@ -19,6 +18,7 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.lang.reflect.*;
