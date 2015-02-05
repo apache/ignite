@@ -25,13 +25,13 @@ import org.apache.ignite.lang.*;
 import java.util.*;
 
 /**
- * Grid cache distributed set example.
+ * Ignite cache distributed set example.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-cache.xml} configuration.
+ * start node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheSetExample {
     /** Cache name. */
@@ -47,18 +47,18 @@ public class CacheSetExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
             System.out.println(">>> Cache set example started.");
 
             // Make set name.
             String setName = UUID.randomUUID().toString();
 
-            set = initializeSet(g, setName);
+            set = initializeSet(ignite, setName);
 
-            writeToSet(g);
+            writeToSet(ignite);
 
-            clearAndRemoveSet(g);
+            clearAndRemoveSet(ignite);
         }
 
         System.out.println("Cache set example finished.");
@@ -67,14 +67,14 @@ public class CacheSetExample {
     /**
      * Initialize set.
      *
-     * @param g Grid.
+     * @param ignite Ignite.
      * @param setName Name of set.
      * @return Set.
-     * @throws IgniteCheckedException If execution failed.
+     * @throws IgniteException If execution failed.
      */
-    private static CacheSet<String> initializeSet(Ignite g, String setName) throws IgniteCheckedException {
+    private static CacheSet<String> initializeSet(Ignite ignite, String setName) throws IgniteCheckedException {
         // Initialize new set.
-        CacheSet<String> set = g.cache(CACHE_NAME).dataStructures().set(setName, false, true);
+        CacheSet<String> set = ignite.cache(CACHE_NAME).dataStructures().set(setName, false, true);
 
         // Initialize set items.
         for (int i = 0; i < 10; i++)
@@ -88,16 +88,16 @@ public class CacheSetExample {
     /**
      * Write items into set.
      *
-     * @param g Grid.
-     * @throws IgniteCheckedException If failed.
+     * @param ignite Ignite.
+     * @throws IgniteException If failed.
      */
-    private static void writeToSet(Ignite g) throws IgniteCheckedException {
+    private static void writeToSet(Ignite ignite) throws IgniteException {
         final String setName = set.name();
 
         // Write set items on each node.
-        g.compute().broadcast(new SetClosure(CACHE_NAME, setName));
+        ignite.compute().broadcast(new SetClosure(CACHE_NAME, setName));
 
-        System.out.println("Set size after writing [expected=" + (10 + g.cluster().nodes().size() * 5) +
+        System.out.println("Set size after writing [expected=" + (10 + ignite.cluster().nodes().size() * 5) +
             ", actual=" + set.size() + ']');
 
         System.out.println("Iterate over set.");
@@ -126,10 +126,10 @@ public class CacheSetExample {
     /**
      * Clear and remove set.
      *
-     * @param g Grid.
+     * @param ignite Ignite.
      * @throws IgniteCheckedException If execution failed.
      */
-    private static void clearAndRemoveSet(Ignite g) throws IgniteCheckedException {
+    private static void clearAndRemoveSet(Ignite ignite) throws IgniteCheckedException {
         System.out.println("Set size before clearing: " + set.size());
 
         // Clear set.
@@ -138,7 +138,7 @@ public class CacheSetExample {
         System.out.println("Set size after clearing: " + set.size());
 
         // Remove set from cache.
-        g.cache(CACHE_NAME).dataStructures().removeSet(set.name());
+        ignite.cache(CACHE_NAME).dataStructures().removeSet(set.name());
 
         System.out.println("Set was removed: " + set.removed());
 

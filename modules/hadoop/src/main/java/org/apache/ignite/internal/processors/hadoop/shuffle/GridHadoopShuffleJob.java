@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.hadoop.shuffle;
 
 import org.apache.ignite.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.counter.*;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.*;
 import org.apache.ignite.internal.util.future.*;
@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.hadoop.GridHadoopJobProperty.*;
+import static org.apache.ignite.internal.processors.hadoop.GridHadoopJobProperty.*;
 import static org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory.*;
 
 /**

@@ -53,21 +53,21 @@ object ScalarCacheAffinitySimpleExample extends App {
         // Clean up caches on all nodes before run.
         cache$(NAME).get.globalClearAll(0)
 
-        val c = grid$.cache[Int, String](NAME)
+        val c = ignite$.cache[Int, String](NAME)
 
         populate(c)
         visit(c)
     }
 
     /**
-     * Visits every in-memory data grid entry on the remote node it resides by co-locating visiting
+     * Visits every in-memory data ignite entry on the remote node it resides by co-locating visiting
      * closure with the cache key.
      *
      * @param c Cache to use.
      */
     private def visit(c: Cache) {
         (0 until KEY_CNT).foreach(i =>
-            grid$.compute().affinityRun(NAME, i,
+            ignite$.compute().affinityRun(NAME, i,
                 () => println("Co-located [key= " + i + ", value=" + c.peek(i) + ']'))
         )
     }

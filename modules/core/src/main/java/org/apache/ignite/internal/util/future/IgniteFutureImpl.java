@@ -97,11 +97,10 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void stopListenAsync(IgniteInClosure<? super IgniteFuture<V>>... lsnrs) {
-        for (IgniteInClosure<? super IgniteFuture<V>> lsnr : lsnrs) {
-            if (lsnr != null)
-                fut.stopListenAsync(new InternalFutureListener(lsnr));
-        }
+    @Override public void stopListenAsync(IgniteInClosure<? super IgniteFuture<V>> lsnr) {
+        A.notNull(lsnr, "lsnr");
+
+        fut.stopListenAsync(new InternalFutureListener(lsnr));
     }
 
     /** {@inheritDoc} */

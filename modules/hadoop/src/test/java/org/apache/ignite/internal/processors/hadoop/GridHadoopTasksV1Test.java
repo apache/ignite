@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.hadoop.mapred.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.examples.*;
 import org.apache.ignite.internal.processors.hadoop.v2.*;
 
