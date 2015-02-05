@@ -2167,7 +2167,7 @@ public abstract class IgniteUtils {
                             }
                         }
                     }
-                }, "gridgain-clock");
+                }, "ignite-clock");
 
                 timer.setDaemon(true);
 

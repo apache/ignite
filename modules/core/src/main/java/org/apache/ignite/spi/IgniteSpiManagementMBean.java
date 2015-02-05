@@ -64,7 +64,7 @@ public interface IgniteSpiManagementMBean {
      *
      * @return Ignite installation home folder.
      */
-    @IgniteMXBeanDescription("Gridgain installation home folder.")
+    @IgniteMXBeanDescription("Ignite installation home folder.")
     public String getIgniteHome();
 
     /**
