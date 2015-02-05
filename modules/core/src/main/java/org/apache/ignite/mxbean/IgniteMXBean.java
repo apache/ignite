@@ -115,7 +115,7 @@ public interface IgniteMXBean {
      * @return Ignite installation home.
      */
     @IgniteMXBeanDescription("GridGain installation home folder.")
-    public String getGridGainHome();
+    public String getIgniteHome();
 
     /**
      * Gets a formatted instance of MBean server instance.
