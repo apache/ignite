@@ -35,7 +35,7 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
      * @throws Exception If failed.
      */
     public void testTaskCorrect() throws Exception {
-        proceedTest("correct.gar", "gridgain.xml",
+        proceedTest("correct.gar", "ignite.xml",
             "org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask0", true);
     }
 
@@ -98,7 +98,7 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
         assert mkdir;
 
         // Make Gar file
-        U.copy( new File(garDescDirName), new File(metaDirName + File.separator + "gridgain.xml"), true);
+        U.copy( new File(garDescDirName), new File(metaDirName + File.separator + "ignite.xml"), true);
 
         // Copy files to basedir
         U.copy(new File(srcDirName), new File(baseDirName), true);
