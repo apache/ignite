@@ -39,7 +39,7 @@ import java.io.*;
  */
 public class IgniteDeploymentGarAntTask extends Zip {
     /** GAR descriptor name. Its value is {@code gridgain.xml}. */
-    public static final String DESC_NAME = "gridgain.xml";
+    public static final String DESC_NAME = "ignite.xml";
 
     /**  Default descriptor path. */
     private static final String DESC_PATH = "META-INF";

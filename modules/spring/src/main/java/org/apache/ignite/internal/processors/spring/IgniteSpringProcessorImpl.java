@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.*;
  */
 public class IgniteSpringProcessorImpl implements IgniteSpringProcessor {
     /** Path to {@code gridgain.xml} file. */
-    public static final String IGNITE_XML_PATH = "META-INF/gridgain.xml";
+    public static final String IGNITE_XML_PATH = "META-INF/ignite.xml";
 
     /** System class loader user version. */
     private static final AtomicReference<String> SYS_LDR_VER = new AtomicReference<>(null);

@@ -240,9 +240,9 @@ public class GridHadoopSetup {
         if (hadoopEtc.canWrite()) { // TODO Bigtop
             if (ask("Replace 'core-site.xml' and 'mapred-site.xml' files with preconfigured templates " +
                 "(existing files will be backed up)?")) {
-                replaceWithBackup(new File(gridgainDocs, "core-site.gridgain.xml"), new File(hadoopEtc, "core-site.xml"));
+                replaceWithBackup(new File(gridgainDocs, "core-site.ignite.xml"), new File(hadoopEtc, "core-site.xml"));
 
-                replaceWithBackup(new File(gridgainDocs, "mapred-site.gridgain.xml"), new File(hadoopEtc, "mapred-site.xml"));
+                replaceWithBackup(new File(gridgainDocs, "mapred-site.ignite.xml"), new File(hadoopEtc, "mapred-site.xml"));
             }
             else
                 println("Ok. You can configure them later, the templates are available at GridGain's 'docs' directory...");
@@ -255,7 +255,7 @@ public class GridHadoopSetup {
                 warn("Can not write to '" + hiveConfDir.getAbsolutePath() + "'. To run Hive queries you have to " +
                     "configure 'hive-site.xml' manually. The template is available at GridGain's 'docs' directory.");
             else if (ask("Replace 'hive-site.xml' with preconfigured template (existing file will be backed up)?"))
-                replaceWithBackup(new File(gridgainDocs, "hive-site.gridgain.xml"), new File(hiveConfDir, "hive-site.xml"));
+                replaceWithBackup(new File(gridgainDocs, "hive-site.ignite.xml"), new File(hiveConfDir, "hive-site.xml"));
             else
                 println("Ok. You can configure it later, the template is available at GridGain's 'docs' directory...");
         }
