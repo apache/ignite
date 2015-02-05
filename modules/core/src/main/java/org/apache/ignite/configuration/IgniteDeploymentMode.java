@@ -40,7 +40,7 @@ import org.jetbrains.annotations.*;
  * case of {@link #CONTINUOUS} mode to kill the ever living deployment, you should
  * change the user version.
  * <p>
- * User version is specified in {@code META-INF/gridgain.xml} file as follows:
+ * User version is specified in {@code META-INF/ignite.xml} file as follows:
  * <pre name="code" class="xml">
  *    &lt;!-- User version. --&gt;
  *    &lt;bean id="userVersion" class="java.lang.String"&gt;

@@ -45,7 +45,7 @@ import org.jetbrains.annotations.*;
  * local deployment.
  * </strong>
  * <p>
- * Gridgain provides the following {@code GridDeploymentSpi} implementations:
+ * Ignite provides the following {@code GridDeploymentSpi} implementations:
  * <ul>
  * <li>{@link org.apache.ignite.spi.deployment.local.LocalDeploymentSpi}</li>
  * <li>{@ignitelink org.apache.ignite.spi.deployment.uri.UriDeploymentSpi}</li>

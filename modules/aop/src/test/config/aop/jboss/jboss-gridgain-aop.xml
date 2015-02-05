@@ -21,7 +21,7 @@
 
 <!--
     Ignite aspect definition to be used with JBoss AS. Identical file called 'jboss-aop.xml'
-    is already included into gridgain-x.x.x.sar JBoss archive that is shipped with Ignite.
+    is already included into ignite-x.x.x.sar JBoss archive that is shipped with Ignite.
     However, when doing your own custom deployment, you will need to copy this file
     into JBoss 'deploy' folder to enable AOP-based grid-enabling with @Gridify annotation.
 -->
