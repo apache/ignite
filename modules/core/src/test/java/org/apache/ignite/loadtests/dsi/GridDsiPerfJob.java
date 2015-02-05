@@ -20,7 +20,6 @@ package org.apache.ignite.loadtests.dsi;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
@@ -304,11 +303,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private long getId() throws IgniteCheckedException {
-        GridCache<Object, Object> cache = ignite.cache(cacheName);
-
-        assert cache != null;
-
-        CacheAtomicSequence seq = cache.dataStructures().atomicSequence("ID", 0, true);
+        IgniteAtomicSequence seq = ignite.atomicSequence("ID", 0, true);
 
         return seq.incrementAndGet();
     }

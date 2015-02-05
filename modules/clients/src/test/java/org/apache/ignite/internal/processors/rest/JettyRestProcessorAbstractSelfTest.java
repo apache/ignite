@@ -118,9 +118,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
      * @param success Success flag.
      * @return Regex pattern for JSON.
      */
-    private String cacheIntegerPattern(int res, boolean success) {
-        return "\\{\\\"affinityNodeId\\\":\\\"\\w{8}-\\w{4}-\\w{4}-\\w{4}-\\w{12}\\\"\\," +
-            "\\\"error\\\":\\\"\\\"\\," +
+    private String integerPattern(int res, boolean success) {
+        return "\\{\\\"error\\\":\\\"\\\"\\," +
             "\\\"response\\\":" + res + "\\," +
             "\\\"sessionToken\\\":\\\"\\\"," +
             "\\\"successStatus\\\":" + (success ? 0 : 1) + "\\}";
@@ -493,18 +492,18 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
 
-        jsonEquals(ret, cacheIntegerPattern(5, true));
+        jsonEquals(ret, integerPattern(5, true));
 
-        assertEquals(5, cache().dataStructures().atomicLong("incrKey", 0, true).get());
+        assertEquals(5, grid(0).atomicLong("incrKey", 0, true).get());
 
         ret = content(F.asMap("cmd", "incr", "key", "incrKey", "delta", "10"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
 
-        jsonEquals(ret, cacheIntegerPattern(15, true));
+        jsonEquals(ret, integerPattern(15, true));
 
-        assertEquals(15, cache().dataStructures().atomicLong("incrKey", 0, true).get());
+        assertEquals(15, grid(0).atomicLong("incrKey", 0, true).get());
     }
 
     /**
@@ -516,18 +515,18 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
 
-        jsonEquals(ret, cacheIntegerPattern(5, true));
+        jsonEquals(ret, integerPattern(5, true));
 
-        assertEquals(5, cache().dataStructures().atomicLong("decrKey", 0, true).get());
+        assertEquals(5, grid(0).atomicLong("decrKey", 0, true).get());
 
         ret = content(F.asMap("cmd", "decr", "key", "decrKey", "delta", "3"));
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
 
-        jsonEquals(ret, cacheIntegerPattern(2, true));
+        jsonEquals(ret, integerPattern(2, true));
 
-        assertEquals(2, cache().dataStructures().atomicLong("decrKey", 0, true).get());
+        assertEquals(2, grid(0).atomicLong("decrKey", 0, true).get());
     }
 
     /**

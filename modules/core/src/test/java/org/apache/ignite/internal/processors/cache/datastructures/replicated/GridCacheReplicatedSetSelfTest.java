@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.datastructures.replicated;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -27,7 +28,12 @@ import static org.apache.ignite.cache.CacheMode.*;
  */
 public class GridCacheReplicatedSetSelfTest extends GridCacheSetAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
+    @Override protected CacheMode collectionCacheMode() {
         return REPLICATED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
+        return TRANSACTIONAL;
     }
 }

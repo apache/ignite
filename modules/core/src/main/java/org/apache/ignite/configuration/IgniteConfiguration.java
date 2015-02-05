@@ -530,6 +530,9 @@ public class IgniteConfiguration {
     /** */
     private IgniteQueryConfiguration qryCfg;
 
+    /** */
+    private IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -567,6 +570,7 @@ public class IgniteConfiguration {
         addrRslvr = cfg.getAddressResolver();
         adminEmails = cfg.getAdminEmails();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
+        atomicCfg = cfg.getAtomicConfiguration();
         daemon = cfg.isDaemon();
         cacheCfg = cfg.getCacheConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
@@ -3161,6 +3165,20 @@ public class IgniteConfiguration {
      */
     public void setQueryConfiguration(IgniteQueryConfiguration qryCfg) {
         this.qryCfg = qryCfg;
+    }
+
+    /**
+     * @return Atomic data structures configuration.
+     */
+    public IgniteAtomicConfiguration getAtomicConfiguration() {
+        return atomicCfg;
+    }
+
+    /**
+     * @param atomicCfg Atomic data structures configuration.
+     */
+    public void setAtomicConfiguration(IgniteAtomicConfiguration atomicCfg) {
+        this.atomicCfg = atomicCfg;
     }
 
     /** {@inheritDoc} */

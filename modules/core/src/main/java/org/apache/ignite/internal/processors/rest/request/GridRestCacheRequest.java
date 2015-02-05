@@ -21,6 +21,9 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 
+/**
+ *
+ */
 public class GridRestCacheRequest extends GridRestRequest {
     /** Cache name. */
     private String cacheName;
@@ -42,12 +45,6 @@ public class GridRestCacheRequest extends GridRestRequest {
 
     /** Expiration time. */
     private Long ttl;
-
-    /** Value to add/subtract. */
-    private Long delta;
-
-    /** Initial value for increment and decrement commands. */
-    private Long init;
 
     /**
      * @return Cache name, or {@code null} if not set.
@@ -145,34 +142,6 @@ public class GridRestCacheRequest extends GridRestRequest {
      */
     public void ttl(Long ttl) {
         this.ttl = ttl;
-    }
-
-    /**
-     * @return Delta for increment and decrement commands.
-     */
-    public Long delta() {
-        return delta;
-    }
-
-    /**
-     * @param delta Delta for increment and decrement commands.
-     */
-    public void delta(Long delta) {
-        this.delta = delta;
-    }
-
-    /**
-     * @return Initial value for increment and decrement commands.
-     */
-    public Long initial() {
-        return init;
-    }
-
-    /**
-     * @param init Initial value for increment and decrement commands.
-     */
-    public void initial(Long init) {
-        this.init = init;
     }
 
     /** {@inheritDoc} */

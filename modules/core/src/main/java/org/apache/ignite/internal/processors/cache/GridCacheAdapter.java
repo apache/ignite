@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -29,7 +28,6 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.processors.cache.affinity.*;
-import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.query.*;
@@ -162,9 +160,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** Queries impl. */
     private CacheQueries<K, V> qry;
 
-    /** Data structures impl. */
-    private CacheDataStructures dataStructures;
-
     /** Affinity impl. */
     private CacheAffinity<K> aff;
 
@@ -274,7 +269,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         init();
 
         qry = new GridCacheQueriesImpl<>(ctx, null);
-        dataStructures = new GridCacheDataStructuresImpl<>(ctx);
         aff = new GridCacheAffinityImpl<>(ctx);
     }
 
@@ -362,11 +356,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** {@inheritDoc} */
     @Override public CacheAffinity<K> affinity() {
         return aff;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheDataStructures dataStructures() {
-        return dataStructures;
     }
 
     /** {@inheritDoc} */

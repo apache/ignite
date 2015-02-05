@@ -54,12 +54,6 @@ public enum GridRestCommand {
     /** Replace cache value only if there is currently a mapping for it. */
     CACHE_REPLACE("rep"),
 
-    /** Increment of atomic long cache data structure. */
-    CACHE_INCREMENT("incr"),
-
-    /** Decrement of atomic long cache data structure. */
-    CACHE_DECREMENT("decr"),
-
     /** Compare and set. */
     CACHE_CAS("cas"),
 
@@ -71,6 +65,12 @@ public enum GridRestCommand {
 
     /** Cache metrics. */
     CACHE_METRICS("cache"),
+
+    /** Increment. */
+    ATOMIC_INCREMENT("incr"),
+
+    /** Decrement. */
+    ATOMIC_DECREMENT("decr"),
 
     /** Grid topology. */
     TOPOLOGY("top"),

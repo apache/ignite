@@ -119,7 +119,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheEvictionManager<K, V> evictMgr;
 
     /** Data structures manager. */
-    private GridCacheDataStructuresManager<K, V> dataStructuresMgr;
+    private CacheDataStructuresManager<K, V> dataStructuresMgr;
 
     /** Eager TTL manager. */
     private GridCacheTtlManager<K, V> ttlMgr;
@@ -234,7 +234,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheQueryManager<K, V> qryMgr,
         GridCacheContinuousQueryManager<K, V> contQryMgr,
         GridCacheAffinityManager<K, V> affMgr,
-        GridCacheDataStructuresManager<K, V> dataStructuresMgr,
+        CacheDataStructuresManager<K, V> dataStructuresMgr,
         GridCacheTtlManager<K, V> ttlMgr,
         GridCacheDrManager<K, V> drMgr,
         CacheJtaManagerAdapter<K, V> jtaMgr) {
@@ -898,7 +898,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Data structures manager.
      */
-    public GridCacheDataStructuresManager<K, V> dataStructures() {
+    public CacheDataStructuresManager<K, V> dataStructures() {
         return dataStructuresMgr;
     }
 

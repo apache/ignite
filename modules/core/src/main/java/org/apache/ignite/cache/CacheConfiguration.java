@@ -45,9 +45,6 @@ import java.util.*;
  */
 @SuppressWarnings("RedundantFieldInitialization")
 public class CacheConfiguration extends MutableConfiguration {
-    /** Default atomic sequence reservation size. */
-    public static final int DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE = 1000;
-
     /** Default size of preload thread pool. */
     public static final int DFLT_PRELOAD_THREAD_POOL_SIZE = 2;
 
@@ -167,9 +164,6 @@ public class CacheConfiguration extends MutableConfiguration {
 
     /** Cache name. */
     private String name;
-
-    /** Default batch size for all cache's sequences. */
-    private int seqReserveSize = DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE;
 
     /** Preload thread pool size. */
     private int preloadPoolSize = DFLT_PRELOAD_THREAD_POOL_SIZE;
@@ -406,7 +400,6 @@ public class CacheConfiguration extends MutableConfiguration {
         qryCfg = cc.getQueryConfiguration();
         qryIdxEnabled = cc.isQueryIndexEnabled();
         readFromBackup = cc.isReadFromBackup();
-        seqReserveSize = cc.getAtomicSequenceReserveSize();
         startSize = cc.getStartSize();
         storeFactory = cc.getCacheStoreFactory();
         storeValBytes = cc.isStoreValueBytes();
@@ -1339,31 +1332,6 @@ public class CacheConfiguration extends MutableConfiguration {
      */
     public void setCloner(CacheCloner cloner) {
         this.cloner = cloner;
-    }
-
-    /**
-     * Gets default number of sequence values reserved for {@link org.apache.ignite.cache.datastructures.CacheAtomicSequence} instances. After
-     * a certain number has been reserved, consequent increments of sequence will happen locally,
-     * without communication with other nodes, until the next reservation has to be made.
-     * <p>
-     * Default value is {@link #DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE}.
-     *
-     * @return Atomic sequence reservation size.
-     */
-    public int getAtomicSequenceReserveSize() {
-        return seqReserveSize;
-    }
-
-    /**
-     * Sets default number of sequence values reserved for {@link org.apache.ignite.cache.datastructures.CacheAtomicSequence} instances. After a certain
-     * number has been reserved, consequent increments of sequence will happen locally, without communication with other
-     * nodes, until the next reservation has to be made.
-     *
-     * @param seqReserveSize Atomic sequence reservation size.
-     * @see #getAtomicSequenceReserveSize()
-     */
-    public void setAtomicSequenceReserveSize(int seqReserveSize) {
-        this.seqReserveSize = seqReserveSize;
     }
 
     /**
