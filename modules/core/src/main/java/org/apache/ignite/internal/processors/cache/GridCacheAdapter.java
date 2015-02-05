@@ -3868,6 +3868,19 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
+    @Override public int localSize(CachePeekMode... peekModes) throws IgniteCheckedException {
+        boolean primary;
+        boolean backup;
+        boolean near;
+
+        boolean heap;
+        boolean offheap;
+        boolean swap;
+
+        return 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public int size() {
         return map.publicSize();
     }
