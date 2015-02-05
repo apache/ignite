@@ -317,6 +317,71 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {
+        assert g != null;
+
+        return g.atomicSequence(name, initVal, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
+        assert g != null;
+
+        return g.atomicLong(name, initVal, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteAtomicReference<T> atomicReference(String name,
+        @Nullable T initVal,
+        boolean create)
+    {
+        assert g != null;
+
+        return g.atomicReference(name, initVal, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
+        @Nullable T initVal,
+        @Nullable S initStamp,
+        boolean create)
+    {
+        assert g != null;
+
+        return g.atomicStamped(name, initVal, initStamp, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteCountDownLatch countDownLatch(String name,
+        int cnt,
+        boolean autoDel,
+        boolean create)
+    {
+        assert g != null;
+
+        return g.countDownLatch(name, cnt, autoDel, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteQueue<T> queue(String name,
+        int cap,
+        IgniteCollectionConfiguration cfg)
+    {
+        assert g != null;
+
+        return g.queue(name, cap, cfg);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteSet<T> set(String name,
+        IgniteCollectionConfiguration cfg)
+    {
+        assert g != null;
+
+        return g.set(name, cfg);
+    }
+
+    /** {@inheritDoc} */
     @Override public <K> CacheAffinity<K> affinity(String cacheName) {
         return g.affinity(cacheName);
     }

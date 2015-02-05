@@ -55,8 +55,8 @@ public class GridCacheContinuousQueryReplicatedSelfTest extends GridCacheContinu
         final AtomicReference<Integer> val = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
 
-        qry.callback(new P2<UUID, Collection<Map.Entry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID uuid, Collection<Map.Entry<Integer, Integer>> entries) {
+        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
+            @Override public boolean apply(UUID uuid, Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
                 assertEquals(1, entries.size());
 
                 Map.Entry<Integer, Integer> e = entries.iterator().next();

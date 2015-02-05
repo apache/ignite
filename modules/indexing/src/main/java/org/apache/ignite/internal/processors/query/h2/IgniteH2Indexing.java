@@ -1994,7 +1994,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (cctx.isNear())
                 cctx = cctx.near().dht().context();
 
-            GridCacheSwapEntry e = cctx.swap().read(key);
+            GridCacheSwapEntry e = cctx.swap().read(key, true, true);
 
             return e != null ? e.value() : null;
         }

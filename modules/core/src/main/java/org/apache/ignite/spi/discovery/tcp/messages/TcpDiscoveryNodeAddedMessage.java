@@ -55,10 +55,10 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     private Map<Long, Collection<ClusterNode>> topHist;
 
     /** Discovery data from new node. */
-    private List<Object> newNodeDiscoData;
+    private Map<Integer, Object> newNodeDiscoData;
 
     /** Discovery data from old nodes. */
-    private Collection<List<Object>> oldNodesDiscoData;
+    private Collection<Map<Integer, Object>> oldNodesDiscoData;
 
     /** Start time of the first grid node. */
     private long gridStartTime;
@@ -79,7 +79,9 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
      * @param gridStartTime Start time of the first grid node.
      */
     public TcpDiscoveryNodeAddedMessage(UUID creatorNodeId, TcpDiscoveryNode node,
-                                        List<Object> newNodeDiscoData, long gridStartTime) {
+        Map<Integer, Object> newNodeDiscoData,
+        long gridStartTime)
+    {
         super(creatorNodeId);
 
         assert node != null;
@@ -169,21 +171,21 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     /**
      * @return Discovery data from new node.
      */
-    public List<Object> newNodeDiscoveryData() {
+    public Map<Integer, Object> newNodeDiscoveryData() {
         return newNodeDiscoData;
     }
 
     /**
      * @return Discovery data from old nodes.
      */
-    public Collection<List<Object>> oldNodesDiscoveryData() {
+    public Collection<Map<Integer, Object>> oldNodesDiscoveryData() {
         return oldNodesDiscoData;
     }
 
     /**
      * @param discoData Discovery data to add.
      */
-    public void addDiscoveryData(List<Object> discoData) {
+    public void addDiscoveryData(Map<Integer, Object> discoData) {
         // Old nodes disco data may be null if message
         // makes more than 1 pass due to stopping of the nodes in topology.
         if (oldNodesDiscoData != null)
@@ -215,13 +217,13 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
         U.writeCollection(out, top);
         U.writeMap(out, topHist);
         out.writeLong(gridStartTime);
-        U.writeCollection(out, newNodeDiscoData);
+        U.writeMap(out, newNodeDiscoData);
 
         out.writeInt(oldNodesDiscoData != null ? oldNodesDiscoData.size() : -1);
 
         if (oldNodesDiscoData != null) {
-            for (List<Object> list : oldNodesDiscoData)
-                U.writeCollection(out, list);
+            for (Map<Integer, Object> map : oldNodesDiscoData)
+                U.writeMap(out, map);
         }
     }
 
@@ -235,7 +237,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
         top = U.readCollection(in);
         topHist = U.readTreeMap(in);
         gridStartTime = in.readLong();
-        newNodeDiscoData = U.readList(in);
+        newNodeDiscoData = U.readMap(in);
 
         int oldNodesDiscoDataSize = in.readInt();
 
@@ -243,7 +245,7 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
             oldNodesDiscoData = new ArrayList<>(oldNodesDiscoDataSize);
 
             for (int i = 0; i < oldNodesDiscoDataSize; i++)
-                oldNodesDiscoData.add(U.readList(in));
+                oldNodesDiscoData.add(U.<Integer, Object>readMap(in));
         }
     }
 

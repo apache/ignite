@@ -23,6 +23,7 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
@@ -178,89 +179,94 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testCacheMetaData() throws Exception {
-        // Create data structure to test filtering of internal objects.
-        grid(0).cache(null).dataStructures().atomicLong("LONG", 0, true);
+        // Put internal key to test filtering of internal objects.
+        grid(0).cache(null).put(new GridCacheInternalKeyImpl("LONG"), new GridCacheAtomicLongValue(0));
 
-        Collection<GridCacheSqlMetadata> metas =
-            ((GridCacheQueriesEx<?, ?>)grid(0).cache(null).queries()).sqlMetadata();
+        try {
+            Collection<GridCacheSqlMetadata> metas =
+                ((GridCacheQueriesEx<?, ?>)grid(0).cache(null).queries()).sqlMetadata();
 
-        assert metas != null;
-        assertEquals("Invalid meta: " + metas, 3, metas.size());
+            assert metas != null;
+            assertEquals("Invalid meta: " + metas, 3, metas.size());
 
-        boolean wasNull = false;
-        boolean wasNamed = false;
-        boolean wasEmpty = false;
+            boolean wasNull = false;
+            boolean wasNamed = false;
+            boolean wasEmpty = false;
 
-        for (GridCacheSqlMetadata meta : metas) {
-            if (meta.cacheName() == null) {
-                Collection<String> types = meta.types();
+            for (GridCacheSqlMetadata meta : metas) {
+                if (meta.cacheName() == null) {
+                    Collection<String> types = meta.types();
 
-                assert types != null;
-                assert types.size() == 4;
-                assert types.contains("Person");
-                assert types.contains("Organization");
-                assert types.contains("String");
-                assert types.contains("Integer");
+                    assert types != null;
+                    assert types.size() == 4;
+                    assert types.contains("Person");
+                    assert types.contains("Organization");
+                    assert types.contains("String");
+                    assert types.contains("Integer");
 
-                assert CacheAffinityKey.class.getName().equals(meta.keyClass("Person"));
-                assert String.class.getName().equals(meta.keyClass("Organization"));
-                assert String.class.getName().equals(meta.keyClass("String"));
+                    assert CacheAffinityKey.class.getName().equals(meta.keyClass("Person"));
+                    assert String.class.getName().equals(meta.keyClass("Organization"));
+                    assert String.class.getName().equals(meta.keyClass("String"));
 
-                assert Person.class.getName().equals(meta.valueClass("Person"));
-                assert Organization.class.getName().equals(meta.valueClass("Organization"));
-                assert String.class.getName().equals(meta.valueClass("String"));
+                    assert Person.class.getName().equals(meta.valueClass("Person"));
+                    assert Organization.class.getName().equals(meta.valueClass("Organization"));
+                    assert String.class.getName().equals(meta.valueClass("String"));
 
-                Map<String, String> fields = meta.fields("Person");
+                    Map<String, String> fields = meta.fields("Person");
 
-                assert fields != null;
-                assert fields.size() == 5;
-                assert CacheAffinityKey.class.getName().equals(fields.get("_KEY"));
-                assert Person.class.getName().equals(fields.get("_VAL"));
-                assert String.class.getName().equals(fields.get("NAME"));
-                assert int.class.getName().equals(fields.get("AGE"));
-                assert int.class.getName().equals(fields.get("ORGID"));
+                    assert fields != null;
+                    assert fields.size() == 5;
+                    assert CacheAffinityKey.class.getName().equals(fields.get("_KEY"));
+                    assert Person.class.getName().equals(fields.get("_VAL"));
+                    assert String.class.getName().equals(fields.get("NAME"));
+                    assert int.class.getName().equals(fields.get("AGE"));
+                    assert int.class.getName().equals(fields.get("ORGID"));
 
-                fields = meta.fields("Organization");
+                    fields = meta.fields("Organization");
 
-                assert fields != null;
-                assert fields.size() == 4;
-                assert String.class.getName().equals(fields.get("_KEY"));
-                assert Organization.class.getName().equals(fields.get("_VAL"));
-                assert int.class.getName().equals(fields.get("ID"));
-                assert String.class.getName().equals(fields.get("NAME"));
+                    assert fields != null;
+                    assert fields.size() == 4;
+                    assert String.class.getName().equals(fields.get("_KEY"));
+                    assert Organization.class.getName().equals(fields.get("_VAL"));
+                    assert int.class.getName().equals(fields.get("ID"));
+                    assert String.class.getName().equals(fields.get("NAME"));
 
-                fields = meta.fields("String");
+                    fields = meta.fields("String");
 
-                assert fields != null;
-                assert fields.size() == 2;
-                assert String.class.getName().equals(fields.get("_KEY"));
-                assert String.class.getName().equals(fields.get("_VAL"));
+                    assert fields != null;
+                    assert fields.size() == 2;
+                    assert String.class.getName().equals(fields.get("_KEY"));
+                    assert String.class.getName().equals(fields.get("_VAL"));
 
-                fields = meta.fields("Integer");
+                    fields = meta.fields("Integer");
 
-                assert fields != null;
-                assert fields.size() == 2;
-                assert Integer.class.getName().equals(fields.get("_KEY"));
-                assert Integer.class.getName().equals(fields.get("_VAL"));
+                    assert fields != null;
+                    assert fields.size() == 2;
+                    assert Integer.class.getName().equals(fields.get("_KEY"));
+                    assert Integer.class.getName().equals(fields.get("_VAL"));
 
-                Collection<GridCacheSqlIndexMetadata> indexes = meta.indexes("Person");
+                    Collection<GridCacheSqlIndexMetadata> indexes = meta.indexes("Person");
 
-                assertEquals(2, indexes.size());
+                    assertEquals(2, indexes.size());
 
-                wasNull = true;
+                    wasNull = true;
+                }
+                else if (CACHE.equals(meta.cacheName()))
+                    wasNamed = true;
+                else if (EMPTY_CACHE.equals(meta.cacheName())) {
+                    assert meta.types().isEmpty();
+
+                    wasEmpty = true;
+                }
             }
-            else if (CACHE.equals(meta.cacheName()))
-                wasNamed = true;
-            else if (EMPTY_CACHE.equals(meta.cacheName())) {
-                assert meta.types().isEmpty();
 
-                wasEmpty = true;
-            }
+            assert wasNull;
+            assert wasNamed;
+            assert wasEmpty;
         }
-
-        assert wasNull;
-        assert wasNamed;
-        assert wasEmpty;
+        finally {
+            grid(0).cache(null).removex(new GridCacheInternalKeyImpl("LONG"));
+        }
     }
 
     /** @throws Exception If failed. */

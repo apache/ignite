@@ -67,6 +67,11 @@ public class GridNoopManagerAdapter implements GridManager {
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public Object collectDiscoveryData(UUID nodeId) {
         return null;
     }

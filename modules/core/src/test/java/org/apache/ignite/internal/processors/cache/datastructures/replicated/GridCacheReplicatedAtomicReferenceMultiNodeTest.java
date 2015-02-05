@@ -18,28 +18,16 @@
 package org.apache.ignite.internal.processors.cache.datastructures.replicated;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * AtomicReference and AtomicStamped tests with replicated cache.
  */
 public class GridCacheReplicatedAtomicReferenceMultiNodeTest extends GridCacheAtomicReferenceMultiNodeAbstractTest {
-
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        // Default cache configuration.
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
-
-        cacheCfg.setCacheMode(REPLICATED);
-        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setCacheConfiguration(cacheCfg);
-
-        return cfg;
+    @Override protected CacheMode atomicsCacheMode() {
+        return REPLICATED;
     }
 }
