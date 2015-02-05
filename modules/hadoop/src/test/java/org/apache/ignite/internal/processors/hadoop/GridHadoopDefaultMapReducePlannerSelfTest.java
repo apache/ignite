@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.fs.mapreduce.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.fs.*;
@@ -932,6 +931,11 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
+        @Override public GridHadoop hadoop() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public String name() {
             return null;
         }
@@ -1128,17 +1132,17 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public ClusterGroup forCacheNodes(String cacheName, @Nullable String... cacheNames) {
+        @Override public ClusterGroup forCacheNodes(String cacheName) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public ClusterGroup forDataNodes(String cacheName, @Nullable String... cacheNames) {
+        @Override public ClusterGroup forDataNodes(String cacheName) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public ClusterGroup forClientNodes(String cacheName, @Nullable String... cacheNames) {
+        @Override public ClusterGroup forClientNodes(String cacheName) {
             return null;
         }
 

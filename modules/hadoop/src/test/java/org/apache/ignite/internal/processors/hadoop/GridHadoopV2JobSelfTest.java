@@ -22,7 +22,6 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.serializer.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.ignite.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.v2.*;
 
 import java.io.*;

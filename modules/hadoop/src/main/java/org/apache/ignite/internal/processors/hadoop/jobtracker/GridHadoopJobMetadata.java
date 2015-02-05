@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop.jobtracker;
 
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.counter.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.hadoop.GridHadoopJobPhase.*;
+import static org.apache.ignite.internal.processors.hadoop.GridHadoopJobPhase.*;
 
 /**
  * Hadoop job metadata. Internal object used for distributed job state tracking.

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.taskexecutor;
 
 
 import org.apache.ignite.*;
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.thread.*;

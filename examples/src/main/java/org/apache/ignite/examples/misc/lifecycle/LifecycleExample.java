@@ -25,8 +25,8 @@ import org.apache.ignite.resources.*;
 import static org.apache.ignite.lifecycle.LifecycleEventType.*;
 
 /**
- * This example shows how to provide your own {@link org.apache.ignite.lifecycle.LifecycleBean} implementation
- * to be able to hook into GridGain lifecycle. The {@link LifecycleExampleBean} bean
+ * This example shows how to provide your own {@link LifecycleBean} implementation
+ * to be able to hook into Ignite lifecycle. The {@link LifecycleExampleBean} bean
  * will output occurred lifecycle events to the console.
  * <p>
  * This example does not require remote nodes to be started.
@@ -36,9 +36,9 @@ public final class LifecycleExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
+    public static void main(String[] args) throws IgniteException {
         System.out.println();
         System.out.println(">>> Lifecycle example started.");
 
@@ -50,20 +50,20 @@ public final class LifecycleExample {
         // Provide lifecycle bean to configuration.
         cfg.setLifecycleBeans(bean);
 
-        try (Ignite g  = Ignition.start(cfg)) {
-            // Make sure that lifecycle bean was notified about grid startup.
+        try (Ignite ignite  = Ignition.start(cfg)) {
+            // Make sure that lifecycle bean was notified about ignite startup.
             assert bean.isStarted();
         }
 
-        // Make sure that lifecycle bean was notified about grid stop.
+        // Make sure that lifecycle bean was notified about ignite stop.
         assert !bean.isStarted();
     }
 
     /**
-     * Simple {@link org.apache.ignite.lifecycle.LifecycleBean} implementation that outputs event type when it is occurred.
+     * Simple {@link LifecycleBean} implementation that outputs event type when it is occurred.
      */
     public static class LifecycleExampleBean implements LifecycleBean {
-        /** Auto-inject grid instance. */
+        /** Auto-inject ignite instance. */
         @IgniteInstanceResource
         private Ignite ignite;
 
@@ -73,8 +73,8 @@ public final class LifecycleExample {
         /** {@inheritDoc} */
         @Override public void onLifecycleEvent(LifecycleEventType evt) {
             System.out.println();
-            System.out.println(">>> Grid lifecycle event occurred: " + evt);
-            System.out.println(">>> Grid name: " + ignite.name());
+            System.out.println(">>> Lifecycle event occurred: " + evt);
+            System.out.println(">>> Ignite name: " + ignite.name());
 
             if (evt == AFTER_GRID_START)
                 isStarted = true;
@@ -83,7 +83,7 @@ public final class LifecycleExample {
         }
 
         /**
-         * @return {@code True} if grid has been started.
+         * @return {@code True} if ignite has been started.
          */
         public boolean isStarted() {
             return isStarted;
