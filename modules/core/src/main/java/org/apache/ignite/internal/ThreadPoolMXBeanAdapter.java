@@ -23,10 +23,10 @@ import org.apache.ignite.mxbean.*;
 import java.util.concurrent.*;
 
 /**
- * Adapter for {@link IgniteThreadPoolMXBean} which delegates all method calls to the underlying
+ * Adapter for {@link org.apache.ignite.mxbean.ThreadPoolMXBean} which delegates all method calls to the underlying
  * {@link ExecutorService} instance.
  */
-public class IgniteThreadPoolMXBeanAdapter implements IgniteThreadPoolMXBean {
+public class ThreadPoolMXBeanAdapter implements ThreadPoolMXBean {
     /** */
     private final ExecutorService exec;
 
@@ -35,7 +35,7 @@ public class IgniteThreadPoolMXBeanAdapter implements IgniteThreadPoolMXBean {
      *
      * @param exec Executor service
      */
-    public IgniteThreadPoolMXBeanAdapter(ExecutorService exec) {
+    public ThreadPoolMXBeanAdapter(ExecutorService exec) {
         assert exec != null;
 
         this.exec = exec;
@@ -124,6 +124,6 @@ public class IgniteThreadPoolMXBeanAdapter implements IgniteThreadPoolMXBean {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteThreadPoolMXBeanAdapter.class, this, super.toString());
+        return S.toString(ThreadPoolMXBeanAdapter.class, this, super.toString());
     }
 }

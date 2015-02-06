@@ -23,7 +23,7 @@ import org.apache.ignite.spi.*;
 /**
  * Management bean for {@link RoundRobinLoadBalancingSpi} SPI.
  */
-@IgniteMXBeanDescription("MBean that provides access to round robin load balancing SPI configuration.")
+@MXBeanDescription("MBean that provides access to round robin load balancing SPI configuration.")
 public interface RoundRobinLoadBalancingSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Configuration parameter indicating whether a new round robin order should be
@@ -40,6 +40,6 @@ public interface RoundRobinLoadBalancingSpiMBean extends IgniteSpiManagementMBea
      * @return Configuration parameter indicating whether a new round robin order should
      *      be created for every task. Default is {@code true}.
      */
-    @IgniteMXBeanDescription("Configuration parameter indicating whether a new round robin order should be created for every task.")
+    @MXBeanDescription("Configuration parameter indicating whether a new round robin order should be created for every task.")
     public boolean isPerTask();
 }

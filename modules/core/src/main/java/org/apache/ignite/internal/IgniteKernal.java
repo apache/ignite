@@ -1508,8 +1508,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 cfg.getGridName(),
                 "Thread Pools",
                 name,
-                new IgniteThreadPoolMXBeanAdapter(exec),
-                IgniteThreadPoolMXBean.class);
+                new ThreadPoolMXBeanAdapter(exec),
+                ThreadPoolMXBean.class);
 
             if (log.isDebugEnabled())
                 log.debug("Registered executor service MBean: " + res);

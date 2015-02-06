@@ -25,14 +25,14 @@ import java.util.*;
 /**
  * MBean for {@code GGFS per-block LRU} eviction policy.
  */
-@IgniteMXBeanDescription("MBean for GGFS per-block LRU cache eviction policy.")
+@MXBeanDescription("MBean for GGFS per-block LRU cache eviction policy.")
 public interface CacheGgfsPerBlockLruEvictionPolicyMBean {
     /**
      * Gets maximum allowed size of all blocks in bytes.
      *
      * @return Maximum allowed size of all blocks in bytes.
      */
-    @IgniteMXBeanDescription("Maximum allowed size of all blocks in bytes.")
+    @MXBeanDescription("Maximum allowed size of all blocks in bytes.")
     public long getMaxSize();
 
     /**
@@ -40,7 +40,7 @@ public interface CacheGgfsPerBlockLruEvictionPolicyMBean {
      *
      * @param maxSize Maximum allowed size of data in all blocks in bytes.
      */
-    @IgniteMXBeanDescription("Sets aximum allowed size of data in all blocks in bytes.")
+    @MXBeanDescription("Sets aximum allowed size of data in all blocks in bytes.")
     public void setMaxSize(long maxSize);
 
     /**
@@ -48,7 +48,7 @@ public interface CacheGgfsPerBlockLruEvictionPolicyMBean {
      *
      * @return Maximum allowed amount of blocks.
      */
-    @IgniteMXBeanDescription("Maximum allowed amount of blocks.")
+    @MXBeanDescription("Maximum allowed amount of blocks.")
     public int getMaxBlocks();
 
     /**
@@ -56,7 +56,7 @@ public interface CacheGgfsPerBlockLruEvictionPolicyMBean {
      *
      * @param maxBlocks Maximum allowed amount of blocks.
      */
-    @IgniteMXBeanDescription("Sets maximum allowed amount of blocks.")
+    @MXBeanDescription("Sets maximum allowed amount of blocks.")
     public void setMaxBlocks(int maxBlocks);
 
     /**
@@ -64,7 +64,7 @@ public interface CacheGgfsPerBlockLruEvictionPolicyMBean {
      *
      * @return Collection of regex for paths whose blocks must not be evicted.
      */
-    @IgniteMXBeanDescription("Collection of regex for paths whose blocks must not be evicted.")
+    @MXBeanDescription("Collection of regex for paths whose blocks must not be evicted.")
     @Nullable public Collection<String> getExcludePaths();
 
     /**
@@ -72,7 +72,7 @@ public interface CacheGgfsPerBlockLruEvictionPolicyMBean {
      *
      * @param excludePaths Collection of regex for paths whose blocks must not be evicted.
      */
-    @IgniteMXBeanDescription("Sets collection of regex for paths whose blocks must not be evicted.")
+    @MXBeanDescription("Sets collection of regex for paths whose blocks must not be evicted.")
     public void setExcludePaths(@Nullable Collection<String> excludePaths);
 
     /**
@@ -80,7 +80,7 @@ public interface CacheGgfsPerBlockLruEvictionPolicyMBean {
      *
      * @return Current size of data in all blocks.
      */
-    @IgniteMXBeanDescription("Current size of data in all blocks.")
+    @MXBeanDescription("Current size of data in all blocks.")
     public long getCurrentSize();
 
     /**
@@ -88,6 +88,6 @@ public interface CacheGgfsPerBlockLruEvictionPolicyMBean {
      *
      * @return Current amount of blocks.
      */
-    @IgniteMXBeanDescription("Current amount of blocks.")
+    @MXBeanDescription("Current amount of blocks.")
     public int getCurrentBlocks();
 }

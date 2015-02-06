@@ -32,7 +32,7 @@ public interface IgniteSpiManagementMBean {
      *
      * @return String presentation of the start timestamp.
      */
-    @IgniteMXBeanDescription("String presentation of the start timestamp.")
+    @MXBeanDescription("String presentation of the start timestamp.")
     public String getStartTimestampFormatted();
 
     /**
@@ -40,7 +40,7 @@ public interface IgniteSpiManagementMBean {
      *
      * @return String presentation of up-time for this SPI.
      */
-    @IgniteMXBeanDescription("String presentation of up-time for this SPI.")
+    @MXBeanDescription("String presentation of up-time for this SPI.")
     public String getUpTimeFormatted();
 
     /**
@@ -48,7 +48,7 @@ public interface IgniteSpiManagementMBean {
      *
      * @return Start timestamp of this SPI.
      */
-    @IgniteMXBeanDescription("Start timestamp of this SPI.")
+    @MXBeanDescription("Start timestamp of this SPI.")
     public long getStartTimestamp();
 
     /**
@@ -56,7 +56,7 @@ public interface IgniteSpiManagementMBean {
      *
      * @return Up-time of this SPI.
      */
-    @IgniteMXBeanDescription("Up-time of this SPI in milliseconds.")
+    @MXBeanDescription("Up-time of this SPI in milliseconds.")
     public long getUpTime();
 
     /**
@@ -64,7 +64,7 @@ public interface IgniteSpiManagementMBean {
      *
      * @return Gridgain installation home folder.
      */
-    @IgniteMXBeanDescription("Gridgain installation home folder.")
+    @MXBeanDescription("Gridgain installation home folder.")
     public String getGridGainHome();
 
     /**
@@ -72,7 +72,7 @@ public interface IgniteSpiManagementMBean {
      *
      * @return ID of the local node.
      */
-    @IgniteMXBeanDescription("ID of the local node.")
+    @MXBeanDescription("ID of the local node.")
     public UUID getLocalNodeId();
 
     /**
@@ -80,6 +80,6 @@ public interface IgniteSpiManagementMBean {
      *
      * @return Name of the SPI.
      */
-    @IgniteMXBeanDescription("Name of the SPI.")
+    @MXBeanDescription("Name of the SPI.")
     public String getName();
 }
