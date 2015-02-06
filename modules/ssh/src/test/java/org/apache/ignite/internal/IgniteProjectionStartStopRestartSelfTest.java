@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.internal.util.nodestart.GridNodeStartUtils.*;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.*;
 
 /**
  * Tests for {@code startNodes(..)}, {@code stopNodes(..)}
@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.util.nodestart.GridNodeStartUtils.*;
  * private key path ({@code ssh.key} property).
  */
 @SuppressWarnings("ConstantConditions")
-public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTest {
+public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String SSH_UNAME = System.getenv("test.ssh.username");
 
@@ -927,7 +927,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
      * @param passwd Password.
      * @param key Private key file.
      * @param nodes Number of nodes.
-     * @param ggHome GridGain home.
+     * @param igniteHome GridGain home.
      * @param cfg Configuration file path.
      * @param script Startup script path.
      * @return Parameters map.
@@ -938,19 +938,19 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         @Nullable String passwd,
         @Nullable File key,
         @Nullable Integer nodes,
-        @Nullable String ggHome,
+        @Nullable String igniteHome,
         @Nullable String cfg,
         @Nullable String script) {
         assert host != null;
 
         Map<String, Object> params = new HashMap<>();
 
-        params.put(GridNodeStartUtils.HOST, host);
+        params.put(IgniteNodeStartUtils.HOST, host);
         params.put(UNAME, uname);
         params.put(PASSWD, passwd);
         params.put(KEY, key);
         params.put(NODES, nodes);
-        params.put(IGNITE_HOME, ggHome);
+        params.put(IGNITE_HOME, igniteHome);
         params.put(CFG, cfg);
         params.put(SCRIPT, script);
 
@@ -963,7 +963,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
      * @param passwd Password.
      * @param key Private key file.
      * @param nodes Number of nodes.
-     * @param ggHome GridGain home.
+     * @param igniteHome GridGain home.
      * @param cfg Configuration file path.
      * @param script Startup script path.
      * @return Parameters map.
@@ -974,7 +974,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         @Nullable String passwd,
         @Nullable File key,
         @Nullable Integer nodes,
-        @Nullable String ggHome,
+        @Nullable String igniteHome,
         @Nullable String cfg,
         @Nullable String script) {
         assert HOST != null;
@@ -984,12 +984,12 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         for (String host : hosts) {
             Map<String, Object> params = new HashMap<>();
 
-            params.put(GridNodeStartUtils.HOST, host);
+            params.put(IgniteNodeStartUtils.HOST, host);
             params.put(UNAME, uname);
             params.put(PASSWD, passwd);
             params.put(KEY, key);
             params.put(NODES, nodes);
-            params.put(IGNITE_HOME, ggHome);
+            params.put(IGNITE_HOME, igniteHome);
             params.put(CFG, cfg);
             params.put(SCRIPT, script);
 
