@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.commands.open
 
-import org.apache.ignite.IgniteCheckedException
+import org.apache.ignite.IgniteException
 import org.apache.ignite.visor.{VisorRuntimeBaseSpec, visor}
 
 /**
@@ -31,7 +31,7 @@ class VisorOpenCommandSpec extends VisorRuntimeBaseSpec(3) {
     }
 
     it should "print error message when already connected" in {
-        intercept[IgniteCheckedException] {
+        intercept[IgniteException] {
             openVisor()
         }
     }
