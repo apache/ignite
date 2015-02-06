@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.fs;
 
 import junit.framework.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 
-import static org.apache.ignite.fs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 
 /**
  *

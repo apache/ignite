@@ -23,9 +23,10 @@ import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.eviction.ggfs.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.fs.*;
-import org.apache.ignite.fs.mapreduce.*;
+import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.ignitefs.mapreduce.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
@@ -46,7 +47,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.fs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 import static org.apache.ignite.internal.GridNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.processors.fs.GridGgfsFileInfo.*;
@@ -1788,7 +1789,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /**
      * Executes GGFS task with overridden maximum range length (see
-     * {@link org.apache.ignite.fs.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
+     * {@link org.apache.ignite.configuration.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
      *
      * @param task Task to execute.
      * @param rslvr Optional resolver to control split boundaries.
@@ -1822,7 +1823,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
     /**
      * Executes GGFS task asynchronously with overridden maximum range length (see
-     * {@link org.apache.ignite.fs.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
+     * {@link org.apache.ignite.configuration.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
      *
      * @param taskCls Task class to execute.
      * @param rslvr Optional resolver to control split boundaries.

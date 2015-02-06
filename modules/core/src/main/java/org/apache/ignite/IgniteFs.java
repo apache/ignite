@@ -17,8 +17,9 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.fs.*;
-import org.apache.ignite.fs.mapreduce.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.ignitefs.mapreduce.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -283,7 +284,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
 
     /**
      * Executes GGFS task with overridden maximum range length (see
-     * {@link org.apache.ignite.fs.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
+     * {@link org.apache.ignite.configuration.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
@@ -321,7 +322,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
 
     /**
      * Executes GGFS task with overridden maximum range length (see
-     * {@link org.apache.ignite.fs.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
+     * {@link org.apache.ignite.configuration.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *

@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

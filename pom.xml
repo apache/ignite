@@ -639,7 +639,7 @@
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.apache.ignite.fs:org.apache.ignite.fs.hadoop:org.apache.ignite.fs.hadoop.v1:org.apache.ignite.fs.hadoop.v2:org.apache.ignite.fs.mapreduce:org.apache.ignite.fs.mapreduce.records:org.apache.ignite.hadoop</packages>
+                                            <packages>org.apache.ignite.fs:org.apache.ignite.ignitefs.hadoop:org.apache.ignite.ignitefs.hadoop.v1:org.apache.ignite.ignitefs.hadoop.v2:org.apache.ignite.ignitefs.mapreduce:org.apache.ignite.ignitefs.mapreduce.records:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>
@@ -849,7 +849,7 @@
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.apache.ignite.fs:org.apache.ignite.fs.hadoop:org.apache.ignite.fs.hadoop.v1:org.apache.ignite.fs.hadoop.v2:org.apache.ignite.fs.mapreduce:org.apache.ignite.fs.mapreduce.records:org.apache.ignite.hadoop</packages>
+                                            <packages>org.apache.ignite.fs:org.apache.ignite.ignitefs.hadoop:org.apache.ignite.ignitefs.hadoop.v1:org.apache.ignite.ignitefs.hadoop.v2:org.apache.ignite.ignitefs.mapreduce:org.apache.ignite.ignitefs.mapreduce.records:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>

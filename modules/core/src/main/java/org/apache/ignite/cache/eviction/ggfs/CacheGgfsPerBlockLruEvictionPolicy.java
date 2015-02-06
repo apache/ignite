@@ -20,7 +20,7 @@ package org.apache.ignite.cache.eviction.ggfs;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.jdk8.backport.*;
 import org.jdk8.backport.ConcurrentLinkedDeque8.*;
