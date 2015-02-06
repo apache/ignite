@@ -305,12 +305,6 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
     }
 
     /** {@inheritDoc} */
-    @Override public boolean clear(Collection<? extends K> keys) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public int size(CachePeekMode... peekModes) throws CacheException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
