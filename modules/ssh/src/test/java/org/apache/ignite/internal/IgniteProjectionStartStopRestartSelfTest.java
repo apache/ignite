@@ -927,7 +927,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @param passwd Password.
      * @param key Private key file.
      * @param nodes Number of nodes.
-     * @param igniteHome GridGain home.
+     * @param igniteHome IgniteHome home.
      * @param cfg Configuration file path.
      * @param script Startup script path.
      * @return Parameters map.
@@ -963,7 +963,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @param passwd Password.
      * @param key Private key file.
      * @param nodes Number of nodes.
-     * @param igniteHome GridGain home.
+     * @param igniteHome IgniteHome home.
      * @param cfg Configuration file path.
      * @param script Startup script path.
      * @return Parameters map.
