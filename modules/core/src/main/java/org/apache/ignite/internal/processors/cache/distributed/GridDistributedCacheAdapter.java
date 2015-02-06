@@ -229,8 +229,10 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                 try (IgniteDataLoader<K, V> dataLdr = ignite.dataLoader(cacheName)) {
                     for (GridDhtLocalPartition<K, V> locPart : dht.topology().currentLocalPartitions()) {
                         if (!locPart.isEmpty() && locPart.primary(topVer)) {
-                            for (GridDhtCacheEntry<K, V> o : locPart.entries())
-                                dataLdr.removeData(o.key());
+                            for (GridDhtCacheEntry<K, V> o : locPart.entries()) {
+                                if (!o.obsoleteOrDeleted())
+                                    dataLdr.removeData(o.key());
+                            }
                         }
                     }
                 }
