@@ -20,20 +20,18 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
+import javax.cache.Cache.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
 /**
  * Multi-node tests for partitioned cache.
@@ -200,9 +198,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         jcache().put("key", 1);
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheEntry<String, Integer> e = cache(i).entry("key");
-
-            if (e.backup()) {
+            if (cache(i).affinity().isBackup(grid(i).localNode(), "key")) {
                 assert cache(i).evict("key") : "Entry was not evicted [idx=" + i + ", entry=" +
                     (nearEnabled() ? dht(i).entryEx("key") : colocated(i).entryEx("key")) + ']';
 
@@ -232,22 +228,15 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             GridCache<String, Integer> c = cache(i);
 
-            CacheEntry<String, Integer> e = c.entry("key");
+            Entry<String, Integer> e = c.entry("key");
 
-            if (e.backup()) {
-                assertNull("NEAR_ONLY for cache: " + i, e.peek(F.asList(NEAR_ONLY)));
-                assertEquals((Integer)1, e.peek(F.asList(PARTITIONED_ONLY)));
-
+            if (c.affinity().isBackup(grid(i).localNode(), "key")) {
                 assertNull(c.peek("key", F.asList(NEAR_ONLY)));
 
                 assertEquals((Integer)1, c.peek("key", F.asList(PARTITIONED_ONLY)));
             }
-            else if (!e.primary() && !e.backup()) {
-                assertEquals((Integer)1, e.get());
-
-                assertEquals(nearPeekVal, e.peek(Arrays.asList(NEAR_ONLY)));
-
-                assert e.peek(Arrays.asList(PARTITIONED_ONLY)) == null;
+            else if (!c.affinity().isPrimaryOrBackup(grid(i).localNode(), "key")) {
+                assertEquals((Integer)1, e.getValue());
 
                 assertEquals(nearPeekVal, c.peek("key", Arrays.asList(NEAR_ONLY)));
 
@@ -269,24 +258,12 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             GridCache<String, Integer> c = cache(i);
 
-            CacheEntry<String, Integer> e = c.entry("key");
-
-            if (e.backup()) {
-                assert e.peek(F.asList(NEAR_ONLY)) == null;
-
-                assert e.peek(Arrays.asList(PARTITIONED_ONLY)) == 1;
-
+            if (c.affinity().isBackup(grid(i).localNode(), "key")) {
                 assert c.peek("key", Arrays.asList(NEAR_ONLY)) == null;
 
                 assert c.peek("key", Arrays.asList(PARTITIONED_ONLY)) == 1;
             }
-            else if (!e.primary() && !e.backup()) {
-                assert e.get() == 1;
-
-                assertEquals(nearPeekVal, e.peek(Arrays.asList(NEAR_ONLY)));
-
-                assert e.peek(Arrays.asList(PARTITIONED_ONLY)) == null;
-
+            else if (!c.affinity().isPrimaryOrBackup(grid(i).localNode(), "key")) {
                 assertEquals(nearPeekVal, c.peek("key", Arrays.asList(NEAR_ONLY)));
 
                 assert c.peek("key", Arrays.asList(PARTITIONED_ONLY)) == null;

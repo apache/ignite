@@ -25,6 +25,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.Cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -93,7 +94,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
         int idx = 0;
 
         for (Entry<Integer, String> e : c.entrySet()) {
-            assertNotNull(e.peek());
+            assertNotNull(e.getValue());
 
             idx++;
         }
@@ -132,7 +133,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
         int idx = 0;
 
         for (Entry<Integer, String> e : c.entrySet()) {
-            assertNotNull(e.peek());
+            assertNotNull(e.getValue());
 
             idx++;
         }
@@ -212,7 +213,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
                 int idx = 0;
 
                 for (Entry<Integer, String> e : c.entrySet()) {
-                    assertNotNull(e.peek());
+                    assertNotNull(e.getValue());
 
                     idx++;
                 }
@@ -307,7 +308,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
                 int idx = 0;
 
                 for (Entry<Integer, String> e : c.entrySet()) {
-                    assertNotNull(e.peek());
+                    assertNotNull(e.getValue());
 
                     idx++;
                 }

@@ -26,6 +26,7 @@ import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 import org.junit.*;
 
+import javax.cache.Cache.*;
 import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.locks.*;
@@ -628,7 +629,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
 
         /** {@inheritDoc} */
         @Override public boolean apply(Entry<Integer, Integer> e) {
-            assertEquals(expVal, e.peek());
+            assertEquals(expVal, e.getValue());
 
             return true;
         }

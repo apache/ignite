@@ -39,6 +39,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -709,13 +710,14 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @throws IgniteCheckedException If failed.
          */
         private void put(Object o, String cacheKey, String terminalId) throws IgniteCheckedException {
-            GridCache<CacheAffinityKey<String>, Object> cache = ignite.cache(null);
-
-            CacheAffinityKey<String> affinityKey = new CacheAffinityKey<>(cacheKey, terminalId);
-
-            Entry<CacheAffinityKey<String>, Object> entry = cache.entry(affinityKey);
-
-            entry.setx(o);
+//            GridCache<CacheAffinityKey<String>, Object> cache = ignite.cache(null);
+//
+//            CacheAffinityKey<String> affinityKey = new CacheAffinityKey<>(cacheKey, terminalId);
+//
+//            Entry<CacheAffinityKey<String>, Object> entry = cache.entry(affinityKey);
+//
+//            entry.setx(o);
+            assert false;
         }
 
         /**

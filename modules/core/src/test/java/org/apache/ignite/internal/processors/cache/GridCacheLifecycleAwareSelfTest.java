@@ -33,6 +33,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.Cache.*;
 import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import java.util.*;
@@ -172,7 +173,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Override public void onEntryAccessed(boolean rmv, Entry entry) {
+        @Override public void onEntryAccessed(boolean rmv, EvictableEntry entry) {
             // No-op.
         }
     }

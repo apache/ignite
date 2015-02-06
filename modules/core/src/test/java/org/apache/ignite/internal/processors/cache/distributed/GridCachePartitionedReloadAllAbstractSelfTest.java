@@ -30,6 +30,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
 
+import javax.cache.Cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 
@@ -184,43 +185,44 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
      * @throws Exception If test failed.
      */
     public void testReloadAll() throws Exception {
-        // Fill caches with values.
-        for (GridCache<Integer, String> cache : caches) {
-            Iterable<Integer> keys = primaryKeysForCache(cache, 100);
-
-            info("Values [cache=" + caches.indexOf(cache) + ", size=" + F.size(keys.iterator()) +  ", keys=" + keys + "]");
-
-            for (Integer key : keys)
-                map.put(key, "val" + key);
-        }
-
-        Collection<GridCache<Integer, String>> emptyCaches = new ArrayList<>(caches);
-
-        for (GridCache<Integer, String> cache : caches) {
-            info("Reloading cache: " + caches.indexOf(cache));
-
-            // Check data is reloaded only on the nodes on which reloadAll() has been called.
-            if (!nearEnabled()) {
-                for (GridCache<Integer, String> eCache : emptyCaches)
-                    assertEquals("Non-null values found in cache [cache=" + caches.indexOf(eCache) +
-                        ", size=" + eCache.size() + ", size=" + eCache.size() +
-                        ", entrySetSize=" + eCache.entrySet().size() + "]",
-                        0, eCache.size());
-            }
-
-            cache.reloadAll(map.keySet());
-
-            for (Integer key : map.keySet()) {
-                Entry entry = cache.entry(key);
-
-                if (entry.primary() || entry.backup() || nearEnabled())
-                    assertEquals(map.get(key), cache.peek(key));
-                else
-                    assertNull(cache.peek(key));
-            }
-
-            emptyCaches.remove(cache);
-        }
+        assert false;
+//        // Fill caches with values.
+//        for (GridCache<Integer, String> cache : caches) {
+//            Iterable<Integer> keys = primaryKeysForCache(cache, 100);
+//
+//            info("Values [cache=" + caches.indexOf(cache) + ", size=" + F.size(keys.iterator()) +  ", keys=" + keys + "]");
+//
+//            for (Integer key : keys)
+//                map.put(key, "val" + key);
+//        }
+//
+//        Collection<GridCache<Integer, String>> emptyCaches = new ArrayList<>(caches);
+//
+//        for (GridCache<Integer, String> cache : caches) {
+//            info("Reloading cache: " + caches.indexOf(cache));
+//
+//            // Check data is reloaded only on the nodes on which reloadAll() has been called.
+//            if (!nearEnabled()) {
+//                for (GridCache<Integer, String> eCache : emptyCaches)
+//                    assertEquals("Non-null values found in cache [cache=" + caches.indexOf(eCache) +
+//                        ", size=" + eCache.size() + ", size=" + eCache.size() +
+//                        ", entrySetSize=" + eCache.entrySet().size() + "]",
+//                        0, eCache.size());
+//            }
+//
+//            cache.reloadAll(map.keySet());
+//
+//            for (Integer key : map.keySet()) {
+//                Entry entry = cache.entry(key);
+//
+//                if (entry.primary() || entry.backup() || nearEnabled())
+//                    assertEquals(map.get(key), cache.peek(key));
+//                else
+//                    assertNull(cache.peek(key));
+//            }
+//
+//            emptyCaches.remove(cache);
+//        }
     }
 
     /**
@@ -233,14 +235,15 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
     private Iterable<Integer> primaryKeysForCache(CacheProjection<Integer,String> cache, int cnt) {
         Collection<Integer> found = new ArrayList<>(cnt);
 
-        for (int i = 0; i < 10000; i++) {
-            if (cache.entry(i).primary()) {
-                found.add(i);
-
-                if (found.size() == cnt)
-                    return found;
-            }
-        }
+        assert false;
+//        for (int i = 0; i < 10000; i++) {
+//            if (cache.entry(i).primary()) {
+//                found.add(i);
+//
+//                if (found.size() == cnt)
+//                    return found;
+//            }
+//        }
 
         throw new IllegalStateException("Unable to find " + cnt + " keys as primary for cache.");
     }

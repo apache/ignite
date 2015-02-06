@@ -20,12 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.transactions.*;
 
-import javax.cache.expiry.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -678,218 +673,224 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     private void checkTtl(boolean inTx) throws Exception {
-        int ttl = 1000;
-
-        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
-
-        final GridCache<Integer, Integer> c = grid(0).cache(null);
-
-        final Integer key = primaryKeysForCache(c, 1, 0).get(0);
-
-        c.put(key, 1);
-
-        Entry<Integer, Integer> entry = c.entry(key);
-
-        assert entry != null;
-
-        assertEquals(0, entry.timeToLive());
-        assertEquals(0, entry.expirationTime());
-        assertEquals(0, grid(0).cache(null).metrics().getCacheEvictions());
-
-        long startTime = System.currentTimeMillis();
-
-        if (inTx) {
-            // Rollback transaction for the first time.
-            IgniteTx tx = grid(0).transactions().txStart();
-
-            try {
-                grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
-            }
-            finally {
-                tx.rollback();
-            }
-
-            assertEquals(0, entry.timeToLive());
-            assertEquals(0, entry.expirationTime());
-        }
-
-        // Now commit transaction and check that ttl and expire time have been saved.
-        IgniteTx tx = inTx ? c.txStart() : null;
-
-        try {
-            grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
-        }
-        finally {
-            if (tx != null)
-                tx.commit();
-        }
-
-        long[] expireTimes = new long[gridCount()];
-
-        for (int i = 0; i < gridCount(); i++) {
-            Entry<Object, Object> curEntry = grid(i).cache(null).entry(key);
-
-            if (curEntry.primary() || curEntry.backup()) {
-                assertEquals(ttl, curEntry.timeToLive());
-
-                assert curEntry.expirationTime() > startTime;
-
-                expireTimes[i] = curEntry.expirationTime();
-            }
-        }
-
-        // One more update from the same cache entry to ensure that expire time is shifted forward.
-        IgniteUtils.sleep(100);
-
-        tx = inTx ? c.txStart() : null;
-
-        try {
-            grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 2);
-        }
-        finally {
-            if (tx != null)
-                tx.commit();
-        }
-
-        for (int i = 0; i < gridCount(); i++) {
-            Entry<Object, Object> curEntry = grid(i).cache(null).entry(key);
-
-            if (curEntry.primary() || curEntry.backup()) {
-                assertEquals(ttl, curEntry.timeToLive());
-
-                assert curEntry.expirationTime() > expireTimes[i];
-
-                expireTimes[i] = curEntry.expirationTime();
-            }
-        }
-
-        // And one more direct update to ensure that expire time is shifted forward.
-        IgniteUtils.sleep(100);
-
-        assertEquals(0, grid(0).cache(null).metrics().getCacheEvictions());
-
-        tx = inTx ? c.txStart() : null;
-
-        try {
-            grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 3);
-        }
-        finally {
-            if (tx != null)
-                tx.commit();
-        }
-
-        for (int i = 0; i < gridCount(); i++) {
-            Entry<Object, Object> curEntry = grid(i).cache(null).entry(key);
-
-            if (curEntry.primary() || curEntry.backup()) {
-                assertEquals(ttl, curEntry.timeToLive());
-
-                assert curEntry.expirationTime() > expireTimes[i];
-
-                expireTimes[i] = curEntry.expirationTime();
-            }
-        }
-
-        // And one more update to ensure that ttl is not changed and expire time is not shifted forward.
-        IgniteUtils.sleep(100);
-
-        assertEquals(0, grid(0).cache(null).metrics().getCacheEvictions());
-
-        log.info("Put 4");
-
-        tx = inTx ? c.txStart() : null;
-
-        try {
-            grid(0).jcache(null).put(key, 4);
-        }
-        finally {
-            if (tx != null)
-                tx.commit();
-        }
-
-        log.info("Put 4 done");
-
-        for (int i = 0; i < gridCount(); i++) {
-            Entry<Object, Object> curEntry = grid(i).cache(null).entry(key);
-
-            if (curEntry.primary() || curEntry.backup()) {
-                assertEquals(ttl, curEntry.timeToLive());
-                assertEquals(expireTimes[i], curEntry.expirationTime());
-            }
-        }
-
-        assertEquals(0, grid(0).cache(null).metrics().getCacheEvictions());
-
-        // Avoid reloading from store.
-        map.remove(key);
-
-        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
-            @SuppressWarnings("unchecked")
-            @Override
-            public boolean applyx() throws IgniteCheckedException {
-                try {
-                    if (c.get(key) != null)
-                        return false;
-
-                    // Get "cache" field from GridCacheProxyImpl.
-                    GridCacheAdapter c0 = GridTestUtils.getFieldValue(c, "cache");
-
-                    if (!c0.context().deferredDelete()) {
-                        GridCacheEntryEx e0 = c0.peekEx(key);
-
-                        return e0 == null || (e0.rawGet() == null && e0.valueBytes() == null);
-                    } else
-                        return true;
-                } catch (GridCacheEntryRemovedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }, Math.min(ttl * 10, getTestTimeout())));
-
-        // Ensure that old TTL and expire time are not longer "visible".
-        entry = c.entry(key);
-
-        assertEquals(0, entry.timeToLive());
-        assertEquals(0, entry.expirationTime());
-
-        // Ensure that next update will not pick old expire time.
-
-        tx = inTx ? c.txStart() : null;
-
-        try {
-            entry.set(10);
-        }
-        finally {
-            if (tx != null)
-                tx.commit();
-        }
-
-        IgniteUtils.sleep(2000);
-
-        entry = c.entry(key);
-
-        assertEquals((Integer)10, entry.get());
-
-        assertEquals(0, entry.timeToLive());
-        assertEquals(0, entry.expirationTime());
-
-        if (c.configuration().getCacheMode() != CacheMode.PARTITIONED && inTx)
-            assertEquals(1, grid(0).cache(null).metrics().getCacheEvictions());
+        assert false : "ignite-96";
+//        int ttl = 1000;
+//
+//        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
+//
+//        final GridCache<Integer, Integer> c = grid(0).cache(null);
+//
+//        final Integer key = primaryKeysForCache(grid(0), c, 1, 0).get(0);
+//
+//        c.put(key, 1);
+//
+//        Entry<Integer, Integer> entry = c.entry(key);
+//
+//        assert entry != null;
+//
+//        assertEquals(0, entry.timeToLive());
+//        assertEquals(0, entry.expirationTime());
+//        assertEquals(0, grid(0).cache(null).metrics().getCacheEvictions());
+//
+//        long startTime = System.currentTimeMillis();
+//
+//        if (inTx) {
+//            // Rollback transaction for the first time.
+//            IgniteTx tx = grid(0).transactions().txStart();
+//
+//            try {
+//                grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
+//            }
+//            finally {
+//                tx.rollback();
+//            }
+//
+//            assertEquals(0, entry.timeToLive());
+//            assertEquals(0, entry.expirationTime());
+//        }
+//
+//        // Now commit transaction and check that ttl and expire time have been saved.
+//        IgniteTx tx = inTx ? c.txStart() : null;
+//
+//        try {
+//            grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
+//        }
+//        finally {
+//            if (tx != null)
+//                tx.commit();
+//        }
+//
+//        long[] expireTimes = new long[gridCount()];
+//
+//        for (int i = 0; i < gridCount(); i++) {
+//            Entry<Object, Object> curEntry = grid(i).cache(null).entry(key);
+//
+//            if (curEntry.primary() || curEntry.backup()) {
+//                assertEquals(ttl, curEntry.timeToLive());
+//
+//                assert curEntry.expirationTime() > startTime;
+//
+//                expireTimes[i] = curEntry.expirationTime();
+//            }
+//        }
+//
+//        // One more update from the same cache entry to ensure that expire time is shifted forward.
+//        IgniteUtils.sleep(100);
+//
+//        tx = inTx ? c.txStart() : null;
+//
+//        try {
+//            grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 2);
+//        }
+//        finally {
+//            if (tx != null)
+//                tx.commit();
+//        }
+//
+//        for (int i = 0; i < gridCount(); i++) {
+//            Entry<Object, Object> curEntry = grid(i).cache(null).entry(key);
+//
+//            if (curEntry.primary() || curEntry.backup()) {
+//                assertEquals(ttl, curEntry.timeToLive());
+//
+//                assert curEntry.expirationTime() > expireTimes[i];
+//
+//                expireTimes[i] = curEntry.expirationTime();
+//            }
+//        }
+//
+//        // And one more direct update to ensure that expire time is shifted forward.
+//        IgniteUtils.sleep(100);
+//
+//        assertEquals(0, grid(0).cache(null).metrics().getCacheEvictions());
+//
+//        tx = inTx ? c.txStart() : null;
+//
+//        try {
+//            grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 3);
+//        }
+//        finally {
+//            if (tx != null)
+//                tx.commit();
+//        }
+//
+//        for (int i = 0; i < gridCount(); i++) {
+//            Entry<Object, Object> curEntry = grid(i).cache(null).entry(key);
+//
+//            if (curEntry.primary() || curEntry.backup()) {
+//                assertEquals(ttl, curEntry.timeToLive());
+//
+//                assert curEntry.expirationTime() > expireTimes[i];
+//
+//                expireTimes[i] = curEntry.expirationTime();
+//            }
+//        }
+//
+//        // And one more update to ensure that ttl is not changed and expire time is not shifted forward.
+//        IgniteUtils.sleep(100);
+//
+//        assertEquals(0, grid(0).cache(null).metrics().getCacheEvictions());
+//
+//        log.info("Put 4");
+//
+//        tx = inTx ? c.txStart() : null;
+//
+//        try {
+//            grid(0).jcache(null).put(key, 4);
+//        }
+//        finally {
+//            if (tx != null)
+//                tx.commit();
+//        }
+//
+//        log.info("Put 4 done");
+//
+//        for (int i = 0; i < gridCount(); i++) {
+//            Entry<Object, Object> curEntry = grid(i).cache(null).entry(key);
+//
+//            if (curEntry.primary() || curEntry.backup()) {
+//                assertEquals(ttl, curEntry.timeToLive());
+//                assertEquals(expireTimes[i], curEntry.expirationTime());
+//            }
+//        }
+//
+//        assertEquals(0, grid(0).cache(null).metrics().getCacheEvictions());
+//
+//        // Avoid reloading from store.
+//        map.remove(key);
+//
+//        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
+//            @SuppressWarnings("unchecked")
+//            @Override
+//            public boolean applyx() throws IgniteCheckedException {
+//                try {
+//                    if (c.get(key) != null)
+//                        return false;
+//
+//                    // Get "cache" field from GridCacheProxyImpl.
+//                    GridCacheAdapter c0 = GridTestUtils.getFieldValue(c, "cache");
+//
+//                    if (!c0.context().deferredDelete()) {
+//                        GridCacheEntryEx e0 = c0.peekEx(key);
+//
+//                        return e0 == null || (e0.rawGet() == null && e0.valueBytes() == null);
+//                    } else
+//                        return true;
+//                } catch (GridCacheEntryRemovedException e) {
+//                    throw new RuntimeException(e);
+//                }
+//            }
+//        }, Math.min(ttl * 10, getTestTimeout())));
+//
+//        // Ensure that old TTL and expire time are not longer "visible".
+//        entry = c.entry(key);
+//
+//        assertEquals(0, entry.timeToLive());
+//        assertEquals(0, entry.expirationTime());
+//
+//        // Ensure that next update will not pick old expire time.
+//
+//        tx = inTx ? c.txStart() : null;
+//
+//        try {
+//            entry.set(10);
+//        }
+//        finally {
+//            if (tx != null)
+//                tx.commit();
+//        }
+//
+//        IgniteUtils.sleep(2000);
+//
+//        entry = c.entry(key);
+//
+//        assertEquals((Integer)10, entry.get());
+//
+//        assertEquals(0, entry.timeToLive());
+//        assertEquals(0, entry.expirationTime());
+//
+//        if (c.configuration().getCacheMode() != CacheMode.PARTITIONED && inTx)
+//            assertEquals(1, grid(0).cache(null).metrics().getCacheEvictions());
     }
 
     /**
+     * @param grid
      * @param cache Cache.
      * @param cnt Keys count.
      * @param startFrom Start value for keys search.
      * @return Collection of keys for which given cache is primary.
      * @throws IgniteCheckedException If failed.
      */
-    protected List<Integer> primaryKeysForCache(CacheProjection<Integer, Integer> cache, int cnt, int startFrom)
-            throws IgniteCheckedException {
+    protected List<Integer> primaryKeysForCache(
+        IgniteEx grid,
+        CacheProjection<Integer, Integer> cache,
+        int cnt,
+        int startFrom
+    ) throws IgniteCheckedException {
         List<Integer> found = new ArrayList<>(cnt);
 
         for (int i = startFrom; i < startFrom + 100_000; i++) {
-            if (cache.entry(i).primary()) {
+            if (grid.affinity(cache.name()).isPrimary(grid.localNode(), i)) {
                 found.add(i);
 
                 if (found.size() == cnt)

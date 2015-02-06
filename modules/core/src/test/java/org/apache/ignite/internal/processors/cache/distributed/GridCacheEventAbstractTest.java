@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.Cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;

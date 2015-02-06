@@ -31,6 +31,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.Cache.*;
 import java.util.*;
 
 import static org.apache.ignite.IgniteState.*;
@@ -115,7 +116,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
             Entry e = cache(i).entry(KEY);
 
-            assert !e.isLocked() : "Entry is locked for grid [idx=" + i + ", entry=" + e + ']';
+            assert !cache(i).isLocked(KEY) : "Entry is locked for grid [idx=" + i + ", entry=" + e + ']';
         }
     }
 
@@ -258,7 +259,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         Entry e = checkCache.entry(KEY);
 
-        assert e.isLocked() : "Entry is not locked for grid [idx=" + checkIdx + ", entry=" + e + ']';
+        assert cache.isLocked(KEY) : "Entry is not locked for grid [idx=" + checkIdx + ", entry=" + e + ']';
 
         IgniteFuture<?> f = waitForLocalEvent(grid(checkIdx).events(), new P1<IgniteEvent>() {
             @Override public boolean apply(IgniteEvent e) {
@@ -292,6 +293,6 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         e = checkCache.entry(KEY);
 
-        assert !e.isLocked() : "Entry is locked for grid [idx=" + checkIdx + ", entry=" + e + ']';
+        assert !cache.isLocked(KEY) : "Entry is locked for grid [idx=" + checkIdx + ", entry=" + e + ']';
     }
 }

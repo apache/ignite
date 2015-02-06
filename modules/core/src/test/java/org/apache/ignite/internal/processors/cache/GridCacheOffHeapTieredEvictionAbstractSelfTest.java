@@ -25,6 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.testframework.*;
 
+import javax.cache.Cache.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
@@ -271,7 +272,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
         @Override public final boolean apply(Entry<Integer, Object> e) {
             assertNotNull(e);
 
-            Object val = e.peek();
+            Object val = e.getValue();
 
             if (val == null) {
                 if (!acceptNull)

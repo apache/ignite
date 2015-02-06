@@ -28,6 +28,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -128,8 +129,8 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
     protected MockEntry entry(MockEntry[] arr, int idx) {
         MockEntry e = arr[idx];
 
-        if (e.isEvicted())
-            e = arr[idx] = new MockEntry(e.getKey());
+//        if (e.isEvicted()) // TODO ignite-96
+//            e = arr[idx] = new MockEntry(e.getKey());
 
         return e;
     }
@@ -443,20 +444,6 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
         /** {@inheritDoc} */
         @Override public String getValue() throws IllegalStateException {
             return val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String setValue(String val) {
-            String old = this.val;
-
-            this.val = val;
-
-            return old;
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheProjection<String, String> projection() {
-            return parent;
         }
     }
 }

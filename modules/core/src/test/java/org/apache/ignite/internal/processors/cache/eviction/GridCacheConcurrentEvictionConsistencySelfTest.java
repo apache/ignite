@@ -31,6 +31,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.Cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -208,7 +209,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
 
             fut.get();
 
-            Collection<Entry<Integer, Integer>> queue = internalQueue(plc);
+            Collection<EvictableEntry<Integer, Integer>> queue = internalQueue(plc);
 
             info("Test results [threadCnt=" + threadCnt + ", iterCnt=" + ITERATION_CNT + ", cacheSize=" + cache.size() +
                 ", internalQueueSize" + queue.size() + ", duration=" + (System.currentTimeMillis() - start) + ']');
@@ -248,7 +249,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @param plc Policy to get queue from.
      * @return Internal entries collection.
      */
-    private Collection<Entry<Integer, Integer>> internalQueue(CacheEvictionPolicy<?, ?> plc) {
+    private Collection<EvictableEntry<Integer, Integer>> internalQueue(CacheEvictionPolicy<?, ?> plc) {
         if (plc instanceof CacheFifoEvictionPolicy) {
             CacheFifoEvictionPolicy<Integer, Integer> plc0 = (CacheFifoEvictionPolicy<Integer, Integer>)plc;
 

@@ -25,6 +25,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 
+import javax.cache.Cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;

@@ -27,6 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.Cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -54,8 +55,8 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
 
     /** Policy. */
     private CacheEvictionPolicy<Object, Object> plc = new CacheEvictionPolicy<Object, Object>() {
-        @Override public void onEntryAccessed(boolean rmv, Entry entry) {
-            assert !(entry.peek() instanceof Integer);
+        @Override public void onEntryAccessed(boolean rmv, EvictableEntry entry) {
+            assert !(entry.getValue() instanceof Integer);
         }
     };
 
@@ -229,14 +230,12 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
 
             i.incrementAndGet();
 
-            String grid = entry.projection().gridProjection().ignite().name();
-
-            boolean ret = !(entry.peek() instanceof Integer);
+            boolean ret = !(entry.getValue() instanceof Integer);
 
             if (!ret)
-                info(">>> Not evicting key [grid=" + grid + ", key=" + entry.getKey() + ", cnt=" + i.get() + ']');
+                info(">>> Not evicting key [key=" + entry.getKey() + ", cnt=" + i.get() + ']');
             else
-                info(">>> Evicting key [grid=" + grid + ", key=" + entry.getKey() + ", cnt=" + i.get() + ']');
+                info(">>> Evicting key [key=" + entry.getKey() + ", cnt=" + i.get() + ']');
 
             return ret;
         }

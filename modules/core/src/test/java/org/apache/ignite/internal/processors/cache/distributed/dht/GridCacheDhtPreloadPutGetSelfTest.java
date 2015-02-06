@@ -29,6 +29,7 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 

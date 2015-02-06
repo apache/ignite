@@ -26,6 +26,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.Cache.*;
+
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -210,7 +212,7 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
 
         IgniteInClosure<Entry<Integer, Integer>> c = new CI1<Entry<Integer, Integer>>() {
             @Override public void apply(Entry<Integer, Integer> t) {
-                if (t.peek() < SMALL_ENTRY_CNT)
+                if (t.getValue() < SMALL_ENTRY_CNT)
                     cnt.increment();
             }
         };

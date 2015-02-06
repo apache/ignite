@@ -33,6 +33,7 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -113,6 +114,8 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
 
             int oldSize = cache1.size();
 
+            assert false;
+
             IgniteInternalFuture fut = multithreadedAsync(
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
@@ -124,7 +127,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                             Entry<Integer, Object> entry = randomEntry(ignite1);
 
                             if (entry != null)
-                                entry.evict();
+                                ignite1.cache(null).evict(entry.getKey());
                             else
                                 info("Entry is null.");
                         }
@@ -163,10 +166,10 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
             for (int i = 0; i < 1000; i++) {
                 Entry<Integer, Object> entry = randomEntry(ignite1);
 
-                if (entry != null)
-                    entry.evict();
-                else
-                    info("Entry is null.");
+//                if (entry != null) // TODO ignite-96
+//                    entry.evict();
+//                else
+//                    info("Entry is null.");
             }
 
             sleepUntilCashesEqualize(ignite1, ignite2, oldSize);

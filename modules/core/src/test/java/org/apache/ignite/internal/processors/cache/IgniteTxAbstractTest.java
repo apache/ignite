@@ -31,6 +31,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.Cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -423,16 +424,16 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                         if (j == 0) {
                             e1 = cache.entry(i);
 
-                            v1 = e1.get();
+                            v1 = e1.getValue();
                         }
                         else {
                             Entry<Integer, String> e2 = cache.entry(i);
 
-                            String v2 = e2.get();
+                            String v2 = e2.getValue();
 
                             if (!F.eq(v2, v1)) {
-                                v1 = e1.get();
-                                v2 = e2.get();
+                                v1 = e1.getValue();
+                                v2 = e2.getValue();
                             }
 
                             assert F.eq(v2, v1) :

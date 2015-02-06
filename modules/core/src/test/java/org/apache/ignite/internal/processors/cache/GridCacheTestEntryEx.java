@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.dr.*;
@@ -27,6 +27,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.util.*;
@@ -116,7 +117,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Entry<K, V> evictWrap() {
+    @Nullable @Override public EvictableEntry<K, V> evictWrap() {
         return null;
     }
 

@@ -42,6 +42,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache.*;
 import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import java.util.*;
@@ -1116,7 +1117,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         CacheContinuousQuery<Integer, Integer> qry = cache.projection(
             new P1<Entry<Integer, Integer>>() {
                 @Override public boolean apply(Entry<Integer, Integer> e) {
-                    Integer i = e.peek();
+                    Integer i = e.getValue();
 
                     return i != null && i > 10;
                 }
@@ -1260,56 +1261,6 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
             assertEquals(1, (int)map.get(1));
             assertEquals(2, (int)map.get(2));
-        }
-        finally {
-            qry.close();
-        }
-    }
-
-    /**
-     * @throws Exception If filter.
-     */
-    public void testUpdateInFilter() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
-
-        cache.putx(1, 1);
-
-        CacheProjection<Integer, Integer> prj = cache.projection(new P1<Entry<Integer, Integer>>() {
-            @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-            @Override public boolean apply(final Entry<Integer, Integer> e) {
-                GridTestUtils.assertThrows(
-                    log,
-                    new Callable<Object>() {
-                        @Override public Object call() throws Exception {
-                            e.set(1000);
-
-                            return null;
-                        }
-                    },
-                    CacheFlagException.class,
-                    null
-                );
-
-                return true;
-            }
-        });
-
-        CacheContinuousQuery<Integer, Integer> qry = prj.queries().createContinuousQuery();
-
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        qry.localCallback(new P2<UUID, Collection<CacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<CacheContinuousQueryEntry<Integer, Integer>> entries) {
-                latch.countDown();
-
-                return true;
-            }
-        });
-
-        try {
-            qry.execute();
-
-            assert latch.await(LATCH_TIMEOUT, MILLISECONDS);
         }
         finally {
             qry.close();

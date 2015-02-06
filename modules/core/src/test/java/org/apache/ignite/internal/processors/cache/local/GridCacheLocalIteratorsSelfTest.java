@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.local;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 
+import javax.cache.Cache.*;
 import java.io.*;
 import java.util.*;
 
@@ -99,7 +100,6 @@ public class GridCacheLocalIteratorsSelfTest extends GridCacheAbstractIteratorsS
 
         checkKey(entry.getKey());
         checkValue(entry.getValue(), bound);
-        checkValue(entry.get(), bound);
     }
 
     /**

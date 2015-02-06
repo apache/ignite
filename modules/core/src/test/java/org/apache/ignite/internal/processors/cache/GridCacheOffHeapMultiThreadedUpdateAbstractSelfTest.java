@@ -23,6 +23,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 
+import javax.cache.Cache.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.concurrent.*;
@@ -385,7 +386,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
 
                 return false;
             }
-            else if (e.peek() == null) {
+            else if (e.getValue() == null) {
                 failed = true;
 
                 System.out.println(Thread.currentThread() + " got null value in filter: " + e);

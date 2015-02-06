@@ -30,6 +30,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.Cache.*;
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
