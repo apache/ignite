@@ -34,7 +34,7 @@ public class GridPeerDeployAwareAdapter implements GridPeerDeployAware {
      * will be copied, i.e. this lambda object will be peer deployed
      * using the same class loader as given object.
      * <p>
-     * Note that in most cases GridGain attempts to automatically call this
+     * Note that in most cases Ignite attempts to automatically call this
      * method whenever lambda classes like closures and predicates are created that
      * wrap user object (the peer deploy information in such cases will be copied
      * from the user object).

@@ -100,7 +100,7 @@ class IgniteJdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public String getDatabaseProductName() throws SQLException {
-        return "GridGain Cache";
+        return "Ignite Cache";
     }
 
     /** {@inheritDoc} */
@@ -110,7 +110,7 @@ class IgniteJdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public String getDriverName() throws SQLException {
-        return "GridGain JDBC Driver";
+        return "Ignite JDBC Driver";
     }
 
     /** {@inheritDoc} */
@@ -1296,7 +1296,7 @@ class IgniteJdbcDatabaseMetadata implements DatabaseMetaData {
             }
         }
         catch (GridClientException e) {
-            throw new SQLException("Failed to get meta data from GridGain.", e);
+            throw new SQLException("Failed to get meta data from Ignite.", e);
         }
     }
 

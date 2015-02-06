@@ -21,7 +21,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * GridGain properties holder.
+ * Ignite properties holder.
  */
 public class GridProperties {
     /** Properties file path. */

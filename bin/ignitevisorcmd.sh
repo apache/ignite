@@ -37,7 +37,7 @@ checkJava
 #
 # Discover IGNITE_HOME environment variable.
 #
-setGridGainHome
+setIgniteHome
 
 #
 # Parse command line parameters.
@@ -62,7 +62,7 @@ JVM_OPTS="-Xms1g -Xmx1g -XX:MaxPermSize=128M -server ${JVM_OPTS}"
 osname=`uname`
 
 if [ "${DOCK_OPTS}" == "" ]; then
-    DOCK_OPTS="-Xdock:name=Visor - GridGain Shell Console"
+    DOCK_OPTS="-Xdock:name=Visor - Ignite Shell Console"
 fi
 
 #

@@ -55,17 +55,17 @@ public class ClientTcpConnectivitySelfTest extends ClientAbstractConnectivitySel
 
     /** {@inheritDoc} */
     @Override protected String restAddressAttributeName() {
-        return GridNodeAttributes.ATTR_REST_TCP_ADDRS;
+        return IgniteNodeAttributes.ATTR_REST_TCP_ADDRS;
     }
 
     /** {@inheritDoc} */
     @Override protected String restHostNameAttributeName() {
-        return GridNodeAttributes.ATTR_REST_TCP_HOST_NAMES;
+        return IgniteNodeAttributes.ATTR_REST_TCP_HOST_NAMES;
     }
 
     /** {@inheritDoc} */
     @Override protected String restPortAttributeName() {
-        return GridNodeAttributes.ATTR_REST_TCP_PORT;
+        return IgniteNodeAttributes.ATTR_REST_TCP_PORT;
     }
 
     /** {@inheritDoc} */

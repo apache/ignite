@@ -26,7 +26,7 @@ public enum GridSegmentationPolicy {
     /**
      * When segmentation policy is {@code RESTART_JVM}, all listeners will receive
      * {@link org.apache.ignite.events.IgniteEventType#EVT_NODE_SEGMENTED} event and then JVM will be restarted.
-     * Note, that this will work <b>only</b> if GridGain is started with {@link org.apache.ignite.startup.cmdline.CommandLineStartup}
+     * Note, that this will work <b>only</b> if Ignite is started with {@link org.apache.ignite.startup.cmdline.CommandLineStartup}
      * via standard {@code ignite.{sh|bat}} shell script.
      */
     RESTART_JVM,

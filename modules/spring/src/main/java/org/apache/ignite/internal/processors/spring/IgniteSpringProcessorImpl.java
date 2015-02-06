@@ -42,8 +42,8 @@ import java.util.concurrent.atomic.*;
  * Spring configuration processor.
  */
 public class IgniteSpringProcessorImpl implements IgniteSpringProcessor {
-    /** Path to {@code gridgain.xml} file. */
-    public static final String IGNITE_XML_PATH = "META-INF/gridgain.xml";
+    /** Path to {@code ignite.xml} file. */
+    public static final String IGNITE_XML_PATH = "META-INF/ignite.xml";
 
     /** System class loader user version. */
     private static final AtomicReference<String> SYS_LDR_VER = new AtomicReference<>(null);

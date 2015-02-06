@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
 /**
  * Special kill task that never fails over jobs.

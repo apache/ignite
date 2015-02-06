@@ -100,7 +100,7 @@ public class VisorFileBlockTask extends VisorOneNodeTask<VisorFileBlockTask.Viso
         /** {@inheritDoc} */
         @Override protected IgniteBiTuple<? extends IOException, VisorFileBlock> run(VisorFileBlockArg arg) {
             try {
-                URL url = U.resolveGridGainUrl(arg.path);
+                URL url = U.resolveIgniteUrl(arg.path);
 
                 if (url == null)
                     return new IgniteBiTuple<>(new NoSuchFileException("File path not found: " + arg.path), null);

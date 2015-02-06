@@ -102,8 +102,8 @@ abstract class GridCacheAbstractLoadTest {
         Properties props = new Properties();
 
         try {
-            props.load(new FileReader(GridTestUtils.resolveGridGainPath(
-                "modules/tests/config/cache-load.properties")));
+            props.load(new FileReader(GridTestUtils.resolveIgnitePath(
+                    "modules/tests/config/cache-load.properties")));
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -249,7 +249,7 @@ abstract class GridCacheAbstractLoadTest {
 
         impl.removeAllAppenders();
 
-        String fileName =  U.getGridGainHome() + "/work/log/" + log;
+        String fileName =  U.getIgniteHome() + "/work/log/" + log;
 
         // Configure output that should go to System.out
         RollingFileAppender fileApp;
@@ -303,7 +303,7 @@ abstract class GridCacheAbstractLoadTest {
 
         impl.setLevel(Level.INFO);
 
-        //Logger.getLogger("org.gridgain").setLevel(Level.INFO);
+        //Logger.getLogger("org.apache.ignite").setLevel(Level.INFO);
         //Logger.getLogger(GridCacheVersionManager.class).setLevel(Level.DEBUG);
 
         return new GridTestLog4jLogger(false);
@@ -319,7 +319,7 @@ abstract class GridCacheAbstractLoadTest {
      */
     @SuppressWarnings("unchecked")
     protected IgniteConfiguration configuration(String springCfgPath, String log) throws IgniteCheckedException {
-        File path = GridTestUtils.resolveGridGainPath(springCfgPath);
+        File path = GridTestUtils.resolveIgnitePath(springCfgPath);
 
         if (path == null)
             throw new IgniteCheckedException("Spring XML configuration file path is invalid: " + new File(springCfgPath) +

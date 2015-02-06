@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.lang.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 

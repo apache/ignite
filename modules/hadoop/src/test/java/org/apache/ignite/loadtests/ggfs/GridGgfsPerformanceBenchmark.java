@@ -206,7 +206,7 @@ public class GridGgfsPerformanceBenchmark {
     private static FileSystem ggfs(Path home, String cfgPath) throws IOException {
         Configuration cfg = new Configuration();
 
-        cfg.addResource(U.resolveGridGainUrl(cfgPath));
+        cfg.addResource(U.resolveIgniteUrl(cfgPath));
 
         return FileSystem.get(home.toUri(), cfg);
     }

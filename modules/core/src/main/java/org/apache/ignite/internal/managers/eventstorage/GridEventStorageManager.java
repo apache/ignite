@@ -126,7 +126,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
         }
 
         // Javadoc to GridEventType states that all types in range from 1 to 1000
-        // are reserved for internal GridGain events.
+        // are reserved for internal Ignite events.
         assert maxIdx <= 1000 : "Invalid max index: " + maxIdx;
 
         // We don't want to pre-process passed in types,
@@ -466,7 +466,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     /**
      * Checks whether all provided events are user-recordable.
      * <p>
-     * Note that this method supports only predefined GridGain events.
+     * Note that this method supports only predefined Ignite events.
      *
      * @param types Event types.
      * @return Whether all events are recordable.

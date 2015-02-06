@@ -66,19 +66,19 @@ public class GridCacheGroupLockComparisonTest {
             System.out.println("batchSize=" + BATCH_SIZE);
 
             // Populate and warm-up.
-            gridGainGroupLock(g, OBJECT_CNT, THREADS);
+            igniteGroupLock(g, OBJECT_CNT, THREADS);
 
-            gridGainGroupLock(g, OBJECT_CNT, THREADS);
+            igniteGroupLock(g, OBJECT_CNT, THREADS);
         }
     }
 
     /**
-     * @param ignite Grid.
+     * @param ignite Ignite.
      * @param max Maximum cache size.
      * @param threads Threads.
      * @throws Exception If failed.
      */
-    private static void gridGainPutAll(Ignite ignite, final long max, int threads) throws Exception {
+    private static void ignitePutAll(Ignite ignite, final long max, int threads) throws Exception {
         X.println(">>>");
         X.println(">>> Testing putAll");
         X.println(">>>");
@@ -128,12 +128,12 @@ public class GridCacheGroupLockComparisonTest {
     }
 
     /**
-     * @param ignite Grid.
+     * @param ignite Ignite.
      * @param max Maximum cache size.
      * @param threads Threads.
      * @throws Exception If failed.
      */
-    private static void gridGainGroupLock(Ignite ignite, final long max, int threads) throws Exception {
+    private static void igniteGroupLock(Ignite ignite, final long max, int threads) throws Exception {
         X.println(">>>");
         X.println(">>> Testing group lock");
         X.println(">>>");

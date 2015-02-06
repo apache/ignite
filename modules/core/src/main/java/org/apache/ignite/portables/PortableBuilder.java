@@ -25,7 +25,7 @@ import org.jetbrains.annotations.*;
  * <p>
  * Here is an example of how a portable object can be built dynamically:
  * <pre name=code class=java>
- * GridPortableBuilder builder = GridGain.grid().portables().builder("org.project.MyObject");
+ * GridPortableBuilder builder = Ignition.ignite().portables().builder("org.project.MyObject");
  *
  * builder.setField("fieldA", "A");
  * builder.setField("fieldB", "B");
@@ -37,7 +37,7 @@ import org.jetbrains.annotations.*;
  * Also builder can be initialized by existing portable object. This allows changing some fields without affecting
  * other fields.
  * <pre name=code class=java>
- * GridPortableBuilder builder = GridGain.grid().portables().builder(person);
+ * GridPortableBuilder builder = Ignition.ignite().portables().builder(person);
  *
  * builder.setField("name", "John");
  *

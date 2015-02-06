@@ -83,7 +83,7 @@ import java.util.*;
  * Here is Spring XML configuration example:
  * <pre name="code" class="xml">
  * &lt;property name="collisionSpi"&gt;
- *     &lt;bean class="org.gridgain.grid.spi.collision.priorityqueue.GridPriorityQueueCollisionSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.collision.priorityqueue.GridPriorityQueueCollisionSpi"&gt;
  *         &lt;property name="priorityAttributeKey" value="myPriorityAttributeKey"/&gt;
  *         &lt;property name="parallelJobsNumber" value="10"/&gt;
  *     &lt;/bean&gt;

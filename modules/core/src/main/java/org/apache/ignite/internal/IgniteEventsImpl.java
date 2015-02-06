@@ -164,7 +164,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter<IgniteEvents> im
 
         if (evt.type() <= 1000)
             throw new IllegalArgumentException("All types in range from 1 to 1000 are reserved for " +
-                "internal GridGain events [evtType=" + evt.type() + ", evt=" + evt + ']');
+                "internal Ignite events [evtType=" + evt.type() + ", evt=" + evt + ']');
 
         guard();
 

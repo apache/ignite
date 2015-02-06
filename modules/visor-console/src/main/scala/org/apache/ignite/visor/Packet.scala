@@ -28,10 +28,10 @@ package org.apache.ignite
  * }}}
  *
  * ==Overview==
- * Visor console provides monitoring capabilities for GridGain.
+ * Visor console provides monitoring capabilities for Ignite.
  *
  * ==Usage==
- * GridGain ships with `IGNITE_HOME/bin/ignitevisorcmd.{sh|bat}` script that starts Visor console.
+ * Ignite ships with `IGNITE_HOME/bin/ignitevisorcmd.{sh|bat}` script that starts Visor console.
  *
  * Just type:<ex>help</ex> in Visor console to get help and get started.
  */

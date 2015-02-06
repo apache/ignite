@@ -65,7 +65,7 @@ import org.apache.ignite.cluster.*;
  * SPI:
  * <pre name="code" class="xml">
  * &lt;property name="loadBalancingSpi"&gt;
- *     &lt;bean class="org.gridgain.grid.spi.loadBalancing.adaptive.GridAdaptiveLoadBalancingSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.loadBalancing.adaptive.GridAdaptiveLoadBalancingSpi"&gt;
  *         &lt;property name="loadProbe"&gt;
  *             &lt;bean class="foo.bar.FooBarLoadProbe"&gt;
  *                 &lt;constructor-arg value="true"/&gt;

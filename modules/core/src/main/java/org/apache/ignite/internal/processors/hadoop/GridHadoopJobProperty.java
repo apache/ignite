@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.hadoop;
 import org.jetbrains.annotations.*;
 
 /**
- * Enumeration of optional properties supported by GridGain for Apache Hadoop.
+ * Enumeration of optional properties supported by Ignite for Apache Hadoop.
  */
 public enum GridHadoopJobProperty {
     /**
@@ -52,7 +52,7 @@ public enum GridHadoopJobProperty {
     EXTERNAL_CONCURRENT_REDUCERS,
 
     /**
-     * Delay in milliseconds after which GridGain server will reply job status.
+     * Delay in milliseconds after which Ignite server will reply job status.
      */
     JOB_STATUS_POLL_DELAY,
 
