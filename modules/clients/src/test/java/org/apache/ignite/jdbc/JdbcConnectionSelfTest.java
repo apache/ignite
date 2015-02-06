@@ -88,7 +88,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(2);
 
-        Class.forName("org.apache.ignite.jdbc.IgniteJdbcDriver");
+        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */

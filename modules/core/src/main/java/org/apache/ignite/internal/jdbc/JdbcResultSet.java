@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc;
+package org.apache.ignite.internal.jdbc;
 
 import org.apache.ignite.client.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.jdbc.typedef.*;
 
 import java.io.*;
 import java.math.*;
@@ -31,13 +30,13 @@ import java.util.*;
 /**
  * JDBC result set implementation.
  */
-class IgniteJdbcResultSet implements ResultSet {
+public class JdbcResultSet implements ResultSet {
     /** Task name. */
     private static final String TASK_NAME =
         "org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcTask";
 
     /** Statement. */
-    private final IgniteJdbcStatement stmt;
+    private final JdbcStatement stmt;
 
     /** Node ID. */
     private final UUID nodeId;
@@ -88,9 +87,9 @@ class IgniteJdbcResultSet implements ResultSet {
      * @param finished Finished flag.
      * @param fetchSize Fetch size.
      */
-    IgniteJdbcResultSet(IgniteJdbcStatement stmt, UUID nodeId, UUID futId,
-                        List<String> tbls, List<String> cols, List<String> types,
-                        Collection<List<Object>> fields, boolean finished, int fetchSize) {
+    JdbcResultSet(JdbcStatement stmt, UUID nodeId, UUID futId,
+        List<String> tbls, List<String> cols, List<String> types,
+        Collection<List<Object>> fields, boolean finished, int fetchSize) {
         assert stmt != null;
         assert nodeId != null;
         assert futId != null;
@@ -122,8 +121,8 @@ class IgniteJdbcResultSet implements ResultSet {
      * @param types Types.
      * @param fields Fields.
      */
-    IgniteJdbcResultSet(IgniteJdbcStatement stmt, List<String> tbls, List<String> cols,
-                        List<String> types, Collection<List<Object>> fields) {
+    JdbcResultSet(JdbcStatement stmt, List<String> tbls, List<String> cols,
+        List<String> types, Collection<List<Object>> fields) {
         assert stmt != null;
         assert tbls != null;
         assert cols != null;
@@ -156,8 +155,8 @@ class IgniteJdbcResultSet implements ResultSet {
 
                 GridClientCompute prj = compute.projection(compute.node(nodeId));
 
-                byte[] packet = prj.execute(TASK_NAME, JU.marshalArgument(
-                    JU.taskArgument(nodeId, futId, fetchSize, stmt.getMaxRows())));
+                byte[] packet = prj.execute(TASK_NAME, JdbcUtils.marshalArgument(
+                    JdbcUtils.taskArgument(nodeId, futId, fetchSize, stmt.getMaxRows())));
 
                 byte status = packet[0];
                 byte[] data = new byte[packet.length - 1];
@@ -165,9 +164,9 @@ class IgniteJdbcResultSet implements ResultSet {
                 U.arrayCopy(packet, 1, data, 0, data.length);
 
                 if (status == 1)
-                    throw JU.unmarshalError(data);
+                    throw JdbcUtils.unmarshalError(data);
                 else {
-                    List<?> msg = JU.unmarshal(data);
+                    List<?> msg = JdbcUtils.unmarshal(data);
 
                     assert msg.size() == 2;
 
@@ -430,7 +429,7 @@ class IgniteJdbcResultSet implements ResultSet {
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        return new IgniteJdbcResultSetMetadata(tbls, cols, types);
+        return new JdbcResultSetMetadata(tbls, cols, types);
     }
 
     /** {@inheritDoc} */

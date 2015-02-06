@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc;
+package org.apache.ignite;
 
+
+import org.apache.ignite.internal.jdbc.*;
 
 import java.sql.*;
 import java.util.*;
@@ -235,25 +237,25 @@ public class IgniteJdbcDriver implements Driver {
     private static final String PROP_PREFIX = "gg.jdbc.";
 
     /** Hostname property name. */
-    static final String PROP_HOST = PROP_PREFIX + "host";
+    public static final String PROP_HOST = PROP_PREFIX + "host";
 
     /** Port number property name. */
-    static final String PROP_PORT = PROP_PREFIX + "port";
+    public static final String PROP_PORT = PROP_PREFIX + "port";
 
     /** Cache name property name. */
-    static final String PROP_CACHE = PROP_PREFIX + "cache";
+    public static final String PROP_CACHE = PROP_PREFIX + "cache";
 
     /** Node ID URL parameter name. */
-    static final String PARAM_NODE_ID = "nodeId";
+    public static final String PARAM_NODE_ID = "nodeId";
 
     /** Node ID property name. */
-    static final String PROP_NODE_ID = PROP_PREFIX + PARAM_NODE_ID;
+    public static final String PROP_NODE_ID = PROP_PREFIX + PARAM_NODE_ID;
 
     /** URL prefix. */
-    private static final String URL_PREFIX = "jdbc:gridgain://";
+    public static final String URL_PREFIX = "jdbc:gridgain://";
 
     /** Default port. */
-    private static final int DFLT_PORT = 11211;
+    public static final int DFLT_PORT = 11211;
 
     /** Major version. */
     private static final int MAJOR_VER = 1;
@@ -278,7 +280,7 @@ public class IgniteJdbcDriver implements Driver {
         if (!parseUrl(url, props))
             throw new SQLException("URL is invalid: " + url);
 
-        return new IgniteJdbcConnection(url, props);
+        return new JdbcConnection(url, props);
     }
 
     /** {@inheritDoc} */

@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc;
+package org.apache.ignite.internal.jdbc;
 
 import org.apache.ignite.client.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.jdbc.typedef.*;
 
 import java.sql.*;
 import java.util.*;
@@ -29,7 +28,7 @@ import static java.sql.ResultSet.*;
 /**
  * JDBC statement implementation.
  */
-class IgniteJdbcStatement implements Statement {
+public class JdbcStatement implements Statement {
     /** Task name. */
     private static final String TASK_NAME =
         "org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcTask";
@@ -38,7 +37,7 @@ class IgniteJdbcStatement implements Statement {
     private static final int DFLT_FETCH_SIZE = 1024;
 
     /** Connection. */
-    private final IgniteJdbcConnection conn;
+    private final JdbcConnection conn;
 
     /** Closed flag. */
     private boolean closed;
@@ -63,7 +62,7 @@ class IgniteJdbcStatement implements Statement {
      *
      * @param conn Connection.
      */
-    IgniteJdbcStatement(IgniteJdbcConnection conn) {
+    JdbcStatement(JdbcConnection conn) {
         assert conn != null;
 
         this.conn = conn;
@@ -80,8 +79,8 @@ class IgniteJdbcStatement implements Statement {
 
         try {
             byte[] packet = conn.client().compute().execute(TASK_NAME,
-                JU.marshalArgument(JU.taskArgument(conn.nodeId(), conn.cacheName(), sql, timeout, args, fetchSize,
-                    maxRows)));
+                JdbcUtils.marshalArgument(JdbcUtils.taskArgument(conn.nodeId(), conn.cacheName(), sql,
+                    timeout, args, fetchSize, maxRows)));
 
             byte status = packet[0];
             byte[] data = new byte[packet.length - 1];
@@ -89,9 +88,9 @@ class IgniteJdbcStatement implements Statement {
             U.arrayCopy(packet, 1, data, 0, data.length);
 
             if (status == 1)
-                throw JU.unmarshalError(data);
+                throw JdbcUtils.unmarshalError(data);
             else {
-                List<?> msg = JU.unmarshal(data);
+                List<?> msg = JdbcUtils.unmarshal(data);
 
                 assert msg.size() == 7;
 
@@ -103,7 +102,7 @@ class IgniteJdbcStatement implements Statement {
                 Collection<List<Object>> fields = (Collection<List<Object>>)msg.get(5);
                 boolean finished = (Boolean)msg.get(6);
 
-                return new IgniteJdbcResultSet(this, nodeId, futId, tbls, cols, types, fields, finished, fetchSize);
+                return new JdbcResultSet(this, nodeId, futId, tbls, cols, types, fields, finished, fetchSize);
             }
         }
         catch (GridClientException e) {
@@ -433,7 +432,7 @@ class IgniteJdbcStatement implements Statement {
     /**
      * @return Connection.
      */
-    IgniteJdbcConnection connection() {
+    JdbcConnection connection() {
         return conn;
     }
 

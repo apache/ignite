@@ -72,7 +72,7 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid();
 
-        Class.forName("org.apache.ignite.jdbc.IgniteJdbcDriver");
+        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */

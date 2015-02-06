@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc;
+package org.apache.ignite.internal.jdbc;
 
 import java.io.*;
 import java.math.*;
@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * JDBC prepared statement implementation.
  */
-class IgniteJdbcPreparedStatement extends IgniteJdbcStatement implements PreparedStatement {
+public class JdbcPreparedStatement extends JdbcStatement implements PreparedStatement {
     /** SQL query. */
     private final String sql;
 
@@ -40,7 +40,7 @@ class IgniteJdbcPreparedStatement extends IgniteJdbcStatement implements Prepare
      * @param conn Connection.
      * @param sql SQL query.
      */
-    IgniteJdbcPreparedStatement(IgniteJdbcConnection conn, String sql) {
+    JdbcPreparedStatement(JdbcConnection conn, String sql) {
         super(conn);
 
         this.sql = sql;

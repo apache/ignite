@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc;
+package org.apache.ignite.internal.jdbc;
 
 import org.apache.ignite.client.*;
 
@@ -25,12 +25,12 @@ import java.util.concurrent.*;
 
 import static java.sql.ResultSet.*;
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.jdbc.IgniteJdbcDriver.*;
+import static org.apache.ignite.IgniteJdbcDriver.*;
 
 /**
  * JDBC connection implementation.
  */
-class IgniteJdbcConnection implements Connection {
+public class JdbcConnection implements Connection {
     /** Validation task name. */
     private static final String VALID_TASK_NAME =
         "org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcValidationTask";
@@ -60,7 +60,7 @@ class IgniteJdbcConnection implements Connection {
      * @param props Additional properties.
      * @throws SQLException In case GridGain client failed to start.
      */
-    IgniteJdbcConnection(String url, Properties props) throws SQLException {
+    public JdbcConnection(String url, Properties props) throws SQLException {
         assert url != null;
         assert props != null;
 
@@ -167,7 +167,7 @@ class IgniteJdbcConnection implements Connection {
     @Override public DatabaseMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        return new IgniteJdbcDatabaseMetadata(this);
+        return new JdbcDatabaseMetadata(this);
     }
 
     /** {@inheritDoc} */
@@ -315,7 +315,7 @@ class IgniteJdbcConnection implements Connection {
         if (resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
 
-        IgniteJdbcStatement stmt = new IgniteJdbcStatement(this);
+        JdbcStatement stmt = new JdbcStatement(this);
 
         if (timeout > 0)
             stmt.timeout(timeout);
@@ -337,7 +337,7 @@ class IgniteJdbcConnection implements Connection {
         if (resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
 
-        IgniteJdbcPreparedStatement stmt = new IgniteJdbcPreparedStatement(this, sql);
+        JdbcPreparedStatement stmt = new JdbcPreparedStatement(this, sql);
 
         if (timeout > 0)
             stmt.timeout(timeout);
@@ -541,7 +541,7 @@ class IgniteJdbcConnection implements Connection {
      * @return Internal statement.
      * @throws SQLException In case of error.
      */
-    IgniteJdbcStatement createStatement0() throws SQLException {
-        return (IgniteJdbcStatement)createStatement();
+    JdbcStatement createStatement0() throws SQLException {
+        return (JdbcStatement)createStatement();
     }
 }

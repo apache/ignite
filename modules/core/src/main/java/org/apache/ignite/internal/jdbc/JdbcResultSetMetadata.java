@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc;
-
-import org.apache.ignite.jdbc.typedef.*;
+package org.apache.ignite.internal.jdbc;
 
 import java.sql.*;
 import java.util.*;
@@ -25,7 +23,7 @@ import java.util.*;
 /**
  * JDBC result set metadata implementation.
  */
-class IgniteJdbcResultSetMetadata implements ResultSetMetaData {
+public class JdbcResultSetMetadata implements ResultSetMetaData {
     /** Column width. */
     private static final int COL_WIDTH = 30;
 
@@ -43,7 +41,7 @@ class IgniteJdbcResultSetMetadata implements ResultSetMetaData {
      * @param cols Column names.
      * @param types Types.
      */
-    IgniteJdbcResultSetMetadata(List<String> tbls, List<String> cols, List<String> types) {
+    JdbcResultSetMetadata(List<String> tbls, List<String> cols, List<String> types) {
         assert cols != null;
         assert types != null;
 
@@ -129,12 +127,12 @@ class IgniteJdbcResultSetMetadata implements ResultSetMetaData {
 
     /** {@inheritDoc} */
     @Override public int getColumnType(int col) throws SQLException {
-        return JU.type(types.get(col - 1));
+        return JdbcUtils.type(types.get(col - 1));
     }
 
     /** {@inheritDoc} */
     @Override public String getColumnTypeName(int col) throws SQLException {
-        return JU.typeName(types.get(col - 1));
+        return JdbcUtils.typeName(types.get(col - 1));
     }
 
     /** {@inheritDoc} */

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc.util;
+package org.apache.ignite.internal.jdbc;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -31,7 +31,7 @@ import static java.sql.Types.*;
 /**
  * Utility methods for JDBC driver.
  */
-public class IgniteJdbcUtils {
+class JdbcUtils {
     /** Marshaller. */
     private static final IgniteMarshaller MARSHALLER = new IgniteJdkMarshaller();
 

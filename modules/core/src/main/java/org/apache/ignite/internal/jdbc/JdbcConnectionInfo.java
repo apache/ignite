@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc;
+package org.apache.ignite.internal.jdbc;
 
 /**
  * Connection properties.
  */
-class IgniteJdbcConnectionInfo {
+public class JdbcConnectionInfo {
     /** URL. */
     private final String url;
 
@@ -36,7 +36,7 @@ class IgniteJdbcConnectionInfo {
     /**
      * @param url URL.
      */
-    IgniteJdbcConnectionInfo(String url) {
+    JdbcConnectionInfo(String url) {
         this.url = url;
     }
 
