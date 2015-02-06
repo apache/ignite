@@ -30,8 +30,6 @@ import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.log4j.*;
 
-import java.util.concurrent.*;
-
 /**
  * Single split load test.
  */

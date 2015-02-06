@@ -21,7 +21,6 @@ import org.apache.ignite.client.ssl.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
-import java.util.concurrent.*;
 
 /**
  * REST access configuration.
@@ -126,7 +125,7 @@ public class ClientConnectionConfiguration {
 
         clientMsgInterceptor = cfg.getClientMessageInterceptor();
         restAccessibleFolders = cfg.getRestAccessibleFolders();
-        restSvcPoolSz = cfg.getRestExecutorService();
+        restSvcPoolSz = cfg.getRestThreadPoolSize();
         restIdleTimeout = cfg.getRestIdleTimeout();
         jettyPath = cfg.getRestJettyPath();
         restPortRange = cfg.getRestPortRange();
@@ -488,24 +487,24 @@ public class ClientConnectionConfiguration {
     }
 
     /**
-     * Should return an thread pool size to be used for
+     * Should return a thread pool size to be used for
      * processing of client messages (REST requests).
      *
-     * @return Thread pool implementation to be used for processing of client
+     * @return Thread pool size to be used for processing of client
      *      messages.
      */
-    public int getRestExecutorService() {
+    public int getRestThreadPoolSize() {
         return restSvcPoolSz;
     }
 
     /**
-     * Sets thread pool to use for processing of client messages (REST requests).
+     * Sets thread pool size to use for processing of client messages (REST requests).
      *
-     * @param restExecSvc Thread pool to use for processing of client messages.
-     * @see #getRestExecutorService()
+     * @param restSvcPoolSz Thread pool size to use for processing of client messages.
+     * @see #getRestThreadPoolSize()
      */
-    public void setRestExecutorService(int restExecSvc) {
-        this.restSvcPoolSz = restExecSvc;
+    public void setRestThreadPoolSize(int restSvcPoolSz) {
+        this.restSvcPoolSz = restSvcPoolSz;
     }
 
     /**

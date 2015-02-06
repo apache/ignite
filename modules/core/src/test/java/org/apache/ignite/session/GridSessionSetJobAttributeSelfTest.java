@@ -29,7 +29,6 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
@@ -59,7 +58,7 @@ public class GridSessionSetJobAttributeSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(discoSpi);
 
-        c.setExecutorService(SPLIT_COUNT * EXEC_COUNT);
+        c.setPublicThreadPoolSize(SPLIT_COUNT * EXEC_COUNT);
 
         return c;
     }

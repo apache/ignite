@@ -59,7 +59,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
 
         c.setDiscoverySpi(discoSpi);
 
-        c.setExecutorService(SPLIT_COUNT * 2);
+        c.setPublicThreadPoolSize(SPLIT_COUNT * 2);
 
         return c;
     }

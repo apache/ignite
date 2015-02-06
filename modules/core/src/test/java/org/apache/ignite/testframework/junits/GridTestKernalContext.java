@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 
 import java.util.*;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.*;
 
 /**
  * Test context.
@@ -90,8 +90,13 @@ public class GridTestKernalContext extends GridKernalContextImpl {
         return S.toString(GridTestKernalContext.class, this, super.toString());
     }
 
-    public void setSystemExecutorService(ExecutorService systemExecutorService) {
-        this.sysExecSvc = systemExecutorService;
+    /**
+     * Sets system executor service.
+     *
+     * @param sysExecSvc Executor service
+     */
+    public void setSystemExecutorService(ExecutorService sysExecSvc) {
+        this.sysExecSvc = sysExecSvc;
     }
 
 

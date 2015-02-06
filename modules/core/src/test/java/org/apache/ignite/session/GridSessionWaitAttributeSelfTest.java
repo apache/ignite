@@ -29,7 +29,6 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Tests waiting for session attributes.
@@ -83,7 +82,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(discoSpi);
 
-        c.setExecutorService(JOB_NUM * 2);
+        c.setPublicThreadPoolSize(JOB_NUM * 2);
 
         return c;
     }

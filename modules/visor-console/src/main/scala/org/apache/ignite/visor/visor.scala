@@ -1521,9 +1521,9 @@ object visor extends VisorTag {
                 cfg.setClientConnectionConfiguration(null)
 
                 // All thread pools are overridden to have size equal to number of CPUs.
-                cfg.setExecutorService(cpuCnt)
-                cfg.setSystemExecutorService(cpuCnt)
-                cfg.setPeerClassLoadingExecutorService(cpuCnt)
+                cfg.setPublicThreadPoolSize(cpuCnt)
+                cfg.setSystemThreadPoolSize(cpuCnt)
+                cfg.setPeerClassLoadingThreadPoolSize(cpuCnt)
 
                 var ioSpi = cfg.getCommunicationSpi
 

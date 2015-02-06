@@ -65,7 +65,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
 
         c.setDiscoverySpi(discoSpi);
 
-        c.setExecutorService(SPLIT_COUNT * 2);
+        c.setPublicThreadPoolSize(SPLIT_COUNT * 2);
 
         return c;
     }

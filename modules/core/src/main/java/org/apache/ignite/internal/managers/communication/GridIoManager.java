@@ -543,7 +543,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to process P2P message due to execution rejection. Increase the upper bound " +
-                "on 'ExecutorService' provided by 'GridConfiguration.getPeerClassLoadingExecutorService()'. " +
+                "on 'ExecutorService' provided by 'GridConfiguration.getPeerClassLoadingThreadPoolSize()'. " +
                 "Will attempt to process message in the listener thread instead.", e);
 
             c.run();

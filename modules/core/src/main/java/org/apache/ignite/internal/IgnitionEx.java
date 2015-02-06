@@ -1469,8 +1469,8 @@ public class IgnitionEx {
             // maximum threads has no effect.
             sysExecSvc = new IgniteThreadPoolExecutor(
                 "sys-" + cfg.getGridName(),
-                cfg.getSystemExecutorService(),
-                cfg.getSystemExecutorService(),
+                cfg.getSystemThreadPoolSize(),
+                cfg.getSystemThreadPoolSize(),
                 DFLT_SYSTEM_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
 
@@ -1483,8 +1483,8 @@ public class IgnitionEx {
             // not be needed.
             mgmtExecSvc = new IgniteThreadPoolExecutor(
                 "mgmt-" + cfg.getGridName(),
-                cfg.getManagementExecutorService(),
-                cfg.getManagementExecutorService(),
+                cfg.getManagementThreadPoolSize(),
+                cfg.getManagementThreadPoolSize(),
                 0,
                 new LinkedBlockingQueue<Runnable>());
 
@@ -1494,8 +1494,8 @@ public class IgnitionEx {
             // not be needed.
             p2pExecSvc = new IgniteThreadPoolExecutor(
                 "p2p-" + cfg.getGridName(),
-                cfg.getPeerClassLoadingExecutorService(),
-                cfg.getPeerClassLoadingExecutorService(),
+                cfg.getPeerClassLoadingThreadPoolSize(),
+                cfg.getPeerClassLoadingThreadPoolSize(),
                 0,
                 new LinkedBlockingQueue<Runnable>());
 
@@ -1513,8 +1513,8 @@ public class IgnitionEx {
             if (clientCfg != null) {
                 restExecSvc = new IgniteThreadPoolExecutor(
                     "rest-" + cfg.getGridName(),
-                    clientCfg.getRestExecutorService(),
-                    clientCfg.getRestExecutorService(),
+                    clientCfg.getRestThreadPoolSize(),
+                    clientCfg.getRestThreadPoolSize(),
                     DFLT_REST_KEEP_ALIVE_TIME,
                     new LinkedBlockingQueue<Runnable>(DFLT_REST_THREADPOOL_QUEUE_CAP)
                 );

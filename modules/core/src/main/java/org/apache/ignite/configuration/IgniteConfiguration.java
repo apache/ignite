@@ -51,7 +51,6 @@ import javax.management.*;
 import java.lang.management.*;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
@@ -575,13 +574,13 @@ public class IgniteConfiguration {
         metricsExpTime = cfg.getMetricsExpireTime();
         metricsLogFreq = cfg.getMetricsLogFrequency();
         metricsUpdateFreq = cfg.getMetricsUpdateFrequency();
-        mgmtPoolSz = cfg.getManagementExecutorService();
+        mgmtPoolSz = cfg.getManagementThreadPoolSize();
         netTimeout = cfg.getNetworkTimeout();
         nodeId = cfg.getNodeId();
         p2pEnabled = cfg.isPeerClassLoadingEnabled();
         p2pLocClsPathExcl = cfg.getPeerClassLoadingLocalClassPathExclude();
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
-        p2pPoolSz = cfg.getPeerClassLoadingExecutorService();
+        p2pPoolSz = cfg.getPeerClassLoadingThreadPoolSize();
         pluginCfgs = cfg.getPluginConfigurations();
         portableCfg = cfg.getPortableConfiguration();
         qryCfg = cfg.getQueryConfiguration();
@@ -615,7 +614,7 @@ public class IgniteConfiguration {
         smtpSsl = cfg.isSmtpSsl();
         smtpStartTls = cfg.isSmtpStartTls();
         streamerCfg = cfg.getStreamerConfiguration();
-        sysPoolSz = cfg.getSystemExecutorService();
+        sysPoolSz = cfg.getSystemThreadPoolSize();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
         txCfg = cfg.getTransactionsConfiguration();
@@ -1062,18 +1061,13 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Should return an instance of fully configured thread pool to be used in grid.
+     * Should return a thread pool size to be used in grid.
      * This executor service will be in charge of processing {@link org.apache.ignite.compute.ComputeJob GridJobs}
      * and user messages sent to node.
      * <p>
-     * If not provided, new executor service will be created using the following configuration:
-     * <ul>
-     *     <li>Core pool size - {@link #DFLT_PUBLIC_CORE_THREAD_CNT}</li>
-     *     <li>Max pool size - {@link #DFLT_PUBLIC_MAX_THREAD_CNT}</li>
-     *     <li>Queue capacity - {@link #DFLT_PUBLIC_THREADPOOL_QUEUE_CAP}</li>
-     * </ul>
+     * If not provided, executor service will have size {@link #DFLT_PUBLIC_CORE_THREAD_CNT}.
      *
-     * @return Thread pool implementation to be used in grid to process job execution
+     * @return Thread pool size to be used in grid to process job execution
      *      requests and user messages sent to the node.
      */
     public int getExecutorService() {
@@ -1081,71 +1075,49 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Executor service that is in charge of processing internal system messages.
+     * Size of thread pool that is in charge of processing internal system messages.
      * <p>
-     * If not provided, new executor service will be created using the following configuration:
-     * <ul>
-     *     <li>Core pool size - {@link #DFLT_SYSTEM_CORE_THREAD_CNT}</li>
-     *     <li>Max pool size - {@link #DFLT_SYSTEM_MAX_THREAD_CNT}</li>
-     *     <li>Queue capacity - {@link #DFLT_SYSTEM_THREADPOOL_QUEUE_CAP}</li>
-     * </ul>
+     * If not provided, executor service will have size {@link #DFLT_SYSTEM_CORE_THREAD_CNT}.
      *
-     * @return Thread pool implementation to be used in grid for internal system messages.
+     * @return Thread pool size to be used in grid for internal system messages.
      */
-    public int getSystemExecutorService() {
+    public int getSystemThreadPoolSize() {
         return sysPoolSz;
     }
 
     /**
-     * Executor service that is in charge of processing internal and Visor
+     * Size of thread pool that is in charge of processing internal and Visor
      * {@link org.apache.ignite.compute.ComputeJob GridJobs}.
      * <p>
-     * If not provided, new executor service will be created using the following configuration:
-     * <ul>
-     *     <li>Core pool size - {@link #DFLT_MGMT_THREAD_CNT}</li>
-     *     <li>Max pool size - {@link #DFLT_MGMT_THREAD_CNT}</li>
-     *     <li>Queue capacity - unbounded</li>
-     * </ul>
+     * If not provided, executor service will have size {@link #DFLT_MGMT_THREAD_CNT}
      *
-     * @return Thread pool implementation to be used in grid for internal and Visor
+     * @return Thread pool size to be used in grid for internal and Visor
      *      jobs processing.
      */
-    public int getManagementExecutorService() {
+    public int getManagementThreadPoolSize() {
         return mgmtPoolSz;
     }
 
     /**
-     * Should return an instance of fully configured executor service which
-     * is in charge of peer class loading requests/responses. If you don't use
+     * Size of thread pool which  is in charge of peer class loading requests/responses. If you don't use
      * peer class loading and use GAR deployment only we would recommend to decrease
      * the value of total threads to {@code 1}.
      * <p>
-     * If not provided, new executor service will be created using the following configuration:
-     * <ul>
-     *     <li>Core pool size - {@link #DFLT_P2P_THREAD_CNT}</li>
-     *     <li>Max pool size - {@link #DFLT_P2P_THREAD_CNT}</li>
-     *     <li>Queue capacity - unbounded</li>
-     * </ul>
+     * If not provided, executor service will have size {@link #DFLT_P2P_THREAD_CNT}.
      *
-     * @return Thread pool implementation to be used for peer class loading
+     * @return Thread pool size to be used for peer class loading
      *      requests handling.
      */
-    public int getPeerClassLoadingExecutorService() {
+    public int getPeerClassLoadingThreadPoolSize() {
         return p2pPoolSz;
     }
 
     /**
-     * Executor service that is in charge of processing outgoing GGFS messages. Note that this
-     * executor must have limited task queue to avoid OutOfMemory errors when incoming data stream
-     * is faster than network bandwidth.
+     * Size of thread pool that is in charge of processing outgoing GGFS messages.
      * <p>
-     * If not provided, new executor service will be created using the following configuration:
-     * <ul>
-     *     <li>Core pool size - number of processors available in system</li>
-     *     <li>Max pool size - number of processors available in system</li>
-     * </ul>
+     * If not provided, executor service will have size equals number of processors available in system.
      *
-     * @return Thread pool implementation to be used for GGFS outgoing message sending.
+     * @return Thread pool size to be used for GGFS outgoing message sending.
      */
     public int getGgfsExecutorService() {
         return ggfsPoolSz;
@@ -1157,7 +1129,7 @@ public class IgniteConfiguration {
      * @param poolSz Thread pool size to use within grid.
      * @see IgniteConfiguration#getExecutorService()
      */
-    public void setExecutorService(int poolSz) {
+    public void setPublicThreadPoolSize(int poolSz) {
         this.pubPoolSz = poolSz;
     }
 
@@ -1165,9 +1137,9 @@ public class IgniteConfiguration {
      * Sets system thread pool size to use within grid.
      *
      * @param poolSz Thread pool size to use within grid.
-     * @see IgniteConfiguration#getSystemExecutorService()
+     * @see IgniteConfiguration#getSystemThreadPoolSize()
      */
-    public void setSystemExecutorService(int poolSz) {
+    public void setSystemThreadPoolSize(int poolSz) {
         this.sysPoolSz = poolSz;
     }
 
@@ -1175,9 +1147,9 @@ public class IgniteConfiguration {
      * Sets management thread pool size to use within grid.
      *
      * @param poolSz Thread pool size to use within grid.
-     * @see IgniteConfiguration#getManagementExecutorService()
+     * @see IgniteConfiguration#getManagementThreadPoolSize()
      */
-    public void setManagementExecutorService(int poolSz) {
+    public void setManagementThreadPoolSize(int poolSz) {
         this.mgmtPoolSz = poolSz;
     }
 
@@ -1185,9 +1157,9 @@ public class IgniteConfiguration {
      * Sets thread pool size to use for peer class loading.
      *
      * @param poolSz Thread pool size to use within grid.
-     * @see IgniteConfiguration#getPeerClassLoadingExecutorService()
+     * @see IgniteConfiguration#getPeerClassLoadingThreadPoolSize()
      */
-    public void setPeerClassLoadingExecutorService(int poolSz) {
+    public void setPeerClassLoadingThreadPoolSize(int poolSz) {
         this.p2pPoolSz = poolSz;
     }
 
@@ -1202,7 +1174,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Should return GridGain installation home folder. If not provided, the system will check
+     * Should return Ignite installation home folder. If not provided, the system will check
      * {@code IGNITE_HOME} system property and environment variable in that order. If
      * {@code IGNITE_HOME} still could not be obtained, then grid will not start and exception
      * will be thrown.
@@ -1218,7 +1190,7 @@ public class IgniteConfiguration {
     /**
      * Sets Ignite installation folder.
      *
-     * @param ggHome {@code GridGain} installation folder.
+     * @param ggHome {@code Ignition} installation folder.
      * @see IgniteConfiguration#getIgniteHome()
      * @see org.apache.ignite.IgniteSystemProperties#IGNITE_HOME
      */
@@ -1227,13 +1199,13 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets GridGain work folder. If not provided, the method will use work folder under
+     * Gets Ignite work folder. If not provided, the method will use work folder under
      * {@code IGNITE_HOME} specified by {@link IgniteConfiguration#setIgniteHome(String)} or
      * {@code IGNITE_HOME} environment variable or system property.
      * <p>
      * If {@code IGNITE_HOME} is not provided, then system temp folder is used.
      *
-     * @return GridGain work folder or {@code null} to make the system attempt to infer it automatically.
+     * @return Ignite work folder or {@code null} to make the system attempt to infer it automatically.
      * @see IgniteConfiguration#getIgniteHome()
      * @see org.apache.ignite.IgniteSystemProperties#IGNITE_HOME
      */

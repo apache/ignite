@@ -69,7 +69,7 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(discoSpi);
 
-        c.setExecutorService(SPLIT_COUNT);
+        c.setPublicThreadPoolSize(SPLIT_COUNT);
 
         return c;
     }

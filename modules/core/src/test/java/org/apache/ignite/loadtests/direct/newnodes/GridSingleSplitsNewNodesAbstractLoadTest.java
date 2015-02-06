@@ -27,9 +27,7 @@ import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.thread.*;
 
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
@@ -59,7 +57,7 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
 
         cfg.setMetricsHistorySize(1000);
 
-        cfg.setExecutorService(100);
+        cfg.setPublicThreadPoolSize(100);
 
         return cfg;
     }

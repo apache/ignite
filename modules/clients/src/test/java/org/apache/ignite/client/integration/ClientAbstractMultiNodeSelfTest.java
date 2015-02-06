@@ -163,9 +163,9 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         c.setCacheConfiguration(cacheConfiguration(null), cacheConfiguration(PARTITIONED_CACHE_NAME),
             cacheConfiguration(REPLICATED_CACHE_NAME), cacheConfiguration(REPLICATED_ASYNC_CACHE_NAME));
 
-        c.setExecutorService(40);
+        c.setPublicThreadPoolSize(40);
 
-        c.setSystemExecutorService(40);
+        c.setSystemThreadPoolSize(40);
 
         return c;
     }

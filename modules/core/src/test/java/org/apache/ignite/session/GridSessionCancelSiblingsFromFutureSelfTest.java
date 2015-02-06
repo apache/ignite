@@ -73,7 +73,7 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
 
         c.setDiscoverySpi(discoSpi);
 
-        c.setExecutorService( SPLIT_COUNT * EXEC_COUNT);
+        c.setPublicThreadPoolSize(SPLIT_COUNT * EXEC_COUNT);
 
         return c;
     }

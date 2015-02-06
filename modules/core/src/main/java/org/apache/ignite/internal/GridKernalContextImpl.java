@@ -377,6 +377,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.p2pExecSvc = p2pExecSvc;
         this.mgmtExecSvc = mgmtExecSvc;
         this.ggfsExecSvc = ggfsExecSvc;
+        this.restExecSvc = restExecSvc;
 
         try {
             spring = SPRING.create(false);

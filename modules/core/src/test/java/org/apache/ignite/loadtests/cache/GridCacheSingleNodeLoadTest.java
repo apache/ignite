@@ -26,7 +26,6 @@ import org.apache.ignite.spi.collision.fifoqueue.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
-import org.apache.ignite.thread.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -122,8 +121,8 @@ public class GridCacheSingleNodeLoadTest {
 
         c.setCollisionSpi(cols);
 
-        c.setExecutorService(THREADS / 2);
-        c.setSystemExecutorService(THREADS * 2);
+        c.setPublicThreadPoolSize(THREADS / 2);
+        c.setSystemThreadPoolSize(THREADS * 2);
 
         CacheConfiguration cc = new CacheConfiguration();
 

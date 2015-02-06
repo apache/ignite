@@ -22,8 +22,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
-
 /**
  * Data transfer object for node executors configuration properties.
  */
@@ -52,14 +50,14 @@ public class VisorExecutorServiceConfiguration implements Serializable {
 
         cfg.executeService(c.getExecutorService());
 
-        cfg.systemExecutorService(c.getSystemExecutorService());
+        cfg.systemExecutorService(c.getSystemThreadPoolSize());
 
-        cfg.p2pExecutorService(c.getPeerClassLoadingExecutorService());
+        cfg.p2pExecutorService(c.getPeerClassLoadingThreadPoolSize());
 
         ClientConnectionConfiguration cc = c.getClientConnectionConfiguration();
 
         if (cc != null)
-            cfg.restExecutorService(cc.getRestExecutorService());
+            cfg.restExecutorService(cc.getRestThreadPoolSize());
 
         return cfg;
     }
