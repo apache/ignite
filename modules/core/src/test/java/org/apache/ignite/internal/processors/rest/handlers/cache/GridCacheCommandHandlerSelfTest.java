@@ -196,13 +196,13 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         try {
             // Change cache state.
-            cache().putx(key, curVal);
+            jcache().put(key, curVal);
 
             // Validate behavior for initialized cache (has current value).
             assertTrue("Expects succeed.", (Boolean)hnd.handleAsync(req).get().getResponse());
         }
         finally {
-            res = (T)cache().remove(key);
+            res = (T)jcache().getAndRemove(key);
         }
 
         return res;

@@ -820,7 +820,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             for (int i = 1000; i < 2000; i++) {
                 assertEquals(i, storeMap.get(i));
 
-                assertNull(cache.localPeek(i));
+                assertNull(cache.localPeek(i, CachePeekMode.ONHEAP));
             }
         }
         finally {

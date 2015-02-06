@@ -36,8 +36,12 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.integration.*;
 import javax.net.ssl.*;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
@@ -96,6 +100,19 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected <K, V> IgniteCache<K, V> jcache() {
         return grid().jcache(null);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    @SuppressWarnings("TypeMayBeWeakened")
+    protected <K> Set<K> keySet(IgniteCache<K, ?> cache) {
+        Set<K> res = new HashSet<>();
+
+        for (Cache.Entry<K, ?> entry : cache)
+            res.add(entry.getKey());
+
+        return res;
     }
 
     /**
@@ -172,6 +189,43 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected static <K, V> GridDhtColocatedCache<K, V> colocated(CacheProjection<K,V> cache) {
         return ((IgniteKernal)cache.gridProjection().ignite()).<K, V>internalCache(cache.name()).context().colocated();
+    }
+
+    /**
+     * @param cache Cache.
+     * @param keys Keys.
+     * @param replaceExistingValues Replace existing values.
+     */
+    protected static <K> void loadAll(Cache<K, ?> cache, Set<K> keys, boolean replaceExistingValues) throws Exception {
+        final AtomicReference<Exception> ex = new AtomicReference<>();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        cache.loadAll(keys, replaceExistingValues, new CompletionListener() {
+            @Override public void onCompletion() {
+                latch.countDown();
+            }
+
+            @Override public void onException(Exception e) {
+                ex.set(e);
+
+                latch.countDown();
+            }
+        });
+
+        latch.await();
+
+        if (ex.get() != null)
+            throw ex.get();
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Keys.
+     * @param replaceExistingValues Replace existing values.
+     */
+    protected static <K> void load(Cache<K, ?> cache, K key, boolean replaceExistingValues) throws Exception {
+        loadAll(cache, Collections.singleton(key), replaceExistingValues);
     }
 
     /**
