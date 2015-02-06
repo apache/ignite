@@ -175,7 +175,7 @@ public class GridJettyRestHandler extends AbstractHandler {
         if (log.isDebugEnabled())
             log.debug("Handling request [target=" + target + ", req=" + req + ", srvReq=" + srvReq + ']');
 
-        if (target.startsWith("/gridgain")) {
+        if (target.startsWith("/ignite")) {
             processRequest(target, srvReq, res);
 
             req.setHandled(true);
