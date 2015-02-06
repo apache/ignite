@@ -276,10 +276,10 @@ public class GridTcpCommunicationByteBufferStream {
     /**
      * @param val Array.
      */
-    public void writeByteArrayNoLength(byte[] val) {
+    public void writeByteArray(byte[] val, int off, int len) {
         assert val != null;
 
-        lastFinished = writeArray(val, BYTE_ARR_OFF, val.length, val.length, true);
+        lastFinished = writeArray(val, BYTE_ARR_OFF + off, len, len, true);
     }
 
     /** {@inheritDoc} */
@@ -417,6 +417,14 @@ public class GridTcpCommunicationByteBufferStream {
     /** {@inheritDoc} */
     public byte[] readByteArray() {
         return readArray(BYTE_ARR_CREATOR, 0, BYTE_ARR_OFF);
+    }
+
+    /**
+     * @param len Length.
+     * @return Array.
+     */
+    public byte[] readByteArray(int len) {
+        return readArray(BYTE_ARR_CREATOR, 0, BYTE_ARR_OFF, len);
     }
 
     /** {@inheritDoc} */
@@ -639,16 +647,29 @@ public class GridTcpCommunicationByteBufferStream {
      * @return Array or special value if it was not fully read.
      */
     private <T> T readArray(ArrayCreator<T> creator, int lenShift, long off) {
+        return readArray(creator, lenShift, off, -1);
+    }
+
+    /**
+     * @param creator Array creator.
+     * @param lenShift Array length shift size.
+     * @param off Base offset.
+     * @param len Length.
+     * @return Array or special value if it was not fully read.
+     */
+    private <T> T readArray(ArrayCreator<T> creator, int lenShift, long off, int len) {
         assert creator != null;
 
         if (tmpArr == null) {
-            if (remaining() < 4) {
-                lastFinished = false;
+            if (len == -1) {
+                if (remaining() < 4) {
+                    lastFinished = false;
 
-                return null;
+                    return null;
+                }
+
+                len = readInt();
             }
-
-            int len = readInt();
 
             switch (len) {
                 case -1:

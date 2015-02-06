@@ -78,7 +78,7 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
             commState.typeWritten = true;
         }
 
-        stream.writeByteArrayNoLength(bytes);
+        stream.writeByteArray(bytes, 0, bytes.length);
 
         return stream.lastFinished();
     }

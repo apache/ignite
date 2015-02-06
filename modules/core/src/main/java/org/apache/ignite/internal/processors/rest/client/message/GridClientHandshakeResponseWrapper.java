@@ -62,8 +62,6 @@ public class GridClientHandshakeResponseWrapper extends GridTcpCommunicationMess
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
-
         return true;
     }
 

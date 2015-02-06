@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.rest.client.message;
 
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.gridgain.grid.util.direct.*;
 
 import java.nio.*;
 
@@ -31,6 +32,9 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
 
     /** Signal char. */
     public static final byte HANDSHAKE_HEADER = (byte)0x91;
+
+    /** Stream. */
+    private final GridTcpCommunicationByteBufferStream stream = new GridTcpCommunicationByteBufferStream(null);
 
     /** Handshake bytes. */
     private byte[] bytes;
@@ -59,43 +63,29 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        stream.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+            if (!buf.hasRemaining())
                 return false;
+
+            stream.writeByte(directType());
 
             commState.typeWritten = true;
         }
 
-        switch (commState.idx) {
-            case 0:
-                if (!commState.putByteArray("bytes", bytes))
-                    return false;
+        stream.writeByteArray(bytes, 0, bytes.length);
 
-                commState.idx++;
-
-        }
-
-        return true;
+        return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        stream.setBuffer(buf);
 
-        switch (commState.idx) {
-            case 0:
-                bytes = commState.getByteArray("bytes");
+        bytes = stream.readByteArray(GridClientHandshakeRequest.PACKET_SIZE);
 
-                if (!commState.lastRead())
-                    return false;
-
-                commState.idx++;
-
-        }
-
-        return true;
+        return stream.lastFinished();
     }
 
     /** {@inheritDoc} */

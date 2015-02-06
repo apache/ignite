@@ -60,7 +60,7 @@ public class CommunicationMessageCodeGenerator {
     };
 
     /** */
-    private static final String SRC_DIR = U.getGridGainHome() + "/modules/core/src/main/java";
+    private static final String SRC_DIR = U.getIgniteHome() + "/modules/core/src/main/java";
 
     /** */
     private static final Class<?> BASE_CLS = GridTcpCommunicationMessageAdapter.class;

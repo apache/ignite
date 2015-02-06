@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.rest.client.message;
 
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.gridgain.grid.util.direct.*;
 
 import java.nio.*;
 import java.util.*;
@@ -32,6 +33,9 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
 
     /** Client request header. */
     public static final byte REQ_HEADER = (byte)0x90;
+
+    /** Stream. */
+    private final GridTcpCommunicationByteBufferStream stream = new GridTcpCommunicationByteBufferStream(null);
 
     /** */
     private int msgSize;
@@ -130,43 +134,52 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        stream.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+            if (stream.remaining() < 1)
                 return false;
+
+            stream.writeByte(directType());
 
             commState.typeWritten = true;
         }
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putInt("msgSize", msgSize))
+                if (stream.remaining() < 4)
                     return false;
+
+                stream.writeInt(msgSize);
 
                 commState.idx++;
 
             case 1:
-                if (!commState.putLong("reqId", reqId))
+                if (stream.remaining() < 8)
                     return false;
+
+                stream.writeLong(reqId);
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putUuid("clientId", clientId))
+                if (stream.remaining() < 16)
                     return false;
+
+                stream.writeByteArray(U.uuidToBytes(clientId), 0, 16);
 
                 commState.idx++;
 
             case 3:
-                if (!commState.putUuid("destId", destId))
+                if (stream.remaining() < 16)
                     return false;
+
+                stream.writeByteArray(U.uuidToBytes(destId), 0, 16);
 
                 commState.idx++;
 
             case 4:
-                if (!commState.putByteBuffer("msg", msg))
-                    return false;
+                stream.writeByteArray(msg.array(), msg.position(), msg.remaining());
 
                 commState.idx++;
 
@@ -177,46 +190,51 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        stream.setBuffer(buf);
 
         switch (commState.idx) {
             case 0:
-                msgSize = commState.getInt("msgSize");
-
-                if (!commState.lastRead())
+                if (stream.remaining() < 4)
                     return false;
+
+                msgSize = stream.readInt();
+
+                if (msgSize == 0) // Ping message.
+                    return true;
 
                 commState.idx++;
 
             case 1:
-                reqId = commState.getLong("reqId");
-
-                if (!commState.lastRead())
+                if (stream.remaining() < 8)
                     return false;
+
+                reqId = stream.readLong();
 
                 commState.idx++;
 
             case 2:
-                clientId = commState.getUuid("clientId");
-
-                if (!commState.lastRead())
+                if (stream.remaining() < 16)
                     return false;
+
+                clientId = U.bytesToUuid(stream.readByteArray(16), 0);
 
                 commState.idx++;
 
             case 3:
-                destId = commState.getUuid("destId");
-
-                if (!commState.lastRead())
+                if (stream.remaining() < 16)
                     return false;
+
+                destId = U.bytesToUuid(stream.readByteArray(16), 0);
 
                 commState.idx++;
 
             case 4:
-                msg = commState.getByteBuffer("msg");
+                byte[] msg0 = stream.readByteArray(msgSize);
 
-                if (!commState.lastRead())
+                if (!stream.lastFinished())
                     return false;
+
+                msg = ByteBuffer.wrap(msg0);
 
                 commState.idx++;
         }
