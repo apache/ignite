@@ -26,7 +26,7 @@
         <property name="peerClassLoadingEnabled" value="false"/>
 
         <property name="cacheConfiguration">
-            <bean class="org.apache.ignite.cache.CacheConfiguration">
+            <bean class="org.apache.ignite.configuration.CacheConfiguration">
                 <property name="cacheMode" value="PARTITIONED"/>
                 <property name="distributionMode" value="PARTITIONED_ONLY"/>
                 <property name="preloadMode" value="SYNC"/>

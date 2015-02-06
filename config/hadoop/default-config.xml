@@ -64,7 +64,7 @@
     <!--
         Abstract cache configuration for GGFS file data to be used as a template.
     -->
-    <bean id="dataCacheCfgBase" class="org.apache.ignite.cache.CacheConfiguration" abstract="true">
+    <bean id="dataCacheCfgBase" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
         <property name="cacheMode" value="PARTITIONED"/>
         <property name="atomicityMode" value="TRANSACTIONAL"/>
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
@@ -80,7 +80,7 @@
     <!--
         Abstract cache configuration for GGFS metadata to be used as a template.
     -->
-    <bean id="metaCacheCfgBase" class="org.apache.ignite.cache.CacheConfiguration" abstract="true">
+    <bean id="metaCacheCfgBase" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
         <property name="cacheMode" value="REPLICATED"/>
         <property name="atomicityMode" value="TRANSACTIONAL"/>
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
@@ -135,12 +135,12 @@
         <property name="cacheConfiguration">
             <list>
                 <!-- File system metadata cache. -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration" parent="metaCacheCfgBase">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="metaCacheCfgBase">
                     <property name="name" value="ggfs-meta"/>
                 </bean>
 
                 <!-- File system files data cache. -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration" parent="dataCacheCfgBase">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="dataCacheCfgBase">
                     <property name="name" value="ggfs-data"/>
                 </bean>
             </list>

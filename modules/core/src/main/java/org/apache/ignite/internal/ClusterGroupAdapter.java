@@ -692,7 +692,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
         /**
          * @param cacheName Cache name.
-         * @param distributionMode Filter by {@link CacheConfiguration#getDistributionMode()}.
+         * @param distributionMode Filter by {@link org.apache.ignite.configuration.CacheConfiguration#getDistributionMode()}.
          */
         private CachesFilter(@Nullable String cacheName, @Nullable Set<CacheDistributionMode> distributionMode) {
             this.cacheName = cacheName;

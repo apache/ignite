@@ -214,7 +214,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * that entry will be evicted only if it's not used (not
      * participating in any locks or transactions).
      * <p>
-     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
      * <h2 class="header">Cache Flags</h2>
@@ -261,7 +261,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Clears an entry from this cache and swap storage only if the entry
      * is not currently locked, and is not participating in a transaction.
      * <p>
-     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
      * also be cleared from swap.
      * <p>
@@ -341,7 +341,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * </pre>
      * <p>
      * Note that this method makes sense only if cache is working in portable mode
-     * ({@link CacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
+     * ({@link org.apache.ignite.configuration.CacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
      * this method is no-op and will return current projection.
      *
      * @return Projection for portable objects.

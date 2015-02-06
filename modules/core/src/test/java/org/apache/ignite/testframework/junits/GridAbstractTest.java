@@ -19,7 +19,6 @@ package org.apache.ignite.testframework.junits;
 
 import junit.framework.*;
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;

@@ -75,7 +75,7 @@
 
         <property name="cacheConfiguration">
             <list>
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="atomic"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -115,7 +115,7 @@
                     <property name="writeBehindEnabled" value="false"/>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="tx"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>

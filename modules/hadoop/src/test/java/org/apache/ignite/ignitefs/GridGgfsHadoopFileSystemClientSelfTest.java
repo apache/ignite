@@ -18,7 +18,6 @@
 package org.apache.ignite.ignitefs;
 
 import org.apache.commons.logging.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.fs.common.*;

@@ -60,7 +60,7 @@ public enum CacheFlag {
      * automatic cloning of values prior to returning so they can be directly
      * updated.
      *
-     * @see org.apache.ignite.cache.CacheConfiguration#getCloner()
+     * @see org.apache.ignite.configuration.CacheConfiguration#getCloner()
      */
     CLONE,
 
@@ -79,7 +79,7 @@ public enum CacheFlag {
      * messages will be sent to set the values to {@code null}.
      *
      * @see IgniteTx#isInvalidate()
-     * @see org.apache.ignite.cache.CacheConfiguration#isInvalidate()
+     * @see org.apache.ignite.configuration.CacheConfiguration#isInvalidate()
      */
     INVALIDATE,
 

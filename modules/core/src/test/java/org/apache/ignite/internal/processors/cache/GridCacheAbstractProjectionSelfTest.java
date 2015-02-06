@@ -25,9 +25,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 
 import java.util.*;
-import java.util.concurrent.*;
 
-import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;

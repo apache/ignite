@@ -113,7 +113,7 @@
                 <!--
                     Local cache example configuration.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <!-- Cache name is null. -->
                     <!--<property name="name"><null/></property>-->
 
@@ -126,7 +126,7 @@
                 <!--
                     Partitioned cache example configuration.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <!-- Cache name is 'partitioned'. -->
                     <property name="name" value="partitioned"/>
 
@@ -209,7 +209,7 @@
                 <!--
                     Local cache with store.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="local.store"/>
 
                     <property name="cacheMode" value="LOCAL"/>
@@ -226,7 +226,7 @@
                 <!--
                     Replicated cache example configuration.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <!-- Cache name is 'replicated'. -->
                     <property name="name" value="replicated"/>
 
@@ -241,7 +241,7 @@
                 <!--
                     Replicated cache with in-memory store enabled.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <!-- Cache name is 'replicated.store'. -->
                     <property name="name" value="replicated.store"/>
 

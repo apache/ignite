@@ -18,7 +18,6 @@
 package org.apache.ignite.transactions;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -67,7 +66,7 @@ import java.util.*;
  *  all nodes reply {@code 'OK'} (i.e. {@code Phase 1} completes successfully), a one-way' {@code 'COMMIT'}
  *  message is sent without waiting for reply. If it is necessary to know whenever remote nodes have committed
  *  as well, synchronous commit or synchronous rollback should be enabled via
- *  {@link CacheConfiguration#setWriteSynchronizationMode}
+ *  {@link org.apache.ignite.configuration.CacheConfiguration#setWriteSynchronizationMode}
  *  or by setting proper flags on cache projection, such as {@link org.apache.ignite.internal.processors.cache.CacheFlag#SYNC_COMMIT}.
  *  <p>
  *  Note that in this mode, optimistic failures are only possible in conjunction with

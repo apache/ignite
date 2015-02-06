@@ -18,7 +18,6 @@
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.processors.hadoop.*;

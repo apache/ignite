@@ -153,7 +153,7 @@ public interface ClusterGroup {
      *
      * @param cacheName Cache name.
      * @return Projection over nodes that have specified cache running.
-     * @see CacheConfiguration#getDistributionMode()
+     * @see org.apache.ignite.configuration.CacheConfiguration#getDistributionMode()
      */
     public ClusterGroup forDataNodes(String cacheName);
 
@@ -163,7 +163,7 @@ public interface ClusterGroup {
      *
      * @param cacheName Cache name.
      * @return Projection over nodes that have specified cache running.
-     * @see CacheConfiguration#getDistributionMode()
+     * @see org.apache.ignite.configuration.CacheConfiguration#getDistributionMode()
      */
     public ClusterGroup forClientNodes(String cacheName);
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.hadoop.conf.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.processors.hadoop.fs.*;
