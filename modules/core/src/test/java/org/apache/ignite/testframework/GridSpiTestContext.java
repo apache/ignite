@@ -29,6 +29,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.swapspace.*;
+import org.gridgain.grid.util.direct.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -519,7 +520,11 @@ public class GridSpiTestContext implements IgniteSpiContext {
     @Override public GridTcpMessageFactory messageFactory() {
         return new GridTcpMessageFactory() {
             @Override public GridTcpCommunicationMessageAdapter create(byte type) {
-                return GridTcpCommunicationMessageFactory.create(type);
+                GridTcpCommunicationMessageAdapter msg = GridTcpCommunicationMessageFactory.create(type);
+
+                msg.setReader(new GridTcpCommunicationMessageReader(null));
+
+                return msg;
             }
         };
     }
