@@ -19,7 +19,6 @@ package org.apache.ignite.yardstick.cache.store.jdbc;
 
 import org.apache.ignite.*;
 import org.apache.ignite.yardstick.cache.model.*;
-import org.yardstickframework.*;
 
 import java.util.*;
 
@@ -27,14 +26,9 @@ import java.util.*;
  * Ignite JDBC cache store benchmark that performs get operations.
  */
 public class IgniteJdbcStoreGetBenchmark extends IgniteJdbcStoreAbstractBenchmark {
-    /** Cache. */
-    protected IgniteCache<Object, Object> cache;
-
     /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-
-        cache = cache();
+    @Override protected int fillRange() {
+        return args.range();
     }
 
     /** {@inheritDoc} */

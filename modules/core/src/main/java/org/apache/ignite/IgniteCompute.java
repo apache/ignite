@@ -122,7 +122,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If job failed.
      */
     @IgniteAsyncSupported
-    public void affinityRun(@Nullable String cacheName, Object affKey, Runnable job) throws IgniteException;
+    public void affinityRun(@Nullable String cacheName, Object affKey, IgniteRunnable job) throws IgniteException;
 
     /**
      * Executes given job on the node where data for provided affinity key is located
@@ -139,7 +139,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @see ComputeJobContext#affinityKey()
      */
     @IgniteAsyncSupported
-    public <R> R affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job) throws IgniteException;
+    public <R> R affinityCall(@Nullable String cacheName, Object affKey, IgniteCallable<R> job) throws IgniteException;
 
     /**
      * Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -200,7 +200,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If job failed.
      */
     @IgniteAsyncSupported
-    public void broadcast(Runnable job) throws IgniteException;
+    public void broadcast(IgniteRunnable job) throws IgniteException;
 
     /**
      * Broadcasts given job to all nodes in grid projection. Every participating node will return a
@@ -213,7 +213,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public <R> Collection<R> broadcast(Callable<R> job) throws IgniteException;
+    public <R> Collection<R> broadcast(IgniteCallable<R> job) throws IgniteException;
 
     /**
      * Broadcasts given closure job with passed in argument to all nodes in grid projection.
@@ -239,7 +239,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public void run(Runnable job) throws IgniteException;
+    public void run(IgniteRunnable job) throws IgniteException;
 
     /**
      * Executes collection of jobs on grid nodes within this grid projection.
@@ -250,7 +250,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public void run(Collection<? extends Runnable> jobs) throws IgniteException;
+    public void run(Collection<? extends IgniteRunnable> jobs) throws IgniteException;
 
     /**
      * Executes provided job on a node in this grid projection. The result of the
@@ -263,7 +263,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public <R> R call(Callable<R> job) throws IgniteException;
+    public <R> R call(IgniteCallable<R> job) throws IgniteException;
 
     /**
      * Executes collection of jobs on nodes within this grid projection.
@@ -276,7 +276,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public <R> Collection<R> call(Collection<? extends Callable<R>> jobs) throws IgniteException;
+    public <R> Collection<R> call(Collection<? extends IgniteCallable<R>> jobs) throws IgniteException;
 
     /**
      * Executes collection of jobs on nodes within this grid projection. The returned
@@ -290,7 +290,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public <R1, R2> R2 call(Collection<? extends Callable<R1>> jobs, IgniteReducer<R1, R2> rdc) throws IgniteException;
+    public <R1, R2> R2 call(Collection<? extends IgniteCallable<R1>> jobs, IgniteReducer<R1, R2> rdc) throws IgniteException;
 
     /**
      * Executes provided closure job on a node in this grid projection. This method is different

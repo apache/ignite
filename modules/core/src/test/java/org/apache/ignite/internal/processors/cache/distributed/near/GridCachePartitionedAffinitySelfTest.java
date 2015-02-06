@@ -426,7 +426,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     /**
      *
      */
-    private static class ListenerJob implements Runnable, Serializable {
+    private static class ListenerJob implements IgniteRunnable {
         /** Grid. */
         @IgniteInstanceResource
         private Ignite ignite;

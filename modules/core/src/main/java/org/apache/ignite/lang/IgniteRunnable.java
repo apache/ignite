@@ -22,7 +22,7 @@ import java.io.*;
 /**
  * Grid-aware adapter for {@link Runnable} implementations. It adds {@link Serializable} interface
  * to {@link Runnable} object. Use this class for executing distributed computations on the grid,
- * like in {@link org.apache.ignite.IgniteCompute#run(Runnable)} method.
+ * like in {@link org.apache.ignite.IgniteCompute#run(IgniteRunnable)} method.
  */
 public interface IgniteRunnable extends Runnable, Serializable {
     // No-op.

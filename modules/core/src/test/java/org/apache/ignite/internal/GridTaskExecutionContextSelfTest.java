@@ -67,8 +67,8 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWithName() throws Exception {
-        Callable<String> f = new IgniteCallable<String>() {
-            @TaskSessionResource
+        IgniteCallable<String> f = new IgniteCallable<String>() {
+            @IgniteTaskSessionResource
             private ComputeTaskSession ses;
 
             @Override public String call() {
@@ -91,7 +91,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWithNoFailoverClosure() throws Exception {
-        final Runnable r = new GridAbsClosureX() {
+        final IgniteRunnable r = new GridAbsClosureX() {
             @Override public void applyx() throws IgniteCheckedException {
                 CNT.incrementAndGet();
 

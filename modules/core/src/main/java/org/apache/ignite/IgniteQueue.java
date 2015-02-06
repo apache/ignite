@@ -66,9 +66,9 @@ import java.util.concurrent.*;
  * Instances of distributed cache queues can be created by calling the following method
  * on {@link Ignite} API:
  * <ul>
- *     <li>{@link Ignite#queue(String, org.apache.ignite.configuration.CollectionConfiguration, int, boolean)}</li>
+ *     <li>{@link Ignite#queue(String, CollectionConfiguration, int, boolean)}</li>
  * </ul>
- * @see Ignite#queue(String, org.apache.ignite.configuration.CollectionConfiguration, int, boolean)
+ * @see Ignite#queue(String, CollectionConfiguration, int, boolean)
  */
 public interface IgniteQueue<T> extends BlockingQueue<T>, Closeable {
     /**

@@ -56,7 +56,7 @@ public final class IgniteAtomicReferenceExample {
             System.out.println("Atomic reference initial value : " + ref.get() + '.');
 
             // Make closure for checking atomic reference value on cluster.
-            Runnable c = new ReferenceClosure(refName);
+            IgniteRunnable c = new ReferenceClosure(refName);
 
             // Check atomic reference on all cluster nodes.
             ignite.compute().run(c);

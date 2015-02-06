@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.task.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -125,7 +126,7 @@ public class GridManagementJobSelfTest extends GridCommonAbstractTest {
      * @param job Job.
      * @throws Exception If failed.
      */
-    private void runJob(String taskName, Callable<Object> job) throws Exception {
+    private void runJob(String taskName, IgniteCallable<Object> job) throws Exception {
         // We run a task on remote nodes because on local node jobs will be executed in system pool anyway.
         compute(grid(0).forRemotes()).withName(taskName).call(job);
     }
@@ -134,7 +135,7 @@ public class GridManagementJobSelfTest extends GridCommonAbstractTest {
      *  Test job which ensures that its executor thread is from management pool in case
      *  task name corresponds to either internal or Visor task.
      */
-    private static class TestJob implements Callable<Object>, Serializable {
+    private static class TestJob implements IgniteCallable<Object> {
         /** Task session. */
         @TaskSessionResource
         protected ComputeTaskSession ses;
@@ -154,7 +155,7 @@ public class GridManagementJobSelfTest extends GridCommonAbstractTest {
      * of task name due to presence of {@link GridInternal} annotation.
      */
     @GridInternal
-    private static class TestJobInternal implements Callable<Object>, Serializable {
+    private static class TestJobInternal implements IgniteCallable<Object> {
         /** {@inheritDoc} */
         @Nullable @Override public Object call() throws IgniteCheckedException {
             String threadName = Thread.currentThread().getName();

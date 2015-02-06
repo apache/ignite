@@ -31,7 +31,7 @@ import java.util.*;
  * (governed by {@code collocated} parameter). {@code Non-collocated} mode is provided only
  * for partitioned caches. If {@code collocated} parameter is {@code true}, then all set items
  * will be collocated on one node, otherwise items will be distributed through all grid nodes.
- * @see Ignite#set(String, org.apache.ignite.configuration.CollectionConfiguration, boolean)
+ * @see Ignite#set(String, CollectionConfiguration, boolean)
  */
 public interface IgniteSet<T> extends Set<T>, Closeable {
     /** {@inheritDoc} */
