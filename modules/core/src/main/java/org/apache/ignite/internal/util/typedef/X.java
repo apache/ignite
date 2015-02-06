@@ -853,7 +853,7 @@ public final class X {
      * @return Installation home folder.
      * @throws IgniteCheckedException If Ignite home folder was not set.
      */
-    public static String resolveGridGainHome() throws IgniteCheckedException {
+    public static String resolveIgniteHome() throws IgniteCheckedException {
         String var = IgniteSystemProperties.getString(IGNITE_HOME);
 
         if (var != null)

@@ -96,7 +96,7 @@ public abstract class GridAbstractTest extends TestCase {
     static {
         System.setProperty(IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
 
-        Thread timer = new Thread(new GridTestClockTimer(), "gridgain-clock-for-tests");
+        Thread timer = new Thread(new GridTestClockTimer(), "ignite-clock-for-tests");
 
         timer.setDaemon(true);
 

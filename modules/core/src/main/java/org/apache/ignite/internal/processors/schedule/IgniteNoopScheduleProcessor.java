@@ -49,6 +49,6 @@ public class IgniteNoopScheduleProcessor extends IgniteScheduleProcessorAdapter 
      */
     private IgniteException processorException() {
         return new IgniteException("Current Ignite configuration does not support schedule functionality " +
-            "(consider adding gridgain-schedule module to classpath).");
+            "(consider adding ignite-schedule module to classpath).");
     }
 }
