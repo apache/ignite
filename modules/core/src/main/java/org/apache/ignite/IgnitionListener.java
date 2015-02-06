@@ -15,19 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.lifecycle;
+package org.apache.ignite;
 
-import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
  * Listener for gird state change notifications. Use
- * {@link Ignition#addListener(IgniteListener)} to register this
+ * {@link Ignition#addListener(IgnitionListener)} to register this
  * listener with grid factory.
  */
-public interface IgniteListener extends EventListener {
+public interface IgnitionListener extends EventListener {
     /**
      * Listener for grid factory state change notifications.
      *

@@ -22,7 +22,6 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lifecycle.*;
 import org.jetbrains.annotations.*;
 
 import javax.swing.*;
@@ -303,7 +302,7 @@ public final class CommandLineStartup {
         // Exit latch for the grid loaded from the command line.
         final CountDownLatch latch = new CountDownLatch(1);
 
-        G.addListener(new IgniteListener() {
+        G.addListener(new IgnitionListener() {
             @Override public void onStateChange(String name, IgniteState state) {
                 // Skip all grids except loaded from the command line.
                 if (!F.eq(gridName, name))

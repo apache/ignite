@@ -40,11 +40,10 @@ import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.apache.ignite.internal.{IgniteEx, GridProductImpl}
 import org.apache.ignite.lang.{IgniteNotPeerDeployable, IgnitePredicate}
-import org.apache.ignite.lifecycle.IgniteListener
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import org.apache.ignite.{IgniteState, IgniteSystemProperties, Ignition, _}
+import org.apache.ignite._
 import org.jetbrains.annotations.Nullable
 
 import scala.collection.JavaConversions._
@@ -156,7 +155,7 @@ object visor extends VisorTag {
     private var nodeSegLsnr: IgnitePredicate[IgniteEvent] = null
 
     /** Node stop listener. */
-    private var nodeStopLsnr: IgniteListener = null
+    private var nodeStopLsnr: IgnitionListener = null
 
     /** Visor copyright blurb. */
     private final val COPYRIGHT = GridProductImpl.COPYRIGHT
@@ -1706,7 +1705,7 @@ object visor extends VisorTag {
 
         grid.events().localListen(nodeSegLsnr, EVT_NODE_SEGMENTED)
 
-        nodeStopLsnr = new IgniteListener {
+        nodeStopLsnr = new IgnitionListener {
             def onStateChange(name: String, state: IgniteState) {
                 if (name == grid.name && state == IgniteState.STOPPED) {
                     warn("Closing Visor console due to stopping of host grid instance.")

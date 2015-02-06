@@ -26,7 +26,6 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.logger.*;
 import org.apache.ignite.logger.java.*;
 import org.apache.ignite.marshaller.*;
@@ -125,7 +124,7 @@ public class IgnitionEx {
     private static volatile IgniteState dfltGridState;
 
     /** List of state listeners. */
-    private static final Collection<IgniteListener> lsnrs = new GridConcurrentHashSet<>(4);
+    private static final Collection<IgnitionListener> lsnrs = new GridConcurrentHashSet<>(4);
 
     /** */
     private static volatile boolean daemon;
@@ -1026,19 +1025,19 @@ public class IgnitionEx {
      * @param lsnr Listener for grid life cycle events. If this listener was already added
      *      this method is no-op.
      */
-    public static void addListener(IgniteListener lsnr) {
+    public static void addListener(IgnitionListener lsnr) {
         A.notNull(lsnr, "lsnr");
 
         lsnrs.add(lsnr);
     }
 
     /**
-     * Removes lsnr added by {@link #addListener(org.apache.ignite.lifecycle.IgniteListener)} method.
+     * Removes lsnr added by {@link #addListener(org.apache.ignite.IgnitionListener)} method.
      *
      * @param lsnr Listener to remove.
      * @return {@code true} if lsnr was added before, {@code false} otherwise.
      */
-    public static boolean removeListener(IgniteListener lsnr) {
+    public static boolean removeListener(IgnitionListener lsnr) {
         A.notNull(lsnr, "lsnr");
 
         return lsnrs.remove(lsnr);
@@ -1054,7 +1053,7 @@ public class IgnitionEx {
         else
             dfltGridState = state;
 
-        for (IgniteListener lsnr : lsnrs)
+        for (IgnitionListener lsnr : lsnrs)
             lsnr.onStateChange(gridName, state);
     }
 

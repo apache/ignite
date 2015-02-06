@@ -221,7 +221,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         final Object mux = new Object();
 
-        IgniteListener factoryLsnr = new IgniteListener() {
+        IgnitionListener factoryLsnr = new IgnitionListener() {
             @Override public void onStateChange(String name, IgniteState state) {
                 synchronized (mux) {
                     if ("grid-factory-test-1".equals(name))
@@ -354,7 +354,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         final AtomicInteger startedCnt = new AtomicInteger();
         final AtomicInteger stoppedCnt = new AtomicInteger();
 
-        IgniteListener lsnr = new IgniteListener() {
+        IgnitionListener lsnr = new IgnitionListener() {
             @SuppressWarnings("StringEquality")
             @Override public void onStateChange(@Nullable String name, IgniteState state) {
                 assert name == gridName;

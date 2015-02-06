@@ -22,7 +22,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.logger.*;
 import org.apache.log4j.*;
@@ -224,7 +223,7 @@ public final class GridRandomCommandLineLoader {
         System.out.println("Minimum TTL: " + minTtl);
         System.out.println("Maximum TTL: " + maxTtl);
 
-        G.addListener(new IgniteListener() {
+        G.addListener(new IgnitionListener() {
             @Override public void onStateChange(String name, IgniteState state) {
                 if (state == STOPPED && latch != null)
                     latch.countDown();
