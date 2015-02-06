@@ -559,7 +559,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
     /**
      * Tests queue serialization.
      */
-    private static class QueueJob implements Callable<Integer>, Serializable {
+    private static class QueueJob implements IgniteCallable<Integer> {
         /** */
         private IgniteQueue<Integer> queue;
 

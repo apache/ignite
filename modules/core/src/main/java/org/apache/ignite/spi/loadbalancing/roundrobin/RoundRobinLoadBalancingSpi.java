@@ -148,7 +148,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * Here is how you can configure {@code GridRandomLoadBalancingSpi} using Spring XML configuration:
  * <pre name="code" class="xml">
  * &lt;property name="loadBalancingSpi"&gt;
- *     &lt;bean class="org.gridgain.grid.spi.loadBalancing.roundrobin.GridRoundRobinLoadBalancingSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.loadBalancing.roundrobin.GridRoundRobinLoadBalancingSpi"&gt;
  *         &lt;!-- Set to global round-robin mode. --&gt;
  *         &lt;property name="perTask" value="false"/&gt;
  *     &lt;/bean&gt;

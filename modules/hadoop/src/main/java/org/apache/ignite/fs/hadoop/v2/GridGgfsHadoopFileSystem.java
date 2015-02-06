@@ -59,12 +59,12 @@ import static org.apache.ignite.internal.fs.hadoop.GridGgfsHadoopUtils.*;
  *      &lt;value&gt;org.apache.ignite.fs.hadoop.GridGgfsHadoopFileSystem&lt;/value&gt;
  *  &lt;/property&gt;
  * </pre>
- * You should also add GridGain JAR and all libraries to Hadoop classpath. To
+ * You should also add Ignite JAR and all libraries to Hadoop classpath. To
  * do this, add following lines to {@code conf/hadoop-env.sh} script in Hadoop
  * distribution:
  * <pre name="code" class="bash">
- * export IGNITE_HOME=/path/to/GridGain/distribution
- * export HADOOP_CLASSPATH=$IGNITE_HOME/gridgain*.jar
+ * export IGNITE_HOME=/path/to/Ignite/distribution
+ * export HADOOP_CLASSPATH=$IGNITE_HOME/ignite*.jar
  *
  * for f in $IGNITE_HOME/libs/*.jar; do
  *  export HADOOP_CLASSPATH=$HADOOP_CLASSPATH:$f;
@@ -78,7 +78,7 @@ import static org.apache.ignite.internal.fs.hadoop.GridGgfsHadoopUtils.*;
  * started together with Hadoop {@code task-tracker} processes.
  * <p>
  * For sample client and data node configuration refer to {@code config/hadoop/default-config-client.xml}
- * and {@code config/hadoop/default-config.xml} configuration files in GridGain installation.
+ * and {@code config/hadoop/default-config.xml} configuration files in Ignite installation.
  */
 public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Closeable {
     /** Logger. */
@@ -234,7 +234,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
             // Get log directory.
             String logDirCfg = parameter(cfg, PARAM_GGFS_LOG_DIR, uriAuthority, DFLT_GGFS_LOG_DIR);
 
-            File logDirFile = U.resolveGridGainPath(logDirCfg);
+            File logDirFile = U.resolveIgnitePath(logDirCfg);
 
             String logDir = logDirFile != null ? logDirFile.getAbsolutePath() : null;
 
@@ -298,7 +298,7 @@ public class GridGgfsHadoopFileSystem extends AbstractFileSystem implements Clos
                 try {
                     secondaryUri = new URI(secUri);
 
-                    URL secondaryCfgUrl = U.resolveGridGainUrl(secConfPath);
+                    URL secondaryCfgUrl = U.resolveIgniteUrl(secConfPath);
 
                     if (secondaryCfgUrl == null)
                         throw new IOException("Failed to resolve secondary file system config URL: " + secConfPath);

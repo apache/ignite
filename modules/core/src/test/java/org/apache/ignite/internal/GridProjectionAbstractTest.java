@@ -51,10 +51,10 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private ClusterGroup prj;
 
     /** Runnable job. */
-    private Runnable runJob = new TestRunnable();
+    private IgniteRunnable runJob = new TestRunnable();
 
     /** Callable job. */
-    private Callable<String> calJob = new TestCallable<>();
+    private IgniteCallable<String> calJob = new TestCallable<>();
 
     /** Closure job. */
     private IgniteClosure<String, String> clrJob = new IgniteClosure<String, String>() {
@@ -343,7 +343,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void run2(AtomicInteger cnt) throws Exception {
-        Collection<Runnable> jobs = F.asList(runJob);
+        Collection<IgniteRunnable> jobs = F.asList(runJob);
 
         IgniteCompute comp = compute(prj).withAsync();
 
@@ -387,7 +387,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void call2(AtomicInteger cnt) throws Exception {
         IgniteCompute comp = compute(prj).withAsync();
 
-        Collection<Callable<String>> jobs = F.asList(calJob);
+        Collection<IgniteCallable<String>> jobs = F.asList(calJob);
 
         comp.call(jobs);
 
@@ -496,7 +496,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void forkjoin2(AtomicInteger cnt) throws Exception {
-        Collection<Callable<String>> jobs = F.asList(calJob);
+        Collection<IgniteCallable<String>> jobs = F.asList(calJob);
 
         IgniteCompute comp = compute(prj).withAsync();
 
@@ -652,7 +652,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
         Collection<ComputeTaskFuture<Object>> futsList = new ArrayList<>();
 
         for (int i = 0; i < 10; i++) {
-            comp.call(new TestWaitCallable<Object>());
+            comp.call(new TestWaitCallable<>());
 
             ComputeTaskFuture<Object> fut = comp.future();
 
@@ -692,7 +692,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     /**
      * Test runnable.
      */
-    private static class TestRunnable implements Runnable, Serializable {
+    private static class TestRunnable implements IgniteRunnable {
         /** {@inheritDoc} */
         @Override public void run() {
             // No-op.
@@ -702,7 +702,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     /**
      * Test callable.
      */
-    private static class TestCallable<T> implements Callable<T>, Serializable {
+    private static class TestCallable<T> implements IgniteCallable<T> {
         /** {@inheritDoc} */
         @Nullable @Override public T call() throws Exception {
             return null;
@@ -712,7 +712,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     /**
      * Test callable.
      */
-    private static class TestWaitCallable<T> implements Callable<T>, Serializable {
+    private static class TestWaitCallable<T> implements IgniteCallable<T> {
         /** {@inheritDoc} */
         @Nullable @Override public T call() throws Exception {
             synchronized (mux) {

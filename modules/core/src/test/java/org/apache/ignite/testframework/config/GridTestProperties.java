@@ -260,7 +260,7 @@ public final class GridTestProperties {
 
         path += File.separatorChar + fileName;
 
-        File file = GridTestUtils.resolveGridGainPath(path);
+        File file = GridTestUtils.resolveIgnitePath(path);
 
         if (file != null && file.exists()) {
             assert !file.isDirectory();

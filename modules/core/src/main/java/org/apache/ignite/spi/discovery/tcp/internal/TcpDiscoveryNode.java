@@ -31,7 +31,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
 /**
  * Node for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}.
@@ -156,7 +156,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     @SuppressWarnings("unchecked")
     @Override public <T> T attribute(String name) {
         // Even though discovery SPI removes this attribute after authentication, keep this check for safety.
-        if (GridNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(name))
+        if (IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(name))
             return null;
 
         return (T)attrs.get(name);
@@ -167,7 +167,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         // Even though discovery SPI removes this attribute after authentication, keep this check for safety.
         return F.view(attrs, new IgnitePredicate<String>() {
             @Override public boolean apply(String s) {
-                return !GridNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(s);
+                return !IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(s);
             }
         });
     }

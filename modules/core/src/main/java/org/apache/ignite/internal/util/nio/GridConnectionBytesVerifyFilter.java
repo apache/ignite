@@ -115,7 +115,7 @@ public class GridConnectionBytesVerifyFilter extends GridNioFilterAdapter {
                 ses.close();
 
                 LT.warn(log, null, "Unknown connection detected (is some other software connecting to this " +
-                    "GridGain port?) [rmtAddr=" + ses.remoteAddress() + ", locAddr=" + ses.localAddress() + ']');
+                    "Ignite port?) [rmtAddr=" + ses.remoteAddress() + ", locAddr=" + ses.localAddress() + ']');
             }
         }
         else

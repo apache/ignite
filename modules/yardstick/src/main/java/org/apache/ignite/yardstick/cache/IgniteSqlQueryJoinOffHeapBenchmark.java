@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 
 /**
- * GridGain benchmark that performs query operations with joins
+ * Ignite benchmark that performs query operations with joins
  * and {@link CacheMemoryMode#OFFHEAP_TIERED OFFHEAP TIERED} memory mode.
  */
 public class IgniteSqlQueryJoinOffHeapBenchmark extends IgniteSqlQueryJoinBenchmark {

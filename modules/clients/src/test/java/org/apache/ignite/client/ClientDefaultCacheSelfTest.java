@@ -57,7 +57,7 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
     private static final int HTTP_PORT = 8081;
 
     /** Url address to send HTTP request. */
-    private static final String TEST_URL = "http://" + HOST + ":" + HTTP_PORT + "/gridgain";
+    private static final String TEST_URL = "http://" + HOST + ":" + HTTP_PORT + "/ignite";
 
     /** Used to sent request charset. */
     private static final String CHARSET = StandardCharsets.UTF_8.name();
@@ -186,9 +186,7 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
      */
     public void testTcp() throws Exception {
         try {
-            boolean putRes = cache().putx("key", 1);
-
-            assert putRes : "Put operation failed";
+            jcache().put("key", 1);
 
             GridClient client = clientTcp();
 

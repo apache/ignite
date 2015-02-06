@@ -155,7 +155,7 @@ class IgniteOptimizedClassResolver {
             BigDecimal.class,
             BigInteger.class,
 
-            // GridGain types.
+            // Ignite types.
             IgniteUuid.class,
             GridBoundedConcurrentOrderedSet.class,
             GridBoundedLinkedHashSet.class,

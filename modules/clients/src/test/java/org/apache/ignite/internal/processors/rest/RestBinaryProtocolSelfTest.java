@@ -555,7 +555,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     public void testLog() throws Exception {
         String path = "work/log/ignite.log." + System.currentTimeMillis();
 
-        File file = new File(U.getGridGainHome(), path);
+        File file = new File(U.getIgniteHome(), path);
 
         assert !file.exists();
 

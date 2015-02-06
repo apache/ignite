@@ -223,7 +223,7 @@ class VisorConfigurationCommand {
             val cmnT = VisorTextTable()
 
             cmnT += ("Grid name", safe(cfg.basic().gridName(), "<default>"))
-            cmnT += ("GridGain home", safe(cfg.basic().ggHome(), DFLT))
+            cmnT += ("Ignite home", safe(cfg.basic().ggHome(), DFLT))
             cmnT += ("Localhost", safe(cfg.basic().localHost(), DFLT))
             cmnT += ("Node ID", safe(cfg.basic().nodeId(), DFLT))
             cmnT += ("Marshaller", cfg.basic().marshaller())

@@ -25,11 +25,11 @@ import java.util.logging.*;
 /**
  * JDBC driver implementation for In-Memory Data Grid.
  * <p>
- * Driver allows to get distributed data from GridGain cache using standard
+ * Driver allows to get distributed data from Ignite cache using standard
  * SQL queries and standard JDBC API. It will automatically get only fields that
  * you actually need from objects stored in cache.
  * <h1 class="header">Limitations</h1>
- * Data in GridGain cache is usually distributed across several nodes,
+ * Data in Ignite cache is usually distributed across several nodes,
  * so some queries may not work as expected since the query will be sent to each
  * individual node and results will then be collected and returned as JDBC result set.
  * Keep in mind following limitations (not applied if data is queried from one node only,
@@ -65,19 +65,19 @@ import java.util.logging.*;
  * <p>
  * Note that cache name is case sensitive and you have to always specify it in quotes.
  * <h1 class="header">Dependencies</h1>
- * JDBC driver is located in main GridGain JAR and depends on all libraries located in
+ * JDBC driver is located in main Ignite JAR and depends on all libraries located in
  * {@code IGNITE_HOME/libs} folder. So if you are using JDBC driver in any external tool,
- * you have to add main GridGain JAR will all dependencies to its classpath.
+ * you have to add main Ignite JAR will all dependencies to its classpath.
  * <h1 class="header">Configuration</h1>
- * Internally JDBC driver <b>is based on GridGain Java client</b>. Therefore, all client
+ * Internally JDBC driver <b>is based on Ignite Java client</b>. Therefore, all client
  * configuration properties can be applied to JDBC connection.
  * <p>
  * JDBC connection URL has the following pattern:
- * {@code jdbc:gridgain://<hostname>:<port>/<cache_name>?nodeId=<UUID>}<br>
+ * {@code jdbc:ignite://<hostname>:<port>/<cache_name>?nodeId=<UUID>}<br>
  * Note the following:
  * <ul>
  *     <li>Hostname is required.</li>
- *     <li>If port is not defined, {@code 11211} is used (default for GridGain client).</li>
+ *     <li>If port is not defined, {@code 11211} is used (default for Ignite client).</li>
  *     <li>Leave {@code <cache_name>} empty if you are connecting to default cache.</li>
  *     <li>
  *         Provide {@code nodeId} parameter if you want to specify node where to execute
@@ -134,7 +134,7 @@ import java.util.logging.*;
  *     </tr>
  *     <tr>
  *         <td><b>gg.client.ssl.keystore.location</b></td>
- *         <td>Key store to be used by client to connect with GridGain topology.</td>
+ *         <td>Key store to be used by client to connect with Ignite topology.</td>
  *         <td>&nbsp;</td>
  *         <td>No (if {@code SSL} is enabled)</td>
  *     </tr>
@@ -152,7 +152,7 @@ import java.util.logging.*;
  *     </tr>
  *     <tr>
  *         <td><b>gg.client.ssl.truststore.location</b></td>
- *         <td>Trust store to be used by client to connect with GridGain topology.</td>
+ *         <td>Trust store to be used by client to connect with Ignite topology.</td>
  *         <td>&nbsp;</td>
  *         <td>No (if {@code SSL} is enabled)</td>
  *     </tr>
@@ -200,10 +200,10 @@ import java.util.logging.*;
  * <h1 class="header">Example</h1>
  * <pre name="code" class="java">
  * // Register JDBC driver.
- * Class.forName("org.gridgain.jdbc.IgniteJdbcDriver");
+ * Class.forName("org.apache.ignite.jdbc.IgniteJdbcDriver");
  *
  * // Open JDBC connection.
- * Connection conn = DriverManager.getConnection("jdbc:gridgain://localhost/cache");
+ * Connection conn = DriverManager.getConnection("jdbc:ignite://localhost/cache");
  *
  * // Query persons' names
  * ResultSet rs = conn.createStatement().executeQuery("select name from Person");
@@ -250,7 +250,7 @@ public class IgniteJdbcDriver implements Driver {
     static final String PROP_NODE_ID = PROP_PREFIX + PARAM_NODE_ID;
 
     /** URL prefix. */
-    private static final String URL_PREFIX = "jdbc:gridgain://";
+    private static final String URL_PREFIX = "jdbc:ignite://";
 
     /** Default port. */
     private static final int DFLT_PORT = 11211;
@@ -269,7 +269,7 @@ public class IgniteJdbcDriver implements Driver {
             DriverManager.registerDriver(new IgniteJdbcDriver());
         }
         catch (SQLException e) {
-            throw new RuntimeException("Failed to register GridGain JDBC driver.", e);
+            throw new RuntimeException("Failed to register Ignite JDBC driver.", e);
         }
     }
 
@@ -311,14 +311,14 @@ public class IgniteJdbcDriver implements Driver {
             "SunX509"), "Key manager algorithm.");
         props[10] = new PropertyInfo("gg.client.ssl.keystore.location",
             info.getProperty("gg.client.ssl.keystore.location", ""),
-            "Key store to be used by client to connect with GridGain topology.");
+            "Key store to be used by client to connect with Ignite topology.");
         props[11] = new PropertyInfo("gg.client.ssl.keystore.password",
             info.getProperty("gg.client.ssl.keystore.password", ""), "Key store password.");
         props[12] = new PropertyInfo("gg.client.ssl.keystore.type", info.getProperty("gg.client.ssl.keystore.type",
             "jks"), "Key store type.");
         props[13] = new PropertyInfo("gg.client.ssl.truststore.location",
             info.getProperty("gg.client.ssl.truststore.location", ""),
-            "Trust store to be used by client to connect with GridGain topology.");
+            "Trust store to be used by client to connect with Ignite topology.");
         props[14] = new PropertyInfo("gg.client.ssl.keystore.password",
             info.getProperty("gg.client.ssl.truststore.password", ""), "Trust store password.");
         props[15] = new PropertyInfo("gg.client.ssl.truststore.type", info.getProperty("gg.client.ssl.truststore.type",

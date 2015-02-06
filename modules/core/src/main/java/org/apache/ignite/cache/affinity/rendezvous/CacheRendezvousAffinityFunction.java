@@ -446,7 +446,7 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
 
         // Group by mac addresses.
         for (ClusterNode node : topSnapshot) {
-            String macs = node.attribute(GridNodeAttributes.ATTR_MACS);
+            String macs = node.attribute(IgniteNodeAttributes.ATTR_MACS);
 
             Collection<ClusterNode> nodes = macMap.get(macs);
 

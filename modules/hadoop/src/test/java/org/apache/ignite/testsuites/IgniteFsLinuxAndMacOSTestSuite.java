@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.hadoop.*;
 import static org.apache.ignite.testsuites.IgniteHadoopTestSuite.*;
 
 /**
- * Test suite for Hadoop file system over GridGain cache.
+ * Test suite for Hadoop file system over Ignite cache.
  * Contains tests which works on Linux and Mac OS platform only.
  */
 public class IgniteFsLinuxAndMacOSTestSuite extends TestSuite {
@@ -38,7 +38,7 @@ public class IgniteFsLinuxAndMacOSTestSuite extends TestSuite {
 
         GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
 
-        TestSuite suite = new TestSuite("Gridgain GGFS Test Suite For Linux And Mac OS");
+        TestSuite suite = new TestSuite("Ignite GGFS Test Suite For Linux And Mac OS");
 
         suite.addTest(new TestSuite(ldr.loadClass(GridGgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest.class.getName())));
 

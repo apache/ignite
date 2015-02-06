@@ -42,7 +42,7 @@ import java.util.logging.*;
 
 import static java.util.logging.Level.*;
 import static org.apache.ignite.client.impl.connection.GridClientConnectionCloseReason.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
 /**
  * Cached connections manager.

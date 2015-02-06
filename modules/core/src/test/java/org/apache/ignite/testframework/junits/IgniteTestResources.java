@@ -70,7 +70,7 @@ public class IgniteTestResources {
         log = rootLog.getLogger(getClass());
         nodeId = UUID.randomUUID();
         jmx = ManagementFactory.getPlatformMBeanServer();
-        home = U.getGridGainHome();
+        home = U.getIgniteHome();
         locHost = localHost();
 
         GridTestKernalContext ctx = new GridTestKernalContext();
@@ -91,7 +91,7 @@ public class IgniteTestResources {
         log = rootLog.getLogger(getClass());
 
         nodeId = UUID.randomUUID();
-        home = U.getGridGainHome();
+        home = U.getIgniteHome();
         locHost = localHost();
 
         GridTestKernalContext ctx = new GridTestKernalContext();
@@ -111,7 +111,7 @@ public class IgniteTestResources {
 
         nodeId = UUID.randomUUID();
         jmx = ManagementFactory.getPlatformMBeanServer();
-        home = U.getGridGainHome();
+        home = U.getIgniteHome();
         locHost = localHost();
 
         GridTestKernalContext ctx = new GridTestKernalContext();
@@ -186,9 +186,9 @@ public class IgniteTestResources {
     }
 
     /**
-     * @return GridGain home.
+     * @return Ignite home.
      */
-    public String getGridgainHome() {
+    public String getIgniteHome() {
         return home;
     }
 

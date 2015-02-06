@@ -60,12 +60,12 @@ public interface IgniteSpiManagementMBean {
     public long getUpTime();
 
     /**
-     * Gets Gridgain installation home folder (i.e. ${IGNITE_HOME});
+     * Gets Ignite installation home folder (i.e. ${IGNITE_HOME});
      *
-     * @return Gridgain installation home folder.
+     * @return Ignite installation home folder.
      */
-    @IgniteMXBeanDescription("Gridgain installation home folder.")
-    public String getGridGainHome();
+    @IgniteMXBeanDescription("Ignite installation home folder.")
+    public String getIgniteHome();
 
     /**
      * Gets ID of the local node.

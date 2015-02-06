@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import javax.swing.*;
 
 /**
- * GridGain startup.
+ * Ignite startup.
  */
 public class GridStartupMain {
     /**
@@ -41,14 +41,14 @@ public class GridStartupMain {
         JOptionPane.showMessageDialog(
             null,
             new JComponent[] {
-                new JLabel("GridGain started."),
+                new JLabel("Ignite started."),
                 new JLabel(
                     "<html>" +
                         "You can use JMX console at <u>http://localhost:1234</u>" +
                     "</html>"),
-                new JLabel("Press OK to stop GridGain.")
+                new JLabel("Press OK to stop Ignite.")
             },
-            "GridGain Startup JUnit",
+            "Ignite Startup JUnit",
             JOptionPane.INFORMATION_MESSAGE
         );
 

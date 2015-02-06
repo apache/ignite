@@ -29,13 +29,14 @@ public class GridTestLifecycleBean implements LifecycleBean {
     @IgniteInstanceResource
     private Ignite g;
 
+    /** {@inheritDoc} */
     @Override public void onLifecycleEvent(LifecycleEventType type) {
         if (type == LifecycleEventType.AFTER_GRID_START) {
             IgniteCache<GridTestKey, Long> cache = g.jcache("partitioned");
 
             assert cache != null;
 
-            cache.loadCache(null, 0, GridTestConstants.LOAD_THREADS, GridTestConstants.ENTRY_COUNT);
+            cache.loadCache(null, GridTestConstants.LOAD_THREADS, GridTestConstants.ENTRY_COUNT);
         }
     }
 }

@@ -48,7 +48,7 @@ public class GridUriDeploymentMultiScannersSelfTest extends GridUriDeploymentAbs
 
         // One real URI.
         uriList.add(GridTestProperties.getProperty("ant.urideployment.gar.uri").
-            replace("EXTDATA", U.resolveGridGainPath("modules/extdata").getAbsolutePath()));
+            replace("EXTDATA", U.resolveIgnitePath("modules/extdata").getAbsolutePath()));
 
         return uriList;
     }

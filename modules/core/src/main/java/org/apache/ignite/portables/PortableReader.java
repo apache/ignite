@@ -28,12 +28,12 @@ import java.util.Date;
  * Reader for portable objects used in {@link PortableMarshalAware} implementations.
  * Useful for the cases when user wants a fine-grained control over serialization.
  * <p>
- * Note that GridGain never writes full strings for field or type names. Instead,
- * for performance reasons, GridGain writes integer hash codes for type and field names.
+ * Note that Ignite never writes full strings for field or type names. Instead,
+ * for performance reasons, Ignite writes integer hash codes for type and field names.
  * It has been tested that hash code conflicts for the type names or the field names
  * within the same type are virtually non-existent and, to gain performance, it is safe
  * to work with hash codes. For the cases when hash codes for different types or fields
- * actually do collide, GridGain provides {@link PortableIdMapper} which
+ * actually do collide, Ignite provides {@link PortableIdMapper} which
  * allows to override the automatically generated hash code IDs for the type and field names.
  */
 public interface PortableReader {
