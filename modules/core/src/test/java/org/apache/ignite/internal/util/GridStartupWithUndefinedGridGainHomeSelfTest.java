@@ -90,7 +90,6 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
             // Default console logger is used
             cfg.setGridLogger(log);
             cfg.setDiscoverySpi(disc);
-            cfg.setRestEnabled(false);
 
             try (Ignite g = G.start(cfg)) {
                 assert g != null;

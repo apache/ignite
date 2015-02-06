@@ -64,7 +64,7 @@ public class JdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setRestEnabled(true);
+        cfg.setClientConnectionConfiguration(new ClientConnectionConfiguration());
 
         return cfg;
     }

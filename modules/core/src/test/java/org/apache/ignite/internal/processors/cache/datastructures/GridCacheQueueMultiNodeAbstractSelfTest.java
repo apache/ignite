@@ -92,23 +92,9 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setExecutorService(
-            new ThreadPoolExecutor(
-                RETRIES * 2,
-                RETRIES * 2,
-                0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>()));
+        cfg.setExecutorService(RETRIES * 2);
 
-        cfg.setExecutorServiceShutdown(true);
-
-        cfg.setSystemExecutorService(
-            new ThreadPoolExecutor(
-                RETRIES * 2,
-                RETRIES * 2,
-                0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>()));
-
-        cfg.setSystemExecutorServiceShutdown(true);
+        cfg.setSystemExecutorService(RETRIES * 2);
 
         cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 

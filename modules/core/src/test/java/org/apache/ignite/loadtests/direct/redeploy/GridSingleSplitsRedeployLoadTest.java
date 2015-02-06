@@ -57,8 +57,6 @@ public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        ((ThreadPoolExecutor)cfg.getExecutorService()).prestartAllCoreThreads();
-
         cfg.setDeploymentMode(IgniteDeploymentMode.CONTINUOUS);
 
         return cfg;

@@ -97,7 +97,6 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
         spi.setLocalPortRange(1);
         cfg.setDiscoverySpi(spi);
         cfg.setLocalHost("127.0.0.1");
-        cfg.setRestEnabled(false);
         cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi() {

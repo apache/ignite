@@ -31,29 +31,17 @@ public class VisorExecutorServiceConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Executor service. */
-    private String execSvc;
+    /** Public pool size. */
+    private int execPoolSz;
 
-    /** Whether or not GridGain will stop executor service on node shutdown. */
-    private boolean execSvcShutdown;
+    /** System pool size. */
+    private int sysPoolSz;
 
-    /** System executor service. */
-    private String sysExecSvc;
+    /** Peer-to-peer pool size. */
+    private int p2pPoolSz;
 
-    /** Whether or not GridGain will stop system executor service on node shutdown. */
-    private boolean sysExecSvcShutdown;
-
-    /** Peer-to-peer executor service. */
-    private String p2pExecSvc;
-
-    /** Whether or not GridGain will stop peer-to-peer executor service on node shutdown. */
-    private boolean p2pExecSvcShutdown;
-
-    /** REST requests executor service. */
-    private String restExecSvc;
-
-    /** REST executor service shutdown flag. */
-    private boolean restSvcShutdown;
+    /** REST requests pool size. */
+    private int restPoolSz;
 
     /**
      * @param c Grid configuration.
@@ -62,135 +50,75 @@ public class VisorExecutorServiceConfiguration implements Serializable {
     public static VisorExecutorServiceConfiguration from(IgniteConfiguration c) {
         VisorExecutorServiceConfiguration cfg = new VisorExecutorServiceConfiguration();
 
-        cfg.executeService(compactClass(c.getExecutorService()));
-        cfg.executeServiceShutdown(c.getExecutorServiceShutdown());
+        cfg.executeService(c.getExecutorService());
 
-        cfg.systemExecutorService(compactClass(c.getSystemExecutorService()));
-        cfg.systemExecutorServiceShutdown(c.getSystemExecutorServiceShutdown());
+        cfg.systemExecutorService(c.getSystemExecutorService());
 
-        cfg.p2pExecutorService(compactClass(c.getPeerClassLoadingExecutorService()));
-        cfg.p2pExecutorServiceShutdown(c.getSystemExecutorServiceShutdown());
+        cfg.p2pExecutorService(c.getPeerClassLoadingExecutorService());
 
         ClientConnectionConfiguration cc = c.getClientConnectionConfiguration();
 
         if (cc != null) {
-            cfg.restExecutorService(compactClass(cc.getRestExecutorService()));
-            cfg.restExecutorServiceShutdown(cc.isRestExecutorServiceShutdown());
+            cfg.restExecutorService(cc.getRestExecutorService());
         }
 
         return cfg;
     }
 
     /**
-     * @return Executor service.
+     * @return Public pool size.
      */
-    public String executeService() {
-        return execSvc;
+    public int executeService() {
+        return execPoolSz;
     }
 
     /**
-     * @param execSvc New executor service.
+     * @param execPoolSz Public pool size.
      */
-    public void executeService(String execSvc) {
-        this.execSvc = execSvc;
+    public void executeService(int execPoolSz) {
+        this.execPoolSz = execPoolSz;
     }
 
     /**
-     * @return Whether or not GridGain will stop executor service on node shutdown.
+     * @return System pool size.
      */
-    public boolean executeServiceShutdown() {
-        return execSvcShutdown;
+    public int systemExecutorService() {
+        return sysPoolSz;
     }
 
     /**
-     * @param execSvcShutdown New whether or not GridGain will stop executor service on node shutdown.
+     * @param sysExecSvc System pool size.
      */
-    public void executeServiceShutdown(boolean execSvcShutdown) {
-        this.execSvcShutdown = execSvcShutdown;
+    public void systemExecutorService(int sysExecSvc) {
+        this.sysPoolSz = sysExecSvc;
     }
 
     /**
-     * @return System executor service.
+     * @return Peer-to-peer pool size.
      */
-    public String systemExecutorService() {
-        return sysExecSvc;
+    public int p2pExecutorService() {
+        return p2pPoolSz;
     }
 
     /**
-     * @param sysExecSvc New system executor service.
+     * @param p2pExecSvc New peer-to-peer pool size.
      */
-    public void systemExecutorService(String sysExecSvc) {
-        this.sysExecSvc = sysExecSvc;
+    public void p2pExecutorService(int p2pExecSvc) {
+        this.p2pPoolSz = p2pExecSvc;
     }
 
     /**
-     * @return Whether or not GridGain will stop system executor service on node shutdown.
+     * @return REST requests pool size.
      */
-    public boolean systemExecutorServiceShutdown() {
-        return sysExecSvcShutdown;
+    public int restExecutorService() {
+        return restPoolSz;
     }
 
     /**
-     * @param sysExecSvcShutdown New whether or not GridGain will stop system executor service on node shutdown.
+     * @param restExecSvc New REST requests pool size.
      */
-    public void systemExecutorServiceShutdown(boolean sysExecSvcShutdown) {
-        this.sysExecSvcShutdown = sysExecSvcShutdown;
-    }
-
-    /**
-     * @return Peer-to-peer executor service.
-     */
-    public String p2pExecutorService() {
-        return p2pExecSvc;
-    }
-
-    /**
-     * @param p2pExecSvc New peer-to-peer executor service.
-     */
-    public void p2pExecutorService(String p2pExecSvc) {
-        this.p2pExecSvc = p2pExecSvc;
-    }
-
-    /**
-     * @return Whether or not GridGain will stop peer-to-peer executor service on node shutdown.
-     */
-    public boolean p2pExecutorServiceShutdown() {
-        return p2pExecSvcShutdown;
-    }
-
-    /**
-     * @param p2pExecSvcShutdown New whether or not GridGain will stop peer-to-peer executor service on node shutdown.
-     */
-    public void p2pExecutorServiceShutdown(boolean p2pExecSvcShutdown) {
-        this.p2pExecSvcShutdown = p2pExecSvcShutdown;
-    }
-
-    /**
-     * @return REST requests executor service.
-     */
-    public String restExecutorService() {
-        return restExecSvc;
-    }
-
-    /**
-     * @param restExecSvc New REST requests executor service.
-     */
-    public void restExecutorService(String restExecSvc) {
-        this.restExecSvc = restExecSvc;
-    }
-
-    /**
-     * @return REST executor service shutdown flag.
-     */
-    public boolean restExecutorServiceShutdown() {
-        return restSvcShutdown;
-    }
-
-    /**
-     * @param restSvcShutdown New REST executor service shutdown flag.
-     */
-    public void restExecutorServiceShutdown(boolean restSvcShutdown) {
-        this.restSvcShutdown = restSvcShutdown;
+    public void restExecutorService(int restExecSvc) {
+        this.restPoolSz = restExecSvc;
     }
 
     /** {@inheritDoc} */

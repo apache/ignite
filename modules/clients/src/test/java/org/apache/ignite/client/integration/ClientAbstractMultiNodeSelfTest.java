@@ -163,31 +163,9 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         c.setCacheConfiguration(cacheConfiguration(null), cacheConfiguration(PARTITIONED_CACHE_NAME),
             cacheConfiguration(REPLICATED_CACHE_NAME), cacheConfiguration(REPLICATED_ASYNC_CACHE_NAME));
 
-        ThreadPoolExecutor exec = new ThreadPoolExecutor(
-            40,
-            40,
-            0,
-            MILLISECONDS,
-            new LinkedBlockingQueue<Runnable>());
+        c.setExecutorService(40);
 
-        exec.prestartAllCoreThreads();
-
-        c.setExecutorService(exec);
-
-        c.setExecutorServiceShutdown(true);
-
-        ThreadPoolExecutor sysExec = new ThreadPoolExecutor(
-            40,
-            40,
-            0,
-            MILLISECONDS,
-            new LinkedBlockingQueue<Runnable>());
-
-        sysExec.prestartAllCoreThreads();
-
-        c.setSystemExecutorService(sysExec);
-
-        c.setSystemExecutorServiceShutdown(true);
+        c.setSystemExecutorService(40);
 
         return c;
     }

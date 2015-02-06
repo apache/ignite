@@ -46,8 +46,6 @@ public class GridMultiSplitsRedeployLoadTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
 
-        ((ThreadPoolExecutor)cfg.getExecutorService()).prestartAllCoreThreads();
-
         return cfg;
     }
 

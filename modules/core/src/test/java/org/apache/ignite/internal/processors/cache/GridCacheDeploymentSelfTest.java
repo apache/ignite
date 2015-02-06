@@ -91,8 +91,6 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setRestEnabled(false);
-
         cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         return cfg;

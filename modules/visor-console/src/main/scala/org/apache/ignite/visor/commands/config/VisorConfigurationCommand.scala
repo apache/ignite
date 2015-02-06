@@ -326,13 +326,9 @@ class VisorConfigurationCommand {
             val execCfg = cfg.executeService()
 
             execSvcT += ("Executor service", safe(execCfg.executeService(), DFLT))
-            execSvcT += ("Executor service shutdown", bool2Str(execCfg.executeServiceShutdown()))
             execSvcT += ("System executor service", safe(execCfg.systemExecutorService(), DFLT))
-            execSvcT += ("System executor service shutdown", bool2Str(execCfg.systemExecutorServiceShutdown()))
             execSvcT += ("Peer-to-Peer executor service", safe(execCfg.p2pExecutorService(), DFLT))
-            execSvcT += ("Peer-to-Peer executor service shutdown", bool2Str(execCfg.p2pExecutorServiceShutdown()))
             execSvcT += ("REST Executor Service", safe(execCfg.restExecutorService(), DFLT))
-            execSvcT += ("REST Executor Service Shutdown", bool2Str(execCfg.restExecutorServiceShutdown()))
 
             execSvcT.render()
 

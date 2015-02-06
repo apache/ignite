@@ -102,11 +102,8 @@ public class ClientConnectionConfiguration {
     /** Folders accessible by REST. */
     private String[] restAccessibleFolders;
 
-    /** REST requests executor service. */
-    private ExecutorService restExecSvc;
-
-    /** REST executor service shutdown flag. */
-    private boolean restSvcShutdown = true;
+    /** REST requests thread pool size. */
+    private int restSvcPoolSz = DFLT_REST_CORE_THREAD_CNT;
 
     /** Client message interceptor. */
     private ClientMessageInterceptor clientMsgInterceptor;
@@ -129,8 +126,7 @@ public class ClientConnectionConfiguration {
 
         clientMsgInterceptor = cfg.getClientMessageInterceptor();
         restAccessibleFolders = cfg.getRestAccessibleFolders();
-        restExecSvc = cfg.getRestExecutorService();
-        restSvcShutdown = cfg.isRestExecutorServiceShutdown();
+        restSvcPoolSz = cfg.getRestExecutorService();
         restIdleTimeout = cfg.getRestIdleTimeout();
         jettyPath = cfg.getRestJettyPath();
         restPortRange = cfg.getRestPortRange();
@@ -492,55 +488,24 @@ public class ClientConnectionConfiguration {
     }
 
     /**
-     * Should return an instance of fully configured thread pool to be used for
+     * Should return an thread pool size to be used for
      * processing of client messages (REST requests).
-     * <p>
-     * If not provided, new executor service will be created using the following
-     * configuration:
-     * <ul>
-     *     <li>Core pool size - {@link #DFLT_REST_CORE_THREAD_CNT}</li>
-     *     <li>Max pool size - {@link #DFLT_REST_MAX_THREAD_CNT}</li>
-     *     <li>Queue capacity - {@link #DFLT_REST_THREADPOOL_QUEUE_CAP}</li>
-     * </ul>
      *
      * @return Thread pool implementation to be used for processing of client
      *      messages.
      */
-    public ExecutorService getRestExecutorService() {
-        return restExecSvc;
+    public int getRestExecutorService() {
+        return restSvcPoolSz;
     }
 
     /**
      * Sets thread pool to use for processing of client messages (REST requests).
      *
      * @param restExecSvc Thread pool to use for processing of client messages.
-     * @see IgniteConfiguration#getRestExecutorService()
+     * @see #getRestExecutorService()
      */
-    public void setRestExecutorService(ExecutorService restExecSvc) {
-        this.restExecSvc = restExecSvc;
-    }
-
-    /**
-     * Sets REST executor service shutdown flag.
-     *
-     * @param restSvcShutdown REST executor service shutdown flag.
-     * @see IgniteConfiguration#getRestExecutorService()
-     */
-    public void setRestExecutorServiceShutdown(boolean restSvcShutdown) {
-        this.restSvcShutdown = restSvcShutdown;
-    }
-
-    /**
-     * Shutdown flag for REST executor service.
-     * <p>
-     * If not provided, default value {@code true} will be used which will shutdown
-     * executor service when GridGain stops regardless whether it was started before GridGain
-     * or by GridGain.
-     *
-     * @return REST executor service shutdown flag.
-     */
-    public boolean isRestExecutorServiceShutdown() {
-        return restSvcShutdown;
+    public void setRestExecutorService(int restExecSvc) {
+        this.restSvcPoolSz = restExecSvc;
     }
 
     /**

@@ -65,14 +65,7 @@ public class GridSessionSetFutureAttributeWaitListenerSelfTest extends GridCommo
 
         c.setDiscoverySpi(discoSpi);
 
-        c.setExecutorService(
-            new ThreadPoolExecutor(
-                SPLIT_COUNT * 2,
-                SPLIT_COUNT * 2,
-                0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>()));
-
-        c.setExecutorServiceShutdown(true);
+        c.setExecutorService(SPLIT_COUNT * 2);
 
         return c;
     }

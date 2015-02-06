@@ -54,8 +54,6 @@ public class SingleSplitsLoadTest extends GridCommonAbstractTest {
 
         log.setLevel(Level.INFO);
 
-        ((ThreadPoolExecutor)cfg.getExecutorService()).prestartAllCoreThreads();
-
         return cfg;
     }
 

@@ -81,15 +81,14 @@ public abstract class GridCachePreloadLifecycleAbstractTest extends GridCommonAb
         c.setIncludeProperties();
         c.setDeploymentMode(IgniteDeploymentMode.SHARED);
         c.setNetworkTimeout(10000);
-        c.setRestEnabled(false);
         c.setMarshaller(new IgniteOptimizedMarshaller(false));
 
 //        c.setPeerClassLoadingLocalClassPathExclude(GridCachePreloadLifecycleAbstractTest.class.getName(),
 //            MyValue.class.getName());
 
-        c.setExecutorService(new IgniteThreadPoolExecutor(10, 10, 0, new LinkedBlockingQueue<Runnable>()));
-        c.setSystemExecutorService(new IgniteThreadPoolExecutor(10, 10, 0, new LinkedBlockingQueue<Runnable>()));
-        c.setPeerClassLoadingExecutorService(new IgniteThreadPoolExecutor(3, 3, 0, new LinkedBlockingQueue<Runnable>()));
+        c.setExecutorService(10);
+        c.setSystemExecutorService(10);
+        c.setPeerClassLoadingExecutorService(3);
 
         c.setLifecycleBeans(lifecycleBean);
 

@@ -122,9 +122,8 @@ public class GridCacheSingleNodeLoadTest {
 
         c.setCollisionSpi(cols);
 
-        c.setExecutorService(new IgniteThreadPoolExecutor(THREADS / 2, THREADS / 2, 0L, new LinkedBlockingQueue<Runnable>()));
-        c.setSystemExecutorService(new IgniteThreadPoolExecutor(THREADS * 2, THREADS * 2, 0L,
-            new LinkedBlockingQueue<Runnable>()));
+        c.setExecutorService(THREADS / 2);
+        c.setSystemExecutorService(THREADS * 2);
 
         CacheConfiguration cc = new CacheConfiguration();
 

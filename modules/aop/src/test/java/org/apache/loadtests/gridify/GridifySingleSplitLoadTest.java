@@ -73,8 +73,6 @@ public class GridifySingleSplitLoadTest extends GridCommonAbstractTest {
 
         log.getLogger("org.gridgain.grid").setLevel(Level.INFO);
 
-        ((ThreadPoolExecutor)cfg.getExecutorService()).prestartAllCoreThreads();
-
         return cfg;
     }
 

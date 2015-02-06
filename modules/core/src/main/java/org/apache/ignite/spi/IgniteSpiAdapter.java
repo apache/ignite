@@ -112,7 +112,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
     /** {@inheritDoc} */
     @Override public final String getGridGainHome() {
-        return ignite.configuration().getGridGainHome();
+        return ignite.configuration().getIgniteHome();
     }
 
     /** {@inheritDoc} */

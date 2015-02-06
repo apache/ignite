@@ -83,14 +83,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(discoSpi);
 
-        c.setExecutorService(
-            new ThreadPoolExecutor(
-                JOB_NUM * 2,
-                JOB_NUM * 2,
-                0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>()));
-
-        c.setExecutorServiceShutdown(true);
+        c.setExecutorService(JOB_NUM * 2);
 
         return c;
     }

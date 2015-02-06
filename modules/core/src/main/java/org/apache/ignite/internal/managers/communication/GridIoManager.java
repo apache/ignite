@@ -158,10 +158,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         startSpi();
 
-        pubPool = ctx.config().getExecutorService();
-        p2pPool = ctx.config().getPeerClassLoadingExecutorService();
-        sysPool = ctx.config().getSystemExecutorService();
-        mgmtPool = ctx.config().getManagementExecutorService();
+        pubPool = ctx.getExecutorService();
+        p2pPool = ctx.getPeerClassLoadingExecutorService();
+        sysPool = ctx.getSystemExecutorService();
+        mgmtPool = ctx.getManagementExecutorService();
         utilityCachePool = ctx.utilityCachePool();
         affPool = Executors.newFixedThreadPool(1);
 

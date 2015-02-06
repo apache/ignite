@@ -1520,12 +1520,10 @@ object visor extends VisorTag {
 
                 cfg.setClientConnectionConfiguration(null)
 
-                def createExecutor = new IgniteThreadPoolExecutor(cpuCnt, cpuCnt, Long.MaxValue, new LinkedBlockingQueue[Runnable])
-
                 // All thread pools are overridden to have size equal to number of CPUs.
-                cfg.setExecutorService(createExecutor)
-                cfg.setSystemExecutorService(createExecutor)
-                cfg.setPeerClassLoadingExecutorService(createExecutor)
+                cfg.setExecutorService(cpuCnt)
+                cfg.setSystemExecutorService(cpuCnt)
+                cfg.setPeerClassLoadingExecutorService(cpuCnt)
 
                 var ioSpi = cfg.getCommunicationSpi
 
