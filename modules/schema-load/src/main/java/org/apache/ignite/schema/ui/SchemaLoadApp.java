@@ -47,45 +47,69 @@ import static org.apache.ignite.schema.ui.Controls.*;
  */
 @SuppressWarnings("UnnecessaryFullyQualifiedName")
 public class SchemaLoadApp extends Application {
-    /** Rdbms names. */
-    private static final String[] RDBMS_NAMES = {
-        "H2 Database",
-        "DB2",
-        "Oracle",
-        "MySQL",
-        "Microsoft SQL Server",
-        "PostgreSQL",
-        "Custom server..."};
+    /** Default presets for most popular databases. */
+    private enum Preset {
+        /** Preset for H2. */
+        H2("H2 Database", "h2.jar", "org.h2.Driver", "jdbc:h2:[database]", "sa"),
 
-    /** Jdbc drivers. */
-    private static final String[] JDBC_JAR = {
-        "h2.jar",
-        "db2jcc4.jar",
-        "ojdbc6.jar",
-        "mysql-connector-java-5-bin.jar",
-        "sqljdbc41.jar",
-        "postgresql-9.3.jdbc4.jar",
-        "jdbc.jar"};
+        /** Preset for DB2. */
+        DB2("DB2", "db2jcc4.jar", "com.ibm.db2.jcc.DB2Driver", "jdbc:db2://[host]:[port]/[database]", "db2admin"),
 
-    /** Jdbc drivers. */
-    private static final String[] JDBC_DRIVERS = {
-        "org.h2.Driver",
-        "com.ibm.db2.jcc.DB2Driver",
-        "oracle.jdbc.OracleDriver",
-        "com.mysql.jdbc.Driver",
-        "com.microsoft.sqlserver.jdbc.SQLServerDriver",
-        "org.postgresql.Driver",
-        "org.custom.Driver"};
+        /** Preset for Oracle. */
+        ORACLE("Oracle", "ojdbc6.jar", "oracle.jdbc.OracleDriver", "jdbc:oracle:thin:@[host]:[port]:[database]", "system"),
 
-    /** Jdbc urls. */
-    private static final String[] JDBC_URLS = {
-        "jdbc:h2:[database]",
-        "jdbc:db2://[host]:[port]/[database]",
-        "jdbc:oracle:thin:@[host]:[port]:[database]",
-        "jdbc:mysql://[host]:[port]/[database]",
-        "jdbc:sqlserver://[host]:[port][;databaseName=database]",
-        "jdbc:postgresql://[host]:[port]/[database]",
-        "jdbc:custom"};
+        /** Preset for MySql. */
+        MY_SQL("MySQL", "mysql-connector-java-5-bin.jar", "com.mysql.jdbc.Driver", "jdbc:mysql://[host]:[port]/[database]", "root"),
+
+        /** Preset for MsSql. */
+        MS_SQL("Microsoft SQL Server", "sqljdbc41.jar", "com.microsoft.sqlserver.jdbc.SQLServerDriver", "jdbc:sqlserver://[host]:[port][;databaseName=database]", "sa"),
+
+        /** Preset for PostgreSQL. */
+        POSTGRE_SQL("PostgreSQL", "postgresql-9.3.jdbc4.jar", "org.postgresql.Driver", "jdbc:postgresql://[host]:[port]/[database]", "sa"),
+
+        /** Preset for custom server. */
+        CUSTOM("Custom server...", "custom-jdbc.jar", "org.custom.Driver", "jdbc:custom", "sa");
+
+        /** RDBMS name. */
+        private final String name;
+
+        /** JDBC driver jar name. */
+        private String jar;
+
+        /** JDBC driver class name. */
+        private String drv;
+
+        /** JDBC URL. */
+        private String url;
+
+        /** User name. */
+        private String user;
+
+        /**
+         * Enum constructor.
+         *
+         * @param name RDBMS name.
+         * @param jar JDBC driver jar name.
+         * @param drv JDBC driver class name.
+         * @param url JDBC URL.
+         * @param user User name.
+         */
+        Preset(String name, String jar, String drv, String url, String user) {
+            this.name = name;
+            this.jar = jar;
+            this.drv = drv;
+            this.url = url;
+            this.user = user;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return name;
+        }
+    }
+
+    /** Databases presets. */
+    private static Preset[] PRESETS = Preset.values();
 
     /** */
     private Stage owner;
@@ -115,7 +139,7 @@ public class SchemaLoadApp extends Application {
     private Button nextBtn;
 
     /** */
-    private ComboBox<String> rdbmsCb;
+    private ComboBox<Preset> rdbmsCb;
 
     /** */
     private TextField jdbcDrvJarTf;
@@ -621,8 +645,22 @@ public class SchemaLoadApp extends Application {
 
         connPnl.wrap();
 
-        rdbmsCb = connPnl.addLabeled("DB Server preset:",
-            comboBox("Select database server to get predefined settings", RDBMS_NAMES), 2);
+        GridPaneEx presetPnl = paneEx(0, 0, 0, 0);
+        presetPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
+        presetPnl.addColumn();
+
+
+
+        rdbmsCb = presetPnl.add(comboBox("Select database server to get predefined settings", PRESETS));
+
+        presetPnl.add(button("Save preset", "", new EventHandler<ActionEvent>() {
+            @Override public void handle(ActionEvent evt) {
+                // TODO: CODE: implement.
+            }
+        }));
+
+        connPnl.add(label("DB Preset:"));
+        connPnl.add(presetPnl, 2);
 
         jdbcDrvJarTf = connPnl.addLabeled("Driver JAR:", textField("Path to driver jar"));
 
@@ -658,13 +696,12 @@ public class SchemaLoadApp extends Application {
 
         jdbcUrlTf = connPnl.addLabeled("JDBC URL:", textField("JDBC URL of the database connection string"), 2);
 
-        rdbmsCb.getSelectionModel().selectedIndexProperty().addListener(new ChangeListener<Number>() {
-            @Override public void changed(ObservableValue<? extends Number> observable, Number oldIdx, Number newIdx) {
-                int idx = newIdx.intValue();
-
-                jdbcDrvJarTf.setText(JDBC_JAR[idx]);
-                jdbcDrvClsTf.setText(JDBC_DRIVERS[idx]);
-                jdbcUrlTf.setText(JDBC_URLS[idx]);
+        rdbmsCb.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Preset>() {
+            @Override public void changed(ObservableValue<? extends Preset> val, Preset oldVal, Preset newVal) {
+                jdbcDrvJarTf.setText(newVal.jar);
+                jdbcDrvClsTf.setText(newVal.drv);
+                jdbcUrlTf.setText(newVal.url);
+                userTf.setText(newVal.user);
             }
         });
 
@@ -763,6 +800,8 @@ public class SchemaLoadApp extends Application {
         TableColumn<PojoField, Boolean> useFldCol = customColumn("Use", "use",
             "Check to use this field for XML and POJO generation\n" +
             "Note that NOT NULL columns cannot be unchecked", PojoFieldUseCell.cellFactory());
+        useFldCol.setMinWidth(50);
+        useFldCol.setMaxWidth(50);
 
         TableColumn<PojoField, Boolean> keyCol = booleanColumn("Key", "key",
             "Check to include this field into key object");
