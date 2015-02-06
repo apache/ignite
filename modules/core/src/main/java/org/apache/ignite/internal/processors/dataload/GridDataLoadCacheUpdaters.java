@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.dataload;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.dataload.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.transactions.*;
@@ -37,16 +36,16 @@ import static org.apache.ignite.transactions.IgniteTxIsolation.*;
  */
 public class GridDataLoadCacheUpdaters {
     /** */
-    private static final IgniteDataLoadCacheUpdater INDIVIDUAL = new Individual();
+    private static final IgniteDataLoader.Updater INDIVIDUAL = new Individual();
 
     /** */
-    private static final IgniteDataLoadCacheUpdater BATCHED = new Batched();
+    private static final IgniteDataLoader.Updater BATCHED = new Batched();
 
     /** */
-    private static final IgniteDataLoadCacheUpdater BATCHED_SORTED = new BatchedSorted();
+    private static final IgniteDataLoader.Updater BATCHED_SORTED = new BatchedSorted();
 
     /** */
-    private static final IgniteDataLoadCacheUpdater GROUP_LOCKED = new GroupLocked();
+    private static final IgniteDataLoader.Updater GROUP_LOCKED = new GroupLocked();
 
     /**
      * Updates cache using independent {@link org.apache.ignite.cache.GridCache#put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} and
@@ -55,7 +54,7 @@ public class GridDataLoadCacheUpdaters {
      *
      * @return Single updater.
      */
-    public static <K, V> IgniteDataLoadCacheUpdater<K, V> individual() {
+    public static <K, V> IgniteDataLoader.Updater<K, V> individual() {
         return INDIVIDUAL;
     }
 
@@ -66,7 +65,7 @@ public class GridDataLoadCacheUpdaters {
      *
      * @return Batched updater.
      */
-    public static <K, V> IgniteDataLoadCacheUpdater<K, V> batched() {
+    public static <K, V> IgniteDataLoader.Updater<K, V> batched() {
         return BATCHED;
     }
 
@@ -77,7 +76,7 @@ public class GridDataLoadCacheUpdaters {
      *
      * @return Batched sorted updater.
      */
-    public static <K extends Comparable<?>, V> IgniteDataLoadCacheUpdater<K, V> batchedSorted() {
+    public static <K extends Comparable<?>, V> IgniteDataLoader.Updater<K, V> batchedSorted() {
         return BATCHED_SORTED;
     }
 
@@ -88,7 +87,7 @@ public class GridDataLoadCacheUpdaters {
      *
      * @return Updater with group lock.
      */
-    public static <K, V> IgniteDataLoadCacheUpdater<K, V> groupLocked() {
+    public static <K, V> IgniteDataLoader.Updater<K, V> groupLocked() {
         return GROUP_LOCKED;
     }
 
@@ -115,7 +114,7 @@ public class GridDataLoadCacheUpdaters {
     /**
      * Simple cache updater implementation. Updates keys one by one thus is not dead lock prone.
      */
-    private static class Individual<K, V> implements IgniteDataLoadCacheUpdater<K, V> {
+    private static class Individual<K, V> implements IgniteDataLoader.Updater<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -142,7 +141,7 @@ public class GridDataLoadCacheUpdaters {
     /**
      * Batched updater. Updates cache using batch operations thus is dead lock prone.
      */
-    private static class Batched<K, V> implements IgniteDataLoadCacheUpdater<K, V> {
+    private static class Batched<K, V> implements IgniteDataLoader.Updater<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -182,7 +181,7 @@ public class GridDataLoadCacheUpdaters {
     /**
      * Batched updater. Updates cache using batch operations thus is dead lock prone.
      */
-    private static class BatchedSorted<K, V> implements IgniteDataLoadCacheUpdater<K, V> {
+    private static class BatchedSorted<K, V> implements IgniteDataLoader.Updater<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -222,7 +221,7 @@ public class GridDataLoadCacheUpdaters {
     /**
      * Cache updater which uses group lock.
      */
-    private static class GroupLocked<K, V> implements IgniteDataLoadCacheUpdater<K, V> {
+    private static class GroupLocked<K, V> implements IgniteDataLoader.Updater<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 

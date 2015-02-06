@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.dataload;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.dataload.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -54,7 +53,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
  */
 public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delayed {
     /** Cache updater. */
-    private IgniteDataLoadCacheUpdater<K, V> updater = GridDataLoadCacheUpdaters.individual();
+    private Updater<K, V> updater = GridDataLoadCacheUpdaters.individual();
 
     /** */
     private byte[] updaterBytes;
@@ -276,7 +275,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public void updater(IgniteDataLoadCacheUpdater<K, V> updater) {
+    @Override public void updater(Updater<K, V> updater) {
         A.notNull(updater, "updater");
 
         this.updater = updater;

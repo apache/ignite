@@ -24,7 +24,7 @@ import java.util.*;
 
 /**
  * Listener for gird state change notifications. Use
- * {@link org.apache.ignite.Ignition#addListener(IgniteListener)} to register this
+ * {@link Ignition#addListener(IgniteListener)} to register this
  * listener with grid factory.
  */
 public interface IgniteListener extends EventListener {
