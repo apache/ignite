@@ -151,12 +151,12 @@ public final class GridGgfsImpl implements GridGgfsEx {
         Map<String, IgniteFsMode> cfgModes = new LinkedHashMap<>();
         Map<String, IgniteFsMode> dfltModes = new LinkedHashMap<>(4, 1.0f);
 
-        dfltModes.put("/gridgain/primary", PRIMARY);
+        dfltModes.put("/ignite/primary", PRIMARY);
 
         if (secondaryFs != null) {
-            dfltModes.put("/gridgain/proxy", PROXY);
-            dfltModes.put("/gridgain/sync", DUAL_SYNC);
-            dfltModes.put("/gridgain/async", DUAL_ASYNC);
+            dfltModes.put("/ignite/proxy", PROXY);
+            dfltModes.put("/ignite/sync", DUAL_SYNC);
+            dfltModes.put("/ignite/async", DUAL_ASYNC);
         }
 
         cfgModes.putAll(dfltModes);
