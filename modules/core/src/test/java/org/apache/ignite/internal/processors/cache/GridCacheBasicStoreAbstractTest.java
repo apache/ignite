@@ -382,7 +382,11 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         checkLastMethod("loadAllFull");
 
+        Set<Integer> keys = new HashSet<>();
+
         for (int i = 1; i <= 10; i++) {
+            keys.add(i);
+
             cache.put(i, Integer.toString(i));
 
             checkLastMethod("put");
@@ -390,7 +394,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         assert cache.size() == 10;
 
-        cache.localLoadCache(null);
+        loadAll(cache, keys, true);
 
         checkLastMethod("loadAll");
 
