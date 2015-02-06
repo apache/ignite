@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
+package org.apache.ignite.internal.processors.cache.version;
 
 import org.jetbrains.annotations.*;
 
