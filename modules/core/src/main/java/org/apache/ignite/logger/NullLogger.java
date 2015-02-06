@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
 /**
  * Logger which does not output anything.
  */
-public class IgniteNullLogger implements IgniteLogger {
+public class NullLogger implements IgniteLogger {
     /** {@inheritDoc} */
     @Override public IgniteLogger getLogger(Object ctgr) {
         return this;

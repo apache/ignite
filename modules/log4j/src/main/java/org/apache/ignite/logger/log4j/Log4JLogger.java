@@ -64,7 +64,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * logger in your task/job code. See {@link org.apache.ignite.resources.IgniteLoggerResource} annotation about logger
  * injection.
  */
-public class IgniteLog4jLogger implements IgniteLogger, IgniteLoggerNodeIdAware,
+public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware,
     IgniteLog4jFileAware {
     /** */
     private static final long serialVersionUID = 0L;
@@ -99,12 +99,12 @@ public class IgniteLog4jLogger implements IgniteLogger, IgniteLoggerNodeIdAware,
      * Creates new logger and automatically detects if root logger already
      * has appenders configured. If it does not, the root logger will be
      * configured with default appender (analogous to calling
-     * {@link #IgniteLog4jLogger(boolean) GridLog4jLogger(boolean)}
+     * {@link #Log4JLogger(boolean) GridLog4jLogger(boolean)}
      * with parameter {@code true}, otherwise, existing appenders will be used (analogous
-     * to calling {@link #IgniteLog4jLogger(boolean) GridLog4jLogger(boolean)}
+     * to calling {@link #Log4JLogger(boolean) GridLog4jLogger(boolean)}
      * with parameter {@code false}).
      */
-    public IgniteLog4jLogger() {
+    public Log4JLogger() {
         this(!isConfigured());
     }
 
@@ -119,7 +119,7 @@ public class IgniteLog4jLogger implements IgniteLogger, IgniteLoggerNodeIdAware,
      *      and {@code Log4j} should be configured prior to calling this
      *      constructor.
      */
-    public IgniteLog4jLogger(boolean init) {
+    public Log4JLogger(boolean init) {
         impl = Logger.getRootLogger();
 
         if (init) {
@@ -139,7 +139,7 @@ public class IgniteLog4jLogger implements IgniteLogger, IgniteLoggerNodeIdAware,
      *
      * @param impl Log4j implementation to use.
      */
-    public IgniteLog4jLogger(final Logger impl) {
+    public Log4JLogger(final Logger impl) {
         assert impl != null;
 
         path = null;
@@ -159,7 +159,7 @@ public class IgniteLog4jLogger implements IgniteLogger, IgniteLoggerNodeIdAware,
      * @param path Path to log4j configuration XML file.
      * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
-    public IgniteLog4jLogger(String path) throws IgniteCheckedException {
+    public Log4JLogger(String path) throws IgniteCheckedException {
         if (path == null)
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
@@ -188,7 +188,7 @@ public class IgniteLog4jLogger implements IgniteLogger, IgniteLoggerNodeIdAware,
      * @param cfgFile Log4j configuration XML file.
      * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
-    public IgniteLog4jLogger(File cfgFile) throws IgniteCheckedException {
+    public Log4JLogger(File cfgFile) throws IgniteCheckedException {
         if (cfgFile == null)
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
@@ -215,7 +215,7 @@ public class IgniteLog4jLogger implements IgniteLogger, IgniteLoggerNodeIdAware,
      * @param cfgUrl URL for Log4j configuration XML file.
      * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
-    public IgniteLog4jLogger(final URL cfgUrl) throws IgniteCheckedException {
+    public Log4JLogger(final URL cfgUrl) throws IgniteCheckedException {
         if (cfgUrl == null)
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
@@ -432,8 +432,8 @@ public class IgniteLog4jLogger implements IgniteLogger, IgniteLoggerNodeIdAware,
      * @param ctgr {@inheritDoc}
      * @return {@link org.apache.ignite.IgniteLogger} wrapper around log4j logger.
      */
-    @Override public IgniteLog4jLogger getLogger(Object ctgr) {
-        return new IgniteLog4jLogger(ctgr == null ? Logger.getRootLogger() :
+    @Override public Log4JLogger getLogger(Object ctgr) {
+        return new Log4JLogger(ctgr == null ? Logger.getRootLogger() :
             ctgr instanceof Class ? Logger.getLogger(((Class<?>)ctgr).getName()) :
                 Logger.getLogger(ctgr.toString()));
     }
@@ -504,7 +504,7 @@ public class IgniteLog4jLogger implements IgniteLogger, IgniteLoggerNodeIdAware,
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteLog4jLogger.class, this);
+        return S.toString(Log4JLogger.class, this);
     }
 
     /** {@inheritDoc} */

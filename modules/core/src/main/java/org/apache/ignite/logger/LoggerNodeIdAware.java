@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * Interface for GridGain file appenders to attach node ID to log file names.
  */
-public interface IgniteLoggerNodeIdAware {
+public interface LoggerNodeIdAware {
     /**
      * Sets node ID.
      *

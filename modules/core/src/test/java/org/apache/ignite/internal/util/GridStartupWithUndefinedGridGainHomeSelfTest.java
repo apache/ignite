@@ -72,7 +72,7 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
 
         assert ggHome0 == null;
 
-        IgniteLogger log = new IgniteJavaLogger();
+        IgniteLogger log = new JavaLogger();
 
         log.info(">>> Test started: " + getName());
         log.info("Grid start-stop test count: " + GRID_COUNT);

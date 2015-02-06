@@ -39,7 +39,7 @@ public class GridLog4jLoggingUrlTest extends TestCase {
         assert xml != null;
         assert xml.exists();
 
-        log = new IgniteLog4jLogger(xml.toURI().toURL()).getLogger(getClass());
+        log = new Log4JLogger(xml.toURI().toURL()).getLogger(getClass());
     }
 
     /**

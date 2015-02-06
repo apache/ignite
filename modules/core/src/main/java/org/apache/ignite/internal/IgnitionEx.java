@@ -2085,12 +2085,12 @@ public class IgnitionEx {
                     }
 
                     if (log4jCls == null || log4jInitErr != null)
-                        cfgLog = new IgniteJavaLogger();
+                        cfgLog = new JavaLogger();
                 }
 
                 // Set node IDs for all file appenders.
-                if (cfgLog instanceof IgniteLoggerNodeIdAware)
-                    ((IgniteLoggerNodeIdAware)cfgLog).setNodeId(nodeId);
+                if (cfgLog instanceof LoggerNodeIdAware)
+                    ((LoggerNodeIdAware)cfgLog).setNodeId(nodeId);
 
                 if (log4jInitErr != null)
                     U.warn(cfgLog, "Failed to initialize IgniteLog4jLogger (falling back to standard java logging): "

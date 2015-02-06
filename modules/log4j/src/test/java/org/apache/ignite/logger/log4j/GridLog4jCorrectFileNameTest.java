@@ -56,7 +56,7 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
         if (appender != null) {
             Logger.getRootLogger().removeAppender(IgniteLog4jRollingFileAppender.class.getSimpleName());
 
-            IgniteLog4jLogger.removeAppender(appender);
+            Log4JLogger.removeAppender(appender);
         }
     }
 
@@ -104,7 +104,7 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName(gridName);
-        cfg.setGridLogger(new IgniteLog4jLogger());
+        cfg.setGridLogger(new Log4JLogger());
         cfg.setRestEnabled(false);
 
         return cfg;

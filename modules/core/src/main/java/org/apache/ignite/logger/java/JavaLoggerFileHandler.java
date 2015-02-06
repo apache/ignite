@@ -29,7 +29,7 @@ import java.util.logging.*;
 /**
  * File logging handler which skips all the messages until node ID is set.
  */
-public final class IgniteJavaLoggerFileHandler extends StreamHandler {
+public final class JavaLoggerFileHandler extends StreamHandler {
     /** Log manager. */
     private static final LogManager manager = LogManager.getLogManager();
 
@@ -123,7 +123,7 @@ public final class IgniteJavaLoggerFileHandler extends StreamHandler {
      * @return Pattern or {@code null} if node id has not been set yet.
      */
     @Nullable public String fileName() {
-        return IgniteJavaLogger.fileName(delegate);
+        return JavaLogger.fileName(delegate);
     }
 
     /**
@@ -185,6 +185,6 @@ public final class IgniteJavaLoggerFileHandler extends StreamHandler {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteJavaLoggerFileHandler.class, this);
+        return S.toString(JavaLoggerFileHandler.class, this);
     }
 }

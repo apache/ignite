@@ -81,7 +81,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * logger in your task/job code. See {@link org.apache.ignite.resources.IgniteLoggerResource} annotation about logger
  * injection.
  */
-public class IgniteJavaLogger implements IgniteLogger, IgniteLoggerNodeIdAware {
+public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -110,7 +110,7 @@ public class IgniteJavaLogger implements IgniteLogger, IgniteLoggerNodeIdAware {
     /**
      * Creates new logger.
      */
-    public IgniteJavaLogger() {
+    public JavaLogger() {
         this(!isConfigured());
     }
 
@@ -150,7 +150,7 @@ public class IgniteJavaLogger implements IgniteLogger, IgniteLoggerNodeIdAware {
      *      If {@code false}, then no implicit initialization will take place,
      *      and java logger should be configured prior to calling this constructor.
      */
-    public IgniteJavaLogger(boolean init) {
+    public JavaLogger(boolean init) {
         impl = Logger.getLogger("");
 
         if (init) {
@@ -168,7 +168,7 @@ public class IgniteJavaLogger implements IgniteLogger, IgniteLoggerNodeIdAware {
      *
      * @param impl Java Logging implementation to use.
      */
-    public IgniteJavaLogger(final Logger impl) {
+    public JavaLogger(final Logger impl) {
         assert impl != null;
 
         configure(impl);
@@ -178,7 +178,7 @@ public class IgniteJavaLogger implements IgniteLogger, IgniteLoggerNodeIdAware {
 
     /** {@inheritDoc} */
     @Override public IgniteLogger getLogger(Object ctgr) {
-        return new IgniteJavaLogger(ctgr == null ? Logger.getLogger("") : Logger.getLogger(
+        return new JavaLogger(ctgr == null ? Logger.getLogger("") : Logger.getLogger(
             ctgr instanceof Class ? ((Class)ctgr).getName() : String.valueOf(ctgr)));
     }
 
@@ -303,7 +303,7 @@ public class IgniteJavaLogger implements IgniteLogger, IgniteLoggerNodeIdAware {
 
     /** {@inheritDoc} */
     @Nullable @Override public String fileName() {
-        IgniteJavaLoggerFileHandler gridFileHnd = findHandler(impl, IgniteJavaLoggerFileHandler.class);
+        JavaLoggerFileHandler gridFileHnd = findHandler(impl, JavaLoggerFileHandler.class);
 
         if (gridFileHnd != null)
             return gridFileHnd.fileName();
@@ -346,7 +346,7 @@ public class IgniteJavaLogger implements IgniteLogger, IgniteLoggerNodeIdAware {
             this.nodeId = nodeId;
         }
 
-        IgniteJavaLoggerFileHandler fileHnd = findHandler(impl, IgniteJavaLoggerFileHandler.class);
+        JavaLoggerFileHandler fileHnd = findHandler(impl, JavaLoggerFileHandler.class);
 
         if (fileHnd == null)
             return;
