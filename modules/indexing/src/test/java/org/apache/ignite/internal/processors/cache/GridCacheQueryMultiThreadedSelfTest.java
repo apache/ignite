@@ -105,7 +105,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        IgniteQueryConfiguration indexing = new IgniteQueryConfiguration();
+        QueryConfiguration indexing = new QueryConfiguration();
 
         indexing.setMaxOffheapRowsCacheSize(128);
 

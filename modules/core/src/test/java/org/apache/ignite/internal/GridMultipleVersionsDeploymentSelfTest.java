@@ -61,7 +61,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
         // Following tests makes sense in ISOLATED modes (they redeploy tasks
         // and don't change task version. The different tasks with the same version from the same node
         // executed in parallel - this does not work in share mode.)
-        cfg.setDeploymentMode(IgniteDeploymentMode.ISOLATED);
+        cfg.setDeploymentMode(DeploymentMode.ISOLATED);
 
         cfg.setPeerClassLoadingLocalClassPathExclude(
             "org.apache.ignite.internal.GridMultipleVersionsDeploymentSelfTest*");

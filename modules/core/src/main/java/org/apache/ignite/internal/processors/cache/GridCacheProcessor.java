@@ -62,7 +62,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
 import static org.apache.ignite.internal.GridNodeAttributes.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
@@ -345,7 +345,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     " 'true' [cacheName=" + cc.getName() + ']');
         }
 
-        IgniteDeploymentMode depMode = c.getDeploymentMode();
+        DeploymentMode depMode = c.getDeploymentMode();
 
         if (c.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
             !CU.isSystemCache(cc.getName()))
@@ -553,7 +553,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        IgniteDeploymentMode depMode = ctx.config().getDeploymentMode();
+        DeploymentMode depMode = ctx.config().getDeploymentMode();
 
         if (!F.isEmpty(ctx.config().getCacheConfiguration())) {
             if (depMode != CONTINUOUS && depMode != SHARED)
@@ -1062,8 +1062,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (F.isEmpty(rmtAttrs) || F.isEmpty(locAttrs))
             return;
 
-        IgniteDeploymentMode locDepMode = ctx.config().getDeploymentMode();
-        IgniteDeploymentMode rmtDepMode = rmt.attribute(GridNodeAttributes.ATTR_DEPLOYMENT_MODE);
+        DeploymentMode locDepMode = ctx.config().getDeploymentMode();
+        DeploymentMode rmtDepMode = rmt.attribute(GridNodeAttributes.ATTR_DEPLOYMENT_MODE);
 
         for (GridCacheAttributes rmtAttr : rmtAttrs) {
             for (GridCacheAttributes locAttr : locAttrs) {

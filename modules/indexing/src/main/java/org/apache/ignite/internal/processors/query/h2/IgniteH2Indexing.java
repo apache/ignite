@@ -225,7 +225,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     };
 
     /** */
-    private volatile IgniteQueryConfiguration cfg = new IgniteQueryConfiguration();
+    private volatile QueryConfiguration cfg = new QueryConfiguration();
 
     /** */
     private volatile GridKernalContext ctx;
@@ -586,7 +586,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * @return Configuration.
      */
-    public IgniteQueryConfiguration configuration() {
+    public QueryConfiguration configuration() {
         return cfg;
     }
 
@@ -1118,7 +1118,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             nodeId = ctx.localNodeId();
             marshaller = ctx.config().getMarshaller();
 
-            IgniteQueryConfiguration cfg0 = ctx.config().getQueryConfiguration();
+            QueryConfiguration cfg0 = ctx.config().getQueryConfiguration();
 
             if (cfg0 != null)
                 cfg = cfg0;

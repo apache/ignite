@@ -28,7 +28,7 @@ import java.util.*;
  * and internal networks and the same mapping must be available to SPIs
  * in GridGain that perform communication over IP protocols.
  */
-public interface IgniteAddressResolver {
+public interface AddressResolver {
     /**
      * Maps internal address to a collection of external addresses.
      *

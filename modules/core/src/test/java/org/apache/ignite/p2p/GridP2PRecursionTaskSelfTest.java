@@ -35,7 +35,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
     /**
      * Current deployment mode. Used in {@link #getConfiguration(String)}.
      */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -52,7 +52,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception if error occur.
      */
-    private void processTest(IgniteDeploymentMode depMode) throws Exception {
+    private void processTest(DeploymentMode depMode) throws Exception {
         this.depMode = depMode;
 
         try {
@@ -79,7 +79,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testPrivateMode() throws Exception {
-        processTest(IgniteDeploymentMode.PRIVATE);
+        processTest(DeploymentMode.PRIVATE);
     }
 
     /**
@@ -88,7 +88,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testIsolatedMode() throws Exception {
-        processTest(IgniteDeploymentMode.ISOLATED);
+        processTest(DeploymentMode.ISOLATED);
     }
 
     /**
@@ -97,7 +97,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testContinuousMode() throws Exception {
-        processTest(IgniteDeploymentMode.CONTINUOUS);
+        processTest(DeploymentMode.CONTINUOUS);
     }
 
     /**
@@ -106,7 +106,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testSharedMode() throws Exception {
-        processTest(IgniteDeploymentMode.SHARED);
+        processTest(DeploymentMode.SHARED);
     }
 
     /**

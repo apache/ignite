@@ -26,7 +26,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  * Configuration for atomic data structures.
  */
-public class IgniteAtomicConfiguration {
+public class AtomicConfiguration {
     /** */
     public static final int DFLT_BACKUPS = 0;
 
@@ -100,6 +100,6 @@ public class IgniteAtomicConfiguration {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteAtomicConfiguration.class, this);
+        return S.toString(AtomicConfiguration.class, this);
     }
 }

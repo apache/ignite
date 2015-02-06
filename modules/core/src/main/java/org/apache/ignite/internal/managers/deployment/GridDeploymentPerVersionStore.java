@@ -36,12 +36,12 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
- * Deployment storage for {@link org.apache.ignite.configuration.IgniteDeploymentMode#SHARED} and
- * {@link org.apache.ignite.configuration.IgniteDeploymentMode#CONTINUOUS} modes.
+ * Deployment storage for {@link org.apache.ignite.configuration.DeploymentMode#SHARED} and
+ * {@link org.apache.ignite.configuration.DeploymentMode#CONTINUOUS} modes.
  */
 public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     /** Shared deployment cache. */
@@ -1057,7 +1057,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
          * @param sampleClsName Sample class name.
          */
         @SuppressWarnings({"TypeMayBeWeakened"})
-        SharedDeployment(IgniteDeploymentMode depMode,
+        SharedDeployment(DeploymentMode depMode,
             GridDeploymentClassLoader clsLdr, IgniteUuid clsLdrId,
             String userVer, String sampleClsName) {
             super(depMode, clsLdr, clsLdrId, userVer, sampleClsName, false);

@@ -78,8 +78,8 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
      * @param collocated Collocated flag.
      * @return Collection configuration.
      */
-    protected final IgniteCollectionConfiguration config(boolean collocated) {
-        IgniteCollectionConfiguration cfg = new IgniteCollectionConfiguration();
+    protected final CollectionConfiguration config(boolean collocated) {
+        CollectionConfiguration cfg = new CollectionConfiguration();
 
         cfg.setCacheName(COL_CACHE_NAME);
         cfg.setCollocated(collocated);

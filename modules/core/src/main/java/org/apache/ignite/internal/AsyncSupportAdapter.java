@@ -15,30 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.lang;
+package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.lang.*;
 
 /**
- * Adapter for {@link IgniteAsyncSupport}.
+ * Adapter for {@link org.apache.ignite.lang.IgniteAsyncSupport}.
  */
-public class IgniteAsyncSupportAdapter<T extends IgniteAsyncSupport> implements IgniteAsyncSupport {
+public class AsyncSupportAdapter<T extends IgniteAsyncSupport> implements IgniteAsyncSupport {
     /** Future for previous asynchronous operation. */
     protected ThreadLocal<IgniteFuture<?>> curFut;
 
     /**
      * Default constructor.
      */
-    public IgniteAsyncSupportAdapter() {
+    public AsyncSupportAdapter() {
         // No-op.
     }
 
     /**
      * @param async Async enabled flag.
      */
-    public IgniteAsyncSupportAdapter(boolean async) {
+    public AsyncSupportAdapter(boolean async) {
         if (async)
             curFut = new ThreadLocal<>();
     }

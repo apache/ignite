@@ -93,7 +93,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+        AtomicConfiguration atomicCfg = new AtomicConfiguration();
 
         atomicCfg.setCacheMode(collectionCacheMode());
         atomicCfg.setBackups(collectionConfiguration().getBackups());

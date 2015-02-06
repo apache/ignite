@@ -46,7 +46,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.Map.*;
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
@@ -107,7 +107,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         IgniteConfiguration cfg = ctx.config();
 
-        IgniteDeploymentMode depMode = cfg.getDeploymentMode();
+        DeploymentMode depMode = cfg.getDeploymentMode();
 
         if (cfg.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
             !F.isEmpty(cfg.getServiceConfiguration()))
@@ -232,7 +232,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     private void validate(ServiceConfiguration c) throws IgniteException {
         IgniteConfiguration cfg = ctx.config();
 
-        IgniteDeploymentMode depMode = cfg.getDeploymentMode();
+        DeploymentMode depMode = cfg.getDeploymentMode();
 
         if (cfg.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED))
             throw new IgniteException("Cannot deploy services in PRIVATE or ISOLATED deployment mode: " + depMode);

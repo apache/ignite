@@ -79,7 +79,7 @@ public class IgniteQueueExample {
      * @throws IgniteException If execution failed.
      */
     private static IgniteQueue<String> initializeQueue(Ignite ignite, String queueName) throws IgniteException {
-        IgniteCollectionConfiguration colCfg = new IgniteCollectionConfiguration();
+        CollectionConfiguration colCfg = new CollectionConfiguration();
 
         colCfg.setCacheName(CACHE_NAME);
 

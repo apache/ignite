@@ -99,7 +99,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         c.getTransactionsConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
         c.getTransactionsConfiguration().setDefaultTxIsolation(REPEATABLE_READ);
 
-        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+        AtomicConfiguration atomicCfg = new AtomicConfiguration();
 
         atomicCfg.setAtomicSequenceReserveSize(100000);
         atomicCfg.setCacheMode(mode);

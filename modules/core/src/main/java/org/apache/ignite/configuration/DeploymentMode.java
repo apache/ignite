@@ -70,7 +70,7 @@ import org.jetbrains.annotations.*;
  *  </li>
  * </ol>
  */
-public enum IgniteDeploymentMode {
+public enum DeploymentMode {
     /**
      * In this mode deployed classes do not share resources. Basically, resources are created
      * once per deployed task class and then get reused for all executions.
@@ -167,7 +167,7 @@ public enum IgniteDeploymentMode {
     CONTINUOUS;
 
     /** Enum values. */
-    private static final IgniteDeploymentMode[] VALS = values();
+    private static final DeploymentMode[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -175,7 +175,7 @@ public enum IgniteDeploymentMode {
      * @param ord Ordinal value.
      * @return Enumerated value.
      */
-    @Nullable public static IgniteDeploymentMode fromOrdinal(int ord) {
+    @Nullable public static DeploymentMode fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

@@ -53,7 +53,7 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
     private static final URL[] URLS;
 
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /**
      * Initialize URLs.
@@ -111,45 +111,45 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link org.apache.ignite.configuration.IgniteDeploymentMode#PRIVATE} mode.
+     * Test {@link org.apache.ignite.configuration.DeploymentMode#PRIVATE} mode.
      *
      * @throws Exception if error occur.
      */
     public void testPrivateMode() throws Exception {
-        depMode = IgniteDeploymentMode.PRIVATE;
+        depMode = DeploymentMode.PRIVATE;
 
         affinityTest();
     }
 
     /**
-     * Test {@link org.apache.ignite.configuration.IgniteDeploymentMode#ISOLATED} mode.
+     * Test {@link org.apache.ignite.configuration.DeploymentMode#ISOLATED} mode.
      *
      * @throws Exception if error occur.
      */
     public void testIsolatedMode() throws Exception {
-        depMode = IgniteDeploymentMode.ISOLATED;
+        depMode = DeploymentMode.ISOLATED;
 
         affinityTest();
     }
 
     /**
-     * Test {@link org.apache.ignite.configuration.IgniteDeploymentMode#CONTINUOUS} mode.
+     * Test {@link org.apache.ignite.configuration.DeploymentMode#CONTINUOUS} mode.
      *
      * @throws Exception if error occur.
      */
     public void testContinuousMode() throws Exception {
-        depMode = IgniteDeploymentMode.CONTINUOUS;
+        depMode = DeploymentMode.CONTINUOUS;
 
         affinityTest();
     }
 
     /**
-     * Test {@link org.apache.ignite.configuration.IgniteDeploymentMode#SHARED} mode.
+     * Test {@link org.apache.ignite.configuration.DeploymentMode#SHARED} mode.
      *
      * @throws Exception if error occur.
      */
     public void testSharedMode() throws Exception {
-        depMode = IgniteDeploymentMode.SHARED;
+        depMode = DeploymentMode.SHARED;
 
         affinityTest();
     }

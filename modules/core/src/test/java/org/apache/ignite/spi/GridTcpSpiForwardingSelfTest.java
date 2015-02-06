@@ -123,7 +123,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
             new InetSocketAddress("127.0.0.1", commLocPort), F.asList(new InetSocketAddress("127.0.0.1", commExtPort))
         );
 
-        cfg.setAddressResolver(new IgniteAddressResolver() {
+        cfg.setAddressResolver(new AddressResolver() {
             @Override public Collection<InetSocketAddress> getExternalAddresses(InetSocketAddress addr) {
                 return mp.get(addr);
             }

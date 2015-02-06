@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 /**
  * Configuration for Ignite collections.
  */
-public class IgniteCollectionConfiguration {
+public class CollectionConfiguration {
     /** Cache name. */
     private String cacheName;
 
@@ -62,6 +62,6 @@ public class IgniteCollectionConfiguration {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteCollectionConfiguration.class, this);
+        return S.toString(CollectionConfiguration.class, this);
     }
 }

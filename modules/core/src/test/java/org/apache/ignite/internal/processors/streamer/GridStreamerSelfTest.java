@@ -43,7 +43,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
 
 /**
  * Basic streamer test.

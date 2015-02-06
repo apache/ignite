@@ -64,7 +64,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
     private IgniteUuid clsLdrId;
 
     /** */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /** */
     private String filterClsName;
@@ -96,7 +96,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
         byte[] filter,
         String filterClsName,
         IgniteUuid clsLdrId,
-        IgniteDeploymentMode depMode,
+        DeploymentMode depMode,
         String userVer,
         Map<UUID, IgniteUuid> ldrParties) {
         this.resTopic = resTopic;
@@ -200,7 +200,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
     /**
      * @return Deployment mode.
      */
-    IgniteDeploymentMode deploymentMode() {
+    DeploymentMode deploymentMode() {
         return depMode;
     }
 
@@ -414,7 +414,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
 
                 byte depMode0 = commState.getByte();
 
-                depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
+                depMode = DeploymentMode.fromOrdinal(depMode0);
 
                 commState.idx++;
 

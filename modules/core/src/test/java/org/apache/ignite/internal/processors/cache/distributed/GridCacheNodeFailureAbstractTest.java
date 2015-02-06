@@ -80,7 +80,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         c.setDiscoverySpi(disco);
 
-        c.setDeploymentMode(IgniteDeploymentMode.SHARED);
+        c.setDeploymentMode(DeploymentMode.SHARED);
 
         return c;
     }

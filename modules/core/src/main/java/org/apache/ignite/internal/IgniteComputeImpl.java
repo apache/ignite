@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
 /**
  * {@link IgniteCompute} implementation.
  */
-public class IgniteComputeImpl extends IgniteAsyncSupportAdapter<IgniteCompute>
+public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     implements IgniteCompute, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;

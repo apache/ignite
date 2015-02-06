@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * {@link IgniteEvents} implementation.
  */
-public class IgniteEventsImpl extends IgniteAsyncSupportAdapter<IgniteEvents> implements IgniteEvents, Externalizable {
+public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implements IgniteEvents, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

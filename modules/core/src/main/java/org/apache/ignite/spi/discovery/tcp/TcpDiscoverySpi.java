@@ -170,7 +170,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     public static final String ATTR_EXT_ADDRS = "disc.tcp.ext-addrs";
 
     /** Address resolver. */
-    private IgniteAddressResolver addrRslvr;
+    private AddressResolver addrRslvr;
 
     /** Local port which node uses. */
     private int locPort = DFLT_PORT;
@@ -297,7 +297,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * @param addrRslvr Address resolver.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setAddressResolver(IgniteAddressResolver addrRslvr) {
+    public void setAddressResolver(AddressResolver addrRslvr) {
         // Injection should not override value already set by Spring or user.
         if (this.addrRslvr == null)
             this.addrRslvr = addrRslvr;
@@ -308,7 +308,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      *
      * @return Address resolver.
      */
-    public IgniteAddressResolver getAddressResolver() {
+    public AddressResolver getAddressResolver() {
         return addrRslvr;
     }
 

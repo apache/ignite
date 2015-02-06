@@ -84,8 +84,8 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     }
 
     /** {@inheritDoc} */
-    protected IgniteAtomicConfiguration atomicConfiguration() {
-        IgniteAtomicConfiguration atomicCfg = super.atomicConfiguration();
+    protected AtomicConfiguration atomicConfiguration() {
+        AtomicConfiguration atomicCfg = super.atomicConfiguration();
 
         atomicCfg.setAtomicSequenceReserveSize(BATCH_SIZE);
 

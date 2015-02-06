@@ -8474,7 +8474,7 @@ public abstract class IgniteUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static Collection<InetSocketAddress> resolveAddresses(
-        IgniteAddressResolver addrRslvr,
+        AddressResolver addrRslvr,
         Iterable<String> addrs,
         int port
     ) throws IgniteCheckedException {

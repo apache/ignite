@@ -49,7 +49,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
     private static final String FILTER_NAME2 = "org.apache.ignite.tests.p2p.P2PEventFilterExternalPath2";
 
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /** */
     private int missedRsrcCacheSize;
@@ -124,7 +124,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void processSize0Test(IgniteDeploymentMode depMode) throws Exception {
+    private void processSize0Test(DeploymentMode depMode) throws Exception {
         this.depMode = depMode;
 
         missedRsrcCacheSize = 0;
@@ -225,7 +225,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      * @throws Exception if error occur.
      */
     public void testSize0PrivateMode() throws Exception {
-        processSize0Test(IgniteDeploymentMode.PRIVATE);
+        processSize0Test(DeploymentMode.PRIVATE);
     }
 
     /**
@@ -234,7 +234,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      * @throws Exception if error occur.
      */
     public void testSize0IsolatedMode() throws Exception {
-        processSize0Test(IgniteDeploymentMode.ISOLATED);
+        processSize0Test(DeploymentMode.ISOLATED);
     }
 
     /**
@@ -243,7 +243,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      * @throws Exception if error occur.
      */
     public void testSize0ContinuousMode() throws Exception {
-        processSize0Test(IgniteDeploymentMode.CONTINUOUS);
+        processSize0Test(DeploymentMode.CONTINUOUS);
     }
 
     /**
@@ -252,7 +252,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
      * @throws Exception if error occur.
      */
     public void testSize0SharedMode() throws Exception {
-        processSize0Test(IgniteDeploymentMode.SHARED);
+        processSize0Test(DeploymentMode.SHARED);
     }
     /**
      * Test GridDeploymentMode.PRIVATE mode.

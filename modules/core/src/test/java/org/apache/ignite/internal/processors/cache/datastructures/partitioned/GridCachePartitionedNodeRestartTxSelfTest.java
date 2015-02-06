@@ -78,7 +78,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+        AtomicConfiguration atomicCfg = new AtomicConfiguration();
 
         atomicCfg.setCacheMode(PARTITIONED);
         atomicCfg.setBackups(1);

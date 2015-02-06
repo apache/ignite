@@ -200,14 +200,14 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
         private final int retries;
 
         /** */
-        private final IgniteCollectionConfiguration colCfg;
+        private final CollectionConfiguration colCfg;
 
         /**
          * @param queueName Queue name.
          * @param colCfg Collection configuration.
          * @param retries  Number of operations.
          */
-        PutJob(String queueName, IgniteCollectionConfiguration colCfg, int retries) {
+        PutJob(String queueName, CollectionConfiguration colCfg, int retries) {
             this.queueName = queueName;
             this.colCfg = colCfg;
             this.retries = retries;
@@ -251,14 +251,14 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
         private final int retries;
 
         /** */
-        private final IgniteCollectionConfiguration colCfg;
+        private final CollectionConfiguration colCfg;
 
         /**
          * @param queueName Queue name.
          * @param colCfg Queue configuration.
          * @param retries  Number of operations.
          */
-        PutTakeJob(String queueName, IgniteCollectionConfiguration colCfg, int retries) {
+        PutTakeJob(String queueName, CollectionConfiguration colCfg, int retries) {
             this.queueName = queueName;
             this.colCfg = colCfg;
             this.retries = retries;
@@ -305,13 +305,13 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
         private final String queueName;
 
         /** */
-        private final IgniteCollectionConfiguration colCfg;
+        private final CollectionConfiguration colCfg;
 
         /**
          * @param queueName Queue name.
          * @param colCfg Collection configuration.
          */
-        TakeJob(String queueName, IgniteCollectionConfiguration colCfg) {
+        TakeJob(String queueName, CollectionConfiguration colCfg) {
             this.queueName = queueName;
             this.colCfg = colCfg;
         }

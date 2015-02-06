@@ -302,7 +302,7 @@ public interface Ignite extends AutoCloseable {
      * @return Sequence for the given name.
      * @throws IgniteException If sequence could not be fetched or created.
      */
-    @Nullable public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)
+    public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)
         throws IgniteException;
 
     /**
@@ -315,8 +315,7 @@ public interface Ignite extends AutoCloseable {
      * @return Atomic long.
      * @throws IgniteException If atomic long could not be fetched or created.
      */
-    @Nullable public IgniteAtomicLong atomicLong(String name, long initVal, boolean create)
-        throws IgniteException;
+    public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteException;
 
     /**
      * Will get a atomic reference from cache and create one if it has not been created yet and {@code create} flag
@@ -328,7 +327,7 @@ public interface Ignite extends AutoCloseable {
      * @return Atomic reference for the given name.
      * @throws IgniteException If atomic reference could not be fetched or created.
      */
-    @Nullable public <T> IgniteAtomicReference<T> atomicReference(String name, @Nullable T initVal, boolean create)
+    public <T> IgniteAtomicReference<T> atomicReference(String name, @Nullable T initVal, boolean create)
         throws IgniteException;
 
     /**
@@ -342,7 +341,7 @@ public interface Ignite extends AutoCloseable {
      * @return Atomic stamped for the given name.
      * @throws IgniteException If atomic stamped could not be fetched or created.
      */
-    @Nullable public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, @Nullable T initVal,
+    public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, @Nullable T initVal,
         @Nullable S initStamp, boolean create) throws IgniteException;
 
     /**
@@ -357,7 +356,7 @@ public interface Ignite extends AutoCloseable {
      * @return Count down latch for the given name.
      * @throws IgniteException If latch could not be fetched or created.
      */
-    @Nullable public IgniteCountDownLatch countDownLatch(String name, int cnt, boolean autoDel, boolean create)
+    public IgniteCountDownLatch countDownLatch(String name, int cnt, boolean autoDel, boolean create)
         throws IgniteException;
 
     /**
@@ -375,7 +374,7 @@ public interface Ignite extends AutoCloseable {
      * @return Queue with given properties.
      * @throws IgniteException If queue could not be fetched or created.
      */
-    @Nullable public <T> IgniteQueue<T> queue(String name, int cap, @Nullable IgniteCollectionConfiguration cfg)
+    public <T> IgniteQueue<T> queue(String name, int cap, @Nullable CollectionConfiguration cfg)
         throws IgniteException;
 
     /**
@@ -387,8 +386,7 @@ public interface Ignite extends AutoCloseable {
      * @return Set with given properties.
      * @throws IgniteException If set could not be fetched or created.
      */
-    @Nullable public <T> IgniteSet<T> set(String name, @Nullable IgniteCollectionConfiguration cfg)
-        throws IgniteException;
+    public <T> IgniteSet<T> set(String name, @Nullable CollectionConfiguration cfg) throws IgniteException;
 
     /**
      * Gets an instance of deployed Ignite plugin.

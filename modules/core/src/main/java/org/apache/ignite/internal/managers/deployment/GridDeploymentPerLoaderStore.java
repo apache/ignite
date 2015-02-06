@@ -35,8 +35,8 @@ import java.util.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
- * Deployment storage for {@link org.apache.ignite.configuration.IgniteDeploymentMode#PRIVATE} and
- * {@link org.apache.ignite.configuration.IgniteDeploymentMode#ISOLATED} modes.
+ * Deployment storage for {@link org.apache.ignite.configuration.DeploymentMode#PRIVATE} and
+ * {@link org.apache.ignite.configuration.DeploymentMode#ISOLATED} modes.
  */
 public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
     /** Cache keyed by class loader ID. */
@@ -409,7 +409,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
          * @param sndNode Sender node.
          * @param sampleClsName Sample class name.
          */
-        IsolatedDeployment(IgniteDeploymentMode depMode, ClassLoader clsLdr, IgniteUuid clsLdrId,
+        IsolatedDeployment(DeploymentMode depMode, ClassLoader clsLdr, IgniteUuid clsLdrId,
             String userVer, ClusterNode sndNode, String sampleClsName) {
             super(depMode, clsLdr, clsLdrId, userVer, sampleClsName, false);
 

@@ -1486,7 +1486,7 @@ public class IgnitionEx {
                 }
                 else {
                     try {
-                        IgniteDeploymentMode depMode = IgniteDeploymentMode.valueOf(depModeName);
+                        DeploymentMode depMode = DeploymentMode.valueOf(depModeName);
 
                         if (myCfg.getDeploymentMode() != depMode)
                             myCfg.setDeploymentMode(depMode);
@@ -2137,7 +2137,7 @@ public class IgnitionEx {
          * @param client If {@code true} creates client-only cache configuration.
          * @return Cache configuration for atomic data structures.
          */
-        private static CacheConfiguration atomicsSystemCache(IgniteAtomicConfiguration cfg, boolean client) {
+        private static CacheConfiguration atomicsSystemCache(AtomicConfiguration cfg, boolean client) {
             CacheConfiguration ccfg = new CacheConfiguration();
 
             ccfg.setName(CU.ATOMICS_CACHE_NAME);

@@ -51,7 +51,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
 
 /**
  *
@@ -67,7 +67,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     private CacheMode cacheMode = REPLICATED;
 
     /** */
-    private IgniteDeploymentMode depMode = SHARED;
+    private DeploymentMode depMode = SHARED;
 
     /** */
     private C1<CacheConfiguration, Void> initCache;

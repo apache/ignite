@@ -106,7 +106,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
         c.setDiscoverySpi(disco);
 
-        IgniteQueryConfiguration idxCfg = new IgniteQueryConfiguration();
+        QueryConfiguration idxCfg = new QueryConfiguration();
 
         idxCfg.setIndexCustomFunctionClasses(SqlFunctions.class);
 

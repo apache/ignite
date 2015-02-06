@@ -73,7 +73,7 @@ public class IgniteSetExample {
      * @throws IgniteException If execution failed.
      */
     private static IgniteSet<String> initializeSet(Ignite ignite, String setName) throws IgniteException {
-        IgniteCollectionConfiguration setCfg = new IgniteCollectionConfiguration();
+        CollectionConfiguration setCfg = new CollectionConfiguration();
 
         setCfg.setCacheName(CACHE_NAME);
 

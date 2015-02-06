@@ -108,8 +108,8 @@ public class IgniteConfiguration {
     /** Default discovery startup delay in milliseconds (value is {@code 60,000ms}). */
     public static final long DFLT_DISCOVERY_STARTUP_DELAY = 60000;
 
-    /** Default deployment mode (value is {@link IgniteDeploymentMode#SHARED}). */
-    public static final IgniteDeploymentMode DFLT_DEPLOYMENT_MODE = IgniteDeploymentMode.SHARED;
+    /** Default deployment mode (value is {@link DeploymentMode#SHARED}). */
+    public static final DeploymentMode DFLT_DEPLOYMENT_MODE = DeploymentMode.SHARED;
 
     /** Default cache size for missed resources. */
     public static final int DFLT_P2P_MISSED_RESOURCES_CACHE_SIZE = 100;
@@ -379,7 +379,7 @@ public class IgniteConfiguration {
     private GridIndexingSpi indexingSpi;
 
     /** Address resolver. */
-    private IgniteAddressResolver addrRslvr;
+    private AddressResolver addrRslvr;
 
     /** Cache configurations. */
     private CacheConfiguration[] cacheCfg;
@@ -397,7 +397,7 @@ public class IgniteConfiguration {
     private long discoStartupDelay = DFLT_DISCOVERY_STARTUP_DELAY;
 
     /** Tasks classes sharing mode. */
-    private IgniteDeploymentMode deployMode = DFLT_DEPLOYMENT_MODE;
+    private DeploymentMode deployMode = DFLT_DEPLOYMENT_MODE;
 
     /** Cache size of missed resources. */
     private int p2pMissedCacheSize = DFLT_P2P_MISSED_RESOURCES_CACHE_SIZE;
@@ -521,10 +521,10 @@ public class IgniteConfiguration {
     private IgniteInClosure<IgniteConfiguration> warmupClos;
 
     /** */
-    private IgniteQueryConfiguration qryCfg;
+    private QueryConfiguration qryCfg;
 
     /** */
-    private IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+    private AtomicConfiguration atomicCfg = new AtomicConfiguration();
 
     /**
      * Creates valid grid configuration with all default values.
@@ -2179,7 +2179,7 @@ public class IgniteConfiguration {
      *
      * @return Address resolver.
      */
-    public IgniteAddressResolver getAddressResolver() {
+    public AddressResolver getAddressResolver() {
         return addrRslvr;
     }
 
@@ -2188,7 +2188,7 @@ public class IgniteConfiguration {
      *
      * @param addrRslvr Address resolver.
      */
-    public void setAddressResolver(IgniteAddressResolver addrRslvr) {
+    public void setAddressResolver(AddressResolver addrRslvr) {
         this.addrRslvr = addrRslvr;
     }
 
@@ -2197,17 +2197,17 @@ public class IgniteConfiguration {
      *
      * @param deployMode Task classes and resources sharing mode.
      */
-    public void setDeploymentMode(IgniteDeploymentMode deployMode) {
+    public void setDeploymentMode(DeploymentMode deployMode) {
         this.deployMode = deployMode;
     }
 
     /**
      * Gets deployment mode for deploying tasks and other classes on this node.
-     * Refer to {@link IgniteDeploymentMode} documentation for more information.
+     * Refer to {@link DeploymentMode} documentation for more information.
      *
      * @return Deployment mode.
      */
-    public IgniteDeploymentMode getDeploymentMode() {
+    public DeploymentMode getDeploymentMode() {
         return deployMode;
     }
 
@@ -3149,28 +3149,28 @@ public class IgniteConfiguration {
     /**
      * @return Query configuration.
      */
-    public IgniteQueryConfiguration getQueryConfiguration() {
+    public QueryConfiguration getQueryConfiguration() {
         return qryCfg;
     }
 
     /**
      * @param qryCfg Query configuration.
      */
-    public void setQueryConfiguration(IgniteQueryConfiguration qryCfg) {
+    public void setQueryConfiguration(QueryConfiguration qryCfg) {
         this.qryCfg = qryCfg;
     }
 
     /**
      * @return Atomic data structures configuration.
      */
-    public IgniteAtomicConfiguration getAtomicConfiguration() {
+    public AtomicConfiguration getAtomicConfiguration() {
         return atomicCfg;
     }
 
     /**
      * @param atomicCfg Atomic data structures configuration.
      */
-    public void setAtomicConfiguration(IgniteAtomicConfiguration atomicCfg) {
+    public void setAtomicConfiguration(AtomicConfiguration atomicCfg) {
         this.atomicCfg = atomicCfg;
     }
 

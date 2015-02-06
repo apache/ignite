@@ -20,7 +20,6 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.services.*;
 import org.jetbrains.annotations.*;
 
@@ -30,7 +29,7 @@ import java.util.*;
 /**
  * {@link org.apache.ignite.IgniteCompute} implementation.
  */
-public class IgniteServicesImpl extends IgniteAsyncSupportAdapter implements IgniteServices, Externalizable {
+public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteServices, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

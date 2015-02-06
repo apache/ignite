@@ -47,7 +47,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
     private final long ts = U.currentTimeMillis();
 
     /** Deployment mode. */
-    private final IgniteDeploymentMode depMode;
+    private final DeploymentMode depMode;
 
     /** Class loader. */
     private final ClassLoader clsLdr;
@@ -108,7 +108,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @param sampleClsName Sample class name.
      * @param loc {@code True} if local deployment.
      */
-    GridDeployment(IgniteDeploymentMode depMode, ClassLoader clsLdr, IgniteUuid clsLdrId, String userVer,
+    GridDeployment(DeploymentMode depMode, ClassLoader clsLdr, IgniteUuid clsLdrId, String userVer,
         String sampleClsName, boolean loc) {
         assert depMode != null;
         assert clsLdr != null;
@@ -145,7 +145,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      *
      * @return Property depMode.
      */
-    @Override public IgniteDeploymentMode deployMode() {
+    @Override public DeploymentMode deployMode() {
         return depMode;
     }
 
