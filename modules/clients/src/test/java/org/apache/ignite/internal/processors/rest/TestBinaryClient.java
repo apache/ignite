@@ -274,6 +274,8 @@ final class TestBinaryClient {
 
         ByteBuffer slice = res.slice();
 
+        slice.order(ByteOrder.LITTLE_ENDIAN);
+
         slice.put((byte)0x90);
         slice.putInt(res.remaining() - 5);
         slice.putLong(msg.requestId());
