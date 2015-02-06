@@ -278,19 +278,23 @@
                         <inceptionYear>2014</inceptionYear>
                     </properties>
                     <includes>
-                        <include>src/**/*.java</include>
-                        <include>src/**/*.scala</include>
-                        <include>**/*.php</include>
-                        <inclide>src/**/*.properties</inclide>
-                        <include>**/*.sh</include>
-                        <include>**/*.bat</include>
-                        <include>**/*.js</include>
-                        <include>**/*.xml</include>
-                        <include>**/*.css</include>
-                        <include>**/*.cpp</include>
-                        <include>**/*.html</include>
+                        <include>**/*.*</include>
                     </includes>
                     <excludes>
+                        <exclude>**/*.txt</exclude>
+                        <exclude>**/*.jks</exclude>
+                        <exclude>**/*.pem</exclude>
+                        <exclude>**/*.m4</exclude>
+                        <exclude>**/*.pem</exclude>
+                        <exclude>**/*.in</exclude>
+                        <exclude>**/*.am</exclude>
+                        <exclude>**/*.ac</exclude>
+                        <exclude>**/*.sub</exclude>
+                        <exclude>**/*.csproj</exclude>
+                        <exclude>**/*.log</exclude>
+                        <exclude>**/*.sln</exclude>
+                        <exclude>**/*.h</exclude>
+                        <!--special excludes-->
                         <exclude>**/com/romix/scala/**</exclude>
                         <exclude>**/GridOffHeapSnapTreeMap.java</exclude>
                         <exclude>**/internal/util/snaptree/SnapTreeMap.java</exclude>
