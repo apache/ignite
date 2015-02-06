@@ -40,7 +40,7 @@ public class GridCachePartitionedTxTimeoutSelfTest extends IgniteTxTimeoutAbstra
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        TransactionsConfiguration txCfg = c.getTransactionsConfiguration();
+        TransactionConfiguration txCfg = c.getTransactionsConfiguration();
 
         txCfg.setTxSerializableEnabled(true);
         txCfg.setDefaultTxTimeout(TIMEOUT);

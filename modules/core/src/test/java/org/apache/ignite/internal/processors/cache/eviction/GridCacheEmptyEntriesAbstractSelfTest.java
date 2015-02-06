@@ -63,7 +63,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        TransactionsConfiguration txCfg = c.getTransactionsConfiguration();
+        TransactionConfiguration txCfg = c.getTransactionsConfiguration();
 
         txCfg.setDefaultTxConcurrency(txConcurrency);
         txCfg.setDefaultTxIsolation(txIsolation);

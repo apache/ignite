@@ -33,7 +33,7 @@ public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extend
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TransactionsConfiguration tCfg = new TransactionsConfiguration();
+        TransactionConfiguration tCfg = new TransactionConfiguration();
 
         tCfg.setTxSerializableEnabled(true);
 

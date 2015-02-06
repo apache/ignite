@@ -24,7 +24,7 @@ import java.io.*;
 /**
  * Transactions configuration.
  */
-public class TransactionsConfiguration implements Serializable {
+public class TransactionConfiguration implements Serializable {
     /** Default value for 'txSerializableEnabled' flag. */
     public static final boolean DFLT_TX_SERIALIZABLE_ENABLED = false;
 
@@ -61,14 +61,14 @@ public class TransactionsConfiguration implements Serializable {
     /**
      * Empty constructor.
      */
-    public TransactionsConfiguration() {
+    public TransactionConfiguration() {
         // No-op.
     }
 
     /**
      * @param cfg Configuration to copy.
      */
-    public TransactionsConfiguration(TransactionsConfiguration cfg) {
+    public TransactionConfiguration(TransactionConfiguration cfg) {
         dfltConcurrency = cfg.getDefaultTxConcurrency();
         dfltIsolation = cfg.getDefaultTxIsolation();
         dfltTxTimeout = cfg.getDefaultTxTimeout();

@@ -74,7 +74,7 @@ public class CacheJtaManager<K, V> extends CacheJtaManagerAdapter<K, V> {
                         IgniteInternalTx tx = cctx.tm().userTx();
 
                         if (tx == null) {
-                            TransactionsConfiguration tCfg = cctx.kernalContext().config()
+                            TransactionConfiguration tCfg = cctx.kernalContext().config()
                                 .getTransactionsConfiguration();
 
                             tx = cctx.tm().newTx(

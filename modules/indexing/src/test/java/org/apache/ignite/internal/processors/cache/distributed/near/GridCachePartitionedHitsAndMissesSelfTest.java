@@ -62,7 +62,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         // Cache.
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
 
-        TransactionsConfiguration tCfg = new TransactionsConfiguration();
+        TransactionConfiguration tCfg = new TransactionConfiguration();
 
         tCfg.setDefaultTxConcurrency(IgniteTxConcurrency.PESSIMISTIC);
         tCfg.setDefaultTxIsolation(IgniteTxIsolation.REPEATABLE_READ);

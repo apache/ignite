@@ -104,7 +104,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
         discoSpi.setIpFinder(IP_FINDER);
 
-        TransactionsConfiguration tCfg = cfg.getTransactionsConfiguration();
+        TransactionConfiguration tCfg = cfg.getTransactionsConfiguration();
 
         tCfg.setDefaultTxConcurrency(txConcurrency);
         tCfg.setDefaultTxIsolation(txIsolation);

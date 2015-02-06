@@ -1423,7 +1423,7 @@ public class IgnitionEx {
             myCfg.setServiceConfiguration(cfg.getServiceConfiguration());
             myCfg.setWarmupClosure(cfg.getWarmupClosure());
             myCfg.setPluginConfigurations(cfg.getPluginConfigurations());
-            myCfg.setTransactionsConfiguration(new TransactionsConfiguration(cfg.getTransactionsConfiguration()));
+            myCfg.setTransactionsConfiguration(new TransactionConfiguration(cfg.getTransactionsConfiguration()));
             myCfg.setQueryConfiguration(cfg.getQueryConfiguration());
             myCfg.setAtomicConfiguration(cfg.getAtomicConfiguration());
 

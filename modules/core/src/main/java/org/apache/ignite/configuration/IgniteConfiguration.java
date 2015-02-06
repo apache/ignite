@@ -383,7 +383,7 @@ public class IgniteConfiguration {
     private CacheConfiguration[] cacheCfg;
 
     /** Transactions configuration. */
-    private TransactionsConfiguration txCfg = new TransactionsConfiguration();
+    private TransactionConfiguration txCfg = new TransactionConfiguration();
 
     /** */
     private Collection<? extends PluginConfiguration> pluginCfgs;
@@ -3117,7 +3117,7 @@ public class IgniteConfiguration {
      *
      * @return Transactions configuration.
      */
-    public TransactionsConfiguration getTransactionsConfiguration() {
+    public TransactionConfiguration getTransactionsConfiguration() {
         return txCfg;
     }
 
@@ -3126,7 +3126,7 @@ public class IgniteConfiguration {
      *
      * @param txCfg Transactions configuration.
      */
-    public void setTransactionsConfiguration(TransactionsConfiguration txCfg) {
+    public void setTransactionsConfiguration(TransactionConfiguration txCfg) {
         this.txCfg = txCfg;
     }
 

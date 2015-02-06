@@ -55,7 +55,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        TransactionsConfiguration txCfg = c.getTransactionsConfiguration();
+        TransactionConfiguration txCfg = c.getTransactionsConfiguration();
 
         txCfg.setDefaultTxConcurrency(PESSIMISTIC);
         txCfg.setDefaultTxIsolation(REPEATABLE_READ);

@@ -1226,10 +1226,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If check failed.
      */
     private void checkTransactionConfiguration(ClusterNode rmt) throws IgniteCheckedException {
-        TransactionsConfiguration txCfg = rmt.attribute(ATTR_TX_CONFIG);
+        TransactionConfiguration txCfg = rmt.attribute(ATTR_TX_CONFIG);
 
         if (txCfg != null) {
-            TransactionsConfiguration locTxCfg = ctx.config().getTransactionsConfiguration();
+            TransactionConfiguration locTxCfg = ctx.config().getTransactionsConfiguration();
 
             if (locTxCfg.isTxSerializableEnabled() != txCfg.isTxSerializableEnabled())
                 throw new IgniteCheckedException("Serializable transactions enabled mismatch " +

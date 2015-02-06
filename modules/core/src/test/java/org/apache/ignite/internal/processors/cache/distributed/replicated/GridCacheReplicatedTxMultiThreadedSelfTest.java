@@ -45,7 +45,7 @@ public class GridCacheReplicatedTxMultiThreadedSelfTest extends IgniteTxMultiThr
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        TransactionsConfiguration tCfg = new TransactionsConfiguration();
+        TransactionConfiguration tCfg = new TransactionConfiguration();
 
         tCfg.setTxSerializableEnabled(true);
 

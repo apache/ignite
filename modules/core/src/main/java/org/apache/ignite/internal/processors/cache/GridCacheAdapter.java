@@ -3730,7 +3730,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public IgniteTx txStart() throws IllegalStateException {
-        TransactionsConfiguration cfg = ctx.gridConfig().getTransactionsConfiguration();
+        TransactionConfiguration cfg = ctx.gridConfig().getTransactionsConfiguration();
 
         return txStart(cfg.getDefaultTxConcurrency(), cfg.getDefaultTxIsolation());
     }
@@ -3740,7 +3740,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
-        TransactionsConfiguration cfg = ctx.gridConfig().getTransactionsConfiguration();
+        TransactionConfiguration cfg = ctx.gridConfig().getTransactionsConfiguration();
 
         return txStart(
             concurrency,
@@ -4352,7 +4352,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         IgniteTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx();
 
         if (tx == null || tx.implicit()) {
-            TransactionsConfiguration tCfg = ctx.gridConfig().getTransactionsConfiguration();
+            TransactionConfiguration tCfg = ctx.gridConfig().getTransactionsConfiguration();
 
             tx = ctx.tm().newTx(
                 true,
