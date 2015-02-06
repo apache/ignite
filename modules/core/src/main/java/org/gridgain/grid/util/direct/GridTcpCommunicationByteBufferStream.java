@@ -205,7 +205,7 @@ public class GridTcpCommunicationByteBufferStream {
     private long baseOff;
 
     /** */
-    private int arrOff;
+    private int arrOff = -1;
 
     /** */
     private Object tmpArr;
@@ -572,11 +572,13 @@ public class GridTcpCommunicationByteBufferStream {
         assert bytes >= 0;
         assert bytes >= arrOff;
 
-        if (arrOff == 0) {
+        if (arrOff == -1) {
             if (remaining() < 4)
                 return false;
 
             writeInt(len);
+
+            arrOff = 0;
         }
 
         int toWrite = bytes - arrOff;
@@ -590,7 +592,7 @@ public class GridTcpCommunicationByteBufferStream {
 
             buf.position(pos);
 
-            arrOff = 0;
+            arrOff = -1;
 
             return true;
         }
@@ -623,7 +625,7 @@ public class GridTcpCommunicationByteBufferStream {
                 return null;
             }
 
-           int len = readInt();
+            int len = readInt();
 
             switch (len) {
                 case -1:
