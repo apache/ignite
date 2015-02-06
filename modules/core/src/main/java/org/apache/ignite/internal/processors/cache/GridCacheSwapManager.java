@@ -33,6 +33,7 @@ import org.apache.ignite.spi.swapspace.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.lang.ref.*;
 import java.nio.*;
 import java.util.*;
@@ -1511,6 +1512,66 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /**
+     * @param primary If {@code true} includes primary entries.
+     * @param backup If {@code true} includes backup entries.
+     * @param topVer Topology version.
+     * @return Swap entries iterator.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Iterator<Cache.Entry<K, V>> swapIterator(boolean primary, boolean backup, long topVer)
+        throws IgniteCheckedException
+    {
+        assert primary || backup;
+
+        if (!swapEnabled)
+            return F.emptyIterator();
+
+        if (primary && backup)
+            return cacheEntryIterator(lazySwapIterator());
+
+        Set<Integer> parts = primary ? cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer) :
+            cctx.affinity().backupPartitions(cctx.localNodeId(), topVer);
+
+        return new PartitionsIterator(parts) {
+            @Override protected GridCloseableIterator<? extends Map.Entry<byte[], byte[]>> partitionIterator(int part)
+                throws IgniteCheckedException
+            {
+                return swapMgr.rawIterator(spaceName, part);
+            }
+        };
+    }
+
+    /**
+     * @param primary If {@code true} includes primary entries.
+     * @param backup If {@code true} includes backup entries.
+     * @param topVer Topology version.
+     * @return Offheap entries iterator.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Iterator<Cache.Entry<K, V>> offheapIterator(boolean primary, boolean backup, long topVer)
+        throws IgniteCheckedException
+    {
+        assert primary || backup;
+
+        if (!offheapEnabled)
+            return F.emptyIterator();
+
+        if (primary && backup)
+            return cacheEntryIterator(lazyOffHeapIterator());
+
+        Set<Integer> parts = primary ? cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer) :
+            cctx.affinity().backupPartitions(cctx.localNodeId(), topVer);
+
+        return new PartitionsIterator(parts) {
+            @Override protected GridCloseableIterator<? extends Map.Entry<byte[], byte[]>> partitionIterator(int part)
+                throws IgniteCheckedException
+            {
+                return offheap.iterator(spaceName, part);
+            }
+        };
+    }
+
+    /**
      * @param ldr Undeployed class loader.
      * @return Undeploy count.
      */
@@ -1611,6 +1672,19 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /**
+     * @param it Map.Entry iterator.
+     * @return Cache.Entry iterator.
+     */
+    private static <K, V> Iterator<Cache.Entry<K, V>> cacheEntryIterator(Iterator<Map.Entry<K, V>> it) {
+        return F.iterator(it, new C1<Map.Entry<K, V>, Cache.Entry<K, V>>() {
+            @Override public Cache.Entry<K, V> apply(Map.Entry<K, V> e) {
+                // Create Cache.Entry over Map.Entry to do not deserialize key/values if not needed.
+                return new CacheEntryImpl0<>(e);
+            }
+        }, true);
+    }
+
+    /**
      *
      */
     private class IteratorWrapper extends GridCloseableIteratorAdapter<Map.Entry<byte[], GridCacheSwapEntry<V>>> {
@@ -1687,5 +1761,91 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     e.keyClassLoaderId(),
                     e.valueClassLoaderId());
         }
+    }
+
+    /**
+     *
+     */
+    private abstract class PartitionsIterator implements Iterator<Cache.Entry<K, V>> {
+        /** */
+        private Iterator<Integer> partIt;
+
+        /** */
+        private Iterator<Cache.Entry<K, V>> curIt;
+
+        /** */
+        private Cache.Entry<K, V> next;
+
+        /**
+         * @param parts Partitions
+         */
+        public PartitionsIterator(Collection<Integer> parts) {
+            this.partIt = parts.iterator();
+
+            advance();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return next != null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Cache.Entry<K, V> next() {
+            if (next == null)
+                throw new NoSuchElementException();
+
+            Cache.Entry<K, V> e = next;
+
+            advance();
+
+            return e;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove() {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * Switches to next element.
+         */
+        private void advance() {
+            next = null;
+
+            do {
+                if (curIt == null) {
+                    if (partIt.hasNext()) {
+                        int part = partIt.next();
+
+                        try {
+                            curIt = cacheEntryIterator(lazyIterator(partitionIterator(part)));
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteException(e);
+                        }
+                    }
+                }
+
+                if (curIt != null) {
+                    if (curIt.hasNext()) {
+                        next = curIt.next();
+
+                        break;
+                    }
+                    else
+                        curIt = null;
+                }
+            }
+            while (partIt.hasNext());
+        }
+
+        /**
+         * @param part Partition.
+         * @return Iterator for given partition.
+         * @throws IgniteCheckedException If failed.
+         */
+        abstract protected GridCloseableIterator<? extends Map.Entry<byte[], byte[]>> partitionIterator(int part)
+            throws IgniteCheckedException;
     }
 }

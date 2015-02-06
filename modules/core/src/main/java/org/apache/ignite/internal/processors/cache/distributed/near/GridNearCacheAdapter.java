@@ -32,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
@@ -778,6 +779,13 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
                 throw new IgniteException(e);
             }
         }
+    }
+
+    /**
+     * @return Near entries iterator.
+     */
+    public Iterator<Cache.Entry<K, V>> nearEntriesIterator() {
+        return iterator(map.entries0().iterator(), !ctx.keepPortable());
     }
 
     /** {@inheritDoc} */

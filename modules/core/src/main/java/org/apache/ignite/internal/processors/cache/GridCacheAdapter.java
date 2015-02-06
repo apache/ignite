@@ -663,7 +663,50 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         PeekModes modes = parsePeekModes(peekModes);
 
-        return null;
+        List<Iterator<Cache.Entry<K, V>>> its = new ArrayList<>();
+
+        if (ctx.isLocal()) {
+            modes.primary = true;
+            modes.backup = true;
+
+            if (modes.heap)
+                its.add(iterator(map.entries0().iterator(), !ctx.keepPortable()));
+        }
+        else if (modes.heap) {
+            if (modes.near && ctx.isNear())
+                its.add(ctx.near().nearEntriesIterator());
+
+            if (modes.primary || modes.backup) {
+                GridDhtCacheAdapter<K, V> cache = ctx.isNear() ? ctx.near().dht() : ctx.dht();
+
+                its.add(cache.localEntriesIterator(modes.primary, modes.backup));
+            }
+        }
+
+        // Swap and offheap are disabled for near cache.
+        if (modes.primary || modes.backup) {
+            long topVer = ctx.affinity().affinityTopologyVersion();
+
+            GridCacheSwapManager<K, V> swapMgr = ctx.isNear() ? ctx.near().dht().context().swap() : ctx.swap();
+
+            if (modes.swap)
+                its.add(swapMgr.swapIterator(modes.primary, modes.backup, topVer));
+
+            if (modes.offheap)
+                its.add(swapMgr.offheapIterator(modes.primary, modes.backup, topVer));
+        }
+
+        final Iterator<Cache.Entry<K, V>> it = F.flatIterators(its);
+
+        return new Iterable<Cache.Entry<K, V>>() {
+            @Override public Iterator<Cache.Entry<K, V>> iterator() {
+                return it;
+            }
+
+            public String toString() {
+                return "CacheLocalEntries []";
+            }
+        };
     }
 
     /** {@inheritDoc} */
@@ -5274,15 +5317,112 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /**
+     * @param it Internal entry iterator.
+     * @param deserializePortable Deserialize portable flag.
+     * @return Public API iterator.
+     */
+    protected Iterator<Cache.Entry<K, V>> iterator(final Iterator<GridCacheEntryEx<K, V>> it,
+        final boolean deserializePortable) {
+        return new Iterator<Cache.Entry<K, V>>() {
+            {
+                advance();
+            }
+
+            /** */
+            private Cache.Entry<K, V> next;
+
+            @Override public boolean hasNext() {
+                return next != null;
+            }
+
+            @Override public Cache.Entry<K, V> next() {
+                if (next == null)
+                    throw new NoSuchElementException();
+
+                Cache.Entry<K, V> e = next;
+
+                advance();
+
+                return e;
+            }
+
+            @Override public void remove() {
+                throw new UnsupportedOperationException();
+            }
+
+            /**
+             * Switch to next entry.
+             */
+            private void advance() {
+                next = null;
+
+                while (it.hasNext()) {
+                    GridCacheEntryEx<K, V> entry = it.next();
+
+                    try {
+                        V val = entry.innerGet(
+                            null,
+                            false,
+                            false,
+                            false,
+                            true,
+                            false,
+                            false,
+                            false,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null);
+
+                        if (val == null)
+                            continue;
+
+                        K key = entry.key();
+
+                        if (deserializePortable && ctx.portableEnabled()) {
+                            key = (K)ctx.unwrapPortableIfNeeded(key, true);
+                            val = (V)ctx.unwrapPortableIfNeeded(val, true);
+                        }
+
+                        next = new CacheEntryImpl<>(key, val);
+
+                        break;
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw U.convertToCacheException(e);
+                    }
+                    catch (GridCacheEntryRemovedException ignore) {
+                        // No-op.
+                    }
+                    catch (GridCacheFilterFailedException ignore) {
+                        assert false;
+                    }
+                }
+            }
+        };
+    }
+
+    /**
      *
      */
     private static class PeekModes {
+        /** */
         boolean near;
+
+        /** */
         boolean primary;
+
+        /** */
         boolean backup;
 
+        /** */
         boolean heap;
+
+        /** */
         boolean offheap;
+
+        /** */
         boolean swap;
 
         /** {@inheritDoc} */
