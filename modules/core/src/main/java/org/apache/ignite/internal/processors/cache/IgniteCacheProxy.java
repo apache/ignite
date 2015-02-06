@@ -736,7 +736,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            delegate.removeAll();
+            if (isAsync())
+                setFuture(delegate.removeAllAsync());
+            else
+                delegate.removeAll();
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);

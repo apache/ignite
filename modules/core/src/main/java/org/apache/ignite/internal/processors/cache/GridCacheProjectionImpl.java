@@ -1206,6 +1206,11 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> removeAllAsync() {
+        return cache.removeAllAsync();
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         return cache.removeAllAsync(and(filter, false));
     }

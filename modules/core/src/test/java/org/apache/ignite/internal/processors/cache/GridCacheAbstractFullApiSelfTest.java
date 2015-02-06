@@ -2098,14 +2098,36 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception In case of error.
      */
-    public void testRemoveAll() throws Exception {
-        cache().put("key1", 1);
-        cache().put("key2", 2);
-        cache().put("key3", 3);
+    public void testGlobalRemoveAll() throws Exception {
+        globalRemoveAll(false);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testGlobalRemoveAllAsync() throws Exception {
+        globalRemoveAll(true);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    private void globalRemoveAll(boolean async) throws Exception {
+        jcache().put("key1", 1);
+        jcache().put("key2", 2);
+        jcache().put("key3", 3);
 
         checkSize(F.asSet("key1", "key2", "key3"));
 
-        cache().removeAll(F.asList("key1", "key2"));
+        IgniteCache<String, Integer> asyncCache = jcache().withAsync();
+
+        if (async) {
+            asyncCache.removeAll(F.asSet("key1", "key2"));
+
+            asyncCache.future().get();
+        }
+        else
+            jcache().removeAll(F.asSet("key1", "key2"));
 
         checkSize(F.asSet("key3"));
 
@@ -2114,24 +2136,38 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         checkContainsKey(true, "key3");
 
         // Put values again.
-        cache().put("key1", 1);
-        cache().put("key2", 2);
-        cache().put("key3", 3);
+        jcache().put("key1", 1);
+        jcache().put("key2", 2);
+        jcache().put("key3", 3);
 
-        cache(gridCount() > 1 ? 1 : 0).removeAll();
+        if (async) {
+            IgniteCache<String, Integer> asyncCache0 = jcache(gridCount() > 1 ? 1 : 0).withAsync();
+
+            asyncCache0.removeAll();
+
+            asyncCache0.future().get();
+        }
+        else
+            jcache(gridCount() > 1 ? 1 : 0).removeAll();
 
         assert cache().isEmpty();
-        long entryCount = hugeRemoveAllEntryCount();
+        long entryCnt = hugeRemoveAllEntryCount();
 
-        for (int i = 0; i < entryCount; i++)
+        for (int i = 0; i < entryCnt; i++)
             cache().put(String.valueOf(i), i);
 
-        for (int i = 0; i < entryCount; i++)
+        for (int i = 0; i < entryCnt; i++)
             assertEquals(Integer.valueOf(i), cache().get(String.valueOf(i)));
 
-        cache().removeAll();
+        if (async) {
+            asyncCache.removeAll();
 
-        for (int i = 0; i < entryCount; i++)
+            asyncCache.future().get();
+        }
+        else
+            cache().removeAll();
+
+        for (int i = 0; i < entryCnt; i++)
             assertNull(cache().get(String.valueOf(i)));
     }
 

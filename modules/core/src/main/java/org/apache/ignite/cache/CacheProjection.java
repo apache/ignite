@@ -1678,6 +1678,11 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
     public void removeAll() throws IgniteCheckedException;
 
     /**
+     * @return Remove future.
+     */
+    public IgniteInternalFuture<?> removeAllAsync();
+
+    /**
      * Asynchronously removes mappings from cache for entries for which the optionally passed in filters do
      * pass. If passed in filters are {@code null}, then all entries in cache will be enrolled
      * into transaction.
