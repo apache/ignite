@@ -76,10 +76,10 @@ import java.util.*;
  * <h2 class="header">Spring Example</h2>
  * {@link SharedFsCheckpointSpi} can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
+ * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *     &lt;property name="checkpointSpi"&gt;
- *         &lt;bean class="org.gridgain.grid.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpi"&gt;
+ *         &lt;bean class="org.apache.ignite.spi.checkpoint.sharedfs.GridSharedFsCheckpointSpi"&gt;
  *             &lt;!-- Change to shared directory path in your environment. --&gt;
  *             &lt;property name="directoryPaths"&gt;
  *                 &lt;list&gt;
@@ -173,7 +173,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
      * <p>
      * If not provided, default value is {@link #DFLT_DIR_PATH}.
      *
-     * @param dirPaths Absolute or GridGain installation home folder relative path where checkpoints
+     * @param dirPaths Absolute or Ignite installation home folder relative path where checkpoints
      * will be stored.
      */
     @IgniteSpiConfiguration(optional = true)

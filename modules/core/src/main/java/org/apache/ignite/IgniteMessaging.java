@@ -30,7 +30,7 @@ import java.util.*;
  * cannot be reused between ordered and unordered messages. Instance of {@code GridMessaging}
  * is obtained from grid projection as follows:
  * <pre name="code" class="java">
- * GridMessaging m = GridGain.grid().message();
+ * GridMessaging m = Ignition.ignite().message();
  * </pre>
  * <p>
  * There are {@code 2} ways to subscribe to message listening, {@code local} and {@code remote}.
@@ -45,7 +45,7 @@ import java.util.*;
  * it belongs to the projection as well). This means that any node within this grid projection can send
  * a message for a given topic and all nodes within projection will receive listener notification.
  * <h1 class="header">Ordered vs Unordered</h1>
- * GridGain allows for sending ordered messages (see {@link #sendOrdered(Object, Object, long)}), i.e.
+ * Ignite allows for sending ordered messages (see {@link #sendOrdered(Object, Object, long)}), i.e.
  * messages will be received in the same order they were sent. Ordered messages have a {@code timeout}
  * parameter associated with them which specifies how long an out-of-order message will stay in a queue,
  * waiting for messages that are ordered ahead of it to arrive. If timeout expires, then all ordered

@@ -53,7 +53,7 @@ object ScalarProjectionPimp {
  * Scalar's pimp and replace the original call with a call on that pimp.
  *
  * Note that Scalar provide extensive library of implicit conversion between Java and
- * Scala GridGain counterparts in `ScalarConversions` object
+ * Scala Ignite counterparts in `ScalarConversions` object
  *
  * ==Suffix '$' In Names==
  * Symbol `$` is used in names when they conflict with the names in the base Java class
@@ -586,7 +586,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * be serializable. Other marshallers, e.g. JBoss marshaller, may not have this limitation. Please consult
      * with specific marshaller implementation for the details. Note that all closures and predicates in
      * `org.apache.ignite.lang` package are serializable and can be freely used in the distributed
-     * context with all marshallers currently shipped with GridGain.
+     * context with all marshallers currently shipped with Ignite.
      *
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
@@ -620,9 +620,9 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *
      * Note that class `GridAbsClosure` implements `Runnable` and class `GridOutClosure`
      * implements `Callable` interface. Note also that class `GridFunc` and typedefs provide rich
-     * APIs and functionality for closures and predicates based processing in GridGain. While Java interfaces
+     * APIs and functionality for closures and predicates based processing in Ignite. While Java interfaces
      * `Runnable` and `Callable` allow for lowest common denominator for APIs - it is advisable
-     * to use richer Functional Programming support provided by GridGain available in `org.apache.ignite.lang`
+     * to use richer Functional Programming support provided by Ignite available in `org.apache.ignite.lang`
      * package.
      *
      * Notice that `Runnable` and `Callable` implementations must support serialization as required
@@ -630,7 +630,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * be serializable. Other marshallers, e.g. JBoss marshaller, may not have this limitation. Please consult
      * with specific marshaller implementation for the details. Note that all closures and predicates in
      * `org.apache.ignite.lang` package are serializable and can be freely used in the distributed
-     * context with all marshallers currently shipped with GridGain.
+     * context with all marshallers currently shipped with Ignite.
      *
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.

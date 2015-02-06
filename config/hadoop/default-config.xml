@@ -18,13 +18,13 @@
 -->
 
 <!--
-    GridGain Spring configuration file.
+    Ignite Spring configuration file.
 
-    When starting a standalone GridGain node, you need to execute the following command:
+    When starting a standalone Ignite node, you need to execute the following command:
     {IGNITE_HOME}/bin/ignite.{bat|sh} path-to-this-file/default-config.xml
 
-    When starting GridGain from Java IDE, pass path to this file into GridGain:
-    GridGain.start("path-to-this-file/default-config.xml");
+    When starting Ignite from Java IDE, pass path to this file into Ignition:
+    Ignition.start("path-to-this-file/default-config.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
@@ -37,8 +37,8 @@
         Optional description.
     -->
     <description>
-        Spring file for GridGain node configuration with GGFS and Apache Hadoop map-reduce support enabled.
-        GridGain node will start with this configuration by default.
+        Spring file for Ignite node configuration with GGFS and Apache Hadoop map-reduce support enabled.
+        Ignite node will start with this configuration by default.
     </description>
 
     <!--
@@ -87,7 +87,7 @@
     </bean>
 
     <!--
-        Configuration of GridGain node.
+        Configuration of Ignite node.
     -->
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!--
@@ -101,7 +101,7 @@
         </property>
 
         <!--
-            This port will be used by Apache Hadoop client to connect to GridGain node as if it was a job tracker.
+            This port will be used by Apache Hadoop client to connect to Ignite node as if it was a job tracker.
         -->
         <property name="restTcpPort" value="11211"/>
 
@@ -162,9 +162,9 @@
         -->
         <!--
         <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
                                 <value>127.0.0.1:47500..47509</value>

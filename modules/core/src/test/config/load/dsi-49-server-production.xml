@@ -83,6 +83,6 @@
 
 
     <util:list id="lifecycleBeans">
-        <!-- <bean class="gridgain.MyGridLifecycleBean" /> -->
+        <!-- <bean class="org.apache.ignite.lifecycle.LifecycleBean" /> -->
     </util:list>
 </beans>

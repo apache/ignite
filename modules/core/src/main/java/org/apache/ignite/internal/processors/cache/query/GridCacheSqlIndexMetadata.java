@@ -21,7 +21,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * GridGain index descriptor.
+ * Ignite index descriptor.
  * <p>
  * All index descriptors can be obtained from
  * {@link GridCacheSqlMetadata#indexes(String)} method.

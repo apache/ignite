@@ -68,7 +68,7 @@ import java.util.*;
  * Here is an example of how to configure {@code GridAlwaysFailoverSpi} from Spring XML configuration file.
  * <pre name="code" class="xml">
  * &lt;property name="failoverSpi"&gt;
- *     &lt;bean class="org.gridgain.grid.spi.failover.always.GridAlwaysFailoverSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.failover.always.GridAlwaysFailoverSpi"&gt;
  *         &lt;property name="maximumFailoverAttempts" value="5"/&gt;
  *     &lt;/bean&gt;
  * &lt;/property&gt;

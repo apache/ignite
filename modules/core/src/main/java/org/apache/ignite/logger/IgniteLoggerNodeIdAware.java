@@ -20,7 +20,7 @@ package org.apache.ignite.logger;
 import java.util.*;
 
 /**
- * Interface for GridGain file appenders to attach node ID to log file names.
+ * Interface for Ignite file appenders to attach node ID to log file names.
  */
 public interface IgniteLoggerNodeIdAware {
     /**

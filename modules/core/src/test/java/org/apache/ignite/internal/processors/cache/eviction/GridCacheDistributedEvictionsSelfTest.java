@@ -154,8 +154,6 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * http://atlassian.gridgain.com/jira/browse/GG-9002
-     *
      * @throws Throwable If failed.
      */
     public void testLocalSync() throws Throwable {

@@ -18,7 +18,7 @@
 -->
 
 <!--
-    GridGain Spring configuration file.
+    Ignite Spring configuration file.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -41,7 +41,7 @@
                 </property>
 
                 <property name="store">
-                    <bean class="org.gridgain.grid.cache.store.GridGeneratingTestStore"/>
+                    <bean class="org.apache.ignite.cache.store.GridGeneratingTestStore"/>
                 </property>
             </bean>
         </property>

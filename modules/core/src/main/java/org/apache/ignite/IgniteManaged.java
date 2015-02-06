@@ -30,7 +30,7 @@ import java.util.*;
  * Defines functionality necessary to deploy distributed services on the grid. Instance of
  * {@code GridServices} is obtained from grid projection as follows:
  * <pre name="code" class="java">
- * GridServices svcs = GridGain.grid().services();
+ * GridServices svcs = Ignition.ignite().services();
  * </pre>
  * With distributed services you can do the following:
  * <ul>
@@ -67,15 +67,15 @@ import java.util.*;
  *
  * gridCfg.setServiceConfiguration(svcCfg1, svcCfg2);
  * ...
- * GridGain.start(gridCfg);
+ * Ignition.start(gridCfg);
  * </pre>
  * <h1 class="header">Load Balancing</h1>
- * In all cases, other than singleton service deployment, GridGain will automatically make sure that
+ * In all cases, other than singleton service deployment, Ignite will automatically make sure that
  * an about equal number of services are deployed on each node within the grid. Whenever cluster topology
- * changes, GridGain will re-evaluate service deployments and may re-deploy an already deployed service
+ * changes, Ignite will re-evaluate service deployments and may re-deploy an already deployed service
  * on another node for better load balancing.
  * <h1 class="header">Fault Tolerance</h1>
- * GridGain guarantees that services are deployed according to specified configuration regardless
+ * Ignite guarantees that services are deployed according to specified configuration regardless
  * of any topology changes, including node crashes.
  * <h1 class="header">Resource Injection</h1>
  * All distributed services can be injected with
@@ -129,9 +129,9 @@ public interface IgniteManaged extends IgniteAsyncSupport {
     public ClusterGroup clusterGroup();
 
     /**
-     * Deploys a cluster-wide singleton service. GridGain will guarantee that there is always
+     * Deploys a cluster-wide singleton service. Ignite will guarantee that there is always
      * one instance of the service in the cluster. In case if grid node on which the service
-     * was deployed crashes or stops, GridGain will automatically redeploy it on another node.
+     * was deployed crashes or stops, Ignite will automatically redeploy it on another node.
      * However, if the node on which the service is deployed remains in topology, then the
      * service will always be deployed on that node only, regardless of topology changes.
      * <p>
@@ -151,9 +151,9 @@ public interface IgniteManaged extends IgniteAsyncSupport {
     public void deployClusterSingleton(String name, ManagedService svc) throws IgniteException;
 
     /**
-     * Deploys a per-node singleton service. GridGain will guarantee that there is always
+     * Deploys a per-node singleton service. Ignite will guarantee that there is always
      * one instance of the service running on each node. Whenever new nodes are started
-     * within this grid projection, GridGain will automatically deploy one instance of
+     * within this grid projection, Ignite will automatically deploy one instance of
      * the service on every new node.
      * <p>
      * This method is analogous to calling
@@ -170,7 +170,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
 
     /**
      * Deploys one instance of this service on the primary node for a given affinity key.
-     * Whenever topology changes and primary node assignment changes, GridGain will always
+     * Whenever topology changes and primary node assignment changes, Ignite will always
      * make sure that the service is undeployed on the previous primary node and deployed
      * on the new primary node.
      * <p>
@@ -209,10 +209,10 @@ public interface IgniteManaged extends IgniteAsyncSupport {
         throws IgniteException;
 
     /**
-     * Deploys multiple instances of the service on the grid. GridGain will deploy a
+     * Deploys multiple instances of the service on the grid. Ignite will deploy a
      * maximum amount of services equal to {@code 'totalCnt'} parameter making sure that
      * there are no more than {@code 'maxPerNodeCnt'} service instances running
-     * on each node. Whenever topology changes, GridGain will automatically rebalance
+     * on each node. Whenever topology changes, Ignite will automatically rebalance
      * the deployed services within cluster to make sure that each node will end up with
      * about equal number of deployed instances whenever possible.
      * <p>
@@ -249,19 +249,19 @@ public interface IgniteManaged extends IgniteAsyncSupport {
 
     /**
      * Deploys multiple instances of the service on the grid according to provided
-     * configuration. GridGain will deploy a maximum amount of services equal to
+     * configuration. Ignite will deploy a maximum amount of services equal to
      * {@link ManagedServiceConfiguration#getTotalCount() cfg.getTotalCount()}  parameter
      * making sure that there are no more than {@link ManagedServiceConfiguration#getMaxPerNodeCount() cfg.getMaxPerNodeCount()}
-     * service instances running on each node. Whenever topology changes, GridGain will automatically rebalance
+     * service instances running on each node. Whenever topology changes, Ignite will automatically rebalance
      * the deployed services within cluster to make sure that each node will end up with
      * about equal number of deployed instances whenever possible.
      * <p>
-     * If {@link ManagedServiceConfiguration#getAffinityKey() cfg.getAffinityKey()} is not {@code null}, then GridGain
+     * If {@link ManagedServiceConfiguration#getAffinityKey() cfg.getAffinityKey()} is not {@code null}, then Ignition
      * will deploy the service on the primary node for given affinity key. The affinity will be calculated
      * on the cache with {@link ManagedServiceConfiguration#getCacheName() cfg.getCacheName()} name.
      * <p>
      * If {@link ManagedServiceConfiguration#getNodeFilter() cfg.getNodeFilter()} is not {@code null}, then
-     * GridGain will deploy service on all grid nodes for which the provided filter evaluates to {@code true}.
+     * Ignite will deploy service on all grid nodes for which the provided filter evaluates to {@code true}.
      * The node filter will be checked in addition to the underlying grid projection filter, or the
      * whole grid, if the underlying grid projection includes all grid nodes.
      * <p>
@@ -292,7 +292,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * Cancels service deployment. If a service with specified name was deployed on the grid,
      * then {@link ManagedService#cancel(ManagedServiceContext)} method will be called on it.
      * <p>
-     * Note that GridGain cannot guarantee that the service exits from {@link ManagedService#execute(ManagedServiceContext)}
+     * Note that Ignite cannot guarantee that the service exits from {@link ManagedService#execute(ManagedServiceContext)}
      * method whenever {@link ManagedService#cancel(ManagedServiceContext)} is called. It is up to the user to
      * make sure that the service code properly reacts to cancellations.
      * <p>
@@ -349,7 +349,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      *
      * @param name Service name.
      * @param svcItf Interface for the service.
-     * @param sticky Whether or not GridGain should always contact the same remote
+     * @param sticky Whether or not Ignite should always contact the same remote
      *      service or try to load-balance between services.
      * @return Either proxy over remote service or local service if it is deployed locally.
      * @throws IgniteException If failed to create service proxy.

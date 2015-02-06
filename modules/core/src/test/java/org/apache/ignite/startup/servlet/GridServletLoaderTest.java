@@ -28,18 +28,18 @@ import java.util.*;
 /**
  * Servlet loader test.
  *
- * 1. Create folder where all GridGain jar files will be placed.
- * For example: /home/ggdev/apache-tomcat-6.0.14/gridgain
+ * 1. Create folder where all Ignite jar files will be placed.
+ * For example: /home/ggdev/apache-tomcat-6.0.14/ignite
  *
  * 2. Add in {@code $TOMCAT_HOME/conf/catalina.properties} for property {@code common.loader}
- * value {@code ,${catalina.home}/gridgain/*.jar}
- * For example, {@code common.loader=${catalina.home}/lib,${catalina.home}/lib/*.jar,${catalina.home}/gridgain/*.jar}
+ * value {@code ,${catalina.home}/ignite/*.jar}
+ * For example, {@code common.loader=${catalina.home}/lib,${catalina.home}/lib/*.jar,${catalina.home}/ignite/*.jar}
  *
  * 3. Add in {@code $TOMCAT_HOME/conf/web.xml}
  *          <pre class="snippet">
  *          &lt;servlet&gt;
- *              &lt;servlet-name&gt;GridGain&lt;/servlet-name&gt;
- *              &lt;servlet-class&gt;org.gridgain.grid.loaders.servlet.GridServletLoader&lt;/servlet-class&gt;
+ *              &lt;servlet-name&gt;Ignite&lt;/servlet-name&gt;
+ *              &lt;servlet-class&gt;org.apache.ignite.loaders.servlet.GridServletLoader&lt;/servlet-class&gt;
  *              &lt;init-param&gt;
  *                  &lt;param-name&gt;cfgFilePath&lt;/param-name&gt;
  *                  &lt;param-value&gt;config/default-config.xml&lt;/param-value&gt;

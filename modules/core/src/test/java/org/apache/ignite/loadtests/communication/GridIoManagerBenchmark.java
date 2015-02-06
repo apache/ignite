@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.testframework.GridLoadTestUtils.*;
 
 /**
- * By default this benchmarks uses original GridGain configuration
+ * By default this benchmarks uses original Ignite configuration
  * with message dispatching from NIO threads.
  *
  * By changing {@link #DFLT_CONFIG} constant you can use ForkJoin thread pool instead of JDK default.

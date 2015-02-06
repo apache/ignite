@@ -91,7 +91,7 @@ public class IgniteMock implements Ignite {
         cfg.setMarshaller(marshaller);
         cfg.setNodeId(nodeId);
         cfg.setMBeanServer(jmx);
-        cfg.setGridGainHome(home);
+        cfg.setIgniteHome(home);
         cfg.setLocalHost(locHost);
 
         return cfg;

@@ -18,9 +18,9 @@
 -->
 
 <!--
-    GridGain Client Spring configuration file to start grid client.
+    Ignite Client Spring configuration file to start grid client.
 
-    When starting GridGain Client from Java IDE, pass configuration bean into GridClientFactory:
+    When starting Ignite Client from Java IDE, pass configuration bean into GridClientFactory:
     GridClientFactory.start(new FileSystemXmlApplicationContext(
         "/path/to/grid-client-spring-config.xml").getBean(GridClientConfiguration.class));
 -->

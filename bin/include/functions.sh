@@ -17,7 +17,7 @@
 #
 
 #
-# This is a collection of utility functions to be used in other GridGain scripts.
+# This is a collection of utility functions to be used in other Ignite scripts.
 # Before calling any function from this file you have to import it:
 #   if [ "${IGNITE_HOME}" = "" ];
 #       then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
@@ -78,9 +78,9 @@ checkJava() {
 #
 # Discovers IGNITE_HOME environment variable.
 # The function expects IGNITE_HOME_TMP variable is set and points to the directory where the callee script resides.
-# The function exports IGNITE_HOME variable with path to GridGain home directory.
+# The function exports IGNITE_HOME variable with path to Ignite home directory.
 #
-setGridGainHome() {
+setIgniteHome() {
     #
     # Set IGNITE_HOME, if needed.
     #
@@ -93,8 +93,8 @@ setGridGainHome() {
     #
     if [ ! -d "${IGNITE_HOME}/config" ]; then
         echo $0", ERROR:"
-        echo "GridGain installation folder is not found or IGNITE_HOME environment variable is not valid."
-        echo "Please create IGNITE_HOME environment variable pointing to location of GridGain installation folder."
+        echo "Ignite installation folder is not found or IGNITE_HOME environment variable is not valid."
+        echo "Please create IGNITE_HOME environment variable pointing to location of Ignite installation folder."
 
         exit 1
     fi

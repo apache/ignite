@@ -154,8 +154,8 @@
                             <goal>doc</goal>
                         </goals>
                         <configuration>
-                            <doctitle>GridGain Console Visor</doctitle>
-                            <windowtitle>GridGain Console Visor</windowtitle>
+                            <doctitle>Ignite Console Visor</doctitle>
+                            <windowtitle>Ignite Console Visor</windowtitle>
                         </configuration>
                     </execution>
                 </executions>

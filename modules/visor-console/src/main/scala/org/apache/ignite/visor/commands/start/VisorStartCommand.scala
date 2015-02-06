@@ -85,13 +85,13 @@ private case class Result(
  *         If some nodes are started already, then only remaining nodes will be started.
  *         If current count of nodes is equal to this number and '-r' flag is not set, then nothing will happen.
  *     -g=<path>
- *         Path to GridGain installation folder.
+ *         Path to Ignite installation folder.
  *         If not defined, IGNITE_HOME environment variable must be set on remote hosts.
  *     -c=<path>
- *         Path to configuration file (relative to GridGain home).
- *         If not provided, default GridGain configuration is used.
+ *         Path to configuration file (relative to Ignite home).
+ *         If not provided, default Ignite configuration is used.
  *     -s=<path>
- *         Path to start script (relative to GridGain home).
+ *         Path to start script (relative to Ignite home).
  *         Default is "bin/ignite.sh" for Unix or
  *         "bin\ignite.bat" for Windows.
  *     -m=<num>
@@ -375,15 +375,15 @@ object VisorStartCommand {
                 "If current count of nodes is equal to this number and '-r' flag is not set, then nothing will happen."
             ),
             "-g=<path>" -> List(
-                "Path to GridGain installation folder.",
+                "Path to Ignite installation folder.",
                 "If not defined, IGNITE_HOME environment variable must be set on remote hosts."
             ),
             "-c=<path>" -> List(
-                "Path to configuration file (relative to GridGain home).",
-                "If not provided, default GridGain configuration is used."
+                "Path to configuration file (relative to Ignite home).",
+                "If not provided, default Ignite configuration is used."
             ),
             "-s=<path>" -> List(
-                "Path to start script (relative to GridGain home).",
+                "Path to start script (relative to Ignite home).",
                 "Default is \"bin/ignite.sh\" for Unix or",
                 "\"bin\\ignite.bat\" for Windows."
             ),

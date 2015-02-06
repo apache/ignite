@@ -17,7 +17,7 @@
 #
 
 #
-# Run this script to configure Hadoop client to work with GridGain.
+# Run this script to configure Hadoop client to work with Ignite.
 #
 
 HADOOP_COMMON_HOME=
@@ -49,12 +49,12 @@ source "${SCRIPTS_HOME}"/include/functions.sh
 #
 # Discover IGNITE_HOME environment variable.
 #
-setGridGainHome
+setIgniteHome
 
 #
 # Set utility environment.
 #
-export MAIN_CLASS=org.gridgain.grid.hadoop.GridHadoopSetup
+export MAIN_CLASS=org.apache.ignite.hadoop.GridHadoopSetup
 
 #
 # Start utility.

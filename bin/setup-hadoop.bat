@@ -16,13 +16,13 @@
 ::
 
 ::
-:: Run this script to configure Hadoop client to work with GridGain.
+:: Run this script to configure Hadoop client to work with Ignite.
 ::
 
 @echo off
 
 if "%OS%" == "Windows_NT" setlocal
 
-set MAIN_CLASS=org.gridgain.grid.hadoop.GridHadoopSetup
+set MAIN_CLASS=org.apache.ignite.hadoop.GridHadoopSetup
 
 call "%~dp0\ignite.bat" %*

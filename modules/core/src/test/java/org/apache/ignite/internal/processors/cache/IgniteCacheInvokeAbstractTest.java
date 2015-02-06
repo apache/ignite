@@ -464,7 +464,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
             for (int i = 0; i < gridCount(); i++) {
                 IgniteCache<Object, Object> cache = jcache(i);
 
-                Object val = cache.localPeek(key);
+                Object val = cache.localPeek(key, CachePeekMode.ONHEAP);
 
                 if (val == null)
                     assertFalse(cache(0).affinity().isPrimaryOrBackup(ignite(i).cluster().localNode(), key));
@@ -476,7 +476,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
             for (int i = 0; i < gridCount(); i++) {
                 IgniteCache<Object, Object> cache = jcache(i);
 
-                assertNull("Unexpected non null value for grid " + i, cache.localPeek(key));
+                assertNull("Unexpected non null value for grid " + i, cache.localPeek(key, CachePeekMode.ONHEAP));
             }
         }
     }
