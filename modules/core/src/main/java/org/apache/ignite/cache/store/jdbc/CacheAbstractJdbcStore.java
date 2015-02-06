@@ -1448,9 +1448,16 @@ public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> impl
 
                 ResultSet rs = stmt.executeQuery();
 
+                ResultSetMetaData meta = rs.getMetaData();
+
+                Map<String, Integer> colIdxs = U.newHashMap(meta.getColumnCount());
+
+                for (int i = 1; i <= meta.getColumnCount(); i++)
+                    colIdxs.put(meta.getColumnLabel(i), i);
+
                 while (rs.next()) {
-                    K1 key = buildObject(em.keyType(), em.keyColumns(), em.loadColIdxs, rs);
-                    V1 val = buildObject(em.valueType(), em.valueColumns(), em.loadColIdxs, rs);
+                    K1 key = buildObject(em.keyType(), em.keyColumns(), colIdxs, rs);
+                    V1 val = buildObject(em.valueType(), em.valueColumns(), colIdxs, rs);
 
                     clo.apply(key, val);
                 }

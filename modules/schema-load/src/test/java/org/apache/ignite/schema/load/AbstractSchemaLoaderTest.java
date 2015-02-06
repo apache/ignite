@@ -57,7 +57,7 @@ public abstract class AbstractSchemaLoaderTest extends TestCase {
 
         Statement stmt = conn.createStatement();
 
-        stmt.executeUpdate("CREATE TABLE PRIMITIVES (pk INTEGER PRIMARY KEY, " +
+        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS PRIMITIVES (pk INTEGER PRIMARY KEY, " +
             " boolCol BOOLEAN NOT NULL," +
             " byteCol TINYINT NOT NULL," +
             " shortCol SMALLINT NOT NULL," +
@@ -73,7 +73,7 @@ public abstract class AbstractSchemaLoaderTest extends TestCase {
             " tsCol TIMESTAMP, " +
             " arrCol BINARY(10))");
 
-        stmt.executeUpdate("CREATE TABLE OBJECTS (pk INTEGER PRIMARY KEY, " +
+        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS OBJECTS (pk INTEGER PRIMARY KEY, " +
             " boolCol BOOLEAN," +
             " byteCol TINYINT," +
             " shortCol SMALLINT," +

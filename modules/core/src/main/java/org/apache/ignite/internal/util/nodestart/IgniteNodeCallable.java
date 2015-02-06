@@ -25,5 +25,6 @@ import java.util.concurrent.*;
  * SSH-based node starter, returns tuple which contains hostname, success flag and error message
  * if attempt was not successful.
  */
-public interface GridNodeCallable extends Callable<GridTuple3<String, Boolean, String>> {
+public interface IgniteNodeCallable extends Callable<GridTuple3<String, Boolean, String>> {
+    // No-op.
 }

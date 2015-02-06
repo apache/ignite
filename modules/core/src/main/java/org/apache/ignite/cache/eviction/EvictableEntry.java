@@ -27,7 +27,7 @@ import javax.cache.*;
  * @author @java.author
  * @version @java.version
  */
-public interface EvictableEntry extends Cache.Entry {
+public interface EvictableEntry<K, V> extends Cache.Entry<K, V> {
     /**
      * Attaches metadata to the entry.
      *
