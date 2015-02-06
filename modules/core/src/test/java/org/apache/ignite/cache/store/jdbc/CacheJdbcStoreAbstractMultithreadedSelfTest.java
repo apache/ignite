@@ -169,7 +169,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
 
             @Override public Object call() throws Exception {
                 for (int i = 0; i < TX_CNT; i++) {
-                    GridCache<Object, Object> cache = cache();
+                    IgniteCache<Object, Object> cache = jcache();
 
                     int id = rnd.nextInt(1000);
 
@@ -188,7 +188,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
 
             @Override public Object call() throws Exception {
                 for (int i = 0; i < TX_CNT; i++) {
-                    GridCache<Object, Object> cache = cache();
+                    IgniteCache<Object, Object> cache = jcache();
 
                     int id = rnd.nextInt(1000);
 
@@ -228,7 +228,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
                             map.put(new PersonKey(id), new Person(id, rnd.nextInt(), "Name" + id));
                     }
 
-                    GridCache<Object, Object> cache = cache();
+                    IgniteCache<Object, Object> cache = jcache();
 
                     cache.putAll(map);
                 }
@@ -247,9 +247,9 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
 
             @Override public Object call() throws Exception {
                 for (int i = 0; i < TX_CNT; i++) {
-                    GridCache<PersonKey, Person> cache = cache();
+                    IgniteCache<PersonKey, Person> cache = jcache();
 
-                    try (IgniteTx tx = cache.txStart()) {
+                    try (IgniteTx tx = grid().transactions().txStart()) {
                         cache.put(new PersonKey(1), new Person(1, rnd.nextInt(), "Name" + 1));
                         cache.put(new PersonKey(2), new Person(2, rnd.nextInt(), "Name" + 2));
                         cache.put(new PersonKey(3), new Person(3, rnd.nextInt(), "Name" + 3));

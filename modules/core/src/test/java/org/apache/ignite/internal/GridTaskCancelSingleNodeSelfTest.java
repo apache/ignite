@@ -34,8 +34,6 @@ import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Test for task cancellation issue.
- * <p/>
- * http://www.gridgainsystems.com/jiveforums/thread.jspa?messageID=8034
  */
 public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */

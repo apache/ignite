@@ -232,7 +232,7 @@ public class GridFileSystemLoad {
         if (startNode) {
             X.println("Starting node using configuration: " + nodeCfg);
 
-            ignite = G.start(U.resolveGridGainUrl(nodeCfg));
+            ignite = G.start(U.resolveIgniteUrl(nodeCfg));
         }
 
         try {
@@ -269,7 +269,7 @@ public class GridFileSystemLoad {
 
         Configuration cfg = new Configuration(true);
 
-        cfg.addResource(U.resolveGridGainUrl(hadoopCfg));
+        cfg.addResource(U.resolveIgniteUrl(hadoopCfg));
 
         final FileSystem fs = FileSystem.get(fsPath.toUri(), cfg);
 

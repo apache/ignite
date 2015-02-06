@@ -17,13 +17,14 @@
 
 package org.apache.ignite.yardstick.compute.model;
 
+import org.apache.ignite.lang.*;
+
 import java.io.*;
-import java.util.concurrent.*;
 
 /**
  *
  */
-public class NoopCallable implements Callable<Object>, Externalizable {
+public class NoopCallable implements IgniteCallable<Object>, Externalizable {
     /** {@inheritDoc} */
     @Override public Object call() {
         return null;

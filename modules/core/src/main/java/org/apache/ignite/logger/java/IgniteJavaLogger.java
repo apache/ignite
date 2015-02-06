@@ -34,13 +34,13 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 /**
  * Logger to use with Java logging. Implementation simply delegates to Java Logging.
  * <p>
- * Here is an example of configuring Java logger in GridGain configuration Spring
+ * Here is an example of configuring Java logger in Ignite configuration Spring
  * file to work over log4j implementation. Note that we use the same configuration file
  * as we provide by default:
  * <pre name="code" class="xml">
  *      ...
  *      &lt;property name="gridLogger"&gt;
- *          &lt;bean class="org.gridgain.grid.logger.java.GridJavaLogger"&gt;
+ *          &lt;bean class="org.apache.ignite.logger.java.IgniteJavaLogger"&gt;
  *              &lt;constructor-arg type="java.util.logging.Logger"&gt;
  *                  &lt;bean class="java.util.logging.Logger"&gt;
  *                      &lt;constructor-arg type="java.lang.String" value="global"/&gt;
@@ -54,11 +54,11 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * <pre name="code" class="xml">
  *      ...
  *      &lt;property name="gridLogger"&gt;
- *          &lt;bean class="org.gridgain.grid.logger.java.GridJavaLogger"/&gt;
+ *          &lt;bean class="org.apache.ignite.logger.java.IgniteJavaLogger"/&gt;
  *      &lt;/property&gt;
  *      ...
  * </pre>
- * And the same configuration if you'd like to configure GridGain in your code:
+ * And the same configuration if you'd like to configure Ignite in your code:
  * <pre name="code" class="java">
  *      GridConfiguration cfg = new GridConfiguration();
  *      ...
@@ -77,7 +77,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * Please take a look at <a target=_new href="http://java.sun.com/j2se/1.4.2/docs/api20/java/util/logging/Logger.html">Logger javadoc</a>
  * for additional information.
  * <p>
- * It's recommended to use GridGain logger injection instead of using/instantiating
+ * It's recommended to use Ignite logger injection instead of using/instantiating
  * logger in your task/job code. See {@link org.apache.ignite.resources.IgniteLoggerResource} annotation about logger
  * injection.
  */
@@ -127,7 +127,7 @@ public class IgniteJavaLogger implements IgniteLogger, IgniteLoggerNodeIdAware {
      * Reads default JUL configuration.
      */
     private void defaultConfiguration() {
-        final URL cfgUrl = U.resolveGridGainUrl(DFLT_CONFIG_PATH);
+        final URL cfgUrl = U.resolveIgniteUrl(DFLT_CONFIG_PATH);
 
         if (cfgUrl == null) {
             error("Failed to resolve default logging config file: " + DFLT_CONFIG_PATH);

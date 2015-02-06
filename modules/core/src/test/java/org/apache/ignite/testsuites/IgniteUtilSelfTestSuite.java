@@ -31,7 +31,7 @@ import org.apache.ignite.util.*;
 import org.apache.ignite.util.mbeans.*;
 
 /**
- * Test suite for GridGain utility classes.
+ * Test suite for Ignite utility classes.
  */
 public class IgniteUtilSelfTestSuite extends TestSuite {
     /**

@@ -582,7 +582,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * Master leave aware callable.
      */
-    private static class TestCallable implements Callable<Void>, ComputeJobMasterLeaveAware {
+    private static class TestCallable implements IgniteCallable<Void>, ComputeJobMasterLeaveAware {
         /** Task session. */
         @IgniteLoggerResource
         private IgniteLogger log;
@@ -606,7 +606,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
     /**
      * Master leave aware runnable.
      */
-    private static class TestRunnable implements Runnable, ComputeJobMasterLeaveAware {
+    private static class TestRunnable implements IgniteRunnable, ComputeJobMasterLeaveAware {
         /** Task session. */
         @IgniteLoggerResource
         private IgniteLogger log;

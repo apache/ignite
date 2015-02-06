@@ -83,7 +83,7 @@ public class GridTestMain {
         for (long i = 0; i < GridTestConstants.ENTRY_COUNT; i++) {
             final long key = i;
 
-            comp.affinityRun("partitioned", GridTestKey.affinityKey(key), new Runnable() {
+            comp.affinityRun("partitioned", GridTestKey.affinityKey(key), new IgniteRunnable() {
                 // This code will execute on remote nodes by collocating keys with cached data.
                 @Override public void run() {
                     Long val = cache.peek(new GridTestKey(key));

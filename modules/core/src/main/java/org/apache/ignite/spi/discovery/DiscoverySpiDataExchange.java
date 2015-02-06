@@ -20,7 +20,7 @@ package org.apache.ignite.spi.discovery;
 import java.util.*;
 
 /**
- * Handler for initial data exchange between GridGain nodes. Data exchange
+ * Handler for initial data exchange between Ignite nodes. Data exchange
  * is initiated by a new node when it tries to join topology and finishes
  * before it actually joins.
  */

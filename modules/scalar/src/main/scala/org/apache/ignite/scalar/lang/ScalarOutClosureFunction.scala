@@ -19,10 +19,12 @@ package org.apache.ignite.scalar.lang
 
 import java.util.concurrent.Callable
 
+import org.apache.ignite.lang.IgniteCallable
+
 /**
  * Wrapping Scala function for `Callable` and specifically for `GridOutClosure`.
  */
-class ScalarOutClosureFunction[R](val inner: Callable[R]) extends (() => R) {
+class ScalarOutClosureFunction[R](val inner: IgniteCallable[R]) extends (() => R) {
     assert(inner != null)
 
     /**

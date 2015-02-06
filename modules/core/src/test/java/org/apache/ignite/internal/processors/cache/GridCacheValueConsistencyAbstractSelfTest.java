@@ -109,7 +109,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     public void testPutRemove() throws Exception {
         awaitPartitionMapExchange();
 
-        GridCache<String, Integer> cache = cache();
+        IgniteCache<String, Integer> cache = jcache();
 
         int keyCnt = 10;
 
@@ -117,25 +117,25 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
             cache.put("key" + i, i);
 
         for (int g = 0; g < gridCount(); g++) {
-            GridCache<String, Integer> cache0 = cache(g);
+            IgniteCache<String, Integer> cache0 = jcache(g);
             ClusterNode locNode = grid(g).localNode();
 
             for (int i = 0; i < keyCnt; i++) {
                 String key = "key" + i;
 
-                if (cache.affinity().mapKeyToPrimaryAndBackups(key).contains(locNode)) {
+                if (ignite(0).affinity(null).mapKeyToPrimaryAndBackups(key).contains(locNode)) {
                     info("Node is reported as affinity node for key [key=" + key + ", nodeId=" + locNode.id() + ']');
 
-                    assertEquals((Integer)i, cache0.peek(key));
+                    assertEquals((Integer)i, cache0.localPeek(key, CachePeekMode.ONHEAP));
                 }
                 else {
                     info("Node is reported as NOT affinity node for key [key=" + key +
                         ", nodeId=" + locNode.id() + ']');
 
                     if (distributionMode() == NEAR_PARTITIONED && cache == cache0)
-                        assertEquals((Integer)i, cache0.peek(key));
+                        assertEquals((Integer)i, cache0.localPeek(key, CachePeekMode.ONHEAP));
                     else
-                        assertNull(cache0.peek(key));
+                        assertNull(cache0.localPeek(key, CachePeekMode.ONHEAP));
                 }
 
                 assertEquals((Integer)i, cache0.get(key));
@@ -145,15 +145,15 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
         info("Removing values from cache.");
 
         for (int i = 0; i < keyCnt; i++)
-            assertEquals((Integer)i, cache.remove("key" + i));
+            assertEquals((Integer)i, cache.getAndRemove("key" + i));
 
         for (int g = 0; g < gridCount(); g++) {
-            GridCache<String, Integer> cache0 = cache(g);
+            IgniteCache<String, Integer> cache0 = jcache(g);
 
             for (int i = 0; i < keyCnt; i++) {
                 String key = "key" + i;
 
-                assertNull(cache0.peek(key));
+                assertNull(cache0.localPeek(key, CachePeekMode.ONHEAP));
 
                 assertNull(cache0.get(key));
             }
@@ -166,7 +166,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     public void testPutRemoveAll() throws Exception {
         awaitPartitionMapExchange();
 
-        GridCache<String, Integer> cache = cache();
+        IgniteCache<String, Integer> cache = jcache();
 
         int keyCnt = 10;
 
@@ -177,25 +177,25 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
         }
 
         for (int g = 0; g < gridCount(); g++) {
-            GridCache<String, Integer> cache0 = cache(g);
+            IgniteCache<String, Integer> cache0 = jcache(g);
             ClusterNode locNode = grid(g).localNode();
 
             for (int i = 0; i < keyCnt; i++) {
                 String key = "key" + i;
 
-                if (cache.affinity().mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode())) {
+                if (ignite(0).affinity(null).mapKeyToPrimaryAndBackups(key).contains(grid(g).localNode())) {
                     info("Node is reported as affinity node for key [key=" + key + ", nodeId=" + locNode.id() + ']');
 
-                    assertEquals((Integer)i, cache0.peek(key));
+                    assertEquals((Integer)i, cache0.localPeek(key, CachePeekMode.ONHEAP));
                 }
                 else {
                     info("Node is reported as NOT affinity node for key [key=" + key +
                         ", nodeId=" + locNode.id() + ']');
 
                     if (distributionMode() == NEAR_PARTITIONED && cache == cache0)
-                        assertEquals((Integer)i, cache0.peek(key));
+                        assertEquals((Integer)i, cache0.localPeek(key, CachePeekMode.ONHEAP));
                     else
-                        assertNull(cache0.peek(key));
+                        assertNull(cache0.localPeek(key, CachePeekMode.ONHEAP));
                 }
 
                 assertEquals((Integer)i, cache0.get(key));
@@ -211,12 +211,12 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
         info(">>>> Starting values check");
 
         for (int g = 0; g < gridCount(); g++) {
-            GridCache<String, Integer> cache0 = cache(g);
+            IgniteCache<String, Integer> cache0 = jcache(g);
 
             for (int i = 0; i < keyCnt; i++) {
                 String key = "key" + i;
 
-                assertNull(cache0.peek(key));
+                assertNull(cache0.localPeek(key, CachePeekMode.ONHEAP));
                 assertNull(cache0.get(key));
             }
         }

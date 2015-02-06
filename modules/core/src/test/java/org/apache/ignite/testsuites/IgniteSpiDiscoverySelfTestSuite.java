@@ -37,17 +37,17 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Discovery SPI Test Suite");
 
         // Tcp.
-        suite.addTest(new TestSuite(GridTcpDiscoveryVmIpFinderSelfTest.class));
-        suite.addTest(new TestSuite(GridTcpDiscoverySharedFsIpFinderSelfTest.class));
-        suite.addTest(new TestSuite(GridTcpDiscoveryJdbcIpFinderSelfTest.class));
-        suite.addTest(new TestSuite(GridTcpDiscoveryMulticastIpFinderSelfTest.class));
+        suite.addTest(new TestSuite(TcpDiscoveryVmIpFinderSelfTest.class));
+        suite.addTest(new TestSuite(TcpDiscoverySharedFsIpFinderSelfTest.class));
+        suite.addTest(new TestSuite(TcpDiscoveryJdbcIpFinderSelfTest.class));
+        suite.addTest(new TestSuite(TcpDiscoveryMulticastIpFinderSelfTest.class));
 
-        suite.addTest(new TestSuite(GridTcpDiscoverySelfTest.class));
-        suite.addTest(new TestSuite(GridTcpDiscoverySpiSelfTest.class));
-        suite.addTest(new TestSuite(GridTcpDiscoverySpiStartStopSelfTest.class));
-        suite.addTest(new TestSuite(GridTcpDiscoverySpiConfigSelfTest.class));
-        suite.addTest(new TestSuite(GridTcpDiscoveryMarshallerCheckSelfTest.class));
-        suite.addTest(new TestSuite(GridTcpDiscoverySnapshotHistoryTest.class));
+        suite.addTest(new TestSuite(TcpDiscoverySelfTest.class));
+        suite.addTest(new TestSuite(TcpDiscoverySpiSelfTest.class));
+        suite.addTest(new TestSuite(TcpDiscoverySpiStartStopSelfTest.class));
+        suite.addTest(new TestSuite(TcpDiscoverySpiConfigSelfTest.class));
+        suite.addTest(new TestSuite(TcpDiscoveryMarshallerCheckSelfTest.class));
+        suite.addTest(new TestSuite(TcpDiscoverySnapshotHistoryTest.class));
 
         suite.addTest(new TestSuite(GridTcpSpiForwardingSelfTest.class));
 
