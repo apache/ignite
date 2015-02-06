@@ -27,19 +27,15 @@ import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.managed.*;
+import org.apache.ignite.services.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.streamer.*;
-import org.apache.ignite.client.ssl.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.plugin.segmentation.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.spi.communication.*;
@@ -47,12 +43,9 @@ import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.spi.failover.*;
-import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.securesession.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.streamer.*;
 
 import javax.management.*;
 import java.lang.management.*;
@@ -513,7 +506,7 @@ public class IgniteConfiguration {
     private GridSecurityCredentialsProvider securityCred;
 
     /** Service configuration. */
-    private ManagedServiceConfiguration[] svcCfgs;
+    private ServiceConfiguration[] svcCfgs;
 
     /** Hadoop configuration. */
     private GridHadoopConfiguration hadoopCfg;
@@ -3067,7 +3060,7 @@ public class IgniteConfiguration {
      *
      * @return Configurations for services to be deployed on the grid.
      */
-    public ManagedServiceConfiguration[] getServiceConfiguration() {
+    public ServiceConfiguration[] getServiceConfiguration() {
         return svcCfgs;
     }
 
@@ -3076,7 +3069,7 @@ public class IgniteConfiguration {
      *
      * @param svcCfgs Configurations for services to be deployed on the grid.
      */
-    public void setServiceConfiguration(ManagedServiceConfiguration... svcCfgs) {
+    public void setServiceConfiguration(ServiceConfiguration... svcCfgs) {
         this.svcCfgs = svcCfgs;
     }
 

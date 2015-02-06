@@ -100,7 +100,7 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCompute compute(ClusterGroup prj) {
+    @Override public IgniteCompute compute(ClusterGroup grp) {
         return null;
     }
 
@@ -120,17 +120,17 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteEvents events(ClusterGroup prj) {
+    @Override public IgniteEvents events(ClusterGroup grp) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteManaged managed() {
+    @Override public IgniteServices services() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteManaged managed(ClusterGroup prj) {
+    @Override public IgniteServices services(ClusterGroup grp) {
         return null;
     }
 
@@ -140,7 +140,7 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService executorService(ClusterGroup prj) {
+    @Override public ExecutorService executorService(ClusterGroup grp) {
         return null;
     }
 

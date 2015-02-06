@@ -651,7 +651,7 @@
                                         </group>
                                         <group>
                                             <title>Distributed Services APIs</title>
-                                            <packages>org.apache.ignite.managed</packages>
+                                            <packages>org.apache.ignite.services</packages>
                                         </group>
                                         <group>
                                             <title>MXBeans classes</title>
@@ -861,7 +861,7 @@
                                         </group>
                                         <group>
                                             <title>Distributed Services APIs</title>
-                                            <packages>org.apache.ignite.managed</packages>
+                                            <packages>org.apache.ignite.services</packages>
                                         </group>
                                         <group>
                                             <title>JDBC Driver</title>

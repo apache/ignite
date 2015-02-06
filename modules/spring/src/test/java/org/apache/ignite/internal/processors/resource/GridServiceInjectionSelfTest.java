@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.resource;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.managed.*;
+import org.apache.ignite.services.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -45,8 +45,8 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
         startGrid(0);
         startGrid(1);
 
-        grid(0).managed().deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl());
-        grid(0).managed(grid(0).cluster().forLocal()).deployClusterSingleton(SERVICE_NAME2, new DummyServiceImpl());
+        grid(0).services().deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl());
+        grid(0).services(grid(0).cluster().forLocal()).deployClusterSingleton(SERVICE_NAME2, new DummyServiceImpl());
 
         assertEquals(2, grid(0).nodes().size());
         assertEquals(2, grid(1).nodes().size());
@@ -69,7 +69,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
             @Override public Object call() throws Exception {
                 assertNotNull(svc);
-                assertTrue(svc instanceof ManagedService);
+                assertTrue(svc instanceof Service);
 
                 svc.noop();
 
@@ -90,7 +90,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
                 assertNotNull(svc);
 
                 // Ensure proxy instance.
-                assertFalse(svc instanceof ManagedService);
+                assertFalse(svc instanceof Service);
 
                 svc.noop();
 
@@ -111,7 +111,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
                 assertNotNull(svc);
 
                 // Ensure proxy instance.
-                assertTrue(svc instanceof ManagedService);
+                assertTrue(svc instanceof Service);
 
                 svc.noop();
 
@@ -154,7 +154,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
             private void service(DummyService svc) {
                 assertNotNull(svc);
 
-                assertTrue(svc instanceof ManagedService);
+                assertTrue(svc instanceof Service);
 
                 this.svc = svc;
             }
@@ -179,7 +179,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
                 assertNotNull(svc);
 
                 // Ensure proxy instance.
-                assertFalse(svc instanceof ManagedService);
+                assertFalse(svc instanceof Service);
 
                 this.svc = svc;
             }
@@ -204,7 +204,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
                 assertNotNull(svc);
 
                 // Ensure proxy instance.
-                assertTrue(svc instanceof ManagedService);
+                assertTrue(svc instanceof Service);
 
                 this.svc = svc;
             }
@@ -282,7 +282,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
     /**
      * No-op test service.
      */
-    public static class DummyServiceImpl implements DummyService, ManagedService {
+    public static class DummyServiceImpl implements DummyService, Service {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -292,17 +292,17 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
         }
 
         /** {@inheritDoc} */
-        @Override public void cancel(ManagedServiceContext ctx) {
+        @Override public void cancel(ServiceContext ctx) {
             System.out.println("Cancelling service: " + ctx.name());
         }
 
         /** {@inheritDoc} */
-        @Override public void init(ManagedServiceContext ctx) throws Exception {
+        @Override public void init(ServiceContext ctx) throws Exception {
             System.out.println("Initializing service: " + ctx.name());
         }
 
         /** {@inheritDoc} */
-        @Override public void execute(ManagedServiceContext ctx) {
+        @Override public void execute(ServiceContext ctx) {
             System.out.println("Executing service: " + ctx.name());
         }
     }

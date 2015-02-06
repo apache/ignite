@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.resource;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.managers.deployment.*;
-import org.apache.ignite.managed.*;
+import org.apache.ignite.services.*;
 import org.apache.ignite.resources.*;
 
 import java.util.*;
@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Grid service injector.
  */
-public class GridResourceServiceInjector extends GridResourceBasicInjector<Collection<ManagedService>> {
+public class GridResourceServiceInjector extends GridResourceBasicInjector<Collection<Service>> {
     /** */
     private Ignite ignite;
 
@@ -50,9 +50,9 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
         Object svc;
 
         if (svcItf == Void.class)
-            svc = ignite.managed().service(ann.serviceName());
+            svc = ignite.services().service(ann.serviceName());
         else
-            svc = ignite.managed().serviceProxy(ann.serviceName(), svcItf, ann.proxySticky());
+            svc = ignite.services().serviceProxy(ann.serviceName(), svcItf, ann.proxySticky());
 
         if (svc != null)
             GridResourceUtils.inject(field.getField(), target, svc);
@@ -68,9 +68,9 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
         Object svc;
 
         if (svcItf == Void.class)
-            svc = ignite.managed().service(ann.serviceName());
+            svc = ignite.services().service(ann.serviceName());
         else
-            svc = ignite.managed().serviceProxy(ann.serviceName(), svcItf, ann.proxySticky());
+            svc = ignite.services().serviceProxy(ann.serviceName(), svcItf, ann.proxySticky());
 
         Class<?>[] types = mtd.getMethod().getParameterTypes();
 

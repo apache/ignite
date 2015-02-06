@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.managed.*;
+import org.apache.ignite.services.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
@@ -69,7 +69,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     private GridResourceBasicInjector<IgniteLogger> logInjector;
 
     /** Services injector. */
-    private GridResourceBasicInjector<Collection<ManagedService>> srvcInjector;
+    private GridResourceBasicInjector<Collection<Service>> srvcInjector;
 
     /** Spring bean resources injector. */
     private GridResourceInjector springBeanInjector;
@@ -471,7 +471,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param svc Service to inject.
      * @throws IgniteCheckedException If failed.
      */
-    public void inject(ManagedService svc) throws IgniteCheckedException {
+    public void inject(Service svc) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Injecting resources: " + svc);
 
@@ -493,7 +493,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param svc Service.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void cleanup(ManagedService svc) throws IgniteCheckedException {
+    public void cleanup(Service svc) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Cleaning up resources: " + svc);
 

@@ -261,8 +261,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public final IgniteCompute compute(ClusterGroup prj) {
-        return ((ClusterGroupAdapter)prj).compute();
+    @Override public final IgniteCompute compute(ClusterGroup grp) {
+        return ((ClusterGroupAdapter) grp).compute();
     }
 
     /** {@inheritDoc} */
@@ -271,18 +271,18 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public final IgniteEvents events(ClusterGroup prj) {
-        return ((ClusterGroupAdapter)prj).events();
+    @Override public final IgniteEvents events(ClusterGroup grp) {
+        return ((ClusterGroupAdapter) grp).events();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteManaged managed(ClusterGroup prj) {
-        return ((ClusterGroupAdapter)prj).managed();
+    @Override public IgniteServices services(ClusterGroup grp) {
+        return ((ClusterGroupAdapter) grp).services();
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService executorService(ClusterGroup prj) {
-        return ((ClusterGroupAdapter)prj).executorService();
+    @Override public ExecutorService executorService(ClusterGroup grp) {
+        return ((ClusterGroupAdapter) grp).executorService();
     }
 
     /** {@inheritDoc} */

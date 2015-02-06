@@ -56,7 +56,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     private transient IgniteEvents evts;
 
     /** Services. */
-    private transient IgniteManaged svcs;
+    private transient IgniteServices svcs;
 
     /** Grid name. */
     private String gridName;
@@ -244,13 +244,13 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /**
-     * @return {@link org.apache.ignite.IgniteManaged} for this projection.
+     * @return {@link org.apache.ignite.IgniteServices} for this projection.
      */
-    public IgniteManaged managed() {
+    public IgniteServices services() {
         if (svcs == null) {
             assert ctx != null;
 
-            svcs = new IgniteManagedImpl(ctx, this, false);
+            svcs = new IgniteServicesImpl(ctx, this, false);
         }
 
         return svcs;

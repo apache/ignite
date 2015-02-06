@@ -158,10 +158,10 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteManaged managed() {
+    @Override public IgniteServices services() {
         assert g != null;
 
-        return g.managed();
+        return g.services();
     }
 
     /** {@inheritDoc} */
@@ -193,10 +193,10 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCompute compute(ClusterGroup prj) {
+    @Override public IgniteCompute compute(ClusterGroup grp) {
         assert g != null;
 
-        return g.compute(prj);
+        return g.compute(grp);
     }
 
     /** {@inheritDoc} */
@@ -207,24 +207,24 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteEvents events(ClusterGroup prj) {
+    @Override public IgniteEvents events(ClusterGroup grp) {
         assert g != null;
 
-        return g.events(prj);
+        return g.events(grp);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteManaged managed(ClusterGroup prj) {
+    @Override public IgniteServices services(ClusterGroup grp) {
         assert g != null;
 
-        return g.managed(prj);
+        return g.services(grp);
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService executorService(ClusterGroup prj) {
+    @Override public ExecutorService executorService(ClusterGroup grp) {
         assert g != null;
 
-        return g.executorService(prj);
+        return g.executorService(grp);
     }
 
     /** {@inheritDoc} */

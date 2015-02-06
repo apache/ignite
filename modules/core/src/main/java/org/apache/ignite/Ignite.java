@@ -108,10 +108,10 @@ public interface Ignite extends AutoCloseable {
     public IgniteCompute compute();
 
     /**
-     * @param prj Projection.
-     * @return Compute instance over given projection.
+     * @param grp Cluster group..
+     * @return Compute instance over given cluster group.
      */
-    public IgniteCompute compute(ClusterGroup prj);
+    public IgniteCompute compute(ClusterGroup grp);
 
     /**
      * Gets {@code messaging} functionality over this grid projection. All operations
@@ -123,10 +123,10 @@ public interface Ignite extends AutoCloseable {
     public IgniteMessaging message();
 
     /**
-     * @param prj Projection.
-     * @return Messaging instance over given projection.
+     * @param grp Cluster group.
+     * @return Messaging instance over given cluster group.
      */
-    public IgniteMessaging message(ClusterGroup prj);
+    public IgniteMessaging message(ClusterGroup grp);
 
     /**
      * Gets {@code events} functionality over this grid projection. All operations
@@ -138,10 +138,10 @@ public interface Ignite extends AutoCloseable {
     public IgniteEvents events();
 
     /**
-     * @param prj Projection.
-     * @return Events instance over given projection.
+     * @param grp Cluster group.
+     * @return Events instance over given cluster group.
      */
-    public IgniteEvents events(ClusterGroup prj);
+    public IgniteEvents events(ClusterGroup grp);
 
     /**
      * Gets {@code services} functionality over this grid projection. All operations
@@ -150,13 +150,13 @@ public interface Ignite extends AutoCloseable {
      *
      * @return Services instance over this grid projection.
      */
-    public IgniteManaged managed();
+    public IgniteServices services();
 
     /**
-     * @param prj Projection.
-     * @return {@code Services} functionality over given projection.
+     * @param grp Cluster group.
+     * @return {@code Services} functionality over given cluster group.
      */
-    public IgniteManaged managed(ClusterGroup prj);
+    public IgniteServices services(ClusterGroup grp);
 
     /**
      * Creates new {@link ExecutorService} which will execute all submitted
@@ -170,10 +170,10 @@ public interface Ignite extends AutoCloseable {
     public ExecutorService executorService();
 
     /**
-     * @param prj Projection.
-     * @return {@link ExecutorService} which will execute jobs on nodes in given projection.
+     * @param grp Cluster group.
+     * @return {@link ExecutorService} which will execute jobs on nodes in given cluster group.
      */
-    public ExecutorService executorService(ClusterGroup prj);
+    public ExecutorService executorService(ClusterGroup grp);
 
     /**
      * Gets information about product as well as license management capabilities.
@@ -375,9 +375,7 @@ public interface Ignite extends AutoCloseable {
      * @return Queue with given properties.
      * @throws IgniteException If queue could not be fetched or created.
      */
-    @Nullable public <T> IgniteQueue<T> queue(String name,
-        int cap,
-        @Nullable IgniteCollectionConfiguration cfg)
+    @Nullable public <T> IgniteQueue<T> queue(String name, int cap, @Nullable IgniteCollectionConfiguration cfg)
         throws IgniteException;
 
     /**
@@ -389,8 +387,7 @@ public interface Ignite extends AutoCloseable {
      * @return Set with given properties.
      * @throws IgniteException If set could not be fetched or created.
      */
-    @Nullable public <T> IgniteSet<T> set(String name,
-        @Nullable IgniteCollectionConfiguration cfg)
+    @Nullable public <T> IgniteSet<T> set(String name, @Nullable IgniteCollectionConfiguration cfg)
         throws IgniteException;
 
     /**

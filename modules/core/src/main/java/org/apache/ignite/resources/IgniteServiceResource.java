@@ -68,7 +68,7 @@ public @interface IgniteServiceResource {
      * instance, then leave this property as {@code null}.
      * <p>
      * For more information about service proxies, see
-     * {@link org.apache.ignite.IgniteManaged#serviceProxy(String, Class, boolean)} documentation.
+     * {@link org.apache.ignite.IgniteServices#serviceProxy(String, Class, boolean)} documentation.
      *
      * @return Interface class for remote service proxy.
      */
@@ -78,7 +78,7 @@ public @interface IgniteServiceResource {
      * Flag indicating if a sticky instance of a service proxy should be returned.
      * This flag is only valid if {@link #proxyInterface()} is not {@code null}.
      * <p>
-     * For information about sticky flag, see {@link org.apache.ignite.IgniteManaged#serviceProxy(String, Class, boolean)}
+     * For information about sticky flag, see {@link org.apache.ignite.IgniteServices#serviceProxy(String, Class, boolean)}
      * documentation.
      *
      * @return {@code True} if a sticky instance of a service proxy should be injected.
