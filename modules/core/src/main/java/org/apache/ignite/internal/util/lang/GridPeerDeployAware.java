@@ -22,7 +22,7 @@ import java.io.*;
 /**
  * Represents any class that needs to maintain or carry on peer deployment information.
  * <p>
- * This interface is intended to be used primarily by GridGain's code.
+ * This interface is intended to be used primarily by Ignite's code.
  * User's code can however implement this interface, for example, if it wraps a
  * closure or a predicate and wants to maintain its peer deployment
  * information so that the user class could be peer-deployed as well.

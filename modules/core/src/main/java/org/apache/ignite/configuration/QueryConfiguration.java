@@ -56,7 +56,7 @@ public class QueryConfiguration {
      * <ul>
      * <li>{@code -1} - Means that off-heap storage is disabled.</li>
      * <li>
-     *     {@code 0} - GridGain will not limit off-heap storage (it's up to user to properly
+     *     {@code 0} - Ignite will not limit off-heap storage (it's up to user to properly
      *     add and remove entries from cache to ensure that off-heap storage does not grow
      *     indefinitely.
      * </li>
@@ -66,7 +66,7 @@ public class QueryConfiguration {
      * <p>
      * Use off-heap storage to load gigabytes of data in memory without slowing down
      * Garbage Collection. Essentially in this case you should allocate very small amount
-     * of memory to JVM and GridGain will cache most of the data in off-heap space
+     * of memory to JVM and Ignite will cache most of the data in off-heap space
      * without affecting JVM performance at all.
      *
      * @param maxOffHeapMemory Maximum memory in bytes available to off-heap memory space.
@@ -176,7 +176,7 @@ public class QueryConfiguration {
     }
 
     /**
-     * The flag indicating that serializer for H2 database will be set to GridGain's marshaller.
+     * The flag indicating that serializer for H2 database will be set to Ignite's marshaller.
      * This setting usually makes sense for offheap indexing only.
      * <p>
      * Default is {@link #DFLT_USE_OPTIMIZED_SERIALIZER}.
@@ -188,7 +188,7 @@ public class QueryConfiguration {
     }
 
     /**
-     * The flag indicating that serializer for H2 database will be set to GridGain's marshaller.
+     * The flag indicating that serializer for H2 database will be set to Ignite's marshaller.
      * This setting usually makes sense for offheap indexing only.
      * <p>
      * Default is {@link #DFLT_USE_OPTIMIZED_SERIALIZER}.

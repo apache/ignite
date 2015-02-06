@@ -52,7 +52,7 @@ public class WebSessionServerStart {
     private static Server jettyServer(int port, HttpServlet servlet) throws Exception {
         Server srv = new Server(port);
 
-        WebAppContext ctx = new WebAppContext(U.resolveGridGainPath("modules/tests/webapp").getAbsolutePath(),
+        WebAppContext ctx = new WebAppContext(U.resolveIgnitePath("modules/tests/webapp").getAbsolutePath(),
             "/ggtest");
 
         ctx.setInitParameter("cfgFilePath", "/examples/config/spring-cache.xml");

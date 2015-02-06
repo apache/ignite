@@ -30,7 +30,7 @@ import java.net.*;
  * grid tasks and grid jobs using {@link org.apache.ignite.resources.SpringApplicationContextResource @IgniteSpringApplicationContextResource}
  * annotation.
  * <p>
- * You can also instantiate grid directly from Spring without using {@code GridGain}.
+ * You can also instantiate grid directly from Spring without using {@code Ignite}.
  * For more information refer to {@link IgniteSpringBean} documentation.
  */
 public class IgniteSpring {

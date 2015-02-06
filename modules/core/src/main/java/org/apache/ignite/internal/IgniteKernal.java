@@ -94,7 +94,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.internal.GridKernalState.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.GridProductImpl.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
@@ -102,7 +102,7 @@ import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.*;
 import static org.apache.ignite.lifecycle.LifecycleEventType.*;
 
 /**
- * GridGain kernal.
+ * Ignite kernal.
  * <p/>
  * See <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a> for information on the
  * misspelling.
@@ -114,7 +114,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     /** Compatible versions. */
     private static final String COMPATIBLE_VERS = GridProperties.get("gridgain.compatible.vers");
 
-    /** GridGain site that is shown in log messages. */
+    /** Ignite site that is shown in log messages. */
     static final String SITE = "www.gridgain.com";
 
     /** System line separator. */
@@ -437,10 +437,10 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public String getGridGainHome() {
+    @Override public String getIgniteHome() {
         assert cfg != null;
 
-        return cfg.getGridGainHome();
+        return cfg.getIgniteHome();
     }
 
     /** {@inheritDoc} */
@@ -645,8 +645,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         final GridUpdateNotifier verChecker = verChecker0;
 
         // Ack 3-rd party licenses location.
-        if (log.isInfoEnabled() && cfg.getGridGainHome() != null)
-            log.info("3-rd party licenses can be found at: " + cfg.getGridGainHome() + File.separatorChar + "libs" +
+        if (log.isInfoEnabled() && cfg.getIgniteHome() != null)
+            log.info("3-rd party licenses can be found at: " + cfg.getIgniteHome() + File.separatorChar + "libs" +
                 File.separatorChar + "licenses");
 
         // Check that user attributes are not conflicting
@@ -934,7 +934,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                     // This exception thrown here means that grace period, if any,
                     // has expired and license violation is still unresolved.
                     catch (IgniteProductLicenseException ignored) {
-                        U.error(log, "License violation is unresolved. GridGain node will shutdown in " +
+                        U.error(log, "License violation is unresolved. Ignite node will shutdown in " +
                             (SHUTDOWN_DELAY / 1000) + " sec.");
                         U.error(log, "  ^-- Contact your support for immediate assistance (!)");
 
@@ -1073,10 +1073,10 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             IgniteProductLicense lic = ctx.license().license();
 
             String body =
-                "GridGain node started with the following parameters:" + NL +
+                "Ignite node started with the following parameters:" + NL +
                 NL +
                 "----" + NL +
-                "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
+                "Ignite ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
                 "Grid name: " + gridName + NL +
                 "Node ID: " + nid + NL +
                 "Node order: " + localNode().order() + NL +
@@ -1109,7 +1109,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 "| " + SITE + NL +
                 "| support@gridgain.com" + NL;
 
-            sendAdminEmailAsync("GridGain node started: " + nid8, body, false);
+            sendAdminEmailAsync("Ignite node started: " + nid8, body, false);
         }
     }
 
@@ -1306,9 +1306,9 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
         // Warn about loopback.
         if (ips.isEmpty() && macs.isEmpty())
-            U.warn(log, "GridGain is starting on loopback address... Only nodes on the same physical " +
+            U.warn(log, "Ignite is starting on loopback address... Only nodes on the same physical " +
                 "computer can participate in topology.",
-                "GridGain is starting on loopback address...");
+                "Ignite is starting on loopback address...");
 
         // Stick in network context into attributes.
         add(attrs, ATTR_IPS, (ips.isEmpty() ? "" : ips));
@@ -1752,14 +1752,14 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     private void ackStart(RuntimeMXBean rtBean) {
         if (log.isQuiet()) {
             U.quiet(false, "");
-            U.quiet(false, "GridGain node started OK (id=" + U.id8(localNode().id()) +
+            U.quiet(false, "Ignite node started OK (id=" + U.id8(localNode().id()) +
                 (F.isEmpty(gridName) ? "" : ", grid=" + gridName) + ')');
         }
 
         if (log.isInfoEnabled()) {
             log.info("");
 
-            String ack = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH;
+            String ack = "Ignite ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH;
 
             String dash = U.dash(ack.length());
 
@@ -1785,7 +1785,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                     ">>> Local node addresses: " + U.addressesAsString(localNode()) + NL +
                     ">>> Local ports: " + sb + NL;
 
-            str += ">>> GridGain documentation: http://" + SITE + "/documentation" + NL;
+            str += ">>> Ignite documentation: http://" + SITE + "/documentation" + NL;
 
             log.info(str);
         }
@@ -2016,16 +2016,16 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             // Ack stop.
             if (log.isQuiet()) {
                 if (!errOnStop)
-                    U.quiet(false, "GridGain node stopped OK [uptime=" +
+                    U.quiet(false, "Ignite node stopped OK [uptime=" +
                         X.timeSpan2HMSM(U.currentTimeMillis() - startTime) + ']');
                 else
-                    U.quiet(true, "GridGain node stopped wih ERRORS [uptime=" +
+                    U.quiet(true, "Ignite node stopped wih ERRORS [uptime=" +
                         X.timeSpan2HMSM(U.currentTimeMillis() - startTime) + ']');
             }
 
             if (log.isInfoEnabled())
                 if (!errOnStop) {
-                    String ack = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH +
+                    String ack = "Ignite ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH +
                         " stopped OK";
 
                     String dash = U.dash(ack.length());
@@ -2040,7 +2040,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                         NL);
                 }
                 else {
-                    String ack = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH +
+                    String ack = "Ignite ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH +
                         " stopped with ERRORS";
 
                     String dash = U.dash(ack.length());
@@ -2062,16 +2062,16 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             if (isSmtpEnabled() && isAdminEmailsSet() && cfg.isLifeCycleEmailNotification()) {
                 String errOk = errOnStop ? "with ERRORS" : "OK";
 
-                String headline = "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR +
+                String headline = "Ignite ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR +
                     " stopped " + errOk + ":";
-                String subj = "GridGain node stopped " + errOk + ": " + nid8;
+                String subj = "Ignite node stopped " + errOk + ": " + nid8;
 
                 IgniteProductLicense lic = ctx.license() != null ? ctx.license().license() : null;
 
                 String body =
                     headline + NL + NL +
                     "----" + NL +
-                    "GridGain ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
+                    "Ignite ver. " + COMPOUND_VER + '#' + BUILD_TSTAMP_STR + "-sha1:" + REV_HASH + NL +
                     "Grid name: " + gridName + NL +
                     "Node ID: " + nid + NL +
                     "Node uptime: " + X.timeSpan2HMSM(U.currentTimeMillis() - startTime) + NL;
@@ -2401,7 +2401,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
         // Ack IGNITE_HOME and VM arguments.
         if (log.isInfoEnabled()) {
-            log.info("IGNITE_HOME=" + cfg.getGridGainHome());
+            log.info("IGNITE_HOME=" + cfg.getIgniteHome());
             log.info("VM arguments: " + rtBean.getInputArguments());
         }
     }
@@ -2812,7 +2812,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
      * Local grid node is excluded.
      * <p>
      * Detection of the same physical computer is based on comparing set of network interface MACs.
-     * If two nodes have the same set of MACs, GridGain considers these nodes running on the same
+     * If two nodes have the same set of MACs, Ignite considers these nodes running on the same
      * physical computer.
      * @return Grid nodes that reside on the same physical computer as local grid node.
      */

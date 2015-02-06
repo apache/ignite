@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -30,6 +31,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
+import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
@@ -96,22 +98,20 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
         info("Primary node for key [id=" + node.id() + ", order=" + node.order() + ", key=" + key + ']');
 
-        GridCache<Integer, String> cache = cache(idx);
+        IgniteCache<Integer, String> cache = jcache(idx);
 
         cache.put(key, "val");
 
-        assert cache.lock(key, -1);
+        Lock lock = cache.lock(key);
+
+        assert lock.tryLock();
 
         for (int checkIdx = 1; checkIdx < GRID_CNT; checkIdx++) {
             info("Check grid index: " + checkIdx);
 
-            GridCache<Integer, String> checkCache = cache(checkIdx);
+            IgniteCache<Integer, String> checkCache = jcache(checkIdx);
 
-            assert !checkCache.lock(key, -1);
-
-            CacheEntry e = checkCache.entry(key);
-
-            assert e.isLocked() : "Entry is not locked for grid [idx=" + checkIdx + ", entry=" + e + ']';
+            assert !checkCache.lock(key).tryLock();
         }
 
         Collection<IgniteFuture<?>> futs = new LinkedList<>();
@@ -137,13 +137,9 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
                 for (int checkIdx = 1; checkIdx < GRID_CNT; checkIdx++) {
                     info("Check grid index: " + checkIdx);
 
-                    GridCache<Integer, String> checkCache = cache(checkIdx);
+                    IgniteCache<Integer, String> checkCache = jcache(checkIdx);
 
-                    CacheEntry e = checkCache.entry(key);
-
-                    info("Checking entry: " + e);
-
-                    assert !e.isLocked() : "Entry is locked for grid [idx=" + checkIdx + ", entry=" + e + ']';
+                    assert !checkCache.isLocalLocked(key, false);
                 }
             }
             catch (AssertionError e) {

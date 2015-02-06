@@ -293,7 +293,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
 
         primaryFsCfg = new Configuration();
 
-        primaryFsCfg.addResource(U.resolveGridGainUrl(primaryFileSystemConfigPath()));
+        primaryFsCfg.addResource(U.resolveIgniteUrl(primaryFileSystemConfigPath()));
 
         fs = AbstractFileSystem.get(primaryFsUri, primaryFsCfg);
 

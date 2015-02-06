@@ -146,7 +146,7 @@ import static org.apache.ignite.events.EventType.*;
  * Here is how you can configure {@code GridRandomLoadBalancingSpi} using Spring XML configuration:
  * <pre name="code" class="xml">
  * &lt;property name="loadBalancingSpi"&gt;
- *     &lt;bean class="org.gridgain.grid.spi.loadBalancing.weightedrandom.GridWeightedRandomLoadBalancingSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.loadBalancing.weightedrandom.GridWeightedRandomLoadBalancingSpi"&gt;
  *         &lt;property name="useWeights" value="true"/&gt;
  *         &lt;property name="nodeWeight" value="10"/&gt;
  *     &lt;/bean&gt;

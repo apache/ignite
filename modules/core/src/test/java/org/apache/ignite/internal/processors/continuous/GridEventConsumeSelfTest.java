@@ -43,10 +43,10 @@ import static org.apache.ignite.internal.processors.continuous.GridContinuousPro
  */
 public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final String PRJ_PRED_CLS_NAME = "org.gridgain.grid.tests.p2p.GridEventConsumeProjectionPredicate";
+    private static final String PRJ_PRED_CLS_NAME = "org.apache.ignite.tests.p2p.GridEventConsumeProjectionPredicate";
 
     /** */
-    private static final String FILTER_CLS_NAME = "org.gridgain.grid.tests.p2p.GridEventConsumeFilter";
+    private static final String FILTER_CLS_NAME = "org.apache.ignite.tests.p2p.GridEventConsumeFilter";
 
     /** Grids count. */
     private static final int GRID_CNT = 3;

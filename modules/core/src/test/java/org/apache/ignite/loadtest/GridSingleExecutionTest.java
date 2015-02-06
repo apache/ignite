@@ -118,7 +118,7 @@ public final class GridSingleExecutionTest {
 
         impl.removeAllAppenders();
 
-        String fileName =  U.getGridGainHome() + "/work/log/" + log;
+        String fileName =  U.getIgniteHome() + "/work/log/" + log;
 
         // Configure output that should go to System.out
         RollingFileAppender fileApp;
@@ -165,7 +165,7 @@ public final class GridSingleExecutionTest {
 
         impl.setLevel(Level.INFO);
 
-        Logger.getLogger("org.gridgain").setLevel(Level.DEBUG);
+        Logger.getLogger("org.apache.ignite").setLevel(Level.DEBUG);
 
         return new GridTestLog4jLogger(false);
     }
@@ -180,7 +180,7 @@ public final class GridSingleExecutionTest {
      */
     @SuppressWarnings("unchecked")
     private static Iterable<IgniteConfiguration> getConfigurations(String springCfgPath, String log) throws IgniteCheckedException {
-        File path = GridTestUtils.resolveGridGainPath(springCfgPath);
+        File path = GridTestUtils.resolveIgnitePath(springCfgPath);
 
         if (path == null) {
             throw new IgniteCheckedException("Spring XML configuration file path is invalid: " + new File(springCfgPath) +

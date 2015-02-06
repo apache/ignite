@@ -43,7 +43,7 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache";
 
     /** URL. */
-    private static final String URL = "jdbc:gridgain://127.0.0.1/" + CACHE_NAME;
+    private static final String URL = "jdbc:ignite://127.0.0.1/" + CACHE_NAME;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

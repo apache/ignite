@@ -390,8 +390,8 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
      * @throws IgniteCheckedException If check failed.
      */
     private void checkGgfsOnRemoteNode(ClusterNode rmtNode) throws IgniteCheckedException {
-        GridGgfsAttributes[] locAttrs = ctx.discovery().localNode().attribute(GridNodeAttributes.ATTR_GGFS);
-        GridGgfsAttributes[] rmtAttrs = rmtNode.attribute(GridNodeAttributes.ATTR_GGFS);
+        GridGgfsAttributes[] locAttrs = ctx.discovery().localNode().attribute(IgniteNodeAttributes.ATTR_GGFS);
+        GridGgfsAttributes[] rmtAttrs = rmtNode.attribute(IgniteNodeAttributes.ATTR_GGFS);
 
         if (F.isEmpty(locAttrs) || F.isEmpty(rmtAttrs))
             return;

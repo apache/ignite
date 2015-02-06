@@ -42,7 +42,7 @@ import java.util.*;
  */
 public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, LifecycleAware {
     /** */
-    private static final String ENT_NIO_LSNR_CLS = "org.gridgain.client.router.impl.GridTcpRouterNioListenerEntImpl";
+    private static final String ENT_NIO_LSNR_CLS = "org.apache.ignite.client.router.impl.GridTcpRouterNioListenerEntImpl";
 
     /** Id. */
     private final UUID id = UUID.randomUUID();

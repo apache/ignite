@@ -166,7 +166,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (!dfltModes.containsKey(e.getKey()))
                     cfgModes.put(e.getKey(), e.getValue());
                 else
-                    U.warn(log, "Ignoring path mode because it conflicts with GridGain reserved path " +
+                    U.warn(log, "Ignoring path mode because it conflicts with Ignite reserved path " +
                         "(use another path) [mode=" + e.getValue() + ", path=" + e.getKey() + ']');
             }
         }

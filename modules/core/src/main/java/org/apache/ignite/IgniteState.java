@@ -41,7 +41,7 @@ public enum IgniteState {
      * <p>
      * Notification on this state will be fired only when segmentation policy is
      * set to {@link GridSegmentationPolicy#STOP} or {@link GridSegmentationPolicy#RESTART_JVM}
-     * and node is stopped from internals of GridGain after segment becomes invalid.
+     * and node is stopped from internals of Ignite after segment becomes invalid.
      */
     STOPPED_ON_SEGMENTATION;
 

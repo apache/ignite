@@ -101,7 +101,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     }
 
     /**
-     * This test is just a wrapper for org.gridgain.examples1.data.realtime.GridPopularNumbersRealTimeExample
+     * This test is just a wrapper for org.apache.ignite.examples.datagrid.CachePopularNumbersExample
      *
      * @throws Exception If failed.
      */

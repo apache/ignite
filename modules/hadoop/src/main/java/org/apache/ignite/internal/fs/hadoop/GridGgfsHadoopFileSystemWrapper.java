@@ -60,7 +60,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
         Configuration cfg = new Configuration();
 
         if (cfgPath != null)
-            cfg.addResource(U.resolveGridGainUrl(cfgPath));
+            cfg.addResource(U.resolveIgniteUrl(cfgPath));
 
         try {
             fileSys = uri == null ? FileSystem.get(cfg) : FileSystem.get(new URI(uri), cfg);

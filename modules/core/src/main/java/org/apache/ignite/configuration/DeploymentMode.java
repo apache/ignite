@@ -34,33 +34,33 @@ import org.jetbrains.annotations.*;
  * </ul>
  * <h1 class="header">User Version</h1>
  * User version comes into play whenever you would like to redeploy tasks deployed
- * in {@link #SHARED} or {@link #CONTINUOUS} modes. By default, GridGain will
+ * in {@link #SHARED} or {@link #CONTINUOUS} modes. By default, Ignite will
  * automatically detect if class-loader changed or a node is restarted. However,
  * if you would like to change and redeploy code on a subset of nodes, or in
  * case of {@link #CONTINUOUS} mode to kill the ever living deployment, you should
  * change the user version.
  * <p>
- * User version is specified in {@code META-INF/gridgain.xml} file as follows:
+ * User version is specified in {@code META-INF/ignite.xml} file as follows:
  * <pre name="code" class="xml">
  *    &lt;!-- User version. --&gt;
  *    &lt;bean id="userVersion" class="java.lang.String"&gt;
  *        &lt;constructor-arg value="0"/&gt;
  *    &lt;/bean>
  * </pre>
- * By default, all gridgain startup scripts ({@code gridgain.sh} or {@code gridgain.bat})
+ * By default, all ignite startup scripts ({@code ignite.sh} or {@code ignite.bat})
  * pick up user version from {@code IGNITE_HOME/config/userversion} folder. Usually, it
  * is just enough to update user version under that folder, however, in case of {@code GAR}
- * or {@code JAR} deployment, you should remember to provide {@code META-INF/gridgain.xml}
+ * or {@code JAR} deployment, you should remember to provide {@code META-INF/ignite.xml}
  * file with desired user version in it.
  * <p>
  * <h1 class="header">Always-Local Development</h1>
- * GridGain deployment (regardless of mode) allows you to develop everything as you would
+ * Ignite deployment (regardless of mode) allows you to develop everything as you would
  * locally. You never need to specifically write any kind of code for remote nodes. For
  * example, if you need to use a distributed cache from your {@link org.apache.ignite.compute.ComputeJob}, then you can
  * the following:
  * <ol>
  *  <li>
- *      Simply startup stand-alone GridGain nodes by executing
+ *      Simply startup stand-alone Ignite nodes by executing
  *      {@code IGNITE_HOME/ignite.{sh|bat}} scripts.
  *  </li>
  *  <li>
@@ -120,7 +120,7 @@ public enum DeploymentMode {
      * different master nodes share the same instances of resources on worker nodes. This allows for all
      * tasks executing on remote nodes to reuse, for example, the same instances of
      * connection pools or caches. When using this mode, you can
-     * startup multiple stand-alone GridGain worker nodes, define resources
+     * startup multiple stand-alone Ignite worker nodes, define resources
      * on master nodes and have them initialize once on worker nodes regardless
      * of which master node they came from.
      * <p>
@@ -131,7 +131,7 @@ public enum DeploymentMode {
      * <p>
      * Note that classes deployed in this mode will be undeployed if
      * all master nodes left grid or if user version changed. User version can
-     * be specified in {@code META-INF/gridgain.xml} file as a Spring bean
+     * be specified in {@code META-INF/ignite.xml} file as a Spring bean
      * property with name {@code userVersion}. This file has to be in the class
      * path of the class used for task execution.
      * <p>
@@ -149,7 +149,7 @@ public enum DeploymentMode {
      * different master nodes share the same instances of resources on worker nodes. This allows for all
      * tasks executing on remote nodes to reuse, for example, the same instances of
      * connection pools or caches. When using this mode, you can
-     * startup multiple stand-alone GridGain worker nodes, define resources
+     * startup multiple stand-alone Ignite worker nodes, define resources
      * on master nodes and have them initialize once on worker nodes regardless
      * of which master node they came from.
      * <p>
@@ -160,7 +160,7 @@ public enum DeploymentMode {
      * <p>
      * Note that classes deployed in <tt>CONTINUOUS</tt> mode will be undeployed
      * only if user version changes. User version can be specified in
-     * {@code META-INF/gridgain.xml} file as a Spring bean property with name
+     * {@code META-INF/ignite.xml} file as a Spring bean property with name
      * {@code userVersion}. This file has to be in the class
      * path of the class used for task execution.
      */

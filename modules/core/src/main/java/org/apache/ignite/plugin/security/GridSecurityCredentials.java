@@ -37,7 +37,7 @@ import java.io.*;
  * <p>
  * Getting credentials through {@link GridSecurityCredentialsProvider} abstraction allows
  * users to provide custom implementations for storing user names and passwords in their
- * environment, possibly in encrypted format. GridGain comes with
+ * environment, possibly in encrypted format. Ignite comes with
  * {@link GridSecurityCredentialsBasicProvider} which simply provides
  * the passed in {@code login} and {@code password} when encryption or custom logic is not required.
  * <p>

@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Communication SPI is responsible for data exchange between nodes.
  * <p>
- * Communication SPI is one of the most important SPI in GridGain. It is used
+ * Communication SPI is one of the most important SPI in Ignite. It is used
  * heavily throughout the system and provides means for all data exchanges
  * between nodes, such as internal implementation details and user driven
  * messages.
@@ -38,12 +38,12 @@ import java.util.*;
  *      <li>{@link org.apache.ignite.IgniteMessaging#send(Object, Collection)}</li>
  * </ul>
  * <p>
- * GridGain comes with built-in communication SPI implementations:
+ * Ignite comes with built-in communication SPI implementations:
  * <ul>
  *      <li>{@link org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
- * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
+ * internal view on the subsystem and is used internally by Ignite kernal. In rare use cases when
  * access to a specific implementation of this SPI is required - an instance of this SPI can be obtained
  * via {@link org.apache.ignite.Ignite#configuration()} method to check its configuration properties or call other non-SPI
  * methods. Note again that calling methods from this interface on the obtained instance can lead

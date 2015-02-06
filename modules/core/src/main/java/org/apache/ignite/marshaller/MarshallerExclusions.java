@@ -39,7 +39,7 @@ public final class MarshallerExclusions {
      * Note that this list supercedes {@link #EXCL_CLASSES}.
      */
     private static final Class<?>[] INCL_CLASSES = new Class[] {
-        // GridGain classes.
+        // Ignite classes.
         GridLoggerProxy.class,
         GridExecutorService.class
     };
@@ -71,7 +71,7 @@ public final class MarshallerExclusions {
 
         List<Class<?>> excl = new ArrayList<>();
 
-        // Non-GridGain classes.
+        // Non-Ignite classes.
         excl.add(MBeanServer.class);
         excl.add(ExecutorService.class);
         excl.add(ClassLoader.class);
@@ -80,7 +80,7 @@ public final class MarshallerExclusions {
         if (springCtxCls != null)
             excl.add(springCtxCls);
 
-        // GridGain classes.
+        // Ignite classes.
         excl.add(IgniteLogger.class);
         excl.add(ComputeTaskSession.class);
         excl.add(ComputeLoadBalancer.class);

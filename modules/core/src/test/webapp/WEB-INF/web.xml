@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <web-app xmlns="http://java.sun.com/xml/ns/javaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -30,12 +30,12 @@
 
     <!-- Declare filter for web sessions caching. -->
     <filter>
-        <filter-name>GridGainWebSessionsFilter</filter-name>
+        <filter-name>GridWebSessionsFilter</filter-name>
         <filter-class>org.apache.ignite.cache.websession.GridWebSessionFilter</filter-class>
     </filter>
 
     <filter-mapping>
-        <filter-name>GridGainWebSessionsFilter</filter-name>
+        <filter-name>GridWebSessionsFilter</filter-name>
         <url-pattern>/*</url-pattern>
     </filter-mapping>
 </web-app>

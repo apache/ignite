@@ -111,8 +111,8 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     }
 
     /** {@inheritDoc} */
-    @Override public final String getGridGainHome() {
-        return ignite.configuration().getGridGainHome();
+    @Override public final String getIgniteHome() {
+        return ignite.configuration().getIgniteHome();
     }
 
     /** {@inheritDoc} */
@@ -424,7 +424,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         if (!enabled)
             return;
 
-        String clsAttr = createSpiAttributeName(GridNodeAttributes.ATTR_SPI_CLASS);
+        String clsAttr = createSpiAttributeName(IgniteNodeAttributes.ATTR_SPI_CLASS);
 
         String name = getName();
 

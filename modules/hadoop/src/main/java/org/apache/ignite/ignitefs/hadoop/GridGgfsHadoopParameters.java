@@ -58,7 +58,7 @@ package org.apache.ignite.ignitefs.hadoop;
  *     &lt;/property&gt;
  *     &lt;property&gt;
  *         &lt;name&gt;fs.ggfs.127.0.0.1:10500.log.dir&lt;/name&gt;
- *         &lt;value&gt;/home/gridgain/log/sampling&lt;/value&gt;
+ *         &lt;value&gt;/home/apache/ignite/log/sampling&lt;/value&gt;
  *     &lt;/property&gt;
  *     &lt;property&gt;
  *         &lt;name&gt;fs.ggfs.127.0.0.1:10500.log.batch_size&lt;/name&gt;

@@ -36,7 +36,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
     private static final Collection<String> CONVERTED_ERR = F.asList(
         "weblogic/management/ManagementException",
         "Externalizable class doesn't have default constructor: class " +
-            "org.gridgain.grid.kernal.processors.email.GridEmailProcessor$2"
+            "org.apache.ignite.internal.processors.email.IgniteEmailProcessor$2"
     );
 
     /** */

@@ -263,6 +263,78 @@
 
         <plugins>
             <plugin>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>2.8</version>
+                <inherited>false</inherited>
+                <configuration>
+                    <aggregate>true</aggregate>
+                    <mapping>
+                        <scala>JAVADOC_STYLE</scala>
+                    </mapping>
+                    <headerDefinitions>
+                        <headerDefinition>license/header-customisation.xml</headerDefinition>
+                    </headerDefinitions>
+                    <header>license/header.txt</header>
+                    <properties>
+                        <inceptionYear>2014</inceptionYear>
+                    </properties>
+                    <includes>
+                        <include>**/*.*</include>
+                    </includes>
+                    <excludes>
+                        <exclude>**/*.txt</exclude>
+                        <exclude>**/*.jks</exclude>
+                        <exclude>**/*.pem</exclude>
+                        <exclude>**/*.m4</exclude>
+                        <exclude>**/*.pem</exclude>
+                        <exclude>**/*.in</exclude>
+                        <exclude>**/*.am</exclude>
+                        <exclude>**/*.ac</exclude>
+                        <exclude>**/*.sub</exclude>
+                        <exclude>**/*.csproj</exclude>
+                        <exclude>**/*.log</exclude>
+                        <exclude>**/*.sln</exclude>
+                        <exclude>**/*.h</exclude>
+                        <exclude>**/*.pfx</exclude>
+                        <exclude>**/*.dylib</exclude>
+                        <exclude>**/*.ini</exclude>
+                        <exclude>**/*.gar</exclude>
+                        <exclude>**/*.tst</exclude>
+                        <exclude>**/*.brokenxml</exclude>
+                        <exclude>**/*.empty</exclude>
+                        <exclude>**/*.incorrefs</exclude>
+                        <exclude>**/*.guess</exclude>
+                        <!--special excludes-->
+                        <exclude>**/com/romix/scala/**</exclude>
+                        <exclude>**/GridOffHeapSnapTreeMap.java</exclude>
+                        <exclude>**/internal/util/snaptree/SnapTreeMap.java</exclude>
+                        <exclude>**/internal/util/snaptree/CopyOnWriteManager.java</exclude>
+                        <exclude>**/internal/util/snaptree/Epoch.java</exclude>
+                        <exclude>**/internal/util/snaptree/EpochNode.java</exclude>
+                        <exclude>**/org/jetbrains/annotations/**</exclude>
+                        <exclude>**/org/pcollections/**</exclude>
+                        <exclude>**/org/jdk8/backport/**</exclude>
+                        <exclude>**/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
+                        <exclude>**/ipc/shmem/*.sh</exclude>
+                        <exclude>**/keystore/generate.sh</exclude>
+                        <exclude>**/pom-installed.xml</exclude>
+                        <exclude>**/optimized-classnames*.properties</exclude>
+                        <exclude>**/yardstick/**</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>check-license</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.1</version>
                 <configuration>

@@ -240,7 +240,7 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
         // Instantiate file system with overridden "seq reads before prefetch" property.
         Configuration cfg = new Configuration();
 
-        cfg.addResource(U.resolveGridGainUrl(PRIMARY_CFG));
+        cfg.addResource(U.resolveIgniteUrl(PRIMARY_CFG));
 
         int seqReads = SEQ_READS_BEFORE_PREFETCH + 1;
 

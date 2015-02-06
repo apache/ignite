@@ -33,7 +33,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
- * Test for http://gridgain.jira.com/browse/GG-3979.
+ * Cache query internal keys self test.
  */
 public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTest {
     /** Grid count. */

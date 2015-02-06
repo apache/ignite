@@ -27,7 +27,7 @@ import java.io.*;
  * serialization/deserialization mechanism for all instances that are sent across networks
  * or are otherwise serialized.
  * <p>
- * Gridgain provides the following {@code GridMarshaller} implementations:
+ * Ignite provides the following {@code GridMarshaller} implementations:
  * <ul>
  * <li>{@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller} - default</li>
  * <li>{@link org.apache.ignite.marshaller.jdk.JdkMarshaller}</li>
@@ -51,7 +51,7 @@ import java.io.*;
  * <h2 class="header">Spring Example</h2>
  * GridMarshaller can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
+ * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *     &lt;property name="marshaller"&gt;
  *         &lt;bean class="org.apache.ignite.marshaller.jdk.GridJdkMarshaller"/&gt;

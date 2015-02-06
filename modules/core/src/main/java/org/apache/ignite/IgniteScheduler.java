@@ -27,7 +27,7 @@ import java.util.concurrent.*;
  * Provides functionality for scheduling jobs locally using UNIX cron-based syntax.
  * Instance of {@code GridScheduler} is obtained from grid as follows:
  * <pre name="code" class="java">
- * GridScheduler s = GridGain.grid().scheduler();
+ * GridScheduler s = Ignition.ignite().scheduler();
  * </pre>
  * <p>
  * Scheduler supports standard UNIX {@code cron} format with optional prefix of
@@ -36,8 +36,8 @@ import java.util.concurrent.*;
  * Here's an example of scheduling a closure that broadcasts a message
  * to all nodes five times, once every minute, with initial delay of two seconds:
  * <pre name="code" class="java">
- * GridGain.grid().scheduler().scheduleLocal(
- *     GridSchedulerFuture&lt;?&gt; = GridGain.grid().scheduler().scheduleLocal(new Callable&lt;Object&gt;() {
+ * Ignition.ignite().scheduler().scheduleLocal(
+ *     GridSchedulerFuture&lt;?&gt; = Ignition.ignite().scheduler().scheduleLocal(new Callable&lt;Object&gt;() {
  *         &#64;Override public Object call() throws IgniteCheckedException {
  *             g.broadcast(new GridCallable() {...}).get();
  *         }

@@ -43,10 +43,10 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final String EXT_AFFINITY_MAPPER_CLS_NAME = "org.gridgain.grid.tests.p2p.GridExternalAffinityMapper";
+    private static final String EXT_AFFINITY_MAPPER_CLS_NAME = "org.apache.ignite.tests.p2p.GridExternalAffinityMapper";
 
     /** */
-    private static final String EXT_AFFINITY_CLS_NAME = "org.gridgain.grid.tests.p2p.GridExternalAffinity";
+    private static final String EXT_AFFINITY_CLS_NAME = "org.apache.ignite.tests.p2p.GridExternalAffinity";
 
     /** URL of classes. */
     private static final URL[] URLS;

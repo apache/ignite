@@ -29,7 +29,7 @@ import java.util.*;
  * There are {@code 2} ways to subscribe to event listening, {@code local} and {@code remote}. Instance
  * of {@code GridMessaging} is obtained from grid projection as follows:
  * <pre name="code" class="java">
- * GridEvents evts = GridGain.grid().events();
+ * GridEvents evts = Ignition.ignite().events();
  * </pre> * <p>
  * Local subscription, defined by {@link #localListen(IgnitePredicate, int...)} method, will add
  * a listener for specified events on local node only. This listener will be notified whenever any
@@ -41,13 +41,13 @@ import java.util.*;
  * it belongs to the projection as well). All projection nodes will then be notified of the subscribed events.
  * If the events pass the remote event filter, the events will be sent to local node for local listener notification.
  * <p>
- * Note that by default, all events in GridGain are disabled for performance reasons. You must only enable
+ * Note that by default, all events in Ignite are disabled for performance reasons. You must only enable
  * events that you need within your logic. You can enable/disable events either by calling {@link #enableLocal(int...)}
  * or {@link #disableLocal(int...)} methods, or from XML configuration.
  * For example, you can enable all cache events as follows:
  * <pre name="code" class="xml">
  * &lt;property name="includeEventTypes"&gt;
- *     &lt;util:constant static-field="org.gridgain.grid.events.GridEventType.EVTS_CACHE"/&gt;
+ *     &lt;util:constant static-field="org.apache.ignite.events.IgniteEventType.EVTS_CACHE"/&gt;
  * &lt;/property&gt;
  * </pre>
  */
@@ -192,12 +192,12 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * Records customer user generated event. All registered local listeners will be notified.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      * Attempt to record internal event with this method will cause {@code IllegalArgumentException}
      * to be thrown.
      *
      * @param evt Locally generated event.
-     * @throws IllegalArgumentException If event type is within GridGain reserved range between {@code 1} and
+     * @throws IllegalArgumentException If event type is within Ignite reserved range between {@code 1} and
      *      {@code 1000}.
      */
     public void recordLocal(Event evt);

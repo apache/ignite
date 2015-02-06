@@ -339,7 +339,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
                     @Override public void run() {
                         assert ignite != null;
                         assert ignite.configuration() != null;
-                        assert ignite.configuration().getGridGainHome() != null;
+                        assert ignite.configuration().getIgniteHome() != null;
                     }
                 };
 

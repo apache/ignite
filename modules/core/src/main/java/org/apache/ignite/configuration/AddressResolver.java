@@ -26,7 +26,7 @@ import java.util.*;
  * Provides resolution between external and internal addresses. In some cases
  * network routers are configured to perform address mapping between external
  * and internal networks and the same mapping must be available to SPIs
- * in GridGain that perform communication over IP protocols.
+ * in Ignite that perform communication over IP protocols.
  */
 public interface AddressResolver {
     /**

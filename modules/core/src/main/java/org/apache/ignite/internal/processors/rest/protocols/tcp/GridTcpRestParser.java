@@ -295,7 +295,7 @@ public class GridTcpRestParser implements GridNioParser {
     }
 
     /**
-     * Parses custom packet serialized by GridGain marshaller.
+     * Parses custom packet serialized by Ignite marshaller.
      *
      * @param ses Session.
      * @param buf Buffer containing not parsed bytes.

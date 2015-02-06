@@ -33,7 +33,7 @@ import javax.management.*;
 import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
 
 /**

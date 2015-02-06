@@ -25,14 +25,14 @@ import org.slf4j.*;
  * SLF4J-based implementation for logging. This logger should be used
  * by loaders that have prefer slf4j-based logging.
  * <p>
- * Here is an example of configuring SLF4J logger in GridGain configuration Spring file:
+ * Here is an example of configuring SLF4J logger in Ignite configuration Spring file:
  * <pre name="code" class="xml">
  *      &lt;property name="gridLogger"&gt;
  *          &lt;bean class="org.apache.ignite.logger.slf4j.GridSlf4jLogger"/&gt;
  *      &lt;/property&gt;
  * </pre>
  * <p>
- * It's recommended to use GridGain's logger injection instead of using/instantiating
+ * It's recommended to use Ignite's logger injection instead of using/instantiating
  * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */

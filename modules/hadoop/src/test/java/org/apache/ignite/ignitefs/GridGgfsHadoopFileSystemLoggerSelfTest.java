@@ -44,7 +44,7 @@ public class GridGgfsHadoopFileSystemLoggerSelfTest extends GridGgfsCommonAbstra
     private static final String GGFS_NAME = "ggfs";
 
     /** Log file path. */
-    private static final String LOG_DIR = U.getGridGainHome();
+    private static final String LOG_DIR = U.getIgniteHome();
 
     /** Endpoint address. */
     private static final String ENDPOINT = "localhost:10500";

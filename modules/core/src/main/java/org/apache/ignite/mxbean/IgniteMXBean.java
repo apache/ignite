@@ -42,11 +42,11 @@ public interface IgniteMXBean {
     public String getFullVersion();
 
     /**
-     * Gets copyright statement for GridGain product.
+     * Gets copyright statement for Ignite product.
      *
-     * @return Copyright statement for GridGain product.
+     * @return Copyright statement for Ignite product.
      */
-    @MXBeanDescription("Copyright statement for GridGain product.")
+    @MXBeanDescription("Copyright statement for Ignite product.")
     public String getCopyright();
 
     /**
@@ -110,11 +110,11 @@ public interface IgniteMXBean {
     public String getExecutorServiceFormatted();
 
     /**
-     * Gets GridGain installation home folder.
+     * Gets Ignite installation home folder.
      *
-     * @return GridGain installation home.
+     * @return Ignite installation home.
      */
-    @MXBeanDescription("GridGain installation home folder.")
+    @MXBeanDescription("Ignite installation home folder.")
     public String getGridGainHome();
 
     /**
@@ -150,10 +150,10 @@ public interface IgniteMXBean {
 
     /**
      * Gets {@code toString()} representation of of lifecycle beans configured
-     * with GridGain.
+     * with Ignite.
      *
      * @return {@code toString()} representation of all lifecycle beans configured
-     *      with GridGain.
+     *      with Ignite.
      */
     @MXBeanDescription("String representation of lifecycle beans.")
     public Collection<String> getLifecycleBeansFormatted();
@@ -197,7 +197,7 @@ public interface IgniteMXBean {
      * method returns immediately and does not wait until the task will actually be
      * undeployed on every node.
      * <p>
-     * Note that GridGain maintains internal versions for grid tasks in case of redeployment.
+     * Note that Ignite maintains internal versions for grid tasks in case of redeployment.
      * This method will attempt to undeploy all versions on the grid task with
      * given name.
      *

@@ -53,7 +53,7 @@ import java.util.*;
  *          Job will be rejected. In this case the {@link ComputeJobResult} passed into
  *          {@link ComputeTask#result(ComputeJobResult, List)} method will contain
  *          {@link ComputeExecutionRejectedException} exception. If you are using any
- *          of the task adapters shipped with GridGain, then job will be failed
+ *          of the task adapters shipped with Ignite, then job will be failed
  *          over automatically for execution on another node.
  *      </li>
  *      </ul>
@@ -104,7 +104,7 @@ import java.util.*;
  * Refer to corresponding resource documentation for more information.
  * <p>
  * <h1 class="header">GridComputeJobAdapter</h1>
- * GridGain comes with convenience {@link ComputeJobAdapter} adapter that provides
+ * Ignite comes with convenience {@link ComputeJobAdapter} adapter that provides
  * default empty implementation for {@link ComputeJob#cancel()} method and also
  * allows user to set and get job argument, if there is one.
  * <p>

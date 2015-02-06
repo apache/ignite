@@ -87,7 +87,7 @@ import java.util.*;
  * </ul>
  * <p>
  * <h1 class="header">Cache Atomicity Mode</h1>
- * In addition to standard {@link org.apache.ignite.cache.CacheAtomicityMode#TRANSACTIONAL} behavior, GridGain also supports
+ * In addition to standard {@link org.apache.ignite.cache.CacheAtomicityMode#TRANSACTIONAL} behavior, Ignite also supports
  * a lighter {@link org.apache.ignite.cache.CacheAtomicityMode#ATOMIC} mode as well. In this mode distributed transactions
  * and distributed locking are not supported. Disabling transactions and locking allows to achieve much higher
  * performance and throughput ratios. It is recommended that {@link org.apache.ignite.cache.CacheAtomicityMode#ATOMIC} mode
@@ -96,7 +96,7 @@ import java.util.*;
  * <h1 class="header">Usage</h1>
  * You can use cache transactions as follows:
  * <pre name="code" class="java">
- * Cache&lt;String, Integer&gt; cache = GridGain.grid().cache();
+ * Cache&lt;String, Integer&gt; cache = Ignition.ignite().cache();
  *
  * try (GridCacheTx tx = cache.txStart()) {
  *     // Perform transactional operations.

@@ -71,7 +71,7 @@ public class GridifySingleSplitLoadTest extends GridCommonAbstractTest {
         @SuppressWarnings("TypeMayBeWeakened")
         Log4JLogger log = (Log4JLogger)cfg.getGridLogger();
 
-        log.getLogger("org.gridgain.grid").setLevel(Level.INFO);
+        log.getLogger("org.apache.ignite").setLevel(Level.INFO);
 
         ((ThreadPoolExecutor)cfg.getExecutorService()).prestartAllCoreThreads();
 

@@ -44,7 +44,7 @@ import static org.apache.ignite.configuration.DeploymentMode.*;
  */
 public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     /** Test p2p value. */
-    private static final String TEST_VALUE = "org.gridgain.grid.tests.p2p.GridCacheDeploymentTestValue3";
+    private static final String TEST_VALUE = "org.apache.ignite.tests.p2p.GridCacheDeploymentTestValue3";
 
     /** */
     private static final long OFFHEAP = 0;// 4 * 1024 * 1024;

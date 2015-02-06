@@ -42,7 +42,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     private static final int CUSTOM_PORT = 11212;
 
     /** URL prefix. */
-    private static final String URL_PREFIX = "jdbc:gridgain://";
+    private static final String URL_PREFIX = "jdbc:ignite://";
 
     /** Host. */
     private static final String HOST = "127.0.0.1";

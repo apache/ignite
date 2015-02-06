@@ -46,24 +46,24 @@ import java.util.*;
  * </ul>
  * <p>
  * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
- * internal GridGain events and should not be used by user-defined events.
+ * internal Ignite events and should not be used by user-defined events.
  * <h1 class="header">Events and Performance</h1>
- * Note that by default all events in GridGain are enabled and therefore generated and stored
- * by whatever event storage SPI is configured. GridGain can and often does generate thousands events per seconds
+ * Note that by default all events in Ignite are enabled and therefore generated and stored
+ * by whatever event storage SPI is configured. Ignite can and often does generate thousands events per seconds
  * under the load and therefore it creates a significant additional load on the system. If these events are
  * not needed by the application this load is unnecessary and leads to significant performance degradation.
  * <p>
  * It is <b>highly recommended</b> to enable only those events that your application logic requires
- * by using either {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
- * events are required for GridGain's internal operations and such events will still be generated but not stored by
- * event storage SPI if they are disabled in GridGain configuration.
+ * by using either {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration. Note that certain
+ * events are required for Ignite's internal operations and such events will still be generated but not stored by
+ * event storage SPI if they are disabled in Ignite configuration.
  */
 public interface EventType {
     /**
      * Built-in event type: checkpoint was saved.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see CheckpointEvent
      */
@@ -73,7 +73,7 @@ public interface EventType {
      * Built-in event type: checkpoint was loaded.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see CheckpointEvent
      */
@@ -88,7 +88,7 @@ public interface EventType {
      * </ul>
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see CheckpointEvent
      */
@@ -99,11 +99,11 @@ public interface EventType {
      * <br>
      * New node has been discovered and joined grid topology.
      * Note that even though a node has been discovered there could be
-     * a number of warnings in the log. In certain situations GridGain
+     * a number of warnings in the log. In certain situations Ignite
      * doesn't prevent a node from joining but prints warning messages into the log.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see DiscoveryEvent
      */
@@ -113,7 +113,7 @@ public interface EventType {
      * Built-in event type: node has normally left topology.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see DiscoveryEvent
      */
@@ -122,10 +122,10 @@ public interface EventType {
     /**
      * Built-in event type: node failed.
      * <br>
-     * GridGain detected that node has presumably crashed and is considered failed.
+     * Ignite detected that node has presumably crashed and is considered failed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see DiscoveryEvent
      */
@@ -138,7 +138,7 @@ public interface EventType {
      * is invoked with every heartbeat received from a node (including local node).
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see DiscoveryEvent
      */
@@ -150,7 +150,7 @@ public interface EventType {
      * Generated when node determines that it runs in invalid network segment.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see DiscoveryEvent
      */
@@ -164,7 +164,7 @@ public interface EventType {
      * Built-in event type: task started.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see TaskEvent
      */
@@ -177,7 +177,7 @@ public interface EventType {
      * a task finished without exception.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see TaskEvent
      */
@@ -191,7 +191,7 @@ public interface EventType {
      * to the failure.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see TaskEvent
      */
@@ -201,7 +201,7 @@ public interface EventType {
      * Built-in event type: task timed out.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see TaskEvent
      */
@@ -211,7 +211,7 @@ public interface EventType {
      * Built-in event type: task session attribute set.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see TaskEvent
      */
@@ -221,7 +221,7 @@ public interface EventType {
      * Built-in event type: task reduced.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      */
     public static final int EVT_TASK_REDUCED = 25;
 
@@ -229,7 +229,7 @@ public interface EventType {
      * Built-in event type: non-task class deployed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see DeploymentEvent
      */
@@ -239,7 +239,7 @@ public interface EventType {
      * Built-in event type: non-task class undeployed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see DeploymentEvent
      */
@@ -249,7 +249,7 @@ public interface EventType {
      * Built-in event type: non-task class deployment failed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see DeploymentEvent
      */
@@ -259,7 +259,7 @@ public interface EventType {
      * Built-in event type: task deployed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see DeploymentEvent
      */
@@ -269,7 +269,7 @@ public interface EventType {
      * Built-in event type: task undeployed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see DeploymentEvent
      */
@@ -279,7 +279,7 @@ public interface EventType {
      * Built-in event type: task deployment failed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see DeploymentEvent
      */
@@ -290,7 +290,7 @@ public interface EventType {
      * {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} method.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see JobEvent
      */
@@ -301,7 +301,7 @@ public interface EventType {
      * {@link org.apache.ignite.compute.ComputeTask#result(org.apache.ignite.compute.ComputeJobResult, List)} method.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see JobEvent
      */
@@ -311,7 +311,7 @@ public interface EventType {
      * Built-in event type: grid job failed over.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see JobEvent
      */
@@ -321,7 +321,7 @@ public interface EventType {
      * Built-in event type: grid job started.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see JobEvent
      */
@@ -334,7 +334,7 @@ public interface EventType {
      * can still be either negative or positive.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see JobEvent
      */
@@ -344,7 +344,7 @@ public interface EventType {
      * Built-in event type: grid job timed out.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see JobEvent
      */
@@ -354,7 +354,7 @@ public interface EventType {
      * Built-in event type: grid job rejected during collision resolution.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see JobEvent
      */
@@ -367,7 +367,7 @@ public interface EventType {
      * and job did not produce a result.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see JobEvent
      */
@@ -380,7 +380,7 @@ public interface EventType {
      * collision resolution).
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see JobEvent
      */
@@ -390,7 +390,7 @@ public interface EventType {
      * Built-in event type: grid job cancelled.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see JobEvent
      */
@@ -400,7 +400,7 @@ public interface EventType {
       * Built-in event type: entry created.
       * <p>
       * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal GridGain events and should not be used by user-defined events.
+      * internal Ignite events and should not be used by user-defined events.
       */
      public static final int EVT_CACHE_ENTRY_CREATED = 60;
 
@@ -408,7 +408,7 @@ public interface EventType {
       * Built-in event type: entry destroyed.
       * <p>
       * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal GridGain events and should not be used by user-defined events.
+      * internal Ignite events and should not be used by user-defined events.
       */
      public static final int EVT_CACHE_ENTRY_DESTROYED = 61;
 
@@ -416,7 +416,7 @@ public interface EventType {
      * Built-in event type: entry evicted.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      */
      public static final int EVT_CACHE_ENTRY_EVICTED = 62;
 
@@ -424,7 +424,7 @@ public interface EventType {
       * Built-in event type: object put.
       * <p>
       * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal GridGain events and should not be used by user-defined events.
+      * internal Ignite events and should not be used by user-defined events.
       */
      public static final int EVT_CACHE_OBJECT_PUT = 63;
 
@@ -432,7 +432,7 @@ public interface EventType {
       * Built-in event type: object read.
       * <p>
       * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal GridGain events and should not be used by user-defined events.
+      * internal Ignite events and should not be used by user-defined events.
       */
      public static final int EVT_CACHE_OBJECT_READ = 64;
 
@@ -440,7 +440,7 @@ public interface EventType {
       * Built-in event type: object removed.
       * <p>
       * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal GridGain events and should not be used by user-defined events.
+      * internal Ignite events and should not be used by user-defined events.
       */
      public static final int EVT_CACHE_OBJECT_REMOVED = 65;
 
@@ -448,7 +448,7 @@ public interface EventType {
       * Built-in event type: object locked.
       * <p>
       * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal GridGain events and should not be used by user-defined events.
+      * internal Ignite events and should not be used by user-defined events.
       */
      public static final int EVT_CACHE_OBJECT_LOCKED = 66;
 
@@ -456,7 +456,7 @@ public interface EventType {
       * Built-in event type: object unlocked.
       * <p>
       * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-      * internal GridGain events and should not be used by user-defined events.
+      * internal Ignite events and should not be used by user-defined events.
       */
      public static final int EVT_CACHE_OBJECT_UNLOCKED = 67;
 
@@ -464,7 +464,7 @@ public interface EventType {
      * Built-in event type: cache object swapped from swap storage.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      */
     public static final int EVT_CACHE_OBJECT_SWAPPED = 68;
 
@@ -472,7 +472,7 @@ public interface EventType {
      * Built-in event type: cache object unswapped from swap storage.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      */
     public static final int EVT_CACHE_OBJECT_UNSWAPPED = 69;
 
@@ -480,7 +480,7 @@ public interface EventType {
      * Built-in event type: cache object was expired when reading it.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      */
     public static final int EVT_CACHE_OBJECT_EXPIRED = 70;
 
@@ -488,7 +488,7 @@ public interface EventType {
      * Built-in event type: swap space data read.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see SwapSpaceEvent
      */
@@ -498,7 +498,7 @@ public interface EventType {
      * Built-in event type: swap space data stored.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see SwapSpaceEvent
      */
@@ -508,7 +508,7 @@ public interface EventType {
      * Built-in event type: swap space data removed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see SwapSpaceEvent
      */
@@ -518,7 +518,7 @@ public interface EventType {
      * Built-in event type: swap space cleared.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see SwapSpaceEvent
      */
@@ -528,7 +528,7 @@ public interface EventType {
      * Built-in event type: swap space data evicted.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see SwapSpaceEvent
      */
@@ -538,7 +538,7 @@ public interface EventType {
      * Built-in event type: cache object stored in off-heap storage.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      */
     public static final int EVT_CACHE_OBJECT_TO_OFFHEAP = 76;
 
@@ -546,7 +546,7 @@ public interface EventType {
      * Built-in event type: cache object moved from off-heap storage back into memory.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      */
     public static final int EVT_CACHE_OBJECT_FROM_OFFHEAP = 77;
 
@@ -554,7 +554,7 @@ public interface EventType {
      * Built-in event type: cache preload started.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see SwapSpaceEvent
      */
@@ -564,7 +564,7 @@ public interface EventType {
      * Built-in event type: cache preload stopped.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see SwapSpaceEvent
      */
@@ -574,7 +574,7 @@ public interface EventType {
      * Built-in event type: cache partition loaded.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see SwapSpaceEvent
      */
@@ -584,7 +584,7 @@ public interface EventType {
      * Built-in event type: cache partition unloaded.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      */
     public static final int EVT_CACHE_PRELOAD_PART_UNLOADED = 83;
 
@@ -592,7 +592,7 @@ public interface EventType {
      * Built-in event type: cache entry preloaded.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      */
     public static final int EVT_CACHE_PRELOAD_OBJECT_LOADED = 84;
 
@@ -600,7 +600,7 @@ public interface EventType {
      * Built-in event type: cache entry unloaded.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      */
     public static final int EVT_CACHE_PRELOAD_OBJECT_UNLOADED = 85;
 
@@ -608,7 +608,7 @@ public interface EventType {
      * Built-in event type: query executed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      */
     public static final int EVT_CACHE_QUERY_EXECUTED = 96;
 
@@ -616,7 +616,7 @@ public interface EventType {
      * Built-in event type: query entry read.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      */
     public static final int EVT_CACHE_QUERY_OBJECT_READ = 97;
 
@@ -624,7 +624,7 @@ public interface EventType {
      * Built-in event type: license violation detected.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see LicenseEvent
      */
@@ -634,7 +634,7 @@ public interface EventType {
      * Built-in event type: license violation cleared.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see LicenseEvent
      */
@@ -644,7 +644,7 @@ public interface EventType {
      * Built-in event type: license violation grace period is expired.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see LicenseEvent
      */
@@ -657,7 +657,7 @@ public interface EventType {
      * an authentication procedure finished without exception.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see AuthenticationEvent
      */
@@ -670,7 +670,7 @@ public interface EventType {
      * during authentication procedure and authentication procedure was not successful.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see AuthenticationEvent
      */
@@ -683,7 +683,7 @@ public interface EventType {
      * a validation of secure session procedure finished without exception.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see SecureSessionEvent
      */
@@ -696,7 +696,7 @@ public interface EventType {
      * during secure session validation procedure and validation was not succeed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see SecureSessionEvent
      */
@@ -706,7 +706,7 @@ public interface EventType {
      * Built-in event type: Visor detects that some events were evicted from events buffer since last poll.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      */
     public static final int EVT_VISOR_EVENTS_LOST = 115;
 
@@ -716,7 +716,7 @@ public interface EventType {
      * Fired when GGFS component creates new file.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see IgniteFsEvent
      */
@@ -728,7 +728,7 @@ public interface EventType {
      * Fired when GGFS component renames an existing file.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see IgniteFsEvent
      */
@@ -740,7 +740,7 @@ public interface EventType {
      * Fired when GGFS component deletes a file.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see IgniteFsEvent
      */
@@ -752,7 +752,7 @@ public interface EventType {
      * Fired when GGFS file is opened for reading.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see IgniteFsEvent
      */
@@ -764,7 +764,7 @@ public interface EventType {
      * Fired when GGFS file is opened for writing.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see IgniteFsEvent
      */
@@ -776,7 +776,7 @@ public interface EventType {
      * Fired when GGFS file or directory metadata is updated.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see IgniteFsEvent
      */
@@ -788,7 +788,7 @@ public interface EventType {
      * Fired when GGFS file is closed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see IgniteFsEvent
      */
@@ -800,7 +800,7 @@ public interface EventType {
      * Fired when GGFS file is closed.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see IgniteFsEvent
      */
@@ -812,7 +812,7 @@ public interface EventType {
      * Fired when GGFS component creates new directory.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see IgniteFsEvent
      */
@@ -824,7 +824,7 @@ public interface EventType {
      * Fired when GGFS component renames an existing directory.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see IgniteFsEvent
      */
@@ -836,7 +836,7 @@ public interface EventType {
      * Fired when GGFS component deletes a directory.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see IgniteFsEvent
      */
@@ -848,7 +848,7 @@ public interface EventType {
      * Fired when GGFS file data was actually removed from cache.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see IgniteFsEvent
      */
@@ -861,7 +861,7 @@ public interface EventType {
      * an authorization procedure finished without exception.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see AuthorizationEvent
      */
@@ -874,7 +874,7 @@ public interface EventType {
      * during authorization procedure and authorization procedure was not successful.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      *
      * @see AuthorizationEvent
      */
@@ -1135,12 +1135,12 @@ public interface EventType {
     };
 
     /**
-     * All GridGain events (<b>including</b> metric update event).
+     * All Ignite events (<b>including</b> metric update event).
      */
     public static final int[] EVTS_ALL = U.gridEvents();
 
     /**
-     * All GridGain events (<b>excluding</b> metric update event).
+     * All Ignite events (<b>excluding</b> metric update event).
      */
     public static final int[] EVTS_ALL_MINUS_METRIC_UPDATE = U.gridEvents(EVT_NODE_METRICS_UPDATED);
 }

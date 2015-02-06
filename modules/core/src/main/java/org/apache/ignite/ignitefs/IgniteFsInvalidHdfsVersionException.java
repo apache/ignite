@@ -18,8 +18,8 @@
 package org.apache.ignite.ignitefs;
 
 /**
- * Exception thrown when GridGain detects that remote HDFS version differs from version of HDFS libraries
- * in GridGain classpath.
+ * Exception thrown when Ignite detects that remote HDFS version differs from version of HDFS libraries
+ * in Ignite classpath.
  */
 public class IgniteFsInvalidHdfsVersionException extends IgniteFsException {
     /** */

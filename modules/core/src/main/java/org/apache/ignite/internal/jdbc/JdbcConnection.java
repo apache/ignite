@@ -35,7 +35,7 @@ public class JdbcConnection implements Connection {
     private static final String VALID_TASK_NAME =
         "org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcValidationTask";
 
-    /** GridGain client. */
+    /** Ignite client. */
     private final GridClient client;
 
     /** Cache name. */
@@ -58,7 +58,7 @@ public class JdbcConnection implements Connection {
      *
      * @param url Connection URL.
      * @param props Additional properties.
-     * @throws SQLException In case GridGain client failed to start.
+     * @throws SQLException In case Ignite client failed to start.
      */
     public JdbcConnection(String url, Properties props) throws SQLException {
         assert url != null;
@@ -86,7 +86,7 @@ public class JdbcConnection implements Connection {
             client = GridClientFactory.start(cfg);
         }
         catch (GridClientException e) {
-            throw new SQLException("Failed to start GridGain client.", e);
+            throw new SQLException("Failed to start Ignite client.", e);
         }
 
         if (!isValid(2))
@@ -500,7 +500,7 @@ public class JdbcConnection implements Connection {
     }
 
     /**
-     * @return GridGain client.
+     * @return Ignite client.
      */
     GridClient client() {
         return client;

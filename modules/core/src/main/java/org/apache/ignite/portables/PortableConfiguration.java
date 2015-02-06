@@ -23,7 +23,7 @@ import java.sql.*;
 import java.util.*;
 
 /**
- * Defines configuration for GridGain portable functionality. All configuration
+ * Defines configuration for Ignite portable functionality. All configuration
  * properties defined here can be overridden on per-type level in
  * {@link PortableTypeConfiguration}. Type configurations are provided via
  * {@link #getTypeConfigurations()} method.

@@ -82,13 +82,13 @@ public class GridCacheAttributes implements Externalizable {
     /** Synchronization mode. */
     private CacheWriteSynchronizationMode writeSyncMode;
 
-    /** Flag indicating whether GridGain should use swap storage by default. */
+    /** Flag indicating whether Ignite should use swap storage by default. */
     protected boolean swapEnabled;
 
     /** Flag indicating whether  query indexing is enabled. */
     private boolean qryIdxEnabled;
 
-    /** Flag indicating whether GridGain should use write-behind behaviour for the cache store. */
+    /** Flag indicating whether Ignite should use write-behind behaviour for the cache store. */
     private boolean writeBehindEnabled;
 
     /** Maximum size of write-behind cache. */
@@ -480,7 +480,7 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Flag indicating whether GridGain should use write-behind behaviour for the cache store.
+     * @return Flag indicating whether Ignite should use write-behind behaviour for the cache store.
      */
     public boolean writeBehindEnabled() {
         return writeBehindEnabled;

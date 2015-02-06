@@ -197,10 +197,10 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
-                GridCache<Object, Object> c = cache(0);
+                IgniteCache<Object, Object> c = jcache(0);
 
                 try {
-                    IgniteTx tx = c.txStart(mode, REPEATABLE_READ);
+                    IgniteTx tx = grid(0).transactions().txStart(mode, REPEATABLE_READ);
 
                     for (Integer key : keys)
                         c.put(key, "val" + key);

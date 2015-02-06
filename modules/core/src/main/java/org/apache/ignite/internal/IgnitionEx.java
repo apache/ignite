@@ -87,7 +87,7 @@ import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
 /**
- * This class defines a factory for the main GridGain API. It controls Grid life cycle
+ * This class defines a factory for the main Ignite API. It controls Grid life cycle
  * and allows listening for grid events.
  * <h1 class="header">Grid Loaders</h1>
  * Although user can apply grid factory directly to start and stop grid, grid is
@@ -105,7 +105,7 @@ import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
  * GridConfiguration cfg = new GridConfiguration();
  */
 public class IgnitionEx {
-    /** Default configuration path relative to GridGain home. */
+    /** Default configuration path relative to Ignite home. */
     public static final String DFLT_CFG = "config/default-config.xml";
 
     /** Map of named grids. */
@@ -137,7 +137,7 @@ public class IgnitionEx {
         // Check 1.8 just in case for forward compatibility.
         if (!U.jdkVersion().contains("1.7") &&
             !U.jdkVersion().contains("1.8"))
-            throw new IllegalStateException("GridGain requires Java 7 or above. Current Java version " +
+            throw new IllegalStateException("Ignite requires Java 7 or above. Current Java version " +
                 "is not supported: " + U.jdkVersion());
 
         // To avoid nasty race condition in UUID.randomUUID() in JDK prior to 6u34.
@@ -333,8 +333,8 @@ public class IgnitionEx {
      * should be responsible for stopping it.
      * <p>
      * Note also that restarting functionality only works with the tools that specifically
-     * support GridGain's protocol for restarting. Currently only standard <tt>ignite.{sh|bat}</tt>
-     * scripts support restarting of JVM GridGain's process.
+     * support Ignite's protocol for restarting. Currently only standard <tt>ignite.{sh|bat}</tt>
+     * scripts support restarting of JVM Ignite's process.
      *
      * @param cancel If {@code true} then all jobs currently executing on
      *      all grids will be cancelled by calling {@link org.apache.ignite.compute.ComputeJob#cancel()}
@@ -423,7 +423,7 @@ public class IgnitionEx {
      *      also if default grid has already been started.
      */
     public static Ignite start(@Nullable GridSpringResourceContext springCtx) throws IgniteCheckedException {
-        URL url = U.resolveGridGainUrl(DFLT_CFG);
+        URL url = U.resolveIgniteUrl(DFLT_CFG);
 
         if (url != null)
             return start(DFLT_CFG, null, springCtx);
@@ -574,7 +574,7 @@ public class IgnitionEx {
             url = new URL(springCfgPath);
         }
         catch (MalformedURLException e) {
-            url = U.resolveGridGainUrl(springCfgPath);
+            url = U.resolveIgniteUrl(springCfgPath);
 
             if (url == null)
                 throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
@@ -807,7 +807,7 @@ public class IgnitionEx {
             url = new URL(springCfgPath);
         }
         catch (MalformedURLException e) {
-            url = U.resolveGridGainUrl(springCfgPath);
+            url = U.resolveIgniteUrl(springCfgPath);
 
             if (url == null)
                 throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
@@ -1016,7 +1016,7 @@ public class IgnitionEx {
     /**
      * Adds a lsnr for grid life cycle events.
      * <p>
-     * Note that unlike other listeners in GridGain this listener will be
+     * Note that unlike other listeners in Ignite this listener will be
      * notified from the same thread that triggers the state change. Because of
      * that it is the responsibility of the user to make sure that listener logic
      * is light-weight and properly handles (catches) any runtime exceptions, if any
@@ -1348,14 +1348,14 @@ public class IgnitionEx {
 
             IgniteConfiguration myCfg = new IgniteConfiguration();
 
-            String ggHome = cfg.getGridGainHome();
+            String ggHome = cfg.getIgniteHome();
 
-            // Set GridGain home.
+            // Set Ignite home.
             if (ggHome == null)
-                ggHome = U.getGridGainHome();
+                ggHome = U.getIgniteHome();
             else
                 // If user provided IGNITE_HOME - set it as a system property.
-                U.setGridGainHome(ggHome);
+                U.setIgniteHome(ggHome);
 
             U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
 
@@ -1388,15 +1388,15 @@ public class IgnitionEx {
             // Initialize factory's log.
             log = cfgLog.getLogger(G.class);
 
-            // Check GridGain home folder (after log is available).
+            // Check Ignite home folder (after log is available).
             if (ggHome != null) {
                 File ggHomeFile = new File(ggHome);
 
                 if (!ggHomeFile.exists() || !ggHomeFile.isDirectory())
-                    throw new IgniteCheckedException("Invalid GridGain installation home folder: " + ggHome);
+                    throw new IgniteCheckedException("Invalid Ignite installation home folder: " + ggHome);
             }
 
-            myCfg.setGridGainHome(ggHome);
+            myCfg.setIgniteHome(ggHome);
 
             // Copy values that don't need extra processing.
             myCfg.setLicenseUrl(cfg.getLicenseUrl());
@@ -1931,7 +1931,7 @@ public class IgnitionEx {
 
             try {
                 // Use reflection to avoid loading undesired classes.
-                Class helperCls = Class.forName("org.gridgain.grid.util.GridConfigurationHelper");
+                Class helperCls = Class.forName("org.apache.ignite.util.GridConfigurationHelper");
 
                 helperCls.getMethod("overrideConfiguration", IgniteConfiguration.class, Properties.class,
                     String.class, IgniteLogger.class).invoke(helperCls, myCfg, System.getProperties(), name, log);
@@ -1955,7 +1955,7 @@ public class IgnitionEx {
                 ensureMultiInstanceSupport(swapspaceSpi);
             }
 
-            // Register GridGain MBean for current grid instance.
+            // Register Ignite MBean for current grid instance.
             registerFactoryMbean(myCfg.getMBeanServer());
 
             boolean started = false;
@@ -2046,7 +2046,7 @@ public class IgnitionEx {
 
                     if (log4jCls != null) {
                         try {
-                            URL url = U.resolveGridGainUrl("config/ignite-log4j.xml");
+                            URL url = U.resolveIgniteUrl("config/ignite-log4j.xml");
 
                             if (url == null) {
                                 File cfgFile = new File("config/ignite-log4j.xml");
@@ -2200,7 +2200,7 @@ public class IgnitionEx {
                         log.debug("Shutdown is in progress (ignoring): " + e.getMessage());
                 }
 
-            // Unregister GridGain MBean.
+            // Unregister Ignite MBean.
             unregisterFactoryMBean();
 
             try {

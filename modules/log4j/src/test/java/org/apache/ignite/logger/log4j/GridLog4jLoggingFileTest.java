@@ -34,7 +34,7 @@ public class GridLog4jLoggingFileTest extends TestCase {
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
-        File xml = GridTestUtils.resolveGridGainPath("modules/core/src/test/config/log4j-test.xml");
+        File xml = GridTestUtils.resolveIgnitePath("modules/core/src/test/config/log4j-test.xml");
 
         assert xml != null;
         assert xml.exists() == true;

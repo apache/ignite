@@ -21,7 +21,7 @@ import java.lang.annotation.*;
 
 /**
  * Annotates a field or a setter method for injection of Spring ApplicationContext resource.
- * When GridGain starts using Spring configuration, the Application Context for Spring
+ * When Ignite starts using Spring configuration, the Application Context for Spring
  * Configuration is injected as this resource.
  * method.
  * <p>

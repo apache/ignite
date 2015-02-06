@@ -155,7 +155,7 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridGgfsCommonAbst
 
         Configuration cfg = new Configuration();
 
-        cfg.addResource(U.resolveGridGainUrl(HADOOP_FS_CFG));
+        cfg.addResource(U.resolveIgniteUrl(HADOOP_FS_CFG));
         cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
         cfg.setBoolean(String.format(GridGgfsHadoopUtils.PARAM_GGFS_ENDPOINT_NO_EMBED, name), true);
 

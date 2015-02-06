@@ -41,7 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * It is required for {@code GGFS} data cache to be configured with this mapper. Here is an
  * example of how it can be specified in XML configuration:
  * <pre name="code" class="xml">
- * &lt;bean id="cacheCfgBase" class="org.gridgain.grid.cache.GridCacheConfiguration" abstract="true"&gt;
+ * &lt;bean id="cacheCfgBase" class="org.apache.ignite.cache.CacheConfiguration" abstract="true"&gt;
  *     ...
  *     &lt;property name="affinityMapper"&gt;
  *         &lt;bean class="org.apache.ignite.ignitefs.IgniteFsGroupDataBlocksKeyMapper"&gt;

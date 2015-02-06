@@ -43,7 +43,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** URL. */
-    private static final String URL = "jdbc:gridgain://127.0.0.1/";
+    private static final String URL = "jdbc:ignite://127.0.0.1/";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
