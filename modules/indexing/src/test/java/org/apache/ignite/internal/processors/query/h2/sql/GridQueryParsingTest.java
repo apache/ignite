@@ -99,6 +99,9 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      */
     public void testAllExampless() throws Exception {
+        checkQuery("select avg(old) from Person, Address where Person.addrId = Address.id " +
+            "and lower(Address.street) = lower(?)");
+
         checkQuery("select name, date from Person");
         checkQuery("select distinct name, date from Person");
         checkQuery("select * from Person p");

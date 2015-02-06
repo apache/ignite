@@ -212,10 +212,11 @@ public class GridSqlQueryParser {
         TableFilter filter = select.getTopTableFilter();
         do {
             assert0(filter != null, select);
-            assert0(!filter.isJoinOuter(), select);
+            assert0(!filter.isJoinOuter(), select); // TODO 3
+            assert0(!filter.isJoinOuterIndirect(), select);
             assert0(filter.getNestedJoin() == null, select);
-            assert0(filter.getJoinCondition() == null, select);
-            assert0(filter.getFilterCondition() == null, select);
+            assert0(filter.getJoinCondition() == null, select); // TODO 1
+            assert0(filter.getFilterCondition() == null, select); // TODO 2
 
             GridSqlElement gridFilter = parse(filter);
 
