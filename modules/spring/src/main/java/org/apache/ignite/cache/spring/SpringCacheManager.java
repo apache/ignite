@@ -28,7 +28,7 @@ import org.springframework.cache.CacheManager;
 import java.util.*;
 
 /**
- * Implementation of Spring cache abstraction based on GridGain cache.
+ * Implementation of Spring cache abstraction based on Ignite cache.
  * <h1 class="header">Overview</h1>
  * Spring cache abstraction allows to enable caching for Java methods
  * so that the result of a method execution is stored in some storage. If
@@ -38,11 +38,11 @@ import java.util.*;
  * <a href="http://docs.spring.io/spring/docs/current/spring-framework-reference/html/cache.html">
  * Spring Cache Abstraction documentation</a>.
  * <h1 class="header">How To Enable Caching</h1>
- * To enable caching based on GridGain cache in your Spring application,
+ * To enable caching based on Ignite cache in your Spring application,
  * you will need to do the following:
  * <ul>
  *     <li>
- *         Start a GridGain node with configured cache in the same JVM
+ *         Start a Ignite node with configured cache in the same JVM
  *         where you application is running.
  *     </li>
  *     <li>
@@ -51,7 +51,7 @@ import java.util.*;
  *     </li>
  * </ul>
  * {@code GridSpringCacheManager} can start a node itself on its startup
- * based on provided GridGain configuration. You can provide path to a
+ * based on provided Ignite configuration. You can provide path to a
  * Spring configuration XML file, like below (path can be absolute or
  * relative to {@code IGNITE_HOME}):
  * <pre name="code" class="xml">
@@ -81,7 +81,7 @@ import java.util.*;
  *     &lt;-- Provide configuration bean. --&gt;
  *     &lt;bean id="cacheManager" class="org.apache.ignite.cache.spring.GridSpringCacheManager"&gt;
  *         &lt;property name="configuration"&gt;
- *             &lt;bean id="gridCfg" class="org.gridgain.grid.GridConfiguration"&gt;
+ *             &lt;bean id="gridCfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *                 ...
  *             &lt;/bean&gt;
  *         &lt;/property&gt;
@@ -94,7 +94,7 @@ import java.util.*;
  * Note that providing both configuration path and configuration bean is illegal
  * and results in {@link IllegalArgumentException}.
  * <p>
- * If you already have GridGain node running within your application,
+ * If you already have Ignite node running within your application,
  * simply provide correct Grid name, like below (if there is no Grid
  * instance with such name, exception will be thrown):
  * <pre name="code" class="xml">
@@ -126,7 +126,7 @@ import java.util.*;
  * Remember that the node started inside your application is an entry point
  * to the whole topology it connects to. You can start as many remote standalone
  * nodes as you need using {@code bin/ignite.{sh|bat}} scripts provided in
- * GridGain distribution, and all these nodes will participate
+ * Ignite distribution, and all these nodes will participate
  * in caching data.
  */
 public class SpringCacheManager implements CacheManager, InitializingBean {
@@ -203,7 +203,7 @@ public class SpringCacheManager implements CacheManager, InitializingBean {
 
         if (cfgPath != null && cfg != null) {
             throw new IllegalArgumentException("Both 'configurationPath' and 'configuration' are " +
-                "provided. Set only one of these properties if you need to start a GridGain node inside of " +
+                "provided. Set only one of these properties if you need to start a Ignite node inside of " +
                 "GridSpringCacheManager. If you already have a node running, omit both of them and set" +
                 "'gridName' property.");
         }

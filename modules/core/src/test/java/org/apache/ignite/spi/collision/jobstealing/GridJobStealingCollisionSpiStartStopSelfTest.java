@@ -25,7 +25,7 @@ import org.apache.ignite.testframework.junits.spi.*;
 
 import java.util.*;
 
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
 /**
  * Job stealing collision SPI start-stop test.

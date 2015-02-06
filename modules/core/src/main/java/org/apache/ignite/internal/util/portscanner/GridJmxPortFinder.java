@@ -24,7 +24,7 @@ import java.net.*;
 import java.nio.channels.*;
 
 /**
- * GridGain port scanner.
+ * Ignite port scanner.
  */
 public class GridJmxPortFinder {
     /** Environment variable for overriding JMX port. */

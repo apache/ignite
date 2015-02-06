@@ -20,7 +20,7 @@ package org.apache.ignite.resources;
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of GridGain service(s) by specified service name.
+ * Annotates a field or a setter method for injection of Ignite service(s) by specified service name.
  * If more than one service is deployed on a server, then the first available instance will be returned.
  * <p>
  * Here is how injection would typically happen:

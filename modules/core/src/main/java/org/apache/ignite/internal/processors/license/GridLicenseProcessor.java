@@ -41,7 +41,7 @@ public interface GridLicenseProcessor extends GridProcessor {
     public void ackLicense();
 
     /**
-     * This method is called periodically by the GridGain to check the license conformance.
+     * This method is called periodically by the Ignite to check the license conformance.
      *
      * @throws org.apache.ignite.internal.product.IgniteProductLicenseException Thrown in case of any license violation.
      */

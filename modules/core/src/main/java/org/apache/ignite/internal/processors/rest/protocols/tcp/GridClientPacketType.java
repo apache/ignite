@@ -24,9 +24,9 @@ public enum GridClientPacketType {
     /** Memcache protocol message. */
     MEMCACHE,
 
-    /** GridGain handshake. */
+    /** Ignite handshake. */
     IGNITE_HANDSHAKE,
 
-    /** GridGain message. */
+    /** Ignite message. */
     IGNITE
 }

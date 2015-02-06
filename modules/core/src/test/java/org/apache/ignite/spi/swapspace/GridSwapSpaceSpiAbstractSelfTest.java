@@ -55,7 +55,7 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        U.setWorkDirectory(null, U.getGridGainHome());
+        U.setWorkDirectory(null, U.getIgniteHome());
 
         spi = spi();
 

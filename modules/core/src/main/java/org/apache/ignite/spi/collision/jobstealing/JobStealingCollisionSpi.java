@@ -141,7 +141,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * Here is an example of how this SPI can be configured from Spring XML configuration:
  * <pre name="code" class="xml">
  * &lt;property name="collisionSpi"&gt;
- *     &lt;bean class="org.gridgain.grid.spi.collision.jobstealing.GridJobStealingCollisionSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.collision.jobstealing.GridJobStealingCollisionSpi"&gt;
  *         &lt;property name="activeJobsThreshold" value="100"/&gt;
  *         &lt;property name="waitJobsThreshold" value="0"/&gt;
  *         &lt;property name="messageExpireTime" value="1000"/&gt;

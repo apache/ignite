@@ -45,7 +45,7 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
 
         info("Latest version: " + ver);
 
-        assertNotNull("GridGain latest version has not been detected.", ver);
+        assertNotNull("Ignite latest version has not been detected.", ver);
 
         ntf.reportStatus(log);
     }

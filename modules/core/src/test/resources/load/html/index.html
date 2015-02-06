@@ -19,7 +19,7 @@
     <meta charset="UTF-8"/>
     <meta http-equiv="cache-control" content="no-cache"/>
 
-    <title>GridGain Load Tests</title>
+    <title>Ignite Load Tests</title>
 
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
@@ -64,7 +64,7 @@
             <div class="container">
                 <a class="brand" href="#">
                     <img src="http://atlassian.gridgain.com/wiki/download/attachments/10682370/book">
-                    GridGain Load Tests
+                    Ignite Load Tests
                 </a>
 
                 <ul class="nav" role="navigation">
@@ -393,7 +393,7 @@
         }
 
         /** 
-          * Displays GridGain load test charts. 
+          * Displays Ignite load test charts.
           * 
           * @param invCache Invalidate cache flag.
           */
@@ -496,7 +496,7 @@
         }
 
         /**
-         * Displays charts for GGFS (GridGain) vs. HDFS (Hadoop) benchmark.
+         * Displays charts for GGFS (Ignite) vs. HDFS (Hadoop) benchmark.
          */
         function displayHadoopCharts() {
             var hadoopTests = [
@@ -526,7 +526,7 @@
         }
 
         /**
-         * Displays charts for GridGain vs. Mongo benchmark.
+         * Displays charts for Ignite vs. Mongo benchmark.
          */
         function displayMongoCharts() {
             $.each(
@@ -540,7 +540,7 @@
                         columns : function(data) {
                             data.addColumn('datetime', 'Date/Time');
                             data.addColumn('number', 'Inserts/sec. (Mongo)');
-                            data.addColumn('number', 'Inserts/sec. (GridGain)');
+                            data.addColumn('number', 'Inserts/sec. (Ignite)');
 
                             return [0, 1, 5];
                         }
@@ -553,7 +553,7 @@
                         columns : function(data) {
                             data.addColumn('datetime', 'Date/Time');
                             data.addColumn('number', 'Updates/sec. (Mongo)');
-                            data.addColumn('number', 'Updates/sec. (GridGain)');
+                            data.addColumn('number', 'Updates/sec. (Ignite)');
 
                             return [0, 2, 6];
                         }
@@ -566,7 +566,7 @@
                         columns : function(data) {
                             data.addColumn('datetime', 'Date/Time');
                             data.addColumn('number', 'Deletes/sec. (Mongo)');
-                            data.addColumn('number', 'Deletes/sec. (GridGain)');
+                            data.addColumn('number', 'Deletes/sec. (Ignite)');
 
                             return [0, 3, 7];
                         }
@@ -579,7 +579,7 @@
                         columns : function(data) {
                             data.addColumn('datetime', 'Date/Time');
                             data.addColumn('number', 'Queries/sec. (Mongo)');
-                            data.addColumn('number', 'Queries/sec. (GridGain)');
+                            data.addColumn('number', 'Queries/sec. (Ignite)');
 
                             return [0, 4, 8];
                         }
@@ -592,7 +592,7 @@
                         columns : function(data) {
                             data.addColumn('datetime', 'Date/Time');
                             data.addColumn('number', 'Queries/sec. (Mongo)');
-                            data.addColumn('number', 'Queries/sec. (GridGain)');
+                            data.addColumn('number', 'Queries/sec. (Ignite)');
 
                             return [0, 4, 8];
                         }
@@ -601,7 +601,7 @@
                     multiLineChart({
                         name : 'GridMongoMixedOperationsBenchmarkGridGainMultinode' + suiteName,
                         csvFile : 'GridMongoMixedOperationsBenchmarkMultinode' + suiteName + '.csv',
-                        title : 'MixedOperations (GridGain)',
+                        title : 'MixedOperations (Ignite)',
                         insertInto : 'ins-MongoMultinode' + suiteName,
                         columns : function(data) {
                             data.addColumn('datetime', 'Date/Time');
@@ -634,7 +634,7 @@
         }
 
         /**
-         * Displays charts for GridGain vs. Hazelcast benchmark.
+         * Displays charts for Ignite vs. Hazelcast benchmark.
          */
         function displayHazelcastCharts() {
             // Base name for all CSV files.
@@ -746,7 +746,7 @@
                         insertInto : 'hazelcast',
                         columns : function(data) {
                             data.addColumn('datetime', 'Date/Time');
-                            data.addColumn('number', 'Ops/sec. (GridGain)');
+                            data.addColumn('number', 'Ops/sec. (Ignite)');
                             data.addColumn('number', 'Ops/sec. (Hazelcast)');
                         }
                     });

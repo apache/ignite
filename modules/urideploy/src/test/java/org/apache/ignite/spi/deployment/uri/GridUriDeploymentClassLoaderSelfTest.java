@@ -70,6 +70,6 @@ public class GridUriDeploymentClassLoaderSelfTest extends GridUriDeploymentAbstr
     @GridSpiTestConfig
     public List<String> getUriList() {
         return Collections.singletonList(GridTestProperties.getProperty("ant.urideployment.gar.uri").
-            replace("EXTDATA", U.resolveGridGainPath("modules/extdata").getAbsolutePath()));
+            replace("EXTDATA", U.resolveIgnitePath("modules/extdata").getAbsolutePath()));
     }
 }

@@ -14,7 +14,7 @@
 ::  limitations under the License.
 
 ::
-:: Exports IGNITE_LIBS variable containing classpath for GridGain.
+:: Exports IGNITE_LIBS variable containing classpath for Ignite.
 :: Expects IGNITE_HOME to be set.
 :: Can be used like:
 ::      call %IGNITE_HOME%\bin\include\setenv.bat
@@ -30,18 +30,18 @@
 :: Check IGNITE_HOME.
 ::
 if defined IGNITE_HOME goto run
-    echo %0, ERROR: GridGain installation folder is not found.
+    echo %0, ERROR: Ignite installation folder is not found.
     echo Please create IGNITE_HOME environment variable pointing to location of
-    echo GridGain installation folder.
+    echo Ignite installation folder.
 goto :eof
 
 :run
-:: The following libraries are required for GridGain.
+:: The following libraries are required for Ignite.
 set IGNITE_LIBS=%IGNITE_HOME%\libs\*
 
 for /D %%F in (%IGNITE_HOME%\libs\*) do if not "%%F" == "%IGNITE_HOME%\libs\optional" call :concat %%F\*
 
-if exist %IGNITE_HOME%\libs\gridgain-hadoop set HADOOP_EDITION=1
+if exist %IGNITE_HOME%\libs\ignite-hadoop set HADOOP_EDITION=1
 
 if defined USER_LIBS set IGNITE_LIBS=%USER_LIBS%;%IGNITE_LIBS%
 

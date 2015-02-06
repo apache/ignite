@@ -60,7 +60,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridPortProcessorSelfTest.class);
         suite.addTestSuite(GridHomePathSelfTest.class);
         suite.addTestSuite(GridStartupWithSpecifiedWorkDirectorySelfTest.class);
-        suite.addTestSuite(GridStartupWithUndefinedGridGainHomeSelfTest.class);
+        suite.addTestSuite(GridStartupWithUndefinedIgniteHomeSelfTest.class);
         suite.addTestSuite(GridVersionSelfTest.class);
         suite.addTestSuite(GridListenActorSelfTest.class);
         suite.addTestSuite(GridNodeLocalSelfTest.class);

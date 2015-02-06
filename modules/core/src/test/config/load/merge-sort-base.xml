@@ -35,17 +35,17 @@
 
         <!--
             Events and Performance
-            Note that by default all events in GridGain are enabled and therefore generated and stored by
-            whatever event storage SPI is configured. GridGain can and often does generate thousands events per
+            Note that by default all events in Ignite are enabled and therefore generated and stored by
+            whatever event storage SPI is configured. Ignite can and often does generate thousands events per
             seconds under the load and therefore it creates a significant additional load on the system. If
             these events are not needed by the application this load is unnecessary and leads to significant
             performance degradation.
 
             It is highly recommended to enable only those events that your application logic requires by using
             either GridConfiguration.getExcludeEventTypes() orGridConfiguration.getIncludeEventTypes() methods
-            in GridGain configuration. Note that certain events are required for GridGain's internal operations
+            in Ignite configuration. Note that certain events are required for Ignite's internal operations
             and such events will still be generated but not stored by event storage SPI if they are disabled in
-            GridGain configuration.
+            Ignite configuration.
         -->
         <property name="includeEventTypes">
             <list/>

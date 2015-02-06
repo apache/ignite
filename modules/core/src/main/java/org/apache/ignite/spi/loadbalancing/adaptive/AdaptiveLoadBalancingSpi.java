@@ -214,9 +214,9 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * Here is how you can configure {@code GridJobsLoadBalancingSpi} using Spring XML configuration:
  * <pre name="code" class="xml">
  * &lt;property name="loadBalancingSpi"&gt;
- *     &lt;bean class="org.gridgain.grid.spi.loadBalancing.adaptive.GridAdaptiveLoadBalancingSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.loadBalancing.adaptive.GridAdaptiveLoadBalancingSpi"&gt;
  *         &lt;property name="loadProbe"&gt;
- *             &lt;bean class="org.gridgain.grid.spi.loadBalancing.adaptive.GridAdaptiveProcessingTimeLoadProbe"&gt;
+ *             &lt;bean class="org.apache.ignite.spi.loadBalancing.adaptive.GridAdaptiveProcessingTimeLoadProbe"&gt;
  *                 &lt;constructor-arg value="false"/&gt;
  *             &lt;/bean&gt;
  *         &lt;/property&gt;

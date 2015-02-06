@@ -277,7 +277,7 @@ public enum IgniteComponentType {
      * @return Component creation exception.
      */
     private IgniteCheckedException componentException(Exception err) {
-        return new IgniteCheckedException("Failed to create GridGain component (consider adding " + module +
+        return new IgniteCheckedException("Failed to create Ignite component (consider adding " + module +
             " module to classpath) [component=" + this + ", cls=" + clsName + ']', err);
     }
 }

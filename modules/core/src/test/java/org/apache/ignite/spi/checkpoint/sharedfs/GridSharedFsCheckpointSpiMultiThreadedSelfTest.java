@@ -194,6 +194,6 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        deleteFolder(new File(U.getGridGainHome(), PATH));
+        deleteFolder(new File(U.getIgniteHome(), PATH));
     }
 }

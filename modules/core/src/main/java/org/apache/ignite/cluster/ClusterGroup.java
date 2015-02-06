@@ -35,7 +35,7 @@ import java.util.*;
  * projection will include a subset of nodes from current projection. The following code snippet
  * shows how to create and nest grid projections:
  * <pre name="code" class="java">
- * Grid g = GridGain.grid();
+ * Grid g = Ignition.ignite();
  *
  * // Projection over remote nodes.
  * GridProjection remoteNodes = g.forRemotes();
@@ -200,7 +200,7 @@ public interface ClusterGroup {
      * way to see daemon nodes is to use this method.
      * <p>
      * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on GridGain and needs to participate in the topology but also needs to be
+     * is build on Ignite and needs to participate in the topology but also needs to be
      * excluded from "normal" topology so that it won't participate in task execution
      * or in-memory data grid storage.
      *

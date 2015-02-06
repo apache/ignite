@@ -34,7 +34,7 @@ import java.net.*;
 import java.util.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 

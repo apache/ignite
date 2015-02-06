@@ -357,7 +357,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Assembles GridGain client packet.
+     * Assembles Ignite client packet.
      *
      * @param msg Message to serialize.
      * @return Raw message bytes.
@@ -378,7 +378,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Assembles GridGain client handshake packet.
+     * Assembles Ignite client handshake packet.
      *
      * @return Raw message bytes.
      */

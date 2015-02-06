@@ -121,7 +121,7 @@ import java.util.*;
  * of which may hinder performance. In such cases it may make sense to disable task
  * result caching by attaching {@link ComputeTaskNoResultCache @GridComputeTaskNoResultCache} annotation to task class, and
  * processing all results as they come in {@link #result(ComputeJobResult, List)} method.
- * When GridGain sees this annotation it will disable tracking of job results and
+ * When Ignite sees this annotation it will disable tracking of job results and
  * list of all job results passed into {@link #result(ComputeJobResult, List)} or
  * {@link #reduce(List)} methods will always be empty. Note that list of
  * job siblings on {@link ComputeTaskSession} will also be empty to prevent number
