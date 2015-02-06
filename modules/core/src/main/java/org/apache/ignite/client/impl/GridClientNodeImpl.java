@@ -128,23 +128,8 @@ public class GridClientNodeImpl implements GridClientNode {
     }
 
     /** {@inheritDoc} */
-    @Override public List<String> jettyAddresses() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public List<String> jettyHostNames() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public int tcpPort() {
         return tcpPort;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int httpPort() {
-        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

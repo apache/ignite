@@ -35,7 +35,7 @@ public class GridCacheQueryTestValue implements Serializable {
     private int field2;
 
     /** */
-    @CacheQuerySqlField(unique = true)
+    @CacheQuerySqlField
     private long field3;
 
     /** */

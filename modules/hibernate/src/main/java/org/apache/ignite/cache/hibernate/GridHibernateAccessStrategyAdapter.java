@@ -300,7 +300,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
      */
     static void evictAll(CacheProjection<Object,Object> cache) throws CacheException {
         try {
-            cache.globalClearAll();
+            cache.clear();
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);
@@ -346,7 +346,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
 
             assert cache != null;
 
-            cache.clear(key);
+            cache.clearLocally(key);
 
             return null;
         }

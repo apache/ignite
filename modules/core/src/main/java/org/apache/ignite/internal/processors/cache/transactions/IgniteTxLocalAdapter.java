@@ -2445,7 +2445,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             Object res = null;
 
             for (T2<EntryProcessor<K, V, ?>, Object[]> t : txEntry.entryProcessors()) {
-                CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(txEntry.key(), val);
+                CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(txEntry.context(), txEntry.key(), val);
 
                 EntryProcessor<K, V, ?> entryProcessor = t.get1();
 

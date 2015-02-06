@@ -17,13 +17,15 @@
 
 package org.apache.ignite.cache;
 
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Enumeration of all supported cache peek modes. Peek modes can be passed into various
- * {@code 'CacheProjection.peek(..)'} and {@code CacheEntry.peek(..)} methods,
- * such as {@link CacheProjection#peek(Object, java.util.Collection)},
- * {@link CacheEntry#peek()}, and others.
+ * Enumeration of all supported cache peek modes. Peek modes can be passed
+ * into {@link IgniteCache#localPeek(Object, CachePeekMode...)},
+ * {@link IgniteCache#localEntries(CachePeekMode...)},
+ * {@link IgniteCache#localSize(CachePeekMode...)} and
+ * {@link IgniteCache#size(CachePeekMode...)} methods.
  * <p>
  * The following modes are supported:
  * <ul>
@@ -48,11 +50,13 @@ public enum CachePeekMode {
 
     /**
      * Peek value from primary copy of partitioned cache only (skip near cache).
+     * In case of {@link CacheMode#LOCAL} cache, behaves as {@link #ALL} mode.
      */
     PRIMARY,
 
     /**
      * Peek value from backup copies of partitioned cache only (skip near cache).
+     * In case of {@link CacheMode#LOCAL} cache, behaves as {@link #ALL} mode.
      */
     BACKUP,
 
