@@ -33,7 +33,7 @@ import java.util.*;
  *
  * This implementation stores objects in underlying database using java beans mapping description via reflection.
  */
-public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
+public class CacheJdbcPojoStore extends CacheAbstractJdbcStore<Object, Object> {
     /**
      * POJO methods cache.
      */

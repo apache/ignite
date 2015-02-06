@@ -51,7 +51,7 @@ import static org.apache.ignite.testframework.junits.cache.GridAbstractCacheStor
 /**
  * Class for {@code PojoCacheStore} tests.
  */
-public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
+public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
     /** Default connection URL (value is <tt>jdbc:h2:mem:jdbcCacheStore;DB_CLOSE_DELAY=-1</tt>). */
     protected static final String DFLT_CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
 
@@ -68,13 +68,13 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
     protected TestThreadLocalCacheSession ses = new TestThreadLocalCacheSession();
 
     /** */
-    protected final JdbcPojoCacheStore store;
+    protected final CacheJdbcPojoStore store;
 
     /**
      * @throws Exception If failed.
      */
     @SuppressWarnings({"AbstractMethodCallInConstructor", "OverriddenMethodCallDuringObjectConstruction"})
-    public PojoJdbcCacheStoreTest() throws Exception {
+    public CacheJdbcPojoStoreTest() throws Exception {
         super(false);
 
         store = store();
@@ -85,21 +85,20 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
     /**
      * @return Store.
      */
-    protected JdbcPojoCacheStore store() throws IgniteCheckedException {
-        JdbcPojoCacheStore store = new JdbcPojoCacheStore();
+    protected CacheJdbcPojoStore store() throws IgniteCheckedException {
+        CacheJdbcPojoStore store = new CacheJdbcPojoStore();
 
 //        PGPoolingDataSource ds = new PGPoolingDataSource();
 //        ds.setUser("postgres");
-//        ds.setPassword("1");
-//        ds.setServerName("192.168.1.47");
+//        ds.setPassword("postgres");
+//        ds.setServerName("ip");
 //        ds.setDatabaseName("postgres");
 //        store.setDataSource(ds);
 
 //        MysqlDataSource ds = new MysqlDataSource();
-//        ds.setURL("jdbc:mysql://192.168.1.12:3306/test");
-//        ds.setUser("test");
-//        ds.setPassword("1");
-//        store.setDataSource(ds);
+//        ds.setURL("jdbc:mysql://ip:port/dbname");
+//        ds.setUser("mysql");
+//        ds.setPassword("mysql");
 
         store.setDataSource(JdbcConnectionPool.create(DFLT_CONN_URL, "sa", ""));
 
@@ -110,7 +109,7 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
      * @param store Store.
      * @throws Exception If failed.
      */
-    protected void inject(JdbcCacheStore store) throws Exception {
+    protected void inject(CacheAbstractJdbcStore store) throws Exception {
         getTestResources().inject(store);
 
         GridTestUtils.setFieldValue(store, CacheStore.class, "ses", ses);
@@ -133,22 +132,22 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
 
             Collection<CacheTypeMetadata> typeMeta = springCtx.getBeansOfType(CacheTypeMetadata.class).values();
 
-            Map<Integer, Map<Object, JdbcCacheStore.EntryMapping>> cacheMappings = new HashMap<>();
+            Map<Integer, Map<Object, CacheAbstractJdbcStore.EntryMapping>> cacheMappings = new HashMap<>();
 
             JdbcDialect dialect = store.resolveDialect();
 
-            GridTestUtils.setFieldValue(store, JdbcCacheStore.class, "dialect", dialect);
+            GridTestUtils.setFieldValue(store, CacheAbstractJdbcStore.class, "dialect", dialect);
 
-            Map<Object, JdbcCacheStore.EntryMapping> entryMappings = U.newHashMap(typeMeta.size());
+            Map<Object, CacheAbstractJdbcStore.EntryMapping> entryMappings = U.newHashMap(typeMeta.size());
 
             for (CacheTypeMetadata type : typeMeta)
-                entryMappings.put(store.keyTypeId(type.getKeyType()), new JdbcCacheStore.EntryMapping(dialect, type));
+                entryMappings.put(store.keyTypeId(type.getKeyType()), new CacheAbstractJdbcStore.EntryMapping(dialect, type));
 
             store.prepareBuilders(null, typeMeta);
 
             cacheMappings.put(null, entryMappings);
 
-            GridTestUtils.setFieldValue(store, JdbcCacheStore.class, "cacheMappings", cacheMappings);
+            GridTestUtils.setFieldValue(store, CacheAbstractJdbcStore.class, "cacheMappings", cacheMappings);
         }
         catch (BeansException e) {
             if (X.hasCause(e, ClassNotFoundException.class))
@@ -175,14 +174,14 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
 
         store.setDialect(dialect);
 
-        Map<String, Map<Object, JdbcCacheStore.EntryMapping>> cacheMappings =
-            GridTestUtils.getFieldValue(store, JdbcCacheStore.class, "cacheMappings");
+        Map<String, Map<Object, CacheAbstractJdbcStore.EntryMapping>> cacheMappings =
+            GridTestUtils.getFieldValue(store, CacheAbstractJdbcStore.class, "cacheMappings");
 
-        JdbcCacheStore.EntryMapping em = cacheMappings.get(null).get(OrganizationKey.class);
+        CacheAbstractJdbcStore.EntryMapping em = cacheMappings.get(null).get(OrganizationKey.class);
 
-        CacheTypeMetadata typeMeta = GridTestUtils.getFieldValue(em, JdbcCacheStore.EntryMapping.class, "typeMeta");
+        CacheTypeMetadata typeMeta = GridTestUtils.getFieldValue(em, CacheAbstractJdbcStore.EntryMapping.class, "typeMeta");
 
-        cacheMappings.get(null).put(OrganizationKey.class, new JdbcCacheStore.EntryMapping(dialect, typeMeta));
+        cacheMappings.get(null).put(OrganizationKey.class, new CacheAbstractJdbcStore.EntryMapping(dialect, typeMeta));
 
         Connection conn = store.openConnection(false);
 
@@ -251,10 +250,28 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
 
         U.closeQuiet(prnStmt);
 
+        PreparedStatement prnComplexStmt = conn.prepareStatement("INSERT INTO Person_Complex(id, org_id, city_id, name) VALUES (?, ?, ?, ?)");
+
+        for (int i = 0; i < PERSON_CNT; i++) {
+            prnComplexStmt.setInt(1, i);
+            prnComplexStmt.setInt(2, i % 500);
+            prnComplexStmt.setInt(3, i % 100);
+            prnComplexStmt.setString(4, "name" + i);
+
+            prnComplexStmt.addBatch();
+        }
+
+        prnComplexStmt.executeBatch();
+
+        U.closeQuiet(prnComplexStmt);
+
+        conn.commit();
+
         U.closeQuiet(conn);
 
         final Collection<OrganizationKey> orgKeys = new ConcurrentLinkedQueue<>();
         final Collection<PersonKey> prnKeys = new ConcurrentLinkedQueue<>();
+        final Collection<PersonComplexKey> prnComplexKeys = new ConcurrentLinkedQueue<>();
 
         IgniteBiInClosure<Object, Object> c = new CI2<Object, Object>() {
             @Override public void apply(Object k, Object v) {
@@ -262,6 +279,17 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
                     orgKeys.add((OrganizationKey)k);
                 else if (k instanceof PersonKey && v instanceof Person)
                     prnKeys.add((PersonKey)k);
+                else if (k instanceof PersonComplexKey && v instanceof Person) {
+                    PersonComplexKey key = (PersonComplexKey)k;
+
+                    Person val = (Person)v;
+
+                    assert key.getId() == val.getId();
+                    assert key.getOrgId() == val.getOrgId();
+                    assert ("name"  + key.getId()).equals(val.getName());
+
+                    prnComplexKeys.add((PersonComplexKey)k);
+                }
             }
         };
 
@@ -269,17 +297,36 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
 
         assertEquals(ORGANIZATION_CNT, orgKeys.size());
         assertEquals(PERSON_CNT, prnKeys.size());
+        assertEquals(PERSON_CNT, prnComplexKeys.size());
 
-        store.deleteAll(orgKeys);
-        store.deleteAll(prnKeys);
+        Collection<OrganizationKey> tmpOrgKeys = new ArrayList<>(orgKeys);
+        Collection<PersonKey> tmpPrnKeys = new ArrayList<>(prnKeys);
+        Collection<PersonComplexKey> tmpPrnComplexKeys = new ArrayList<>(prnComplexKeys);
 
         orgKeys.clear();
         prnKeys.clear();
+        prnComplexKeys.clear();
+
+        store.loadCache(c, OrganizationKey.class.getName(), "SELECT name, city, id FROM ORGANIZATION",
+            PersonKey.class.getName(), "SELECT org_id, id, name FROM Person WHERE id < 1000");
+
+        assertEquals(ORGANIZATION_CNT, orgKeys.size());
+        assertEquals(1000, prnKeys.size());
+        assertEquals(0, prnComplexKeys.size());
+
+        store.deleteAll(tmpOrgKeys);
+        store.deleteAll(tmpPrnKeys);
+        store.deleteAll(tmpPrnComplexKeys);
+
+        orgKeys.clear();
+        prnKeys.clear();
+        prnComplexKeys.clear();
 
         store.loadCache(c);
 
         assertTrue(orgKeys.isEmpty());
         assertTrue(prnKeys.isEmpty());
+        assertTrue(prnComplexKeys.isEmpty());
     }
 
     /**
@@ -323,6 +370,15 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
         ses.newSession(null);
 
         assertNull(store.load(k3));
+
+        OrganizationKey k4 = new OrganizationKey(4);
+        Organization v4 = new Organization(4, null, "City4");
+
+        assertNull(store.load(k4));
+
+        store.write(new CacheEntryImpl<>(k4, v4));
+
+        assertEquals(v4, store.load(k4));
     }
 
     /**
@@ -692,6 +748,7 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
 
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Organization (id integer not null, name varchar(50), city varchar(50), PRIMARY KEY(id))");
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Person (id integer not null, org_id integer, name varchar(50), PRIMARY KEY(id))");
+        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Person_Complex (id integer not null, org_id integer not null, city_id integer not null, name varchar(50), PRIMARY KEY(id))");
 
         conn.commit();
 

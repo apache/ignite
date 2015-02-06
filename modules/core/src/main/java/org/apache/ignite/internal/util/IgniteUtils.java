@@ -2533,7 +2533,7 @@ public abstract class IgniteUtils {
 
         if (ggHome0 != null && !ggHome0.equals(path))
             throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
-                "[ggHome=" + ggHome0 + ", newGgHome=" + path + ']');
+                "[igniteHome=" + ggHome0 + ", newIgniteHome=" + path + ']');
     }
 
     /**

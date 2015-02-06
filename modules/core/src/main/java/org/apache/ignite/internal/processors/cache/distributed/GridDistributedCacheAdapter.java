@@ -175,9 +175,6 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     @GridInternal
     private static class GlobalRemoveAllCallable<K,V> implements Callable<Object>, Externalizable {
         /** */
-        private static final long REMOVE_ALL_BATCH_SIZE = 100L;
-
-        /** */
         private static final long serialVersionUID = 0L;
 
         /** Cache name. */
@@ -210,40 +207,39 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
          * {@inheritDoc}
          */
         @Override public Object call() throws Exception {
-            final IgniteKernal grid = (IgniteKernal)ignite;
-
-            final GridCache<K,V> cache = grid.cachex(cacheName);
-
-            GridCacheAdapter<K, V> cacheAdapter = grid.context().cache().internalCache(cacheName);
+            GridCacheAdapter<K, V> cacheAdapter = ((IgniteKernal)ignite).context().cache().internalCache(cacheName);
 
             final GridCacheContext<K, V> ctx = cacheAdapter.context();
 
-            if (ctx.affinity().affinityTopologyVersion() != topVer)
-                return null; // Ignore this remove request because remove request will be sent again.
+            ctx.affinity().affinityReadyFuture(topVer).get();
 
-            if (cacheAdapter instanceof GridNearCacheAdapter)
-                cacheAdapter = ((GridNearCacheAdapter<K, V>)cacheAdapter).dht();
+            ctx.gate().enter();
 
-            GridDhtCacheAdapter<K, V> dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
+            try {
+                if (ctx.affinity().affinityTopologyVersion() != topVer)
+                    return null; // Ignore this remove request because remove request will be sent again.
 
-            Collection<K> keys = new ArrayList<>();
+                GridDhtCacheAdapter<K, V> dht;
 
-            for (GridDhtLocalPartition<K, V> locPart : dht.topology().currentLocalPartitions()) {
-                if (!locPart.isEmpty() && locPart.primary(topVer)) {
-                    for (GridDhtCacheEntry<K, V> o : locPart.entries()) {
-                        keys.add(o.key());
+                if (cacheAdapter instanceof GridNearCacheAdapter)
+                    dht = ((GridNearCacheAdapter<K, V>)cacheAdapter).dht();
+                else
+                    dht = (GridDhtCacheAdapter<K, V>)cacheAdapter;
 
-                        if (keys.size() >= REMOVE_ALL_BATCH_SIZE) {
-                            cache.removeAll(keys);
-
-                            keys.clear();
+                try (IgniteDataLoader<K, V> dataLdr = ignite.dataLoader(cacheName)) {
+                    for (GridDhtLocalPartition<K, V> locPart : dht.topology().currentLocalPartitions()) {
+                        if (!locPart.isEmpty() && locPart.primary(topVer)) {
+                            for (GridDhtCacheEntry<K, V> o : locPart.entries()) {
+                                if (!o.obsoleteOrDeleted())
+                                    dataLdr.removeData(o.key());
+                            }
                         }
                     }
                 }
             }
-
-            if (!keys.isEmpty())
-                cache.removeAll(keys);
+            finally {
+                ctx.gate().leave();
+            }
 
             return null;
         }

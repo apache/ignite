@@ -21,12 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.jdbc.model.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
 import org.springframework.beans.factory.xml.*;
@@ -42,25 +44,27 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
  *
  */
-public abstract class AbstractJdbcCacheStoreMultithreadedSelfTest<T extends JdbcCacheStore> extends GridCommonAbstractTest {
-    /** Default connection URL (value is <tt>jdbc:h2:mem:jdbcCacheStore;DB_CLOSE_DELAY=-1</tt>). */
+public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends CacheAbstractJdbcStore>
+    extends GridCommonAbstractTest {
+    /** Database connection URL. */
     protected static final String DFLT_CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
 
     /** IP finder. */
     protected static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Number of transactions. */
-    private static final int TX_CNT = 1000;
+    private static final int TX_CNT = 200;
 
     /** Number of transactions. */
     private static final int BATCH_CNT = 2000;
 
     /** Cache store. */
-    protected T store;
+    protected static CacheAbstractJdbcStore store;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -69,7 +73,6 @@ public abstract class AbstractJdbcCacheStoreMultithreadedSelfTest<T extends Jdbc
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        Class.forName("org.h2.Driver");
         Connection conn = DriverManager.getConnection(DFLT_CONN_URL, "sa", "");
 
         Statement stmt = conn.createStatement();
@@ -80,16 +83,13 @@ public abstract class AbstractJdbcCacheStoreMultithreadedSelfTest<T extends Jdbc
         stmt.executeUpdate("CREATE TABLE Organization (id integer PRIMARY KEY, name varchar(50), city varchar(50))");
         stmt.executeUpdate("CREATE TABLE Person (id integer PRIMARY KEY, org_id integer, name varchar(50))");
 
-        stmt.executeUpdate("CREATE INDEX Org_Name_IDX On Organization (name)");
-        stmt.executeUpdate("CREATE INDEX Org_Name_City_IDX On Organization (name, city)");
-        stmt.executeUpdate("CREATE INDEX Person_Name_IDX1 On Person (name)");
-        stmt.executeUpdate("CREATE INDEX Person_Name_IDX2 On Person (name desc)");
-
         conn.commit();
 
         U.closeQuiet(stmt);
 
         U.closeQuiet(conn);
+
+        startGrid();
     }
 
     /** {@inheritDoc} */
@@ -163,9 +163,53 @@ public abstract class AbstractJdbcCacheStoreMultithreadedSelfTest<T extends Jdbc
     /**
      * @throws Exception If failed.
      */
-    public void testMultithreadedPutAll() throws Exception {
-        startGrid();
+    public void testMultithreadedPut() throws Exception {
+        IgniteInternalFuture<?> fut1 = runMultiThreadedAsync(new Callable<Object>() {
+            private final Random rnd = new Random();
 
+            @Override public Object call() throws Exception {
+                for (int i = 0; i < TX_CNT; i++) {
+                    GridCache<Object, Object> cache = cache();
+
+                    int id = rnd.nextInt(1000);
+
+                    if (rnd.nextBoolean())
+                        cache.put(new OrganizationKey(id), new Organization(id, "Name" + id, "City" + id));
+                    else
+                        cache.put(new PersonKey(id), new Person(id, rnd.nextInt(), "Name" + id));
+                }
+
+                return null;
+            }
+        }, 4, "put");
+
+        IgniteInternalFuture<?> fut2 = runMultiThreadedAsync(new Callable<Object>() {
+            private final Random rnd = new Random();
+
+            @Override public Object call() throws Exception {
+                for (int i = 0; i < TX_CNT; i++) {
+                    GridCache<Object, Object> cache = cache();
+
+                    int id = rnd.nextInt(1000);
+
+                    if (rnd.nextBoolean())
+                        cache.putIfAbsent(new OrganizationKey(id), new Organization(id, "Name" + id, "City" + id));
+                    else
+                        cache.putIfAbsent(new PersonKey(id), new Person(id, rnd.nextInt(), "Name" + id));
+                }
+
+                return null;
+            }
+        }, 8, "putIfAbsent");
+
+        fut1.get();
+        fut2.get();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMultithreadedPutAll() throws Exception {
         multithreaded(new Callable<Object>() {
             private final Random rnd = new Random();
 
@@ -192,5 +236,40 @@ public abstract class AbstractJdbcCacheStoreMultithreadedSelfTest<T extends Jdbc
                 return null;
             }
         }, 8, "putAll");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMultithreadedExplicitTx() throws Exception {
+        runMultiThreaded(new Callable<Object>() {
+            private final Random rnd = new Random();
+
+            @Override public Object call() throws Exception {
+                for (int i = 0; i < TX_CNT; i++) {
+                    GridCache<PersonKey, Person> cache = cache();
+
+                    try (IgniteTx tx = cache.txStart()) {
+                        cache.put(new PersonKey(1), new Person(1, rnd.nextInt(), "Name" + 1));
+                        cache.put(new PersonKey(2), new Person(2, rnd.nextInt(), "Name" + 2));
+                        cache.put(new PersonKey(3), new Person(3, rnd.nextInt(), "Name" + 3));
+
+                        cache.get(new PersonKey(1));
+                        cache.get(new PersonKey(4));
+
+                        Map<PersonKey, Person> map =  U.newHashMap(2);
+
+                        map.put(new PersonKey(5), new Person(5, rnd.nextInt(), "Name" + 5));
+                        map.put(new PersonKey(6), new Person(6, rnd.nextInt(), "Name" + 6));
+
+                        cache.putAll(map);
+
+                        tx.commit();
+                    }
+                }
+
+                return null;
+            }
+        }, 8, "tx");
     }
 }
