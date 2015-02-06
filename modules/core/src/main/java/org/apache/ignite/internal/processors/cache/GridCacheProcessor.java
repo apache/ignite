@@ -1062,7 +1062,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return;
 
         DeploymentMode locDepMode = ctx.config().getDeploymentMode();
-        DeploymentMode rmtDepMode = rmt.attribute(GridNodeAttributes.ATTR_DEPLOYMENT_MODE);
+        DeploymentMode rmtDepMode = rmt.attribute(IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE);
 
         for (GridCacheAttributes rmtAttr : rmtAttrs) {
             for (GridCacheAttributes locAttr : locAttrs) {
