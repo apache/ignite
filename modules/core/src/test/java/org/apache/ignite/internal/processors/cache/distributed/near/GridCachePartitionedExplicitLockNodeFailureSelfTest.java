@@ -109,7 +109,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
             assert !checkCache.lock(key, -1);
 
-            CacheEntry e = checkCache.entry(key);
+            Entry e = checkCache.entry(key);
 
             assert e.isLocked() : "Entry is not locked for grid [idx=" + checkIdx + ", entry=" + e + ']';
         }
@@ -139,7 +139,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
                     GridCache<Integer, String> checkCache = cache(checkIdx);
 
-                    CacheEntry e = checkCache.entry(key);
+                    Entry e = checkCache.entry(key);
 
                     info("Checking entry: " + e);
 

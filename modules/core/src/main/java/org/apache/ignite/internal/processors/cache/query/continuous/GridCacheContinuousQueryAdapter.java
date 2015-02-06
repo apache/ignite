@@ -54,7 +54,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements CacheContinuousQue
     private final Object topic;
 
     /** Projection predicate */
-    private final IgnitePredicate<CacheEntry<K, V>> prjPred;
+    private final IgnitePredicate<Entry<K, V>> prjPred;
 
     /** Keep portable flag. */
     private final boolean keepPortable;
@@ -93,7 +93,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements CacheContinuousQue
      * @param prjPred Projection predicate.
      */
     GridCacheContinuousQueryAdapter(GridCacheContext<K, V> ctx, Object topic,
-        @Nullable IgnitePredicate<CacheEntry<K, V>> prjPred) {
+        @Nullable IgnitePredicate<Entry<K, V>> prjPred) {
         assert ctx != null;
         assert topic != null;
 

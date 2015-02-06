@@ -32,6 +32,8 @@ import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache.*;
+import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -313,15 +315,20 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      * @param cacheKey Key.
      * @throws IgniteCheckedException If failed.
      */
-    private void put(Object o, Object cacheKey) throws IgniteCheckedException {
-        GridCache<Object, Object> cache = ignite.cache(cacheName);
+    private void put(final Object o, Object cacheKey) throws IgniteCheckedException {
+        IgniteCache<Object, Object> cache = ignite.jcache(cacheName);
 
         assert cache != null;
 
-        CacheEntry<Object, Object> entry = cache.entry(cacheKey);
+        cache.invoke(cacheKey, new EntryProcessor<Object, Object, Entry<Object, Object>>() {
+            @Override public Entry<Object, Object> process(MutableEntry<Object, Object> entry, Object... arguments)
+                throws EntryProcessorException {
+                if (entry != null)
+                    entry.setValue(o);
 
-        if (entry != null)
-            entry.setx(o);
+                return null;
+            }
+        });
     }
 
     /**

@@ -342,7 +342,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
             assert val != null;
             assert val.value() == i;
 
-            CacheEntry<Integer, CacheValue> entry = cache.entry(i);
+            Entry<Integer, CacheValue> entry = cache.entry(i);
 
             assert entry != null;
 
@@ -564,7 +564,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
     private void checkEntries(CacheProjection<Integer, CacheValue> cache,
         int lowerBound, int upperBound) throws Exception {
         for (int i = lowerBound; i < upperBound; i++) {
-            CacheEntry<Integer, CacheValue> entry = cache.entry(i);
+            Entry<Integer, CacheValue> entry = cache.entry(i);
 
             assert entry != null;
             assert entry.getKey() != null;

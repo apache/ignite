@@ -119,12 +119,12 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
                 if (offheapTiered(nodeCache))
                     continue;
 
-                Set<CacheEntry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
+                Set<Entry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
 
                 if (nodeCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key)) {
                     Collection<String> cp = new LinkedList<>(vals);
 
-                    for (CacheEntry<String, Integer> e : partEntrySet) {
+                    for (Entry<String, Integer> e : partEntrySet) {
                         String eKey = e.getKey();
 
                         assertTrue("Got unexpected key:" + eKey, cp.contains(eKey));
@@ -163,13 +163,13 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
 
                 // First node with this partition will remove first key from partition.
                 if (nodeCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key)) {
-                    Set<CacheEntry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
+                    Set<Entry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
 
-                    Iterator<CacheEntry<String, Integer>> it = partEntrySet.iterator();
+                    Iterator<Entry<String, Integer>> it = partEntrySet.iterator();
 
                     assertTrue(it.hasNext());
 
-                    CacheEntry<String, Integer> next = it.next();
+                    Entry<String, Integer> next = it.next();
 
                     deleted.add(next.getKey());
 
@@ -229,7 +229,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
                 if (offheapTiered(nodeCache))
                     continue;
 
-                Set<CacheEntry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
+                Set<Entry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
 
                 if (nodeCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key)) {
                     assertTrue(partEntrySet.contains(nodeCache.entry(key)));

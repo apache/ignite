@@ -96,7 +96,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     private IgniteLogger log;
 
     /** Filter. */
-    private IgnitePredicate<CacheEntry<K, V>>[] filter;
+    private IgnitePredicate<Entry<K, V>>[] filter;
 
     /** Transaction. */
     @GridToStringExclude
@@ -140,7 +140,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         boolean retval,
         long timeout,
         long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        IgnitePredicate<Entry<K, V>>[] filter) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert keys != null;

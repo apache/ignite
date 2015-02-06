@@ -98,9 +98,9 @@ public abstract class GridCacheEntrySetAbstractSelfTest extends GridCacheAbstrac
 
             int cntr = 0;
 
-            Set<CacheEntry<Object, Object>> entries = cache.entrySet();
+            Set<Entry<Object, Object>> entries = cache.entrySet();
 
-            for (CacheEntry e : entries) {
+            for (Entry e : entries) {
                 if (e.getKey() instanceof Integer)
                     cntr++;
             }

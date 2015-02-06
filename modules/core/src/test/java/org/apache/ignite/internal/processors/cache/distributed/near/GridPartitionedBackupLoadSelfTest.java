@@ -110,7 +110,7 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             GridCache<Integer, Integer> cache = cache(i);
 
-            CacheEntry<Integer, Integer> entry = cache.entry(1);
+            Entry<Integer, Integer> entry = cache.entry(1);
 
             if (entry.backup()) {
                 assert entry.peek() == 1;

@@ -362,7 +362,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 "different configuration) [deployed=" + dep.configuration() + ", new=" + cfg + ']'));
                         }
                         else {
-                            for (CacheEntry<Object, Object> e : cache.entrySetx()) {
+                            for (Entry<Object, Object> e : cache.entrySetx()) {
                                 if (e.getKey() instanceof GridServiceAssignmentsKey) {
                                     GridServiceAssignments assigns = (GridServiceAssignments)e.getValue();
 
@@ -454,7 +454,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public IgniteInternalFuture<?> cancelAll() {
         Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
-        for (CacheEntry<Object, Object> e : cache.entrySetx()) {
+        for (Entry<Object, Object> e : cache.entrySetx()) {
             if (!(e.getKey() instanceof GridServiceDeploymentKey))
                 continue;
 
@@ -473,7 +473,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public Collection<ManagedServiceDescriptor> deployedServices() {
         Collection<ManagedServiceDescriptor> descs = new ArrayList<>();
 
-        for (CacheEntry<Object, Object> e : cache.entrySetx()) {
+        for (Entry<Object, Object> e : cache.entrySetx()) {
             if (!(e.getKey() instanceof GridServiceDeploymentKey))
                 continue;
 
@@ -1074,7 +1074,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 ctx.cache().context().deploy().ignoreOwnership(true);
 
                             try {
-                                for (CacheEntry<Object, Object> e : cache.entrySetx()) {
+                                for (Entry<Object, Object> e : cache.entrySetx()) {
                                     if (!(e.getKey() instanceof GridServiceDeploymentKey))
                                         continue;
 
@@ -1107,7 +1107,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         }
 
                         // Clean up zombie assignments.
-                        for (CacheEntry<Object, Object> e : cache.primaryEntrySetx()) {
+                        for (Entry<Object, Object> e : cache.primaryEntrySetx()) {
                             if (!(e.getKey() instanceof GridServiceAssignmentsKey))
                                 continue;
 

@@ -76,7 +76,7 @@ public class GridCacheConcurrentMapTest extends GridCommonAbstractTest {
             cache.put("key" + i, "val" + i);
 
         for (int i = 0; i < 20; i++) {
-            CacheEntry<String, String> entry = cache.randomEntry();
+            Entry<String, String> entry = cache.randomEntry();
 
             assert entry != null;
 
@@ -116,7 +116,7 @@ public class GridCacheConcurrentMapTest extends GridCommonAbstractTest {
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     while (!done.get()) {
-                        CacheEntry<String, String> entry = cache.randomEntry();
+                        Entry<String, String> entry = cache.randomEntry();
 
                         info("Random entry key: " + (entry != null ? entry.getKey() : "N/A"));
                     }

@@ -411,7 +411,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
         ggfs.delete(path("/"), false);
         assertEquals(Collections.<IgniteFsPath>emptyList(), ggfs.listPaths(path("/")));
 
-        for (CacheEntry<Object, Object> e : metaCache)
+        for (Entry<Object, Object> e : metaCache)
             info("Entry in cache [key=" + e.getKey() + ", val=" + e.getValue() + ']');
     }
 

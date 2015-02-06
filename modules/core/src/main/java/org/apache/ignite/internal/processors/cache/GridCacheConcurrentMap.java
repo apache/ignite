@@ -87,9 +87,9 @@ public class GridCacheConcurrentMap<K, V> {
     private final LongAdder mapSize = new LongAdder();
 
     /** Filters cache internal entry. */
-    private static final P1<CacheEntry<?, ?>> NON_INTERNAL =
-        new P1<CacheEntry<?, ?>>() {
-            @Override public boolean apply(CacheEntry<?, ?> entry) {
+    private static final P1<Entry<?, ?>> NON_INTERNAL =
+        new P1<Entry<?, ?>>() {
+            @Override public boolean apply(Entry<?, ?> entry) {
                 return !(entry.getKey() instanceof GridCacheInternal);
             }
         };
@@ -312,17 +312,17 @@ public class GridCacheConcurrentMap<K, V> {
     /**
      * @return Non-internal predicate.
      */
-    private static <K, V> IgnitePredicate<CacheEntry<K, V>>[] nonInternal() {
-        return (IgnitePredicate<CacheEntry<K,V>>[])NON_INTERNAL_ARR;
+    private static <K, V> IgnitePredicate<Entry<K, V>>[] nonInternal() {
+        return (IgnitePredicate<Entry<K,V>>[])NON_INTERNAL_ARR;
     }
 
     /**
      * @param filter Filter to add to non-internal-key filter.
      * @return Non-internal predicate.
      */
-    private static <K, V> IgnitePredicate<CacheEntry<K, V>>[] nonInternal(
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
-        return F.asArray(F0.and((IgnitePredicate<CacheEntry<K, V>>[]) NON_INTERNAL_ARR, filter));
+    private static <K, V> IgnitePredicate<Entry<K, V>>[] nonInternal(
+        IgnitePredicate<Entry<K, V>>[] filter) {
+        return F.asArray(F0.and((IgnitePredicate<Entry<K, V>>[]) NON_INTERNAL_ARR, filter));
     }
 
     /**
@@ -394,7 +394,7 @@ public class GridCacheConcurrentMap<K, V> {
      * @param filter Filter.
      * @return a collection view of the values contained in this map.
      */
-    public Collection<V> allValues(IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    public Collection<V> allValues(IgnitePredicate<Entry<K, V>>[] filter) {
         checkWeakQueue();
 
         return new Values<>(this, filter);
@@ -562,10 +562,10 @@ public class GridCacheConcurrentMap<K, V> {
      * @return Entry wrapper set.
      */
     @SuppressWarnings({"unchecked", "RedundantCast"})
-    public Set<GridCacheEntryImpl<K, V>> wrappers(IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    public Set<GridCacheEntryImpl<K, V>> wrappers(IgnitePredicate<Entry<K, V>>[] filter) {
         checkWeakQueue();
 
-        return (Set<GridCacheEntryImpl<K, V>>)(Set<? extends CacheEntry<K, V>>)entries(filter);
+        return (Set<GridCacheEntryImpl<K, V>>)(Set<? extends Entry<K, V>>)entries(filter);
     }
 
     /**
@@ -575,10 +575,10 @@ public class GridCacheConcurrentMap<K, V> {
      * @return Entry projections set.
      */
     @SuppressWarnings({"unchecked", "RedundantCast"})
-    public Set<CacheEntry<K, V>> projections(IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    public Set<Entry<K, V>> projections(IgnitePredicate<Entry<K, V>>[] filter) {
         checkWeakQueue();
 
-        return (Set<CacheEntry<K, V>>)(Set<? extends CacheEntry<K, V>>)wrappers(filter);
+        return (Set<Entry<K, V>>)(Set<? extends Entry<K, V>>)wrappers(filter);
     }
 
     /**
@@ -588,7 +588,7 @@ public class GridCacheConcurrentMap<K, V> {
      * @return Set of the mappings contained in this map.
      */
     @SuppressWarnings({"unchecked"})
-    public Set<CacheEntry<K, V>> entries(IgnitePredicate<CacheEntry<K, V>>... filter) {
+    public Set<Entry<K, V>> entries(IgnitePredicate<Entry<K, V>>... filter) {
         checkWeakQueue();
 
         return new EntrySet<>(this, filter);
@@ -601,7 +601,7 @@ public class GridCacheConcurrentMap<K, V> {
      * @return Set of the mappings contained in this map.
      */
     @SuppressWarnings({"unchecked"})
-    public Set<CacheEntry<K, V>> entriesx(IgnitePredicate<CacheEntry<K, V>>... filter) {
+    public Set<Entry<K, V>> entriesx(IgnitePredicate<Entry<K, V>>... filter) {
         checkWeakQueue();
 
         return new EntrySet<>(this, filter, true);
@@ -648,7 +648,7 @@ public class GridCacheConcurrentMap<K, V> {
      * @param filter Filter.
      * @return Set of the keys contained in this map.
      */
-    public Set<K> keySet(IgnitePredicate<CacheEntry<K, V>>... filter) {
+    public Set<K> keySet(IgnitePredicate<Entry<K, V>>... filter) {
         checkWeakQueue();
 
         return new KeySet<>(this, filter);
@@ -660,7 +660,7 @@ public class GridCacheConcurrentMap<K, V> {
      * @param filter Filter.
      * @return Collection view of the values contained in this map.
      */
-    public Collection<V> values(IgnitePredicate<CacheEntry<K, V>>... filter) {
+    public Collection<V> values(IgnitePredicate<Entry<K, V>>... filter) {
         checkWeakQueue();
 
         return allValues(filter);
@@ -1568,7 +1568,7 @@ public class GridCacheConcurrentMap<K, V> {
         private GridCacheMapEntry<K, V> cur;
 
         /** Iterator filter. */
-        private IgnitePredicate<CacheEntry<K, V>>[] filter;
+        private IgnitePredicate<Entry<K, V>>[] filter;
 
         /** Outer cache map. */
         private GridCacheConcurrentMap<K, V> map;
@@ -1601,7 +1601,7 @@ public class GridCacheConcurrentMap<K, V> {
          */
         @SuppressWarnings({"unchecked"})
         Iterator0(GridCacheConcurrentMap<K, V> map, boolean isVal,
-            IgnitePredicate<CacheEntry<K, V>>[] filter, int id, int totalCnt) {
+            IgnitePredicate<Entry<K, V>>[] filter, int id, int totalCnt) {
             this.filter = filter;
             this.isVal = isVal;
             this.id = id;
@@ -1780,7 +1780,7 @@ public class GridCacheConcurrentMap<K, V> {
         @SuppressWarnings({"unchecked"})
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             ctx = (GridCacheContext<K, V>)in.readObject();
-            filter = (IgnitePredicate<CacheEntry<K, V>>[])in.readObject();
+            filter = (IgnitePredicate<Entry<K, V>>[])in.readObject();
             isVal = in.readBoolean();
             id = in.readInt();
             totalCnt = in.readInt();
@@ -1806,7 +1806,7 @@ public class GridCacheConcurrentMap<K, V> {
         private static final long serialVersionUID = 0L;
 
         /** Filter. */
-        private IgnitePredicate<CacheEntry<K, V>>[] filter;
+        private IgnitePredicate<Entry<K, V>>[] filter;
 
         /** Base map. */
         private GridCacheConcurrentMap<K, V> map;
@@ -1834,7 +1834,7 @@ public class GridCacheConcurrentMap<K, V> {
          * @param map Base map.
          * @param filter Filter.
          */
-        private Set0(GridCacheConcurrentMap<K, V> map, IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        private Set0(GridCacheConcurrentMap<K, V> map, IgnitePredicate<Entry<K, V>>[] filter) {
             assert map != null;
 
             this.map = map;
@@ -1855,7 +1855,7 @@ public class GridCacheConcurrentMap<K, V> {
         /**
          * @return Entry iterator.
          */
-        Iterator<CacheEntry<K, V>> entryIterator() {
+        Iterator<Entry<K, V>> entryIterator() {
             return new EntryIterator<>(map, filter, ctx, prjPerCall, forcedFlags);
         }
 
@@ -1924,7 +1924,7 @@ public class GridCacheConcurrentMap<K, V> {
 
         /** {@inheritDoc} */
         @Override public boolean remove(Object o) {
-            return o instanceof CacheEntry && removeKey(((Map.Entry<K, V>)o).getKey());
+            return o instanceof Entry && removeKey(((Map.Entry<K, V>)o).getKey());
         }
 
         /**
@@ -1964,7 +1964,7 @@ public class GridCacheConcurrentMap<K, V> {
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             ctx = (GridCacheContext<K, V>)in.readObject();
-            filter = (IgnitePredicate<CacheEntry<K, V>>[])in.readObject();
+            filter = (IgnitePredicate<Entry<K, V>>[])in.readObject();
         }
 
         /**
@@ -1983,7 +1983,7 @@ public class GridCacheConcurrentMap<K, V> {
      * <p>
      * Note, class is static for {@link Externalizable}.
      */
-    private static class EntryIterator<K, V> implements Iterator<CacheEntry<K, V>>, Externalizable {
+    private static class EntryIterator<K, V> implements Iterator<Entry<K, V>>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2015,7 +2015,7 @@ public class GridCacheConcurrentMap<K, V> {
          */
         EntryIterator(
             GridCacheConcurrentMap<K, V> map,
-            IgnitePredicate<CacheEntry<K, V>>[] filter,
+            IgnitePredicate<Entry<K, V>>[] filter,
             GridCacheContext<K, V> ctx,
             GridCacheProjectionImpl<K, V> prjPerCall,
             CacheFlag[] forcedFlags) {
@@ -2032,7 +2032,7 @@ public class GridCacheConcurrentMap<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override public CacheEntry<K, V> next() {
+        @Override public Entry<K, V> next() {
             GridCacheProjectionImpl<K, V> oldPrj = ctx.projectionPerCall();
 
             ctx.projectionPerCall(prjPerCall);
@@ -2104,7 +2104,7 @@ public class GridCacheConcurrentMap<K, V> {
          */
         private ValueIterator(
             GridCacheConcurrentMap<K, V> map,
-            IgnitePredicate<CacheEntry<K, V>>[] filter,
+            IgnitePredicate<Entry<K, V>>[] filter,
             GridCacheContext<K, V> ctx,
             boolean clone) {
             it = new Iterator0<>(map, true, filter, -1, -1);
@@ -2175,7 +2175,7 @@ public class GridCacheConcurrentMap<K, V> {
          * @param map Cache map.
          * @param filter Filter.
          */
-        private KeyIterator(GridCacheConcurrentMap<K, V> map, IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        private KeyIterator(GridCacheConcurrentMap<K, V> map, IgnitePredicate<Entry<K, V>>[] filter) {
             it = new Iterator0<>(map, false, filter, -1, -1);
         }
 
@@ -2227,7 +2227,7 @@ public class GridCacheConcurrentMap<K, V> {
          * @param map Base map.
          * @param filter Key filter.
          */
-        private KeySet(GridCacheConcurrentMap<K, V> map, IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        private KeySet(GridCacheConcurrentMap<K, V> map, IgnitePredicate<Entry<K, V>>[] filter) {
             assert map != null;
 
             set = new Set0<>(map, nonInternal(filter));
@@ -2295,7 +2295,7 @@ public class GridCacheConcurrentMap<K, V> {
          * @param map Base map.
          * @param filter Value filter.
          */
-        private Values(GridCacheConcurrentMap<K, V> map, IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        private Values(GridCacheConcurrentMap<K, V> map, IgnitePredicate<Entry<K, V>>[] filter) {
             assert map != null;
 
             set = new Set0<>(map, nonInternal(filter));
@@ -2337,7 +2337,7 @@ public class GridCacheConcurrentMap<K, V> {
     /**
      * Entry set.
      */
-    private static class EntrySet<K, V> extends AbstractSet<CacheEntry<K, V>> implements Externalizable {
+    private static class EntrySet<K, V> extends AbstractSet<Entry<K, V>> implements Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2355,7 +2355,7 @@ public class GridCacheConcurrentMap<K, V> {
          * @param map Base map.
          * @param filter Key filter.
          */
-        private EntrySet(GridCacheConcurrentMap<K, V> map, IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        private EntrySet(GridCacheConcurrentMap<K, V> map, IgnitePredicate<Entry<K, V>>[] filter) {
             this(map, filter, false);
         }
 
@@ -2364,7 +2364,7 @@ public class GridCacheConcurrentMap<K, V> {
          * @param filter Key filter.
          * @param internal Whether to allow internal entries.
          */
-        private EntrySet(GridCacheConcurrentMap<K, V> map, IgnitePredicate<CacheEntry<K, V>>[] filter,
+        private EntrySet(GridCacheConcurrentMap<K, V> map, IgnitePredicate<Entry<K, V>>[] filter,
             boolean internal) {
             assert map != null;
 
@@ -2372,7 +2372,7 @@ public class GridCacheConcurrentMap<K, V> {
         }
 
         /** {@inheritDoc} */
-        @NotNull @Override public Iterator<CacheEntry<K, V>> iterator() {
+        @NotNull @Override public Iterator<Entry<K, V>> iterator() {
             return set.entryIterator();
         }
 

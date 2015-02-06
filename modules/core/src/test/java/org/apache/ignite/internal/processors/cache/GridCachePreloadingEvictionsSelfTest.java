@@ -121,7 +121,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                         info("Started evicting...");
 
                         for (int i = 0; i < 3000 && !done.get(); i++) {
-                            CacheEntry<Integer, Object> entry = randomEntry(ignite1);
+                            Entry<Integer, Object> entry = randomEntry(ignite1);
 
                             if (entry != null)
                                 entry.evict();
@@ -161,7 +161,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
             info("Evicting on constant topology.");
 
             for (int i = 0; i < 1000; i++) {
-                CacheEntry<Integer, Object> entry = randomEntry(ignite1);
+                Entry<Integer, Object> entry = randomEntry(ignite1);
 
                 if (entry != null)
                     entry.evict();
@@ -204,7 +204,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @param g Grid.
      * @return Random entry from cache.
      */
-    @Nullable private CacheEntry<Integer, Object> randomEntry(Ignite g) {
+    @Nullable private Entry<Integer, Object> randomEntry(Ignite g) {
         IgniteKernal g1 = (IgniteKernal)g;
 
         return g1.<Integer, Object>internalCache().randomEntry();

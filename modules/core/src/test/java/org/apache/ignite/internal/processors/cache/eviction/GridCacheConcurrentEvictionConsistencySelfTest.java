@@ -208,12 +208,12 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
 
             fut.get();
 
-            Collection<CacheEntry<Integer, Integer>> queue = internalQueue(plc);
+            Collection<Entry<Integer, Integer>> queue = internalQueue(plc);
 
             info("Test results [threadCnt=" + threadCnt + ", iterCnt=" + ITERATION_CNT + ", cacheSize=" + cache.size() +
                 ", internalQueueSize" + queue.size() + ", duration=" + (System.currentTimeMillis() - start) + ']');
 
-            for (CacheEntry<Integer, Integer> e : queue) {
+            for (Entry<Integer, Integer> e : queue) {
                 Integer rmv = cache.remove(e.getKey());
 
                 if (rmv == null)
@@ -225,7 +225,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
             if (!cache.isEmpty()) {
                 boolean zombies = false;
 
-                for (CacheEntry<Integer, Integer> e : cache) {
+                for (Entry<Integer, Integer> e : cache) {
                     U.warn(log, "Zombie entry: " + e);
 
                     zombies = true;
@@ -248,7 +248,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @param plc Policy to get queue from.
      * @return Internal entries collection.
      */
-    private Collection<CacheEntry<Integer, Integer>> internalQueue(CacheEvictionPolicy<?, ?> plc) {
+    private Collection<Entry<Integer, Integer>> internalQueue(CacheEvictionPolicy<?, ?> plc) {
         if (plc instanceof CacheFifoEvictionPolicy) {
             CacheFifoEvictionPolicy<Integer, Integer> plc0 = (CacheFifoEvictionPolicy<Integer, Integer>)plc;
 

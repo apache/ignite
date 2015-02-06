@@ -51,7 +51,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
     public void testCacheIterator() throws Exception {
         int cnt = 0;
 
-        for (CacheEntry<String, Integer> entry : cache()) {
+        for (Entry<String, Integer> entry : cache()) {
             assert entry != null;
             assert entry.getKey() != null;
             assert entry.getKey().contains(KEY_PREFIX);
@@ -72,7 +72,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
     public void testCacheProjectionIterator() throws Exception {
         int cnt = 0;
 
-        for (CacheEntry<String, Integer> entry : cache().projection(lt50)) {
+        for (Entry<String, Integer> entry : cache().projection(lt50)) {
             assert entry != null;
             assert entry.getKey() != null;
             assert entry.getKey().contains(KEY_PREFIX);
@@ -104,7 +104,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
         GridTestUtils.runMultiThreaded(new CA() {
             @Override public void apply() {
                 while (!putFut.isDone()) {
-                    for (CacheEntry<String, Integer> entry : cache()) {
+                    for (Entry<String, Integer> entry : cache()) {
                         assert entry != null;
                         assert entry.getKey() != null;
                         assert entry.getKey().contains(KEY_PREFIX);
@@ -118,14 +118,14 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
      * @throws Exception If failed.
      */
     public void testEntrySetIterator() throws Exception {
-        Set<CacheEntry<String, Integer>> entries = cache().entrySet();
+        Set<Entry<String, Integer>> entries = cache().entrySet();
 
         assert entries != null;
         assert entries.size() == entryCount();
 
         int cnt = 0;
 
-        for (CacheEntry<String, Integer> entry : entries) {
+        for (Entry<String, Integer> entry : entries) {
             assert entry != null;
             assert entry.getKey() != null;
             assert entry.getKey().contains(KEY_PREFIX);
@@ -144,14 +144,14 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
      * @throws Exception If failed.
      */
     public void testEntrySetIteratorFiltered() throws Exception {
-        Set<CacheEntry<String, Integer>> entries = cache().projection(lt50).entrySet();
+        Set<Entry<String, Integer>> entries = cache().projection(lt50).entrySet();
 
         assert entries != null;
         assert entries.size() == 50;
 
         int cnt = 0;
 
-        for (CacheEntry<String, Integer> entry : entries) {
+        for (Entry<String, Integer> entry : entries) {
             assert entry != null;
             assert entry.getKey() != null;
             assert entry.getKey().contains(KEY_PREFIX);
@@ -183,7 +183,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
         GridTestUtils.runMultiThreaded(new CA() {
             @Override public void apply() {
                 while (!putFut.isDone()) {
-                    for (CacheEntry<String, Integer> entry : cache().entrySet()) {
+                    for (Entry<String, Integer> entry : cache().entrySet()) {
                         assert entry != null;
                         assert entry.getKey() != null;
                         assert entry.getKey().contains(KEY_PREFIX);

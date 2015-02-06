@@ -615,7 +615,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      *
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class TestEntryPredicate implements IgnitePredicate<CacheEntry<Integer, Integer>> {
+    public static class TestEntryPredicate implements IgnitePredicate<Entry<Integer, Integer>> {
         /** */
         private Integer expVal;
 
@@ -627,7 +627,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(CacheEntry<Integer, Integer> e) {
+        @Override public boolean apply(Entry<Integer, Integer> e) {
             assertEquals(expVal, e.peek());
 
             return true;

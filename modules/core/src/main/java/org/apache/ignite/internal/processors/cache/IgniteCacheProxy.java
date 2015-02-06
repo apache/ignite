@@ -405,7 +405,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
      * @param filter Filter.
      * @return Entry set.
      */
-    public Set<CacheEntry<K, V>> entrySetx(IgnitePredicate<CacheEntry<K, V>>... filter) {
+    public Set<Entry<K, V>> entrySetx(IgnitePredicate<Entry<K, V>>... filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

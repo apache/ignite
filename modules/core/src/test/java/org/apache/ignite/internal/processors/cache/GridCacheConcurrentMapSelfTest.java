@@ -92,7 +92,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
 
         int idx = 0;
 
-        for (CacheEntry<Integer, String> e : c.entrySet()) {
+        for (Entry<Integer, String> e : c.entrySet()) {
             assertNotNull(e.peek());
 
             idx++;
@@ -131,7 +131,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
 
         int idx = 0;
 
-        for (CacheEntry<Integer, String> e : c.entrySet()) {
+        for (Entry<Integer, String> e : c.entrySet()) {
             assertNotNull(e.peek());
 
             idx++;
@@ -160,7 +160,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
                 int start = 2 * 1024 * tid;
 
                 Iterator<String> it1 = null;
-                Iterator<CacheEntry<Integer, String>> it2 = null;
+                Iterator<Entry<Integer, String>> it2 = null;
                 Iterator<Integer> it3 = null;
 
                 boolean created = false;
@@ -211,7 +211,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
 
                 int idx = 0;
 
-                for (CacheEntry<Integer, String> e : c.entrySet()) {
+                for (Entry<Integer, String> e : c.entrySet()) {
                     assertNotNull(e.peek());
 
                     idx++;
@@ -256,7 +256,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
                 int start = 2 * 1024 * tid;
 
                 Iterator<String> it1 = null;
-                Iterator<CacheEntry<Integer, String>> it2 = null;
+                Iterator<Entry<Integer, String>> it2 = null;
                 Iterator<Integer> it3 = null;
 
                 boolean forgot = false;
@@ -306,7 +306,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
 
                 int idx = 0;
 
-                for (CacheEntry<Integer, String> e : c.entrySet()) {
+                for (Entry<Integer, String> e : c.entrySet()) {
                     assertNotNull(e.peek());
 
                     idx++;
@@ -343,7 +343,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
                 @SuppressWarnings("UnusedAssignment")
                 @Override public Object call() throws Exception {
                     Iterator<String> it1 = c.values().iterator();
-                    Iterator<CacheEntry<Integer, String>> it2 = c.entrySet().iterator();
+                    Iterator<Entry<Integer, String>> it2 = c.entrySet().iterator();
                     Iterator<Integer> it3 = c.keySet().iterator();
 
                     for (int i = 0; i < 1000; i++) {

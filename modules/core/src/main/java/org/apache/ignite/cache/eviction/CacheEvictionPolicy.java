@@ -21,10 +21,10 @@ import org.apache.ignite.cache.*;
 
 /**
  * Pluggable cache eviction policy. Usually, implementations will internally order
- * cache entries based on {@link #onEntryAccessed(boolean, org.apache.ignite.cache.CacheEntry)} notifications and
- * whenever an element needs to be evicted, {@link org.apache.ignite.cache.CacheEntry#evict()}
+ * cache entries based on {@link #onEntryAccessed(boolean, org.apache.ignite.cache.Entry)} notifications and
+ * whenever an element needs to be evicted, {@link org.apache.ignite.cache.Entry#evict()}
  * method should be called. If you need to access the underlying cache directly
- * from this policy, you can get it via {@link org.apache.ignite.cache.CacheEntry#projection()} method.
+ * from this policy, you can get it via {@link org.apache.ignite.cache.Entry#projection()} method.
  * <p>
  * GridGain comes with following eviction policies out-of-the-box:
  * <ul>
@@ -49,5 +49,5 @@ public interface CacheEvictionPolicy<K, V> {
      * @param rmv {@code True} if entry has been removed, {@code false} otherwise.
      * @param entry Accessed entry.
      */
-    public void onEntryAccessed(boolean rmv, CacheEntry<K, V> entry);
+    public void onEntryAccessed(boolean rmv, EvictableEntry<K, V> entry);
 }

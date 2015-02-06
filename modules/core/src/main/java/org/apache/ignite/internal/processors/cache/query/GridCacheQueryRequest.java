@@ -67,7 +67,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
     /** */
     @GridDirectTransient
-    private IgnitePredicate<CacheEntry<Object, Object>> prjFilter;
+    private IgnitePredicate<Entry<Object, Object>> prjFilter;
 
     /** */
     private byte[] prjFilterBytes;
@@ -201,7 +201,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
         String clause,
         String clsName,
         IgniteBiPredicate<Object, Object> keyValFilter,
-        IgnitePredicate<CacheEntry<Object, Object>> prjFilter,
+        IgnitePredicate<Entry<Object, Object>> prjFilter,
         IgniteReducer<Object, Object> rdc,
         IgniteClosure<Object, Object> trans,
         int pageSize,
@@ -376,7 +376,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     }
 
     /** {@inheritDoc} */
-    public IgnitePredicate<CacheEntry<Object, Object>> projectionFilter() {
+    public IgnitePredicate<Entry<Object, Object>> projectionFilter() {
         return prjFilter;
     }
 

@@ -251,7 +251,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
     /**
      *
      */
-    protected abstract static class TestPredicate implements P1<CacheEntry<Integer, Object>> {
+    protected abstract static class TestPredicate implements P1<Entry<Integer, Object>> {
         /** */
         protected String expVal;
 
@@ -268,7 +268,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
         }
 
         /** {@inheritDoc} */
-        @Override public final boolean apply(CacheEntry<Integer, Object> e) {
+        @Override public final boolean apply(Entry<Integer, Object> e) {
             assertNotNull(e);
 
             Object val = e.peek();

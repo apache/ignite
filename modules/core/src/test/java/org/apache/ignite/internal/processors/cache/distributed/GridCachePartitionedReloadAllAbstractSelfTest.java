@@ -211,7 +211,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
             cache.reloadAll(map.keySet());
 
             for (Integer key : map.keySet()) {
-                CacheEntry entry = cache.entry(key);
+                Entry entry = cache.entry(key);
 
                 if (entry.primary() || entry.backup() || nearEnabled())
                     assertEquals(map.get(key), cache.peek(key));

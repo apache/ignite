@@ -191,7 +191,7 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkCache(CacheProjection<Integer, Integer> cache, int key, int expVal) throws Exception {
-        CacheEntry<Integer, Integer> entry = cache.entry(key);
+        Entry<Integer, Integer> entry = cache.entry(key);
 
         assert F.eq(expVal, entry.getValue()) : "Unexpected cache value [key=" + key + ", expected=" + expVal +
             ", actual=" + entry.getValue() + ", primary=" + entry.primary() + ", backup=" + entry.backup() + ']';

@@ -141,7 +141,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
                 CacheFifoEvictionPolicy<Integer, Integer> plc0 = (CacheFifoEvictionPolicy<Integer, Integer>) plc;
 
                 if (!plc0.queue().isEmpty()) {
-                    for (CacheEntry<Integer, Integer> e : plc0.queue())
+                    for (Entry<Integer, Integer> e : plc0.queue())
                         U.warn(log, "Policy queue item: " + e);
 
                     fail("Test failed, see logs for details.");

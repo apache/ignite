@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.CacheEntry;
+import org.apache.ignite.cache.Entry;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -233,7 +233,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheEntry<K, V> entry(K key) {
+    @Override public Entry<K, V> entry(K key) {
         return new GridDhtCacheEntryImpl<>(ctx.projectionPerCall(), ctx, key, null);
     }
 
@@ -265,7 +265,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable UUID subjId,
         final String taskName,
         final boolean deserializePortable,
-        @Nullable final IgnitePredicate<CacheEntry<K, V>>[] filter
+        @Nullable final IgnitePredicate<Entry<K, V>>[] filter
     ) {
         GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
@@ -291,26 +291,26 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public V put(K key, V val, @Nullable GridCacheEntryEx<K, V> cached, long ttl,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Entry<K, V>>[] filter) throws IgniteCheckedException {
         return putAsync(key, val, cached, ttl, filter).get();
     }
 
     /** {@inheritDoc} */
     @Override public boolean putx(K key, V val, @Nullable GridCacheEntryEx<K, V> cached,
-        long ttl, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+        long ttl, @Nullable IgnitePredicate<Entry<K, V>>... filter) throws IgniteCheckedException {
         return putxAsync(key, val, cached, ttl, filter).get();
     }
 
     /** {@inheritDoc} */
     @Override public boolean putx(K key, V val,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        IgnitePredicate<Entry<K, V>>[] filter) throws IgniteCheckedException {
         return putxAsync(key, val, filter).get();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<V> putAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry,
-        long ttl, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        long ttl, @Nullable IgnitePredicate<Entry<K, V>>... filter) {
         A.notNull(key, "key");
 
         return updateAllAsync0(F0.asMap(key, val),
@@ -327,7 +327,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<Boolean> putxAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        @Nullable IgnitePredicate<Entry<K, V>>... filter) {
         A.notNull(key, "key");
 
         return updateAllAsync0(F0.asMap(key, val),
@@ -435,13 +435,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void putAll(Map<? extends K, ? extends V> m,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        IgnitePredicate<Entry<K, V>>[] filter) throws IgniteCheckedException {
         putAllAsync(m, filter).get();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllAsync(Map<? extends K, ? extends V> m,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        @Nullable IgnitePredicate<Entry<K, V>>[] filter) {
         return updateAllAsync0(m,
             null,
             null,
@@ -475,14 +475,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public V remove(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Entry<K, V>>... filter) throws IgniteCheckedException {
         return removeAsync(key, entry, filter).get();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        @Nullable IgnitePredicate<Entry<K, V>>... filter) {
         A.notNull(key, "key");
 
         return removeAllAsync0(Collections.singletonList(key), null, entry, true, false, filter);
@@ -490,13 +490,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void removeAll(Collection<? extends K> keys,
-        IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+        IgnitePredicate<Entry<K, V>>... filter) throws IgniteCheckedException {
         removeAllAsync(keys, filter).get();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync(Collection<? extends K> keys,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        IgnitePredicate<Entry<K, V>>[] filter) {
         A.notNull(keys, "keys");
 
         return removeAllAsync0(keys, null, null, false, false, filter);
@@ -504,14 +504,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean removex(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Entry<K, V>>... filter) throws IgniteCheckedException {
         return removexAsync(key, entry, filter).get();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteInternalFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        @Nullable IgnitePredicate<Entry<K, V>>... filter) {
         A.notNull(key, "key");
 
         return removeAllAsync0(Collections.singletonList(key), null, entry, false, false, filter);
@@ -530,7 +530,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllAsync(IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    @Override public IgniteInternalFuture<?> removeAllAsync(IgnitePredicate<Entry<K, V>>[] filter) {
         return removeAllAsync(keySet(filter), filter);
     }
 
@@ -604,7 +604,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean retval,
         @Nullable IgniteTxIsolation isolation,
         long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        IgnitePredicate<Entry<K, V>>[] filter) {
         return new FinishedLockFuture(new UnsupportedOperationException("Locks are not supported for " +
             "CacheAtomicityMode.ATOMIC mode (use CacheAtomicityMode.TRANSACTIONAL instead)"));
     }
@@ -747,7 +747,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean retval,
         final boolean rawRetval,
         @Nullable GridCacheEntryEx<K, V> cached,
-        @Nullable final IgnitePredicate<CacheEntry<K, V>>[] filter
+        @Nullable final IgnitePredicate<Entry<K, V>>[] filter
     ) {
         if (map != null && keyCheck)
             validateCacheKeys(map.keySet());
@@ -805,7 +805,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable GridCacheEntryEx<K, V> cached,
         final boolean retval,
         boolean rawRetval,
-        @Nullable final IgnitePredicate<CacheEntry<K, V>>[] filter
+        @Nullable final IgnitePredicate<Entry<K, V>>[] filter
     ) {
         final boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
@@ -870,7 +870,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     private IgniteInternalFuture<Map<K, V>> getAllAsync0(@Nullable Collection<? extends K> keys,
         boolean reload,
         boolean forcePrimary,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter,
+        @Nullable IgnitePredicate<Entry<K, V>>[] filter,
         UUID subjId,
         String taskName,
         boolean deserializePortable,

@@ -397,7 +397,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictionFilter(new CacheEvictionFilter<Object, Object>() {
-                        @Override public boolean evictAllowed(CacheEntry<Object, Object> entry) {
+                        @Override public boolean evictAllowed(Entry<Object, Object> entry) {
                             return false;
                         }
                     });
@@ -408,7 +408,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictionFilter(new CacheEvictionFilter<Object, Object>() {
-                        @Override public boolean evictAllowed(CacheEntry<Object, Object> entry) {
+                        @Override public boolean evictAllowed(Entry<Object, Object> entry) {
                             return true;
                         }
                     });

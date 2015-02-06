@@ -54,7 +54,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
 
     /** Policy. */
     private CacheEvictionPolicy<Object, Object> plc = new CacheEvictionPolicy<Object, Object>() {
-        @Override public void onEntryAccessed(boolean rmv, CacheEntry entry) {
+        @Override public void onEntryAccessed(boolean rmv, Entry entry) {
             assert !(entry.peek() instanceof Integer);
         }
     };
@@ -217,7 +217,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
         private final ConcurrentMap<Object, AtomicInteger> cnts = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
-        @Override public boolean evictAllowed(CacheEntry<Object, Object> entry) {
+        @Override public boolean evictAllowed(Entry<Object, Object> entry) {
             AtomicInteger i = cnts.get(entry.getKey());
 
             if (i == null) {

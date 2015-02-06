@@ -713,7 +713,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
             CacheAffinityKey<String> affinityKey = new CacheAffinityKey<>(cacheKey, terminalId);
 
-            CacheEntry<CacheAffinityKey<String>, Object> entry = cache.entry(affinityKey);
+            Entry<CacheAffinityKey<String>, Object> entry = cache.entry(affinityKey);
 
             entry.setx(o);
         }

@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * Mock cache entry.
  */
-public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implements CacheEntry<K, V> {
+public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implements Entry<K, V> {
     /** */
     @GridToStringInclude
     private K key;
@@ -160,14 +160,14 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Nullable @Override public V set(V val,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Entry<K, V>>... filter) throws IgniteCheckedException {
         // No-op.
         return null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteInternalFuture<V> setAsync(V val,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        @Nullable IgnitePredicate<Entry<K, V>>... filter) {
         // No-op.
         return null;
     }
@@ -186,14 +186,14 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Override public boolean setx(V val,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Entry<K, V>>... filter) throws IgniteCheckedException {
         // No-op.
         return false;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteInternalFuture<Boolean> setxAsync(V val,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        @Nullable IgnitePredicate<Entry<K, V>>... filter) {
         // No-op.
         return null;
     }
@@ -248,27 +248,27 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Nullable @Override public V remove(
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Entry<K, V>>... filter) throws IgniteCheckedException {
         // No-op.
         return null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteInternalFuture<V> removeAsync(
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        @Nullable IgnitePredicate<Entry<K, V>>... filter) {
         // No-op.
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+    @Override public boolean removex(@Nullable IgnitePredicate<Entry<K, V>>... filter) throws IgniteCheckedException {
         // No-op.
         return false;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteInternalFuture<Boolean> removexAsync(
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        @Nullable IgnitePredicate<Entry<K, V>>... filter) {
         // No-op.
         return null;
     }
@@ -292,18 +292,18 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
 
     /** {@inheritDoc} */
     @Override public boolean lock(long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Entry<K, V>>... filter) throws IgniteCheckedException {
         return false;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAsync(long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        @Nullable IgnitePredicate<Entry<K, V>>... filter) {
         return new GridFinishedFuture<>(null, false);
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+    @Override public void unlock(IgnitePredicate<Entry<K, V>>... filter) throws IgniteCheckedException {
         // No-op.
     }
 

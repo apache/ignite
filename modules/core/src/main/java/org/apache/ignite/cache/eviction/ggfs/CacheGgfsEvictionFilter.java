@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.fs.*;
  */
 public class CacheGgfsEvictionFilter implements CacheEvictionFilter {
     /** {@inheritDoc} */
-    @Override public boolean evictAllowed(CacheEntry entry) {
+    @Override public boolean evictAllowed(Entry entry) {
         Object key = entry.getKey();
 
         return !(key instanceof GridGgfsBlockKey && ((GridGgfsBlockKey)key).evictExclude());

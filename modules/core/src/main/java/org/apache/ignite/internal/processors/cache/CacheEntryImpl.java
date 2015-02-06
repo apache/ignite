@@ -59,6 +59,6 @@ public class CacheEntryImpl<K, V> implements Cache.Entry<K, V> {
 
     /** {@inheritDoc} */
     public String toString() {
-        return "CacheEntry [key=" + key + ", val=" + val + ']';
+        return "Entry [key=" + key + ", val=" + val + ']';
     }
 }

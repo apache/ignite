@@ -587,13 +587,13 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
 
             for (Integer key : failedKeys) {
                 for (int i = 0; i < dataNodes(); i++) {
-                    CacheEntry<Integer, Integer> cacheEntry = caches.get(i).entry(key);
+                    Entry<Integer, Integer> Entry = caches.get(i).entry(key);
 
                     UUID nodeId = G.ignite(nodeName(i)).cluster().localNode().id();
 
-                    if (!F.eq(cacheEntry.get(), expVals.get(key)))
-                        log.error("key=" + key + ", expVal=" + expVals.get(key) + ", cacheVal=" + cacheEntry.get() +
-                            ", primary=" + cacheEntry.primary() + ", backup=" + cacheEntry.backup() +
+                    if (!F.eq(Entry.get(), expVals.get(key)))
+                        log.error("key=" + key + ", expVal=" + expVals.get(key) + ", cacheVal=" + Entry.get() +
+                            ", primary=" + Entry.primary() + ", backup=" + Entry.backup() +
                             ", nodeId=" + nodeId);
                 }
             }

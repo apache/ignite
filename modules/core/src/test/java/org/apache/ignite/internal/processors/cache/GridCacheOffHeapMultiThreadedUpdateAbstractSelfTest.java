@@ -375,9 +375,9 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     /**
      *
      */
-    protected static class TestFilter implements IgnitePredicate<CacheEntry<Integer, Integer>> {
+    protected static class TestFilter implements IgnitePredicate<Entry<Integer, Integer>> {
         /** {@inheritDoc} */
-        @Override public boolean apply(CacheEntry<Integer, Integer> e) {
+        @Override public boolean apply(Entry<Integer, Integer> e) {
             if (e == null) {
                 failed = true;
 

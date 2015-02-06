@@ -202,7 +202,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         cache().put("key", 1);
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheEntry<String, Integer> e = cache(i).entry("key");
+            Entry<String, Integer> e = cache(i).entry("key");
 
             if (e.backup()) {
                 assert cache(i).evict("key") : "Entry was not evicted [idx=" + i + ", entry=" +
@@ -234,7 +234,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             GridCache<String, Integer> c = cache(i);
 
-            CacheEntry<String, Integer> e = c.entry("key");
+            Entry<String, Integer> e = c.entry("key");
 
             if (e.backup()) {
                 assertNull("NEAR_ONLY for cache: " + i, e.peek(F.asList(NEAR_ONLY)));
@@ -271,7 +271,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             GridCache<String, Integer> c = cache(i);
 
-            CacheEntry<String, Integer> e = c.entry("key");
+            Entry<String, Integer> e = c.entry("key");
 
             if (e.backup()) {
                 assert e.peek(F.asList(NEAR_ONLY)) == null;
@@ -428,7 +428,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         throws Exception {
         assert lockingEnabled();
 
-        final CacheEntry<String, Integer> e = cache.entry(key);
+        final Entry<String, Integer> e = cache.entry(key);
 
         info("Entry [e=" + e + ", primary=" + e.primary() + ", backup=" + e.backup() + ']');
 

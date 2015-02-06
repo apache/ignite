@@ -58,7 +58,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     private IgnitePredicate<CacheContinuousQueryEntry<K, V>> filter;
 
     /** Projection predicate */
-    private IgnitePredicate<CacheEntry<K, V>> prjPred;
+    private IgnitePredicate<Entry<K, V>> prjPred;
 
     /** Deployable object for filter. */
     private DeployableObject filterDep;
@@ -113,7 +113,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         Object topic,
         IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<K, V>>> cb,
         @Nullable IgnitePredicate<CacheContinuousQueryEntry<K, V>> filter,
-        @Nullable IgnitePredicate<CacheEntry<K, V>> prjPred,
+        @Nullable IgnitePredicate<Entry<K, V>> prjPred,
         boolean internal,
         boolean entryLsnr,
         boolean sync,
@@ -280,7 +280,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 GridCacheProjectionImpl.FullFilter<K, V> filter = (GridCacheProjectionImpl.FullFilter<K, V>)prjPred;
 
                 GridCacheProjectionImpl.KeyValueFilter<K, V> kvFilter = filter.keyValueFilter();
-                IgnitePredicate<? super CacheEntry<K, V>> entryFilter = filter.entryFilter();
+                IgnitePredicate<? super Entry<K, V>> entryFilter = filter.entryFilter();
 
                 boolean ret = true;
 
@@ -462,7 +462,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         if (b)
             prjPredDep = (DeployableObject)in.readObject();
         else
-            prjPred = (IgnitePredicate<CacheEntry<K, V>>)in.readObject();
+            prjPred = (IgnitePredicate<Entry<K, V>>)in.readObject();
 
         internal = in.readBoolean();
 

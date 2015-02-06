@@ -153,7 +153,7 @@ public class GridCacheEvictionEntry<K, V> implements Entry<K, V>, Externalizable
      */
     @SuppressWarnings({"unchecked"})
     @Nullable private V peek0(@Nullable GridCachePeekMode mode,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter, @Nullable IgniteInternalTx<K, V> tx)
+        @Nullable IgnitePredicate<Entry<K, V>>[] filter, @Nullable IgniteInternalTx<K, V> tx)
         throws IgniteCheckedException {
         assert tx == null || tx.local();
 
@@ -185,7 +185,7 @@ public class GridCacheEvictionEntry<K, V> implements Entry<K, V>, Externalizable
      * @throws IgniteCheckedException If failed.
      */
     @Nullable private V peek0(@Nullable Collection<GridCachePeekMode> modes,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter, IgniteInternalTx<K, V> tx) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Entry<K, V>>[] filter, IgniteInternalTx<K, V> tx) throws IgniteCheckedException {
         if (F.isEmpty(modes))
             return peek0(SMART, filter, tx);
 
@@ -256,22 +256,22 @@ public class GridCacheEvictionEntry<K, V> implements Entry<K, V>, Externalizable
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V set(V val, IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+    @Nullable @Override public V set(V val, IgnitePredicate<Entry<K, V>>[] filter) throws IgniteCheckedException {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> setAsync(V val, IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    @Override public IgniteInternalFuture<V> setAsync(V val, IgnitePredicate<Entry<K, V>>[] filter) {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean setx(V val, IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+    @Override public boolean setx(V val, IgnitePredicate<Entry<K, V>>[] filter) throws IgniteCheckedException {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> setxAsync(V val, IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    @Override public IgniteInternalFuture<Boolean> setxAsync(V val, IgnitePredicate<Entry<K, V>>[] filter) {
         throw unsupported();
     }
 
@@ -336,22 +336,22 @@ public class GridCacheEvictionEntry<K, V> implements Entry<K, V>, Externalizable
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V remove(IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+    @Nullable @Override public V remove(IgnitePredicate<Entry<K, V>>[] filter) throws IgniteCheckedException {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> removeAsync(IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    @Override public IgniteInternalFuture<V> removeAsync(IgnitePredicate<Entry<K, V>>[] filter) {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+    @Override public boolean removex(IgnitePredicate<Entry<K, V>>[] filter) throws IgniteCheckedException {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> removexAsync(IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    @Override public IgniteInternalFuture<Boolean> removexAsync(IgnitePredicate<Entry<K, V>>[] filter) {
         throw unsupported();
     }
 
@@ -414,18 +414,18 @@ public class GridCacheEvictionEntry<K, V> implements Entry<K, V>, Externalizable
 
     /** {@inheritDoc} */
     @Override public boolean lock(long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Entry<K, V>>[] filter) throws IgniteCheckedException {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAsync(long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        @Nullable IgnitePredicate<Entry<K, V>>[] filter) {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+    @Override public void unlock(IgnitePredicate<Entry<K, V>>[] filter) throws IgniteCheckedException {
         throw unsupported();
     }
 

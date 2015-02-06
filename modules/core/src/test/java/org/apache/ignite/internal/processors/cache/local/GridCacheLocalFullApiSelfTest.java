@@ -106,8 +106,8 @@ public class GridCacheLocalFullApiSelfTest extends GridCacheAbstractFullApiSelfT
         grid(0).jcache(null).put(new GridCacheInternalKeyImpl("test"), 1);
 
         // I would like to filter from key set all entities which key name is not started with "a_".
-        IgnitePredicate<CacheEntry<String, Integer>> aPred = new IgnitePredicate<CacheEntry<String, Integer>>() {
-            @Override public boolean apply(CacheEntry<String, Integer> entry) {
+        IgnitePredicate<Entry<String, Integer>> aPred = new IgnitePredicate<Entry<String, Integer>>() {
+            @Override public boolean apply(Entry<String, Integer> entry) {
                 cntr.incrementAndGet();
 
                 assert entry.getKey() instanceof String;

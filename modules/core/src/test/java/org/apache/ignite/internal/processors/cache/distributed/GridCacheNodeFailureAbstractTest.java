@@ -113,7 +113,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
                 IGNITEs.set(i, startGrid(i));
             }
 
-            CacheEntry e = cache(i).entry(KEY);
+            Entry e = cache(i).entry(KEY);
 
             assert !e.isLocked() : "Entry is locked for grid [idx=" + i + ", entry=" + e + ']';
         }
@@ -256,7 +256,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         assert !checkCache.lock(KEY, -1);
 
-        CacheEntry e = checkCache.entry(KEY);
+        Entry e = checkCache.entry(KEY);
 
         assert e.isLocked() : "Entry is not locked for grid [idx=" + checkIdx + ", entry=" + e + ']';
 

@@ -77,7 +77,7 @@ public class CacheRandomEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void onEntryAccessed(boolean rmv, CacheEntry<K, V> entry) {
+    @Override public void onEntryAccessed(boolean rmv, Entry<K, V> entry) {
         if (!entry.isCached())
             return;
 
@@ -86,7 +86,7 @@ public class CacheRandomEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V
         int size = cache.size();
 
         for (int i = max; i < size; i++) {
-            CacheEntry<K, V> e = cache.randomEntry();
+            Entry<K, V> e = cache.randomEntry();
 
             if (e != null)
                 e.evict();
@@ -99,7 +99,7 @@ public class CacheRandomEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V
      * @param entry Entry to check.
      * @return {@code True} if entry is empty.
      */
-    private boolean empty(CacheEntry<K, V> entry) {
+    private boolean empty(Entry<K, V> entry) {
         try {
             return entry.peek(F.asList(GridCachePeekMode.GLOBAL)) == null;
         }

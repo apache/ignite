@@ -125,7 +125,7 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
 
             int cnt2 = 0;
 
-            for (CacheEntry<Integer, String> e : cache0.entrySet()) {
+            for (Entry<Integer, String> e : cache0.entrySet()) {
                 assert e.primary() || e.backup();
 
                 cnt2++;

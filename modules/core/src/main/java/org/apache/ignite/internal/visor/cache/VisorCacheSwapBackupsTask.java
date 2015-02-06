@@ -65,11 +65,11 @@ public class VisorCacheSwapBackupsTask extends VisorOneNodeTask<Set<String>, Map
                 String cacheName = c.name();
 
                 if (names.contains(cacheName)) {
-                    Set<CacheEntry> entries = c.entrySet();
+                    Set<Entry> entries = c.entrySet();
 
                     int before = entries.size(), after = before;
 
-                    for (CacheEntry entry: entries) {
+                    for (Entry entry: entries) {
                         if (entry.backup() && entry.evict())
                             after--;
                     }

@@ -39,7 +39,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests from {@link org.apache.ignite.cache.CacheEntry#memorySize()} method.
+ * Tests from {@link org.apache.ignite.cache.Entry#memorySize()} method.
  */
 public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
@@ -270,7 +270,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
      * @return Extras size.
      * @throws Exception If failed.
      */
-    private int extrasSize(CacheEntry entry) throws Exception {
+    private int extrasSize(Entry entry) throws Exception {
         Method mthd = GridCacheMapEntry.class.getDeclaredMethod("extrasSize");
 
         mthd.setAccessible(true);

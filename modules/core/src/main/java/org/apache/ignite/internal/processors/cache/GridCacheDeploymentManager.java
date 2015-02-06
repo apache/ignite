@@ -244,8 +244,8 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         GridCacheAdapter<K, V> cache = cacheCtx.cache();
 
         Set<K> keySet = cache.keySet(cacheCtx.vararg(
-            new P1<CacheEntry<K, V>>() {
-                @Override public boolean apply(CacheEntry<K, V> e) {
+            new P1<Entry<K, V>>() {
+                @Override public boolean apply(Entry<K, V> e) {
                     return cacheCtx.isNear() ? undeploy(e, cacheCtx.near()) || undeploy(e, cacheCtx.near().dht()) :
                         undeploy(e, cacheCtx.cache());
                 }
@@ -255,7 +255,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                  * @param cache Cache.
                  * @return {@code True} if entry should be undeployed.
                  */
-                private boolean undeploy(CacheEntry<K, V> e, GridCacheAdapter<K, V> cache) {
+                private boolean undeploy(Entry<K, V> e, GridCacheAdapter<K, V> cache) {
                     K k = e.getKey();
 
                     GridCacheEntryEx<K, V> entry = cache.peekEx(e.getKey());

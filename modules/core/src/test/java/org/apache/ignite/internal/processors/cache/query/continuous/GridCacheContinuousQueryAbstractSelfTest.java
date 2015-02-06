@@ -1114,8 +1114,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         CacheProjection<Integer, Integer> cache = grid(0).cache(null);
 
         CacheContinuousQuery<Integer, Integer> qry = cache.projection(
-            new P1<CacheEntry<Integer, Integer>>() {
-                @Override public boolean apply(CacheEntry<Integer, Integer> e) {
+            new P1<Entry<Integer, Integer>>() {
+                @Override public boolean apply(Entry<Integer, Integer> e) {
                     Integer i = e.peek();
 
                     return i != null && i > 10;
@@ -1274,9 +1274,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
         cache.putx(1, 1);
 
-        CacheProjection<Integer, Integer> prj = cache.projection(new P1<CacheEntry<Integer, Integer>>() {
+        CacheProjection<Integer, Integer> prj = cache.projection(new P1<Entry<Integer, Integer>>() {
             @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-            @Override public boolean apply(final CacheEntry<Integer, Integer> e) {
+            @Override public boolean apply(final Entry<Integer, Integer> e) {
                 GridTestUtils.assertThrows(
                     log,
                     new Callable<Object>() {

@@ -82,7 +82,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     private GridCacheVersion ver;
 
     /** Filters. */
-    private IgnitePredicate<CacheEntry<K, V>>[] filters;
+    private IgnitePredicate<Entry<K, V>>[] filters;
 
     /** Logger. */
     private IgniteLogger log;
@@ -133,7 +133,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         boolean readThrough,
         boolean reload,
         boolean forcePrimary,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filters,
+        @Nullable IgnitePredicate<Entry<K, V>>[] filters,
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,

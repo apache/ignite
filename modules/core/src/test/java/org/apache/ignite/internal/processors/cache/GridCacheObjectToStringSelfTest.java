@@ -166,7 +166,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
                     assertFalse("Entry is locked after implicit transaction commit: " + entry, entry.lockedByAny());
             }
 
-            Set<CacheEntry<Object, Object>> entries = cache.entrySet();
+            Set<Entry<Object, Object>> entries = cache.entrySet();
 
             assertNotNull(entries);
             assertFalse(entries.toString().isEmpty());

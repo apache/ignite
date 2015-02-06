@@ -688,7 +688,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         c.put(key, 1);
 
-        CacheEntry<Integer, Integer> entry = c.entry(key);
+        Entry<Integer, Integer> entry = c.entry(key);
 
         assert entry != null;
 
@@ -727,7 +727,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         long[] expireTimes = new long[gridCount()];
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheEntry<Object, Object> curEntry = grid(i).cache(null).entry(key);
+            Entry<Object, Object> curEntry = grid(i).cache(null).entry(key);
 
             if (curEntry.primary() || curEntry.backup()) {
                 assertEquals(ttl, curEntry.timeToLive());
@@ -752,7 +752,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheEntry<Object, Object> curEntry = grid(i).cache(null).entry(key);
+            Entry<Object, Object> curEntry = grid(i).cache(null).entry(key);
 
             if (curEntry.primary() || curEntry.backup()) {
                 assertEquals(ttl, curEntry.timeToLive());
@@ -779,7 +779,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheEntry<Object, Object> curEntry = grid(i).cache(null).entry(key);
+            Entry<Object, Object> curEntry = grid(i).cache(null).entry(key);
 
             if (curEntry.primary() || curEntry.backup()) {
                 assertEquals(ttl, curEntry.timeToLive());
@@ -810,7 +810,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         log.info("Put 4 done");
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheEntry<Object, Object> curEntry = grid(i).cache(null).entry(key);
+            Entry<Object, Object> curEntry = grid(i).cache(null).entry(key);
 
             if (curEntry.primary() || curEntry.backup()) {
                 assertEquals(ttl, curEntry.timeToLive());

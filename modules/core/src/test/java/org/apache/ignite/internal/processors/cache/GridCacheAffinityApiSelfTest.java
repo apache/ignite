@@ -330,7 +330,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
         for (int kv = 0; kv < keyCnt; kv++) {
             String key = String.valueOf(kv);
 
-            CacheEntry<String, Integer> entry = cache().entry(key);
+            Entry<String, Integer> entry = cache().entry(key);
 
             assert entry != null;
 

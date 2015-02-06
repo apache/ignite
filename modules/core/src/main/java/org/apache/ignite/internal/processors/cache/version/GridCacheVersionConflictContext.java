@@ -47,7 +47,7 @@ public interface GridCacheVersionConflictContext<K, V> {
      * Force cache to apply new entry overwriting old (existing) entry.
      * <p>
      * Note that updates from remote data centers always have explicit TTL , while local data center
-     * updates will only have explicit TTL in case {@link CacheEntry#timeToLive(long)} was called
+     * updates will only have explicit TTL in case {@link Entry#timeToLive(long)} was called
      * before update. In the latter case new entry will pick TTL of the old (existing) entry, even
      * if it was set through update from remote data center. it means that depending on concurrent
      * update timings new update might pick unexpected TTL. For example, consider that three updates

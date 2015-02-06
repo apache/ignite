@@ -66,7 +66,7 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
             for (int i = 0; i < entryCnt; i++)
                 cache.put(String.valueOf(i), i);
 
-            Collection<CacheEntry<String, Integer>> entries = new ArrayList<>(10_000);
+            Collection<Entry<String, Integer>> entries = new ArrayList<>(10_000);
 
             for (int i = 0; i < 10_000; i++)
                 entries.add(cache.randomEntry());
@@ -75,7 +75,7 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
             startGrid(2);
             startGrid(3);
 
-            for (CacheEntry<String, Integer> entry : entries)
+            for (Entry<String, Integer> entry : entries)
                 entry.partition();
 
             for (int i = 0; i < entryCnt; i++)

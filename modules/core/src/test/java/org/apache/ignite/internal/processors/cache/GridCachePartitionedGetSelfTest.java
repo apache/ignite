@@ -119,7 +119,7 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             GridCache<String, Integer> c = grid(i).cache(null);
 
-            CacheEntry<String, Integer> e = c.entry(KEY);
+            Entry<String, Integer> e = c.entry(KEY);
 
             if (e.primary()) {
                 info("Primary node: " + grid(i).localNode().id());
@@ -140,7 +140,7 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             GridCache<String, Integer> c = grid(i).cache(null);
 
-            CacheEntry<String, Integer> e = c.entry(KEY);
+            Entry<String, Integer> e = c.entry(KEY);
 
             if (e.backup()) {
                 info("Backup node: " + grid(i).localNode().id());
@@ -173,7 +173,7 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             GridCache<String, Integer> c = grid(i).cache(null);
 
-            CacheEntry<String, Integer> e = c.entry(KEY);
+            Entry<String, Integer> e = c.entry(KEY);
 
             if (!e.primary() && !e.backup()) {
                 info("Near node: " + grid(i).localNode().id());
@@ -221,7 +221,7 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
 
-            CacheEntry<String, Integer> e = g.<String, Integer>cache(null).entry(KEY);
+            Entry<String, Integer> e = g.<String, Integer>cache(null).entry(KEY);
 
             if (e.primary()) {
                 info("Primary node: " + g.cluster().localNode().id());

@@ -335,11 +335,11 @@ public class GridCacheUtils {
      * @param <V> Value type.
      * @return Factory instance.
      */
-    public static <K, V> IgniteClosure<Integer, IgnitePredicate<CacheEntry<K, V>>[]> factory() {
-        return new IgniteClosure<Integer, IgnitePredicate<CacheEntry<K, V>>[]>() {
+    public static <K, V> IgniteClosure<Integer, IgnitePredicate<Entry<K, V>>[]> factory() {
+        return new IgniteClosure<Integer, IgnitePredicate<Entry<K, V>>[]>() {
             @SuppressWarnings({"unchecked"})
-            @Override public IgnitePredicate<CacheEntry<K, V>>[] apply(Integer len) {
-                return (IgnitePredicate<CacheEntry<K, V>>[])(len == 0 ? EMPTY : new IgnitePredicate[len]);
+            @Override public IgnitePredicate<Entry<K, V>>[] apply(Integer len) {
+                return (IgnitePredicate<Entry<K, V>>[])(len == 0 ? EMPTY : new IgnitePredicate[len]);
             }
         };
     }
@@ -379,19 +379,19 @@ public class GridCacheUtils {
     }
 
     /**
-     * Gets closure which returns {@link org.apache.ignite.cache.CacheEntry} given cache key.
+     * Gets closure which returns {@link org.apache.ignite.cache.Entry} given cache key.
      * If current cache is DHT and key doesn't belong to current partition,
      * {@code null} is returned.
      *
      * @param ctx Cache context.
      * @param <K> Cache key type.
      * @param <V> Cache value type.
-     * @return Closure which returns {@link org.apache.ignite.cache.CacheEntry} given cache key or {@code null} if partition is invalid.
+     * @return Closure which returns {@link org.apache.ignite.cache.Entry} given cache key or {@code null} if partition is invalid.
      */
-    public static <K, V> IgniteClosure<K, CacheEntry<K, V>> cacheKey2Entry(
+    public static <K, V> IgniteClosure<K, Entry<K, V>> cacheKey2Entry(
         final GridCacheContext<K, V> ctx) {
-        return new IgniteClosure<K, CacheEntry<K, V>>() {
-            @Nullable @Override public CacheEntry<K, V> apply(K k) {
+        return new IgniteClosure<K, Entry<K, V>>() {
+            @Nullable @Override public Entry<K, V> apply(K k) {
                 try {
                     return ctx.cache().entry(k);
                 }
@@ -746,16 +746,16 @@ public class GridCacheUtils {
      * @return Empty filter.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<CacheEntry<K, V>>[] empty() {
-        return (IgnitePredicate<CacheEntry<K, V>>[])EMPTY_FILTER;
+    public static <K, V> IgnitePredicate<Entry<K, V>>[] empty() {
+        return (IgnitePredicate<Entry<K, V>>[])EMPTY_FILTER;
     }
 
     /**
      * @return Always false filter.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<CacheEntry<K, V>>[] alwaysFalse() {
-        return (IgnitePredicate<CacheEntry<K, V>>[])ALWAYS_FALSE;
+    public static <K, V> IgnitePredicate<Entry<K, V>>[] alwaysFalse() {
+        return (IgnitePredicate<Entry<K, V>>[])ALWAYS_FALSE;
     }
 
     /**

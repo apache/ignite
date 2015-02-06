@@ -118,8 +118,8 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
     };
 
     /** */
-    private IgnitePredicate<CacheEntry<String, Integer>> entryFilter = new P1<CacheEntry<String, Integer>>() {
-        @Override public boolean apply(CacheEntry<String, Integer> e) {
+    private IgnitePredicate<Entry<String, Integer>> entryFilter = new P1<Entry<String, Integer>>() {
+        @Override public boolean apply(Entry<String, Integer> e) {
             Integer val = e.peek();
 
             // Let's assume that null values will be passed through, otherwise we won't be able
@@ -232,9 +232,9 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         assert !prj.containsKey("k");
         assert !prj.containsKey("wrongKey");
 
-        assert prj.projection(F.<CacheEntry<String, Integer>>alwaysTrue()).containsKey("key");
-        assert !prj.projection(F.<CacheEntry<String, Integer>>alwaysFalse()).containsKey("key");
-        assert !prj.projection(F.<CacheEntry<String, Integer>>alwaysFalse()).containsKey("k");
+        assert prj.projection(F.<Entry<String, Integer>>alwaysTrue()).containsKey("key");
+        assert !prj.projection(F.<Entry<String, Integer>>alwaysFalse()).containsKey("key");
+        assert !prj.projection(F.<Entry<String, Integer>>alwaysFalse()).containsKey("k");
     }
 
     /**
@@ -363,8 +363,8 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
 
         prj.put("key", 1);
 
-        CacheEntry<String, Integer> prjEntry = prj.entry("key");
-        final CacheEntry<String, Integer> locEntry = loc.entry("key");
+        Entry<String, Integer> prjEntry = prj.entry("key");
+        final Entry<String, Integer> locEntry = loc.entry("key");
 
         assert prjEntry != null;
         assert locEntry != null;
@@ -564,13 +564,13 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
 
         checkClone(vals.iterator().next(), val);
 
-        Set<CacheEntry<String, TestCloneable>> entries = prj.entrySet();
+        Set<Entry<String, TestCloneable>> entries = prj.entrySet();
 
         assertEquals(1, entries.size());
 
         checkClone(entries.iterator().next().getValue(), val);
 
-        CacheEntry<String, TestCloneable> entry = prj.entry("key");
+        Entry<String, TestCloneable> entry = prj.entry("key");
 
         assert entry != null;
 
@@ -586,7 +586,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         GridCacheProxyImpl<String, Integer> prj = (GridCacheProxyImpl<String, Integer>)cache().
             flagsOn(CLONE, INVALIDATE);
 
-        CacheEntry<String, Integer> entry = prj.entry("key");
+        Entry<String, Integer> entry = prj.entry("key");
 
         assert entry != null;
 

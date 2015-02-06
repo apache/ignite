@@ -202,7 +202,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
 
     /** {@inheritDoc} */
     @Override public GridTuple<V> peek(GridCacheContext<K, V> cacheCtx, boolean failFast, K key,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) throws GridCacheFilterFailedException {
+        IgnitePredicate<Entry<K, V>>[] filter) throws GridCacheFilterFailedException {
         assert false : "Method peek can only be called on user transaction: " + this;
 
         throw new IllegalStateException("Method peek can only be called on user transaction: " + this);
@@ -430,17 +430,17 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                 assert txEntry != null : "Missing transaction entry for tx: " + this;
 
                 while (true) {
-                    GridCacheEntryEx<K, V> cacheEntry = txEntry.cached();
+                    GridCacheEntryEx<K, V> Entry = txEntry.cached();
 
-                    assert cacheEntry != null : "Missing cached entry for transaction entry: " + txEntry;
+                    assert Entry != null : "Missing cached entry for transaction entry: " + txEntry;
 
                     try {
                         GridCacheVersion ver = txEntry.explicitVersion() != null ? txEntry.explicitVersion() : xidVer;
 
                         // If locks haven't been acquired yet, keep waiting.
-                        if (!txEntry.groupLockEntry() && !cacheEntry.lockedBy(ver)) {
+                        if (!txEntry.groupLockEntry() && !Entry.lockedBy(ver)) {
                             if (log.isDebugEnabled())
-                                log.debug("Transaction does not own lock for entry (will wait) [entry=" + cacheEntry +
+                                log.debug("Transaction does not own lock for entry (will wait) [entry=" + Entry +
                                     ", tx=" + this + ']');
 
                             return;

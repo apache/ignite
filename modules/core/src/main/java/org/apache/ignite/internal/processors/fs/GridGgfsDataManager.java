@@ -392,7 +392,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         final GridGgfsBlockKey key = blockKey(blockIdx, fileInfo);
 
         if (log.isDebugEnabled()) {
-            CacheEntry<GridGgfsBlockKey, byte[]> entry = dataCachePrj.entry(key);
+            Entry<GridGgfsBlockKey, byte[]> entry = dataCachePrj.entry(key);
 
             assert entry != null;
 

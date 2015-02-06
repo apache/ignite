@@ -49,7 +49,7 @@ public class GridCachePartitionedEntryLockSelfTest extends GridCacheAbstractSelf
         cache().put("key", 1);
 
         for (int i = 0; i < gridCount(); i++) {
-            final CacheEntry<String, Integer> e = cache(i).entry("key");
+            final Entry<String, Integer> e = cache(i).entry("key");
 
             if (e.backup()) {
                 assert !e.isLocked();

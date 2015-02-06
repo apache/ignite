@@ -409,7 +409,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
         for (int i = 1; i <= maxKeyValue(); i++) {
             for (int k = 0; k < 3; k++) {
                 try {
-                    CacheEntry<Integer, String> e1 = null;
+                    Entry<Integer, String> e1 = null;
 
                     String v1 = null;
 
@@ -426,7 +426,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                             v1 = e1.get();
                         }
                         else {
-                            CacheEntry<Integer, String> e2 = cache.entry(i);
+                            Entry<Integer, String> e2 = cache.entry(i);
 
                             String v2 = e2.get();
 

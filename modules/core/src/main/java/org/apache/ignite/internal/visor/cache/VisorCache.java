@@ -187,11 +187,11 @@ public class VisorCache implements Serializable {
         int size = ca.size();
         int near = ca.nearSize();
 
-        Set<CacheEntry> set = ca.entrySet();
+        Set<Entry> set = ca.entrySet();
 
         long memSz = 0;
 
-        Iterator<CacheEntry> it = set.iterator();
+        Iterator<Entry> it = set.iterator();
 
         int sz = sample > 0 ? sample : DFLT_CACHE_SIZE_SAMPLING;
 

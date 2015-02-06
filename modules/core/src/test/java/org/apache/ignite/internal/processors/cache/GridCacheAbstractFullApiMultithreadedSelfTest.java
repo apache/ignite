@@ -111,7 +111,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      * @throws IgniteCheckedException If failed.
      */
     private void checkConsistency() throws IgniteCheckedException {
-        for (CacheEntry<String, Integer> e : cache())
+        for (Entry<String, Integer> e : cache())
             for (int i = 1; i < gridCount(); i++) {
                 Integer val = cache(i).get(e.getKey());
 
@@ -202,8 +202,8 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     public void testForAll() throws Exception {
         runTest(new CI1<GridCache<String,Integer>>() {
             @Override public void apply(GridCache<String, Integer> cache) {
-                assert cache.forAll(new P1<CacheEntry<String, Integer>>() {
-                    @Override public boolean apply(CacheEntry<String, Integer> e) {
+                assert cache.forAll(new P1<Entry<String, Integer>>() {
+                    @Override public boolean apply(Entry<String, Integer> e) {
                         Integer val = e.peek();
 
                         return val == null || val <= PUT_CNT;
@@ -365,8 +365,8 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
             @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 final int rnd = random();
 
-                cache.removeAllAsync(new P1<CacheEntry<String, Integer>>() {
-                    @Override public boolean apply(CacheEntry<String, Integer> e) {
+                cache.removeAllAsync(new P1<Entry<String, Integer>>() {
+                    @Override public boolean apply(Entry<String, Integer> e) {
                         Integer val = e.peek();
 
                         return val != null && val < rnd;

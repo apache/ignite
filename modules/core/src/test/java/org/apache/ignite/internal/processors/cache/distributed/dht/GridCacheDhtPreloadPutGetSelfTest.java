@@ -197,7 +197,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
                             GridCache<Integer, Integer> cache = g2.cache(null);
 
                             for (int j = 0; j < KEY_CNT; j++) {
-                                CacheEntry<Integer, Integer> entry = cache.entry(j);
+                                Entry<Integer, Integer> entry = cache.entry(j);
 
                                 assert entry != null;
 
@@ -241,7 +241,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
                         done.set(true);
 
                         for (int j = 0; j < KEY_CNT; j++) {
-                            CacheEntry<Integer, Integer> entry = cache.entry(j);
+                            Entry<Integer, Integer> entry = cache.entry(j);
 
                             assert entry != null;
 

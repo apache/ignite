@@ -422,8 +422,8 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         assertEquals(5, cache.size());
 
-        cache.forEach(new CIX1<CacheEntry<Integer, String>>() {
-            @Override public void applyx(CacheEntry<Integer, String> entry) throws IgniteCheckedException {
+        cache.forEach(new CIX1<Entry<Integer, String>>() {
+            @Override public void applyx(Entry<Integer, String> entry) throws IgniteCheckedException {
                 String val = entry.get();
 
                 assert val != null;

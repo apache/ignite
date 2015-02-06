@@ -42,7 +42,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheValueBytes.*;
  * Entry implementation.
  */
 @SuppressWarnings("TypeParameterHidesVisibleType")
-public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, GridCacheDeployable, Externalizable,
+public class GridCacheContinuousQueryEntry<K, V> implements Entry<K, V>, GridCacheDeployable, Externalizable,
     CacheContinuousQueryEntry<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -58,7 +58,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     /** Cache entry. */
     @SuppressWarnings("TransientFieldNotInitialized")
     @GridToStringExclude
-    private final transient CacheEntry<K, V> impl;
+    private final transient Entry<K, V> impl;
 
     /** Key. */
     @GridToStringInclude
@@ -112,7 +112,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
      * @param evtType Event type.
      */
     GridCacheContinuousQueryEntry(GridCacheContext<K, V> ctx,
-        CacheEntry<K, V> impl,
+        Entry<K, V> impl,
         K key,
         @Nullable V newVal,
         @Nullable GridCacheValueBytes newValBytes,
@@ -137,7 +137,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     /**
      * @return Cache entry.
      */
-    CacheEntry<K, V> entry() {
+    Entry<K, V> entry() {
         return impl;
     }
 
@@ -381,7 +381,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V set(V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
+    @Nullable @Override public V set(V val, @Nullable IgnitePredicate<Entry<K, V>>... filter)
         throws IgniteCheckedException {
         assert impl != null;
 
@@ -391,7 +391,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> setAsync(V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+    @Override public IgniteInternalFuture<V> setAsync(V val, @Nullable IgnitePredicate<Entry<K, V>>... filter) {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -418,7 +418,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public boolean setx(V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
+    @Override public boolean setx(V val, @Nullable IgnitePredicate<Entry<K, V>>... filter)
         throws IgniteCheckedException {
         assert impl != null;
 
@@ -429,7 +429,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> setxAsync(V val,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        @Nullable IgnitePredicate<Entry<K, V>>... filter) {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -510,7 +510,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V remove(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
+    @Nullable @Override public V remove(@Nullable IgnitePredicate<Entry<K, V>>... filter)
         throws IgniteCheckedException {
         assert impl != null;
 
@@ -520,7 +520,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> removeAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+    @Override public IgniteInternalFuture<V> removeAsync(@Nullable IgnitePredicate<Entry<K, V>>... filter) {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -529,7 +529,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+    @Override public boolean removex(@Nullable IgnitePredicate<Entry<K, V>>... filter) throws IgniteCheckedException {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -538,7 +538,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> removexAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+    @Override public IgniteInternalFuture<Boolean> removexAsync(@Nullable IgnitePredicate<Entry<K, V>>... filter) {
         assert impl != null;
 
         ctx.denyOnFlag(READ);
@@ -593,7 +593,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lock(long timeout, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
+    @Override public boolean lock(long timeout, @Nullable IgnitePredicate<Entry<K, V>>... filter)
         throws IgniteCheckedException {
         assert impl != null;
 
@@ -602,14 +602,14 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAsync(long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        @Nullable IgnitePredicate<Entry<K, V>>... filter) {
         assert impl != null;
 
         return impl.lockAsync(timeout, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+    @Override public void unlock(IgnitePredicate<Entry<K, V>>... filter) throws IgniteCheckedException {
         assert impl != null;
 
         impl.unlock(filter);
