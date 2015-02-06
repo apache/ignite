@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.jetbrains.annotations.*;
+
 import javax.cache.*;
 
 /**
@@ -28,6 +30,9 @@ public class CacheEntryImpl<K, V> implements Cache.Entry<K, V> {
 
     /** */
     private final V val;
+
+    /** Version. */
+    private Object ver;
 
     /**
      * @param key Key.
@@ -46,6 +51,20 @@ public class CacheEntryImpl<K, V> implements Cache.Entry<K, V> {
     /** {@inheritDoc} */
     @Override public V getValue() {
         return val;
+    }
+
+    /**
+     * @return Version.
+     */
+    @Nullable public Object version() {
+        return ver;
+    }
+
+    /**
+     * @param ver Version.
+     */
+    public void version(Object ver) {
+        this.ver = ver;
     }
 
     /** {@inheritDoc} */

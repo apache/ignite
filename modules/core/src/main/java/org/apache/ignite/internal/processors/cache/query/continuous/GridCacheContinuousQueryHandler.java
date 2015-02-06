@@ -192,7 +192,9 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             @Override public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e, boolean recordEvt) {
                 GridCacheContext<K, V> cctx = cacheContext(ctx);
 
-                if (cctx.isReplicated() && !skipPrimaryCheck && !e.primary())
+                if (cctx.isReplicated() &&
+                    !skipPrimaryCheck &&
+                    !cctx.affinity().primary(cctx.localNode(), e.getKey(), cctx.topology().topologyVersion()))
                     return;
 
                 boolean notify;

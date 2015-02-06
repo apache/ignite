@@ -3695,7 +3695,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     @Override public Entry<K, V> wrap(boolean prjAware) {
         try {
-            return new CacheEntryImpl<>(key, rawGetOrUnmarshal(true));
+            CacheEntryImpl<K, V> entry = new CacheEntryImpl<>(key, rawGetOrUnmarshal(true));
+
+            entry.version(ver);
+
+            return entry;
         }
         catch (IgniteCheckedException e) {
             throw new RuntimeException("Fixme"); //TODO ignite-96

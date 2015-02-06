@@ -394,12 +394,7 @@ public class GridFunc {
     private static final IgnitePredicate CACHE_ENTRY_NO_GET_VAL = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
-            try {
-                return ((Entry)o).get() == null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new GridClosureException(e);
-            }
+            return ((Entry)o).getValue() == null;
         }
 
         @Override public String toString() {
@@ -411,7 +406,7 @@ public class GridFunc {
     private static final IgnitePredicate CACHE_ENTRY_HAS_PEEK_VAL = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
-            return ((Entry)o).peek() != null;
+            return ((Entry)o).getValue() != null;
         }
 
         @Override public String toString() {
@@ -423,35 +418,11 @@ public class GridFunc {
     private static final IgnitePredicate CACHE_ENTRY_NO_PEEK_VAL = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
-            return ((Entry)o).peek() == null;
+            return ((Entry)o).getValue() == null;
         }
 
         @Override public String toString() {
             return "Cache entry no-peek-value predicate.";
-        }
-    };
-
-    /** */
-    private static final IgnitePredicate CACHE_ENTRY_PRIMARY = new IgnitePredicate() {
-        @SuppressWarnings({"unchecked"})
-        @Override public boolean apply(Object o) {
-            return ((Entry)o).primary();
-        }
-
-        @Override public String toString() {
-            return "Cache primary entry predicate.";
-        }
-    };
-
-    /** */
-    private static final IgnitePredicate CACHE_ENTRY_BACKUP = new IgnitePredicate() {
-        @SuppressWarnings({"unchecked"})
-        @Override public boolean apply(Object o) {
-            return ((Entry)o).backup();
-        }
-
-        @Override public String toString() {
-            return "Cache backup entry predicate.";
         }
     };
 
@@ -7210,7 +7181,7 @@ public class GridFunc {
      * @return Predicate that accepts {@link Entry} value and compares its value
      *      to the given value.
      */
-    public static <K, V> IgnitePredicate<Entry<K, V>> mapValue(@Nullable final V val) {
+    public static <K, V> IgnitePredicate<Map.Entry<K, V>> mapValue(@Nullable final V val) {
         return new P1<Map.Entry<K, V>>() {
             @Override public boolean apply(Map.Entry<K, V> e) {
                 return e.getValue().equals(val);
@@ -7228,7 +7199,7 @@ public class GridFunc {
      * @return Predicate that accepts {@code Map.Entry} value and compares its key
      *      to the given value.
      */
-    public static <K, V> IgnitePredicate<Entry<K, V>> mapKey(@Nullable final K key) {
+    public static <K, V> IgnitePredicate<Map.Entry<K, V>> mapKey(@Nullable final K key) {
         return new P1<Map.Entry<K, V>>() {
             @Override public boolean apply(Map.Entry<K, V> e) {
                 return e.getKey().equals(key);
@@ -7836,34 +7807,6 @@ public class GridFunc {
     }
 
     /**
-     * Gets predicate which returns {@code true} if {@link org.apache.ignite.cache.Entry#primary()}
-     * method returns {@code true}.
-     *
-     * @param <K> Cache key type.
-     * @param <V> Cache value type.
-     * @return Predicate which returns {@code true} if {@link org.apache.ignite.cache.Entry#primary()}
-     *      method returns {@code true}.
-     */
-    @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<Entry<K, V>> cachePrimary() {
-        return (IgnitePredicate<Entry<K, V>>)CACHE_ENTRY_PRIMARY;
-    }
-
-    /**
-     * Gets predicate which returns {@code true} if {@link org.apache.ignite.cache.Entry#primary()}
-     * method returns {@code false}.
-     *
-     * @param <K> Cache key type.
-     * @param <V> Cache value type.
-     * @return Predicate which returns {@code true} if {@link org.apache.ignite.cache.Entry#primary()}
-     *      method returns {@code false}.
-     */
-    @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheBackup() {
-        return (IgnitePredicate<Entry<K, V>>)CACHE_ENTRY_BACKUP;
-    }
-
-    /**
      * Gets predicate which returns true if {@link org.apache.ignite.cache.Entry#get()}
      * method returns value that is contained in given collection. Note that if collection
      * of provided values is empty this method returns predicate that evaluates to {@code false}
@@ -7925,7 +7868,7 @@ public class GridFunc {
         return isEmpty(vals) ? F.<Entry<K, V>>alwaysFalse() :
             new IgnitePredicate<Entry<K, V>>() {
                 @Override public boolean apply(Entry<K, V> e) {
-                    V v = e.peek();
+                    V v = e.getValue();
 
                     assert vals != null;
 

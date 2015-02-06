@@ -868,7 +868,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
             Entry<K, V> entry = (Entry<K, V>)o;
 
-            return partId == entry.partition() && F.eq(entry.peek(), peek(entry.getKey()));
+            return partId == ctx.affinity().partition(entry.getKey()) &&
+                F.eq(entry.getValue(), peek(entry.getKey()));
         }
 
         /** {@inheritDoc} */
@@ -958,7 +959,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             if (last == null)
                 throw new IllegalStateException();
 
-            ctx.cache().remove(last.getKey(), last.getValue());
+            // TODO ignite-96
+            // ctx.cache().remove(last.getKey(), last.getValue());
         }
 
         /**

@@ -1237,7 +1237,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         // then we should not evict entry.
         return cctx.vararg(new P1<Entry<K, V>>() {
             @Override public boolean apply(Entry<K, V> e) {
-                GridCacheVersion ver = (GridCacheVersion)e.version();
+                GridCacheVersion ver = (GridCacheVersion)((CacheEntryImpl)e).version();
 
                 return info.version().equals(ver) && F.isAll(info.filter());
             }

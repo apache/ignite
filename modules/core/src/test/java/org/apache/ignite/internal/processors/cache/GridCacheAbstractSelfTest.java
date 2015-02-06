@@ -37,6 +37,7 @@ import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -513,7 +514,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     protected static final IgnitePredicate<Entry<String, Integer>> lt50 =
         new P1<Entry<String, Integer>>() {
             @Override public boolean apply(Entry<String, Integer> entry) {
-                Integer i = entry.peek();
+                Integer i = entry.getValue();
 
                 return i != null && i < 50;
             }
@@ -525,7 +526,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     protected static final IgnitePredicate<Entry<String, Integer>> gte100 =
         new P1<Entry<String, Integer>>() {
             @Override public boolean apply(Entry<String, Integer> entry) {
-                Integer i = entry.peek();
+                Integer i = entry.getValue();
 
                 return i != null && i >= 100;
             }
@@ -541,7 +542,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     protected static final IgnitePredicate<Entry<String, Integer>> gte200 =
         new P1<Entry<String, Integer>>() {
             @Override public boolean apply(Entry<String, Integer> entry) {
-                Integer i = entry.peek();
+                Integer i = entry.getValue();
 
                 return i != null && i >= 200;
             }

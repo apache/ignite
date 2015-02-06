@@ -85,12 +85,14 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
 
         map.remove(o);
 
-        try {
-            e.removex();
-        }
-        catch (IgniteCheckedException ex) {
-            throw new IgniteException(ex);
-        }
+        //                // TODO ignite-96
+
+//        try {
+//            e.removex();
+//        }
+//        catch (IgniteCheckedException ex) {
+//            throw new IgniteException(ex);
+//        }
 
         return true;
     }

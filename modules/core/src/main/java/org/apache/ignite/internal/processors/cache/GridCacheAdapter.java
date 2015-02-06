@@ -1304,7 +1304,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public Set<Entry<K, V>> primaryEntrySetx(IgnitePredicate<Entry<K, V>>... filter) {
-        return map.entriesx(F.and(filter, F.<K, V>cachePrimary()));
+        //return map.entriesx(F.and(filter, F.<K, V>cachePrimary()));
+        return null;                 // TODO ignite-96
     }
 
     /** {@inheritDoc} */
@@ -3715,9 +3716,24 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (keyCheck)
             validateCacheKey(key);
 
-        GridCacheEntryEx<K, V> entry = peekEx(key);
+        try {
+            GridCacheEntryEx<K, V> e = entry0(key, ctx.discovery().topologyVersion(), false, false);
 
-        return entry != null && entry.wrap(false).isLockedByThread();
+            if (e == null)
+                return false;
+
+            // Delegate to near if dht.
+            if (e.isDht() && CU.isNearEnabled(ctx)) {
+                GridCache<K, V> near = ctx.isDht() ? ctx.dht().near() : ctx.near();
+
+                return near.isLockedByThread(key) || e.lockedByThread();
+            }
+
+            return e.lockedByThread();
+        }
+        catch (GridCacheEntryRemovedException ignore) {
+            return false;
+        }
     }
 
     /** {@inheritDoc} */
@@ -4923,7 +4939,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     public Set<Entry<K, V>> primaryEntrySet(
         @Nullable IgnitePredicate<Entry<K, V>>... filter) {
-        return map.entries(F.and(filter, F.<K, V>cachePrimary()));
+//        return map.entries(F.and(filter, F.<K, V>cachePrimary()));
+        return null;                 // TODO ignite-96
     }
 
     /**
@@ -4939,7 +4956,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @return Primary key set.
      */
     public Set<K> primaryKeySet(@Nullable IgnitePredicate<Entry<K, V>>... filter) {
-        return map.keySet(F.and(filter, F.<K, V>cachePrimary()));
+//        return map.keySet(F.and(filter, F.<K, V>cachePrimary()));
+        return null;
+        // TODO ignite-96
     }
 
     /**
@@ -4947,7 +4966,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @return Primary values.
      */
     public Collection<V> primaryValues(@Nullable IgnitePredicate<Entry<K, V>>... filter) {
-        return map.values(F.and(filter, F.<K, V>cachePrimary()));
+//        return map.values(F.and(filter, F.<K, V>cachePrimary()));
+        return null;
     }
 
     /**

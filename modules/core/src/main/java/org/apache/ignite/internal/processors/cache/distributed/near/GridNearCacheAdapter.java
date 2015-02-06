@@ -434,7 +434,9 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public Collection<V> primaryValues(@Nullable IgnitePredicate<Entry<K, V>>... filter) {
-        return new GridCacheValueCollection<>(ctx, entrySet(filter), ctx.vararg(F.<K, V>cachePrimary()));
+        return null;
+        // return new GridCacheValueCollection<>(ctx, entrySet(filter), ctx.vararg(F.<K, V>cachePrimary()));
+        // TODO ignite-96
     }
 
     /** {@inheritDoc} */
@@ -469,13 +471,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     @Override public boolean compact(K key,
         @Nullable IgnitePredicate<Entry<K, V>>[] filter) throws IgniteCheckedException {
         return super.compact(key, filter) | dht().compact(key, filter);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Entry<K, V> entry(K key) {
-        // We don't try wrap entry from near or dht cache.
-        // Created object will be wrapped once some method is called.
-        return new GridPartitionedCacheEntryImpl<>(ctx.projectionPerCall(), ctx, key, null);
     }
 
     /**

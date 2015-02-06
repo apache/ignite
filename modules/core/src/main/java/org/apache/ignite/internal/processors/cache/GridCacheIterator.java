@@ -75,12 +75,14 @@ public class GridCacheIterator<K, V, T> implements GridSerializableIterator<T> {
     @Override public void remove() {
         it.remove();
 
-        try {
+//        try {
             // Back remove operation by actual cache.
-            cur.removex();
-        }
-        catch (IgniteCheckedException e) {
-            throw new GridClosureException(e);
-        }
+            // cur.removex();
+        // TODO ignite-96
+
+//        }
+//        catch (IgniteCheckedException e) {
+//            throw new GridClosureException(e);
+//        }
     }
 }

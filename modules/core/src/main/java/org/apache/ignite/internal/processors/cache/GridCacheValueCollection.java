@@ -135,12 +135,13 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
             if (F.isAll(e, filter) && F.eq(o, e.getValue())) {
                 it.remove();
 
-                try {
-                    e.removex();
-                }
-                catch (IgniteCheckedException ex) {
-                    throw new IgniteException(ex);
-                }
+                // TODO ignite-96
+//                try {
+//                    e.removex();
+//                }
+//                catch (IgniteCheckedException ex) {
+//                    throw new IgniteException(ex);
+//                }
 
                 rmv = true;
             }

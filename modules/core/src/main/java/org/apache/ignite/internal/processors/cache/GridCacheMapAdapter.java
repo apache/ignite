@@ -167,7 +167,8 @@ public class GridCacheMapAdapter<K, V> implements ConcurrentMap<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantCast"})
-    @Override public Set<Entry<K, V>> entrySet() {
-        return (Set<Entry<K, V>>)(Set<? extends Entry<K, V>>)prj.entrySet();
+    @Override public Set<Map.Entry<K, V>> entrySet() {
+//        return (Set<Map.Entry<K, V>>)(Set<? extends Map.Entry<K, V>>)prj.entrySet();
+        return null;                 // TODO ignite-96
     }
 }
