@@ -939,9 +939,9 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
             }
         }
         else {
-            //checkLocalEntriesAffinityFilter(0);
+            checkLocalEntriesAffinityFilter(0);
 
-            //checkLocalEntriesAffinityFilter(1);
+            checkLocalEntriesAffinityFilter(1);
 
             checkLocalEntriesStorageFilter(0);
 
