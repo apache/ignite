@@ -1394,6 +1394,33 @@ public class IgnitionEx {
             myCfg.setQueryConfiguration(cfg.getQueryConfiguration());
             myCfg.setAtomicConfiguration(cfg.getAtomicConfiguration());
 
+            ClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
+
+            if (clientCfg == null) {
+                    clientCfg = new ClientConnectionConfiguration();
+
+                    clientCfg.setClientMessageInterceptor(cfg.getClientMessageInterceptor());
+                    clientCfg.setRestAccessibleFolders(cfg.getRestAccessibleFolders());
+                    clientCfg.setRestIdleTimeout(cfg.getRestIdleTimeout());
+                    clientCfg.setRestJettyPath(cfg.getRestJettyPath());
+                    clientCfg.setRestPortRange(cfg.getRestPortRange());
+                    clientCfg.setRestSecretKey(cfg.getRestSecretKey());
+                    clientCfg.setRestTcpDirectBuffer(cfg.isRestTcpDirectBuffer());
+                    clientCfg.setRestTcpHost(cfg.getRestTcpHost());
+                    clientCfg.setRestTcpNoDelay(cfg.isRestTcpNoDelay());
+                    clientCfg.setRestTcpPort(cfg.getRestTcpPort());
+                    clientCfg.setRestTcpReceiveBufferSize(cfg.getRestTcpReceiveBufferSize());
+                    clientCfg.setRestTcpSelectorCount(cfg.getRestTcpSelectorCount());
+                    clientCfg.setRestTcpSendBufferSize(cfg.getRestTcpSendBufferSize());
+                    clientCfg.setRestTcpSendQueueLimit(cfg.getRestTcpSendQueueLimit());
+                    clientCfg.setRestTcpSslClientAuth(cfg.isRestTcpSslClientAuth());
+                    clientCfg.setRestTcpSslContextFactory(cfg.getRestTcpSslContextFactory());
+                    clientCfg.setRestTcpSslEnabled(cfg.isRestTcpSslEnabled());
+            }
+            else
+                clientCfg = new ClientConnectionConfiguration(clientCfg);
+
+
             String ntfStr = IgniteSystemProperties.getString(IGNITE_LIFECYCLE_EMAIL_NOTIFY);
 
             if (ntfStr != null)
@@ -1457,8 +1484,8 @@ public class IgnitionEx {
 
             execSvc = new IgniteThreadPoolExecutor(
                 "pub-" + cfg.getGridName(),
-                cfg.getExecutorService(),
-                cfg.getExecutorService(),
+                cfg.getPublicThreadPoolSize(),
+                cfg.getPublicThreadPoolSize(),
                 DFLT_PUBLIC_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>(DFLT_PUBLIC_THREADPOOL_QUEUE_CAP));
 
@@ -1502,23 +1529,18 @@ public class IgnitionEx {
             // Note that we do not pre-start threads here as ggfs pool may not be needed.
             ggfsExecSvc = new IgniteThreadPoolExecutor(
                 "ggfs-" + cfg.getGridName(),
-                cfg.getGgfsExecutorService(),
-                cfg.getGgfsExecutorService(),
+                cfg.getGgfsThreadPoolSize(),
+                cfg.getGgfsThreadPoolSize(),
                 0,
                 new LinkedBlockingQueue<Runnable>());
 
-
-            ClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
-
-            if (clientCfg != null) {
-                restExecSvc = new IgniteThreadPoolExecutor(
-                    "rest-" + cfg.getGridName(),
-                    clientCfg.getRestThreadPoolSize(),
-                    clientCfg.getRestThreadPoolSize(),
-                    DFLT_REST_KEEP_ALIVE_TIME,
-                    new LinkedBlockingQueue<Runnable>(DFLT_REST_THREADPOOL_QUEUE_CAP)
-                );
-            }
+            restExecSvc = new IgniteThreadPoolExecutor(
+                "rest-" + cfg.getGridName(),
+                clientCfg.getRestThreadPoolSize(),
+                clientCfg.getRestThreadPoolSize(),
+                DFLT_REST_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>(DFLT_REST_THREADPOOL_QUEUE_CAP)
+            );
 
             utilityCacheExecSvc = new IgniteThreadPoolExecutor(
                 "utility-" + cfg.getGridName(),
@@ -1674,31 +1696,6 @@ public class IgnitionEx {
             myCfg.setSmtpUsername(cfg.getSmtpUsername());
             myCfg.setSmtpPassword(cfg.getSmtpPassword());
             myCfg.setAdminEmails(cfg.getAdminEmails());
-
-            if (clientCfg == null) {
-                // If client config is not provided then create config copying values from GridConfiguration.
-                clientCfg = new ClientConnectionConfiguration();
-
-                clientCfg.setClientMessageInterceptor(cfg.getClientMessageInterceptor());
-                clientCfg.setRestAccessibleFolders(cfg.getRestAccessibleFolders());
-                clientCfg.setRestIdleTimeout(cfg.getRestIdleTimeout());
-                clientCfg.setRestJettyPath(cfg.getRestJettyPath());
-                clientCfg.setRestPortRange(cfg.getRestPortRange());
-                clientCfg.setRestSecretKey(cfg.getRestSecretKey());
-                clientCfg.setRestTcpDirectBuffer(cfg.isRestTcpDirectBuffer());
-                clientCfg.setRestTcpHost(cfg.getRestTcpHost());
-                clientCfg.setRestTcpNoDelay(cfg.isRestTcpNoDelay());
-                clientCfg.setRestTcpPort(cfg.getRestTcpPort());
-                clientCfg.setRestTcpReceiveBufferSize(cfg.getRestTcpReceiveBufferSize());
-                clientCfg.setRestTcpSelectorCount(cfg.getRestTcpSelectorCount());
-                clientCfg.setRestTcpSendBufferSize(cfg.getRestTcpSendBufferSize());
-                clientCfg.setRestTcpSendQueueLimit(cfg.getRestTcpSendQueueLimit());
-                clientCfg.setRestTcpSslClientAuth(cfg.isRestTcpSslClientAuth());
-                clientCfg.setRestTcpSslContextFactory(cfg.getRestTcpSslContextFactory());
-                clientCfg.setRestTcpSslEnabled(cfg.isRestTcpSslEnabled());
-            }
-            else
-                clientCfg = new ClientConnectionConfiguration(clientCfg);
 
             // REST configuration.
             myCfg.setClientConnectionConfiguration(clientCfg);

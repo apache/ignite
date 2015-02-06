@@ -433,7 +433,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     @Override public String getExecutorServiceFormatted() {
         assert cfg != null;
 
-        return String.valueOf(cfg.getExecutorService());
+        return String.valueOf(cfg.getPublicThreadPoolSize());
     }
 
     /** {@inheritDoc} */
@@ -1131,7 +1131,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         A.notNull(cfg.getMBeanServer(), "cfg.getMBeanServer()");
         A.notNull(cfg.getGridLogger(), "cfg.getGridLogger()");
         A.notNull(cfg.getMarshaller(), "cfg.getMarshaller()");
-        A.notNull(cfg.getExecutorService(), "cfg.getExecutorService()");
+        A.notNull(cfg.getPublicThreadPoolSize(), "cfg.getPublicThreadPoolSize()");
         A.notNull(cfg.getUserAttributes(), "cfg.getUserAttributes()");
 
         // All SPIs should be non-null.

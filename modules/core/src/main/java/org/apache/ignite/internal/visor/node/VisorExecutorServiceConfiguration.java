@@ -48,7 +48,7 @@ public class VisorExecutorServiceConfiguration implements Serializable {
     public static VisorExecutorServiceConfiguration from(IgniteConfiguration c) {
         VisorExecutorServiceConfiguration cfg = new VisorExecutorServiceConfiguration();
 
-        cfg.executeService(c.getExecutorService());
+        cfg.executeService(c.getPublicThreadPoolSize());
 
         cfg.systemExecutorService(c.getSystemThreadPoolSize());
 

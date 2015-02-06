@@ -135,10 +135,7 @@ public class IgniteConfiguration {
     public static final int AVAILABLE_PROC_CNT = Runtime.getRuntime().availableProcessors();
 
     /** Default core size of public thread pool. */
-    public static final int DFLT_PUBLIC_CORE_THREAD_CNT = Math.max(8, AVAILABLE_PROC_CNT) * 2;
-
-    /** Default max size of public thread pool. */
-    public static final int DFLT_PUBLIC_MAX_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
+    public static final int DFLT_PUBLIC_THREAD_CNT = Math.max(8, AVAILABLE_PROC_CNT) * 2;
 
     /** Default keep alive time for public thread pool. */
     public static final long DFLT_PUBLIC_KEEP_ALIVE_TIME = 0;
@@ -147,10 +144,10 @@ public class IgniteConfiguration {
     public static final int DFLT_PUBLIC_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
 
     /** Default size of system thread pool. */
-    public static final int DFLT_SYSTEM_CORE_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
+    public static final int DFLT_SYSTEM_CORE_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default max size of system thread pool. */
-    public static final int DFLT_SYSTEM_MAX_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
+    public static final int DFLT_SYSTEM_MAX_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default keep alive time for system thread pool. */
     public static final long DFLT_SYSTEM_KEEP_ALIVE_TIME = 0;
@@ -163,12 +160,6 @@ public class IgniteConfiguration {
 
     /** Default size of management thread pool. */
     public static final int DFLT_MGMT_THREAD_CNT = 4;
-
-    /** Default size of REST thread pool. */
-    public static final int DFLT_REST_CORE_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
-
-    /** Default max size of REST thread pool. */
-    public static final int DFLT_REST_MAX_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
 
     /** Default keep alive time for REST thread pool. */
     public static final long DFLT_REST_KEEP_ALIVE_TIME = 0;
@@ -225,22 +216,22 @@ public class IgniteConfiguration {
     private IgniteLogger log;
 
     /** Public pool size. */
-    private int pubPoolSz = DFLT_PUBLIC_CORE_THREAD_CNT;
+    private int pubPoolSize = DFLT_PUBLIC_THREAD_CNT;
 
     /** System pool size. */
-    private int sysPoolSz = DFLT_SYSTEM_CORE_THREAD_CNT;
+    private int sysPoolSize = DFLT_SYSTEM_CORE_THREAD_CNT;
 
     /** Management pool size. */
-    private int mgmtPoolSz = DFLT_MGMT_THREAD_CNT;
+    private int mgmtPoolSize = DFLT_MGMT_THREAD_CNT;
 
     /** GGFS pool size. */
-    private int ggfsPoolSz = AVAILABLE_PROC_CNT;
+    private int ggfsPoolSize = AVAILABLE_PROC_CNT;
 
     /** Lifecycle email notification. */
     private boolean lifeCycleEmailNtf = true;
 
     /** P2P pool size. */
-    private int p2pPoolSz = DFLT_P2P_THREAD_CNT;
+    private int p2pPoolSize = DFLT_P2P_THREAD_CNT;
 
     /** Ignite installation folder. */
     private String ggHome;
@@ -551,12 +542,12 @@ public class IgniteConfiguration {
         clockSyncSamples = cfg.getClockSyncSamples();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
-        pubPoolSz = cfg.getExecutorService();
+        pubPoolSize = cfg.getPublicThreadPoolSize();
         ggHome = cfg.getIgniteHome();
         ggWork = cfg.getWorkDirectory();
         gridName = cfg.getGridName();
         ggfsCfg = cfg.getGgfsConfiguration();
-        ggfsPoolSz = cfg.getGgfsExecutorService();
+        ggfsPoolSize = cfg.getGgfsThreadPoolSize();
         hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
@@ -574,13 +565,13 @@ public class IgniteConfiguration {
         metricsExpTime = cfg.getMetricsExpireTime();
         metricsLogFreq = cfg.getMetricsLogFrequency();
         metricsUpdateFreq = cfg.getMetricsUpdateFrequency();
-        mgmtPoolSz = cfg.getManagementThreadPoolSize();
+        mgmtPoolSize = cfg.getManagementThreadPoolSize();
         netTimeout = cfg.getNetworkTimeout();
         nodeId = cfg.getNodeId();
         p2pEnabled = cfg.isPeerClassLoadingEnabled();
         p2pLocClsPathExcl = cfg.getPeerClassLoadingLocalClassPathExclude();
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
-        p2pPoolSz = cfg.getPeerClassLoadingThreadPoolSize();
+        p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         pluginCfgs = cfg.getPluginConfigurations();
         portableCfg = cfg.getPortableConfiguration();
         qryCfg = cfg.getQueryConfiguration();
@@ -614,7 +605,7 @@ public class IgniteConfiguration {
         smtpSsl = cfg.isSmtpSsl();
         smtpStartTls = cfg.isSmtpStartTls();
         streamerCfg = cfg.getStreamerConfiguration();
-        sysPoolSz = cfg.getSystemThreadPoolSize();
+        sysPoolSize = cfg.getSystemThreadPoolSize();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
         txCfg = cfg.getTransactionsConfiguration();
@@ -1065,13 +1056,13 @@ public class IgniteConfiguration {
      * This executor service will be in charge of processing {@link org.apache.ignite.compute.ComputeJob GridJobs}
      * and user messages sent to node.
      * <p>
-     * If not provided, executor service will have size {@link #DFLT_PUBLIC_CORE_THREAD_CNT}.
+     * If not provided, executor service will have size {@link #DFLT_PUBLIC_THREAD_CNT}.
      *
      * @return Thread pool size to be used in grid to process job execution
      *      requests and user messages sent to the node.
      */
-    public int getExecutorService() {
-        return pubPoolSz;
+    public int getPublicThreadPoolSize() {
+        return pubPoolSize;
     }
 
     /**
@@ -1082,7 +1073,7 @@ public class IgniteConfiguration {
      * @return Thread pool size to be used in grid for internal system messages.
      */
     public int getSystemThreadPoolSize() {
-        return sysPoolSz;
+        return sysPoolSize;
     }
 
     /**
@@ -1095,7 +1086,7 @@ public class IgniteConfiguration {
      *      jobs processing.
      */
     public int getManagementThreadPoolSize() {
-        return mgmtPoolSz;
+        return mgmtPoolSize;
     }
 
     /**
@@ -1109,7 +1100,7 @@ public class IgniteConfiguration {
      *      requests handling.
      */
     public int getPeerClassLoadingThreadPoolSize() {
-        return p2pPoolSz;
+        return p2pPoolSize;
     }
 
     /**
@@ -1119,58 +1110,58 @@ public class IgniteConfiguration {
      *
      * @return Thread pool size to be used for GGFS outgoing message sending.
      */
-    public int getGgfsExecutorService() {
-        return ggfsPoolSz;
+    public int getGgfsThreadPoolSize() {
+        return ggfsPoolSize;
     }
 
     /**
      * Sets thread pool size to use within grid.
      *
-     * @param poolSz Thread pool size to use within grid.
-     * @see IgniteConfiguration#getExecutorService()
+     * @param poolSize Thread pool size to use within grid.
+     * @see IgniteConfiguration#getPublicThreadPoolSize()
      */
-    public void setPublicThreadPoolSize(int poolSz) {
-        this.pubPoolSz = poolSz;
+    public void setPublicThreadPoolSize(int poolSize) {
+        this.pubPoolSize = poolSize;
     }
 
     /**
      * Sets system thread pool size to use within grid.
      *
-     * @param poolSz Thread pool size to use within grid.
+     * @param poolSize Thread pool size to use within grid.
      * @see IgniteConfiguration#getSystemThreadPoolSize()
      */
-    public void setSystemThreadPoolSize(int poolSz) {
-        this.sysPoolSz = poolSz;
+    public void setSystemThreadPoolSize(int poolSize) {
+        this.sysPoolSize = poolSize;
     }
 
     /**
      * Sets management thread pool size to use within grid.
      *
-     * @param poolSz Thread pool size to use within grid.
+     * @param poolSize Thread pool size to use within grid.
      * @see IgniteConfiguration#getManagementThreadPoolSize()
      */
-    public void setManagementThreadPoolSize(int poolSz) {
-        this.mgmtPoolSz = poolSz;
+    public void setManagementThreadPoolSize(int poolSize) {
+        this.mgmtPoolSize = poolSize;
     }
 
     /**
      * Sets thread pool size to use for peer class loading.
      *
-     * @param poolSz Thread pool size to use within grid.
+     * @param poolSize Thread pool size to use within grid.
      * @see IgniteConfiguration#getPeerClassLoadingThreadPoolSize()
      */
-    public void setPeerClassLoadingThreadPoolSize(int poolSz) {
-        this.p2pPoolSz = poolSz;
+    public void setPeerClassLoadingThreadPoolSize(int poolSize) {
+        this.p2pPoolSize = poolSize;
     }
 
     /**
      * Set thread pool size that will be used to process outgoing GGFS messages.
      *
-     * @param poolSz Executor service to use for outgoing GGFS messages.
-     * @see IgniteConfiguration#getGgfsExecutorService()
+     * @param poolSize Executor service to use for outgoing GGFS messages.
+     * @see IgniteConfiguration#getGgfsThreadPoolSize()
      */
-    public void setGgfsExecutorService(int poolSz) {
-        this.ggfsPoolSz = poolSz;
+    public void setGgfsThreadPoolSize(int poolSize) {
+        this.ggfsPoolSize = poolSize;
     }
 
     /**
@@ -1785,7 +1776,7 @@ public class IgniteConfiguration {
      * on arrive to mapped node. This approach suits well for large amount of small
      * jobs (which is a wide-spread use case). User still can control the number
      * of concurrent jobs by setting maximum thread pool size defined by
-     * GridConfiguration.getExecutorService() configuration property.
+     * GridConfiguration.getPublicThreadPoolSize() configuration property.
      *
      * @return Grid collision SPI implementation or {@code null} to use default implementation.
      */

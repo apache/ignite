@@ -42,10 +42,10 @@ public class ClientConnectionConfiguration {
     public static final int DFLT_REST_PORT_RANGE = 100;
 
     /** Default size of REST thread pool. */
-    public static final int DFLT_REST_CORE_THREAD_CNT = IgniteConfiguration.DFLT_PUBLIC_CORE_THREAD_CNT;
+    public static final int DFLT_REST_CORE_THREAD_CNT = IgniteConfiguration.DFLT_PUBLIC_THREAD_CNT;
 
     /** Default max size of REST thread pool. */
-    public static final int DFLT_REST_MAX_THREAD_CNT = IgniteConfiguration.DFLT_PUBLIC_CORE_THREAD_CNT;
+    public static final int DFLT_REST_MAX_THREAD_CNT = IgniteConfiguration.DFLT_PUBLIC_THREAD_CNT;
 
     /** Default max queue capacity of REST thread pool. */
     public static final int DFLT_REST_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;

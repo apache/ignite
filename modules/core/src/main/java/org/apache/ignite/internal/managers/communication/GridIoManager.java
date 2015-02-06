@@ -586,7 +586,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to process regular message due to execution rejection. Increase the upper bound " +
-                "on 'ExecutorService' provided by 'GridConfiguration.getExecutorService()'. " +
+                "on 'ExecutorService' provided by 'GridConfiguration.getPublicThreadPoolSize()'. " +
                 "Will attempt to process message in the listener thread instead.", e);
 
             c.run();
@@ -1304,7 +1304,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
             catch (RejectedExecutionException e) {
                 U.error(log, "Failed to process delayed message due to execution rejection. Increase the upper bound " +
-                    "on executor service provided in 'GridConfiguration.getExecutorService()'). Will attempt to " +
+                    "on executor service provided in 'GridConfiguration.getPublicThreadPoolSize()'). Will attempt to " +
                     "process message in the listener thread instead.", e);
 
                 for (GridCommunicationMessageSet msgSet : msgSets)
