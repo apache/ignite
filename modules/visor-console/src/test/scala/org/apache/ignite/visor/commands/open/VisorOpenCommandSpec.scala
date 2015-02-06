@@ -31,10 +31,8 @@ class VisorOpenCommandSpec extends VisorRuntimeBaseSpec(3) {
     }
 
     it should "print error message when already connected" in {
-        try
+        intercept[IgniteCheckedException] {
             openVisor()
-        catch {
-            case ignored: IgniteCheckedException =>
         }
     }
 }
