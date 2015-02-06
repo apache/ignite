@@ -28,20 +28,56 @@ import javax.cache.*;
  * @version @java.version
  */
 public interface EvictableEntry<K, V> extends Cache.Entry<K, V> {
-    /**
-     * Attaches metadata to the entry.
-     *
-     * @param meta Metadata to attach. Pass {@code null} to remove previous value.
-     * @return Previous metadata value.
-     */
-    public <T> T attachMeta(@Nullable Object meta);
+    public boolean evict();
+
+    public boolean isCached();
 
     /**
-     * Replaces entry metadata.
+     * Gets metadata by name.
      *
-     * @param oldMeta Old metadata value, possibly {@code null}.
-     * @param newMeta New metadata value, possibly {@code null}.
-     * @return {@code True} if metadata value was replaced.
+     * @return Metadata value or {@code null}.
      */
-    public boolean replaceMeta(@Nullable Object oldMeta, @Nullable Object newMeta);
+    @Nullable public <T> T meta();
+
+    /**
+     * Adds a new metadata.
+     *
+     * @param val Metadata value.
+     * @return Metadata previously associated with given name, or
+     *      {@code null} if there was none.
+     */
+    @Nullable public <T> T addMeta(T val);
+
+    /**
+     * Adds given metadata value only if it was absent.
+     *
+     * @param val Value to add if it's not attached already.
+     * @return {@code null} if new value was put, or current value if put didn't happen.
+     */
+    @Nullable public <T> T putMetaIfAbsent(T val);
+
+    /**
+     * Replaces given metadata with new {@code newVal} value only if its current value
+     * is equal to {@code curVal}. Otherwise, it is no-op.
+     *
+     * @param curVal Current value to check.
+     * @param newVal New value.
+     * @return {@code true} if replacement occurred, {@code false} otherwise.
+     */
+    public <T> boolean replaceMeta(T curVal, T newVal);
+
+    /**
+     * Removes metadata by name.
+     *
+     * @return Value of removed metadata or {@code null}.
+     */
+    @Nullable public <T> T removeMeta();
+
+    /**
+     * Removes metadata only if its current value is equal to {@code val} passed in.
+     *
+     * @param val Value to compare.
+     * @return {@code True} if value was removed, {@code false} otherwise.
+     */
+    public <T> boolean removeMeta(T val);
 }

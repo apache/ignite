@@ -18,9 +18,9 @@
 package org.apache.ignite.cache.eviction.ggfs;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.fs.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.jdk8.backport.*;
 import org.jdk8.backport.ConcurrentLinkedDeque8.*;
@@ -35,9 +35,6 @@ import java.util.regex.*;
  */
 public class CacheGgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<GridGgfsBlockKey, byte[]>,
     CacheGgfsPerBlockLruEvictionPolicyMBean {
-    /** Meta denoting node in the queue. */
-    public static final String META_NODE = "ggfs_node";
-
     /** Maximum size. When reached, eviction begins. */
     private volatile long maxSize;
 
@@ -54,7 +51,7 @@ public class CacheGgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<G
     private final AtomicBoolean excludeRecompile = new AtomicBoolean(true);
 
     /** Queue. */
-    private final ConcurrentLinkedDeque8<Entry<GridGgfsBlockKey, byte[]>> queue =
+    private final ConcurrentLinkedDeque8<EvictableEntry<GridGgfsBlockKey, byte[]>> queue =
         new ConcurrentLinkedDeque8<>();
 
     /** Current size of all enqueued blocks in bytes. */
@@ -92,7 +89,7 @@ public class CacheGgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<G
     }
 
     /** {@inheritDoc} */
-    @Override public void onEntryAccessed(boolean rmv, Entry<GridGgfsBlockKey, byte[]> entry) {
+    @Override public void onEntryAccessed(boolean rmv, EvictableEntry<GridGgfsBlockKey, byte[]> entry) {
         if (!rmv) {
             if (!entry.isCached())
                 return;
@@ -101,7 +98,7 @@ public class CacheGgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<G
                 shrink();
         }
         else {
-            MetaEntry meta = entry.removeMeta(META_NODE);
+            MetaEntry meta = entry.removeMeta();
 
             if (meta != null && queue.unlinkx(meta.node()))
                 changeSize(-meta.size());
@@ -112,21 +109,21 @@ public class CacheGgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<G
      * @param entry Entry to touch.
      * @return {@code True} if new node has been added to queue by this call.
      */
-    private boolean touch(Entry<GridGgfsBlockKey, byte[]> entry) {
-        byte[] val = entry.peek();
+    private boolean touch(EvictableEntry<GridGgfsBlockKey, byte[]> entry) {
+        byte[] val = peek(entry);
 
         int blockSize = val != null ? val.length : 0;
 
-        MetaEntry meta = entry.meta(META_NODE);
+        MetaEntry meta = entry.meta();
 
         // Entry has not been enqueued yet.
         if (meta == null) {
             while (true) {
-                Node<Entry<GridGgfsBlockKey, byte[]>> node = queue.offerLastx(entry);
+                Node<EvictableEntry<GridGgfsBlockKey, byte[]>> node = queue.offerLastx(entry);
 
                 meta = new MetaEntry(node, blockSize);
 
-                if (entry.putMetaIfAbsent(META_NODE, meta) != null) {
+                if (entry.putMetaIfAbsent(meta) != null) {
                     // Was concurrently added, need to clear it from queue.
                     queue.unlinkx(node);
 
@@ -147,22 +144,22 @@ public class CacheGgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<G
                     return true;
                 }
                 // If node was unlinked by concurrent shrink() call, we must repeat the whole cycle.
-                else if (!entry.removeMeta(META_NODE, node))
+                else if (!entry.removeMeta(node))
                     return false;
             }
         }
         else {
             int oldBlockSize = meta.size();
 
-            Node<Entry<GridGgfsBlockKey, byte[]>> node = meta.node();
+            Node<EvictableEntry<GridGgfsBlockKey, byte[]>> node = meta.node();
 
             if (queue.unlinkx(node)) {
                 // Move node to tail.
-                Node<Entry<GridGgfsBlockKey, byte[]>> newNode = queue.offerLastx(entry);
+                Node<EvictableEntry<GridGgfsBlockKey, byte[]>> newNode = queue.offerLastx(entry);
 
                 int delta = blockSize - oldBlockSize;
 
-                if (!entry.replaceMeta(META_NODE, meta, new MetaEntry(newNode, blockSize))) {
+                if (!entry.replaceMeta(meta, new MetaEntry(newNode, blockSize))) {
                     // Was concurrently added, need to clear it from queue.
                     if (queue.unlinkx(newNode))
                         delta -= blockSize;
@@ -183,6 +180,14 @@ public class CacheGgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<G
     }
 
     /**
+     * @param entry Entry.
+     * @return Peeked value.
+     */
+    @Nullable private byte[] peek(EvictableEntry<GridGgfsBlockKey, byte[]> entry) {
+        return (byte[])((GridCacheEvictionEntry)entry).peek();
+    }
+
+    /**
      * Shrinks queue to maximum allowed size.
      */
     private void shrink() {
@@ -193,19 +198,19 @@ public class CacheGgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<G
 
         for (int i = 0; i < cnt && (maxBlocks > 0 && queue.sizex() > maxBlocks ||
             maxSize > 0 && curSize.longValue() > maxSize); i++) {
-            Entry<GridGgfsBlockKey, byte[]> entry = queue.poll();
+            EvictableEntry<GridGgfsBlockKey, byte[]> entry = queue.poll();
 
             if (entry == null)
                 break; // Queue is empty.
 
-            byte[] val = entry.peek();
+            byte[] val = peek(entry);
 
             if (val != null)
                 changeSize(-val.length); // Change current size as we polled entry from the queue.
 
             if (!entry.evict()) {
                 // Reorder entries which we failed to evict.
-                entry.removeMeta(META_NODE);
+                entry.removeMeta();
 
                 touch(entry);
             }
@@ -317,7 +322,7 @@ public class CacheGgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<G
      */
     private static class MetaEntry {
         /** Queue node. */
-        private final Node<Entry<GridGgfsBlockKey, byte[]>> node;
+        private final Node<EvictableEntry<GridGgfsBlockKey, byte[]>> node;
 
         /** Data size. */
         private final int size;
@@ -328,7 +333,7 @@ public class CacheGgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<G
          * @param node Queue node.
          * @param size Data size.
          */
-        private MetaEntry(Node<Entry<GridGgfsBlockKey, byte[]>> node, int size) {
+        private MetaEntry(Node<EvictableEntry<GridGgfsBlockKey, byte[]>> node, int size) {
             assert node != null;
             assert size >= 0;
 
@@ -339,7 +344,7 @@ public class CacheGgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<G
         /**
          * @return Queue node.
          */
-        private Node<Entry<GridGgfsBlockKey, byte[]>> node() {
+        private Node<EvictableEntry<GridGgfsBlockKey, byte[]>> node() {
             return node;
         }
 

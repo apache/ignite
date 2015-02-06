@@ -649,8 +649,13 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * @return {@code true} if entry has been evicted.
      * @throws IgniteCheckedException If failed to evict entry.
      */
-    private boolean evict0(GridCacheAdapter<K, V> cache, GridCacheEntryEx<K, V> entry, GridCacheVersion obsoleteVer,
-        @Nullable IgnitePredicate<Entry<K, V>>[] filter, boolean explicit) throws IgniteCheckedException {
+    private boolean evict0(
+        GridCacheAdapter<K, V> cache,
+        GridCacheEntryEx<K, V> entry,
+        GridCacheVersion obsoleteVer,
+        @Nullable IgnitePredicate<Entry<K, V>>[] filter,
+        boolean explicit
+    ) throws IgniteCheckedException {
         assert cache != null;
         assert entry != null;
         assert obsoleteVer != null;

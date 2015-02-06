@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -133,6 +134,16 @@ public interface GridCacheEntryEx<K, V> {
     public V rawPut(V val, long ttl);
 
     /**
+     * Wraps this map entry into cache entry.
+     *
+     * @param prjAware {@code true} if entry should inherit projection properties.
+     * @return Wrapped entry.
+     *
+     */
+    @Deprecated
+    public Entry<K, V> wrap(boolean prjAware);
+
+    /**
      * Wraps this map entry into cache entry for filter evaluation inside entry lock.
      *
      * @return Wrapped entry.
@@ -143,7 +154,7 @@ public interface GridCacheEntryEx<K, V> {
     /**
      * @return Entry which is safe to pass into eviction policy.
      */
-    public Entry<K, V> evictWrap();
+    public EvictableEntry<K, V> evictWrap();
 
     /**
      * @return Not-null version if entry is obsolete.
@@ -585,7 +596,7 @@ public interface GridCacheEntryEx<K, V> {
      * @param heap Read from heap flag.
      * @param offheap Read from offheap flag.
      * @param swap Read from swap flag.
-     * @param topVer Topology version..
+     * @param topVer Topology version.
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      * @throws IgniteCheckedException If failed.

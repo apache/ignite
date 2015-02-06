@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.local.atomic;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.Entry;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.local.*;

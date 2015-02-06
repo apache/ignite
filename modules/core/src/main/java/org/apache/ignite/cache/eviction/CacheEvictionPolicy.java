@@ -17,8 +17,6 @@
 
 package org.apache.ignite.cache.eviction;
 
-import org.apache.ignite.cache.*;
-
 /**
  * Pluggable cache eviction policy. Usually, implementations will internally order
  * cache entries based on {@link #onEntryAccessed(boolean, org.apache.ignite.cache.Entry)} notifications and

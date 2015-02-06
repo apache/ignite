@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -30,6 +29,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
@@ -888,7 +888,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         else {
             key = (K)in.readObject();
             entryProcessorsCol = U.readCollection(in);
-            filters = U.readEntryFilterArray(in);
+            filters = GridCacheUtils.readEntryFilterArray(in);
         }
 
         cacheId = in.readInt();

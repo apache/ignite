@@ -18,7 +18,6 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;

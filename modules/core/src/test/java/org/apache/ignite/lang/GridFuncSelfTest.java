@@ -2716,28 +2716,6 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    public void testCacheExpire() throws Exception {
-        Ignite g = startGrid(1);
-
-        try {
-            GridCache<String, String> cache = g.cache(null);
-
-            cache.put("k1", "v1");
-            cache.put("k2", "v2");
-
-            assert cache.forAll(F.<String, String>cacheExpireBefore(Long.MAX_VALUE));
-            assert !cache.forAll(F.<String, String>cacheExpireAfter(Long.MAX_VALUE));
-        }
-        finally {
-            stopGrid(1);
-        }
-    }
-
-    /**
-     * JUnit.
-     *
-     * @throws Exception If failed.
-     */
     public void testCacheContainsGet() throws Exception {
         Ignite g = startGrid(1);
 

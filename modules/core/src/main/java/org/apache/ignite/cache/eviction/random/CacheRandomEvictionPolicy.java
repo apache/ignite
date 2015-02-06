@@ -24,6 +24,8 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import javax.cache.Cache.*;
+
 /**
  * Cache eviction policy which will select random cache entry for eviction if cache
  * size exceeds the {@link #getMaxSize()} parameter. This implementation is
@@ -77,39 +79,21 @@ public class CacheRandomEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void onEntryAccessed(boolean rmv, Entry<K, V> entry) {
+    @Override public void onEntryAccessed(boolean rmv, EvictableEntry<K, V> entry) {
         if (!entry.isCached())
             return;
 
-        GridCache<K, V> cache = entry.projection().cache();
-
-        int size = cache.size();
-
-        for (int i = max; i < size; i++) {
-            Entry<K, V> e = cache.randomEntry();
-
-            if (e != null)
-                e.evict();
-        }
-    }
-
-    /**
-     * Checks entry for empty value.
-     *
-     * @param entry Entry to check.
-     * @return {@code True} if entry is empty.
-     */
-    private boolean empty(Entry<K, V> entry) {
-        try {
-            return entry.peek(F.asList(GridCachePeekMode.GLOBAL)) == null;
-        }
-        catch (IgniteCheckedException e) {
-            U.error(null, e.getMessage(), e);
-
-            assert false : "Should never happen: " + e;
-
-            return false;
-        }
+//        TODO ignite-96
+//        GridCache<K, V> cache = entry.projection().cache();
+//
+//        int size = cache.size();
+//
+//        for (int i = max; i < size; i++) {
+//            Entry<K, V> e = cache.randomEntry();
+//
+//            if (e != null)
+//                e.evict();
+//        }
     }
 
     /** {@inheritDoc} */

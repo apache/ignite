@@ -63,10 +63,10 @@ import java.util.concurrent.locks.*;
 
 import static java.util.Collections.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.GridClosureCallMode.*;
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
+import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
@@ -1275,16 +1275,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         }
 
         return cur;
-    }
-
-    /**
-     * Same as {@link #entrySet()} but for internal use only to
-     * avoid casting.
-     *
-     * @return Set of entry wrappers.
-     */
-    public Set<GridCacheEntryImpl<K, V>> wrappers() {
-        return map.wrappers(CU.<K, V>empty());
     }
 
     /**

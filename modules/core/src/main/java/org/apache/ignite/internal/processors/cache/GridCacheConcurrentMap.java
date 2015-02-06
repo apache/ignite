@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -27,6 +26,7 @@ import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache.*;
 import java.io.*;
 import java.lang.ref.*;
 import java.lang.reflect.*;
@@ -556,34 +556,6 @@ public class GridCacheConcurrentMap<K, V> {
     }
 
     /**
-     * Entry wrapper set.
-     *
-     * @param filter Filter.
-     * @return Entry wrapper set.
-     */
-    @SuppressWarnings({"unchecked", "RedundantCast"})
-    public Set<GridCacheEntryImpl<K, V>> wrappers(IgnitePredicate<Entry<K, V>>[] filter) {
-        checkWeakQueue();
-
-        return (Set<GridCacheEntryImpl<K, V>>)(Set<? extends Entry<K, V>>)entries(filter);
-    }
-
-    /**
-     * Entry wrapper set casted to projections.
-     *
-     * @param filter Filter to check.
-     * @return Entry projections set.
-     */
-    @SuppressWarnings({"unchecked", "RedundantCast"})
-    public Set<Entry<K, V>> projections(IgnitePredicate<Entry<K, V>>[] filter) {
-        checkWeakQueue();
-
-        return (Set<Entry<K, V>>)(Set<? extends Entry<K, V>>)wrappers(filter);
-    }
-
-    /**
-     * Same as {@link #wrappers(org.apache.ignite.lang.IgnitePredicate[])}
-     *
      * @param filter Filter.
      * @return Set of the mappings contained in this map.
      */
@@ -1688,7 +1660,7 @@ public class GridCacheConcurrentMap<K, V> {
                         continue;
 
                     if (isVal) {
-                        nextVal = next.wrap(true).peek();
+                        nextVal = next.wrap(true).getValue();
 
                         if (nextVal == null)
                             continue;
@@ -2384,8 +2356,8 @@ public class GridCacheConcurrentMap<K, V> {
         /** {@inheritDoc} */
         @SuppressWarnings({"unchecked"})
         @Override public boolean contains(Object o) {
-            if (o instanceof GridCacheEntryImpl) {
-                GridCacheEntryEx<K, V> unwrapped = ((GridCacheEntryImpl<K, V>)o).unwrapNoCreate();
+            if (o instanceof CacheEntryImpl) {
+                GridCacheEntryEx<K, V> unwrapped = set.map.getEntry(((CacheEntryImpl)o).getKey());
 
                 return unwrapped != null && set.contains(unwrapped);
             }

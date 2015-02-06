@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.extras.*;
@@ -3692,13 +3693,22 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         return rawGetOrUnmarshalUnlocked(false);
     }
 
-    /** {@inheritDoc} */
+    @Override public Entry<K, V> wrap(boolean prjAware) {
+        try {
+            return new CacheEntryImpl<>(key, rawGetOrUnmarshal(true));
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException("Fixme"); //TODO ignite-96
+        }
+    }
+
+        /** {@inheritDoc} */
     @Override public Entry<K, V> wrapFilterLocked() throws IgniteCheckedException {
         return new CacheEntryImpl<>(key, rawGetOrUnmarshal(true));
     }
 
     /** {@inheritDoc} */
-    @Override public Entry<K, V> evictWrap() {
+    @Override public EvictableEntry<K, V> evictWrap() {
         return new GridCacheEvictionEntry<>(this);
     }
 

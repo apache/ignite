@@ -35,6 +35,7 @@ import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -836,14 +837,14 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             Entry<K, V> entry = (Entry<K, V>)o;
 
             K key = entry.getKey();
-            V val = entry.peek();
+            V val = entry.getValue();
 
             if (val == null)
                 return false;
 
             try {
                 // Cannot use remove(key, val) since we may be in DHT cache and should go through near.
-                return entry(key).remove(val);
+                return GridDhtCacheAdapter.this.remove(key, val);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -913,7 +914,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * Complex partition iterator for both partition and swap iteration.
      */
-    private static class PartitionEntryIterator<K, V> extends GridIteratorAdapter<Entry<K, V>> {
+    private class PartitionEntryIterator<K, V> extends GridIteratorAdapter<Entry<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -957,7 +958,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             if (last == null)
                 throw new IllegalStateException();
 
-            last.remove();
+            ctx.cache().remove(last.getKey(), last.getValue());
         }
 
         /**

@@ -19,6 +19,8 @@ package org.apache.ignite.cache.eviction;
 
 import org.apache.ignite.cache.*;
 
+import javax.cache.Cache.*;
+
 /**
  * Eviction filter to specify which entries should not be evicted. Not applicable when
  * calling explicit evict via {@link org.apache.ignite.cache.Entry#evict()}.

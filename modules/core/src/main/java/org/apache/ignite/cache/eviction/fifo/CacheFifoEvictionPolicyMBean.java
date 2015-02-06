@@ -25,14 +25,6 @@ import org.apache.ignite.mxbean.*;
 @IgniteMXBeanDescription("MBean for FIFO cache eviction policy.")
 public interface CacheFifoEvictionPolicyMBean {
     /**
-     * Gets name of metadata attribute used to store eviction policy data.
-     *
-     * @return Name of metadata attribute used to store eviction policy data.
-     */
-    @IgniteMXBeanDescription("Name of metadata attribute used to store eviction policy data.")
-    public String getMetaAttributeName();
-
-    /**
      * Gets maximum allowed cache size.
      *
      * @return Maximum allowed cache size.

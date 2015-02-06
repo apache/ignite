@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache.*;
 import java.io.*;
 import java.util.*;
 
@@ -197,11 +198,12 @@ public class VisorCache implements Serializable {
 
         int cnt = 0;
 
-        while (it.hasNext() && cnt < sz) {
-            memSz += it.next().memorySize();
-
-            cnt++;
-        }
+//        TODO ignite-96
+//        while (it.hasNext() && cnt < sz) {
+//            memSz += it.next().memorySize();
+//
+//            cnt++;
+//        }
 
         if (cnt > 0)
             memSz = (long)((double)memSz / cnt * size);

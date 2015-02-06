@@ -37,6 +37,7 @@ import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache.*;
 import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
@@ -49,10 +50,10 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 import static org.apache.ignite.internal.GridNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
+import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
 /**
  * Cache utility methods.
@@ -379,14 +380,14 @@ public class GridCacheUtils {
     }
 
     /**
-     * Gets closure which returns {@link org.apache.ignite.cache.Entry} given cache key.
+     * Gets closure which returns {@code Entry} given cache key.
      * If current cache is DHT and key doesn't belong to current partition,
      * {@code null} is returned.
      *
      * @param ctx Cache context.
      * @param <K> Cache key type.
      * @param <V> Cache value type.
-     * @return Closure which returns {@link org.apache.ignite.cache.Entry} given cache key or {@code null} if partition is invalid.
+     * @return Closure which returns {@code Entry} given cache key or {@code null} if partition is invalid.
      */
     public static <K, V> IgniteClosure<K, Entry<K, V>> cacheKey2Entry(
         final GridCacheContext<K, V> ctx) {
@@ -1674,5 +1675,30 @@ public class GridCacheUtils {
         assert duration.getTimeUnit() != null;
 
         return duration.getTimeUnit().toMillis(duration.getDurationAmount());
+    }
+
+    /**
+     * Reads array from input stream.
+     *
+     * @param in Input stream.
+     * @return Deserialized array.
+     * @throws IOException If failed.
+     * @throws ClassNotFoundException If class not found.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable public static <K, V> IgnitePredicate<Entry<K, V>>[] readEntryFilterArray(ObjectInput in)
+        throws IOException, ClassNotFoundException {
+        int len = in.readInt();
+
+        IgnitePredicate<Entry<K, V>>[] arr = null;
+
+        if (len > 0) {
+            arr = new IgnitePredicate[len];
+
+            for (int i = 0; i < len; i++)
+                arr[i] = (IgnitePredicate<Entry<K, V>>)in.readObject();
+        }
+
+        return arr;
     }
 }

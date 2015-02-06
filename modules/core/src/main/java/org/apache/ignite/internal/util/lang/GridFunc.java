@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util.lang;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
@@ -31,11 +30,11 @@ import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache.*;
 import java.io.*;
 import java.lang.reflect.*;
 import java.math.*;
 import java.util.*;
-import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -359,12 +358,7 @@ public class GridFunc {
     private static final IgniteClosure CACHE_ENTRY_VAL_GET = new IgniteClosure() {
         @SuppressWarnings({"unchecked"})
         @Nullable @Override public Object apply(Object o) {
-            try {
-                return ((Entry)o).get();
-            }
-            catch (IgniteCheckedException e) {
-                throw new GridClosureException(e);
-            }
+            return ((Entry)o).getValue();
         }
 
         @Override public String toString() {
@@ -376,7 +370,7 @@ public class GridFunc {
     private static final IgniteClosure CACHE_ENTRY_VAL_PEEK = new IgniteClosure() {
         @SuppressWarnings({"unchecked"})
         @Nullable @Override public Object apply(Object o) {
-            return ((Entry<?, ?>)o).peek();
+            return ((Entry<?, ?>)o).getValue();
         }
 
         @Override public String toString() {
@@ -388,12 +382,7 @@ public class GridFunc {
     private static final IgnitePredicate CACHE_ENTRY_HAS_GET_VAL = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
-            try {
-                return ((Entry)o).get() != null;
-            }
-            catch (IgniteCheckedException e) {
-                throw new GridClosureException(e);
-            }
+            return ((Entry)o).getValue() != null;
         }
 
         @Override public String toString() {
@@ -2176,7 +2165,7 @@ public class GridFunc {
      */
     @SuppressWarnings({"unchecked"})
     public static <K, V> Map<K, V> lose(Map<K, V> m, boolean cp,
-        @Nullable IgnitePredicate<? super Entry<K, V>>... p) {
+        @Nullable IgnitePredicate<? super Map.Entry<K, V>>... p) {
         A.notNull(m, "m");
 
         Map<K, V> res;
@@ -2216,8 +2205,11 @@ public class GridFunc {
      * @param <V> Type of map's values.
      * @return Filtered map.
      */
-    public static <K, V> Map<K, V> loseKeys(Map<K, V> m, boolean cp,
-        @Nullable final IgnitePredicate<? super K>... p) {
+    public static <K, V> Map<K, V> loseKeys(
+        Map<K, V> m,
+        boolean cp,
+        @Nullable final IgnitePredicate<? super K>... p
+    ) {
         return lose(m, cp, new P1<Map.Entry<K, V>>() {
             @Override public boolean apply(Map.Entry<K, V> e) {
                 return isAll(e.getKey(), p);
@@ -2656,7 +2648,7 @@ public class GridFunc {
      * @return Filtered map.
      */
     public static <K, V> Map<K, V> retain(Map<K, V> m, boolean cp,
-        @Nullable IgnitePredicate<? super Entry<K, V>>... p) {
+        @Nullable IgnitePredicate<? super Map.Entry<K, V>>... p) {
         return lose(m, cp, F.not(p));
     }
 
@@ -6525,7 +6517,7 @@ public class GridFunc {
      *      evaluate to {@code true} - otherwise returns {@code false}.
      */
     public static <K1, K extends K1, V1, V extends V1> boolean exist(Map<K, V> m,
-        @Nullable IgnitePredicate<? super Entry<K, V>>... p) {
+        @Nullable IgnitePredicate<? super Map.Entry<K, V>>... p) {
         A.notNull(m, "m");
 
         if (isAlwaysFalse(p))
@@ -6554,7 +6546,7 @@ public class GridFunc {
      *      entries. Returns {@code false} otherwise.
      */
     public static <K1, K extends K1, V1, V extends V1> boolean forAll(Map<K, V> m,
-        @Nullable IgnitePredicate<? super Entry<K, V>>... p) {
+        @Nullable IgnitePredicate<? super Map.Entry<K, V>>... p) {
         A.notNull(m, "m");
 
         if (isAlwaysFalse(p))
@@ -6633,7 +6625,7 @@ public class GridFunc {
      *      least one entry. Returns {@code false} otherwise.
      */
     public static <K1, K extends K1, V1, V extends V1> boolean forAny(Map<K, V> m,
-        @Nullable IgnitePredicate<? super Entry<K, V>>... p) {
+        @Nullable IgnitePredicate<? super Map.Entry<K, V>>... p) {
         A.notNull(m, "m");
 
         if (isAlwaysFalse(p))
@@ -7386,7 +7378,7 @@ public class GridFunc {
         if (m1.size() != m2.size())
             return false;
 
-        for (Entry<K, V> e : m1.entrySet()) {
+        for (Map.Entry<K, V> e : m1.entrySet()) {
             V v1 = e.getValue();
             V v2 = m2.get(e.getKey());
 
@@ -7784,46 +7776,6 @@ public class GridFunc {
     }
 
     /**
-     * Gets predicate which returns {@code true} if entry expires on or before given time
-     * in milliseconds.
-     *
-     * @param msec Maximum expire time in milliseconds.
-     * @param <K> Cache key type.
-     * @param <V> Cache value type.
-     * @return Predicate which returns {@code true} if entry
-     *      expires on or before given time.
-     */
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheExpireBefore(final long msec) {
-        A.ensure(msec >= 0, "msec >= 0");
-
-        return new IgnitePredicate<Entry<K, V>>() {
-            @Override public boolean apply(Entry<K, V> e) {
-                return e.expirationTime() <= msec;
-            }
-        };
-    }
-
-    /**
-     * Gets predicate which returns {@code true} if entry expires on or after given time
-     * in milliseconds.
-     *
-     * @param msec Minimum expire time in milliseconds.
-     * @param <K> Cache key type.
-     * @param <V> Cache value type.
-     * @return Predicate which returns {@code true} if entry
-     *      expires on or after given time.
-     */
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheExpireAfter(final long msec) {
-        A.ensure(msec >= 0, "msec >= 0");
-
-        return new IgnitePredicate<Entry<K, V>>() {
-            @Override public boolean apply(Entry<K, V> e) {
-                return e.expirationTime() >= msec;
-            }
-        };
-    }
-
-    /**
      * Gets predicate which returns {@code true} if {@link org.apache.ignite.cache.Entry#get()}
      * method returns {@code non-null} value.
      *
@@ -7928,16 +7880,11 @@ public class GridFunc {
         return isEmpty(vals) ? F.<Entry<K, V>>alwaysFalse() :
             new IgnitePredicate<Entry<K, V>>() {
                 @Override public boolean apply(Entry<K, V> e) {
-                    try {
-                        V v = e.get();
+                    V v = e.getValue();
 
-                        assert vals != null;
+                    assert vals != null;
 
-                        return v != null && vals.contains(v);
-                    }
-                    catch (IgniteCheckedException e1) {
-                        throw wrap(e1);
-                    }
+                    return v != null && vals.contains(v);
                 }
             };
     }
@@ -8026,12 +7973,7 @@ public class GridFunc {
                 @Override public boolean apply(Entry<K, V> e) {
                     assert map != null;
 
-                    try {
-                        return eq(e.get(), map.get(e.getKey()));
-                    }
-                    catch (IgniteCheckedException ex) {
-                        throw wrap(ex);
-                    }
+                    return eq(e.getValue(), map.get(e.getKey()));
                 }
             };
     }
@@ -8053,7 +7995,7 @@ public class GridFunc {
                 @Override public boolean apply(Entry<K, V> e) {
                     assert map != null;
 
-                    return eq(e.peek(), map.get(e.getKey()));
+                    return eq(e.getValue(), map.get(e.getKey()));
                 }
             };
     }
@@ -8077,22 +8019,17 @@ public class GridFunc {
         return isEmpty(entries) ? F.<Entry<K, V>>alwaysFalse() :
             new IgnitePredicate<Entry<K, V>>() {
                 @Override public boolean apply(Entry<K, V> e) {
-                    try {
-                        K k = e.getKey();
-                        V v = e.get();
+                    K k = e.getKey();
+                    V v = e.getValue();
 
-                        assert entries != null;
+                    assert entries != null;
 
-                        for (Map.Entry<K, V> entry : entries) {
-                            if (k.equals(entry.getKey()) && v!= null && v.equals(entry.getValue()))
-                                return true;
-                        }
-
-                        return false;
+                    for (Map.Entry<K, V> entry : entries) {
+                        if (k.equals(entry.getKey()) && v!= null && v.equals(entry.getValue()))
+                            return true;
                     }
-                    catch (IgniteCheckedException ex) {
-                        throw wrap(ex);
-                    }
+
+                    return false;
                 }
             };
     }
@@ -8115,7 +8052,7 @@ public class GridFunc {
             new IgnitePredicate<Entry<K, V>>() {
                 @Override public boolean apply(Entry<K, V> e) {
                     K k = e.getKey();
-                    V v = e.peek();
+                    V v = e.getValue();
 
                     assert entries != null;
 
@@ -8202,14 +8139,9 @@ public class GridFunc {
             isAlwaysFalse(ps) ? F.<Entry<K, V>>alwaysFalse() :
             new IgnitePredicate<Entry<K, V>>() {
                 @Override public boolean apply(Entry<K, V> e) {
-                    try {
-                        V v = e.get();
+                    V v = e.getValue();
 
-                        return v != null && F.isAll(v, ps);
-                    }
-                    catch (IgniteCheckedException ex) {
-                        throw wrap(ex);
-                    }
+                    return v != null && F.isAll(v, ps);
                 }
             };
     }
@@ -8228,7 +8160,7 @@ public class GridFunc {
             isAlwaysFalse(ps) ? F.<Entry<K, V>>alwaysFalse() :
             new IgnitePredicate<Entry<K, V>>() {
                 @Override public boolean apply(Entry<K, V> e) {
-                    V v = e.peek();
+                    V v = e.getValue();
 
                     return v != null && F.isAll(v, ps);
                 }

@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache.*;
 import java.util.*;
 
 /**
@@ -66,22 +65,20 @@ public class GridCacheEntrySet<K, V> extends AbstractSet<Entry<K, V>> {
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        ctx.cache().clearLocally0(F.viewReadOnly(set, F.<K>mapEntry2Key(), filter), CU.<K, V>empty());
-
-        set.clear();
+        throw new UnsupportedOperationException("clear");
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public boolean remove(Object o) {
-        if (!(o instanceof GridCacheEntryImpl))
+        if (!(o instanceof CacheEntryImpl))
             return false;
 
         Entry<K, V> e = (Entry<K,V>)o;
 
         if (F.isAll(e, filter) && set.remove(e)) {
             try {
-                e.removex();
+                ctx.cache().remove(e.getKey(), e.getValue());
             }
             catch (IgniteCheckedException ex) {
                 throw new IgniteException(ex);
@@ -101,7 +98,7 @@ public class GridCacheEntrySet<K, V> extends AbstractSet<Entry<K, V>> {
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public boolean contains(Object o) {
-        if (!(o instanceof GridCacheEntryImpl))
+        if (!(o instanceof CacheEntryImpl))
             return false;
 
         Entry<K,V> e = (Entry<K, V>)o;

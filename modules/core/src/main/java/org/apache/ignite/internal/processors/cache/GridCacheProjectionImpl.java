@@ -36,6 +36,7 @@ import org.apache.ignite.portables.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
@@ -1397,7 +1398,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         /** {@inheritDoc} */
         @Override public boolean apply(Entry<K, V> e) {
             if (kvFilter != null) {
-                if (!kvFilter.apply(e.getKey(), e.peek()))
+                if (!kvFilter.apply(e.getKey(), e.getValue()))
                     return false;
             }
 
