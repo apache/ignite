@@ -221,7 +221,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      * @return Servlet container web context for this test.
      */
     protected WebAppContext getWebContext(@Nullable String cfg, @Nullable String gridName, HttpServlet servlet) {
-        WebAppContext ctx = new WebAppContext(U.resolveGridGainPath("modules/core/src/test/webapp").getAbsolutePath(),
+        WebAppContext ctx = new WebAppContext(U.resolveIgnitePath("modules/core/src/test/webapp").getAbsolutePath(),
             "/ggtest");
 
         ctx.setInitParameter("IgniteConfigurationFilePath", cfg);

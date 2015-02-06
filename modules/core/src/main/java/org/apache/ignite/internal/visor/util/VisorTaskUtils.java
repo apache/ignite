@@ -622,7 +622,7 @@ public class VisorTaskUtils {
         else
             throw new IgniteCheckedException("Failed to get profiler log folder (unexpected GGFS instance type)");
 
-        URL logsDirUrl = U.resolveGridGainUrl(logsDir != null ? logsDir : DFLT_GGFS_LOG_DIR);
+        URL logsDirUrl = U.resolveIgniteUrl(logsDir != null ? logsDir : DFLT_GGFS_LOG_DIR);
 
         return logsDirUrl != null ? new File(logsDirUrl.getPath()).toPath() : null;
     }

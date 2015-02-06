@@ -18,8 +18,8 @@
 package org.apache.ignite.portables;
 
 /**
- * Type and field ID mapper for portable objects. GridGain never writes full
- * strings for field or type names. Instead, for performance reasons, GridGain
+ * Type and field ID mapper for portable objects. Ignite never writes full
+ * strings for field or type names. Instead, for performance reasons, Ignite
  * writes integer hash codes for type and field names. It has been tested that
  * hash code conflicts for the type names or the field names
  * within the same type are virtually non-existent and, to gain performance, it is safe

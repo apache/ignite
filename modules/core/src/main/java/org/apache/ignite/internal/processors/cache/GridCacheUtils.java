@@ -50,7 +50,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 
@@ -61,8 +61,11 @@ public class GridCacheUtils {
     /**  Hadoop syste cache name. */
     public static final String SYS_CACHE_HADOOP_MR = "gg-hadoop-mr-sys-cache";
 
-    /** Security system cache name. */
+    /** System cache name. */
     public static final String UTILITY_CACHE_NAME = "gg-sys-cache";
+
+    /** Atomics system cache name. */
+    public static final String ATOMICS_CACHE_NAME = "ignite-atomics-sys-cache";
 
     /** Default mask name. */
     private static final String DEFAULT_MASK_NAME = "<default>";
@@ -1507,10 +1510,18 @@ public class GridCacheUtils {
 
     /**
      * @param cacheName Cache name.
+     * @return {@code True} if this is security system cache.
+     */
+    public static boolean isAtomicsCache(String cacheName) {
+        return ATOMICS_CACHE_NAME.equals(cacheName);
+    }
+
+    /**
+     * @param cacheName Cache name.
      * @return {@code True} if system cache.
      */
     public static boolean isSystemCache(String cacheName) {
-        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName);
+        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName) || isAtomicsCache(cacheName);
     }
 
     /**
@@ -1618,6 +1629,25 @@ public class GridCacheUtils {
     }
 
     /**
+     * Execute closure inside cache transaction.
+     *
+     * @param cache Cache.
+     * @param concurrency Concurrency.
+     * @param isolation Isolation.
+     * @param clo Closure.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static <K, V> void inTx(Ignite ignite, IgniteCache<K, V> cache, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, IgniteInClosureX<IgniteCache<K ,V>> clo) throws IgniteCheckedException {
+
+        try (IgniteTx tx = ignite.transactions().txStart(concurrency, isolation)) {
+            clo.applyx(cache);
+
+            tx.commit();
+        }
+    }
+
+    /**
      * Gets subject ID by transaction.
      *
      * @param tx Transaction.
@@ -1640,7 +1670,7 @@ public class GridCacheUtils {
      * @return {@code True} if entry was invalidated.
      */
     public static <K, V> boolean invalidate(CacheProjection<K, V> cache, K key) {
-        return cache.clear(key);
+        return cache.clearLocally(key);
     }
 
     /**

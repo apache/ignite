@@ -23,7 +23,7 @@ import java.io.*;
  * Defines generic closure with one parameter. Closure is a simple executable which accepts a parameter and
  * returns a value.
  * <p>
- * In GridGain closures are mainly used for executing distributed computations
+ * In Ignite closures are mainly used for executing distributed computations
  * on the grid, like in {@link org.apache.ignite.IgniteCompute#apply(IgniteClosure, Object)} method.
  *
  * @param <E> Type of closure parameter.

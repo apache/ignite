@@ -20,7 +20,6 @@ package org.apache.ignite.loadtests.datastructures;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -32,9 +31,10 @@ import org.apache.ignite.transactions.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Load test for atomic long.
@@ -53,6 +53,14 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
+        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+
+        atomicCfg.setCacheMode(PARTITIONED);
+        atomicCfg.setBackups(1);
+        atomicCfg.setAtomicSequenceReserveSize(10);
+
+        c.setAtomicConfiguration(atomicCfg);
+
         c.getTransactionsConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
         c.getTransactionsConfiguration().setDefaultTxIsolation(REPEATABLE_READ);
 
@@ -65,7 +73,6 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
         cc.setEvictionPolicy(new CacheLruEvictionPolicy<>(1000));
         cc.setBackups(1);
         cc.setAffinity(new CacheConsistentHashAffinityFunction(true));
-        cc.setAtomicSequenceReserveSize(10);
         cc.setEvictSynchronized(true);
         cc.setEvictNearSynchronized(true);
 
@@ -106,7 +113,7 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
 
             assert cache != null;
 
-            CacheAtomicSequence seq = cache.dataStructures().atomicSequence("SEQUENCE", 0, true);
+            IgniteAtomicSequence seq = ignite.atomicSequence("SEQUENCE", 0, true);
 
             long start = System.currentTimeMillis();
 

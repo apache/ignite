@@ -458,19 +458,21 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         startGrid();
 
         try {
-            IgniteTx tx = explicitTx ? cache().txStart(concurrency, isolation) : null;
+            IgniteTx tx = explicitTx ? grid().transactions().txStart(concurrency, isolation) : null;
 
             try {
-                cache().putAll(F.asMap(1, "Hello", 2, "World"));
+                IgniteCache<Object, Object> cache = jcache();
+
+                cache.putAll(F.asMap(1, "Hello", 2, "World"));
 
                 if (tx != null)
                     tx.commit();
 
-                System.out.println(cache().metrics());
+                System.out.println(cache.metrics());
 
-                assertEquals("Hello", cache().get(1));
-                assertEquals("World", cache().get(2));
-                assertNull(cache().get(3));
+                assertEquals("Hello", cache.get(1));
+                assertEquals("World", cache.get(2));
+                assertNull(cache.get(3));
             }
             finally {
                 if (tx != null)
@@ -491,26 +493,28 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         startGrid();
 
         try {
-            IgniteTx tx = cache().txStart(concurrency, isolation);
+            IgniteTx tx = grid().transactions().txStart(concurrency, isolation);
 
             try {
-                String old = (String)cache().get(1);
+                IgniteCache<Object, Object> cache = jcache();
+
+                String old = (String)cache.get(1);
 
                 assert old == null;
 
-                String replaced = (String)cache().put(1, "newVal");
+                String replaced = (String)cache.getAndPut(1, "newVal");
 
                 assert replaced == null;
 
-                replaced = (String)cache().put(1, "newVal2");
+                replaced = (String)cache.getAndPut(1, "newVal2");
 
                 assertEquals("newVal", replaced);
 
                 if (tx != null)
                     tx.commit();
 
-                assertEquals("newVal2", cache().get(1));
-                assertNull(cache().get(3));
+                assertEquals("newVal2", cache.get(1));
+                assertNull(cache.get(3));
             }
             finally {
                 if (tx != null)

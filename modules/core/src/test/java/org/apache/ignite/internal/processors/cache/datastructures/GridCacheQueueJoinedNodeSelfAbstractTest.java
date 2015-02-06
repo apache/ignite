@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -38,7 +37,7 @@ import java.util.concurrent.*;
  * Test that joining node is able to take items from queue.
  * See GG-2311 for more information.
  */
-public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommonAbstractTest {
+public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends IgniteCollectionAbstractTest {
     /** */
     protected static final int GRID_CNT = 3;
 
@@ -49,26 +48,8 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
     protected static final int ITEMS_CNT = 300;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(GRID_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
-
-        return cfg;
+    @Override protected int gridCount() {
+        return GRID_CNT;
     }
 
     /**
@@ -77,8 +58,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
     public void testTakeFromJoined() throws Exception {
         String queueName = UUID.randomUUID().toString();
 
-        CacheQueue<Integer> queue = grid(0).cache(null).dataStructures()
-            .queue(queueName, 0, true, true);
+        IgniteQueue<Integer> queue = grid(0).queue(queueName, 0, config(true));
 
         assertNotNull(queue);
 
@@ -176,7 +156,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
                 ", job=" + getClass().getSimpleName() + "]");
 
             try {
-                CacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, 0, true, false);
+                IgniteQueue<Integer> queue = ignite.queue(queueName, 0, null);
 
                 assertNotNull(queue);
 
@@ -270,7 +250,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
             Integer lastPolled = null;
 
             try {
-                CacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, 0, true, false);
+                IgniteQueue<Integer> queue = ignite.queue(queueName, 0, null);
 
                 assertNotNull(queue);
 
@@ -286,7 +266,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
                 else
                     fail("Unexpected error: " + e);
             }
-            catch (IgniteCheckedException e) {
+            catch (Exception e) {
                 error("Failed to get value from the queue", e);
             }
             finally {

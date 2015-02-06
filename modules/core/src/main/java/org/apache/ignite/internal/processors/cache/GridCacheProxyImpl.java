@@ -20,12 +20,10 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.affinity.*;
-import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -71,9 +69,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     /** Cache queries. */
     private CacheQueries<K, V> qry;
 
-    /** Data structures. */
-    private CacheDataStructures dataStructures;
-
     /** Affinity. */
     private CacheAffinity<K> aff;
 
@@ -102,7 +97,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         cache = ctx.cache();
 
         qry = new GridCacheQueriesProxy<>(ctx, prj, (GridCacheQueriesEx<K, V>)delegate.queries());
-        dataStructures = new GridCacheDataStructuresProxy<>(ctx, ctx.cache().dataStructures());
         aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
     }
 
@@ -150,11 +144,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     /** {@inheritDoc} */
     @Override public CacheAffinity<K> affinity() {
         return aff;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheDataStructures dataStructures() {
-        return dataStructures;
     }
 
     /** {@inheritDoc} */
@@ -1021,6 +1010,18 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
+    @Override public Set<K> keySet(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.keySet(filter);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public Set<K> primaryKeySet() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -1289,11 +1290,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void clearAll() {
+    @Override public void clearLocally() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            delegate.clearAll();
+            delegate.clearLocally();
         }
         finally {
             gate.leave(prev);
@@ -1301,11 +1302,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void globalClearAll() throws IgniteCheckedException {
+    @Override public void clear() throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            delegate.globalClearAll(0);
+            delegate.clear(0);
         }
         finally {
             gate.leave(prev);
@@ -1313,11 +1314,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void globalClearAll(long timeout) throws IgniteCheckedException {
+    @Override public void clear(long timeout) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            delegate.globalClearAll(timeout);
+            delegate.clear(timeout);
         }
         finally {
             gate.leave(prev);
@@ -1325,11 +1326,11 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public boolean clear(K key) {
+    @Override public boolean clearLocally(K key) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.clear(key);
+            return delegate.clearLocally(key);
         }
         finally {
             gate.leave(prev);
@@ -1587,12 +1588,12 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(@Nullable IgnitePredicate<CacheEntry<K, V>>[] filter)
+    @Override public void removeAll()
         throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            delegate.removeAll(filter);
+            delegate.removeAll();
         }
         finally {
             gate.leave(prev);
@@ -1913,7 +1914,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         cache = ctx.cache();
 
         qry = new GridCacheQueriesProxy<>(ctx, prj, (GridCacheQueriesEx<K, V>)delegate.queries());
-        dataStructures = new GridCacheDataStructuresProxy<>(ctx, ctx.cache().dataStructures());
         aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
     }
 

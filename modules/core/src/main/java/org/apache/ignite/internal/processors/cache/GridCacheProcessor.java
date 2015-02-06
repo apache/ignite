@@ -63,7 +63,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -579,6 +579,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         sysCaches.add(CU.UTILITY_CACHE_NAME);
 
+        sysCaches.add(CU.ATOMICS_CACHE_NAME);
+
         CacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
 
         sharedCtx = createSharedContext(ctx);
@@ -630,7 +632,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheEvictionManager evictMgr = new GridCacheEvictionManager();
             GridCacheQueryManager qryMgr = queryManager(cfg);
             GridCacheContinuousQueryManager contQryMgr = new GridCacheContinuousQueryManager();
-            GridCacheDataStructuresManager dataStructuresMgr = new GridCacheDataStructuresManager();
+            CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
             GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
 
@@ -1061,7 +1063,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return;
 
         IgniteDeploymentMode locDepMode = ctx.config().getDeploymentMode();
-        IgniteDeploymentMode rmtDepMode = rmt.attribute(GridNodeAttributes.ATTR_DEPLOYMENT_MODE);
+        IgniteDeploymentMode rmtDepMode = rmt.attribute(IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE);
 
         for (GridCacheAttributes rmtAttr : rmtAttrs) {
             for (GridCacheAttributes locAttr : locAttrs) {
@@ -1118,10 +1120,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "transactionManagerLookup",
                             "Transaction manager lookup", locAttr.transactionManagerLookupClassName(),
                             rmtAttr.transactionManagerLookupClassName(), false);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "atomicSequenceReserveSize",
-                            "Atomic sequence reserve size", locAttr.sequenceReserveSize(),
-                            rmtAttr.sequenceReserveSize(), false);
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultLockTimeout",
                             "Default lock timeout", locAttr.defaultLockTimeout(), rmtAttr.defaultLockTimeout(), false);
@@ -1597,6 +1595,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public <K, V> GridCache<K, V> utilityCache() {
         return cache(CU.UTILITY_CACHE_NAME);
+    }
+
+    /**
+     * Gets utility cache for atomic data structures.
+     *
+     * @return Utility cache for atomic data structures.
+     */
+    public <K, V> GridCache<K, V> atomicsCache() {
+        return cache(CU.ATOMICS_CACHE_NAME);
     }
 
     /**

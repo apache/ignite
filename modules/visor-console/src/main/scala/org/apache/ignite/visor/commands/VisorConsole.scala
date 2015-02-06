@@ -208,7 +208,7 @@ object VisorConsole extends App {
                 Array[Class[_]](aboutHndCls),
                 new java.lang.reflect.InvocationHandler {
                     def invoke(proxy: Any, mth: java.lang.reflect.Method, args: Array[Object]) = {
-                        AboutDialog.centerShow("Visor - GridGain Shell Console", bannerIconUrl.toExternalForm,
+                        AboutDialog.centerShow("Visor - Ignite Shell Console", bannerIconUrl.toExternalForm,
                             VISOR_VER, releaseDate, VISOR_COPYRIGHT)
 
                         null

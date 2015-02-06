@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.email.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
@@ -432,6 +433,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridClockSource timeSource();
 
     /**
+     * Gets data structures processor.
+     *
+     * @return Data structures processor.
+     */
+    public DataStructuresProcessor dataStructures();
+
+    /**
      * Sets segmented flag to {@code true} when node is stopped due to segmentation issues.
      */
     public void markSegmented();
@@ -469,8 +477,8 @@ public interface GridKernalContext extends Iterable<GridComponent> {
 
     /**
      * Gets user version for given class loader by checking
-     * {@code META-INF/gridgain.xml} file for {@code userVersion} attribute. If
-     * {@code gridgain.xml} file is not found, or user version is not specified there,
+     * {@code META-INF/ignite.xml} file for {@code userVersion} attribute. If
+     * {@code ignite.xml} file is not found, or user version is not specified there,
      * then default version (empty string) is returned.
      *
      * @param ldr Class loader.

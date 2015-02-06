@@ -29,7 +29,7 @@ public class IgniteContinuousTaskSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Gridgain Kernal Test Suite");
+        TestSuite suite = new TestSuite("Ignite Kernal Test Suite");
 
         suite.addTest(new TestSuite(GridContinuousJobAnnotationSelfTest.class));
         suite.addTest(new TestSuite(GridContinuousJobSiblingsSelfTest.class));

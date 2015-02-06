@@ -1064,6 +1064,23 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
     public Set<K> keySet();
 
     /**
+     * Set of keys cached on this node. You can remove elements from this set, but you cannot add elements
+     * to this set. All removal operation will be reflected on the cache itself.
+     * <p>
+     * Iterator over this set will not fail if set was concurrently updated
+     * by another thread. This means that iterator may or may not return latest
+     * keys depending on whether they were added before or after current
+     * iterator position.
+     * <p>
+     * NOTE: this operation is not distributed and returns only the keys cached on this node.
+     *
+     * @param filter Optional filter to check prior to getting key form cache. Note
+     * that filter is checked atomically together with get operation.
+     * @return Key set for this cache projection.
+     */
+    public Set<K> keySet(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
+
+    /**
      * Set of keys for which this node is primary.
      * This set is dynamic and may change with grid topology changes.
      * Note that this set will contain mappings for all keys, even if their values are
@@ -1351,7 +1368,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * This method is not available if any of the following flags are set on projection:
      * {@link CacheFlag#READ}.
      */
-    public void clearAll();
+    public void clearLocally();
 
     /**
      * Clears an entry from this cache and swap storage only if the entry
@@ -1368,42 +1385,41 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * This method is not available if any of the following flags are set on projection:
      * {@link CacheFlag#READ}.
      *
-     * @param key Key to clear.
+     * @param key Key to clearLocally.
      * @return {@code True} if entry was successfully cleared from cache, {@code false}
      *      if entry was in use at the time of this method invocation and could not be
      *      cleared.
      */
-    public boolean clear(K key);
+    public boolean clearLocally(K key);
 
     /**
      * Clears cache on all nodes that store it's data. That is, caches are cleared on remote
-     * nodes and local node, as opposed to {@link CacheProjection#clearAll()} method which only
+     * nodes and local node, as opposed to {@link CacheProjection#clearLocally()} method which only
      * clears local node's cache.
      * <p>
      * Ignite will make the best attempt to clear caches on all nodes. If some caches
      * could not be cleared, then exception will be thrown.
      * <p>
-     * This method is identical to calling {@link #globalClearAll(long) globalClearAll(0)}.
+     * This method is identical to calling {@link #clear(long) clear(0)}.
      *
      * @throws IgniteCheckedException In case of cache could not be cleared on any of the nodes.
-     * @deprecated Deprecated in favor of {@link #globalClearAll(long)} method.
+     * @deprecated Deprecated in favor of {@link #clear(long)} method.
      */
-    @Deprecated
-    public void globalClearAll() throws IgniteCheckedException;
+    public void clear() throws IgniteCheckedException;
 
     /**
      * Clears cache on all nodes that store it's data. That is, caches are cleared on remote
-     * nodes and local node, as opposed to {@link CacheProjection#clearAll()} method which only
+     * nodes and local node, as opposed to {@link CacheProjection#clearLocally()} method which only
      * clears local node's cache.
      * <p>
-     * GridGain will make the best attempt to clear caches on all nodes. If some caches
+     * Ignite will make the best attempt to clearLocally caches on all nodes. If some caches
      * could not be cleared, then exception will be thrown.
      *
-     * @param timeout Timeout for clear all task in milliseconds (0 for never).
+     * @param timeout Timeout for clearLocally all task in milliseconds (0 for never).
      *      Set it to larger value for large caches.
      * @throws IgniteCheckedException In case of cache could not be cleared on any of the nodes.
      */
-    public void globalClearAll(long timeout) throws IgniteCheckedException;
+    public void clear(long timeout) throws IgniteCheckedException;
 
     /**
      * Clears serialized value bytes from entry (if any) leaving only object representation.
@@ -1647,13 +1663,10 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * This method is not available if any of the following flags are set on projection:
      * {@link CacheFlag#LOCAL}, {@link CacheFlag#READ}.
      *
-     * @param filter Filter used to supply keys for remove operation (if {@code null},
-     *      then nothing will be removed).
      * @throws IgniteCheckedException If remove failed.
      * @throws CacheFlagException If flags validation failed.
      */
-    public void removeAll(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
-        throws IgniteCheckedException;
+    public void removeAll() throws IgniteCheckedException;
 
     /**
      * Asynchronously removes mappings from cache for entries for which the optionally passed in filters do

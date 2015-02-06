@@ -28,7 +28,7 @@ import java.util.*;
  * Grid authentication event.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
- * design GridGain keeps all events generated on the local node locally and it provides
+ * design Ignite keeps all events generated on the local node locally and it provides
  * APIs for performing a distributed queries across multiple nodes:
  * <ul>
  *      <li>
@@ -47,9 +47,9 @@ import java.util.*;
  * User can also wait for events using method {@link org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)}.
  * <h1 class="header">Events and Performance</h1>
  * It is <b>highly recommended</b> to enable only those events that your application logic requires
- * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
- * events are required for GridGain's internal operations and such events will still be generated but not stored by
- * event storage SPI if they are disabled in GridGain configuration.
+ * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration. Note that certain
+ * events are required for Ignite's internal operations and such events will still be generated but not stored by
+ * event storage SPI if they are disabled in Ignite configuration.
  * @see IgniteEventType#EVT_AUTHENTICATION_FAILED
  * @see IgniteEventType#EVT_AUTHENTICATION_SUCCEEDED
  */

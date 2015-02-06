@@ -83,7 +83,7 @@ public class IgniteMock implements Ignite {
         cfg.setMarshaller(marshaller);
         cfg.setNodeId(nodeId);
         cfg.setMBeanServer(jmx);
-        cfg.setGridGainHome(home);
+        cfg.setIgniteHome(home);
         cfg.setLocalHost(locHost);
 
         return cfg;
@@ -216,6 +216,56 @@ public class IgniteMock implements Ignite {
 
     /** {@inheritDoc} */
     @Override public void close() {}
+
+    @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteAtomicReference<T> atomicReference(String name,
+        @Nullable T initVal,
+        boolean create)
+    {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
+        @Nullable T initVal,
+        @Nullable S initStamp,
+        boolean create)
+    {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteCountDownLatch countDownLatch(String name,
+        int cnt,
+        boolean autoDel,
+        boolean create)
+    {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteQueue<T> queue(String name,
+        int cap,
+        IgniteCollectionConfiguration cfg)
+    {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteSet<T> set(String name,
+        IgniteCollectionConfiguration cfg)
+    {
+        return null;
+    }
 
     /** {@inheritDoc} */
     @Override public <K> CacheAffinity<K> affinity(String cacheName) {

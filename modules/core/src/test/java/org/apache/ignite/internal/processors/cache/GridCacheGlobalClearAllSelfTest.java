@@ -29,7 +29,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Test {@link org.apache.ignite.cache.GridCache#globalClearAll()} operation in multinode environment with nodes
+ * Test {@link org.apache.ignite.cache.GridCache#clear()} operation in multinode environment with nodes
  * having caches with different names.
  */
 public class GridCacheGlobalClearAllSelfTest extends GridCommonAbstractTest {
@@ -131,7 +131,7 @@ public class GridCacheGlobalClearAllSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Ensure that globalClearAll() clears correct cache and is only executed on nodes with the cache excluding
+     * Ensure that clear() clears correct cache and is only executed on nodes with the cache excluding
      * master-node where it is executed locally.
      *
      * @throws Exception If failed.
@@ -155,7 +155,7 @@ public class GridCacheGlobalClearAllSelfTest extends GridCommonAbstractTest {
         assert grid(GRID_CNT - 1).cache(CACHE_NAME_OTHER).size() == KEY_CNT_OTHER;
 
         // Perform clear.
-        grid(0).cache(CACHE_NAME).globalClearAll();
+        grid(0).cache(CACHE_NAME).clear();
 
         // Expect caches with the given name to be clear on all nodes.
         for (int i = 0; i < GRID_CNT - 1; i++)

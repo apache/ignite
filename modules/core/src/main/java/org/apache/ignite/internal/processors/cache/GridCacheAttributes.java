@@ -81,13 +81,13 @@ public class GridCacheAttributes implements Externalizable {
     /** Synchronization mode. */
     private CacheWriteSynchronizationMode writeSyncMode;
 
-    /** Flag indicating whether GridGain should use swap storage by default. */
+    /** Flag indicating whether Ignite should use swap storage by default. */
     protected boolean swapEnabled;
 
     /** Flag indicating whether  query indexing is enabled. */
     private boolean qryIdxEnabled;
 
-    /** Flag indicating whether GridGain should use write-behind behaviour for the cache store. */
+    /** Flag indicating whether Ignite should use write-behind behaviour for the cache store. */
     private boolean writeBehindEnabled;
 
     /** Maximum size of write-behind cache. */
@@ -101,9 +101,6 @@ public class GridCacheAttributes implements Externalizable {
 
     /** Maximum batch size for write-behind cache store. */
     private int writeBehindBatchSize;
-
-    /** Default batch size for all cache's sequences. */
-    private int seqReserveSize;
 
     /** Name of SPI to use for indexing. */
     private String indexingSpiName;
@@ -183,7 +180,6 @@ public class GridCacheAttributes implements Externalizable {
         preloadMode = cfg.getPreloadMode();
         qryIdxEnabled = cfg.isQueryIndexEnabled();
         readThrough = cfg.isReadThrough();
-        seqReserveSize = cfg.getAtomicSequenceReserveSize();
         storeValBytes = cfg.isStoreValueBytes();
         swapEnabled = cfg.isSwapEnabled();
         ttl = cfg.getDefaultTimeToLive();
@@ -483,7 +479,7 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Flag indicating whether GridGain should use write-behind behaviour for the cache store.
+     * @return Flag indicating whether Ignite should use write-behind behaviour for the cache store.
      */
     public boolean writeBehindEnabled() {
         return writeBehindEnabled;
@@ -518,13 +514,6 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Default batch size for all cache's sequences.
-     */
-    public int sequenceReserveSize() {
-        return seqReserveSize;
-    }
-
-    /**
      * @return Name of SPI to use for indexing.
      */
     public String indexingSpiName() {
@@ -555,7 +544,6 @@ public class GridCacheAttributes implements Externalizable {
         U.writeEnum(out, preloadMode);
         out.writeBoolean(qryIdxEnabled);
         out.writeBoolean(readThrough);
-        out.writeInt(seqReserveSize);
         out.writeBoolean(storeValBytes);
         out.writeBoolean(swapEnabled);
         out.writeLong(ttl);
@@ -601,7 +589,6 @@ public class GridCacheAttributes implements Externalizable {
         preloadMode = CachePreloadMode.fromOrdinal(in.readByte());
         qryIdxEnabled = in.readBoolean();
         readThrough = in.readBoolean();
-        seqReserveSize = in.readInt();
         storeValBytes = in.readBoolean();
         swapEnabled = in.readBoolean();
         ttl = in.readLong();

@@ -50,6 +50,6 @@ public class GridJobStealingFailoverSpiStartStopSelfTest extends GridSpiStartSto
      * @param node Node to add attribute to.
      */
     private void addSpiDependency(GridTestNode node) {
-        node.addAttribute(GridNodeAttributes.ATTR_SPI_CLASS, JobStealingCollisionSpi.class.getName());
+        node.addAttribute(IgniteNodeAttributes.ATTR_SPI_CLASS, JobStealingCollisionSpi.class.getName());
     }
 }

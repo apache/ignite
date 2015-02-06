@@ -20,7 +20,7 @@ package org.apache.ignite.portables;
 /**
  * Interface that allows to implement custom serialization
  * logic for portable objects. Portable objects are not required
- * to implement this interface, in which case GridGain will automatically
+ * to implement this interface, in which case Ignite will automatically
  * serialize portable objects using reflection.
  * <p>
  * This interface, in a way, is analogous to {@link java.io.Externalizable}
