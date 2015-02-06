@@ -46,8 +46,9 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  *
  */
-public abstract class AbstractJdbcCacheStoreMultithreadedSelfTest<T extends JdbcCacheStore> extends GridCommonAbstractTest {
-    /** Default connection URL (value is <tt>jdbc:h2:mem:jdbcCacheStore;DB_CLOSE_DELAY=-1</tt>). */
+public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends CacheAbstractJdbcStore>
+    extends GridCommonAbstractTest {
+    /** Database connection URL. */
     protected static final String DFLT_CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
 
     /** IP finder. */

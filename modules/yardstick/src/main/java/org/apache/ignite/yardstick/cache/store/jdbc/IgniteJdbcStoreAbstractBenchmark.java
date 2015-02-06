@@ -55,7 +55,7 @@ public abstract class IgniteJdbcStoreAbstractBenchmark extends IgniteAbstractBen
 
         CacheConfiguration cc = cache.getConfiguration(CacheConfiguration.class);
 
-        JdbcCacheStore store = (JdbcCacheStore)cc.getCacheStoreFactory().create();
+        CacheAbstractJdbcStore store = (CacheAbstractJdbcStore)cc.getCacheStoreFactory().create();
 
         try (Connection conn = store.getDataSource().getConnection()) {
             conn.setAutoCommit(false);
@@ -96,7 +96,7 @@ public abstract class IgniteJdbcStoreAbstractBenchmark extends IgniteAbstractBen
     @Override public void tearDown() throws Exception {
         CacheConfiguration cc = cache.getConfiguration(CacheConfiguration.class);
 
-        JdbcCacheStore store = (JdbcCacheStore)cc.getCacheStoreFactory().create();
+        CacheAbstractJdbcStore store = (CacheAbstractJdbcStore)cc.getCacheStoreFactory().create();
 
         try (Connection conn = store.getDataSource().getConnection()) {
             conn.setAutoCommit(true);

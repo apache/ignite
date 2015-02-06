@@ -94,7 +94,7 @@
                     <property name="cacheStoreFactory">
                         <bean class="javax.cache.configuration.FactoryBuilder$SingletonFactory">
                             <constructor-arg>
-                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcPojoCacheStore">
+                                <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore">
                                     <property name="dataSource">
                                         <bean class="org.h2.jdbcx.JdbcConnectionPool" factory-method="create">
                                             <constructor-arg value="jdbc:h2:tcp://localhost/store-benchmark/h2-benchmark"/>
@@ -134,7 +134,7 @@
                     <property name="cacheStoreFactory">
                         <bean class="javax.cache.configuration.FactoryBuilder$SingletonFactory">
                             <constructor-arg>
-                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcPojoCacheStore">
+                                <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore">
                                     <property name="dataSource">
                                         <bean class="org.h2.jdbcx.JdbcConnectionPool" factory-method="create">
                                             <constructor-arg value="jdbc:h2:tcp://localhost/store-benchmark/h2-benchmark"/>

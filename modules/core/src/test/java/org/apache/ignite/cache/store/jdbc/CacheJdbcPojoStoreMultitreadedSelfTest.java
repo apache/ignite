@@ -20,12 +20,13 @@ package org.apache.ignite.cache.store.jdbc;
 import org.h2.jdbcx.*;
 
 /**
- *
+ * Test for JDBC POJO store from multiple threads.
  */
-public class PojoJdbcCacheStoreMultitreadedSelfTest extends AbstractJdbcCacheStoreMultithreadedSelfTest<JdbcPojoCacheStore> {
+public class CacheJdbcPojoStoreMultitreadedSelfTest
+    extends CacheJdbcStoreAbstractMultithreadedSelfTest<CacheJdbcPojoStore> {
     /** {@inheritDoc} */
-    @Override protected JdbcPojoCacheStore store() throws Exception {
-        JdbcPojoCacheStore store = new JdbcPojoCacheStore();
+    @Override protected CacheJdbcPojoStore store() throws Exception {
+        CacheJdbcPojoStore store = new CacheJdbcPojoStore();
 
         store.setDataSource(JdbcConnectionPool.create(DFLT_CONN_URL, "sa", ""));
 
