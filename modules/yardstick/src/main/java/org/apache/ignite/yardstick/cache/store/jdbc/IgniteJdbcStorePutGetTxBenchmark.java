@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * Ignite benchmark that performs put and get operations.
  */
-public class IgniteJdbcStorePutGetBenchmark extends IgniteJdbcStoreAbstractBenchmark {
+public class IgniteJdbcStorePutGetTxBenchmark extends IgniteJdbcStoreAbstractBenchmark {
     /** {@inheritDoc} */
     @Override protected int fillRange() {
         return 0;
@@ -47,6 +47,6 @@ public class IgniteJdbcStorePutGetBenchmark extends IgniteJdbcStoreAbstractBench
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Object, Object> cache() {
-        return ignite().jcache("atomic");
+        return ignite().jcache("tx");
     }
 }
