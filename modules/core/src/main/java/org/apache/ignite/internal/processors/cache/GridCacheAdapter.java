@@ -4058,6 +4058,31 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return e == null || e.obsolete() ? null : e.wrap(true);
     }
 
+    /**
+     * @return Random entry.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Cache.Entry<K, V> randomCacheEntry() throws IgniteCheckedException {
+        boolean keepPortable = ctx.keepPortable();
+
+        while (true) {
+            GridCacheMapEntry<K, V> e = map.randomEntry();
+
+            if (e == null)
+                return null;
+
+            try {
+                Cache.Entry<K, V> entry = toCacheEntry(e, !keepPortable);
+
+                if (entry != null)
+                    return entry;
+            }
+            catch (GridCacheEntryRemovedException ignore) {
+                // No-op.
+            }
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public int size(CachePeekMode[] peekModes) throws IgniteCheckedException {
         if (isLocal())
@@ -5360,32 +5385,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     GridCacheEntryEx<K, V> entry = it.next();
 
                     try {
-                        V val = entry.innerGet(
-                            null,
-                            false,
-                            false,
-                            false,
-                            true,
-                            false,
-                            false,
-                            false,
-                            null,
-                            null,
-                            null,
-                            null,
-                            null);
+                        next = toCacheEntry(entry, deserializePortable);
 
-                        if (val == null)
+                        if (next == null)
                             continue;
-
-                        K key = entry.key();
-
-                        if (deserializePortable && ctx.portableEnabled()) {
-                            key = (K)ctx.unwrapPortableIfNeeded(key, true);
-                            val = (V)ctx.unwrapPortableIfNeeded(val, true);
-                        }
-
-                        next = new CacheEntryImpl<>(key, val);
 
                         break;
                     }
@@ -5395,12 +5398,55 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     catch (GridCacheEntryRemovedException ignore) {
                         // No-op.
                     }
-                    catch (GridCacheFilterFailedException ignore) {
-                        assert false;
-                    }
                 }
             }
         };
+    }
+
+    /**
+     * @param entry Internal entry.
+     * @param deserializePortable Deserialize portable flag.
+     * @return Public API entry.
+     * @throws IgniteCheckedException If failed.
+     * @throws GridCacheEntryRemovedException If entry removed.
+     */
+    @Nullable private Cache.Entry<K, V> toCacheEntry(GridCacheEntryEx<K, V> entry,
+        boolean deserializePortable)
+        throws IgniteCheckedException, GridCacheEntryRemovedException
+    {
+        try {
+            V val = entry.innerGet(
+                null,
+                false,
+                false,
+                false,
+                true,
+                false,
+                false,
+                false,
+                null,
+                null,
+                null,
+                null,
+                null);
+
+            if (val == null)
+                return null;
+
+            K key = entry.key();
+
+            if (deserializePortable && ctx.portableEnabled()) {
+                key = (K)ctx.unwrapPortableIfNeeded(key, true);
+                val = (V)ctx.unwrapPortableIfNeeded(val, true);
+            }
+
+            return new CacheEntryImpl<>(key, val);
+        }
+        catch (GridCacheFilterFailedException ignore) {
+            assert false;
+
+            return null;
+        }
     }
 
     /**
