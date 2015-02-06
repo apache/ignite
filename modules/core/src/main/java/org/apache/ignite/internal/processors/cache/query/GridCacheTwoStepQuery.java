@@ -23,6 +23,9 @@ import java.util.*;
  */
 public class GridCacheTwoStepQuery implements Serializable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     @GridToStringInclude
     private Map<String, GridCacheSqlQuery> mapQrys;
 

@@ -17,6 +17,9 @@ import java.io.*;
  */
 public class GridNextPageRequest implements Serializable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private long qryReqId;
 
     /** */

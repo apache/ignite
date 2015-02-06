@@ -5908,6 +5908,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      *
      */
     protected static class UpdateGetTimeStatClosure<T> extends UpdateTimeStatClosure<T> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          * @param metrics Metrics.
          * @param start   Start time.
@@ -5926,6 +5929,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      *
      */
     protected static class UpdateRemoveTimeStatClosure<T> extends UpdateTimeStatClosure<T> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          * @param metrics Metrics.
          * @param start   Start time.
@@ -5944,6 +5950,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      *
      */
     protected static class UpdatePutTimeStatClosure<T> extends UpdateTimeStatClosure {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          * @param metrics Metrics.
          * @param start   Start time.
@@ -5962,6 +5971,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      *
      */
     protected static class UpdatePutAndGetTimeStatClosure<T> extends UpdateTimeStatClosure {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          * @param metrics Metrics.
          * @param start   Start time.

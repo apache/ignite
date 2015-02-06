@@ -25,6 +25,9 @@ import java.io.*;
  * Transactions configuration.
  */
 public class TransactionsConfiguration implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Default value for 'txSerializableEnabled' flag. */
     public static final boolean DFLT_TX_SERIALIZABLE_ENABLED = false;
 
