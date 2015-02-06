@@ -2495,9 +2495,24 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * @throws Exception In case of error.
+     * @throws Exception If failed.
      */
     public void testGlobalClearAll() throws Exception {
+        globalClearAll(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGlobalClearAllAsync() throws Exception {
+        globalClearAll(true);
+    }
+
+    /**
+     * @param async If {@code true} uses async method.
+     * @throws Exception If failed.
+     */
+    protected void globalClearAll(boolean async) throws Exception {
         // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
         // because some of them were blocked due to having readers.
         for (int i = 0; i < gridCount(); i++) {
@@ -2505,7 +2520,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 jcache(i).put(key, 1);
         }
 
-        jcache().clear();
+        if (async) {
+            IgniteCache<String, Integer> asyncCache = jcache().withAsync();
+
+            asyncCache.clear();
+
+            asyncCache.future().get();
+        }
+        else
+            jcache().clear();
 
         for (int i = 0; i < gridCount(); i++)
             assert jcache(i).localSize() == 0;

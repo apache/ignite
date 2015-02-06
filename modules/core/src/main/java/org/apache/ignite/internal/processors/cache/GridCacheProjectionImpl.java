@@ -1073,6 +1073,11 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> clearAsync() {
+        return cache.clearAsync();
+    }
+
+    /** {@inheritDoc} */
     @Override public void clear(long timeout) throws IgniteCheckedException {
         cache.clear(timeout);
     }

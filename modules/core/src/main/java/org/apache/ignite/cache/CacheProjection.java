@@ -1417,6 +1417,11 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
     public void clear() throws IgniteCheckedException;
 
     /**
+     * @return Clear future.
+     */
+    public IgniteInternalFuture<?> clearAsync();
+
+    /**
      * Clears cache on all nodes that store it's data. That is, caches are cleared on remote
      * nodes and local node, as opposed to {@link CacheProjection#clearLocally()} method which only
      * clears local node's cache.

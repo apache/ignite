@@ -754,7 +754,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            delegate.clear();
+            if (isAsync())
+                setFuture(delegate.clearAsync());
+            else
+                delegate.clear();
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);
@@ -762,10 +765,6 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
         finally {
             gate.leave(prev);
         }
-    }
-
-    @Override public boolean clear(Collection<K> keys) {
-        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

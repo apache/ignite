@@ -1503,6 +1503,32 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> clearAsync() {
+        Collection<ClusterNode> nodes = ctx.grid().forCacheNodes(name()).nodes();
+
+        if (!nodes.isEmpty()) {
+            IgniteInternalFuture<Object> fut =
+                    ctx.closures().callAsyncNoFailover(BROADCAST, new GlobalClearAllCallable(name()), nodes, true);
+
+            return fut.chain(new CX1<IgniteInternalFuture<Object>, Object>() {
+                @Override public Object applyx(IgniteInternalFuture<Object> fut) throws IgniteCheckedException {
+                    try {
+                        return fut.get();
+                    }
+                    catch (ClusterGroupEmptyCheckedException ignore) {
+                        if (log.isDebugEnabled())
+                            log.debug("All remote nodes left while cache clearLocally [cacheName=" + name() + "]");
+
+                        return null;
+                    }
+                }
+            });
+        }
+        else
+            return new GridFinishedFuture<>(ctx.kernalContext());
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean compact(K key) throws IgniteCheckedException {
         return compact(key, (IgnitePredicate<CacheEntry<K, V>>[])null);
     }
