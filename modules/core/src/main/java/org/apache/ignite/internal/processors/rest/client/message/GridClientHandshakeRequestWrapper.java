@@ -100,7 +100,7 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 72;
+        return HANDSHAKE_HEADER;
     }
 
     /** {@inheritDoc} */

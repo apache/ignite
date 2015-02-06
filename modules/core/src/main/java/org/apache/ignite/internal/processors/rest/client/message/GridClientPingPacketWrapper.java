@@ -57,25 +57,12 @@ public class GridClientPingPacketWrapper extends GridTcpCommunicationMessageAdap
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
-
-        switch (commState.idx) {
-            case 0:
-                size = commState.getInt("size");
-
-                if (!commState.lastRead())
-                    return false;
-
-                commState.idx++;
-
-        }
-
-        return true;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 75;
+        return GridClientMessageWrapper.REQ_HEADER;
     }
 
     /** {@inheritDoc} */

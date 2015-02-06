@@ -381,8 +381,6 @@ public class GridTcpCommunicationMessageState {
         if (buf != null) {
             ByteBuffer buf0 = buf.duplicate();
 
-            buf0.flip();
-
             arr = new byte[buf0.remaining()];
 
             buf0.get(arr);

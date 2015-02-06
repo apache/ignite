@@ -23,6 +23,8 @@ import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
+import org.gridgain.grid.util.direct.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -42,6 +44,9 @@ public class GridTcpRestDirectParser implements GridNioParser {
 
     /** Message metadata key. */
     private static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
+    /** Message reader. */
+    private final MessageReader rdr = new GridTcpCommunicationMessageReader(null);
 
     /** Protocol handler. */
     private final GridTcpRestProtocol proto;
@@ -78,11 +83,15 @@ public class GridTcpRestDirectParser implements GridNioParser {
                 buf.get();
 
                 msg = new GridClientMessageWrapper();
+
+                msg.setReader(rdr);
             }
             else if (type == GridClientHandshakeRequestWrapper.HANDSHAKE_HEADER) {
                 buf.get();
 
                 msg = new GridClientHandshakeRequestWrapper();
+
+                msg.setReader(rdr);
             }
             else if (type == MEMCACHE_REQ_FLAG) {
                 state = new ParserState();

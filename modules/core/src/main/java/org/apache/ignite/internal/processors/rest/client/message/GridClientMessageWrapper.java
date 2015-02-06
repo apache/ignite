@@ -141,31 +141,31 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
 
         switch (commState.idx) {
             case 0:
-                if (!commState.putUuid("clientId", clientId))
-                    return false;
-
-                commState.idx++;
-
-            case 1:
-                if (!commState.putUuid("destId", destId))
-                    return false;
-
-                commState.idx++;
-
-            case 2:
-                if (!commState.putByteBuffer("msg", msg))
-                    return false;
-
-                commState.idx++;
-
-            case 3:
                 if (!commState.putInt("msgSize", msgSize))
                     return false;
 
                 commState.idx++;
 
-            case 4:
+            case 1:
                 if (!commState.putLong("reqId", reqId))
+                    return false;
+
+                commState.idx++;
+
+            case 2:
+                if (!commState.putUuid("clientId", clientId))
+                    return false;
+
+                commState.idx++;
+
+            case 3:
+                if (!commState.putUuid("destId", destId))
+                    return false;
+
+                commState.idx++;
+
+            case 4:
+                if (!commState.putByteBuffer("msg", msg))
                     return false;
 
                 commState.idx++;
@@ -181,30 +181,6 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
 
         switch (commState.idx) {
             case 0:
-                clientId = commState.getUuid("clientId");
-
-                if (!commState.lastRead())
-                    return false;
-
-                commState.idx++;
-
-            case 1:
-                destId = commState.getUuid("destId");
-
-                if (!commState.lastRead())
-                    return false;
-
-                commState.idx++;
-
-            case 2:
-                msg = commState.getByteBuffer("msg");
-
-                if (!commState.lastRead())
-                    return false;
-
-                commState.idx++;
-
-            case 3:
                 msgSize = commState.getInt("msgSize");
 
                 if (!commState.lastRead())
@@ -212,7 +188,7 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
 
                 commState.idx++;
 
-            case 4:
+            case 1:
                 reqId = commState.getLong("reqId");
 
                 if (!commState.lastRead())
@@ -220,6 +196,29 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
 
                 commState.idx++;
 
+            case 2:
+                clientId = commState.getUuid("clientId");
+
+                if (!commState.lastRead())
+                    return false;
+
+                commState.idx++;
+
+            case 3:
+                destId = commState.getUuid("destId");
+
+                if (!commState.lastRead())
+                    return false;
+
+                commState.idx++;
+
+            case 4:
+                msg = commState.getByteBuffer("msg");
+
+                if (!commState.lastRead())
+                    return false;
+
+                commState.idx++;
         }
 
         return true;
@@ -227,7 +226,7 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 74;
+        return REQ_HEADER;
     }
 
     /** {@inheritDoc} */
@@ -244,8 +243,8 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
     @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
         GridClientMessageWrapper _clone = (GridClientMessageWrapper)_msg;
 
-        _clone.msgSize = msgSize;
         _clone.reqId = reqId;
+        _clone.msgSize = msgSize;
         _clone.clientId = clientId;
         _clone.destId = destId;
         _clone.msg = msg;

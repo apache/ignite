@@ -163,7 +163,7 @@ public class GridTestMessage extends GridTcpCommunicationMessageAdapter {
             case 0:
                 srcNodeId = commState.getUuid(null);
 
-                if (srcNodeId == UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
 
                 commState.idx++;
@@ -187,7 +187,7 @@ public class GridTestMessage extends GridTcpCommunicationMessageAdapter {
             case 3:
                 payload = commState.getByteArray(null);
 
-                if (payload == BYTE_ARR_NOT_READ)
+                if (!commState.lastRead())
                     return false;
 
                 commState.idx++;

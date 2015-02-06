@@ -57,15 +57,6 @@ public class GridClientHandshakeResponseWrapper extends GridTcpCommunicationMess
             commState.typeWritten = true;
         }
 
-        switch (commState.idx) {
-            case 0:
-                if (!commState.putByte("code", code))
-                    return false;
-
-                commState.idx++;
-
-        }
-
         return true;
     }
 
@@ -73,23 +64,12 @@ public class GridClientHandshakeResponseWrapper extends GridTcpCommunicationMess
     @Override public boolean readFrom(ByteBuffer buf) {
         commState.setBuffer(buf);
 
-        switch (commState.idx) {
-            case 0:
-                code = commState.getByte("code");
-
-                if (!commState.lastRead())
-                    return false;
-
-                commState.idx++;
-
-        }
-
         return true;
     }
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 73;
+        return code;
     }
 
     /** {@inheritDoc} */

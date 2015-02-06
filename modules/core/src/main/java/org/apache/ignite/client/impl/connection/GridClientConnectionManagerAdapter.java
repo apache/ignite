@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.nio.ssl.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.gridgain.grid.util.direct.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
@@ -670,8 +671,11 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
             if (msg == null && buf.hasRemaining()) {
                 byte type = buf.get();
 
-                if (type == GridClientMessageWrapper.REQ_HEADER)
+                if (type == GridClientMessageWrapper.REQ_HEADER) {
                     msg = new GridClientMessageWrapper();
+
+                    msg.setReader(new GridTcpCommunicationMessageReader(null));
+                }
                 else
                     throw new IOException("Invalid message type: " + type);
             }

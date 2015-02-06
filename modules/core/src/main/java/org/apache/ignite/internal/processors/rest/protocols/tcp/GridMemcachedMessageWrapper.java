@@ -86,25 +86,12 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
-
-        switch (commState.idx) {
-            case 0:
-                bytes = commState.getByteArray("bytes");
-
-                if (!commState.lastRead())
-                    return false;
-
-                commState.idx++;
-
-        }
-
-        return true;
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 78;
+        return MEMCACHE_RES_FLAG;
     }
 
     /** {@inheritDoc} */
