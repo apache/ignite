@@ -71,9 +71,9 @@
                 <artifactId>license-maven-plugin</artifactId>
                 <configuration>
                     <headerDefinitions>
-                        <headerDefinition>../../../licence/headercustomisation.xml</headerDefinition>
+                        <headerDefinition>../../../license/header-customisation.xml</headerDefinition>
                     </headerDefinitions>
-                    <header>../../../licence/header.txt</header>
+                    <header>../../../license/header.txt</header>
                 </configuration>
             </plugin>
 

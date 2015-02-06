@@ -271,9 +271,9 @@
                         <scala>JAVADOC_STYLE</scala>
                     </mapping>
                     <headerDefinitions>
-                        <headerDefinition>licence/headercustomisation.xml</headerDefinition>
+                        <headerDefinition>license/header-customisation.xml</headerDefinition>
                     </headerDefinitions>
-                    <header>licence/header.txt</header>
+                    <header>license/header.txt</header>
                     <properties>
                         <inceptionYear>2014</inceptionYear>
                     </properties>
@@ -304,6 +304,7 @@
                         <exclude>**/ipc/shmem/*.sh</exclude>
                         <exclude>**/keystore/generate.sh</exclude>
                         <exclude>**/pom-installed.xml</exclude>
+                        <exclude>**/optimized-classnames*.properties</exclude>
                     </excludes>
                 </configuration>
                 <executions>
