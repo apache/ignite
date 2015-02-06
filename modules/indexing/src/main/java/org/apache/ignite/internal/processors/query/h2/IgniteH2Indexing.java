@@ -137,7 +137,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private UUID nodeId;
 
     /** */
-    private IgniteMarshaller marshaller;
+    private Marshaller marshaller;
 
     /** */
     private GridUnsafeMemory offheap;
@@ -1111,7 +1111,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             log.debug("Starting cache query index...");
 
         if (ctx == null) // This is allowed in some tests.
-            marshaller = new IgniteOptimizedMarshaller();
+            marshaller = new OptimizedMarshaller();
         else {
             this.ctx = ctx;
 

@@ -29,7 +29,7 @@ import org.jetbrains.annotations.*;
  * use {@link GridByteArrayInputStream} or {@link GridByteArrayOutputStream}
  * to marshal and unmarshal objects.
  */
-public abstract class IgniteAbstractMarshaller implements IgniteMarshaller {
+public abstract class AbstractMarshaller implements Marshaller {
     /** Default initial buffer size for the {@link GridByteArrayOutputStream}. */
     public static final int DFLT_BUFFER_SIZE = 512;
 

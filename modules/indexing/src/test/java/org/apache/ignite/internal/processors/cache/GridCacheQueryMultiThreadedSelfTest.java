@@ -82,7 +82,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         cfg.setDiscoverySpi(disco);
 
         cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 

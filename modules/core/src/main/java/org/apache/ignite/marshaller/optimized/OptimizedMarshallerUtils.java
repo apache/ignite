@@ -30,12 +30,12 @@ import java.security.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshallable.*;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallable.*;
 
 /**
- * Miscellaneous utility methods to facilitate {@link IgniteOptimizedMarshaller}.
+ * Miscellaneous utility methods to facilitate {@link OptimizedMarshaller}.
  */
-class IgniteOptimizedMarshallerUtils {
+class OptimizedMarshallerUtils {
     /** Unsafe. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -52,7 +52,7 @@ class IgniteOptimizedMarshallerUtils {
     static final Charset UTF_8 = Charset.forName("UTF-8");
 
     /** Class descriptors cache. */
-    private static final ConcurrentMap<Class<?>, IgniteOptimizedClassDescriptor> CLS_DESC_CACHE =
+    private static final ConcurrentMap<Class<?>, OptimizedClassDescriptor> CLS_DESC_CACHE =
         new ConcurrentHashMap8<>(256);
 
     /** Classes cache by name. */
@@ -62,7 +62,7 @@ class IgniteOptimizedMarshallerUtils {
     /**
      * Suppresses default constructor, ensuring non-instantiability.
      */
-    private IgniteOptimizedMarshallerUtils() {
+    private OptimizedMarshallerUtils() {
         // No-op.
     }
 
@@ -113,21 +113,21 @@ class IgniteOptimizedMarshallerUtils {
      * @return Descriptor.
      * @throws IOException In case of error.
      */
-    static IgniteOptimizedClassDescriptor classDescriptor(Class<?> cls, @Nullable Object obj) throws IOException {
+    static OptimizedClassDescriptor classDescriptor(Class<?> cls, @Nullable Object obj) throws IOException {
         if (obj != null) {
-            if (obj instanceof IgniteOptimizedMarshallable) {
-                IgniteOptimizedMarshallable m = (IgniteOptimizedMarshallable)obj;
+            if (obj instanceof OptimizedMarshallable) {
+                OptimizedMarshallable m = (OptimizedMarshallable)obj;
 
                 Object clsId = m.ggClassId();
 
-                if (clsId != null && !(clsId instanceof IgniteOptimizedClassDescriptor))
+                if (clsId != null && !(clsId instanceof OptimizedClassDescriptor))
                     throw new IOException("Method '" + obj.getClass().getName() + ".ggClassId() must return " +
                         "the value of the field '" + CLS_ID_FIELD_NAME + "'.");
 
-                IgniteOptimizedClassDescriptor desc = (IgniteOptimizedClassDescriptor)clsId;
+                OptimizedClassDescriptor desc = (OptimizedClassDescriptor)clsId;
 
                 if (desc == null) {
-                    desc = new IgniteOptimizedClassDescriptor(cls);
+                    desc = new OptimizedClassDescriptor(cls);
 
                     try {
                         Field field = obj.getClass().getDeclaredField(CLS_ID_FIELD_NAME);
@@ -148,7 +148,7 @@ class IgniteOptimizedMarshallerUtils {
                                     "return the value of the field '" + CLS_ID_FIELD_NAME + "': "
                                     + obj.getClass().getName());
                         }
-                        else if (!(o instanceof IgniteOptimizedClassDescriptor))
+                        else if (!(o instanceof OptimizedClassDescriptor))
                             throw new IOException("Field '" + CLS_ID_FIELD_NAME + "' must be declared with " +
                                 "null value: " + obj.getClass().getName());
                     }
@@ -166,11 +166,11 @@ class IgniteOptimizedMarshallerUtils {
             }
         }
 
-        IgniteOptimizedClassDescriptor desc = CLS_DESC_CACHE.get(cls);
+        OptimizedClassDescriptor desc = CLS_DESC_CACHE.get(cls);
 
         if (desc == null) {
-            IgniteOptimizedClassDescriptor existing = CLS_DESC_CACHE.putIfAbsent(cls,
-                desc = new IgniteOptimizedClassDescriptor(cls));
+            OptimizedClassDescriptor existing = CLS_DESC_CACHE.putIfAbsent(cls,
+                desc = new OptimizedClassDescriptor(cls));
 
             if (existing != null)
                 desc = existing;
@@ -209,7 +209,7 @@ class IgniteOptimizedMarshallerUtils {
         X.println(">>> GridOptimizedMarshallerUtils memory stats:");
         X.println(" Cache size: " + CLS_DESC_CACHE.size());
 
-        for (Map.Entry<Class<?>, IgniteOptimizedClassDescriptor> e : CLS_DESC_CACHE.entrySet())
+        for (Map.Entry<Class<?>, OptimizedClassDescriptor> e : CLS_DESC_CACHE.entrySet())
             X.println(" " + e.getKey() + " : " + e.getValue());
     }
 

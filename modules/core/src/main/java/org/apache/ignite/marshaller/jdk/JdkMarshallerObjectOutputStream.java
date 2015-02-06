@@ -17,14 +17,29 @@
 
 package org.apache.ignite.marshaller.jdk;
 
+import org.apache.ignite.marshaller.*;
+import org.jetbrains.annotations.*;
+
 import java.io.*;
 
 /**
- * Serializable object used for {@link Object} replacement.
+ * This class defines own object output stream.
  */
-class IgniteJdkMarshallerDummySerializable implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
+class JdkMarshallerObjectOutputStream extends ObjectOutputStream {
+    /**
+     * @param out Output stream.
+     * @throws IOException Thrown in case of any I/O errors.
+     */
+    JdkMarshallerObjectOutputStream(OutputStream out) throws IOException {
+        super(out);
 
-    // No-op.
+        enableReplaceObject(true);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override protected Object replaceObject(Object o) throws IOException {
+        return o == null || MarshallerExclusions.isExcluded(o.getClass()) ? null :
+            o.getClass().equals(Object.class) ? new JdkMarshallerDummySerializable() : super.replaceObject(o);
+    }
 }
+

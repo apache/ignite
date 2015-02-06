@@ -81,7 +81,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
         if (p2pEnabled)
             cfg.setDeploymentMode(SHARED);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }

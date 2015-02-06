@@ -17,29 +17,43 @@
 
 package org.apache.ignite.marshaller.jdk;
 
-import org.apache.ignite.marshaller.*;
-import org.jetbrains.annotations.*;
-
 import java.io.*;
 
 /**
- * This class defines own object output stream.
+ * Wrapper for {@link OutputStream}.
  */
-class IgniteJdkMarshallerObjectOutputStream extends ObjectOutputStream {
-    /**
-     * @param out Output stream.
-     * @throws IOException Thrown in case of any I/O errors.
-     */
-    IgniteJdkMarshallerObjectOutputStream(OutputStream out) throws IOException {
-        super(out);
+class JdkMarshallerOutputStreamWrapper extends OutputStream {
+    /** */
+    private OutputStream out;
 
-        enableReplaceObject(true);
+    /**
+     * Creates wrapper.
+     *
+     * @param out Wrapped output stream
+     */
+    JdkMarshallerOutputStreamWrapper(OutputStream out) {
+        assert out != null;
+
+        this.out = out;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Object replaceObject(Object o) throws IOException {
-        return o == null || IgniteMarshallerExclusions.isExcluded(o.getClass()) ? null :
-            o.getClass().equals(Object.class) ? new IgniteJdkMarshallerDummySerializable() : super.replaceObject(o);
+    @Override public void write(int b) throws IOException {
+        out.write(b);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void write(byte[] b) throws IOException {
+        out.write(b);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void write(byte[] b, int off, int len) throws IOException {
+        out.write(b, off, len);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void flush() throws IOException {
+        out.flush();
     }
 }
-

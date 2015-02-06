@@ -135,7 +135,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     protected volatile long gridStartTime;
 
     /** Marshaller. */
-    protected final IgniteMarshaller marsh = new IgniteJdkMarshaller();
+    protected final Marshaller marsh = new JdkMarshaller();
 
     /** Statistics. */
     protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();

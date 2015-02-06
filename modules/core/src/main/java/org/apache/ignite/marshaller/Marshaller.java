@@ -29,8 +29,8 @@ import java.io.*;
  * <p>
  * Gridgain provides the following {@code GridMarshaller} implementations:
  * <ul>
- * <li>{@link org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller} - default</li>
- * <li>{@link org.apache.ignite.marshaller.jdk.IgniteJdkMarshaller}</li>
+ * <li>{@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller} - default</li>
+ * <li>{@link org.apache.ignite.marshaller.jdk.JdkMarshaller}</li>
  * </ul>
  * <p>
  * Below are examples of marshaller configuration, usage, and injection into tasks, jobs,
@@ -64,7 +64,7 @@ import java.io.*;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public interface IgniteMarshaller {
+public interface Marshaller {
     /**
      * Marshals object to the output stream. This method should not close
      * given output stream.

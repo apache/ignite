@@ -58,7 +58,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         new EnumMap<>(GridTaskThreadContextKey.class);
 
     /** */
-    private final IgniteMarshaller marsh;
+    private final Marshaller marsh;
 
     /** */
     private final ConcurrentMap<IgniteUuid, GridTaskWorker<?, ?>> tasks = GridConcurrentFactory.newMap();

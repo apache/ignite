@@ -272,7 +272,7 @@ public class IgniteConfiguration {
     private UUID nodeId;
 
     /** Marshaller. */
-    private IgniteMarshaller marsh;
+    private Marshaller marsh;
 
     /** Marshal local jobs. */
     private boolean marshLocJobs = DFLT_MARSHAL_LOCAL_JOBS;
@@ -1433,12 +1433,12 @@ public class IgniteConfiguration {
 
     /**
      * Should return an instance of marshaller to use in grid. If not provided,
-     * {@link org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller} will be used on Java HotSpot VM, and
-     * {@link org.apache.ignite.marshaller.jdk.IgniteJdkMarshaller} will be used on other VMs.
+     * {@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller} will be used on Java HotSpot VM, and
+     * {@link org.apache.ignite.marshaller.jdk.JdkMarshaller} will be used on other VMs.
      *
      * @return Marshaller to use in grid.
      */
-    public IgniteMarshaller getMarshaller() {
+    public Marshaller getMarshaller() {
         return marsh;
     }
 
@@ -1448,7 +1448,7 @@ public class IgniteConfiguration {
      * @param marsh Marshaller to use within grid.
      * @see IgniteConfiguration#getMarshaller()
      */
-    public void setMarshaller(IgniteMarshaller marsh) {
+    public void setMarshaller(Marshaller marsh) {
         this.marsh = marsh;
     }
 

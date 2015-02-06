@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Return value for cases where both, value and success flag need to be returned.
  */
-public class GridCacheReturn<V> implements Externalizable, IgniteOptimizedMarshallable {
+public class GridCacheReturn<V> implements Externalizable, OptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 

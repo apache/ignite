@@ -68,7 +68,7 @@ final class TestMemcacheClient {
     private final IgniteLogger log = new JavaLogger();
 
     /** JDK marshaller. */
-    private final IgniteMarshaller jdkMarshaller = new IgniteJdkMarshaller();
+    private final Marshaller jdkMarshaller = new JdkMarshaller();
 
     /** Socket. */
     private final Socket sock;

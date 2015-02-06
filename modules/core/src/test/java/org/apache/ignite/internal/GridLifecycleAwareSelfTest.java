@@ -101,7 +101,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
     /**
      */
-    private static class TestMarshaller extends IgniteOptimizedMarshaller implements LifecycleAware {
+    private static class TestMarshaller extends OptimizedMarshaller implements LifecycleAware {
         /** */
         private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(null);
 

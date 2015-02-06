@@ -860,7 +860,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @return Copy of service.
      */
     private Service copyAndInject(Service svc) {
-        IgniteMarshaller m = ctx.config().getMarshaller();
+        Marshaller m = ctx.config().getMarshaller();
 
         try {
             byte[] bytes = m.marshal(svc);

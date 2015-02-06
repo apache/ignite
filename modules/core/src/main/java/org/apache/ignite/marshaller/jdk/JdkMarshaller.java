@@ -25,13 +25,13 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 /**
- * Implementation of {@link org.apache.ignite.marshaller.IgniteMarshaller} based on JDK serialization mechanism.
+ * Implementation of {@link org.apache.ignite.marshaller.Marshaller} based on JDK serialization mechanism.
  * <p>
  * <h1 class="header">Configuration</h1>
  * <h2 class="header">Mandatory</h2>
  * This marshaller has no mandatory configuration parameters.
  * <h2 class="header">Java Example</h2>
- * {@code GridJdkMarshaller} needs to be explicitly configured to override default {@link org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller}.
+ * {@code GridJdkMarshaller} needs to be explicitly configured to override default {@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller}.
  * <pre name="code" class="java">
  * GridJdkMarshaller marshaller = new GridJdkMarshaller();
  *
@@ -59,7 +59,7 @@ import java.io.*;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public class IgniteJdkMarshaller extends IgniteAbstractMarshaller {
+public class JdkMarshaller extends AbstractMarshaller {
     /** {@inheritDoc} */
     @Override public void marshal(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
         assert out != null;
@@ -67,7 +67,7 @@ public class IgniteJdkMarshaller extends IgniteAbstractMarshaller {
         ObjectOutputStream objOut = null;
 
         try {
-            objOut = new IgniteJdkMarshallerObjectOutputStream(new IgniteJdkMarshallerOutputStreamWrapper(out));
+            objOut = new JdkMarshallerObjectOutputStream(new JdkMarshallerOutputStreamWrapper(out));
 
             // Make sure that we serialize only task, without class loader.
             objOut.writeObject(obj);
@@ -93,7 +93,7 @@ public class IgniteJdkMarshaller extends IgniteAbstractMarshaller {
         ObjectInputStream objIn = null;
 
         try {
-            objIn = new IgniteJdkMarshallerObjectInputStream(new IgniteJdkMarshallerInputStreamWrapper(in), clsLdr);
+            objIn = new JdkMarshallerObjectInputStream(new JdkMarshallerInputStreamWrapper(in), clsLdr);
 
             return (T)objIn.readObject();
         }
@@ -112,6 +112,6 @@ public class IgniteJdkMarshaller extends IgniteAbstractMarshaller {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteJdkMarshaller.class, this);
+        return S.toString(JdkMarshaller.class, this);
     }
 }

@@ -20,40 +20,11 @@ package org.apache.ignite.marshaller.jdk;
 import java.io.*;
 
 /**
- * Wrapper for {@link OutputStream}.
+ * Serializable object used for {@link Object} replacement.
  */
-class IgniteJdkMarshallerOutputStreamWrapper extends OutputStream {
+class JdkMarshallerDummySerializable implements Serializable {
     /** */
-    private OutputStream out;
+    private static final long serialVersionUID = 0L;
 
-    /**
-     * Creates wrapper.
-     *
-     * @param out Wrapped output stream
-     */
-    IgniteJdkMarshallerOutputStreamWrapper(OutputStream out) {
-        assert out != null;
-
-        this.out = out;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void write(int b) throws IOException {
-        out.write(b);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void write(byte[] b) throws IOException {
-        out.write(b);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void write(byte[] b, int off, int len) throws IOException {
-        out.write(b, off, len);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void flush() throws IOException {
-        out.flush();
-    }
+    // No-op.
 }

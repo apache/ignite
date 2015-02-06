@@ -103,7 +103,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private CommunicationListener<Serializable> commLsnr;
 
     /** Grid marshaller. */
-    private final IgniteMarshaller marsh;
+    private final Marshaller marsh;
 
     /** Busy lock. */
     private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();

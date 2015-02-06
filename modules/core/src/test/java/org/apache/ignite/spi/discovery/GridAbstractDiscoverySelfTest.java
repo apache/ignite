@@ -472,7 +472,7 @@ public abstract class GridAbstractDiscoverySelfTest<T extends IgniteSpi> extends
      */
     private void writeObject(ClusterNode node) throws Exception {
 
-        IgniteMarshaller marshaller = getTestResources().getMarshaller();
+        Marshaller marshaller = getTestResources().getMarshaller();
 
         OutputStream out = new NullOutputStream();
 

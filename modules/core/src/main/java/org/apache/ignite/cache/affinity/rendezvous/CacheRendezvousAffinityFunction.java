@@ -92,7 +92,7 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
     private CacheAffinityNodeHashResolver hashIdRslvr = new CacheAffinityNodeAddressHashResolver();
 
     /** Marshaller. */
-    private IgniteMarshaller marshaller = new IgniteOptimizedMarshaller(false);
+    private Marshaller marshaller = new OptimizedMarshaller(false);
 
     /**
      * Empty constructor with all defaults.

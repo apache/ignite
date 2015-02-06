@@ -57,7 +57,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     private static final String CACHE_NAME = "namedCache";
 
     /** */
-    private static IgniteMarshaller marsh;
+    private static Marshaller marsh;
 
     /** Closure job. */
     protected IgniteInClosure<String> c1 = new IgniteInClosure<String>() {
@@ -106,7 +106,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         namedCache.setAtomicityMode(TRANSACTIONAL);
         namedCache.setQueryIndexEnabled(true);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
         cfg.setStreamerConfiguration(streamerConfiguration());
         cfg.setCacheConfiguration(new CacheConfiguration(), namedCache);
 
@@ -142,7 +142,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /**
      * @return Grid marshaller.
      */
-    protected abstract IgniteMarshaller createMarshaller();
+    protected abstract Marshaller createMarshaller();
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

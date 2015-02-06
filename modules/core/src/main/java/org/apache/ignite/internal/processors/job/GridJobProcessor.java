@@ -57,7 +57,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private static final int FINISHED_JOBS_COUNT = Integer.getInteger(IGNITE_JOBS_HISTORY_SIZE, 10240);
 
     /** */
-    private final IgniteMarshaller marsh;
+    private final Marshaller marsh;
 
     /** */
     private final boolean jobAlwaysActivate;

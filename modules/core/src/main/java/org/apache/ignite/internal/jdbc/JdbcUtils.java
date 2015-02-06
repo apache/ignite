@@ -33,7 +33,7 @@ import static java.sql.Types.*;
  */
 class JdbcUtils {
     /** Marshaller. */
-    private static final IgniteMarshaller MARSHALLER = new IgniteJdkMarshaller();
+    private static final Marshaller MARSHALLER = new JdkMarshaller();
 
     /**
      * Marshals task argument to byte array.

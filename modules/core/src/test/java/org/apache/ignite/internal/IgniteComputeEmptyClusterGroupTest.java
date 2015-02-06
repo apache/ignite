@@ -51,7 +51,7 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 

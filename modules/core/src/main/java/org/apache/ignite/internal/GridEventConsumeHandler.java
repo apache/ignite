@@ -352,7 +352,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
          * @param marsh Marshaller.
          * @throws IgniteCheckedException In case of error.
          */
-        void p2pMarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
+        void p2pMarshal(Marshaller marsh) throws IgniteCheckedException {
             assert marsh != null;
 
             bytes = marsh.marshal(evt);
@@ -363,7 +363,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
          * @param ldr Class loader.
          * @throws IgniteCheckedException In case of error.
          */
-        void p2pUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
+        void p2pUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
             assert marsh != null;
 
             assert evt == null;

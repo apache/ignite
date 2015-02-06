@@ -59,7 +59,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         c.setQueryConfiguration(idxCfg);
 
-        c.setMarshaller(new IgniteOptimizedMarshaller(true));
+        c.setMarshaller(new OptimizedMarshaller(true));
 
         // Cache.
         CacheConfiguration cc = defaultCacheConfiguration();

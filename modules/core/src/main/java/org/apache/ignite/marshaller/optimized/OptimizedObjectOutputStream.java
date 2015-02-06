@@ -26,12 +26,12 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-import static org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshallerUtils.*;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
 
 /**
  * Optimized object output stream.
  */
-class IgniteOptimizedObjectOutputStream extends ObjectOutputStream {
+class OptimizedObjectOutputStream extends ObjectOutputStream {
     /** */
     private static final Collection<String> CONVERTED_ERR = F.asList(
         "weblogic/management/ManagementException",
@@ -52,10 +52,10 @@ class IgniteOptimizedObjectOutputStream extends ObjectOutputStream {
     private Object curObj;
 
     /** */
-    private List<T2<IgniteOptimizedFieldType, Long>> curFields;
+    private List<T2<OptimizedFieldType, Long>> curFields;
 
     /** */
-    private Map<String, IgniteBiTuple<Integer, IgniteOptimizedFieldType>> curFieldInfoMap;
+    private Map<String, IgniteBiTuple<Integer, OptimizedFieldType>> curFieldInfoMap;
 
     /** */
     private PutFieldImpl curPut;
@@ -64,7 +64,7 @@ class IgniteOptimizedObjectOutputStream extends ObjectOutputStream {
     /**
      * @throws IOException In case of error.
      */
-    IgniteOptimizedObjectOutputStream() throws IOException {
+    OptimizedObjectOutputStream() throws IOException {
         // No-op.
     }
 
@@ -72,7 +72,7 @@ class IgniteOptimizedObjectOutputStream extends ObjectOutputStream {
      * @param out Output.
      * @throws IOException In case of error.
      */
-    IgniteOptimizedObjectOutputStream(GridDataOutput out) throws IOException {
+    OptimizedObjectOutputStream(GridDataOutput out) throws IOException {
         this.out = out;
     }
 
@@ -156,7 +156,7 @@ class IgniteOptimizedObjectOutputStream extends ObjectOutputStream {
         else {
             Class<?> cls = obj.getClass();
 
-            IgniteOptimizedClassDescriptor desc = classDescriptor(cls, obj);
+            OptimizedClassDescriptor desc = classDescriptor(cls, obj);
 
             if (desc.excluded()) {
                 writeByte(NULL);
@@ -190,7 +190,7 @@ class IgniteOptimizedObjectOutputStream extends ObjectOutputStream {
             else {
                 writeByte(OBJECT);
 
-                IgniteOptimizedClassResolver.writeClass(this, desc);
+                OptimizedClassResolver.writeClass(this, desc);
 
                 desc.write(this, obj);
             }
@@ -276,7 +276,7 @@ class IgniteOptimizedObjectOutputStream extends ObjectOutputStream {
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    void writeSerializable(Object obj, List<Method> mtds, IgniteOptimizedClassDescriptor.Fields fields)
+    void writeSerializable(Object obj, List<Method> mtds, OptimizedClassDescriptor.Fields fields)
         throws IOException {
         for (int i = 0; i < mtds.size(); i++) {
             Method mtd = mtds.get(i);
@@ -430,9 +430,9 @@ class IgniteOptimizedObjectOutputStream extends ObjectOutputStream {
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private void writeFields(Object obj, List<T2<IgniteOptimizedFieldType, Long>> fieldOffs) throws IOException {
+    private void writeFields(Object obj, List<T2<OptimizedFieldType, Long>> fieldOffs) throws IOException {
         for (int i = 0; i < fieldOffs.size(); i++) {
-            T2<IgniteOptimizedFieldType, Long> t = fieldOffs.get(i);
+            T2<OptimizedFieldType, Long> t = fieldOffs.get(i);
 
             switch (t.get1()) {
                 case BYTE:
@@ -668,7 +668,7 @@ class IgniteOptimizedObjectOutputStream extends ObjectOutputStream {
         if (curPut == null)
             throw new NotActiveException("putFields() was not called.");
 
-        for (IgniteBiTuple<IgniteOptimizedFieldType, Object> t : curPut.objs) {
+        for (IgniteBiTuple<OptimizedFieldType, Object> t : curPut.objs) {
             switch (t.get1()) {
                 case BYTE:
                     writeByte((Byte)t.get2());
@@ -752,20 +752,20 @@ class IgniteOptimizedObjectOutputStream extends ObjectOutputStream {
      */
     private static class PutFieldImpl extends PutField {
         /** Stream. */
-        private final IgniteOptimizedObjectOutputStream out;
+        private final OptimizedObjectOutputStream out;
 
         /** Field info map. */
-        private final Map<String, IgniteBiTuple<Integer, IgniteOptimizedFieldType>> fieldInfoMap;
+        private final Map<String, IgniteBiTuple<Integer, OptimizedFieldType>> fieldInfoMap;
 
         /** Values. */
-        private final IgniteBiTuple<IgniteOptimizedFieldType, Object>[] objs;
+        private final IgniteBiTuple<OptimizedFieldType, Object>[] objs;
 
         /**
          * @param out Output stream.
          * @throws IOException In case of error.
          */
         @SuppressWarnings("unchecked")
-        private PutFieldImpl(IgniteOptimizedObjectOutputStream out) {
+        private PutFieldImpl(OptimizedObjectOutputStream out) {
             this.out = out;
 
             fieldInfoMap = out.curFieldInfoMap;
@@ -831,7 +831,7 @@ class IgniteOptimizedObjectOutputStream extends ObjectOutputStream {
          * @param val Value.
          */
         private void value(String name, Object val) {
-            IgniteBiTuple<Integer, IgniteOptimizedFieldType> info = fieldInfoMap.get(name);
+            IgniteBiTuple<Integer, OptimizedFieldType> info = fieldInfoMap.get(name);
 
             objs[info.get1()] = F.t(info.get2(), val);
         }

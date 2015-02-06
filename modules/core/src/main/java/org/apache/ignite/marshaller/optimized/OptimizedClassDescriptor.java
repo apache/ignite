@@ -32,7 +32,7 @@ import static java.lang.reflect.Modifier.*;
 /**
  * Class descriptor.
  */
-class IgniteOptimizedClassDescriptor {
+class OptimizedClassDescriptor {
     /** Unsafe. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -205,12 +205,12 @@ class IgniteOptimizedClassDescriptor {
      * @throws IOException In case of error.
      */
     @SuppressWarnings({"ForLoopReplaceableByForEach", "MapReplaceableByEnumMap"})
-    IgniteOptimizedClassDescriptor(Class<?> cls) throws IOException {
+    OptimizedClassDescriptor(Class<?> cls) throws IOException {
         this.cls = cls;
 
-        excluded = IgniteMarshallerExclusions.isExcluded(cls);
+        excluded = MarshallerExclusions.isExcluded(cls);
 
-        T2<Integer, Integer> t = IgniteOptimizedClassResolver.writeClassData(cls);
+        T2<Integer, Integer> t = OptimizedClassResolver.writeClassData(cls);
 
         hdr = t.get1();
         id = t.get2();
@@ -422,9 +422,9 @@ class IgniteOptimizedClassDescriptor {
                     writeObjMtds = new ArrayList<>();
                     readObjMtds = new ArrayList<>();
                     List<List<Field>> fields = new ArrayList<>();
-                    List<List<T2<IgniteOptimizedFieldType, Long>>> fieldOffs = new ArrayList<>();
-                    List<Map<String, IgniteBiTuple<Integer, IgniteOptimizedFieldType>>> fieldInfoMaps = new ArrayList<>();
-                    List<List<IgniteBiTuple<Integer, IgniteOptimizedFieldType>>> fieldInfoLists = new ArrayList<>();
+                    List<List<T2<OptimizedFieldType, Long>>> fieldOffs = new ArrayList<>();
+                    List<Map<String, IgniteBiTuple<Integer, OptimizedFieldType>>> fieldInfoMaps = new ArrayList<>();
+                    List<List<IgniteBiTuple<Integer, OptimizedFieldType>>> fieldInfoLists = new ArrayList<>();
 
                     for (c = cls; c != null && !c.equals(Object.class); c = c.getSuperclass()) {
                         Method mtd;
@@ -472,7 +472,7 @@ class IgniteOptimizedClassDescriptor {
                         });
 
                         List<Field> clsFields = new ArrayList<>(clsFields0.length);
-                        List<T2<IgniteOptimizedFieldType, Long>> clsFieldOffs =
+                        List<T2<OptimizedFieldType, Long>> clsFieldOffs =
                             new ArrayList<>(clsFields0.length);
 
                         for (int i = 0; i < clsFields0.length; i++) {
@@ -481,7 +481,7 @@ class IgniteOptimizedClassDescriptor {
                             int mod = f.getModifiers();
 
                             if (!isStatic(mod) && !isTransient(mod)) {
-                                IgniteOptimizedFieldType type = fieldType(f.getType());
+                                OptimizedFieldType type = fieldType(f.getType());
 
                                 clsFields.add(f);
                                 clsFieldOffs.add(new T2<>(type, UNSAFE.objectFieldOffset(f)));
@@ -491,7 +491,7 @@ class IgniteOptimizedClassDescriptor {
                         fields.add(clsFields);
                         fieldOffs.add(clsFieldOffs);
 
-                        Map<String, IgniteBiTuple<Integer, IgniteOptimizedFieldType>> fieldInfoMap = null;
+                        Map<String, IgniteBiTuple<Integer, OptimizedFieldType>> fieldInfoMap = null;
 
                         try {
                             Field serFieldsDesc = c.getDeclaredField("serialPersistentFields");
@@ -533,12 +533,12 @@ class IgniteOptimizedClassDescriptor {
 
                         fieldInfoMaps.add(fieldInfoMap);
 
-                        List<IgniteBiTuple<Integer, IgniteOptimizedFieldType>> fieldInfoList =
+                        List<IgniteBiTuple<Integer, OptimizedFieldType>> fieldInfoList =
                             new ArrayList<>(fieldInfoMap.values());
 
-                        Collections.sort(fieldInfoList, new Comparator<IgniteBiTuple<Integer, IgniteOptimizedFieldType>>() {
-                            @Override public int compare(IgniteBiTuple<Integer, IgniteOptimizedFieldType> t1,
-                                IgniteBiTuple<Integer, IgniteOptimizedFieldType> t2) {
+                        Collections.sort(fieldInfoList, new Comparator<IgniteBiTuple<Integer, OptimizedFieldType>>() {
+                            @Override public int compare(IgniteBiTuple<Integer, OptimizedFieldType> t1,
+                                IgniteBiTuple<Integer, OptimizedFieldType> t2) {
                                 return t1.get1().compareTo(t2.get1());
                             }
                         });
@@ -558,7 +558,7 @@ class IgniteOptimizedClassDescriptor {
             }
         }
 
-        shortId = IgniteOptimizedMarshallerUtils.computeSerialVersionUid(cls, fields != null ? fields.ownFields() : null).shortValue();
+        shortId = OptimizedMarshallerUtils.computeSerialVersionUid(cls, fields != null ? fields.ownFields() : null).shortValue();
     }
 
     /**
@@ -659,7 +659,7 @@ class IgniteOptimizedClassDescriptor {
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    void write(IgniteOptimizedObjectOutputStream out, Object obj) throws IOException {
+    void write(OptimizedObjectOutputStream out, Object obj) throws IOException {
         switch (type) {
             case TYPE_BYTE:
                 out.writeByte((Byte)obj);
@@ -802,7 +802,7 @@ class IgniteOptimizedClassDescriptor {
                 break;
 
             case TYPE_CLS:
-                IgniteOptimizedClassResolver.writeClass(out, IgniteOptimizedMarshallerUtils.classDescriptor((Class<?>) obj, obj));
+                OptimizedClassResolver.writeClass(out, OptimizedMarshallerUtils.classDescriptor((Class<?>) obj, obj));
 
                 break;
 
@@ -834,7 +834,7 @@ class IgniteOptimizedClassDescriptor {
      * @throws ClassNotFoundException If class not found.
      * @throws IOException In case of error.
      */
-    Object read(IgniteOptimizedObjectInputStream in) throws ClassNotFoundException, IOException {
+    Object read(OptimizedObjectInputStream in) throws ClassNotFoundException, IOException {
         switch (type) {
             case TYPE_BYTE:
                 return in.readByte();
@@ -921,7 +921,7 @@ class IgniteOptimizedClassDescriptor {
                 return in.readDate();
 
             case TYPE_CLS:
-                return IgniteOptimizedClassResolver.readClass(in, in.classLoader()).describedClass();
+                return OptimizedClassResolver.readClass(in, in.classLoader()).describedClass();
 
             case TYPE_EXTERNALIZABLE:
                 return in.readExternalizable(constructor, readResolveMtd);
@@ -939,27 +939,27 @@ class IgniteOptimizedClassDescriptor {
      * @return Type.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private IgniteOptimizedFieldType fieldType(Class<?> cls) {
-        IgniteOptimizedFieldType type;
+    private OptimizedFieldType fieldType(Class<?> cls) {
+        OptimizedFieldType type;
 
         if (cls == byte.class)
-            type = IgniteOptimizedFieldType.BYTE;
+            type = OptimizedFieldType.BYTE;
         else if (cls == short.class)
-            type = IgniteOptimizedFieldType.SHORT;
+            type = OptimizedFieldType.SHORT;
         else if (cls == int.class)
-            type = IgniteOptimizedFieldType.INT;
+            type = OptimizedFieldType.INT;
         else if (cls == long.class)
-            type = IgniteOptimizedFieldType.LONG;
+            type = OptimizedFieldType.LONG;
         else if (cls == float.class)
-            type = IgniteOptimizedFieldType.FLOAT;
+            type = OptimizedFieldType.FLOAT;
         else if (cls == double.class)
-            type = IgniteOptimizedFieldType.DOUBLE;
+            type = OptimizedFieldType.DOUBLE;
         else if (cls == char.class)
-            type = IgniteOptimizedFieldType.CHAR;
+            type = OptimizedFieldType.CHAR;
         else if (cls == boolean.class)
-            type = IgniteOptimizedFieldType.BOOLEAN;
+            type = OptimizedFieldType.BOOLEAN;
         else
-            type = IgniteOptimizedFieldType.OTHER;
+            type = OptimizedFieldType.OTHER;
 
         return type;
     }
@@ -973,13 +973,13 @@ class IgniteOptimizedClassDescriptor {
         private final List<List<Field>> fields;
 
         /** Fields offsets. */
-        private final List<List<T2<IgniteOptimizedFieldType, Long>>> fieldOffs;
+        private final List<List<T2<OptimizedFieldType, Long>>> fieldOffs;
 
         /** Fields details lists. */
-        private final List<List<IgniteBiTuple<Integer, IgniteOptimizedFieldType>>> fieldInfoLists;
+        private final List<List<IgniteBiTuple<Integer, OptimizedFieldType>>> fieldInfoLists;
 
         /** Fields details maps. */
-        private final List<Map<String, IgniteBiTuple<Integer, IgniteOptimizedFieldType>>> fieldInfoMaps;
+        private final List<Map<String, IgniteBiTuple<Integer, OptimizedFieldType>>> fieldInfoMaps;
 
         /**
          * Creates new instance.
@@ -989,9 +989,9 @@ class IgniteOptimizedClassDescriptor {
          * @param fieldInfoLists List of field details sequences for each type in the object's class hierarchy.
          * @param fieldInfoMaps List of field details maps for each type in the object's class hierarchy.
          */
-        Fields(List<List<Field>> fields, List<List<T2<IgniteOptimizedFieldType, Long>>> fieldOffs,
-            List<List<IgniteBiTuple<Integer, IgniteOptimizedFieldType>>> fieldInfoLists,
-            List<Map<String, IgniteBiTuple<Integer, IgniteOptimizedFieldType>>> fieldInfoMaps) {
+        Fields(List<List<Field>> fields, List<List<T2<OptimizedFieldType, Long>>> fieldOffs,
+            List<List<IgniteBiTuple<Integer, OptimizedFieldType>>> fieldInfoLists,
+            List<Map<String, IgniteBiTuple<Integer, OptimizedFieldType>>> fieldInfoMaps) {
             this.fields = fields;
             this.fieldOffs = fieldOffs;
             this.fieldInfoLists = fieldInfoLists;
@@ -1013,7 +1013,7 @@ class IgniteOptimizedClassDescriptor {
          * @param i hierarchy level where 0 corresponds to top level.
          * @return list of pairs where first value is field type and second value is its offset.
          */
-        List<T2<IgniteOptimizedFieldType, Long>> fieldOffs(int i) {
+        List<T2<OptimizedFieldType, Long>> fieldOffs(int i) {
             return fieldOffs.get(i);
         }
 
@@ -1023,7 +1023,7 @@ class IgniteOptimizedClassDescriptor {
          * @param i hierarchy level where 0 corresponds to top level.
          * @return list of pairs (field number, field type) for the given hierarchy level.
          */
-        List<IgniteBiTuple<Integer, IgniteOptimizedFieldType>> fieldInfoList(int i) {
+        List<IgniteBiTuple<Integer, OptimizedFieldType>> fieldInfoList(int i) {
             return fieldInfoLists.get(i);
         }
 
@@ -1033,7 +1033,7 @@ class IgniteOptimizedClassDescriptor {
          * @param i hierarchy level where 0 corresponds to top level.
          * @return map of field names and their details.
          */
-        Map<String, IgniteBiTuple<Integer, IgniteOptimizedFieldType>> fieldInfoMap(int i) {
+        Map<String, IgniteBiTuple<Integer, OptimizedFieldType>> fieldInfoMap(int i) {
             return fieldInfoMaps.get(i);
         }
     }

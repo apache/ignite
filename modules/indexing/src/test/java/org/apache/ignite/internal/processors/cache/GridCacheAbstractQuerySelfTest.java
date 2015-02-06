@@ -115,7 +115,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         // Otherwise noop swap space will be chosen on Windows.
         c.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
-        c.setMarshaller(new IgniteOptimizedMarshaller(false));
+        c.setMarshaller(new OptimizedMarshaller(false));
 
         CacheConfiguration[] ccs = new CacheConfiguration[2];
 

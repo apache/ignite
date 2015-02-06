@@ -27,7 +27,7 @@ public class GridOptimizedMarshallerEnumSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testEnumSerialisation() throws Exception {
-        IgniteOptimizedMarshaller marsh = new IgniteOptimizedMarshaller();
+        OptimizedMarshaller marsh = new OptimizedMarshaller();
 
         byte[] bytes = marsh.marshal(TestEnum.Bond);
 

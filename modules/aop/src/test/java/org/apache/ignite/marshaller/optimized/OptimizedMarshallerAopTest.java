@@ -58,7 +58,7 @@ public class OptimizedMarshallerAopTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller());
+        cfg.setMarshaller(new OptimizedMarshaller());
 
         G.start(cfg);
 

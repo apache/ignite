@@ -110,7 +110,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
 
         cfg.setSystemExecutorServiceShutdown(true);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }

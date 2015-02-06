@@ -37,7 +37,7 @@ import java.util.concurrent.locks.*;
  * Resolves class names by serialVersionUID.
  */
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "unchecked"})
-class IgniteOptimizedClassResolver {
+class OptimizedClassResolver {
     /** File name to generate. */
     private static final String FILE_NAME = "optimized-classnames.properties";
 
@@ -45,19 +45,19 @@ class IgniteOptimizedClassResolver {
     private static final Map<String, Integer> ggxName2id = new HashMap<>();
 
     /** */
-    private static final T2<Class<?>, IgniteOptimizedClassDescriptor>[] ggxId2name;
+    private static final T2<Class<?>, OptimizedClassDescriptor>[] ggxId2name;
 
     /** */
     private static final Map<String, Integer> ggName2id = new HashMap<>();
 
     /** */
-    private static final T3<String, Class<?>, IgniteOptimizedClassDescriptor>[] ggId2name;
+    private static final T3<String, Class<?>, OptimizedClassDescriptor>[] ggId2name;
 
     /** */
     private static Map<String, Integer> usrName2Id;
 
     /** */
-    private static T3<String, Class<?>, IgniteOptimizedClassDescriptor>[] usrId2Name;
+    private static T3<String, Class<?>, OptimizedClassDescriptor>[] usrId2Name;
 
     /** */
     private static final int HEADER_NAME = 255;
@@ -178,14 +178,14 @@ class IgniteOptimizedClassResolver {
             Class cls = superOptCls[i];
 
             ggxName2id.put(cls.getName(), i);
-            ggxId2name[i] = new T2<Class<?>, IgniteOptimizedClassDescriptor>(cls, null);
+            ggxId2name[i] = new T2<Class<?>, OptimizedClassDescriptor>(cls, null);
         }
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(
-            IgniteOptimizedClassResolver.class.getResourceAsStream(FILE_NAME),
-            IgniteOptimizedMarshallerUtils.UTF_8));
+            OptimizedClassResolver.class.getResourceAsStream(FILE_NAME),
+            OptimizedMarshallerUtils.UTF_8));
 
-        List<T3<String, Class<?>, IgniteOptimizedClassDescriptor>> ggId2name0 =
+        List<T3<String, Class<?>, OptimizedClassDescriptor>> ggId2name0 =
             new LinkedList<>();
 
         try {
@@ -196,7 +196,7 @@ class IgniteOptimizedClassResolver {
                     break;
 
                 ggName2id.put(clsName, i);
-                ggId2name0.add(new T3<String, Class<?>, IgniteOptimizedClassDescriptor>(clsName, null, null));
+                ggId2name0.add(new T3<String, Class<?>, OptimizedClassDescriptor>(clsName, null, null));
             }
 
             ggId2name = ggId2name0.toArray(new T3[ggId2name0.size()]);
@@ -212,7 +212,7 @@ class IgniteOptimizedClassResolver {
     /**
      * Ensure singleton.
      */
-    private IgniteOptimizedClassResolver() {
+    private OptimizedClassResolver() {
         // No-op.
     }
 
@@ -221,7 +221,7 @@ class IgniteOptimizedClassResolver {
      * @param usrId2Name0 From ID to name.
      */
     static void userClasses(@Nullable Map<String, Integer> usrName2id0,
-        @Nullable T3<String, Class<?>, IgniteOptimizedClassDescriptor>[] usrId2Name0) {
+        @Nullable T3<String, Class<?>, OptimizedClassDescriptor>[] usrId2Name0) {
         usrName2Id = usrName2id0;
         usrId2Name = usrId2Name0;
     }
@@ -233,7 +233,7 @@ class IgniteOptimizedClassResolver {
      * @throws IOException If serial version UID failed.
      * @throws ClassNotFoundException If the class cannot be located by the specified class loader.
      */
-    static IgniteOptimizedClassDescriptor readClass(DataInput in, ClassLoader clsLdr)
+    static OptimizedClassDescriptor readClass(DataInput in, ClassLoader clsLdr)
         throws IOException, ClassNotFoundException {
         assert in != null;
         assert clsLdr != null;
@@ -241,12 +241,12 @@ class IgniteOptimizedClassResolver {
         int hdr = in.readByte() & 0xff;
 
         if (hdr < ggxId2name.length) {
-            T2<Class<?>, IgniteOptimizedClassDescriptor> ggxT = ggxId2name[hdr];
+            T2<Class<?>, OptimizedClassDescriptor> ggxT = ggxId2name[hdr];
 
-            IgniteOptimizedClassDescriptor desc = ggxT.get2();
+            OptimizedClassDescriptor desc = ggxT.get2();
 
             if (desc == null) {
-                desc = IgniteOptimizedMarshallerUtils.classDescriptor(ggxT.get1(), null);
+                desc = OptimizedMarshallerUtils.classDescriptor(ggxT.get1(), null);
 
                 ggxT.set2(desc);
             }
@@ -256,13 +256,13 @@ class IgniteOptimizedClassResolver {
 
         String name;
         Class<?> cls;
-        IgniteOptimizedClassDescriptor desc;
+        OptimizedClassDescriptor desc;
 
         switch (hdr) {
             case HEADER_GG_NAME:
                 int ggId = in.readInt();
 
-                T3<String, Class<?>, IgniteOptimizedClassDescriptor> ggT;
+                T3<String, Class<?>, OptimizedClassDescriptor> ggT;
 
                 try {
                     ggT = ggId2name[ggId];
@@ -284,14 +284,14 @@ class IgniteOptimizedClassResolver {
                             ggT.set2(cls);
                         }
 
-                        desc = IgniteOptimizedMarshallerUtils.classDescriptor(cls, null);
+                        desc = OptimizedMarshallerUtils.classDescriptor(cls, null);
 
                         ggT.set3(desc);
                     }
                     else {
                         cls = forName(name, clsLdr);
 
-                        desc = IgniteOptimizedMarshallerUtils.classDescriptor(cls, null);
+                        desc = OptimizedMarshallerUtils.classDescriptor(cls, null);
                     }
                 }
 
@@ -300,7 +300,7 @@ class IgniteOptimizedClassResolver {
             case HEADER_USER_NAME:
                 int usrId = in.readInt();
 
-                T3<String, Class<?>, IgniteOptimizedClassDescriptor> usrT;
+                T3<String, Class<?>, OptimizedClassDescriptor> usrT;
 
                 try {
                     if (usrId2Name != null)
@@ -325,7 +325,7 @@ class IgniteOptimizedClassResolver {
                         usrT.set2(cls);
                     }
 
-                    desc = IgniteOptimizedMarshallerUtils.classDescriptor(cls, null);
+                    desc = OptimizedMarshallerUtils.classDescriptor(cls, null);
 
                     usrT.set3(desc);
                 }
@@ -339,14 +339,14 @@ class IgniteOptimizedClassResolver {
 
                 cls = forName(name, clsLdr);
 
-                return IgniteOptimizedMarshallerUtils.classDescriptor(cls, null);
+                return OptimizedMarshallerUtils.classDescriptor(cls, null);
 
             case HEADER_NAME:
                 name = in.readUTF();
 
                 cls = forName(name, clsLdr);
 
-                desc = IgniteOptimizedMarshallerUtils.classDescriptor(cls, null);
+                desc = OptimizedMarshallerUtils.classDescriptor(cls, null);
 
                 break;
 
@@ -371,7 +371,7 @@ class IgniteOptimizedClassResolver {
      * @param desc Class descriptor.
      * @throws IOException In case of error.
      */
-    static void writeClass(DataOutput out, IgniteOptimizedClassDescriptor desc) throws IOException {
+    static void writeClass(DataOutput out, OptimizedClassDescriptor desc) throws IOException {
         assert out != null;
         assert desc != null;
 
@@ -388,7 +388,7 @@ class IgniteOptimizedClassResolver {
                 return;
 
             case HEADER_ARRAY:
-                writeClass(out, IgniteOptimizedMarshallerUtils.classDescriptor(desc.componentType(), null));
+                writeClass(out, OptimizedMarshallerUtils.classDescriptor(desc.componentType(), null));
 
                 return;
 
@@ -436,7 +436,7 @@ class IgniteOptimizedClassResolver {
         Class<?> cls = primitive(name);
 
         if (cls == null)
-            cls = IgniteOptimizedMarshallerUtils.forName(name, ldr);
+            cls = OptimizedMarshallerUtils.forName(name, ldr);
 
         return cls;
     }

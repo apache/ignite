@@ -291,7 +291,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
         if (folder != null) {
             Map<File, SharedFsTimeData> files = new HashMap<>();
 
-            IgniteMarshaller marsh = ignite.configuration().getMarshaller();
+            Marshaller marsh = ignite.configuration().getMarshaller();
 
             // Track expiration for only those files that are made by this node
             // to avoid file access conflicts.

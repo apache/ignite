@@ -22,7 +22,7 @@ import java.io.*;
 /**
  * This class defines custom JDK object input stream.
  */
-class IgniteJdkMarshallerObjectInputStream extends ObjectInputStream {
+class JdkMarshallerObjectInputStream extends ObjectInputStream {
     /** */
     private final ClassLoader clsLdr;
 
@@ -31,7 +31,7 @@ class IgniteJdkMarshallerObjectInputStream extends ObjectInputStream {
      * @param clsLdr Custom class loader.
      * @throws IOException If initialization failed.
      */
-    IgniteJdkMarshallerObjectInputStream(InputStream in, ClassLoader clsLdr) throws IOException {
+    JdkMarshallerObjectInputStream(InputStream in, ClassLoader clsLdr) throws IOException {
         super(in);
 
         assert clsLdr != null;
@@ -52,7 +52,7 @@ class IgniteJdkMarshallerObjectInputStream extends ObjectInputStream {
 
     /** {@inheritDoc} */
     @Override protected Object resolveObject(Object o) throws IOException {
-        if (o != null && o.getClass().equals(IgniteJdkMarshallerDummySerializable.class))
+        if (o != null && o.getClass().equals(JdkMarshallerDummySerializable.class))
             return new Object();
 
         return super.resolveObject(o);

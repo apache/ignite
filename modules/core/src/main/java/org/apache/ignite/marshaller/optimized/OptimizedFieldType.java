@@ -20,7 +20,7 @@ package org.apache.ignite.marshaller.optimized;
 /**
  * Field type used to calculate {@code Unsafe} offsets into objects.
  */
-enum IgniteOptimizedFieldType {
+enum OptimizedFieldType {
     /** */
     BYTE,
 

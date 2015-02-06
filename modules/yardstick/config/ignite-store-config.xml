@@ -56,7 +56,7 @@
         <property name="peerClassLoadingEnabled" value="false"/>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
+            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
                 <property name="requireSerializable" value="true"/>
                 <property name="classNames">
                     <list>

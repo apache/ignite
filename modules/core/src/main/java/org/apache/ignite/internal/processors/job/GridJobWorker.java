@@ -86,7 +86,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     private final IgniteLogger log;
 
     /** */
-    private final IgniteMarshaller marsh;
+    private final Marshaller marsh;
 
     /** */
     private final GridJobSessionImpl ses;

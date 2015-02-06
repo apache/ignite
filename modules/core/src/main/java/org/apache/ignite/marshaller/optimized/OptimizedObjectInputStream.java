@@ -28,12 +28,12 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-import static org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshallerUtils.*;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.*;
 
 /**
  * Optimized object input stream.
  */
-class IgniteOptimizedObjectInputStream extends ObjectInputStream {
+class OptimizedObjectInputStream extends ObjectInputStream {
     /** Unsafe. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -53,13 +53,13 @@ class IgniteOptimizedObjectInputStream extends ObjectInputStream {
     private Object curObj;
 
     /** */
-    private List<T2<IgniteOptimizedFieldType, Long>> curFields;
+    private List<T2<OptimizedFieldType, Long>> curFields;
 
     /** */
-    private List<IgniteBiTuple<Integer, IgniteOptimizedFieldType>> curFieldInfoList;
+    private List<IgniteBiTuple<Integer, OptimizedFieldType>> curFieldInfoList;
 
     /** */
-    private Map<String, IgniteBiTuple<Integer, IgniteOptimizedFieldType>> curFieldInfoMap;
+    private Map<String, IgniteBiTuple<Integer, OptimizedFieldType>> curFieldInfoMap;
 
     /** */
     private Class<?> curCls;
@@ -68,14 +68,14 @@ class IgniteOptimizedObjectInputStream extends ObjectInputStream {
      * @param in Input.
      * @throws IOException In case of error.
      */
-    IgniteOptimizedObjectInputStream(GridDataInput in) throws IOException {
+    OptimizedObjectInputStream(GridDataInput in) throws IOException {
         this.in = in;
     }
 
     /**
      * @throws IOException In case of error.
      */
-    IgniteOptimizedObjectInputStream() throws IOException {
+    OptimizedObjectInputStream() throws IOException {
         // No-op.
     }
 
@@ -141,7 +141,7 @@ class IgniteOptimizedObjectInputStream extends ObjectInputStream {
                 return handles.lookup(readInt());
 
             case OBJECT:
-                IgniteOptimizedClassDescriptor desc = IgniteOptimizedClassResolver.readClass(this, clsLdr);
+                OptimizedClassDescriptor desc = OptimizedClassResolver.readClass(this, clsLdr);
 
                 curCls = desc.describedClass();
 
@@ -228,10 +228,10 @@ class IgniteOptimizedObjectInputStream extends ObjectInputStream {
      * @throws IOException In case of error.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    void readFields(Object obj, List<T2<IgniteOptimizedFieldType, Long>> fieldOffs) throws ClassNotFoundException,
+    void readFields(Object obj, List<T2<OptimizedFieldType, Long>> fieldOffs) throws ClassNotFoundException,
         IOException {
         for (int i = 0; i < fieldOffs.size(); i++) {
-            T2<IgniteOptimizedFieldType, Long> t = fieldOffs.get(i);
+            T2<OptimizedFieldType, Long> t = fieldOffs.get(i);
 
             switch ((t.get1())) {
                 case BYTE:
@@ -333,7 +333,7 @@ class IgniteOptimizedObjectInputStream extends ObjectInputStream {
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     Object readSerializable(Class<?> cls, List<Method> mtds, Method readResolveMtd,
-        IgniteOptimizedClassDescriptor.Fields fields) throws ClassNotFoundException, IOException {
+        OptimizedClassDescriptor.Fields fields) throws ClassNotFoundException, IOException {
         Object obj;
 
         try {
@@ -877,7 +877,7 @@ class IgniteOptimizedObjectInputStream extends ObjectInputStream {
      */
     private static class GetFieldImpl extends GetField {
         /** Field info map. */
-        private final Map<String, IgniteBiTuple<Integer, IgniteOptimizedFieldType>> fieldInfoMap;
+        private final Map<String, IgniteBiTuple<Integer, OptimizedFieldType>> fieldInfoMap;
 
         /** Values. */
         private final Object[] objs;
@@ -888,15 +888,15 @@ class IgniteOptimizedObjectInputStream extends ObjectInputStream {
          * @throws ClassNotFoundException If class not found.
          */
         @SuppressWarnings("ForLoopReplaceableByForEach")
-        private GetFieldImpl(IgniteOptimizedObjectInputStream in) throws IOException, ClassNotFoundException {
+        private GetFieldImpl(OptimizedObjectInputStream in) throws IOException, ClassNotFoundException {
             fieldInfoMap = in.curFieldInfoMap;
 
-            List<IgniteBiTuple<Integer, IgniteOptimizedFieldType>> infos = in.curFieldInfoList;
+            List<IgniteBiTuple<Integer, OptimizedFieldType>> infos = in.curFieldInfoList;
 
             objs = new Object[infos.size()];
 
             for (int i = 0; i < infos.size(); i++) {
-                IgniteBiTuple<Integer, IgniteOptimizedFieldType> t = infos.get(i);
+                IgniteBiTuple<Integer, OptimizedFieldType> t = infos.get(i);
 
                 Object obj = null;
 

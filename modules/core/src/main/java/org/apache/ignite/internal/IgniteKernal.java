@@ -1201,9 +1201,9 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         if (cfg.getIncludeEventTypes() != null && cfg.getIncludeEventTypes().length != 0)
             perf.add("Disable grid events (remove 'includeEventTypes' from configuration)");
 
-        if (IgniteOptimizedMarshaller.available() && !(cfg.getMarshaller() instanceof IgniteOptimizedMarshaller))
+        if (OptimizedMarshaller.available() && !(cfg.getMarshaller() instanceof OptimizedMarshaller))
             perf.add("Enable optimized marshaller (set 'marshaller' to " +
-                IgniteOptimizedMarshaller.class.getSimpleName() + ')');
+                OptimizedMarshaller.class.getSimpleName() + ')');
     }
 
     /**
@@ -2000,8 +2000,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             notifyLifecycleBeansEx(LifecycleEventType.AFTER_GRID_STOP);
 
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
-            IgniteOptimizedMarshaller.clearCache();
-            IgniteMarshallerExclusions.clearCache();
+            OptimizedMarshaller.clearCache();
+            MarshallerExclusions.clearCache();
             GridEnumCache.clear();
 
             gw.writeLock();

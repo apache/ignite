@@ -77,7 +77,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     private static final byte[] MSG_ADDR_REQ_DATA = U.IGNITE_HEADER;
 
     /** */
-    private static final IgniteMarshaller marsh = new IgniteJdkMarshaller();
+    private static final Marshaller marsh = new JdkMarshaller();
 
     /** Grid logger. */
     @IgniteLoggerResource

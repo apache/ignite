@@ -31,7 +31,7 @@ import java.util.concurrent.*;
 /**
  * Controls what classes should be excluded from marshalling by default.
  */
-public final class IgniteMarshallerExclusions {
+public final class MarshallerExclusions {
     /**
      * Classes that must be included in serialization. All marshallers must
      * included these classes.
@@ -85,7 +85,7 @@ public final class IgniteMarshallerExclusions {
         excl.add(ComputeTaskSession.class);
         excl.add(ComputeLoadBalancer.class);
         excl.add(ComputeJobContext.class);
-        excl.add(IgniteMarshaller.class);
+        excl.add(Marshaller.class);
         excl.add(GridComponent.class);
         excl.add(ComputeTaskContinuousMapper.class);
 
@@ -95,7 +95,7 @@ public final class IgniteMarshallerExclusions {
     /**
      * Ensures singleton.
      */
-    private IgniteMarshallerExclusions() {
+    private MarshallerExclusions() {
         // No-op.
     }
 

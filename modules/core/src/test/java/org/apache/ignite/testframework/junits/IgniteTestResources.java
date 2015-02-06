@@ -51,7 +51,7 @@ public class IgniteTestResources {
     private final UUID nodeId;
 
     /** */
-    private IgniteMarshaller marshaller;
+    private Marshaller marshaller;
 
     /** */
     private final MBeanServer jmx;
@@ -232,15 +232,15 @@ public class IgniteTestResources {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public synchronized IgniteMarshaller getMarshaller() throws IgniteCheckedException {
+    public synchronized Marshaller getMarshaller() throws IgniteCheckedException {
         if (marshaller == null) {
             String marshallerName = GridTestProperties.getProperty("marshaller.class");
 
             if (marshallerName == null)
-                marshaller = new IgniteOptimizedMarshaller();
+                marshaller = new OptimizedMarshaller();
             else {
                 try {
-                    Class<? extends IgniteMarshaller> cls = (Class<? extends IgniteMarshaller>)Class.forName(marshallerName);
+                    Class<? extends Marshaller> cls = (Class<? extends Marshaller>)Class.forName(marshallerName);
 
                     marshaller = cls.newInstance();
                 }

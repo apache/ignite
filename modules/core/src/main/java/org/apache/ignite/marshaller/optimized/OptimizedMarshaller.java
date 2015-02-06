@@ -30,7 +30,7 @@ import java.net.*;
 import java.util.*;
 
 /**
- * Optimized implementation of {@link org.apache.ignite.marshaller.IgniteMarshaller}. Unlike {@link org.apache.ignite.marshaller.jdk.IgniteJdkMarshaller},
+ * Optimized implementation of {@link org.apache.ignite.marshaller.Marshaller}. Unlike {@link org.apache.ignite.marshaller.jdk.JdkMarshaller},
  * which is based on standard {@link ObjectOutputStream}, this marshaller does not
  * enforce that all serialized objects implement {@link Serializable} interface. It is also
  * about 20 times faster as it removes lots of serialization overhead that exists in
@@ -76,7 +76,7 @@ import java.util.*;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
+public class OptimizedMarshaller extends AbstractMarshaller {
     /** Whether or not to require an object to be serializable in order to be marshalled. */
     private boolean requireSer = true;
 
@@ -88,7 +88,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
      *
      * @throws IgniteException If this marshaller is not supported on the current JVM.
      */
-    public IgniteOptimizedMarshaller() {
+    public OptimizedMarshaller() {
         if (!available())
             throw new IgniteException("Using GridOptimizedMarshaller on unsupported JVM version (some of " +
                 "JVM-private APIs required for the marshaller to work are missing).");
@@ -104,7 +104,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
      *      marshalled, if {@code false}, then such requirement will be relaxed.
      * @throws IgniteException If this marshaller is not supported on the current JVM.
      */
-    public IgniteOptimizedMarshaller(boolean requireSer) {
+    public OptimizedMarshaller(boolean requireSer) {
         this();
 
         this.requireSer = requireSer;
@@ -124,8 +124,8 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
      * @throws IgniteCheckedException If an I/O error occurs while writing stream header.
      * @throws IgniteException If this marshaller is not supported on the current JVM.
      */
-    public IgniteOptimizedMarshaller(boolean requireSer, @Nullable List<String> clsNames,
-                                     @Nullable String clsNamesPath, int poolSize) throws IgniteCheckedException {
+    public OptimizedMarshaller(boolean requireSer, @Nullable List<String> clsNames,
+        @Nullable String clsNamesPath, int poolSize) throws IgniteCheckedException {
         this(requireSer);
 
         setClassNames(clsNames);
@@ -148,7 +148,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
             Arrays.sort(clsNamesArr);
 
             Map<String, Integer> name2id = U.newHashMap(clsNamesArr.length);
-            T3<String, Class<?>, IgniteOptimizedClassDescriptor>[] id2name = new T3[clsNamesArr.length];
+            T3<String, Class<?>, OptimizedClassDescriptor>[] id2name = new T3[clsNamesArr.length];
 
             int i = 0;
 
@@ -157,7 +157,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
                 id2name[i++] = new T3<>(name, null, null);
             }
 
-            IgniteOptimizedClassResolver.userClasses(name2id, id2name);
+            OptimizedClassResolver.userClasses(name2id, id2name);
         }
     }
 
@@ -193,7 +193,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
         try {
             clsNames = new LinkedList<>();
 
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), IgniteOptimizedMarshallerUtils.UTF_8))) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), OptimizedMarshallerUtils.UTF_8))) {
                 String clsName;
 
                 while ((clsName = reader.readLine()) != null)
@@ -223,7 +223,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
      * @param poolSize Streams pool size. If {@code 0}, pool is not used.
      */
     public void setPoolSize(int poolSize) {
-        IgniteOptimizedObjectStreamRegistry.poolSize(poolSize);
+        OptimizedObjectStreamRegistry.poolSize(poolSize);
     }
 
     /**
@@ -248,10 +248,10 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
     @Override public void marshal(@Nullable Object obj, OutputStream out) throws IgniteCheckedException {
         assert out != null;
 
-        IgniteOptimizedObjectOutputStream objOut = null;
+        OptimizedObjectOutputStream objOut = null;
 
         try {
-            objOut = IgniteOptimizedObjectStreamRegistry.out();
+            objOut = OptimizedObjectStreamRegistry.out();
 
             objOut.requireSerializable(requireSer);
 
@@ -263,16 +263,16 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
             throw new IgniteCheckedException("Failed to serialize object: " + obj, e);
         }
         finally {
-            IgniteOptimizedObjectStreamRegistry.closeOut(objOut);
+            OptimizedObjectStreamRegistry.closeOut(objOut);
         }
     }
 
     /** {@inheritDoc} */
     @Override public byte[] marshal(@Nullable Object obj) throws IgniteCheckedException {
-        IgniteOptimizedObjectOutputStream objOut = null;
+        OptimizedObjectOutputStream objOut = null;
 
         try {
-            objOut = IgniteOptimizedObjectStreamRegistry.out();
+            objOut = OptimizedObjectStreamRegistry.out();
 
             objOut.requireSerializable(requireSer);
 
@@ -284,7 +284,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
             throw new IgniteCheckedException("Failed to serialize object: " + obj, e);
         }
         finally {
-            IgniteOptimizedObjectStreamRegistry.closeOut(objOut);
+            OptimizedObjectStreamRegistry.closeOut(objOut);
         }
     }
 
@@ -292,10 +292,10 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
     @Override public <T> T unmarshal(InputStream in, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert in != null;
 
-        IgniteOptimizedObjectInputStream objIn = null;
+        OptimizedObjectInputStream objIn = null;
 
         try {
-            objIn = IgniteOptimizedObjectStreamRegistry.in();
+            objIn = OptimizedObjectStreamRegistry.in();
 
             objIn.classLoader(clsLdr != null ? clsLdr : dfltClsLdr);
 
@@ -312,7 +312,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
                 clsLdr, e);
         }
         finally {
-            IgniteOptimizedObjectStreamRegistry.closeIn(objIn);
+            OptimizedObjectStreamRegistry.closeIn(objIn);
         }
     }
 
@@ -320,10 +320,10 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
     @Override public <T> T unmarshal(byte[] arr, @Nullable ClassLoader clsLdr) throws IgniteCheckedException {
         assert arr != null;
 
-        IgniteOptimizedObjectInputStream objIn = null;
+        OptimizedObjectInputStream objIn = null;
 
         try {
-            objIn = IgniteOptimizedObjectStreamRegistry.in();
+            objIn = OptimizedObjectStreamRegistry.in();
 
             objIn.classLoader(clsLdr != null ? clsLdr : dfltClsLdr);
 
@@ -340,7 +340,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
                 clsLdr, e);
         }
         finally {
-            IgniteOptimizedObjectStreamRegistry.closeIn(objIn);
+            OptimizedObjectStreamRegistry.closeIn(objIn);
         }
     }
 
@@ -381,13 +381,13 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
      * @param ldr Class loader being undeployed.
      */
     public static void onUndeploy(ClassLoader ldr) {
-        IgniteOptimizedMarshallerUtils.onUndeploy(ldr);
+        OptimizedMarshallerUtils.onUndeploy(ldr);
     }
 
     /**
      * Clears internal caches and frees memory. Usually called on system stop.
      */
     public static void clearCache() {
-        IgniteOptimizedMarshallerUtils.clearCache();
+        OptimizedMarshallerUtils.clearCache();
     }
 }

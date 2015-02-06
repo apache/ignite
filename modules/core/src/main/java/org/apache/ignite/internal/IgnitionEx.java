@@ -1503,7 +1503,7 @@ public class IgnitionEx {
 
             MBeanServer mbSrv = cfg.getMBeanServer();
 
-            IgniteMarshaller marsh = cfg.getMarshaller();
+            Marshaller marsh = cfg.getMarshaller();
 
             String[] p2pExclude = cfg.getPeerClassLoadingLocalClassPathExclude();
 
@@ -1641,9 +1641,9 @@ public class IgnitionEx {
                         "object serialization performance will be significantly slower.",
                         "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release.");
 
-                    marsh = new IgniteJdkMarshaller();
+                    marsh = new JdkMarshaller();
                 }
-                else if (!IgniteOptimizedMarshaller.available()) {
+                else if (!OptimizedMarshaller.available()) {
                     U.warn(log, "GridOptimizedMarshaller is not supported on this JVM " +
                         "(only recent 1.6 and 1.7 versions HotSpot VMs are supported). " +
                         "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release. " +
@@ -1651,12 +1651,12 @@ public class IgnitionEx {
                         "object serialization performance will be significantly slower.",
                         "To enable fast marshalling upgrade to recent 1.6 or 1.7 HotSpot VM release.");
 
-                    marsh = new IgniteJdkMarshaller();
+                    marsh = new JdkMarshaller();
                 }
                 else
-                    marsh = new IgniteOptimizedMarshaller();
+                    marsh = new OptimizedMarshaller();
             }
-            else if (marsh instanceof IgniteOptimizedMarshaller && !U.isHotSpot()) {
+            else if (marsh instanceof OptimizedMarshaller && !U.isHotSpot()) {
                 U.warn(log, "Using GridOptimizedMarshaller on untested JVM (only Java HotSpot VMs were tested) - " +
                     "object serialization behavior could yield unexpected results.",
                     "Using GridOptimizedMarshaller on untested JVM.");

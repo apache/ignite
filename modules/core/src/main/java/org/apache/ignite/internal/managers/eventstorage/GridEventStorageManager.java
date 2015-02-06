@@ -65,7 +65,7 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
     private final int len;
 
     /** Marshaller. */
-    private final IgniteMarshaller marsh;
+    private final Marshaller marsh;
 
     /** Request listener. */
     private RequestListener msgLsnr;

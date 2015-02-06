@@ -77,7 +77,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
             }
         });
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }

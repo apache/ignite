@@ -53,7 +53,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
     private final DelayQueue<IgniteDataLoaderImpl<K, V>> flushQ = new DelayQueue<>();
 
     /** Marshaller. */
-    private final IgniteMarshaller marsh;
+    private final Marshaller marsh;
 
     /**
      * @param ctx Kernal context.

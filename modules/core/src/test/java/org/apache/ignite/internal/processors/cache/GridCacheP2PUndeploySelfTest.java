@@ -73,7 +73,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(spi);
 
-        cfg.setMarshaller(new IgniteJdkMarshaller());
+        cfg.setMarshaller(new JdkMarshaller());
 
         cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 

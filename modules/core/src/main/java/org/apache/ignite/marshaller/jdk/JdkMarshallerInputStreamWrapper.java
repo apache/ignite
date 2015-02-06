@@ -22,7 +22,7 @@ import java.io.*;
 /**
  * Wrapper for {@link InputStream}.
  */
-class IgniteJdkMarshallerInputStreamWrapper extends InputStream {
+class JdkMarshallerInputStreamWrapper extends InputStream {
     /** */
     private InputStream in;
 
@@ -31,7 +31,7 @@ class IgniteJdkMarshallerInputStreamWrapper extends InputStream {
      *
      * @param in Wrapped input stream
      */
-    IgniteJdkMarshallerInputStreamWrapper(InputStream in) {
+    JdkMarshallerInputStreamWrapper(InputStream in) {
         assert in != null;
 
         this.in = in;

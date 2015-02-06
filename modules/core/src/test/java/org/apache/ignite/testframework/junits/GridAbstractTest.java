@@ -1018,8 +1018,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Path for specific marshaller.
      */
     @SuppressWarnings({"IfMayBeConditional", "deprecation"})
-    protected String getDefaultCheckpointPath(IgniteMarshaller marshaller) {
-        if (marshaller instanceof IgniteJdkMarshaller)
+    protected String getDefaultCheckpointPath(Marshaller marshaller) {
+        if (marshaller instanceof JdkMarshaller)
             return SharedFsCheckpointSpi.DFLT_DIR_PATH + "/jdk/";
         else
             return SharedFsCheckpointSpi.DFLT_DIR_PATH + '/' + marshaller.getClass().getSimpleName() + '/';
@@ -1188,8 +1188,8 @@ public abstract class GridAbstractTest extends TestCase {
 
                 // Remove resources cached in static, if any.
                 GridClassLoaderCache.clear();
-                IgniteOptimizedMarshaller.clearCache();
-                IgniteMarshallerExclusions.clearCache();
+                OptimizedMarshaller.clearCache();
+                MarshallerExclusions.clearCache();
                 GridEnumCache.clear();
             }
 

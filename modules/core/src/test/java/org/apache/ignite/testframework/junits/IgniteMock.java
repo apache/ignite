@@ -14,7 +14,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.marshaller.IgniteMarshaller;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.internal.product.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.plugin.security.*;
@@ -38,7 +38,7 @@ public class IgniteMock implements Ignite {
     private final UUID nodeId;
 
     /** */
-    private IgniteMarshaller marshaller;
+    private Marshaller marshaller;
 
     /** */
     private final MBeanServer jmx;
@@ -57,7 +57,7 @@ public class IgniteMock implements Ignite {
      * @param home Ignite home.
      */
     public IgniteMock(
-        String name, String locHost, UUID nodeId, IgniteMarshaller marshaller, MBeanServer jmx, String home) {
+        String name, String locHost, UUID nodeId, Marshaller marshaller, MBeanServer jmx, String home) {
         this.locHost = locHost;
         this.nodeId = nodeId;
         this.marshaller = marshaller;

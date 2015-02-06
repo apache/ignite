@@ -100,7 +100,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
             false
         );
 
-        IgniteMarshaller marshaller = getTestResources().getMarshaller();
+        Marshaller marshaller = getTestResources().getMarshaller();
 
         GridCacheMvccCandidate<String> unmarshalled = marshaller.unmarshal(marshaller.marshal(cand), null);
 

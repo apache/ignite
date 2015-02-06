@@ -35,7 +35,7 @@ import java.util.concurrent.*;
  */
 public class GridGgfsPathSelfTest extends GridCommonAbstractTest {
     /** Marshaller to test {@link Externalizable} interface. */
-    private final IgniteMarshaller marshaller = new IgniteOptimizedMarshaller();
+    private final Marshaller marshaller = new OptimizedMarshaller();
 
     /**
      * Test public methods of ggfs path.

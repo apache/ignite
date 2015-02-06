@@ -37,7 +37,7 @@
         <property name="restEnabled" value="false"/>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
+            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
                 <property name="requireSerializable" value="false"/>
             </bean>
         </property>

@@ -28,7 +28,7 @@ import java.util.concurrent.*;
 /**
  * Storage for object streams.
  */
-class IgniteOptimizedObjectStreamRegistry {
+class OptimizedObjectStreamRegistry {
     /** Holders. */
     private static final ThreadLocal<StreamHolder> holders = new ThreadLocal<>();
 
@@ -38,7 +38,7 @@ class IgniteOptimizedObjectStreamRegistry {
     /**
      * Ensures singleton.
      */
-    private IgniteOptimizedObjectStreamRegistry() {
+    private OptimizedObjectStreamRegistry() {
         // No-op.
     }
 
@@ -67,7 +67,7 @@ class IgniteOptimizedObjectStreamRegistry {
      * @return Object output stream.
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread is interrupted while trying to take holder from pool.
      */
-    static IgniteOptimizedObjectOutputStream out() throws IgniteInterruptedCheckedException {
+    static OptimizedObjectOutputStream out() throws IgniteInterruptedCheckedException {
         return holder().acquireOut();
     }
 
@@ -77,7 +77,7 @@ class IgniteOptimizedObjectStreamRegistry {
      * @return Object input stream.
      * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread is interrupted while trying to take holder from pool.
      */
-    static IgniteOptimizedObjectInputStream in() throws IgniteInterruptedCheckedException {
+    static OptimizedObjectInputStream in() throws IgniteInterruptedCheckedException {
         return holder().acquireIn();
     }
 
@@ -86,7 +86,7 @@ class IgniteOptimizedObjectStreamRegistry {
      *
      * @param out Object output stream.
      */
-    static void closeOut(IgniteOptimizedObjectOutputStream out) {
+    static void closeOut(OptimizedObjectOutputStream out) {
         U.close(out, null);
 
         StreamHolder holder = holders.get();
@@ -108,7 +108,7 @@ class IgniteOptimizedObjectStreamRegistry {
      * @param in Object input stream.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    static void closeIn(IgniteOptimizedObjectInputStream in) {
+    static void closeIn(OptimizedObjectInputStream in) {
         U.close(in, null);
 
         StreamHolder holder = holders.get();
@@ -150,10 +150,10 @@ class IgniteOptimizedObjectStreamRegistry {
      */
     private static class StreamHolder {
         /** Output stream. */
-        private final IgniteOptimizedObjectOutputStream out = createOut();
+        private final OptimizedObjectOutputStream out = createOut();
 
         /** Input stream. */
-        private final IgniteOptimizedObjectInputStream in = createIn();
+        private final OptimizedObjectInputStream in = createIn();
 
         /** Output streams counter. */
         private int outAcquireCnt;
@@ -166,7 +166,7 @@ class IgniteOptimizedObjectStreamRegistry {
          *
          * @return Object output stream.
          */
-        IgniteOptimizedObjectOutputStream acquireOut() {
+        OptimizedObjectOutputStream acquireOut() {
             return outAcquireCnt++ > 0 ? createOut() : out;
         }
 
@@ -175,7 +175,7 @@ class IgniteOptimizedObjectStreamRegistry {
          *
          * @return Object input stream.
          */
-        IgniteOptimizedObjectInputStream acquireIn() {
+        OptimizedObjectInputStream acquireIn() {
             return inAcquireCnt++ > 0 ? createIn() : in;
         }
 
@@ -198,9 +198,9 @@ class IgniteOptimizedObjectStreamRegistry {
          *
          * @return Object output stream.
          */
-        private IgniteOptimizedObjectOutputStream createOut() {
+        private OptimizedObjectOutputStream createOut() {
             try {
-                return new IgniteOptimizedObjectOutputStream(new GridUnsafeDataOutput(4 * 1024));
+                return new OptimizedObjectOutputStream(new GridUnsafeDataOutput(4 * 1024));
             }
             catch (IOException e) {
                 throw new IgniteException("Failed to create object output stream.", e);
@@ -212,9 +212,9 @@ class IgniteOptimizedObjectStreamRegistry {
          *
          * @return Object input stream.
          */
-        private IgniteOptimizedObjectInputStream createIn() {
+        private OptimizedObjectInputStream createIn() {
             try {
-                return new IgniteOptimizedObjectInputStream(new GridUnsafeDataInput());
+                return new OptimizedObjectInputStream(new GridUnsafeDataInput());
             }
             catch (IOException e) {
                 throw new IgniteException("Failed to create object input stream.", e);

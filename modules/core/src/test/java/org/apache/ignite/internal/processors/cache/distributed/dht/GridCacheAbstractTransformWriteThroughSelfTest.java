@@ -100,7 +100,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

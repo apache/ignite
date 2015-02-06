@@ -124,7 +124,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
         injectLogger(spi);
 
         ctx.config().setCommunicationSpi(spi);
-        ctx.config().setMarshaller(new IgniteOptimizedMarshaller());
+        ctx.config().setMarshaller(new OptimizedMarshaller());
 
         GridIoManager mgr = new GridIoManager(ctx);
 

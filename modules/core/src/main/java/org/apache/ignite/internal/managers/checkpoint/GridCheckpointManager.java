@@ -62,7 +62,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
         MAX_CLOSED_SESS, MAX_CLOSED_SESS, 0.75f, 256, PER_SEGMENT_Q);
 
     /** Grid marshaller. */
-    private final IgniteMarshaller marsh;
+    private final Marshaller marsh;
 
     /**
      * @param ctx Grid kernal context.

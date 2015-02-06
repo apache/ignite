@@ -61,7 +61,7 @@ public class MemcacheRestExampleNodeStartup {
         cfg.setDeploymentMode(SHARED);
         cfg.setPeerClassLoadingEnabled(true);
 
-        IgniteOptimizedMarshaller marsh = new IgniteOptimizedMarshaller();
+        OptimizedMarshaller marsh = new OptimizedMarshaller();
 
         marsh.setRequireSerializable(false);
 

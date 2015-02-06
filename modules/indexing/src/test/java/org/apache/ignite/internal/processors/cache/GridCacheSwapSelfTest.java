@@ -89,7 +89,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
         cfg.setPeerClassLoadingLocalClassPathExclude(GridCacheSwapSelfTest.class.getName(),
             CacheValue.class.getName());
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }
