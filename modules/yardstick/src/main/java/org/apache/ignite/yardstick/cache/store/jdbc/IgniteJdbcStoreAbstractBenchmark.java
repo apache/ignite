@@ -82,14 +82,20 @@ public abstract class IgniteJdbcStoreAbstractBenchmark extends IgniteAbstractBen
 
             PreparedStatement orgStmt = conn.prepareStatement("INSERT INTO SAMPLE(id, value) VALUES (?, ?)");
 
-            for (int i = 0; i < fillRange(); i++) {
+            int i;
+
+            for (i = 1; i <= fillRange(); i++) {
                 orgStmt.setInt(1, i);
                 orgStmt.setInt(2, i);
 
                 orgStmt.addBatch();
+
+                if (i % 1000 == 0)
+                    orgStmt.executeBatch();
             }
 
-            orgStmt.executeBatch();
+            if (i % 1000 != 0)
+                orgStmt.executeBatch();
 
             conn.commit();
 

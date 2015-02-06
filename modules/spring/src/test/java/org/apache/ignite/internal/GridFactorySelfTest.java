@@ -88,7 +88,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         try {
             srv = GridEmbeddedHttpServer.startHttpServer().withFileDownloadingHandler(null,
-                GridTestUtils.resolveGridGainPath("/modules/core/src/test/config/default-spring-url-testing.xml"));
+                GridTestUtils.resolveIgnitePath("/modules/core/src/test/config/default-spring-url-testing.xml"));
 
             Ignite ignite = G.start(srv.getBaseUrl());
 
@@ -111,7 +111,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         try {
             srv = GridEmbeddedHttpServer.startHttpServer().withFileDownloadingHandler(null,
-                GridTestUtils.resolveGridGainPath("modules/core/src/test/config/default-spring-url-testing.xml"));
+                GridTestUtils.resolveIgnitePath("modules/core/src/test/config/default-spring-url-testing.xml"));
 
             Ignite ignite = G.start(new URL(srv.getBaseUrl()));
 
@@ -208,7 +208,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     public void testStartMultipleGridsFromSpring() throws Exception {
         File cfgFile =
-            GridTestUtils.resolveGridGainPath(GridTestProperties.getProperty("loader.self.multipletest.config"));
+            GridTestUtils.resolveIgnitePath(GridTestProperties.getProperty("loader.self.multipletest.config"));
 
         assert cfgFile != null;
 
@@ -709,7 +709,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         try {
             GenericApplicationContext ctx = new GenericApplicationContext();
 
-            new XmlBeanDefinitionReader(ctx).loadBeanDefinitions(new UrlResource(U.resolveGridGainUrl(path)));
+            new XmlBeanDefinitionReader(ctx).loadBeanDefinitions(new UrlResource(U.resolveIgniteUrl(path)));
 
             ctx.refresh();
 

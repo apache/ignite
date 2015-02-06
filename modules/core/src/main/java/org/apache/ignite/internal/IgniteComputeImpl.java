@@ -81,7 +81,7 @@ public class IgniteComputeImpl extends IgniteAsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public void affinityRun(@Nullable String cacheName, Object affKey, Runnable job) {
+    @Override public void affinityRun(@Nullable String cacheName, Object affKey, IgniteRunnable job) {
         A.notNull(affKey, "affKey");
         A.notNull(job, "job");
 
@@ -99,7 +99,7 @@ public class IgniteComputeImpl extends IgniteAsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job) {
+    @Override public <R> R affinityCall(@Nullable String cacheName, Object affKey, IgniteCallable<R> job) {
         A.notNull(affKey, "affKey");
         A.notNull(job, "job");
 
@@ -117,6 +117,7 @@ public class IgniteComputeImpl extends IgniteAsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T, R> R execute(String taskName, @Nullable T arg) {
         A.notNull(taskName, "taskName");
 
@@ -219,7 +220,7 @@ public class IgniteComputeImpl extends IgniteAsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public void broadcast(Runnable job) {
+    @Override public void broadcast(IgniteRunnable job) {
         A.notNull(job, "job");
 
         guard();
@@ -236,7 +237,7 @@ public class IgniteComputeImpl extends IgniteAsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public <R> Collection<R> broadcast(Callable<R> job) {
+    @Override public <R> Collection<R> broadcast(IgniteCallable<R> job) {
         A.notNull(job, "job");
 
         guard();
@@ -270,7 +271,7 @@ public class IgniteComputeImpl extends IgniteAsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public void run(Runnable job) {
+    @Override public void run(IgniteRunnable job) {
         A.notNull(job, "job");
 
         guard();
@@ -287,7 +288,7 @@ public class IgniteComputeImpl extends IgniteAsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public void run(Collection<? extends Runnable> jobs) {
+    @Override public void run(Collection<? extends IgniteRunnable> jobs) {
         A.notEmpty(jobs, "jobs");
 
         guard();
@@ -321,7 +322,7 @@ public class IgniteComputeImpl extends IgniteAsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R call(Callable<R> job) {
+    @Override public <R> R call(IgniteCallable<R> job) {
         A.notNull(job, "job");
 
         guard();
@@ -338,13 +339,13 @@ public class IgniteComputeImpl extends IgniteAsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public <R> Collection<R> call(Collection<? extends Callable<R>> jobs) {
+    @Override public <R> Collection<R> call(Collection<? extends IgniteCallable<R>> jobs) {
         A.notEmpty(jobs, "jobs");
 
         guard();
 
         try {
-            return saveOrGet(ctx.closure().callAsync(BALANCE, jobs, prj.nodes()));
+            return saveOrGet(ctx.closure().callAsync(BALANCE, (Collection<? extends Callable<R>>)jobs, prj.nodes()));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -373,7 +374,7 @@ public class IgniteComputeImpl extends IgniteAsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override public <R1, R2> R2 call(Collection<? extends Callable<R1>> jobs, IgniteReducer<R1, R2> rdc) {
+    @Override public <R1, R2> R2 call(Collection<? extends IgniteCallable<R1>> jobs, IgniteReducer<R1, R2> rdc) {
         A.notEmpty(jobs, "jobs");
         A.notNull(rdc, "rdc");
 

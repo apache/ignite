@@ -30,7 +30,7 @@ import java.util.*;
  * are my top 10 best selling products over last 24 hours?", or "Who are my top 10 users out of
  * last 1,000,000 users who logged in?"
  * <p>
- * GridGain comes with following rolling windows implementations out of the box:
+ * Ignite comes with following rolling windows implementations out of the box:
  * <ul>
  * <li>{@link org.apache.ignite.streamer.window.StreamerUnboundedWindow}</li>
  * <li>{@link org.apache.ignite.streamer.window.StreamerBoundedSizeWindow}</li>

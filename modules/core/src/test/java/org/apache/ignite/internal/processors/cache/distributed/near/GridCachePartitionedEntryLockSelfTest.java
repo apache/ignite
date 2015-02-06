@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.lang.*;
 
 import java.util.concurrent.*;
 
@@ -60,7 +61,7 @@ public class GridCachePartitionedEntryLockSelfTest extends GridCacheAbstractSelf
 
                 IgniteCompute comp = compute(grid(i).forLocal()).withAsync();
 
-                comp.call(new Callable<Boolean>() {
+                comp.call(new IgniteCallable<Boolean>() {
                     @Override public Boolean call() throws Exception {
                         IgniteInternalFuture<Boolean> f = e.lockAsync(1000);
 

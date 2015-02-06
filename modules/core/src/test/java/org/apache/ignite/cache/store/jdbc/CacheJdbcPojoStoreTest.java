@@ -90,16 +90,15 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
 
 //        PGPoolingDataSource ds = new PGPoolingDataSource();
 //        ds.setUser("postgres");
-//        ds.setPassword("1");
-//        ds.setServerName("192.168.1.47");
+//        ds.setPassword("postgres");
+//        ds.setServerName("ip");
 //        ds.setDatabaseName("postgres");
 //        store.setDataSource(ds);
 
 //        MysqlDataSource ds = new MysqlDataSource();
-//        ds.setURL("jdbc:mysql://192.168.1.12:3306/test");
-//        ds.setUser("test");
-//        ds.setPassword("1");
-//        store.setDataSource(ds);
+//        ds.setURL("jdbc:mysql://ip:port/dbname");
+//        ds.setUser("mysql");
+//        ds.setPassword("mysql");
 
         store.setDataSource(JdbcConnectionPool.create(DFLT_CONN_URL, "sa", ""));
 
@@ -251,10 +250,28 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
 
         U.closeQuiet(prnStmt);
 
+        PreparedStatement prnComplexStmt = conn.prepareStatement("INSERT INTO Person_Complex(id, org_id, city_id, name) VALUES (?, ?, ?, ?)");
+
+        for (int i = 0; i < PERSON_CNT; i++) {
+            prnComplexStmt.setInt(1, i);
+            prnComplexStmt.setInt(2, i % 500);
+            prnComplexStmt.setInt(3, i % 100);
+            prnComplexStmt.setString(4, "name" + i);
+
+            prnComplexStmt.addBatch();
+        }
+
+        prnComplexStmt.executeBatch();
+
+        U.closeQuiet(prnComplexStmt);
+
+        conn.commit();
+
         U.closeQuiet(conn);
 
         final Collection<OrganizationKey> orgKeys = new ConcurrentLinkedQueue<>();
         final Collection<PersonKey> prnKeys = new ConcurrentLinkedQueue<>();
+        final Collection<PersonComplexKey> prnComplexKeys = new ConcurrentLinkedQueue<>();
 
         IgniteBiInClosure<Object, Object> c = new CI2<Object, Object>() {
             @Override public void apply(Object k, Object v) {
@@ -262,6 +279,17 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
                     orgKeys.add((OrganizationKey)k);
                 else if (k instanceof PersonKey && v instanceof Person)
                     prnKeys.add((PersonKey)k);
+                else if (k instanceof PersonComplexKey && v instanceof Person) {
+                    PersonComplexKey key = (PersonComplexKey)k;
+
+                    Person val = (Person)v;
+
+                    assert key.getId() == val.getId();
+                    assert key.getOrgId() == val.getOrgId();
+                    assert ("name"  + key.getId()).equals(val.getName());
+
+                    prnComplexKeys.add((PersonComplexKey)k);
+                }
             }
         };
 
@@ -269,17 +297,36 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
 
         assertEquals(ORGANIZATION_CNT, orgKeys.size());
         assertEquals(PERSON_CNT, prnKeys.size());
+        assertEquals(PERSON_CNT, prnComplexKeys.size());
 
-        store.deleteAll(orgKeys);
-        store.deleteAll(prnKeys);
+        Collection<OrganizationKey> tmpOrgKeys = new ArrayList<>(orgKeys);
+        Collection<PersonKey> tmpPrnKeys = new ArrayList<>(prnKeys);
+        Collection<PersonComplexKey> tmpPrnComplexKeys = new ArrayList<>(prnComplexKeys);
 
         orgKeys.clear();
         prnKeys.clear();
+        prnComplexKeys.clear();
+
+        store.loadCache(c, OrganizationKey.class.getName(), "SELECT name, city, id FROM ORGANIZATION",
+            PersonKey.class.getName(), "SELECT org_id, id, name FROM Person WHERE id < 1000");
+
+        assertEquals(ORGANIZATION_CNT, orgKeys.size());
+        assertEquals(1000, prnKeys.size());
+        assertEquals(0, prnComplexKeys.size());
+
+        store.deleteAll(tmpOrgKeys);
+        store.deleteAll(tmpPrnKeys);
+        store.deleteAll(tmpPrnComplexKeys);
+
+        orgKeys.clear();
+        prnKeys.clear();
+        prnComplexKeys.clear();
 
         store.loadCache(c);
 
         assertTrue(orgKeys.isEmpty());
         assertTrue(prnKeys.isEmpty());
+        assertTrue(prnComplexKeys.isEmpty());
     }
 
     /**
@@ -323,6 +370,15 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
         ses.newSession(null);
 
         assertNull(store.load(k3));
+
+        OrganizationKey k4 = new OrganizationKey(4);
+        Organization v4 = new Organization(4, null, "City4");
+
+        assertNull(store.load(k4));
+
+        store.write(new CacheEntryImpl<>(k4, v4));
+
+        assertEquals(v4, store.load(k4));
     }
 
     /**
@@ -692,6 +748,7 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
 
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Organization (id integer not null, name varchar(50), city varchar(50), PRIMARY KEY(id))");
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Person (id integer not null, org_id integer, name varchar(50), PRIMARY KEY(id))");
+        stmt.executeUpdate("CREATE TABLE IF NOT EXISTS Person_Complex (id integer not null, org_id integer not null, city_id integer not null, name varchar(50), PRIMARY KEY(id))");
 
         conn.commit();
 

@@ -35,7 +35,7 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
      * @throws Exception If failed.
      */
     public void testTaskCorrect() throws Exception {
-        proceedTest("correct.gar", "gridgain.xml",
+        proceedTest("correct.gar", "ignite.xml",
             "org.apache.ignite.spi.deployment.uri.tasks.GridUriDeploymentTestTask0", true);
     }
 
@@ -43,26 +43,26 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
      * @throws Exception If failed.
      */
     public void testTaskWithBrokenXML() throws Exception {
-        proceedTest("broken.gar", "gridgain.brokenxml", "brokenxml-task", false);
+        proceedTest("broken.gar", "ignite.brokenxml", "brokenxml-task", false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTaskWithEmptyXML() throws Exception {
-        proceedTest("empty.gar", "gridgain.empty", "emptyxml-task", false);
+        proceedTest("empty.gar", "ignite.empty", "emptyxml-task", false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTaskWithIncorrectRefsXML() throws Exception {
-        proceedTest("incorrefs.gar", "gridgain.incorrefs", "incorrectref-task", false);
+        proceedTest("incorrefs.gar", "ignite.incorrefs", "incorrectref-task", false);
     }
 
     /**
      * @param garFileName Name of .gar file.
-     * @param garDescFileName Name of GridGain descriptor file.
+     * @param garDescFileName Name of Ignite descriptor file.
      * @param taskId Task id.
      * @param deployed If {@code true} then givent task should be deployed after test,
      *      if {@code false} then it should be undeployed.
@@ -77,7 +77,7 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
         String baseDirName = tmpDirName + File.separator + System.currentTimeMillis();
         String metaDirName = baseDirName + File.separator + "META-INF";
         String garDescDirName =
-            U.resolveGridGainPath(GridTestProperties.getProperty("deploy.gar.descriptor.dir")) +
+            U.resolveIgnitePath(GridTestProperties.getProperty("deploy.gar.descriptor.dir")) +
             File.separator + garDescFileName;
 
         // Make base, META-INF and deployment dirs.
@@ -98,7 +98,7 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
         assert mkdir;
 
         // Make Gar file
-        U.copy( new File(garDescDirName), new File(metaDirName + File.separator + "gridgain.xml"), true);
+        U.copy( new File(garDescDirName), new File(metaDirName + File.separator + "ignite.xml"), true);
 
         // Copy files to basedir
         U.copy(new File(srcDirName), new File(baseDirName), true);

@@ -18,6 +18,6 @@
 package org.apache.ignite.scalar
 
 /**
- * Contains Scala "Pimp" implementations for main GridGain entities.
+ * Contains Scala "Pimp" implementations for main Ignite entities.
  */
 package object pimps

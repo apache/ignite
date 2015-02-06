@@ -94,7 +94,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         for (int i = 0; i < gridCount(); i++) {
             ClusterNode node = grid(i).localNode();
 
-            GridCacheAttributes[] nodeAttrs = node.attribute(GridNodeAttributes.ATTR_CACHE);
+            GridCacheAttributes[] nodeAttrs = node.attribute(IgniteNodeAttributes.ATTR_CACHE);
 
             info("Cache attribtues for node [nodeId=" + node.id() + ", attrs=" +
                 Arrays.asList(nodeAttrs) + ']');

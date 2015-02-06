@@ -822,7 +822,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
             assert false : e.getMessage();
         }
 
-        String s = "gridgain functional programming";
+        String s = "ignite functional programming";
 
         IgniteOutClosure<Boolean> co = F.coInvoke(s, "contains", "prog");
 
@@ -837,7 +837,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
 
         Collection<String> strs = new ArrayList<>();
 
-        strs.add("GridGain");
+        strs.add("Ignite");
         strs.add("Cloud");
         strs.add("Compute");
         strs.add("Data");

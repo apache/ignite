@@ -41,7 +41,7 @@ checkJava
 #
 # Discover IGNITE_HOME environment variable.
 #
-setGridGainHome
+setIgniteHome
 
 if [ "${DEFAULT_CONFIG}" == "" ]; then
     DEFAULT_CONFIG=config/default-config.xml
@@ -75,7 +75,7 @@ findAvailableJmxPort
 osname=`uname`
 
 if [ "${DOCK_OPTS}" == "" ]; then
-    DOCK_OPTS="-Xdock:name=GridGain Node"
+    DOCK_OPTS="-Xdock:name=Ignite Node"
 fi
 
 #

@@ -18,7 +18,7 @@
   -->
 
 <!--
-    GridGain Spring configuration file for testing ping pong example.
+    Ignite Spring configuration file for testing ping pong example.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -81,7 +81,7 @@
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
                     <!--
-                        GridGain provides several options for automatic discovery that can be used
+                        Ignite provides several options for automatic discovery that can be used
                         instead os static IP based discovery. For information on all options refer
                         to our documentation: http://doc.gridgain.org/latest/Automatic+Node+Discovery
                     -->

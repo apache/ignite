@@ -183,7 +183,7 @@ public class GridClientConfiguration {
     /**
      * Collection of {@code 'host:port'} pairs representing
      * remote grid servers used to establish initial connection to
-     * the grid. Once connection is established, GridGain will get
+     * the grid. Once connection is established, Ignite will get
      * a full view on grid topology and will be able to connect to
      * any available remote node.
      * <p>
@@ -611,7 +611,7 @@ public class GridClientConfiguration {
      * <p>
      * Options, that can be used out-of-the-box:
      * <ul>
-     *     <li>{@link GridClientOptimizedMarshaller} (default) - GridGain's optimized marshaller.</li>
+     *     <li>{@link GridClientOptimizedMarshaller} (default) - Ignite's optimized marshaller.</li>
      *     <li>{@code GridClientPortableMarshaller} - Marshaller that supports portable objects.</li>
      *     <li>{@link GridClientJdkMarshaller} - JDK marshaller (not recommended).</li>
      * </ul>

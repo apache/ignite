@@ -52,7 +52,7 @@ import java.util.zip.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
 /**
@@ -178,7 +178,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         // at java.lang.management.MemoryUsage.<init>(MemoryUsage.java:105)
         // at com.ibm.lang.management.MemoryMXBeanImpl.getNonHeapMemoryUsageImpl(Native Method)
         // at com.ibm.lang.management.MemoryMXBeanImpl.getNonHeapMemoryUsage(MemoryMXBeanImpl.java:143)
-        // at org.gridgain.grid.spi.metrics.jdk.GridJdkLocalMetricsSpi.getMetrics(GridJdkLocalMetricsSpi.java:242)
+        // at org.apache.ignite.spi.metrics.jdk.GridJdkLocalMetricsSpi.getMetrics(GridJdkLocalMetricsSpi.java:242)
         //
         // We so had to workaround this with exception handling, because we can not control classes from WebSphere.
         try {
@@ -206,7 +206,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             // No-op.
         }
 
-        attrs.put(GridNodeAttributes.ATTR_PHY_RAM, totSysMemory);
+        attrs.put(IgniteNodeAttributes.ATTR_PHY_RAM, totSysMemory);
 
         getSpi().setNodeAttributes(attrs, ver);
     }

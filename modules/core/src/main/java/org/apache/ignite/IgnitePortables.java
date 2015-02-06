@@ -43,7 +43,7 @@ import java.util.Date;
  * </ul>
  * <h1 class="header">Working With Portables Directly</h1>
  * Once an object is defined as portable,
- * GridGain will always store it in memory in the portable (i.e. binary) format.
+ * Ignite will always store it in memory in the portable (i.e. binary) format.
  * User can choose to work either with the portable format or with the deserialized form
  * (assuming that class definitions are present in the classpath).
  * <p>
@@ -63,7 +63,7 @@ import java.util.Date;
  * </pre>
  * Alternatively, if we have class definitions in the classpath, we may choose to work with deserialized
  * typed objects at all times. In this case we do incur the deserialization cost, however,
- * GridGain will only deserialize on the first access and will cache the deserialized object,
+ * Ignite will only deserialize on the first access and will cache the deserialized object,
  * so it does not have to be deserialized again:
  * <pre name=code class=java>
  * CacheProjection&lt;MyKey.class, MyValue.class&gt; prj =
@@ -99,15 +99,15 @@ import java.util.Date;
  * </ul>
  * <h1 class="header">Working With Maps and Collections</h1>
  * All maps and collections in the portable objects are serialized automatically. When working
- * with different platforms, e.g. C++ or .NET, GridGain will automatically pick the most
+ * with different platforms, e.g. C++ or .NET, Ignite will automatically pick the most
  * adequate collection or map in either language. For example, {@link ArrayList} in Java will become
  * {@code List} in C#, {@link LinkedList} in Java is {@link LinkedList} in C#, {@link HashMap}
  * in Java is {@code Dictionary} in C#, and {@link TreeMap} in Java becomes {@code SortedDictionary}
  * in C#, etc.
  * <h1 class="header">Building Portable Objects</h1>
- * GridGain comes with {@link org.apache.ignite.portables.PortableBuilder} which allows to build portable objects dynamically:
+ * Ignite comes with {@link org.apache.ignite.portables.PortableBuilder} which allows to build portable objects dynamically:
  * <pre name=code class=java>
- * GridPortableBuilder builder = GridGain.grid().portables().builder();
+ * GridPortableBuilder builder = Ignition.ignite().portables().builder();
  *
  * builder.typeId("MyObject");
  *
@@ -125,13 +125,13 @@ import java.util.Date;
  * obj.setFieldA("A");
  * obj.setFieldB(123);
  *
- * GridPortableObject portableObj = GridGain.grid().portables().toPortable(obj);
+ * GridPortableObject portableObj = Ignition.ignite().portables().toPortable(obj);
  * </pre>
  * NOTE: you don't need to convert typed objects to portable format before storing
- * them in cache, GridGain will do that automatically.
+ * them in cache, Ignite will do that automatically.
  * <h1 class="header">Portable Metadata</h1>
- * Even though GridGain portable protocol only works with hash codes for type and field names
- * to achieve better performance, GridGain provides metadata for all portable types which
+ * Even though Ignite portable protocol only works with hash codes for type and field names
+ * to achieve better performance, Ignite provides metadata for all portable types which
  * can be queried ar runtime via any of the {@link IgnitePortables#metadata(Class) GridPortables.metadata(...)}
  * methods. Having metadata also allows for proper formatting of {@code GridPortableObject.toString()} method,
  * even when portable objects are kept in binary format only, which may be necessary for audit reasons.
@@ -146,7 +146,7 @@ import java.util.Date;
  * automatically.
  * <h1 class="header">Configuration</h1>
  * To make any object portable, you have to specify it in {@link org.apache.ignite.portables.PortableConfiguration}
- * at startup. The only requirement GridGain imposes is that your object has an empty
+ * at startup. The only requirement Ignite imposes is that your object has an empty
  * constructor. Note, that since server side does not have to know the class definition,
  * you only need to list portable objects in configuration on the client side. However, if you
  * list them on the server side as well, then you get the ability to deserialize portable objects
@@ -157,11 +157,11 @@ import java.util.Date;
  * ...
  * &lt;!-- Portable objects configuration. --&gt;
  * &lt;property name="portableConfiguration"&gt;
- *     &lt;bean class="org.gridgain.grid.portables.GridPortableConfiguration"&gt;
+ *     &lt;bean class="org.apache.ignite.portables.PortableConfiguration"&gt;
  *         &lt;property name="classNames"&gt;
  *             &lt;list&gt;
  *                 &lt;value&gt;my.package.for.portable.objects.*&lt;/value&gt;
- *                 &lt;value&gt;org.gridgain.examples.client.portable.Employee&lt;/value&gt;
+ *                 &lt;value&gt;org.apache.ignite.examples.client.portable.Employee&lt;/value&gt;
  *             &lt;/list&gt;
  *         &lt;/property&gt;
  *     &lt;/bean&gt;
@@ -192,12 +192,12 @@ import java.util.Date;
  * With portable objects you would have to do it as following:
  * <pre name=code class=xml>
  * &lt;property name="portableConfiguration"&gt;
- *     &lt;bean class="org.gridgain.grid.portables.GridPortableConfiguration"&gt;
+ *     &lt;bean class="org.apache.ignite.portables.PortableConfiguration"&gt;
  *         ...
  *         &lt;property name="typeConfigurations"&gt;
  *             &lt;list&gt;
- *                 &lt;bean class="org.gridgain.grid.portables.GridPortableTypeConfiguration"&gt;
- *                     &lt;property name="className" value="org.gridgain.examples.client.portable.EmployeeKey"/&gt;
+ *                 &lt;bean class="org.apache.ignite.portables.PortableTypeConfiguration"&gt;
+ *                     &lt;property name="className" value="org.apache.ignite.examples.client.portable.EmployeeKey"/&gt;
  *                     &lt;property name="affinityKeyFieldName" value="organizationId"/&gt;
  *                 &lt;/bean&gt;
  *             &lt;/list&gt;
@@ -207,7 +207,7 @@ import java.util.Date;
  * &lt;/property&gt;
  * </pre>
  * <h1 class="header">Serialization</h1>
- * Once portable object is specified in {@link org.apache.ignite.portables.PortableConfiguration}, GridGain will
+ * Once portable object is specified in {@link org.apache.ignite.portables.PortableConfiguration}, Ignite will
  * be able to serialize and deserialize it. However, you can provide your own custom
  * serialization logic by optionally implementing {@link org.apache.ignite.portables.PortableMarshalAware} interface, like so:
  * <pre name=code class=java>
@@ -246,7 +246,7 @@ import java.util.Date;
  * </ul>
  *
  * <h1 class="header">Custom ID Mappers</h1>
- * GridGain implementation uses name hash codes to generate IDs for class names or field names
+ * Ignite implementation uses name hash codes to generate IDs for class names or field names
  * internally. However, in cases when you want to provide your own ID mapping schema,
  * you can provide your own {@link org.apache.ignite.portables.PortableIdMapper} implementation.
  * <p>
@@ -258,7 +258,7 @@ import java.util.Date;
  * like so:
  * <pre name=code class=xml>
  * ...
- * &lt;bean class="org.gridgain.grid.cache.GridCacheConfiguration"&gt;
+ * &lt;bean class="org.apache.ignite.cache.CacheConfiguration"&gt;
  *     ...
  *     &lt;property name="queryConfiguration"&gt;
  *         &lt;bean class="CacheQueryConfiguration"&gt;

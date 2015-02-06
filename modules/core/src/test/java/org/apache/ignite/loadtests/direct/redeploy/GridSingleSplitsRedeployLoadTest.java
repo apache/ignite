@@ -38,7 +38,7 @@ import java.util.concurrent.*;
 @GridCommonTest(group = "Load Test")
 public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
     /** Load test task type ID. */
-    public static final String TASK_NAME = "org.gridgain.grid.tests.p2p.GridSingleSplitTestTask";
+    public static final String TASK_NAME = "org.apache.ignite.tests.p2p.SingleSplitTestTask";
 
     /** */
     public GridSingleSplitsRedeployLoadTest() {

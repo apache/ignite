@@ -47,7 +47,7 @@ import java.util.*;
  * Compute client also allows fetching contents of remote log files (including backwards mode) via any of
  * the provided {@code log(...)} methods.
  * <h1 class="header">Affinity Awareness</h1>
- * One of the unique properties of the GridGain remote clients is that they are
+ * One of the unique properties of the Ignite remote clients is that they are
  * affinity aware. In other words, both compute and data APIs will optionally
  * contact exactly the node where the data is cached based on some affinity key.
  * This allows for collocation of computations and data and avoids extra network
@@ -413,7 +413,7 @@ public interface GridClientCompute {
     public GridClientFuture<List<GridClientNode>> refreshTopologyAsync(boolean includeAttrs, boolean includeMetrics);
 
     /**
-     * Gets contents of default log file ({@code IGNITE_HOME/work/log/gridgain.log}).
+     * Gets contents of default log file ({@code IGNITE_HOME/work/log/ignite.log}).
      * Note that backward reading (with negative line indexes) supported for only 8-bit character encodings.
      *
      * @param lineFrom Index of line from which log is get, inclusive. Negative values mean line numbers
@@ -429,7 +429,7 @@ public interface GridClientCompute {
 
     /**
      * Asynchronously gets contents of default log file
-     * ({@code IGNITE_HOME/work/log/gridgain.log}).
+     * ({@code IGNITE_HOME/work/log/ignite.log}).
      * Note that backward reading (with negative line indexes) supported for only 8-bit character encodings.
      *
      * @param lineFrom Index of line from which log is get, inclusive. Negative values mean line numbers

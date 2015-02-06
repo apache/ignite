@@ -29,9 +29,7 @@ import java.util.concurrent.atomic.*;
 
 /**
  * Java server socket test.
- * <p>
- * http://gridgain.jira.com/browse/GG-2068
- * <p>
+ *
  * When binding server socket to the same port in multiple threads, either
  * BindException or SocketException may be thrown. Purpose of this test is
  * to find some explanation to that.
