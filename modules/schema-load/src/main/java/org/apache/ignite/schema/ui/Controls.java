@@ -315,8 +315,8 @@ public class Controls {
      * @param items Combo box items.
      * @return New {@code ComboBox} instance.
      */
-    public static ComboBox<String> comboBox(String tip, String... items) {
-        ComboBox<String> cb = new ComboBox<>(FXCollections.observableArrayList(items));
+    public static <T> ComboBox<T> comboBox(String tip, T... items) {
+        ComboBox<T> cb = new ComboBox<>(FXCollections.observableArrayList(items));
 
         cb.setMaxWidth(Double.MAX_VALUE);
         cb.getSelectionModel().select(0);
