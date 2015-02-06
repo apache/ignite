@@ -3586,7 +3586,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert jcache().isLocalLocked("key", false);
             assert jcache().isLocalLocked("key", true);
 
-            assert !forLocal(dfltIgnite).call(new Callable<Boolean>() {
+            assert !forLocal(dfltIgnite).call(new IgniteCallable<Boolean>() {
                 @Override public Boolean call() throws InterruptedException {
                     return lock.tryLock(100, MILLISECONDS);
                 }
@@ -3614,7 +3614,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             assert e.isLocked();
 
-            assert !forLocal(dfltIgnite).call(new Callable<Boolean>() {
+            assert !forLocal(dfltIgnite).call(new IgniteCallable<Boolean>() {
                 @Override public Boolean call() throws IgniteCheckedException {
                     return e.lock(100);
                 }
@@ -3647,7 +3647,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             IgniteCompute comp = forLocal(dfltIgnite).withAsync();
 
-            comp.call(new Callable<Boolean>() {
+            comp.call(new IgniteCallable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     assert !lock.tryLock();
 
@@ -3717,7 +3717,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             IgniteCompute comp = forLocal(dfltIgnite).withAsync();
 
-            comp.call(new Callable<Boolean>() {
+            comp.call(new IgniteCallable<Boolean>() {
                 @Override public Boolean call() throws Exception {
                     syncLatch.countDown();
 

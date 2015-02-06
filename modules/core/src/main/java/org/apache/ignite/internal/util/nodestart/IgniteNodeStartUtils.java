@@ -28,9 +28,9 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Util methods for {@code GridProjection.startNodes(..)} methods.
+ * Util methods for {@code IgniteCluster.startNodes(..)} methods.
  */
-public class GridNodeStartUtils {
+public class IgniteNodeStartUtils {
     /** Key for hostname. */
     public static final String HOST = "host";
 
@@ -50,7 +50,7 @@ public class GridNodeStartUtils {
     public static final String NODES = "nodes";
 
     /** Key for Ignite home folder. */
-    public static final String IGNITE_HOME = "ggHome";
+    public static final String IGNITE_HOME = "igniteHome";
 
     /** Key for configuration path. */
     public static final String CFG = "cfg";
@@ -85,7 +85,7 @@ public class GridNodeStartUtils {
     /**
      * Ensure singleton.
      */
-    private GridNodeStartUtils() {
+    private IgniteNodeStartUtils() {
         // No-op.
     }
 
@@ -213,19 +213,20 @@ public class GridNodeStartUtils {
      * @return Specification grouped by hosts.
      * @throws IgniteCheckedException In case of error.
      */
-    public static Map<String, Collection<GridRemoteStartSpecification>> specifications(
+    @SuppressWarnings("ConstantConditions")
+    public static Map<String, Collection<IgniteRemoteStartSpecification>> specifications(
         Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts)
         throws IgniteCheckedException {
-        Map<String, Collection<GridRemoteStartSpecification>> specsMap = U.newHashMap(hosts.size());
+        Map<String, Collection<IgniteRemoteStartSpecification>> specsMap = U.newHashMap(hosts.size());
 
-        GridRemoteStartSpecification dfltSpec = processDefaults(dflts);
+        IgniteRemoteStartSpecification dfltSpec = processDefaults(dflts);
 
         for (Map<String, Object> host : hosts) {
-            Collection<GridRemoteStartSpecification> specs = processHost(host, dfltSpec);
+            Collection<IgniteRemoteStartSpecification> specs = processHost(host, dfltSpec);
 
-            for (GridRemoteStartSpecification spec : specs)
-                F.addIfAbsent(specsMap, spec.host(), new Callable<Collection<GridRemoteStartSpecification>>() {
-                    @Override public Collection<GridRemoteStartSpecification> call() throws Exception {
+            for (IgniteRemoteStartSpecification spec : specs)
+                F.addIfAbsent(specsMap, spec.host(), new Callable<Collection<IgniteRemoteStartSpecification>>() {
+                    @Override public Collection<IgniteRemoteStartSpecification> call() throws Exception {
                         return new HashSet<>();
                     }
                 }).add(spec);
@@ -241,14 +242,14 @@ public class GridNodeStartUtils {
      * @return Specification.
      * @throws IgniteCheckedException If properties are invalid.
      */
-    private static GridRemoteStartSpecification processDefaults(@Nullable Map<String, Object> dflts)
+    private static IgniteRemoteStartSpecification processDefaults(@Nullable Map<String, Object> dflts)
         throws IgniteCheckedException {
         int port = DFLT_PORT;
         String uname = System.getProperty("user.name");
         String passwd = null;
         File key = null;
         int nodes = DFLT_NODES;
-        String ggHome = null;
+        String igniteHome = null;
         String cfg = DFLT_CFG;
         String script = null;
         IgniteLogger log = null;
@@ -270,7 +271,7 @@ public class GridNodeStartUtils {
                 nodes = (Integer)dflts.get(NODES);
 
             if (dflts.get(IGNITE_HOME) != null)
-                ggHome = (String)dflts.get(IGNITE_HOME);
+                igniteHome = (String)dflts.get(IGNITE_HOME);
 
             if (dflts.get(CFG) != null)
                 cfg = (String)dflts.get(CFG);
@@ -288,8 +289,8 @@ public class GridNodeStartUtils {
         if (nodes <= 0)
             throw new IgniteCheckedException("Invalid number of nodes: " + nodes);
 
-        return new GridRemoteStartSpecification(null, port, uname, passwd,
-            key, nodes, ggHome, cfg, script, log);
+        return new IgniteRemoteStartSpecification(null, port, uname, passwd,
+            key, nodes, igniteHome, cfg, script, log);
     }
 
     /**
@@ -300,8 +301,8 @@ public class GridNodeStartUtils {
      * @return Specification.
      * @throws IgniteCheckedException If properties are invalid.
      */
-    private static Collection<GridRemoteStartSpecification> processHost(Map<String, Object> props,
-        GridRemoteStartSpecification dfltSpec) throws IgniteCheckedException {
+    private static Collection<IgniteRemoteStartSpecification> processHost(Map<String, Object> props,
+        IgniteRemoteStartSpecification dfltSpec) throws IgniteCheckedException {
         assert props != null;
         assert dfltSpec != null;
 
@@ -314,7 +315,7 @@ public class GridNodeStartUtils {
         String passwd = props.get(PASSWD) != null ? (String)props.get(PASSWD) : dfltSpec.password();
         File key = props.get(KEY) != null ? (File)props.get(KEY) : dfltSpec.key();
         int nodes = props.get(NODES) != null ? (Integer)props.get(NODES) : dfltSpec.nodes();
-        String ggHome = props.get(IGNITE_HOME) != null ? (String)props.get(IGNITE_HOME) : dfltSpec.ggHome();
+        String igniteHome = props.get(IGNITE_HOME) != null ? (String)props.get(IGNITE_HOME) : dfltSpec.igniteHome();
         String cfg = props.get(CFG) != null ? (String)props.get(CFG) : dfltSpec.configuration();
         String script = props.get(SCRIPT) != null ? (String)props.get(SCRIPT) : dfltSpec.script();
 
@@ -330,12 +331,12 @@ public class GridNodeStartUtils {
         if (passwd != null && key != null)
             passwd = null;
 
-        Collection<GridRemoteStartSpecification> specs =
+        Collection<IgniteRemoteStartSpecification> specs =
             new ArrayList<>(hosts.size());
 
         for (String host : hosts)
-            specs.add(new GridRemoteStartSpecification(host, port, uname, passwd,
-                key, nodes, ggHome, cfg, script, dfltSpec.logger()));
+            specs.add(new IgniteRemoteStartSpecification(host, port, uname, passwd,
+                key, nodes, igniteHome, cfg, script, dfltSpec.logger()));
 
         return specs;
     }

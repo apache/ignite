@@ -26,7 +26,7 @@ import java.io.*;
 /**
  * Host data.
  */
-public class GridRemoteStartSpecification {
+public class IgniteRemoteStartSpecification {
     /** Hostname. */
     private final String host;
 
@@ -49,7 +49,7 @@ public class GridRemoteStartSpecification {
     private final int nodes;
 
     /** Ignite installation folder. */
-    private String ggHome;
+    private String igniteHome;
 
     /** Configuration path. */
     private String cfg;
@@ -73,14 +73,14 @@ public class GridRemoteStartSpecification {
      * @param passwd Password (can be {@code null} if private key authentication is used).
      * @param key Private key file path.
      * @param nodes Number of nodes to start.
-     * @param ggHome Ignite installation folder.
+     * @param igniteHome Ignite installation folder.
      * @param cfg Configuration path.
      * @param script Script path.
      */
-    public GridRemoteStartSpecification(@Nullable String host, int port, @Nullable String uname,
-        @Nullable String passwd, @Nullable File key, int nodes, @Nullable String ggHome,
+    public IgniteRemoteStartSpecification(@Nullable String host, int port, @Nullable String uname,
+        @Nullable String passwd, @Nullable File key, int nodes, @Nullable String igniteHome,
         @Nullable String cfg, @Nullable String script) {
-        this(host, port, uname, passwd, key, nodes, ggHome, cfg, script, null);
+        this(host, port, uname, passwd, key, nodes, igniteHome, cfg, script, null);
     }
 
     /**
@@ -90,13 +90,13 @@ public class GridRemoteStartSpecification {
      * @param passwd Password (can be {@code null} if private key authentication is used).
      * @param key Private key file path.
      * @param nodes Number of nodes to start.
-     * @param ggHome Ignite installation folder.
+     * @param igniteHome Ignite installation folder.
      * @param cfg Configuration path.
      * @param script Script path.
      * @param logger Custom logger.
      */
-    public GridRemoteStartSpecification(@Nullable String host, int port, @Nullable String uname,
-        @Nullable String passwd, @Nullable File key, int nodes, @Nullable String ggHome,
+    public IgniteRemoteStartSpecification(@Nullable String host, int port, @Nullable String uname,
+        @Nullable String passwd, @Nullable File key, int nodes, @Nullable String igniteHome,
         @Nullable String cfg, @Nullable String script, @Nullable IgniteLogger logger) {
         assert port > 0;
         assert nodes > 0;
@@ -107,7 +107,7 @@ public class GridRemoteStartSpecification {
         this.passwd = !F.isEmpty(passwd) ? passwd : null;
         this.key = key;
         this.nodes = nodes;
-        this.ggHome = !F.isEmpty(ggHome) ? ggHome : null;
+        this.igniteHome = !F.isEmpty(igniteHome) ? igniteHome : null;
         this.cfg = !F.isEmpty(cfg) ? cfg : null;
         cfgName = cfg == null ? null : shorten(cfg);
         keyName = key == null ? "" : shorten(key.getAbsolutePath());
@@ -119,15 +119,15 @@ public class GridRemoteStartSpecification {
     @Override public boolean equals(Object o) {
         if (this == o) return true;
 
-        if (!(o instanceof GridRemoteStartSpecification)) return false;
+        if (!(o instanceof IgniteRemoteStartSpecification)) return false;
 
-        GridRemoteStartSpecification that = (GridRemoteStartSpecification)o;
+        IgniteRemoteStartSpecification that = (IgniteRemoteStartSpecification)o;
 
         return (host == null ? that.host == null : host.equals(that.host)) &&
             (uname == null ? that.uname == null : uname.equals(that.uname)) &&
             (passwd == null ? that.passwd == null : passwd.equals(that.passwd)) &&
             (key == null ? that.key == null : key.equals(that.key)) &&
-            (ggHome == null ? that.ggHome == null : ggHome.equals(that.ggHome)) &&
+            (igniteHome == null ? that.igniteHome == null : igniteHome.equals(that.igniteHome)) &&
             (cfg == null ? that.cfg == null : cfg.equals(that.cfg)) &&
             (script == null ? that.script == null : script.equals(that.script)) &&
             port == that.port && nodes == that.nodes;
@@ -140,7 +140,7 @@ public class GridRemoteStartSpecification {
         res = 31 * res + (uname == null ? 0 : uname.hashCode());
         res = 31 * res + (passwd == null ? 0 : passwd.hashCode());
         res = 31 * res + (key == null ? 0 : key.hashCode());
-        res = 31 * res + (ggHome == null ? 0 : ggHome.hashCode());
+        res = 31 * res + (igniteHome == null ? 0 : igniteHome.hashCode());
         res = 31 * res + (cfg == null ? 0 : cfg.hashCode());
         res = 31 * res + (script == null ? 0 : script.hashCode());
         res = 31 * res + port;
@@ -215,8 +215,8 @@ public class GridRemoteStartSpecification {
     /**
      * @return Ignite installation folder.
      */
-    public String ggHome() {
-        return ggHome;
+    public String igniteHome() {
+        return igniteHome;
     }
 
     /**
@@ -267,8 +267,8 @@ public class GridRemoteStartSpecification {
      * @param separator Separator.
      */
     public void fixPaths(char separator) {
-        if (ggHome != null)
-            ggHome = ggHome.replace('\\', separator).replace('/', separator);
+        if (igniteHome != null)
+            igniteHome = igniteHome.replace('\\', separator).replace('/', separator);
 
         if (script != null)
             script = script.replace('\\', separator).replace('/', separator);

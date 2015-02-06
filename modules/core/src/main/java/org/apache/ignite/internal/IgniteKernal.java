@@ -98,7 +98,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.GridProductImpl.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
-import static org.apache.ignite.internal.util.nodestart.GridNodeStartUtils.*;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.*;
 import static org.apache.ignite.lifecycle.LifecycleEventType.*;
 
 /**
@@ -2713,9 +2713,9 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         try {
             IgniteSshProcessor sshProcessor = IgniteComponentType.SSH.create(false);
 
-            Map<String, Collection<GridRemoteStartSpecification>> specsMap = specifications(hosts, dflts);
+            Map<String, Collection<IgniteRemoteStartSpecification>> specsMap = specifications(hosts, dflts);
 
-            Map<String, ConcurrentLinkedQueue<GridNodeCallable>> runMap = new HashMap<>();
+            Map<String, ConcurrentLinkedQueue<IgniteNodeCallable>> runMap = new HashMap<>();
 
             int nodeCallCnt = 0;
 
@@ -2760,11 +2760,11 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                         startIdx = neighbors.size() + 1;
                 }
 
-                ConcurrentLinkedQueue<GridNodeCallable> nodeRuns = new ConcurrentLinkedQueue<>();
+                ConcurrentLinkedQueue<IgniteNodeCallable> nodeRuns = new ConcurrentLinkedQueue<>();
 
                 runMap.put(host, nodeRuns);
 
-                for (GridRemoteStartSpecification spec : specsMap.get(host)) {
+                for (IgniteRemoteStartSpecification spec : specsMap.get(host)) {
                     assert spec.host().equals(host);
 
                     for (int i = startIdx; i <= spec.nodes(); i++) {
@@ -2790,7 +2790,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             AtomicInteger cnt = new AtomicInteger(nodeCallCnt);
 
             // Limit maximum simultaneous connection number per host.
-            for (ConcurrentLinkedQueue<GridNodeCallable> queue : runMap.values()) {
+            for (ConcurrentLinkedQueue<IgniteNodeCallable> queue : runMap.values()) {
                 for (int i = 0; i < maxConn; i++) {
                     if (!runNextNodeCallable(queue, fut, cnt))
                         break;
@@ -2839,10 +2839,10 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
      * @param cnt Atomic counter to check if all futures are added to compound future.
      * @return {@code True} if task was started, {@code false} if queue was empty.
      */
-    private boolean runNextNodeCallable(final ConcurrentLinkedQueue<GridNodeCallable> queue,
+    private boolean runNextNodeCallable(final ConcurrentLinkedQueue<IgniteNodeCallable> queue,
         final GridCompoundFuture<GridTuple3<String, Boolean, String>,
         Collection<GridTuple3<String, Boolean, String>>> comp, final AtomicInteger cnt) {
-        GridNodeCallable call = queue.poll();
+        IgniteNodeCallable call = queue.poll();
 
         if (call == null)
             return false;

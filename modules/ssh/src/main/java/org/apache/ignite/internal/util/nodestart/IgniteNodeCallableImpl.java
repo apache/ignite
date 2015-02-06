@@ -34,7 +34,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 /**
  * SSH-based node starter.
  */
-public class GridNodeCallableImpl implements GridNodeCallable {
+public class IgniteNodeCallableImpl implements IgniteNodeCallable {
     /** Default Ignite home path for Windows (taken from environment variable). */
     private static final String DFLT_IGNITE_HOME_WIN = "%IGNITE_HOME%";
 
@@ -54,13 +54,13 @@ public class GridNodeCallableImpl implements GridNodeCallable {
     private static final String LOG_DIR_WIN = "work\\log";
 
     /** Windows service executable. */
-    private static final String SVC_EXE = "bin\\include\\ggservice.exe";
+    private static final String SVC_EXE = "bin\\include\\igniteservice.exe";
 
     /** Date format for log file name. */
     private static final SimpleDateFormat FILE_NAME_DATE_FORMAT = new SimpleDateFormat("MM-dd-yyyy--HH-mm-ss");
 
     /** Specification. */
-    private final GridRemoteStartSpecification spec;
+    private final IgniteRemoteStartSpecification spec;
 
     /** Connection timeout. */
     private final int timeout;
@@ -72,7 +72,7 @@ public class GridNodeCallableImpl implements GridNodeCallable {
     /**
      * Required by Externalizable.
      */
-    public GridNodeCallableImpl() {
+    public IgniteNodeCallableImpl() {
         spec = null;
         timeout = 0;
 
@@ -85,7 +85,7 @@ public class GridNodeCallableImpl implements GridNodeCallable {
      * @param spec Specification.
      * @param timeout Connection timeout.
      */
-    public GridNodeCallableImpl(GridRemoteStartSpecification spec, int timeout) {
+    public IgniteNodeCallableImpl(IgniteRemoteStartSpecification spec, int timeout) {
         assert spec != null;
 
         this.spec = spec;
@@ -117,10 +117,10 @@ public class GridNodeCallableImpl implements GridNodeCallable {
 
             spec.fixPaths(separator);
 
-            String ggHome = spec.ggHome();
+            String igniteHome = spec.igniteHome();
 
-            if (ggHome == null)
-                ggHome = win ? DFLT_IGNITE_HOME_WIN : DFLT_IGNITE_HOME_LINUX;
+            if (igniteHome == null)
+                igniteHome = win ? DFLT_IGNITE_HOME_WIN : DFLT_IGNITE_HOME_LINUX;
 
             String script = spec.script();
 
@@ -137,7 +137,7 @@ public class GridNodeCallableImpl implements GridNodeCallable {
                 + UUID.randomUUID().toString().substring(0, 8) + ".log";
 
             if (win) {
-                String logDir = ggHome + '\\' + LOG_DIR_WIN;
+                String logDir = igniteHome + '\\' + LOG_DIR_WIN;
                 String tmpDir = env(ses, "%TMP%", logDir);
                 String scriptOutputDir = tmpDir + "\\ignite-startNodes";
 
@@ -147,7 +147,7 @@ public class GridNodeCallableImpl implements GridNodeCallable {
                 UUID id = UUID.randomUUID();
 
                 String svcName = "Ignite-" + id;
-                String svcPath = ggHome + '\\' + SVC_EXE;
+                String svcPath = igniteHome + '\\' + SVC_EXE;
 
                 startNodeCmd = new SB().
                     a("cmd /c if exist \"").a(svcPath).a("\"").
@@ -156,7 +156,7 @@ public class GridNodeCallableImpl implements GridNodeCallable {
                     a(" && ").
                     a("sc start ").a(svcName).
                     a(" ").a(svcName).
-                    a(" \"").a(ggHome).a('\\').a(script).
+                    a(" \"").a(igniteHome).a('\\').a(script).
                     a(" ").a(cfg).a("\"").
                     a(" \"").a(logDir).a("\\ignite.").a(id).
                     a(".log\" > ").a(scriptOutputDir).a("\\").a(scriptOutputFileName).
@@ -174,16 +174,16 @@ public class GridNodeCallableImpl implements GridNodeCallable {
                 shell(ses, "mkdir " + scriptOutputDir);
 
                 // Mac os don't support ~ in double quotes. Trying get home path from remote system.
-                if (ggHome.startsWith("~")) {
+                if (igniteHome.startsWith("~")) {
                     String homeDir = env(ses, "$HOME", "~");
 
-                    ggHome = ggHome.replaceFirst("~", homeDir);
+                    igniteHome = igniteHome.replaceFirst("~", homeDir);
                 }
 
                 startNodeCmd = new SB().
-                    // Console output is consumed, started nodes must use Grid file appenders for log.
+                    // Console output is consumed, started nodes must use Ignite file appenders for log.
                         a("nohup ").
-                    a("\"").a(ggHome).a('/').a(scriptPath).a("\"").
+                    a("\"").a(igniteHome).a('/').a(scriptPath).a("\"").
                     a(" ").a(scriptArgs).
                     a(!cfg.isEmpty() ? " \"" : "").a(cfg).a(!cfg.isEmpty() ? "\"" : "").
                     a(rmtLogArgs).
@@ -324,7 +324,7 @@ public class GridNodeCallableImpl implements GridNodeCallable {
      * @param log Logger.
      * @return This callable for chaining method calls.
      */
-    public GridNodeCallable setLogger(IgniteLogger log) {
+    public IgniteNodeCallable setLogger(IgniteLogger log) {
         this.log = log;
 
         return this;

@@ -232,7 +232,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *             </td>
      *         </tr>
      *         <tr>
-     *             <td><b>ggHome</b></td>
+     *             <td><b>igniteHome</b></td>
      *             <td>String</td>
      *             <td>
      *                 Path to Ignite installation folder. If not defined, IGNITE_HOME
@@ -242,13 +242,13 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *         <tr>
      *             <td><b>cfg</b></td>
      *             <td>String</td>
-     *             <td>Path to configuration file (relative to {@code ggHome}).</td>
+     *             <td>Path to configuration file (relative to {@code igniteHome}).</td>
      *         </tr>
      *         <tr>
      *             <td><b>script</b></td>
      *             <td>String</td>
      *             <td>
-     *                 Custom startup script file name and path (relative to {@code ggHome}).
+     *                 Custom startup script file name and path (relative to {@code igniteHome}).
      *                 You can also specify a space-separated list of parameters in the same
      *                 string (for example: {@code "bin/my-custom-script.sh -v"}).
      *             </td>

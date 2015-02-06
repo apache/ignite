@@ -176,7 +176,7 @@ class VisorStartCommand {
             val passwdOpt = argValue("pw", argLst)
             val keyOpt = argValue("k", argLst)
             val nodesOpt = argValue("n", argLst)
-            val ggHomeOpt = argValue("g", argLst)
+            val igniteHomeOpt = argValue("g", argLst)
             val cfgOpt = argValue("c", argLst)
             val scriptOpt = argValue("s", argLst)
             val maxConnOpt = argValue("m", argLst)
@@ -279,7 +279,7 @@ class VisorStartCommand {
                     "passwd" -> passwdOpt.orNull,
                     "key" -> keyFile,
                     "nodes" -> nodes,
-                    "ggHome" -> ggHomeOpt.orNull,
+                    "igniteHome" -> igniteHomeOpt.orNull,
                     "cfg" -> cfgOpt.orNull,
                     "script" -> scriptOpt.orNull
                 )

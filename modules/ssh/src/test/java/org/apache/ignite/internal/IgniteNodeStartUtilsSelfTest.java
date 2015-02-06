@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.util.nodestart.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -25,12 +24,12 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.util.nodestart.GridNodeStartUtils.*;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.*;
 
 /**
- * Tests for {@link GridNodeStartUtils}.
+ * Tests for {@link org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils}.
  */
-public class GridNodeStartUtilsSelfTest extends GridCommonAbstractTest {
+public class IgniteNodeStartUtilsSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
