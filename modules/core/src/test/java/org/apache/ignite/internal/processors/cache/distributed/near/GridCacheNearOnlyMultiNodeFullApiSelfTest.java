@@ -242,41 +242,6 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
-    @Override public void testClearKeys() throws Exception {
-        IgniteCache<String, Integer> nearCache = jcache();
-        IgniteCache<String, Integer> primary = fullCache();
-
-        Collection<String> keys = primaryKeysForCache(primary, 3);
-
-        for (String key : keys)
-            assertNull(nearCache.get(key));
-
-        String lastKey = F.last(keys);
-
-        Collection<String> subKeys = new ArrayList<>(keys);
-
-        subKeys.remove(lastKey);
-
-        Map<String, Integer> vals = new HashMap<>();
-
-        int i = 0;
-
-        for (String key : keys)
-            vals.put(key, i++);
-
-        nearCache.putAll(vals);
-
-        nearCache.clear(subKeys);
-
-        for (String key : subKeys) {
-            assertNull(nearCache.localPeek(key, CachePeekMode.ONHEAP));
-            assertNotNull(primary.localPeek(key, CachePeekMode.ONHEAP));
-        }
-
-        assertEquals(vals.get(lastKey), nearCache.localPeek(lastKey, CachePeekMode.ONHEAP));
-    }
-
-    /** {@inheritDoc} */
     @Override public void testGlobalClearAll() throws Exception {
         // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
         // because some of them were blocked due to having readers.

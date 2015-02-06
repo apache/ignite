@@ -133,42 +133,6 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
-    @Override public void testClearKeys() throws Exception {
-        IgniteCache<String, Integer> nearCache = jcache();
-        IgniteCache<String, Integer> primary = fullCache();
-
-        Collection<String> keys = primaryKeysForCache(primary, 3);
-
-        for (String key : keys)
-            assertNull(nearCache.get(key));
-
-        String lastKey = F.last(keys);
-
-        Collection<String> subKeys = new ArrayList<>(keys);
-
-        subKeys.remove(lastKey);
-
-        Map<String, Integer> vals = new HashMap<>(keys.size());
-
-        int i = 0;
-
-        for (String key : keys)
-            vals.put(key, i++);
-
-        nearCache.putAll(vals);
-
-        for (String subKey : subKeys)
-            nearCache.clear(Collections.singleton(subKey));
-
-        for (String key : subKeys) {
-            assertNull(nearCache.localPeek(key, CachePeekMode.ONHEAP));
-            assertNotNull(primary.localPeek(key, CachePeekMode.ONHEAP));
-        }
-
-        assertEquals(null, nearCache.localPeek(lastKey, CachePeekMode.ONHEAP));
-    }
-
-    /** {@inheritDoc} */
     @Override public void testEvictExpired() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 

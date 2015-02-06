@@ -194,43 +194,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param cache Cache.
-     * @param keys Keys.
-     * @param replaceExistingValues Replace existing values.
-     */
-    protected static <K> void loadAll(Cache<K, ?> cache, Set<K> keys, boolean replaceExistingValues) throws Exception {
-        final AtomicReference<Exception> ex = new AtomicReference<>();
-
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        cache.loadAll(keys, replaceExistingValues, new CompletionListener() {
-            @Override public void onCompletion() {
-                latch.countDown();
-            }
-
-            @Override public void onException(Exception e) {
-                ex.set(e);
-
-                latch.countDown();
-            }
-        });
-
-        latch.await();
-
-        if (ex.get() != null)
-            throw ex.get();
-    }
-
-    /**
-     * @param cache Cache.
-     * @param key Keys.
-     * @param replaceExistingValues Replace existing values.
-     */
-    protected static <K> void load(Cache<K, ?> cache, K key, boolean replaceExistingValues) throws Exception {
-        loadAll(cache, Collections.singleton(key), replaceExistingValues);
-    }
-
-    /**
      * Cleans up cache store.
      */
     protected void resetStore() {
