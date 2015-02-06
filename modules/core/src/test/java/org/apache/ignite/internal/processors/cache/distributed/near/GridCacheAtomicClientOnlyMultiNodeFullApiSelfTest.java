@@ -117,18 +117,18 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         }
 
         for (String key : keys)
-            assertEquals(null, nearCache.localPeek(key));
+            assertEquals(null, nearCache.localPeek(key, CachePeekMode.ONHEAP));
 
         nearCache.clear();
 
         for (String key : keys)
-            assertNull(nearCache.localPeek(key));
+            assertNull(nearCache.localPeek(key, CachePeekMode.ONHEAP));
 
         for (Map.Entry<String, Integer> entry : vals.entrySet())
             nearCache.put(entry.getKey(), entry.getValue());
 
         for (String key : keys)
-            assertEquals(null, nearCache.localPeek(key));
+            assertEquals(null, nearCache.localPeek(key, CachePeekMode.ONHEAP));
 
     }
 
@@ -161,11 +161,11 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
             nearCache.clear(Collections.singleton(subKey));
 
         for (String key : subKeys) {
-            assertNull(nearCache.localPeek(key));
-            assertNotNull(primary.localPeek(key));
+            assertNull(nearCache.localPeek(key, CachePeekMode.ONHEAP));
+            assertNotNull(primary.localPeek(key, CachePeekMode.ONHEAP));
         }
 
-        assertEquals(null, nearCache.localPeek(lastKey));
+        assertEquals(null, nearCache.localPeek(lastKey, CachePeekMode.ONHEAP));
     }
 
     /** {@inheritDoc} */
@@ -188,11 +188,11 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         // Expired entry should not be swapped.
         cache.localEvict(Collections.singleton(key));
 
-        assertNull(cache.localPeek(key));
+        assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
         cache.localPromote(Collections.singleton(key));
 
-        assertNull(cache.localPeek(key));
+        assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
         assertTrue(cache.localSize() == 0);
 
@@ -205,7 +205,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         // Will do near get request.
         load(cache, key, true);
 
-        assertEquals(null, cache.localPeek(key));
+        assertEquals(null, cache.localPeek(key, CachePeekMode.ONHEAP));
     }
 
     /** {@inheritDoc} */
@@ -222,39 +222,39 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         cache.put(key2, 2);
         cache.put(key3, 3);
 
-        assert cache.localPeek(key1) == null;
-        assert cache.localPeek(key2) == null;
-        assert cache.localPeek(key3) == null;
+        assert cache.localPeek(key1, CachePeekMode.ONHEAP) == null;
+        assert cache.localPeek(key2, CachePeekMode.ONHEAP) == null;
+        assert cache.localPeek(key3, CachePeekMode.ONHEAP) == null;
 
         cache.localEvict(F.asList(key1, key2));
 
-        assert cache.localPeek(key1) == null;
-        assert cache.localPeek(key2) == null;
-        assert cache.localPeek(key3) == null;
+        assert cache.localPeek(key1, CachePeekMode.ONHEAP) == null;
+        assert cache.localPeek(key2, CachePeekMode.ONHEAP) == null;
+        assert cache.localPeek(key3, CachePeekMode.ONHEAP) == null;
 
         loadAll(cache, ImmutableSet.of(key1, key2), true);
 
-        assert cache.localPeek(key1) == null;
-        assert cache.localPeek(key2) == null;
-        assert cache.localPeek(key3) == null;
+        assert cache.localPeek(key1, CachePeekMode.ONHEAP) == null;
+        assert cache.localPeek(key2, CachePeekMode.ONHEAP) == null;
+        assert cache.localPeek(key3, CachePeekMode.ONHEAP) == null;
 
         cache.localEvict(F.asList(key1, key2));
 
-        assert cache.localPeek(key1) == null;
-        assert cache.localPeek(key2) == null;
-        assert cache.localPeek(key3) == null;
+        assert cache.localPeek(key1, CachePeekMode.ONHEAP) == null;
+        assert cache.localPeek(key2, CachePeekMode.ONHEAP) == null;
+        assert cache.localPeek(key3, CachePeekMode.ONHEAP) == null;
 
         loadAll(cache, ImmutableSet.of(key1, key2), true);
 
-        assert cache.localPeek(key1) == null;
-        assert cache.localPeek(key2) == null;
-        assert cache.localPeek(key3) == null;
+        assert cache.localPeek(key1, CachePeekMode.ONHEAP) == null;
+        assert cache.localPeek(key2, CachePeekMode.ONHEAP) == null;
+        assert cache.localPeek(key3, CachePeekMode.ONHEAP) == null;
 
         cache.localEvict(new HashSet<>(keys));
 
-        assert cache.localPeek(key1) == null;
-        assert cache.localPeek(key2) == null;
-        assert cache.localPeek(key3) == null;
+        assert cache.localPeek(key1, CachePeekMode.ONHEAP) == null;
+        assert cache.localPeek(key2, CachePeekMode.ONHEAP) == null;
+        assert cache.localPeek(key3, CachePeekMode.ONHEAP) == null;
     }
 
     /** {@inheritDoc} */
@@ -267,7 +267,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
         c.put(key, 1);
 
-        assertEquals(null, c.localPeek(key));
+        assertEquals(null, c.localPeek(key, CachePeekMode.ONHEAP));
 
         long ttl = 500;
 
@@ -276,7 +276,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
         Thread.sleep(ttl + 100);
 
-        assert c.localPeek(key) == null;
+        assert c.localPeek(key, CachePeekMode.ONHEAP) == null;
 
         assert c.localSize() == 0 : "Cache is not empty.";
     }
@@ -333,28 +333,28 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         if (locKeys.contains(k2)) {
             cache.localPromote(Collections.singleton(k2));
 
-            assertEquals((Integer)2, cache.localPeek(k2));
+            assertEquals((Integer)2, cache.localPeek(k2, CachePeekMode.ONHEAP));
 
             cnt++;
         }
         else {
             cache.localPromote(Collections.singleton(k2));
 
-            assertNull(cache.localPeek(k2));
+            assertNull(cache.localPeek(k2, CachePeekMode.ONHEAP));
         }
 
 
         if (locKeys.contains(k3)) {
             cache.localPromote(Collections.singleton(k3));
 
-            assertEquals((Integer)3, cache.localPeek(k3));
+            assertEquals((Integer)3, cache.localPeek(k3, CachePeekMode.ONHEAP));
 
             cnt++;
         }
         else {
             cache.localPromote(Collections.singleton(k3));
 
-            assertNull(cache.localPeek(k3));
+            assertNull(cache.localPeek(k3, CachePeekMode.ONHEAP));
         }
 
         assertEquals(cnt, swapEvts.get());

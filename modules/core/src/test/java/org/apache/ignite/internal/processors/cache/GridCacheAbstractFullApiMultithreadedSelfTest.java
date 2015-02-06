@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import com.google.common.collect.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -245,14 +246,14 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
                 assert cache.getAndRemove("wrongKey") == null;
                 assert !cache.remove("key" + rnd1, -1);
 
-                assert cache.localPeek("key" + rnd1) == null || cache.localPeek("key" + rnd1) == rnd1;
-                assert cache.localPeek("key" + rnd2) == null || cache.localPeek("key" + rnd2) == rnd2;
+                assert cache.localPeek("key" + rnd1, CachePeekMode.ONHEAP) == null || cache.localPeek("key" + rnd1, CachePeekMode.ONHEAP) == rnd1;
+                assert cache.localPeek("key" + rnd2, CachePeekMode.ONHEAP) == null || cache.localPeek("key" + rnd2, CachePeekMode.ONHEAP) == rnd2;
 
-                assert cache.localPeek("key" + rnd1) == null || cache.getAndRemove("key" + rnd1) == rnd1;
-                assert cache.localPeek("key" + rnd2) == null || cache.remove("key" + rnd2, rnd2);
+                assert cache.localPeek("key" + rnd1, CachePeekMode.ONHEAP) == null || cache.getAndRemove("key" + rnd1) == rnd1;
+                assert cache.localPeek("key" + rnd2, CachePeekMode.ONHEAP) == null || cache.remove("key" + rnd2, rnd2);
 
-                assert cache.localPeek("key" + rnd1) == null;
-                assert cache.localPeek("key" + rnd2) == null;
+                assert cache.localPeek("key" + rnd1, CachePeekMode.ONHEAP) == null;
+                assert cache.localPeek("key" + rnd2, CachePeekMode.ONHEAP) == null;
             }
         });
     }
@@ -276,14 +277,14 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
 
                 assert !cacheAsync.<Boolean>future().get();
 
-                assert cache.localPeek("key" + rnd1) == null || cache.localPeek("key" + rnd1) == rnd1;
-                assert cache.localPeek("key" + rnd2) == null || cache.localPeek("key" + rnd2) == rnd2;
+                assert cache.localPeek("key" + rnd1, CachePeekMode.ONHEAP) == null || cache.localPeek("key" + rnd1, CachePeekMode.ONHEAP) == rnd1;
+                assert cache.localPeek("key" + rnd2, CachePeekMode.ONHEAP) == null || cache.localPeek("key" + rnd2, CachePeekMode.ONHEAP) == rnd2;
 
-                assert cache.localPeek("key" + rnd1) == null || removeAsync(cache, "key" + rnd1) == rnd1;
-                assert cache.localPeek("key" + rnd2) == null || removeAsync(cache, "key" + rnd2, rnd2);
+                assert cache.localPeek("key" + rnd1, CachePeekMode.ONHEAP) == null || removeAsync(cache, "key" + rnd1) == rnd1;
+                assert cache.localPeek("key" + rnd2, CachePeekMode.ONHEAP) == null || removeAsync(cache, "key" + rnd2, rnd2);
 
-                assert cache.localPeek("key" + rnd1) == null;
-                assert cache.localPeek("key" + rnd2) == null;
+                assert cache.localPeek("key" + rnd1, CachePeekMode.ONHEAP) == null;
+                assert cache.localPeek("key" + rnd2, CachePeekMode.ONHEAP) == null;
             }
         });
     }
@@ -299,7 +300,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
                 cache.removeAll(rangeKeys(0, rnd));
 
                 for (int i = 0; i < rnd; i++)
-                    assert cache.localPeek("key" + i) == null;
+                    assert cache.localPeek("key" + i, CachePeekMode.ONHEAP) == null;
             }
         });
     }
@@ -319,7 +320,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
                 cacheAsync.future().get();
 
                 for (int i = 0; i < rnd; i++)
-                    assert cache.localPeek("key" + i) == null;
+                    assert cache.localPeek("key" + i, CachePeekMode.ONHEAP) == null;
             }
         });
     }

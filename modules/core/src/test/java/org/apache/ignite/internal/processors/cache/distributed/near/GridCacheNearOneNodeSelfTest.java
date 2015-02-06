@@ -216,13 +216,13 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         try {
             near.put(1, "1");
 
-            assertEquals("1", near.localPeek(1));
+            assertEquals("1", near.localPeek(1, CachePeekMode.ONHEAP));
             assertEquals("1", dht().peek(1));
 
             assertEquals("1", near.get(1));
             assertEquals("1", near.getAndRemove(1));
 
-            assertNull(near.localPeek(1));
+            assertNull(near.localPeek(1, CachePeekMode.ONHEAP));
             assertNull(dht().peek(1));
 
             assertTrue(near.isLocalLocked(1, false));
@@ -247,7 +247,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         try {
             near.put(1, "1");
 
-            assertEquals("1", near.localPeek(1));
+            assertEquals("1", near.localPeek(1, CachePeekMode.ONHEAP));
             assertEquals("1", dht().peek(1));
 
             assertTrue(near.isLocalLocked(1, false));
@@ -259,7 +259,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
                 assertEquals("1", near.get(1));
                 assertEquals("1", near.getAndRemove(1));
 
-                assertNull(near.localPeek(1));
+                assertNull(near.localPeek(1, CachePeekMode.ONHEAP));
                 assertNull(dht().peek(1));
 
                 assertTrue(near.isLocalLocked(1, false));

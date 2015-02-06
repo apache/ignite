@@ -95,12 +95,12 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
         i = 0;
 
         for (String key : keys)
-            assertEquals((Integer)i++, nearCache.localPeek(key));
+            assertEquals((Integer)i++, nearCache.localPeek(key, CachePeekMode.ONHEAP));
 
         nearCache.clear();
 
         for (String key : keys)
-            assertNull(nearCache.localPeek(key));
+            assertNull(nearCache.localPeek(key, CachePeekMode.ONHEAP));
 
         for (Map.Entry<String, Integer> entry : vals.entrySet())
             nearCache.put(entry.getKey(), entry.getValue());
@@ -108,7 +108,7 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
         i = 0;
 
         for (String key : keys)
-            assertEquals((Integer)i++, nearCache.localPeek(key));
+            assertEquals((Integer)i++, nearCache.localPeek(key, CachePeekMode.ONHEAP));
 
     }
 
@@ -132,11 +132,11 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
         // Expired entry should not be swapped.
         cache.localEvict(Collections.<String>singleton(key));
 
-        assertNull(cache.localPeek(key));
+        assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
         cache.localPromote(Collections.singleton(key));
 
-        assertNull(cache.localPeek(key));
+        assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
         assertTrue(cache.localSize() == 0);
 
@@ -149,6 +149,6 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
         // Will do near get request.
         load(cache, key, true);
 
-        assertEquals((Integer)1, cache.localPeek(key));
+        assertEquals((Integer)1, cache.localPeek(key, CachePeekMode.ONHEAP));
     }
 }

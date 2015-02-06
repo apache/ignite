@@ -120,7 +120,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
         }
 
         assert c.localSize() == 0;
-        assert c.localPeek(1) == null;
+        assert c.localPeek(1, CachePeekMode.ONHEAP) == null;
         assert c.get(1) == null;
     }
 }

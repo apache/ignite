@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 
 import java.io.*;
@@ -246,7 +247,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         info("Put command result: " + ret);
 
-        assertEquals("putVal", jcache().localPeek("putKey"));
+        assertEquals("putVal", jcache().localPeek("putKey", CachePeekMode.ONHEAP));
 
         jsonEquals(ret, cachePattern(true, true));
     }
@@ -282,8 +283,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         jsonEquals(ret, cachePattern(true, true));
 
-        assertEquals("addVal1", jcache().localPeek("addKey1"));
-        assertEquals("addVal2", jcache().localPeek("addKey2"));
+        assertEquals("addVal1", jcache().localPeek("addKey1", CachePeekMode.ONHEAP));
+        assertEquals("addVal2", jcache().localPeek("addKey2", CachePeekMode.ONHEAP));
     }
 
     /**
@@ -316,8 +317,8 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         info("Put all command result: " + ret);
 
-        assertEquals("putVal1", jcache().localPeek("putKey1"));
-        assertEquals("putVal2", jcache().localPeek("putKey2"));
+        assertEquals("putVal1", jcache().localPeek("putKey1", CachePeekMode.ONHEAP));
+        assertEquals("putVal2", jcache().localPeek("putKey2", CachePeekMode.ONHEAP));
 
         jsonEquals(ret, cacheBulkPattern(true, true));
     }
@@ -328,7 +329,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
     public void testRemove() throws Exception {
         jcache().put("rmvKey", "rmvVal");
 
-        assertEquals("rmvVal", jcache().localPeek("rmvKey"));
+        assertEquals("rmvVal", jcache().localPeek("rmvKey", CachePeekMode.ONHEAP));
 
         String ret = content(F.asMap("cmd", "rmv", "key", "rmvKey"));
 
@@ -337,7 +338,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         info("Remove command result: " + ret);
 
-        assertNull(jcache().localPeek("rmvKey"));
+        assertNull(jcache().localPeek("rmvKey", CachePeekMode.ONHEAP));
 
         jsonEquals(ret, cachePattern(true, true));
     }
@@ -351,10 +352,10 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
         jcache().put("rmvKey3", "rmvVal3");
         jcache().put("rmvKey4", "rmvVal4");
 
-        assertEquals("rmvVal1", jcache().localPeek("rmvKey1"));
-        assertEquals("rmvVal2", jcache().localPeek("rmvKey2"));
-        assertEquals("rmvVal3", jcache().localPeek("rmvKey3"));
-        assertEquals("rmvVal4", jcache().localPeek("rmvKey4"));
+        assertEquals("rmvVal1", jcache().localPeek("rmvKey1", CachePeekMode.ONHEAP));
+        assertEquals("rmvVal2", jcache().localPeek("rmvKey2", CachePeekMode.ONHEAP));
+        assertEquals("rmvVal3", jcache().localPeek("rmvKey3", CachePeekMode.ONHEAP));
+        assertEquals("rmvVal4", jcache().localPeek("rmvKey4", CachePeekMode.ONHEAP));
 
         String ret = content(F.asMap("cmd", "rmvall", "k1", "rmvKey1", "k2", "rmvKey2"));
 
@@ -363,10 +364,10 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         info("Remove all command result: " + ret);
 
-        assertNull(jcache().localPeek("rmvKey1"));
-        assertNull(jcache().localPeek("rmvKey2"));
-        assertEquals("rmvVal3", jcache().localPeek("rmvKey3"));
-        assertEquals("rmvVal4", jcache().localPeek("rmvKey4"));
+        assertNull(jcache().localPeek("rmvKey1", CachePeekMode.ONHEAP));
+        assertNull(jcache().localPeek("rmvKey2", CachePeekMode.ONHEAP));
+        assertEquals("rmvVal3", jcache().localPeek("rmvKey3", CachePeekMode.ONHEAP));
+        assertEquals("rmvVal4", jcache().localPeek("rmvKey4", CachePeekMode.ONHEAP));
 
         jsonEquals(ret, cacheBulkPattern(true, true));
 
@@ -377,10 +378,10 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         info("Remove all command result: " + ret);
 
-        assertNull(jcache().localPeek("rmvKey1"));
-        assertNull(jcache().localPeek("rmvKey2"));
-        assertNull(jcache().localPeek("rmvKey3"));
-        assertNull(jcache().localPeek("rmvKey4"));
+        assertNull(jcache().localPeek("rmvKey1", CachePeekMode.ONHEAP));
+        assertNull(jcache().localPeek("rmvKey2", CachePeekMode.ONHEAP));
+        assertNull(jcache().localPeek("rmvKey3", CachePeekMode.ONHEAP));
+        assertNull(jcache().localPeek("rmvKey4", CachePeekMode.ONHEAP));
         assertTrue(jcache().localSize() == 0);
 
         jsonEquals(ret, cacheBulkPattern(true, true));
@@ -392,7 +393,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
     public void testCas() throws Exception {
         jcache().put("casKey", "casOldVal");
 
-        assertEquals("casOldVal", jcache().localPeek("casKey"));
+        assertEquals("casOldVal", jcache().localPeek("casKey", CachePeekMode.ONHEAP));
 
         String ret = content(F.asMap("cmd", "cas", "key", "casKey", "val2", "casOldVal", "val1", "casNewVal"));
 
@@ -401,7 +402,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         info("CAS command result: " + ret);
 
-        assertEquals("casNewVal", jcache().localPeek("casKey"));
+        assertEquals("casNewVal", jcache().localPeek("casKey", CachePeekMode.ONHEAP));
 
         jsonEquals(ret, cachePattern(true, true));
 
@@ -414,7 +415,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
     public void testReplace() throws Exception {
         jcache().put("repKey", "repOldVal");
 
-        assertEquals("repOldVal", jcache().localPeek("repKey"));
+        assertEquals("repOldVal", jcache().localPeek("repKey", CachePeekMode.ONHEAP));
 
         String ret = content(F.asMap("cmd", "rep", "key", "repKey", "val", "repVal"));
 
@@ -423,7 +424,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         info("Replace command result: " + ret);
 
-        assertEquals("repVal", jcache().localPeek("repKey"));
+        assertEquals("repVal", jcache().localPeek("repKey", CachePeekMode.ONHEAP));
 
         jsonEquals(ret, cachePattern(true, true));
     }
@@ -535,7 +536,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
     public void testCar() throws Exception {
         jcache().put("casKey", "casOldVal");
 
-        assertEquals("casOldVal", jcache().localPeek("casKey"));
+        assertEquals("casOldVal", jcache().localPeek("casKey", CachePeekMode.ONHEAP));
 
         String ret = content(F.asMap("cmd", "cas", "key", "casKey", "val2", "casOldVal"));
 
@@ -544,7 +545,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         info("CAR command result: " + ret);
 
-        assertNull(jcache().localPeek("casKey"));
+        assertNull(jcache().localPeek("casKey", CachePeekMode.ONHEAP));
 
         jsonEquals(ret, cachePattern(true, true));
     }
@@ -553,7 +554,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
      * @throws Exception If failed.
      */
     public void testPutIfAbsent() throws Exception {
-        assertNull(jcache().localPeek("casKey"));
+        assertNull(jcache().localPeek("casKey", CachePeekMode.ONHEAP));
 
         String ret = content(F.asMap("cmd", "cas", "key", "casKey", "val1", "casNewVal"));
 
@@ -562,7 +563,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         info("PutIfAbsent command result: " + ret);
 
-        assertEquals("casNewVal", jcache().localPeek("casKey"));
+        assertEquals("casNewVal", jcache().localPeek("casKey", CachePeekMode.ONHEAP));
 
         jsonEquals(ret, cachePattern(true, true));
     }
@@ -573,7 +574,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
     public void testCasRemove() throws Exception {
         jcache().put("casKey", "casVal");
 
-        assertEquals("casVal", jcache().localPeek("casKey"));
+        assertEquals("casVal", jcache().localPeek("casKey", CachePeekMode.ONHEAP));
 
         String ret = content(F.asMap("cmd", "cas", "key", "casKey"));
 
@@ -582,7 +583,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
 
         info("CAS Remove command result: " + ret);
 
-        assertNull(jcache().localPeek("casKey"));
+        assertNull(jcache().localPeek("casKey", CachePeekMode.ONHEAP));
 
         jsonEquals(ret, cachePattern(true, true));
     }

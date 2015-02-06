@@ -112,11 +112,11 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
             IgniteCache<Integer, Integer> cache = jcache(i);
 
             if (grid(i).affinity(null).isBackup(grid(i).localNode(), 1)) {
-                assert cache.localPeek(1) == 1;
+                assert cache.localPeek(1, CachePeekMode.ONHEAP) == 1;
 
                 assert cache.clear(Collections.singleton(1));
 
-                assert cache.localPeek(1) == null;
+                assert cache.localPeek(1, CachePeekMode.ONHEAP) == null;
 
                 // Store is called in putx method, so we reset counter here.
                 cnt.set(0);

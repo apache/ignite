@@ -211,18 +211,18 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         }
 
         for (String key : keys)
-            assertEquals(vals.get(key), nearCache.localPeek(key));
+            assertEquals(vals.get(key), nearCache.localPeek(key, CachePeekMode.ONHEAP));
 
         nearCache.clear();
 
         for (String key : keys)
-            assertNull(nearCache.localPeek(key));
+            assertNull(nearCache.localPeek(key, CachePeekMode.ONHEAP));
 
         for (Map.Entry<String, Integer> entry : vals.entrySet())
             nearCache.put(entry.getKey(), entry.getValue());
 
         for (String key : keys)
-            assertEquals(vals.get(key), nearCache.localPeek(key));
+            assertEquals(vals.get(key), nearCache.localPeek(key, CachePeekMode.ONHEAP));
 
         String first = F.first(keys);
 
@@ -233,8 +233,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         try {
             nearCache.clear();
 
-            assertEquals(vals.get(first), nearCache.localPeek(first));
-            assertEquals(vals.get(first), primary.localPeek(first));
+            assertEquals(vals.get(first), nearCache.localPeek(first, CachePeekMode.ONHEAP));
+            assertEquals(vals.get(first), primary.localPeek(first, CachePeekMode.ONHEAP));
         }
         finally {
             lock.unlock();
@@ -269,11 +269,11 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         nearCache.clear(subKeys);
 
         for (String key : subKeys) {
-            assertNull(nearCache.localPeek(key));
-            assertNotNull(primary.localPeek(key));
+            assertNull(nearCache.localPeek(key, CachePeekMode.ONHEAP));
+            assertNotNull(primary.localPeek(key, CachePeekMode.ONHEAP));
         }
 
-        assertEquals(vals.get(lastKey), nearCache.localPeek(lastKey));
+        assertEquals(vals.get(lastKey), nearCache.localPeek(lastKey, CachePeekMode.ONHEAP));
     }
 
     /** {@inheritDoc} */
