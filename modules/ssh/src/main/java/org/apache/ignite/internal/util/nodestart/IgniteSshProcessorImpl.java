@@ -22,7 +22,7 @@ package org.apache.ignite.internal.util.nodestart;
  */
 public class IgniteSshProcessorImpl implements IgniteSshProcessor {
     /** {@inheritDoc} */
-    @Override public GridNodeCallable nodeStartCallable(GridRemoteStartSpecification spec, int timeout) {
-        return new GridNodeCallableImpl(spec, timeout);
+    @Override public IgniteNodeCallable nodeStartCallable(IgniteRemoteStartSpecification spec, int timeout) {
+        return new IgniteNodeCallableImpl(spec, timeout);
     }
 }
