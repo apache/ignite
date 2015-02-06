@@ -855,7 +855,7 @@ public class IgnitionEx {
             if (name == null)
                 throw new IgniteCheckedException("Default grid instance has already been started.");
             else
-                throw new IgniteCheckedException("Grid instance with this name has already been started: " + name);
+                throw new IgniteCheckedException("Ignite instance with this name has already been started: " + name);
         }
 
         if (startCtx.config().getWarmupClosure() != null)
