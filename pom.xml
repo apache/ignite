@@ -1011,10 +1011,6 @@
                                             <title>Spring Caching</title>
                                             <packages>org.apache.ignite.cache.spring</packages>
                                         </group>
-                                        <group>
-                                            <title>Interop</title>
-                                            <packages>org.apache.ignite.interop</packages>
-                                        </group>
                                     </groups>
                                     <header>
                                         <![CDATA[
