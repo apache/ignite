@@ -27,6 +27,11 @@ import java.util.*;
  */
 public class IgniteJdbcStorePutBenchmark extends IgniteJdbcStoreAbstractBenchmark {
     /** {@inheritDoc} */
+    @Override protected int fillRange() {
+        return args.range() / 2;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int id = nextRandom(args.range());
 

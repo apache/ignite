@@ -110,6 +110,8 @@ class IgniteOptimizedObjectInputStream extends ObjectInputStream {
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
         reset();
+
+        clsLdr = null;
     }
 
     /** {@inheritDoc} */
