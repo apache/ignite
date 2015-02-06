@@ -390,6 +390,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @IgniteAsyncSupported
     @Override public void clear();
 
+    public boolean clear(Collection<K> keys);
+
     /** {@inheritDoc} */
     @IgniteAsyncSupported
     @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments);

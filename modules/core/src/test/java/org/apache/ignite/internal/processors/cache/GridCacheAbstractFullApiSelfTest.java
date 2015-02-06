@@ -1698,8 +1698,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertFalse(cacheAsync.<Boolean>future().get());
 
-        cache.localEvict(Collections.singleton("key2"));
-        cache.clear(Collections.singleton("key3"));
+        cache.localEvict(Arrays.asList("key2"));
 
         // Same checks inside tx.
         IgniteTx tx = inTx ? grid(0).transactions().txStart() : null;
