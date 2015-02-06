@@ -273,7 +273,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final UUID subjId0 = subjId;
 
-        final ExpiryPolicy expiryPlc = prj != null ? prj.expiry() : null;
+        final ExpiryPolicy expiryPlc = skipVals ? null : prj != null ? prj.expiry() : null;
 
         return asyncOp(new CO<IgniteInternalFuture<Map<K, V>>>() {
             @Override public IgniteInternalFuture<Map<K, V>> apply() {
@@ -886,7 +886,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         long topVer = ctx.affinity().affinityTopologyVersion();
 
-        final GetExpiryPolicy expiry = accessExpiryPolicy(expiryPlc);
+        final GetExpiryPolicy expiry = skipVals ? null : accessExpiryPolicy(expiryPlc);
 
         // Optimisation: try to resolve value locally and escape 'get future' creation.
         if (!reload && !forcePrimary) {

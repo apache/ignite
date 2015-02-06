@@ -193,7 +193,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             subjId,
             taskName,
             deserializePortable,
-            accessExpiryPolicy(prj != null ? prj.expiry() : null),
+            skipVals ? null : accessExpiryPolicy(prj != null ? prj.expiry() : null),
             skipVals);
     }
 

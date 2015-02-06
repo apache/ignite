@@ -2070,7 +2070,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             taskName,
             deserializePortable,
             forcePrimary,
-            accessExpiryPolicy(prj != null ? prj.expiry() : null),
+            skipVals ? null : accessExpiryPolicy(prj != null ? prj.expiry() : null),
             skipVals);
     }
 
@@ -2194,7 +2194,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     }
                 }
 
-                if (misses != null && readThrough && ctx.readThrough()) {
+                if (!skipVals && misses != null && readThrough && ctx.readThrough()) {
                     final Map<K, GridCacheVersion> loadKeys = misses;
 
                     final IgniteTxLocalAdapter<K, V> tx0 = tx;

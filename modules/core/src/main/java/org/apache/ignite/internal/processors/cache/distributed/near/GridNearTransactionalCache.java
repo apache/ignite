@@ -132,7 +132,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             subjId,
             taskName,
             deserializePortable,
-            prj != null ? prj.expiry() : null,
+            skipVals ? null : prj != null ? prj.expiry() : null,
             skipVals);
     }
 
