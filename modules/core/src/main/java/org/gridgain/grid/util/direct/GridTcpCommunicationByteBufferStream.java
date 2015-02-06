@@ -273,6 +273,15 @@ public class GridTcpCommunicationByteBufferStream {
         lastFinished = writeArray(val, BYTE_ARR_OFF, val.length, val.length);
     }
 
+    /**
+     * @param val Array.
+     */
+    public void writeByteArrayNoLength(byte[] val) {
+        assert val != null;
+
+        lastFinished = writeArray(val, BYTE_ARR_OFF, val.length, val.length, true);
+    }
+
     /** {@inheritDoc} */
     public void writeBoolean(boolean val) {
         int pos = buf.position();
@@ -565,6 +574,18 @@ public class GridTcpCommunicationByteBufferStream {
      * @return Whether array was fully written
      */
     private boolean writeArray(Object arr, long off, int len, int bytes) {
+        return writeArray(arr, off, len, bytes, false);
+    }
+
+    /**
+     * @param arr Array.
+     * @param off Offset.
+     * @param len Length.
+     * @param bytes Length in bytes.
+     * @param skipLen {@code true} if length should not be written.
+     * @return Whether array was fully written
+     */
+    private boolean writeArray(Object arr, long off, int len, int bytes, boolean skipLen) {
         assert arr != null;
         assert arr.getClass().isArray() && arr.getClass().getComponentType().isPrimitive();
         assert off > 0;
@@ -573,10 +594,12 @@ public class GridTcpCommunicationByteBufferStream {
         assert bytes >= arrOff;
 
         if (arrOff == -1) {
-            if (remaining() < 4)
-                return false;
+            if (!skipLen) {
+                if (remaining() < 4)
+                    return false;
 
-            writeInt(len);
+                writeInt(len);
+            }
 
             arrOff = 0;
         }

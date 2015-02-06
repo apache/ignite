@@ -22,6 +22,7 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
+import org.gridgain.grid.util.direct.*;
 
 import java.io.*;
 import java.nio.*;
@@ -39,6 +40,9 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
 
     /** UTF-8 charset. */
     private static final Charset UTF_8 = Charset.forName("UTF-8");
+
+    /** Stream. */
+    private final GridTcpCommunicationByteBufferStream stream = new GridTcpCommunicationByteBufferStream(null);
 
     /**
      * Memcached message bytes.
@@ -63,25 +67,20 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        stream.setBuffer(buf);
 
         if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+            if (!buf.hasRemaining())
                 return false;
+
+            stream.writeByte(directType());
 
             commState.typeWritten = true;
         }
 
-        switch (commState.idx) {
-            case 0:
-                if (!commState.putByteArray("bytes", bytes))
-                    return false;
+        stream.writeByteArrayNoLength(bytes);
 
-                commState.idx++;
-
-        }
-
-        return true;
+        return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
