@@ -22,7 +22,7 @@ import org.jetbrains.annotations.*;
 
 /**
  * Possible states of {@link org.apache.ignite.Ignition}. You can register a listener for
- * state change notifications via {@link org.apache.ignite.Ignition#addListener(org.apache.ignite.lifecycle.IgniteListener)}
+ * state change notifications via {@link org.apache.ignite.Ignition#addListener(IgnitionListener)}
  * method.
  */
 public enum IgniteState {

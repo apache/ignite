@@ -35,7 +35,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Multi-node cache test.
@@ -420,7 +420,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     /**
      * Event listener.
      */
-    private class CacheEventListener implements IgnitePredicate<IgniteEvent> {
+    private class CacheEventListener implements IgnitePredicate<Event> {
         /** */
         @GridToStringExclude
         private final Ignite ignite;
@@ -468,7 +468,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
+        @Override public boolean apply(Event evt) {
             info("Grid cache event [type=" + evt.type() + ", latch=" + latch.getCount() + ", evt=" + evt + ']');
 
             if (evts.contains(evt.type()))

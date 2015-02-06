@@ -38,7 +38,7 @@ public class ExternalGridifyTask extends ComputeTaskSplitAdapter<GridifyArgument
 
         return Collections.singletonList(new ComputeJobAdapter((String)arg.getMethodParameters()[0]) {
             /** */
-            @IgniteLoggerResource
+            @LoggerResource
             private IgniteLogger log;
 
             /** {@inheritDoc} */

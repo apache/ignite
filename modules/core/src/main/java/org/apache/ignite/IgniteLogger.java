@@ -52,7 +52,7 @@ import org.jetbrains.annotations.*;
  *      ...
  * </pre>
  * It's recommended to use Ignite's logger injection instead of using/instantiating
- * logger in your task/job code. See {@link org.apache.ignite.resources.IgniteLoggerResource} annotation about logger
+ * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  * <h1 class="header">Quiet Mode</h1>
  * By default Ignite 3.0 and later starts in "quiet" mode suppressing {@code INFO} and {@code DEBUG}

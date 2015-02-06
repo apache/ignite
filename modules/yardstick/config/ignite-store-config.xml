@@ -55,7 +55,7 @@
         <property name="peerClassLoadingEnabled" value="false"/>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
+            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
                 <property name="requireSerializable" value="true"/>
                 <property name="classNames">
                     <list>
@@ -74,7 +74,7 @@
 
         <property name="cacheConfiguration">
             <list>
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="atomic"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -114,7 +114,7 @@
                     <property name="writeBehindEnabled" value="false"/>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="tx"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>

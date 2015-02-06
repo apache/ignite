@@ -43,7 +43,7 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
     private byte[] batchBytes;
 
     /** Deployment mode. */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /** Deployment sample class name. */
     private String sampleClsName;
@@ -78,7 +78,7 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
     public GridStreamerExecutionRequest(
         boolean forceLocDep,
         byte[] batchBytes,
-        @Nullable IgniteDeploymentMode depMode,
+        @Nullable DeploymentMode depMode,
         @Nullable String sampleClsName,
         @Nullable String userVer,
         @Nullable Map<UUID, IgniteUuid> ldrParticipants,
@@ -105,7 +105,7 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
     /**
      * @return Deployment mode.
      */
-    public IgniteDeploymentMode deploymentMode() {
+    public DeploymentMode deploymentMode() {
         return depMode;
     }
 
@@ -292,7 +292,7 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
                 if (!commState.lastRead())
                     return false;
 
-                depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
+                depMode = DeploymentMode.fromOrdinal(depMode0);
 
                 commState.idx++;
 

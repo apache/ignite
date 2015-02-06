@@ -87,7 +87,7 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         super.prepareMarshal(marsh);
 
         if (err != null)
@@ -95,7 +95,7 @@ public class GridGgfsAckMessage extends GridGgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(marsh, ldr);
 
         if (errBytes != null)

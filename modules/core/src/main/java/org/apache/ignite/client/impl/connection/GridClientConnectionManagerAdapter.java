@@ -139,7 +139,7 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
 
         if (cfg.getProtocol() == GridClientProtocol.TCP) {
             try {
-                IgniteLogger gridLog = new IgniteJavaLogger(false);
+                IgniteLogger gridLog = new JavaLogger(false);
 
                 GridNioFilter[] filters;
 

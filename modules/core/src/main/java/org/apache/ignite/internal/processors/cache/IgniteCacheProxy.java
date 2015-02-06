@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -41,7 +42,7 @@ import java.util.concurrent.locks.*;
 /**
  * Cache proxy.
  */
-public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCache<K, V>>
+public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V>>
     implements IgniteCache<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;

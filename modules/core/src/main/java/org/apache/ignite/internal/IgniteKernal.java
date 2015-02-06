@@ -261,8 +261,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public final IgniteCompute compute(ClusterGroup prj) {
-        return ((ClusterGroupAdapter)prj).compute();
+    @Override public final IgniteCompute compute(ClusterGroup grp) {
+        return ((ClusterGroupAdapter) grp).compute();
     }
 
     /** {@inheritDoc} */
@@ -271,18 +271,18 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public final IgniteEvents events(ClusterGroup prj) {
-        return ((ClusterGroupAdapter)prj).events();
+    @Override public final IgniteEvents events(ClusterGroup grp) {
+        return ((ClusterGroupAdapter) grp).events();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteManaged managed(ClusterGroup prj) {
-        return ((ClusterGroupAdapter)prj).managed();
+    @Override public IgniteServices services(ClusterGroup grp) {
+        return ((ClusterGroupAdapter) grp).services();
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService executorService(ClusterGroup prj) {
-        return ((ClusterGroupAdapter)prj).executorService();
+    @Override public ExecutorService executorService(ClusterGroup grp) {
+        return ((ClusterGroupAdapter) grp).executorService();
     }
 
     /** {@inheritDoc} */
@@ -1201,9 +1201,9 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         if (cfg.getIncludeEventTypes() != null && cfg.getIncludeEventTypes().length != 0)
             perf.add("Disable grid events (remove 'includeEventTypes' from configuration)");
 
-        if (IgniteOptimizedMarshaller.available() && !(cfg.getMarshaller() instanceof IgniteOptimizedMarshaller))
+        if (OptimizedMarshaller.available() && !(cfg.getMarshaller() instanceof OptimizedMarshaller))
             perf.add("Enable optimized marshaller (set 'marshaller' to " +
-                IgniteOptimizedMarshaller.class.getSimpleName() + ')');
+                OptimizedMarshaller.class.getSimpleName() + ')');
     }
 
     /**
@@ -1508,8 +1508,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 cfg.getGridName(),
                 "Thread Pools",
                 name,
-                new IgniteThreadPoolMXBeanAdapter(exec),
-                IgniteThreadPoolMXBean.class);
+                new ThreadPoolMXBeanAdapter(exec),
+                ThreadPoolMXBean.class);
 
             if (log.isDebugEnabled())
                 log.debug("Registered executor service MBean: " + res);
@@ -2000,8 +2000,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             notifyLifecycleBeansEx(LifecycleEventType.AFTER_GRID_STOP);
 
             // Clean internal class/classloader caches to avoid stopped contexts held in memory.
-            IgniteOptimizedMarshaller.clearCache();
-            IgniteMarshallerExclusions.clearCache();
+            OptimizedMarshaller.clearCache();
+            MarshallerExclusions.clearCache();
             GridEnumCache.clear();
 
             gw.writeLock();
@@ -3367,7 +3367,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteQueue<T> queue(String name,
         int cap,
-        IgniteCollectionConfiguration cfg)
+        CollectionConfiguration cfg)
     {
         guard();
 
@@ -3384,7 +3384,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteSet<T> set(String name,
-        IgniteCollectionConfiguration cfg)
+        CollectionConfiguration cfg)
     {
         guard();
 

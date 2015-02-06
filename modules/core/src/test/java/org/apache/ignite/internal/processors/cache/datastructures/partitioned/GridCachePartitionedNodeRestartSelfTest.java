@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;

@@ -94,12 +94,12 @@ import java.util.*;
  * ignite resources. Both, field and method based injection are supported.
  * The following ignite resources can be injected:
  * <ul>
- * <li>{@link org.apache.ignite.resources.IgniteTaskSessionResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteJobContextResource}</li>
+ * <li>{@link org.apache.ignite.resources.TaskSessionResource}</li>
+ * <li>{@link org.apache.ignite.resources.JobContextResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteInstanceResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteLoggerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteSpringApplicationContextResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteSpringResource}</li>
+ * <li>{@link org.apache.ignite.resources.LoggerResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringApplicationContextResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  * <p>
@@ -117,7 +117,7 @@ import java.util.*;
  * of certain event or state change that occurred during job execution.
  * <p>
  * Distributed task session can be injected into {@link ComputeJob} implementation
- * using {@link org.apache.ignite.resources.IgniteTaskSessionResource @IgniteTaskSessionResource} annotation.
+ * using {@link org.apache.ignite.resources.TaskSessionResource @TaskSessionResource} annotation.
  * Both, field and method based injections are supported. Refer to
  * {@link ComputeTaskSession} documentation for more information on session functionality.
  * <p>

@@ -26,8 +26,8 @@ import java.util.{HashSet => JHashSet, _}
 import org.apache.ignite.IgniteSystemProperties._
 import org.apache.ignite.cluster.{ClusterGroup, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration
-import org.apache.ignite.events.IgniteEventType._
-import org.apache.ignite.events.{IgniteDiscoveryEvent, IgniteEvent}
+import org.apache.ignite.events.EventType._
+import org.apache.ignite.events.{DiscoveryEvent, Event}
 import org.apache.ignite.internal.IgniteComponentType._
 import org.apache.ignite.internal.IgniteNodeAttributes._
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
@@ -40,11 +40,10 @@ import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.apache.ignite.internal.{IgniteEx, GridProductImpl}
 import org.apache.ignite.lang.{IgniteNotPeerDeployable, IgnitePredicate}
-import org.apache.ignite.lifecycle.IgniteListener
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import org.apache.ignite.{IgniteState, IgniteSystemProperties, Ignition, _}
+import org.apache.ignite._
 import org.jetbrains.annotations.Nullable
 
 import scala.collection.JavaConversions._
@@ -132,7 +131,7 @@ object visor extends VisorTag {
     type NodeFilter = ClusterNode => Boolean
 
     /** Type alias for general event filter. */
-    type EventFilter = IgniteEvent => Boolean
+    type EventFilter = Event => Boolean
 
     /** `Nil` is for empty list, `Til` is for empty tuple. */
     val Til: Arg = (null, null)
@@ -147,16 +146,16 @@ object visor extends VisorTag {
     private var cmdLst: Seq[VisorConsoleCommandHolder] = Nil
 
     /** Node left listener. */
-    private var nodeLeftLsnr: IgnitePredicate[IgniteEvent] = null
+    private var nodeLeftLsnr: IgnitePredicate[Event] = null
 
     /** Node join listener. */
-    private var nodeJoinLsnr: IgnitePredicate[IgniteEvent] = null
+    private var nodeJoinLsnr: IgnitePredicate[Event] = null
 
     /** Node segmentation listener. */
-    private var nodeSegLsnr: IgnitePredicate[IgniteEvent] = null
+    private var nodeSegLsnr: IgnitePredicate[Event] = null
 
     /** Node stop listener. */
-    private var nodeStopLsnr: IgniteListener = null
+    private var nodeStopLsnr: IgnitionListener = null
 
     /** Visor copyright blurb. */
     private final val COPYRIGHT = GridProductImpl.COPYRIGHT
@@ -1626,10 +1625,10 @@ object visor extends VisorTag {
                 setVarIfAbsent(ip.get, "h")
         })
 
-        nodeJoinLsnr = new IgnitePredicate[IgniteEvent]() {
-            override def apply(e: IgniteEvent): Boolean = {
+        nodeJoinLsnr = new IgnitePredicate[Event]() {
+            override def apply(e: Event): Boolean = {
                 e match {
-                    case de: IgniteDiscoveryEvent =>
+                    case de: DiscoveryEvent =>
                         setVarIfAbsent(nid8(de.eventNode()), "n")
 
                         val node = grid.node(de.eventNode().id())
@@ -1655,10 +1654,10 @@ object visor extends VisorTag {
 
         grid.events().localListen(nodeJoinLsnr, EVT_NODE_JOINED)
 
-        nodeLeftLsnr = new IgnitePredicate[IgniteEvent]() {
-            override def apply(e: IgniteEvent): Boolean = {
+        nodeLeftLsnr = new IgnitePredicate[Event]() {
+            override def apply(e: Event): Boolean = {
                 e match {
-                    case (de: IgniteDiscoveryEvent) =>
+                    case (de: DiscoveryEvent) =>
                         val nv = mfind(nid8(de.eventNode()))
 
                         if (nv.isDefined)
@@ -1686,10 +1685,10 @@ object visor extends VisorTag {
 
         grid.events().localListen(nodeLeftLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED)
 
-        nodeSegLsnr = new IgnitePredicate[IgniteEvent] {
-            override def apply(e: IgniteEvent): Boolean = {
+        nodeSegLsnr = new IgnitePredicate[Event] {
+            override def apply(e: Event): Boolean = {
                 e match {
-                    case de: IgniteDiscoveryEvent =>
+                    case de: DiscoveryEvent =>
                         if (de.eventNode().id() == grid.localNode.id) {
                             warn("Closing Visor console due to topology segmentation.")
                             warn("Contact your system administrator.")
@@ -1706,7 +1705,7 @@ object visor extends VisorTag {
 
         grid.events().localListen(nodeSegLsnr, EVT_NODE_SEGMENTED)
 
-        nodeStopLsnr = new IgniteListener {
+        nodeStopLsnr = new IgnitionListener {
             def onStateChange(name: String, state: IgniteState) {
                 if (name == grid.name && state == IgniteState.STOPPED) {
                     warn("Closing Visor console due to stopping of host grid instance.")

@@ -48,7 +48,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
 
     /** */
     @GridDirectTransient
-    private Collection<IgniteEvent> evts;
+    private Collection<Event> evts;
 
     /** */
     private byte[] evtsBytes;
@@ -64,7 +64,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
     private IgniteUuid clsLdrId;
 
     /** */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /** */
     private String filterClsName;
@@ -96,7 +96,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
         byte[] filter,
         String filterClsName,
         IgniteUuid clsLdrId,
-        IgniteDeploymentMode depMode,
+        DeploymentMode depMode,
         String userVer,
         Map<UUID, IgniteUuid> ldrParties) {
         this.resTopic = resTopic;
@@ -115,7 +115,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
      * @param evts Grid events.
      * @param ex Exception occurred during processing.
      */
-    GridEventStorageMessage(Collection<IgniteEvent> evts, Throwable ex) {
+    GridEventStorageMessage(Collection<Event> evts, Throwable ex) {
         this.evts = evts;
         this.ex = ex;
 
@@ -165,14 +165,14 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
     /**
      * @return Events.
      */
-    @Nullable Collection<IgniteEvent> events() {
+    @Nullable Collection<Event> events() {
         return evts != null ? Collections.unmodifiableCollection(evts) : null;
     }
 
     /**
      * @param evts Events.
      */
-    void events(@Nullable Collection<IgniteEvent> evts) {
+    void events(@Nullable Collection<Event> evts) {
         this.evts = evts;
     }
 
@@ -200,7 +200,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
     /**
      * @return Deployment mode.
      */
-    IgniteDeploymentMode deploymentMode() {
+    DeploymentMode deploymentMode() {
         return depMode;
     }
 
@@ -412,7 +412,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
                 if (!commState.lastRead())
                     return false;
 
-                depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
+                depMode = DeploymentMode.fromOrdinal(depMode0);
 
                 commState.idx++;
 

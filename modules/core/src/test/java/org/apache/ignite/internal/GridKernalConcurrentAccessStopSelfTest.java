@@ -21,7 +21,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests kernal stop while it is being accessed from asynchronous even listener.
@@ -47,8 +47,8 @@ public class GridKernalConcurrentAccessStopSelfTest  extends GridCommonAbstractT
      */
     public void testConcurrentAccess() {
         for (int i = 0; i < GRIDS; i++) {
-            grid(i).events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            grid(i).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     try {
                         Thread.sleep(2000);
                     } catch (InterruptedException e) {

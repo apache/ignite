@@ -84,7 +84,7 @@ class GridCacheGroupLockPutTask extends ComputeTaskAdapter<Collection<Integer>, 
 
         return Collections.singletonMap(
             new ComputeJobAdapter() {
-                @IgniteLoggerResource
+                @LoggerResource
                 private IgniteLogger log;
 
                 @IgniteInstanceResource

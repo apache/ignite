@@ -82,7 +82,7 @@ public class IgniteStandardMXBean extends StandardMBean {
             Method mtd = findMethod(getMBeanInterface(), methodName, new Class[]{});
 
             if (mtd != null) {
-                IgniteMXBeanDescription desc = mtd.getAnnotation(IgniteMXBeanDescription.class);
+                MXBeanDescription desc = mtd.getAnnotation(MXBeanDescription.class);
 
                 if (desc != null) {
                     str = desc.value();
@@ -110,7 +110,7 @@ public class IgniteStandardMXBean extends StandardMBean {
         String str = super.getDescription(info);
 
         // Return either default one or given by annotation.
-        IgniteMXBeanDescription desc = U.getAnnotation(getMBeanInterface(), IgniteMXBeanDescription.class);
+        MXBeanDescription desc = U.getAnnotation(getMBeanInterface(), MXBeanDescription.class);
 
         if (desc != null) {
             str = desc.value();
@@ -133,7 +133,7 @@ public class IgniteStandardMXBean extends StandardMBean {
         try {
             Method m = getMethod(info);
 
-            IgniteMXBeanDescription desc = m.getAnnotation(IgniteMXBeanDescription.class);
+            MXBeanDescription desc = m.getAnnotation(MXBeanDescription.class);
 
             if (desc != null) {
                 str = desc.value();
@@ -160,7 +160,7 @@ public class IgniteStandardMXBean extends StandardMBean {
         try {
             Method m = getMethod(op);
 
-            IgniteMXBeanParametersDescriptions decsAnn = m.getAnnotation(IgniteMXBeanParametersDescriptions.class);
+            MXBeanParametersDescriptions decsAnn = m.getAnnotation(MXBeanParametersDescriptions.class);
 
             if (decsAnn != null) {
                 assert decsAnn.value() != null;
@@ -190,7 +190,7 @@ public class IgniteStandardMXBean extends StandardMBean {
         try {
             Method m = getMethod(op);
 
-            IgniteMXBeanParametersNames namesAnn = m.getAnnotation(IgniteMXBeanParametersNames.class);
+            MXBeanParametersNames namesAnn = m.getAnnotation(MXBeanParametersNames.class);
 
             if (namesAnn != null) {
                 assert namesAnn.value() != null;

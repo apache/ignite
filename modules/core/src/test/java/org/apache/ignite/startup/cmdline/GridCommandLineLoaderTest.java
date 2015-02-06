@@ -20,7 +20,6 @@ package org.apache.ignite.startup.cmdline;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.concurrent.*;
@@ -51,7 +50,7 @@ public class GridCommandLineLoaderTest extends GridCommonAbstractTest {
 
         info("Loading Grid from configuration file: " + path);
 
-        G.addListener(new IgniteListener() {
+        G.addListener(new IgnitionListener() {
             @Override public void onStateChange(String name, IgniteState state) {
                 if (state == STARTED) {
                     info("Received started notification from grid: " + name);

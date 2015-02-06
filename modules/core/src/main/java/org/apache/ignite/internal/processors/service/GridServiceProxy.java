@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.managed.*;
+import org.apache.ignite.services.*;
 import org.apache.ignite.resources.*;
 import org.jdk8.backport.*;
 
@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.internal.GridClosureCallMode.*;
 
 /**
- * Wrapper for making {@link org.apache.ignite.managed.ManagedService} class proxies.
+ * Wrapper for making {@link org.apache.ignite.services.Service} class proxies.
  */
 class GridServiceProxy<T> implements Serializable {
     /** */
@@ -137,7 +137,7 @@ class GridServiceProxy<T> implements Serializable {
 
                     // If service is deployed locally, then execute locally.
                     if (node.isLocal()) {
-                        ManagedServiceContextImpl svcCtx = ctx.service().serviceContext(name);
+                        ServiceContextImpl svcCtx = ctx.service().serviceContext(name);
 
                         if (svcCtx != null)
                             return mtd.invoke(svcCtx.service(), args);
@@ -288,7 +288,7 @@ class GridServiceProxy<T> implements Serializable {
          * @return Map of number of service instances per node ID.
          */
         private Map<UUID, Integer> serviceTopology(String name) {
-            for (ManagedServiceDescriptor desc : ctx.service().deployedServices()) {
+            for (ServiceDescriptor desc : ctx.service().serviceDescriptors()) {
                 if (desc.name().equals(name))
                     return desc.topologySnapshot();
             }
@@ -342,7 +342,7 @@ class GridServiceProxy<T> implements Serializable {
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            ManagedServiceContextImpl svcCtx = ((IgniteKernal) ignite).context().service().serviceContext(svcName);
+            ServiceContextImpl svcCtx = ((IgniteKernal) ignite).context().service().serviceContext(svcName);
 
             if (svcCtx == null)
                 throw new GridServiceNotFoundException(svcName);

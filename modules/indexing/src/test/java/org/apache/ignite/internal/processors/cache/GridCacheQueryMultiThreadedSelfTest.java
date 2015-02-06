@@ -82,7 +82,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         cfg.setDiscoverySpi(disco);
 
         cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -105,7 +105,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        IgniteQueryConfiguration indexing = new IgniteQueryConfiguration();
+        QueryConfiguration indexing = new QueryConfiguration();
 
         indexing.setMaxOffheapRowsCacheSize(128);
 

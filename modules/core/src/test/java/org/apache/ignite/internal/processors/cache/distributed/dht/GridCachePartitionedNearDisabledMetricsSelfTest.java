@@ -37,7 +37,7 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.getTransactionsConfiguration().setTxSerializableEnabled(true);
+        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         return cfg;
     }

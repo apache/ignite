@@ -39,7 +39,7 @@ public abstract class GridGgfsCommunicationMessage extends GridTcpCommunicationM
      * @param marsh Marshaller.
      * @throws IgniteCheckedException In case of error.
      */
-    public void prepareMarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
+    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -48,7 +48,7 @@ public abstract class GridGgfsCommunicationMessage extends GridTcpCommunicationM
      * @param ldr Class loader.
      * @throws IgniteCheckedException In case of error.
      */
-    public void finishUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
+    public void finishUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         // No-op.
     }
 

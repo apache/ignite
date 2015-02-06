@@ -70,7 +70,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }

@@ -47,7 +47,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.util.nio.GridNioBackPressureControl.*;
@@ -105,7 +105,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private CommunicationListener<Serializable> commLsnr;
 
     /** Grid marshaller. */
-    private final IgniteMarshaller marsh;
+    private final Marshaller marsh;
 
     /** Busy lock. */
     private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
@@ -301,10 +301,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     @Override public void onKernalStart0() throws IgniteCheckedException {
         discoLsnr = new GridLocalEventListener() {
             @SuppressWarnings({"TooBroadScope", "fallthrough"})
-            @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof IgniteDiscoveryEvent : "Invalid event: " + evt;
+            @Override public void onEvent(Event evt) {
+                assert evt instanceof DiscoveryEvent : "Invalid event: " + evt;
 
-                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                 UUID nodeId = discoEvt.eventNode().id();
 

@@ -43,7 +43,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }
@@ -68,7 +68,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
      */
     public void testWithName() throws Exception {
         IgniteCallable<String> f = new IgniteCallable<String>() {
-            @IgniteTaskSessionResource
+            @TaskSessionResource
             private ComputeTaskSession ses;
 
             @Override public String call() {
@@ -156,7 +156,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) {
             return F.asSet(new ComputeJobAdapter() {
-                @IgniteTaskSessionResource
+                @TaskSessionResource
                 private ComputeTaskSession ses;
 
                 @Override public Object execute() {

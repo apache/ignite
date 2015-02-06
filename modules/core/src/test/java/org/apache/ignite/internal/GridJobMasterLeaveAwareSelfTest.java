@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
@@ -91,7 +90,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
 
         cfg.setCommunicationSpi(new CommunicationSpi());
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -584,7 +583,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      */
     private static class TestCallable implements IgniteCallable<Void>, ComputeJobMasterLeaveAware {
         /** Task session. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
@@ -608,7 +607,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      */
     private static class TestRunnable implements IgniteRunnable, ComputeJobMasterLeaveAware {
         /** Task session. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
@@ -630,7 +629,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      */
     private static class TestClosure implements IgniteClosure<String, Void>, ComputeJobMasterLeaveAware {
         /** Task session. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
@@ -657,7 +656,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         private int jobCnt;
 
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /**
@@ -690,7 +689,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      */
     private static class TestJob extends ComputeJobAdapter implements ComputeJobMasterLeaveAware {
         /** Task session. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */

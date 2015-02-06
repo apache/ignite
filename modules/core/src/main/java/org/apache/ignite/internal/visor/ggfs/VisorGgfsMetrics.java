@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.visor.ggfs;
 
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 
 /**
- * Data transfer object for {@link org.apache.ignite.fs.IgniteFsMetrics}.
+ * Data transfer object for {@link org.apache.ignite.ignitefs.IgniteFsMetrics}.
  */
 public class VisorGgfsMetrics implements Serializable {
     /** */

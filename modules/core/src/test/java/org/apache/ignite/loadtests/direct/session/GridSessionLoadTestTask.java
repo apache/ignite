@@ -29,11 +29,11 @@ import java.util.*;
  */
 public class GridSessionLoadTestTask extends ComputeTaskAdapter<Integer, Boolean> {
     /** */
-    @IgniteTaskSessionResource
+    @TaskSessionResource
     private ComputeTaskSession taskSes;
 
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** */

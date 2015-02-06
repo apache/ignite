@@ -41,7 +41,7 @@ public class IgniteLog4jExternallyRolledFileAppender extends ExternallyRolledFil
      *
      */
     private void init() {
-        IgniteLog4jLogger.addAppender(this);
+        Log4JLogger.addAppender(this);
     }
 
     /** {@inheritDoc} */

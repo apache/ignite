@@ -36,7 +36,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Load balancing SPI that adapts to overall node performance. It
@@ -142,7 +142,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskAdapter&lt;String, String&gt; {
  *    // Inject load balancer.
- *    &#64;IgniteLoadBalancerResource
+ *    &#64;LoadBalancerResource
  *    ComputeLoadBalancer balancer;
  *
  *    // Map jobs to grid nodes.
@@ -235,7 +235,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
     private static final Random RAND = new Random();
 
     /** Grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** */
@@ -310,11 +310,11 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
     /** {@inheritDoc} */
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         getSpiContext().addLocalEventListener(evtLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
+            @Override public void onEvent(Event evt) {
                 switch (evt.type()) {
                     case EVT_TASK_FINISHED:
                     case EVT_TASK_FAILED: {
-                        IgniteTaskEvent taskEvt = (IgniteTaskEvent)evt;
+                        TaskEvent taskEvt = (TaskEvent)evt;
 
                         taskTops.remove(taskEvt.taskSessionId());
 
@@ -329,7 +329,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
                         // We should keep topology and use cache in GridComputeTask#map() method to
                         // avoid O(n*n/2) complexity, after that we can drop caches.
                         // Here we set mapped property and later cache will be ignored
-                        IgniteJobEvent jobEvt = (IgniteJobEvent)evt;
+                        JobEvent jobEvt = (JobEvent)evt;
 
                         IgniteBiTuple<Boolean, WeightedTopology> weightedTop = taskTops.get(jobEvt.taskSessionId());
 
@@ -346,7 +346,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
                     case EVT_NODE_FAILED:
                     case EVT_NODE_JOINED:
                     case EVT_NODE_LEFT: {
-                        IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                        DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                         rwLock.writeLock().lock();
 

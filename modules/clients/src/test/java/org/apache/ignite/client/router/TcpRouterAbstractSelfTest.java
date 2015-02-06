@@ -107,7 +107,7 @@ public abstract class TcpRouterAbstractSelfTest extends ClientAbstractSelfTest {
         cfg.setPort(ROUTER_PORT);
         cfg.setPortRange(0);
         cfg.setServers(Collections.singleton(HOST+":"+BINARY_PORT));
-        cfg.setLogger(new IgniteLog4jLogger(ROUTER_LOG_CFG));
+        cfg.setLogger(new Log4JLogger(ROUTER_LOG_CFG));
 
         return cfg;
     }

@@ -40,7 +40,7 @@ import java.text.*;
 import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * This class provides convenient adapter for SPI implementations.
@@ -53,7 +53,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     private long startTstamp;
 
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Ignite instance */
@@ -144,11 +144,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
         if (check) {
             spiCtx.addLocalEventListener(paramsLsnr = new GridLocalEventListener() {
-                @Override public void onEvent(IgniteEvent evt) {
-                    assert evt instanceof IgniteDiscoveryEvent : "Invalid event [expected=" + EVT_NODE_JOINED +
+                @Override public void onEvent(Event evt) {
+                    assert evt instanceof DiscoveryEvent : "Invalid event [expected=" + EVT_NODE_JOINED +
                         ", actual=" + evt.type() + ", evt=" + evt + ']';
 
-                    ClusterNode node = spiCtx.node(((IgniteDiscoveryEvent)evt).eventNode().id());
+                    ClusterNode node = spiCtx.node(((DiscoveryEvent)evt).eventNode().id());
 
                     if (node != null)
                         try {
@@ -559,7 +559,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Override public void recordEvent(IgniteEvent evt) {
+        @Override public void recordEvent(Event evt) {
             /* No-op. */
         }
 

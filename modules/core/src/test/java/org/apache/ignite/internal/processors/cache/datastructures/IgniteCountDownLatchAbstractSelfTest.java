@@ -79,7 +79,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
             @IgniteInstanceResource
             private Ignite ignite;
 
-            @IgniteLoggerResource
+            @LoggerResource
             private IgniteLogger log;
 
             @Nullable @Override public Object call() throws Exception {

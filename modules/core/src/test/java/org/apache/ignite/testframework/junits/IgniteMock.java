@@ -22,7 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.marshaller.IgniteMarshaller;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.internal.product.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.plugin.security.*;
@@ -46,7 +46,7 @@ public class IgniteMock implements Ignite {
     private final UUID nodeId;
 
     /** */
-    private IgniteMarshaller marshaller;
+    private Marshaller marshaller;
 
     /** */
     private final MBeanServer jmx;
@@ -65,7 +65,7 @@ public class IgniteMock implements Ignite {
      * @param home Ignite home.
      */
     public IgniteMock(
-        String name, String locHost, UUID nodeId, IgniteMarshaller marshaller, MBeanServer jmx, String home) {
+        String name, String locHost, UUID nodeId, Marshaller marshaller, MBeanServer jmx, String home) {
         this.locHost = locHost;
         this.nodeId = nodeId;
         this.marshaller = marshaller;
@@ -108,7 +108,7 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCompute compute(ClusterGroup prj) {
+    @Override public IgniteCompute compute(ClusterGroup grp) {
         return null;
     }
 
@@ -128,17 +128,17 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteEvents events(ClusterGroup prj) {
+    @Override public IgniteEvents events(ClusterGroup grp) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteManaged managed() {
+    @Override public IgniteServices services() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteManaged managed(ClusterGroup prj) {
+    @Override public IgniteServices services(ClusterGroup grp) {
         return null;
     }
 
@@ -148,7 +148,7 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService executorService(ClusterGroup prj) {
+    @Override public ExecutorService executorService(ClusterGroup grp) {
         return null;
     }
 
@@ -263,14 +263,14 @@ public class IgniteMock implements Ignite {
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteQueue<T> queue(String name,
         int cap,
-        IgniteCollectionConfiguration cfg)
+        CollectionConfiguration cfg)
     {
         return null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteSet<T> set(String name,
-        IgniteCollectionConfiguration cfg)
+        CollectionConfiguration cfg)
     {
         return null;
     }

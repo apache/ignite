@@ -57,7 +57,7 @@ public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
     private boolean skipStore;
 
     /** */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /** */
     private String sampleClsName;
@@ -105,7 +105,7 @@ public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
         byte[] colBytes,
         boolean ignoreDepOwnership,
         boolean skipStore,
-        IgniteDeploymentMode depMode,
+        DeploymentMode depMode,
         String sampleClsName,
         String userVer,
         Map<UUID, IgniteUuid> ldrParticipants,
@@ -178,7 +178,7 @@ public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
     /**
      * @return Deployment mode.
      */
-    public IgniteDeploymentMode deploymentMode() {
+    public DeploymentMode deploymentMode() {
         return depMode;
     }
 
@@ -384,7 +384,7 @@ public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
                 if (!commState.lastRead())
                     return false;
 
-                depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
+                depMode = DeploymentMode.fromOrdinal(depMode0);
 
                 commState.idx++;
 

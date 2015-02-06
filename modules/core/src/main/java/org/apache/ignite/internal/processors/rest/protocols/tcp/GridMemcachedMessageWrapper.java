@@ -61,7 +61,7 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
      * @param jdkMarshaller JDK marshaller.
      * @throws IgniteCheckedException If failed to marshal.
      */
-    public GridMemcachedMessageWrapper(GridMemcachedMessage msg, IgniteMarshaller jdkMarshaller) throws IgniteCheckedException {
+    public GridMemcachedMessageWrapper(GridMemcachedMessage msg, Marshaller jdkMarshaller) throws IgniteCheckedException {
         bytes = encodeMemcache(msg, jdkMarshaller);
     }
 
@@ -118,7 +118,7 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
      * @return Serialized message.
      * @throws IgniteCheckedException If serialization failed.
      */
-    private byte[] encodeMemcache(GridMemcachedMessage msg, IgniteMarshaller jdkMarshaller) throws IgniteCheckedException {
+    private byte[] encodeMemcache(GridMemcachedMessage msg, Marshaller jdkMarshaller) throws IgniteCheckedException {
         GridByteArrayList res = new GridByteArrayList(HDR_LEN - 1);
 
         int keyLen = 0;
@@ -202,7 +202,7 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
      * @return Serialization flags.
      * @throws IgniteCheckedException If JDK serialization failed.
      */
-    private int encodeObj(Object obj, ByteArrayOutputStream out, IgniteMarshaller jdkMarshaller) throws IgniteCheckedException {
+    private int encodeObj(Object obj, ByteArrayOutputStream out, Marshaller jdkMarshaller) throws IgniteCheckedException {
         int flags = 0;
 
         byte[] data = null;

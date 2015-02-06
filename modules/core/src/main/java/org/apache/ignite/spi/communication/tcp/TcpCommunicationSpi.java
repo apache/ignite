@@ -57,7 +57,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * <tt>GridTcpCommunicationSpi</tt> is default communication SPI which uses
@@ -622,7 +622,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         };
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Local IP address. */
@@ -736,7 +736,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     private int selectorsCnt = DFLT_SELECTORS_CNT;
 
     /** Address resolver. */
-    private IgniteAddressResolver addrRslvr;
+    private AddressResolver addrRslvr;
 
     /** Local node ID message. */
     private NodeIdMessage nodeIdMsg;
@@ -779,11 +779,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
-        @Override public void onEvent(IgniteEvent evt) {
-            assert evt instanceof IgniteDiscoveryEvent;
+        @Override public void onEvent(Event evt) {
+            assert evt instanceof DiscoveryEvent;
             assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-            onNodeLeft(((IgniteDiscoveryEvent)evt).eventNode().id());
+            onNodeLeft(((DiscoveryEvent)evt).eventNode().id());
         }
     };
 
@@ -793,7 +793,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @param addrRslvr Address resolver.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setAddressResolver(IgniteAddressResolver addrRslvr) {
+    public void setAddressResolver(AddressResolver addrRslvr) {
         // Injection should not override value already set by Spring or user.
         if (this.addrRslvr == null)
             this.addrRslvr = addrRslvr;
@@ -818,7 +818,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      *
      * @return Address resolver.
      */
-    public IgniteAddressResolver getAddressResolver() {
+    public AddressResolver getAddressResolver() {
         return addrRslvr;
     }
 

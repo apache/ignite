@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -65,8 +64,8 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     private volatile CountDownLatch latch;
 
     /** */
-    private final IgnitePredicate<IgniteEvent> lsnr = new IgnitePredicate<IgniteEvent>() {
-        @Override public boolean apply(IgniteEvent evt) {
+    private final IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
+        @Override public boolean apply(Event evt) {
             assertNotNull("Topology lost nodes before stopTempNodes() was called.", latch);
 
             latch.countDown();
@@ -103,7 +102,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
         for (int i = 0; i < PERM_NODES_CNT; i++) {
             Ignite g = startGrid(gridCntr++);
 
-            g.events().localListen(lsnr, IgniteEventType.EVT_NODE_LEFT);
+            g.events().localListen(lsnr, EventType.EVT_NODE_LEFT);
 
             alive.add(g);
         }
@@ -207,7 +206,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
 
             alive.add(newNode);
 
-            newNode.events().localListen(lsnr, IgniteEventType.EVT_NODE_LEFT);
+            newNode.events().localListen(lsnr, EventType.EVT_NODE_LEFT);
         }
     }
 
@@ -229,7 +228,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
 
         // Remove listeners to avoid receiving events from stopping nodes.
         for (Ignite g : toRmv)
-            g.events().stopLocalListen(lsnr, IgniteEventType.EVT_NODE_LEFT);
+            g.events().stopLocalListen(lsnr, EventType.EVT_NODE_LEFT);
 
         for (Ignite g : toRmv)
             G.stop(g.name(), false);
