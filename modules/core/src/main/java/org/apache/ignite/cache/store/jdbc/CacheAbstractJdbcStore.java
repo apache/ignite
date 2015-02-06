@@ -75,7 +75,7 @@ import static java.sql.Statement.*;
  * <p>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements LifecycleAware {
+public abstract class CacheAbstractJdbcStore<K, V> extends CacheStore<K, V> implements LifecycleAware {
     /** Max attempt write count. */
     protected static final int MAX_ATTEMPT_WRITE_COUNT = 2;
 
