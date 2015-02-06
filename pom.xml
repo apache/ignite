@@ -266,7 +266,9 @@
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>
                 <version>2.8</version>
+                <inherited>false</inherited>
                 <configuration>
+                    <aggregate>true</aggregate>
                     <mapping>
                         <scala>JAVADOC_STYLE</scala>
                     </mapping>
@@ -294,6 +296,15 @@
                         <exclude>**/*.log</exclude>
                         <exclude>**/*.sln</exclude>
                         <exclude>**/*.h</exclude>
+                        <exclude>**/*.pfx</exclude>
+                        <exclude>**/*.dylib</exclude>
+                        <exclude>**/*.ini</exclude>
+                        <exclude>**/*.gar</exclude>
+                        <exclude>**/*.tst</exclude>
+                        <exclude>**/*.brokenxml</exclude>
+                        <exclude>**/*.empty</exclude>
+                        <exclude>**/*.incorrefs</exclude>
+                        <exclude>**/*.guess</exclude>
                         <!--special excludes-->
                         <exclude>**/com/romix/scala/**</exclude>
                         <exclude>**/GridOffHeapSnapTreeMap.java</exclude>
@@ -304,11 +315,12 @@
                         <exclude>**/org/jetbrains/annotations/**</exclude>
                         <exclude>**/org/pcollections/**</exclude>
                         <exclude>**/org/jdk8/backport/**</exclude>
-                        <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
+                        <exclude>**/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
                         <exclude>**/ipc/shmem/*.sh</exclude>
                         <exclude>**/keystore/generate.sh</exclude>
                         <exclude>**/pom-installed.xml</exclude>
                         <exclude>**/optimized-classnames*.properties</exclude>
+                        <exclude>**/yardstick/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>

@@ -197,17 +197,6 @@
 
         <plugins>
             <plugin>
-                <groupId>com.mycila</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-                <configuration>
-                    <headerDefinitions>
-                        <headerDefinition>../license/header-customisation.xml</headerDefinition>
-                    </headerDefinitions>
-                    <header>../license/header.txt</header>
-                </configuration>
-            </plugin>
-
-            <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
                 <executions>

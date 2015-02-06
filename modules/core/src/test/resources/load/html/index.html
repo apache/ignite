@@ -13,7 +13,8 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
+
 <html>
 <head>
     <meta charset="UTF-8"/>
@@ -366,14 +367,14 @@
 
                     lastEntry = entry;
 
-                    $branchList.append('<option>' + entry + '</option>');    
+                    $branchList.append('<option>' + entry + '</option>');
                 });
 
                 if (!currentBranchSeen)
                     branch = lastEntry;
 
                 $("#gg-branch").val(branch);
-                
+
                 displayCharts();
             }, 'text');
         });
@@ -392,9 +393,9 @@
             });
         }
 
-        /** 
+        /**
           * Displays Ignite load test charts.
-          * 
+          *
           * @param invCache Invalidate cache flag.
           */
         function displayCharts(invCache) {
@@ -530,7 +531,7 @@
          */
         function displayMongoCharts() {
             $.each(
-                ['Acknowledged', 'ReplicaAcknowledged', 'Unacknowledged'], 
+                ['Acknowledged', 'ReplicaAcknowledged', 'Unacknowledged'],
                 function(idx, suiteName) {
                     multiLineChart({
                         name : 'GridMongoInsertBenchmarkMultinode' + suiteName,
@@ -597,7 +598,7 @@
                             return [0, 4, 8];
                         }
                     });
-                    
+
                     multiLineChart({
                         name : 'GridMongoMixedOperationsBenchmarkGridGainMultinode' + suiteName,
                         csvFile : 'GridMongoMixedOperationsBenchmarkMultinode' + suiteName + '.csv',
@@ -872,7 +873,7 @@
         /**
          * Counts the difference between min and max as a
          * percentile of max.
-         * 
+         *
          * @param min Min.
          * @param max Max.
          */

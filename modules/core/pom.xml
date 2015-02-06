@@ -159,17 +159,6 @@
 
         <plugins>
             <plugin>
-                <groupId>com.mycila</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-                <configuration>
-                    <headerDefinitions>
-                        <headerDefinition>../../license/header-customisation.xml</headerDefinition>
-                    </headerDefinitions>
-                    <header>../../license/header.txt</header>
-                </configuration>
-            </plugin>
-
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>2.2</version>

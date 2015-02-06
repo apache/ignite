@@ -33,19 +33,4 @@
     </parent>
 
     <artifactId>jdk8-backport</artifactId>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>com.mycila</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-                <configuration>
-                    <headerDefinitions>
-                        <headerDefinition>../../license/header-customisation.xml</headerDefinition>
-                    </headerDefinitions>
-                    <header>../../license/header.txt</header>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>
