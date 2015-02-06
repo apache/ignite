@@ -44,7 +44,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static java.lang.System.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
 
 /**
@@ -333,8 +333,8 @@ public class VisorTaskUtils {
     }
 
     /** */
-    private static final Comparator<IgniteEvent> EVENTS_ORDER_COMPARATOR = new Comparator<IgniteEvent>() {
-        @Override public int compare(IgniteEvent o1, IgniteEvent o2) {
+    private static final Comparator<Event> EVENTS_ORDER_COMPARATOR = new Comparator<Event>() {
+        @Override public int compare(Event o1, Event o2) {
             return Long.compare(o1.localOrder(), o2.localOrder());
         }
     };
@@ -365,8 +365,8 @@ public class VisorTaskUtils {
         // Flag for detecting gaps between events.
         final AtomicBoolean lastFound = new AtomicBoolean(lastOrder < 0);
 
-        IgnitePredicate<IgniteEvent> p = new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent e) {
+        IgnitePredicate<Event> p = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event e) {
                 // Detects that events were lost.
                 if (!lastFound.get() && (lastOrder == e.localOrder()))
                     lastFound.set(true);
@@ -377,11 +377,11 @@ public class VisorTaskUtils {
             }
         };
 
-        Collection<IgniteEvent> evts = g.events().localQuery(p);
+        Collection<Event> evts = g.events().localQuery(p);
 
         // Update latest order in node local, if not empty.
         if (!evts.isEmpty()) {
-            IgniteEvent maxEvt = Collections.max(evts, EVENTS_ORDER_COMPARATOR);
+            Event maxEvt = Collections.max(evts, EVENTS_ORDER_COMPARATOR);
 
             nl.put(evtOrderKey, maxEvt.localOrder());
         }
@@ -397,7 +397,7 @@ public class VisorTaskUtils {
         if (lost)
             res.add(new VisorGridEventsLost(g.cluster().localNode().id()));
 
-        for (IgniteEvent e : evts) {
+        for (Event e : evts) {
             int tid = e.type();
             IgniteUuid id = e.id();
             String name = e.name();
@@ -406,42 +406,42 @@ public class VisorTaskUtils {
             String msg = e.message();
             String shortDisplay = e.shortDisplay();
 
-            if (e instanceof IgniteTaskEvent) {
-                IgniteTaskEvent te = (IgniteTaskEvent)e;
+            if (e instanceof TaskEvent) {
+                TaskEvent te = (TaskEvent)e;
 
                 res.add(new VisorGridTaskEvent(tid, id, name, nid, t, msg, shortDisplay,
                     te.taskName(), te.taskClassName(), te.taskSessionId(), te.internal()));
             }
-            else if (e instanceof IgniteJobEvent) {
-                IgniteJobEvent je = (IgniteJobEvent)e;
+            else if (e instanceof JobEvent) {
+                JobEvent je = (JobEvent)e;
 
                 res.add(new VisorGridJobEvent(tid, id, name, nid, t, msg, shortDisplay,
                     je.taskName(), je.taskClassName(), je.taskSessionId(), je.jobId()));
             }
-            else if (e instanceof IgniteDeploymentEvent) {
-                IgniteDeploymentEvent de = (IgniteDeploymentEvent)e;
+            else if (e instanceof DeploymentEvent) {
+                DeploymentEvent de = (DeploymentEvent)e;
 
                 res.add(new VisorGridDeploymentEvent(tid, id, name, nid, t, msg, shortDisplay, de.alias()));
             }
-            else if (e instanceof IgniteLicenseEvent) {
-                IgniteLicenseEvent le = (IgniteLicenseEvent)e;
+            else if (e instanceof LicenseEvent) {
+                LicenseEvent le = (LicenseEvent)e;
 
                 res.add(new VisorGridLicenseEvent(tid, id, name, nid, t, msg, shortDisplay, le.licenseId()));
             }
-            else if (e instanceof IgniteAuthorizationEvent) {
-                IgniteAuthorizationEvent ae = (IgniteAuthorizationEvent)e;
+            else if (e instanceof AuthorizationEvent) {
+                AuthorizationEvent ae = (AuthorizationEvent)e;
 
                 res.add(new VisorGridAuthorizationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.operation(),
                     ae.subject()));
             }
-            else if (e instanceof IgniteAuthenticationEvent) {
-                IgniteAuthenticationEvent ae = (IgniteAuthenticationEvent)e;
+            else if (e instanceof AuthenticationEvent) {
+                AuthenticationEvent ae = (AuthenticationEvent)e;
 
                 res.add(new VisorGridAuthenticationEvent(tid, id, name, nid, t, msg, shortDisplay, ae.subjectType(),
                     ae.subjectId(), ae.login()));
             }
-            else if (e instanceof IgniteSecureSessionEvent) {
-                IgniteSecureSessionEvent se = (IgniteSecureSessionEvent)e;
+            else if (e instanceof SecureSessionEvent) {
+                SecureSessionEvent se = (SecureSessionEvent)e;
 
                 res.add(new VisorGridSecuritySessionEvent(tid, id, name, nid, t, msg, shortDisplay, se.subjectType(),
                     se.subjectId()));

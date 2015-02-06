@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Abstract test for {@link org.apache.ignite.cluster.ClusterGroup}
@@ -248,18 +248,18 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     public void testExecution() throws Exception {
         String name = "oneMoreGrid";
 
-        Collection<IgniteBiTuple<Ignite, IgnitePredicate<IgniteEvent>>> lsnrs = new LinkedList<>();
+        Collection<IgniteBiTuple<Ignite, IgnitePredicate<Event>>> lsnrs = new LinkedList<>();
 
         try {
             final AtomicInteger cnt = new AtomicInteger();
 
             Ignite g = startGrid(name);
 
-            IgnitePredicate<IgniteEvent> lsnr;
+            IgnitePredicate<Event> lsnr;
 
             if (!Ignite.class.isAssignableFrom(projection().getClass())) {
-                g.events().localListen(lsnr = new IgnitePredicate<IgniteEvent>() {
-                    @Override public boolean apply(IgniteEvent evt) {
+                g.events().localListen(lsnr = new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
                         assert evt.type() == EVT_JOB_STARTED;
 
                         assert false;
@@ -274,8 +274,8 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
             for (ClusterNode node : prj.nodes()) {
                 g = G.ignite(node.id());
 
-                g.events().localListen(lsnr = new IgnitePredicate<IgniteEvent>() {
-                    @Override public boolean apply(IgniteEvent evt) {
+                g.events().localListen(lsnr = new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
                         assert evt.type() == EVT_JOB_STARTED;
 
                         synchronized (mux) {
@@ -311,7 +311,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
             checkActiveFutures();
         }
         finally {
-            for (IgniteBiTuple<Ignite, IgnitePredicate<IgniteEvent>> t : lsnrs)
+            for (IgniteBiTuple<Ignite, IgnitePredicate<Event>> t : lsnrs)
                 t.get1().events().stopLocalListen(t.get2(), EVT_JOB_STARTED);
 
             stopGrid(name);

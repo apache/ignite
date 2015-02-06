@@ -32,7 +32,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * This SPI iterates through nodes in round-robin fashion and pick the next
@@ -178,13 +178,13 @@ public class RoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements Load
 
     /** Event listener. */
     private final GridLocalEventListener lsnr = new GridLocalEventListener() {
-        @Override public void onEvent(IgniteEvent evt) {
+        @Override public void onEvent(Event evt) {
             if (evt.type() == EVT_TASK_FAILED ||
                 evt.type() == EVT_TASK_FINISHED)
-                perTaskBalancers.remove(((IgniteTaskEvent)evt).taskSessionId());
+                perTaskBalancers.remove(((TaskEvent)evt).taskSessionId());
             else if (evt.type() == EVT_JOB_MAPPED) {
                 RoundRobinPerTaskLoadBalancer balancer =
-                    perTaskBalancers.get(((IgniteJobEvent)evt).taskSessionId());
+                    perTaskBalancers.get(((JobEvent)evt).taskSessionId());
 
                 if (balancer != null)
                     balancer.onMapped();

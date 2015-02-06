@@ -32,7 +32,7 @@ import java.io.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests for cache preloader.

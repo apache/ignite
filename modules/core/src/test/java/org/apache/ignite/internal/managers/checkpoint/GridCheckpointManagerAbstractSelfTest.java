@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.compute.ComputeTaskSessionScope.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  *
@@ -176,11 +176,11 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         try {
             Ignite ignite = startGrid(gridName);
 
-            ignite.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    assert evt instanceof IgniteCheckpointEvent;
+            ignite.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assert evt instanceof CheckpointEvent;
 
-                    IgniteCheckpointEvent e = (IgniteCheckpointEvent) evt;
+                    CheckpointEvent e = (CheckpointEvent) evt;
 
                     info("Checkpoint event: " + e);
 

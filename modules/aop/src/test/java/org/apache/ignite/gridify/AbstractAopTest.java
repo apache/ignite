@@ -32,7 +32,7 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Abstract AOP test.
@@ -710,7 +710,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /**
      * Event listener.
      */
-    private static final class TestEventListener implements IgnitePredicate<IgniteEvent> {
+    private static final class TestEventListener implements IgnitePredicate<Event> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -723,7 +723,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
         private TestEventListener(AtomicInteger cnt) { this.cnt = cnt; }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
+        @Override public boolean apply(Event evt) {
             if ((evt.type() == EVT_TASK_DEPLOYED || evt.type() == EVT_CLASS_DEPLOYED) &&
                 evt.message() != null && !evt.message().contains("GridTopic"))
                 cnt.addAndGet(1);

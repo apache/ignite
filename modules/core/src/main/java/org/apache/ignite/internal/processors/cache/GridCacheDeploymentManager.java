@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.configuration.DeploymentMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Deployment manager for cache.
@@ -94,10 +94,10 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
         if (depEnabled) {
             discoLsnr = new GridLocalEventListener() {
-                @Override public void onEvent(IgniteEvent evt) {
+                @Override public void onEvent(Event evt) {
                     assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT : "Unexpected event: " + evt;
 
-                    UUID id = ((IgniteDiscoveryEvent)evt).eventNode().id();
+                    UUID id = ((DiscoveryEvent)evt).eventNode().id();
 
                     if (log.isDebugEnabled())
                         log.debug("Processing node departure: " + id);

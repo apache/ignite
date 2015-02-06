@@ -31,7 +31,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Task deployment tests.
@@ -496,7 +496,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * Deployment listener.
      */
-    private static class DeploymentEventListener implements IgnitePredicate<IgniteEvent> {
+    private static class DeploymentEventListener implements IgnitePredicate<Event> {
         /** */
         private int depCnt;
 
@@ -508,7 +508,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
          *
          * @param evt local grid event.
          */
-        @Override public boolean apply(IgniteEvent evt) {
+        @Override public boolean apply(Event evt) {
             if (evt.type() == EVT_TASK_DEPLOYED)
                 depCnt++;
             else if (evt.type() == EVT_TASK_UNDEPLOYED)

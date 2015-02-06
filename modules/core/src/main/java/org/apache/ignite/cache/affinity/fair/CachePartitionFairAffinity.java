@@ -390,9 +390,9 @@ public class CachePartitionFairAffinity implements CacheAffinityFunction {
      */
     private IgniteBiTuple<List<List<ClusterNode>>, Map<UUID, PartitionSet>> createCopy(
         CacheAffinityFunctionContext ctx, Iterable<ClusterNode> topSnapshot) {
-        IgniteDiscoveryEvent discoEvt = ctx.discoveryEvent();
+        DiscoveryEvent discoEvt = ctx.discoveryEvent();
 
-        UUID leftNodeId = discoEvt.type() == IgniteEventType.EVT_NODE_JOINED ? null : discoEvt.eventNode().id();
+        UUID leftNodeId = discoEvt.type() == EventType.EVT_NODE_JOINED ? null : discoEvt.eventNode().id();
 
         List<List<ClusterNode>> cp = new ArrayList<>(parts);
 

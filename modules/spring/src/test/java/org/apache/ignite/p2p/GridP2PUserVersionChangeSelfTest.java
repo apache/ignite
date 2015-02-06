@@ -35,7 +35,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * The test does the following:
@@ -138,10 +138,10 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch undeployed = new CountDownLatch(1);
 
-            ignite2.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            ignite2.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     if (evt.type() == EVT_TASK_UNDEPLOYED &&
-                        ((IgniteDeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
+                        ((DeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
                         undeployed.countDown();
 
                     return true;
@@ -186,10 +186,10 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch undeployed = new CountDownLatch(1);
 
-            ignite2.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            ignite2.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     if (evt.type() == EVT_TASK_UNDEPLOYED &&
-                        ((IgniteDeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
+                        ((DeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
                         undeployed.countDown();
 
                     return true;
@@ -231,10 +231,10 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch undeployed = new CountDownLatch(1);
 
-            ignite2.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            ignite2.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     if (evt.type() == EVT_TASK_UNDEPLOYED &&
-                        ((IgniteDeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
+                        ((DeploymentEvent) evt).alias().equals(TEST_TASK_NAME))
                         undeployed.countDown();
 
                     return true;
@@ -243,8 +243,8 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch discoLatch = new CountDownLatch(1);
 
-            ignite2.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            ignite2.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     if (evt.type() == EVT_NODE_LEFT)
                         discoLatch.countDown();
 

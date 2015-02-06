@@ -19,13 +19,10 @@ package org.apache.ignite.events;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import java.util.*;
-
 /**
- * Grid task event.
+ * Grid swap space event.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
  * design GridGain keeps all events generated on the local node locally and it provides
@@ -55,111 +52,50 @@ import java.util.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see IgniteEventType#EVT_TASK_FAILED
- * @see IgniteEventType#EVT_TASK_FINISHED
- * @see IgniteEventType#EVT_TASK_REDUCED
- * @see IgniteEventType#EVT_TASK_STARTED
- * @see IgniteEventType#EVT_TASK_SESSION_ATTR_SET
- * @see IgniteEventType#EVT_TASK_TIMEDOUT
- * @see IgniteEventType#EVTS_TASK_EXECUTION
+ * @see EventType#EVT_SWAP_SPACE_DATA_READ
+ * @see EventType#EVT_SWAP_SPACE_DATA_STORED
+ * @see EventType#EVT_SWAP_SPACE_DATA_REMOVED
+ * @see EventType#EVT_SWAP_SPACE_CLEARED
+ * @see EventType#EVT_SWAP_SPACE_DATA_EVICTED
  */
-public class IgniteTaskEvent extends IgniteEventAdapter {
+public class SwapSpaceEvent extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private final String taskName;
-
-    /** */
-    private final String taskClsName;
-
-    /** */
-    private final IgniteUuid sesId;
-
-    /** */
-    private final boolean internal;
-
-    /**  */
-    private final UUID subjId;
-
-    /** {@inheritDoc} */
-    @Override public String shortDisplay() {
-        return name() + ": taskName=" + taskName;
-    }
+    /** Swap space name. */
+    private String space;
 
     /**
-     * Creates task event with given parameters.
+     * Creates swap space event.
      *
      * @param node Node.
      * @param msg Optional message.
      * @param type Event type.
-     * @param sesId Task session ID.
-     * @param taskName Task name.
-     * @param subjId Subject ID.
+     * @param space Swap space name ({@code null} for default space).
      */
-    public IgniteTaskEvent(ClusterNode node, String msg, int type, IgniteUuid sesId, String taskName, String taskClsName,
-                           boolean internal, @Nullable UUID subjId) {
+    public SwapSpaceEvent(ClusterNode node, String msg, int type, @Nullable String space) {
         super(node, msg, type);
 
-        this.sesId = sesId;
-        this.taskName = taskName;
-        this.taskClsName = taskClsName;
-        this.internal = internal;
-        this.subjId = subjId;
+        this.space = space;
     }
 
     /**
-     * Gets name of the task that triggered the event.
+     * Gets swap space name.
      *
-     * @return Name of the task that triggered the event.
+     * @return Swap space name or {@code null} for default space.
      */
-    public String taskName() {
-        return taskName;
+    @Nullable public String space() {
+        return space;
     }
 
-    /**
-     * Gets name of task class that triggered this event.
-     *
-     * @return Name of task class that triggered the event.
-     */
-    public String taskClassName() {
-        return taskClsName;
-    }
-
-    /**
-     * Gets session ID of the task that triggered the event.
-     *
-     * @return Session ID of the task that triggered the event.
-     */
-    public IgniteUuid taskSessionId() {
-        return sesId;
-    }
-
-    /**
-     * Returns {@code true} if task is created by GridGain and is used for system needs.
-     *
-     * @return {@code True} if task is created by GridGain and is used for system needs.
-     */
-    public boolean internal() {
-        return internal;
-    }
-
-    /**
-     * Gets security subject ID initiated this task event, if available. This property
-     * is not available for GridEventType#EVT_TASK_SESSION_ATTR_SET task event.
-     * <p>
-     * Subject ID will be set either to node ID or client ID initiated
-     * task execution.
-     *
-     * @return Subject ID.
-     */
-    @Nullable public UUID subjectId() {
-        return subjId;
+    /** {@inheritDoc} */
+    @Override public String shortDisplay() {
+        return name() + ": space=" + space;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteTaskEvent.class, this,
+        return S.toString(SwapSpaceEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

@@ -19,10 +19,12 @@ package org.apache.ignite.events;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.security.*;
+
+import java.util.*;
 
 /**
- * In-memory database (cache) preloading event. Preload event happens every time there is a change
- * in grid topology, which means that a node has either joined or left the grid.
+ * Grid secure session validation event.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
  * design GridGain keeps all events generated on the local node locally and it provides
@@ -52,118 +54,98 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see IgniteEventType#EVT_CACHE_PRELOAD_PART_LOADED
- * @see IgniteEventType#EVT_CACHE_PRELOAD_PART_UNLOADED
- * @see IgniteEventType#EVT_CACHE_PRELOAD_STARTED
- * @see IgniteEventType#EVT_CACHE_PRELOAD_STOPPED
+ * @see EventType#EVT_SECURE_SESSION_VALIDATION_FAILED
+ * @see EventType#EVT_SECURE_SESSION_VALIDATION_SUCCEEDED
  */
-public class IgniteCachePreloadingEvent extends IgniteEventAdapter {
+public class SecureSessionEvent extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Cache name. */
-    private String cacheName;
+    /**  Subject type. */
+    private GridSecuritySubjectType subjType;
 
-    /** Partition for the event. */
-    private int part;
-
-    /** Discovery node. */
-    private ClusterNode discoNode;
-
-    /** Discovery event type. */
-    private int discoEvtType;
-
-    /** Discovery event time. */
-    private long discoTs;
-
-    /**
-     * Constructs cache event.
-     *
-     * @param cacheName Cache name.
-     * @param node Event node.
-     * @param msg Event message.
-     * @param type Event type.
-     * @param part Partition for the event (usually the partition the key belongs to).
-     * @param discoNode Node that triggered this preloading event.
-     * @param discoEvtType Discovery event type that triggered this preloading event.
-     * @param discoTs Timestamp of discovery event that triggered this preloading event.
-     */
-    public IgniteCachePreloadingEvent(String cacheName, ClusterNode node, String msg, int type, int part,
-                                      ClusterNode discoNode, int discoEvtType, long discoTs) {
-        super(node, msg, type);
-        this.cacheName = cacheName;
-        this.part = part;
-        this.discoNode = discoNode;
-        this.discoEvtType = discoEvtType;
-        this.discoTs = discoTs;
-    }
-
-    /**
-     * Gets cache name.
-     *
-     * @return Cache name.
-     */
-    public String cacheName() {
-        return cacheName;
-    }
-
-    /**
-     * Gets partition for the event.
-     *
-     * @return Partition for the event.
-     */
-    public int partition() {
-        return part;
-    }
-
-    /**
-     * Gets shadow of the node that triggered this preloading event.
-     *
-     * @return Shadow of the node that triggered this preloading event.
-     */
-    public ClusterNode discoveryNode() {
-        return discoNode;
-    }
-
-    /**
-     * Gets type of discovery event that triggered this preloading event.
-     *
-     * @return Type of discovery event that triggered this preloading event.
-     * @see IgniteDiscoveryEvent#type()
-     */
-    public int discoveryEventType() {
-        return discoEvtType;
-    }
-
-    /**
-     * Gets name of discovery event that triggered this preloading event.
-     *
-     * @return Name of discovery event that triggered this preloading event.
-     * @see IgniteDiscoveryEvent#name()
-     */
-    public String discoveryEventName() {
-        return U.gridEventName(discoEvtType);
-    }
-
-    /**
-     * Gets timestamp of discovery event that caused this preloading event.
-     *
-     * @return Timestamp of discovery event that caused this preloading event.
-     */
-    public long discoveryTimestamp() {
-        return discoTs;
-    }
+    /** Subject ID. */
+    private UUID subjId;
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
-        return name() + ": cache=" + CU.mask(cacheName) + ", cause=" +
-            discoveryEventName();
+        return name() + ": subjType=" + subjType;
+    }
+
+    /**
+     * No-arg constructor.
+     */
+    public SecureSessionEvent() {
+        // No-op.
+    }
+
+    /**
+     * Creates secure session event with given parameters.
+     *
+     * @param node Node.
+     * @param msg Optional message.
+     * @param type Event type.
+     */
+    public SecureSessionEvent(ClusterNode node, String msg, int type) {
+        super(node, msg, type);
+    }
+
+    /**
+     * Creates secure session event with given parameters.
+     *
+     * @param node Node.
+     * @param msg Optional message.
+     * @param type Event type.
+     * @param subjType Subject type.
+     * @param subjId Subject ID.
+     */
+    public SecureSessionEvent(ClusterNode node, String msg, int type, GridSecuritySubjectType subjType,
+        UUID subjId) {
+        super(node, msg, type);
+
+        this.subjType = subjType;
+        this.subjId = subjId;
+    }
+
+    /**
+     * Gets subject type that triggered the event.
+     *
+     * @return Subject type that triggered the event.
+     */
+    public GridSecuritySubjectType subjectType() {
+        return subjType;
+    }
+
+    /**
+     * Gets subject ID that triggered the event.
+     *
+     * @return Subject ID that triggered the event.
+     */
+    public UUID subjectId() {
+        return subjId;
+    }
+
+    /**
+     * Sets subject type that triggered the event.
+     *
+     * @param subjType Subject type to set.
+     */
+    public void subjectType(GridSecuritySubjectType subjType) {
+        this.subjType = subjType;
+    }
+
+    /**
+     * Sets subject ID that triggered the event.
+     *
+     * @param subjId Subject ID to set.
+     */
+    public void subjectId(UUID subjId) {
+        this.subjId = subjId;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteCachePreloadingEvent.class, this,
-            "discoEvtName", discoveryEventName(),
+        return S.toString(SecureSessionEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

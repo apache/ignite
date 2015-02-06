@@ -44,7 +44,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousMessageType.*;
@@ -129,10 +129,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @SuppressWarnings({"fallthrough", "TooBroadScope"})
-            @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof IgniteDiscoveryEvent;
+            @Override public void onEvent(Event evt) {
+                assert evt instanceof DiscoveryEvent;
 
-                UUID nodeId = ((IgniteDiscoveryEvent)evt).eventNode().id();
+                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
                 Collection<GridContinuousMessage> reqs;
 

@@ -47,7 +47,7 @@ import java.util.concurrent.*;
 
 import static java.util.Map.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -1056,14 +1056,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      */
     private class TopologyListener implements GridLocalEventListener {
         /** {@inheritDoc} */
-        @Override public void onEvent(final IgniteEvent evt) {
+        @Override public void onEvent(final Event evt) {
             if (!busyLock.enterBusy())
                 return;
 
             try {
                 depExe.submit(new BusyRunnable() {
                     @Override public void run0() {
-                        long topVer = ((IgniteDiscoveryEvent)evt).topologyVersion();
+                        long topVer = ((DiscoveryEvent)evt).topologyVersion();
 
                         ClusterNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 

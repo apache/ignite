@@ -42,7 +42,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
@@ -1230,7 +1230,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      */
     private void recordTaskEvent(int evtType, String msg) {
         if (!internal && ctx.event().isRecordable(evtType)) {
-            IgniteEvent evt = new IgniteTaskEvent(
+            Event evt = new TaskEvent(
                 ctx.discovery().localNode(),
                 msg,
                 evtType,
@@ -1252,7 +1252,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      */
     private void recordJobEvent(int evtType, IgniteUuid jobId, ClusterNode evtNode, String msg) {
         if (ctx.event().isRecordable(evtType)) {
-            IgniteJobEvent evt = new IgniteJobEvent();
+            JobEvent evt = new JobEvent();
 
             evt.message(msg);
             evt.node(ctx.discovery().localNode());

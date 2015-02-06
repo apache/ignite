@@ -22,8 +22,8 @@ import org.apache.ignite.internal.util.lang.{GridFunc => F}
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.events.IgniteEventType._
-import org.apache.ignite.events.{IgniteDiscoveryEvent, IgniteEvent}
+import org.apache.ignite.events.EventType._
+import org.apache.ignite.events.{DiscoveryEvent, Event}
 import org.apache.ignite.lang.IgnitePredicate
 
 import java.util.UUID
@@ -147,7 +147,7 @@ class VisorAlertCommand {
     private val guard = new AtomicBoolean(false)
 
     /** Node metric update listener. */
-    private var lsnr: IgnitePredicate[IgniteEvent] = null
+    private var lsnr: IgnitePredicate[Event] = null
 
     /**
      * Prints error message and advise.
@@ -354,9 +354,9 @@ class VisorAlertCommand {
         if (guard.compareAndSet(false, true)) {
             assert(lsnr == null)
 
-            lsnr = new IgnitePredicate[IgniteEvent] {
-                override def apply(evt: IgniteEvent): Boolean = {
-                    val discoEvt = evt.asInstanceOf[IgniteDiscoveryEvent]
+            lsnr = new IgnitePredicate[Event] {
+                override def apply(evt: Event): Boolean = {
+                    val discoEvt = evt.asInstanceOf[DiscoveryEvent]
 
                     val node = grid.node(discoEvt.eventNode().id())
 

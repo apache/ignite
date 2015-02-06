@@ -53,7 +53,7 @@ import java.util.concurrent.locks.Lock;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 import static org.jdk8.backport.ConcurrentLinkedDeque8.*;
@@ -172,11 +172,11 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
             cctx.events().addListener(
                 new GridLocalEventListener() {
-                    @Override public void onEvent(IgniteEvent evt) {
+                    @Override public void onEvent(Event evt) {
                         assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT ||
                             evt.type() == EVT_NODE_JOINED;
 
-                        IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                        DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                         // Notify backup worker on each topology change.
                         if (CU.affinityNode(cctx, discoEvt.eventNode()))
@@ -210,10 +210,10 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
             cctx.events().addListener(
                 new GridLocalEventListener() {
-                    @Override public void onEvent(IgniteEvent evt) {
+                    @Override public void onEvent(Event evt) {
                         assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
-                        IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                        DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                         for (EvictionFuture fut : futs.values())
                             fut.onNodeLeft(discoEvt.eventNode().id());
@@ -257,7 +257,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             // Add dummy event to worker.
             ClusterNode locNode = cctx.localNode();
 
-            IgniteDiscoveryEvent evt = new IgniteDiscoveryEvent(locNode, "Dummy event.", EVT_NODE_JOINED, locNode);
+            DiscoveryEvent evt = new DiscoveryEvent(locNode, "Dummy event.", EVT_NODE_JOINED, locNode);
 
             evt.topologySnapshot(locNode.order(), cctx.discovery().topology(locNode.order()));
 
@@ -1366,7 +1366,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      */
     private class BackupWorker extends GridWorker {
         /** */
-        private final BlockingQueue<IgniteDiscoveryEvent> evts = new LinkedBlockingQueue<>();
+        private final BlockingQueue<DiscoveryEvent> evts = new LinkedBlockingQueue<>();
 
         /** */
         private final Collection<Integer> primaryParts = new HashSet<>();
@@ -1383,7 +1383,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         /**
          * @param evt New event.
          */
-        void addEvent(IgniteDiscoveryEvent evt) {
+        void addEvent(DiscoveryEvent evt) {
             assert evt != null;
 
             evts.add(evt);
@@ -1401,7 +1401,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                     cctx.affinity().affinityTopologyVersion()));
 
                 while (!isCancelled()) {
-                    IgniteDiscoveryEvent evt = evts.take();
+                    DiscoveryEvent evt = evts.take();
 
                     if (log.isDebugEnabled())
                         log.debug("Processing event: " + evt);

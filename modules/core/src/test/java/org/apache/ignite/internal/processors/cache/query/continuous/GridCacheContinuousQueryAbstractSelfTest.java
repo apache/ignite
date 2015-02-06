@@ -55,7 +55,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.cache.query.CacheQueryType.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Continuous queries tests.
@@ -1422,11 +1422,11 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final CountDownLatch latch = new CountDownLatch(50);
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
 
-        IgnitePredicate<IgniteEvent> lsnr = new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
-                assert evt instanceof IgniteCacheQueryReadEvent;
+        IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                assert evt instanceof CacheQueryReadEvent;
 
-                IgniteCacheQueryReadEvent qe = (IgniteCacheQueryReadEvent)evt;
+                CacheQueryReadEvent qe = (CacheQueryReadEvent)evt;
 
                 assertEquals(CONTINUOUS, qe.queryType());
                 assertNull(qe.cacheName());
@@ -1446,11 +1446,11 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         };
 
-        IgnitePredicate<IgniteEvent> execLsnr = new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
-                assert evt instanceof IgniteCacheQueryExecutedEvent;
+        IgnitePredicate<Event> execLsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                assert evt instanceof CacheQueryExecutedEvent;
 
-                IgniteCacheQueryExecutedEvent qe = (IgniteCacheQueryExecutedEvent)evt;
+                CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
                 assertEquals(CONTINUOUS, qe.queryType());
                 assertNull(qe.cacheName());

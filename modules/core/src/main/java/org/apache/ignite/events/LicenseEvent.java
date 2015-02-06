@@ -20,8 +20,10 @@ package org.apache.ignite.events;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import java.util.*;
+
 /**
- * Grid deployment event.
+ * Grid license event.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
  * design GridGain keeps all events generated on the local node locally and it provides
@@ -51,65 +53,61 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see IgniteEventType#EVT_CLASS_DEPLOY_FAILED
- * @see IgniteEventType#EVT_CLASS_DEPLOYED
- * @see IgniteEventType#EVT_CLASS_UNDEPLOYED
- * @see IgniteEventType#EVT_TASK_DEPLOY_FAILED
- * @see IgniteEventType#EVT_TASK_DEPLOYED
- * @see IgniteEventType#EVT_TASK_UNDEPLOYED
- * @see IgniteEventType#EVTS_DEPLOYMENT
+ * @see EventType#EVT_LIC_CLEARED
+ * @see EventType#EVT_LIC_GRACE_EXPIRED
+ * @see EventType#EVT_LIC_VIOLATION
  */
-public class IgniteDeploymentEvent extends IgniteEventAdapter {
+public class LicenseEvent extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private String alias;
-
-    /** {@inheritDoc} */
-    @Override public String shortDisplay() {
-        return name() + (alias != null ? ": " + alias : "");
-    }
+    /** License ID. */
+    private UUID licId;
 
     /**
      * No-arg constructor.
      */
-    public IgniteDeploymentEvent() {
+    public LicenseEvent() {
         // No-op.
     }
 
     /**
-     * Creates deployment event with given parameters.
+     * Creates license event with given parameters.
      *
      * @param node Node.
-     * @param msg Optional event message.
+     * @param msg Optional message.
      * @param type Event type.
      */
-    public IgniteDeploymentEvent(ClusterNode node, String msg, int type) {
+    public LicenseEvent(ClusterNode node, String msg, int type) {
         super(node, msg, type);
     }
 
-    /**
-     * Gets deployment alias for this event.
-     *
-     * @return Deployment alias.
-     */
-    public String alias() {
-        return alias;
+    /** {@inheritDoc} */
+    @Override public String shortDisplay() {
+        return name() + ": licId8=" + U.id8(licId) + ", msg=" + message();
     }
 
     /**
-     * Sets deployment alias for this event.
+     * Gets license ID.
      *
-     * @param alias Deployment alias.
+     * @return License ID.
      */
-    public void alias(String alias) {
-        this.alias = alias;
+    public UUID licenseId() {
+        return licId;
+    }
+
+    /**
+     * Sets license ID.
+     *
+     * @param licId License ID to set.
+     */
+    public void licenseId(UUID licId) {
+        this.licId = licId;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteDeploymentEvent.class, this,
+        return S.toString(LicenseEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

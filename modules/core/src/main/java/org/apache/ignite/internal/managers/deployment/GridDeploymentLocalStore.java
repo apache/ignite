@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.Map.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Storage for local deployments.
@@ -385,7 +385,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
         String msg = (isTask ? "Task" : "Class") + " locally deployed: " + cls;
 
         if (recordEvt && ctx.event().isRecordable(isTask ? EVT_TASK_DEPLOYED : EVT_CLASS_DEPLOYED)) {
-            IgniteDeploymentEvent evt = new IgniteDeploymentEvent();
+            DeploymentEvent evt = new DeploymentEvent();
 
             evt.message(msg);
             evt.node(ctx.discovery().localNode());
@@ -422,7 +422,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
         if (recordEvt && ctx.event().isRecordable(isTask ? EVT_CLASS_DEPLOY_FAILED : EVT_TASK_DEPLOY_FAILED)) {
             String taskName = isTask ? U.getTaskName((Class<? extends ComputeTask<?, ?>>)cls) : null;
 
-            IgniteDeploymentEvent evt = new IgniteDeploymentEvent();
+            DeploymentEvent evt = new DeploymentEvent();
 
             evt.message(msg);
             evt.node(ctx.discovery().localNode());
@@ -452,7 +452,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
                 String msg = isTask ? "Task locally undeployed: " + cls : "Class locally undeployed: " + cls;
 
                 if (ctx.event().isRecordable(isTask ? EVT_TASK_UNDEPLOYED : EVT_CLASS_UNDEPLOYED)) {
-                    IgniteDeploymentEvent evt = new IgniteDeploymentEvent();
+                    DeploymentEvent evt = new DeploymentEvent();
 
                     evt.message(msg);
                     evt.node(ctx.discovery().localNode());

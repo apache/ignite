@@ -18,13 +18,13 @@
 package org.apache.ignite.events;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.plugin.security.*;
 
 import java.util.*;
 
 /**
- * Grid secure session validation event.
+ * Grid discovery event.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
  * design GridGain keeps all events generated on the local node locally and it provides
@@ -54,98 +54,109 @@ import java.util.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see IgniteEventType#EVT_SECURE_SESSION_VALIDATION_FAILED
- * @see IgniteEventType#EVT_SECURE_SESSION_VALIDATION_SUCCEEDED
+ * @see EventType#EVT_NODE_METRICS_UPDATED
+ * @see EventType#EVT_NODE_FAILED
+ * @see EventType#EVT_NODE_JOINED
+ * @see EventType#EVT_NODE_LEFT
+ * @see EventType#EVT_NODE_SEGMENTED
+ * @see EventType#EVTS_DISCOVERY_ALL
+ * @see EventType#EVTS_DISCOVERY
  */
-public class IgniteSecureSessionEvent extends IgniteEventAdapter {
+public class DiscoveryEvent extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**  Subject type. */
-    private GridSecuritySubjectType subjType;
+    /** */
+    private ClusterNode evtNode;
 
-    /** Subject ID. */
-    private UUID subjId;
+    /** Topology version. */
+    private long topVer;
+
+    /** Collection of nodes corresponding to topology version. */
+    private Collection<ClusterNode> topSnapshot;
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
-        return name() + ": subjType=" + subjType;
+        return name() + ": id8=" + U.id8(evtNode.id()) + ", ip=" + F.first(evtNode.addresses());
     }
 
     /**
      * No-arg constructor.
      */
-    public IgniteSecureSessionEvent() {
+    public DiscoveryEvent() {
         // No-op.
     }
 
     /**
-     * Creates secure session event with given parameters.
+     * Creates new discovery event with given parameters.
      *
-     * @param node Node.
-     * @param msg Optional message.
+     * @param node Local node.
+     * @param msg Optional event message.
      * @param type Event type.
+     * @param evtNode Node that caused this event to be generated.
      */
-    public IgniteSecureSessionEvent(ClusterNode node, String msg, int type) {
-        super(node, msg, type);
-    }
-
-    /**
-     * Creates secure session event with given parameters.
-     *
-     * @param node Node.
-     * @param msg Optional message.
-     * @param type Event type.
-     * @param subjType Subject type.
-     * @param subjId Subject ID.
-     */
-    public IgniteSecureSessionEvent(ClusterNode node, String msg, int type, GridSecuritySubjectType subjType,
-                                    UUID subjId) {
+    public DiscoveryEvent(ClusterNode node, String msg, int type, ClusterNode evtNode) {
         super(node, msg, type);
 
-        this.subjType = subjType;
-        this.subjId = subjId;
+        this.evtNode = evtNode;
     }
 
     /**
-     * Gets subject type that triggered the event.
+     * Sets node this event is referring to.
      *
-     * @return Subject type that triggered the event.
+     * @param evtNode Event node.
      */
-    public GridSecuritySubjectType subjectType() {
-        return subjType;
+    public void eventNode(ClusterNode evtNode) {
+        this.evtNode = evtNode;
     }
 
     /**
-     * Gets subject ID that triggered the event.
+     * Gets node that caused this event to be generated. It is potentially different from the node
+     * on which this event was recorded. For example, node {@code A} locally recorded the event that a remote node
+     * {@code B} joined the topology. In this case this method will return ID of {@code B}.
      *
-     * @return Subject ID that triggered the event.
+     * @return Event node ID.
      */
-    public UUID subjectId() {
-        return subjId;
+    public ClusterNode eventNode() {
+        return evtNode;
     }
 
     /**
-     * Sets subject type that triggered the event.
+     * Gets topology version if this event is raised on
+     * topology change and configured discovery SPI implementation
+     * supports topology versioning.
      *
-     * @param subjType Subject type to set.
+     * @return Topology version or {@code 0} if configured discovery SPI implementation
+     *      does not support versioning.
      */
-    public void subjectType(GridSecuritySubjectType subjType) {
-        this.subjType = subjType;
+    public long topologyVersion() {
+        return topVer;
     }
 
     /**
-     * Sets subject ID that triggered the event.
+     * Gets topology nodes from topology snapshot. If SPI implementation does not support
+     * versioning, the best effort snapshot will be captured.
      *
-     * @param subjId Subject ID to set.
+     * @return Topology snapshot.
      */
-    public void subjectId(UUID subjId) {
-        this.subjId = subjId;
+    public Collection<ClusterNode> topologyNodes() {
+        return topSnapshot;
+    }
+
+    /**
+     * Sets the topology snapshot.
+     *
+     * @param topVer Topology version.
+     * @param topSnapshot Topology snapshot.
+     */
+    public void topologySnapshot(long topVer, Collection<ClusterNode> topSnapshot) {
+        this.topVer = topVer;
+        this.topSnapshot = topSnapshot;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteSecureSessionEvent.class, this,
+        return S.toString(DiscoveryEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

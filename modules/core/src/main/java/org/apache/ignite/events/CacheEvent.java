@@ -56,19 +56,19 @@ import java.util.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see IgniteEventType#EVT_CACHE_ENTRY_CREATED
- * @see IgniteEventType#EVT_CACHE_ENTRY_DESTROYED
- * @see IgniteEventType#EVT_CACHE_ENTRY_EVICTED
- * @see IgniteEventType#EVT_CACHE_OBJECT_PUT
- * @see IgniteEventType#EVT_CACHE_OBJECT_READ
- * @see IgniteEventType#EVT_CACHE_OBJECT_REMOVED
- * @see IgniteEventType#EVT_CACHE_OBJECT_LOCKED
- * @see IgniteEventType#EVT_CACHE_OBJECT_UNLOCKED
- * @see IgniteEventType#EVT_CACHE_OBJECT_SWAPPED
- * @see IgniteEventType#EVT_CACHE_OBJECT_UNSWAPPED
- * @see IgniteEventType#EVT_CACHE_OBJECT_EXPIRED
+ * @see EventType#EVT_CACHE_ENTRY_CREATED
+ * @see EventType#EVT_CACHE_ENTRY_DESTROYED
+ * @see EventType#EVT_CACHE_ENTRY_EVICTED
+ * @see EventType#EVT_CACHE_OBJECT_PUT
+ * @see EventType#EVT_CACHE_OBJECT_READ
+ * @see EventType#EVT_CACHE_OBJECT_REMOVED
+ * @see EventType#EVT_CACHE_OBJECT_LOCKED
+ * @see EventType#EVT_CACHE_OBJECT_UNLOCKED
+ * @see EventType#EVT_CACHE_OBJECT_SWAPPED
+ * @see EventType#EVT_CACHE_OBJECT_UNSWAPPED
+ * @see EventType#EVT_CACHE_OBJECT_EXPIRED
  */
-public class IgniteCacheEvent extends IgniteEventAdapter {
+public class CacheEvent extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -154,9 +154,9 @@ public class IgniteCacheEvent extends IgniteEventAdapter {
      * @param subjId Subject ID.
      * @param cloClsName Closure class name.
      */
-    public IgniteCacheEvent(String cacheName, ClusterNode node, @Nullable ClusterNode evtNode, String msg, int type, int part,
-                            boolean near, Object key, IgniteUuid xid, Object lockId, Object newVal, boolean hasNewVal,
-                            Object oldVal, boolean hasOldVal, UUID subjId, String cloClsName, String taskName) {
+    public CacheEvent(String cacheName, ClusterNode node, @Nullable ClusterNode evtNode, String msg, int type, int part,
+        boolean near, Object key, IgniteUuid xid, Object lockId, Object newVal, boolean hasNewVal,
+        Object oldVal, boolean hasOldVal, UUID subjId, String cloClsName, String taskName) {
         super(node, msg, type);
         this.cacheName = cacheName;
         this.evtNode = evtNode;
@@ -243,7 +243,7 @@ public class IgniteCacheEvent extends IgniteEventAdapter {
      * Gets new value for this event.
      *
      * @return New value associated with event (<tt>null</tt> if event is
-     *      {@link IgniteEventType#EVT_CACHE_OBJECT_REMOVED}.
+     *      {@link EventType#EVT_CACHE_OBJECT_REMOVED}.
      */
     @Nullable public Object newValue() {
         return newVal;
@@ -282,8 +282,8 @@ public class IgniteCacheEvent extends IgniteEventAdapter {
 
     /**
      * Gets security subject ID initiated this cache event, if available. This property is available only for
-     * {@link IgniteEventType#EVT_CACHE_OBJECT_PUT}, {@link IgniteEventType#EVT_CACHE_OBJECT_REMOVED} and
-     * {@link IgniteEventType#EVT_CACHE_OBJECT_READ} cache events.
+     * {@link EventType#EVT_CACHE_OBJECT_PUT}, {@link EventType#EVT_CACHE_OBJECT_REMOVED} and
+     * {@link EventType#EVT_CACHE_OBJECT_READ} cache events.
      * <p>
      * Subject ID will be set either to nodeId initiated cache update or read or client ID initiated
      * cache update or read.
@@ -321,7 +321,7 @@ public class IgniteCacheEvent extends IgniteEventAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
     @Override public String toString() {
-        return S.toString(IgniteCacheEvent.class, this,
+        return S.toString(CacheEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "evtNodeId8", U.id8(evtNode.id()),
             "msg", message(),

@@ -34,7 +34,7 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests for node failure in transactions.
@@ -118,8 +118,8 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
         for (int i = 1; i < GRID_CNT; i++) {
             futs.add(
-                waitForLocalEvent(grid(i).events(), new P1<IgniteEvent>() {
-                    @Override public boolean apply(IgniteEvent e) {
+                waitForLocalEvent(grid(i).events(), new P1<Event>() {
+                    @Override public boolean apply(Event e) {
                         info("Received grid event: " + e);
 
                         return true;

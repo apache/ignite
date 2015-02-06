@@ -54,19 +54,19 @@ import java.util.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see IgniteEventType#EVT_JOB_CANCELLED
- * @see IgniteEventType#EVT_JOB_FAILED
- * @see IgniteEventType#EVT_JOB_FAILED_OVER
- * @see IgniteEventType#EVT_JOB_FINISHED
- * @see IgniteEventType#EVT_JOB_MAPPED
- * @see IgniteEventType#EVT_JOB_QUEUED
- * @see IgniteEventType#EVT_JOB_REJECTED
- * @see IgniteEventType#EVT_JOB_RESULTED
- * @see IgniteEventType#EVT_JOB_STARTED
- * @see IgniteEventType#EVT_JOB_TIMEDOUT
- * @see IgniteEventType#EVTS_JOB_EXECUTION
+ * @see EventType#EVT_JOB_CANCELLED
+ * @see EventType#EVT_JOB_FAILED
+ * @see EventType#EVT_JOB_FAILED_OVER
+ * @see EventType#EVT_JOB_FINISHED
+ * @see EventType#EVT_JOB_MAPPED
+ * @see EventType#EVT_JOB_QUEUED
+ * @see EventType#EVT_JOB_REJECTED
+ * @see EventType#EVT_JOB_RESULTED
+ * @see EventType#EVT_JOB_STARTED
+ * @see EventType#EVT_JOB_TIMEDOUT
+ * @see EventType#EVTS_JOB_EXECUTION
  */
-public class IgniteJobEvent extends IgniteEventAdapter {
+public class JobEvent extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -96,7 +96,7 @@ public class IgniteJobEvent extends IgniteEventAdapter {
     /**
      * No-arg constructor.
      */
-    public IgniteJobEvent() {
+    public JobEvent() {
         // No-op.
     }
 
@@ -107,7 +107,7 @@ public class IgniteJobEvent extends IgniteEventAdapter {
      * @param msg Optional message.
      * @param type Event type.
      */
-    public IgniteJobEvent(ClusterNode node, String msg, int type) {
+    public JobEvent(ClusterNode node, String msg, int type) {
         super(node, msg, type);
     }
 
@@ -227,7 +227,7 @@ public class IgniteJobEvent extends IgniteEventAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteJobEvent.class, this,
+        return S.toString(JobEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

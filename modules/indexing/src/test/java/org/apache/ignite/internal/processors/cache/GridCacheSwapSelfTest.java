@@ -41,7 +41,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Test for cache swap.
@@ -246,8 +246,8 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
 
             startGrids(1);
 
-            grid(0).events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            grid(0).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     info("Received event: " + evt);
 
                     switch (evt.type()) {
@@ -304,8 +304,8 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
         try {
             startGrids(1);
 
-            grid(0).events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            grid(0).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     assert evt != null;
 
                     switch (evt.type()) {
@@ -676,7 +676,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private class SwapListener implements IgnitePredicate<IgniteEvent> {
+    private class SwapListener implements IgnitePredicate<Event> {
         /** */
         private final CountDownLatch swapLatch = new CountDownLatch(1);
 
@@ -684,7 +684,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
         private final CountDownLatch unswapLatch = new CountDownLatch(1);
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
+        @Override public boolean apply(Event evt) {
             assert evt != null;
 
             info("Received event: " + evt);

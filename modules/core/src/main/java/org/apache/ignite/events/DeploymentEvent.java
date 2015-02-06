@@ -19,10 +19,9 @@ package org.apache.ignite.events;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 /**
- * Grid swap space event.
+ * Grid deployment event.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
  * design GridGain keeps all events generated on the local node locally and it provides
@@ -52,50 +51,65 @@ import org.jetbrains.annotations.*;
  * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
- * @see IgniteEventType#EVT_SWAP_SPACE_DATA_READ
- * @see IgniteEventType#EVT_SWAP_SPACE_DATA_STORED
- * @see IgniteEventType#EVT_SWAP_SPACE_DATA_REMOVED
- * @see IgniteEventType#EVT_SWAP_SPACE_CLEARED
- * @see IgniteEventType#EVT_SWAP_SPACE_DATA_EVICTED
+ * @see EventType#EVT_CLASS_DEPLOY_FAILED
+ * @see EventType#EVT_CLASS_DEPLOYED
+ * @see EventType#EVT_CLASS_UNDEPLOYED
+ * @see EventType#EVT_TASK_DEPLOY_FAILED
+ * @see EventType#EVT_TASK_DEPLOYED
+ * @see EventType#EVT_TASK_UNDEPLOYED
+ * @see EventType#EVTS_DEPLOYMENT
  */
-public class IgniteSwapSpaceEvent extends IgniteEventAdapter {
+public class DeploymentEvent extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Swap space name. */
-    private String space;
-
-    /**
-     * Creates swap space event.
-     *
-     * @param node Node.
-     * @param msg Optional message.
-     * @param type Event type.
-     * @param space Swap space name ({@code null} for default space).
-     */
-    public IgniteSwapSpaceEvent(ClusterNode node, String msg, int type, @Nullable String space) {
-        super(node, msg, type);
-
-        this.space = space;
-    }
-
-    /**
-     * Gets swap space name.
-     *
-     * @return Swap space name or {@code null} for default space.
-     */
-    @Nullable public String space() {
-        return space;
-    }
+    /** */
+    private String alias;
 
     /** {@inheritDoc} */
     @Override public String shortDisplay() {
-        return name() + ": space=" + space;
+        return name() + (alias != null ? ": " + alias : "");
+    }
+
+    /**
+     * No-arg constructor.
+     */
+    public DeploymentEvent() {
+        // No-op.
+    }
+
+    /**
+     * Creates deployment event with given parameters.
+     *
+     * @param node Node.
+     * @param msg Optional event message.
+     * @param type Event type.
+     */
+    public DeploymentEvent(ClusterNode node, String msg, int type) {
+        super(node, msg, type);
+    }
+
+    /**
+     * Gets deployment alias for this event.
+     *
+     * @return Deployment alias.
+     */
+    public String alias() {
+        return alias;
+    }
+
+    /**
+     * Sets deployment alias for this event.
+     *
+     * @param alias Deployment alias.
+     */
+    public void alias(String alias) {
+        this.alias = alias;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteSwapSpaceEvent.class, this,
+        return S.toString(DeploymentEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

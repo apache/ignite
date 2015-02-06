@@ -127,21 +127,21 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
 
-        g1.events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        g1.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 l1.countDown();
 
                 return true;
             }
-        }, IgniteEventType.EVT_CACHE_PRELOAD_STOPPED);
+        }, EventType.EVT_CACHE_PRELOAD_STOPPED);
 
-        g2.events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        g2.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 l2.countDown();
 
                 return true;
             }
-        }, IgniteEventType.EVT_CACHE_PRELOAD_STOPPED);
+        }, EventType.EVT_CACHE_PRELOAD_STOPPED);
 
         info("Beginning to wait for cache1 repartition.");
 
@@ -204,21 +204,21 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
 
-        g1.events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        g1.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 l1.countDown();
 
                 return true;
             }
-        }, IgniteEventType.EVT_CACHE_PRELOAD_STOPPED);
+        }, EventType.EVT_CACHE_PRELOAD_STOPPED);
 
-        g2.events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        g2.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 l2.countDown();
 
                 return true;
             }
-        }, IgniteEventType.EVT_CACHE_PRELOAD_STOPPED);
+        }, EventType.EVT_CACHE_PRELOAD_STOPPED);
 
         U.sleep(1000);
 

@@ -32,7 +32,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  *
@@ -154,8 +154,8 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
             final CountDownLatch latch = new CountDownLatch(2);
 
             g2.events().localListen(
-                new IgnitePredicate<IgniteEvent>() {
-                    @Override public boolean apply(IgniteEvent evt) {
+                new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
                         info("Received event: " + evt);
 
                         latch.countDown();

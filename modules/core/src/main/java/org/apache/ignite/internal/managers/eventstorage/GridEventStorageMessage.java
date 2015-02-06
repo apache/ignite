@@ -48,7 +48,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
 
     /** */
     @GridDirectTransient
-    private Collection<IgniteEvent> evts;
+    private Collection<Event> evts;
 
     /** */
     private byte[] evtsBytes;
@@ -115,7 +115,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
      * @param evts Grid events.
      * @param ex Exception occurred during processing.
      */
-    GridEventStorageMessage(Collection<IgniteEvent> evts, Throwable ex) {
+    GridEventStorageMessage(Collection<Event> evts, Throwable ex) {
         this.evts = evts;
         this.ex = ex;
 
@@ -165,14 +165,14 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
     /**
      * @return Events.
      */
-    @Nullable Collection<IgniteEvent> events() {
+    @Nullable Collection<Event> events() {
         return evts != null ? Collections.unmodifiableCollection(evts) : null;
     }
 
     /**
      * @param evts Events.
      */
-    void events(@Nullable Collection<IgniteEvent> evts) {
+    void events(@Nullable Collection<Event> evts) {
         this.evts = evts;
     }
 

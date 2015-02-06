@@ -39,7 +39,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 
@@ -352,7 +352,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
                 msg = "Checkpoint removed: " + key;
             }
 
-            ctx.event().record(new IgniteCheckpointEvent(ctx.discovery().localNode(), msg, type, key));
+            ctx.event().record(new CheckpointEvent(ctx.discovery().localNode(), msg, type, key));
         }
     }
 

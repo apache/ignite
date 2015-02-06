@@ -32,7 +32,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  *
@@ -94,7 +94,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
                         }
                     }
 
-                    ctx.event().record(new IgniteSwapSpaceEvent(ctx.discovery().localNode(), msg, evtType, spaceName));
+                    ctx.event().record(new SwapSpaceEvent(ctx.discovery().localNode(), msg, evtType, spaceName));
                 }
 
                 // Always notify grid cache processor.

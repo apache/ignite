@@ -58,14 +58,14 @@ import java.util.*;
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
  */
-public interface IgniteEventType {
+public interface EventType {
     /**
      * Built-in event type: checkpoint was saved.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteCheckpointEvent
+     * @see CheckpointEvent
      */
     public static final int EVT_CHECKPOINT_SAVED = 1;
 
@@ -75,7 +75,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteCheckpointEvent
+     * @see CheckpointEvent
      */
     public static final int EVT_CHECKPOINT_LOADED = 2;
 
@@ -90,7 +90,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteCheckpointEvent
+     * @see CheckpointEvent
      */
     public static final int EVT_CHECKPOINT_REMOVED = 3;
 
@@ -105,7 +105,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteDiscoveryEvent
+     * @see DiscoveryEvent
      */
     public static final int EVT_NODE_JOINED = 10;
 
@@ -115,7 +115,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteDiscoveryEvent
+     * @see DiscoveryEvent
      */
     public static final int EVT_NODE_LEFT = 11;
 
@@ -127,7 +127,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteDiscoveryEvent
+     * @see DiscoveryEvent
      */
     public static final int EVT_NODE_FAILED = 12;
 
@@ -140,7 +140,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteDiscoveryEvent
+     * @see DiscoveryEvent
      */
     public static final int EVT_NODE_METRICS_UPDATED = 13;
 
@@ -152,7 +152,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteDiscoveryEvent
+     * @see DiscoveryEvent
      */
     public static final int EVT_NODE_SEGMENTED = 14;
 
@@ -166,7 +166,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteTaskEvent
+     * @see TaskEvent
      */
     public static final int EVT_TASK_STARTED = 20;
 
@@ -179,7 +179,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteTaskEvent
+     * @see TaskEvent
      */
     public static final int EVT_TASK_FINISHED = 21;
 
@@ -193,7 +193,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteTaskEvent
+     * @see TaskEvent
      */
     public static final int EVT_TASK_FAILED = 22;
 
@@ -203,7 +203,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteTaskEvent
+     * @see TaskEvent
      */
     public static final int EVT_TASK_TIMEDOUT = 23;
 
@@ -213,7 +213,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteTaskEvent
+     * @see TaskEvent
      */
     public static final int EVT_TASK_SESSION_ATTR_SET = 24;
 
@@ -231,7 +231,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteDeploymentEvent
+     * @see DeploymentEvent
      */
     public static final int EVT_CLASS_DEPLOYED = 30;
 
@@ -241,7 +241,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteDeploymentEvent
+     * @see DeploymentEvent
      */
     public static final int EVT_CLASS_UNDEPLOYED = 31;
 
@@ -251,7 +251,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteDeploymentEvent
+     * @see DeploymentEvent
      */
     public static final int EVT_CLASS_DEPLOY_FAILED = 32;
 
@@ -261,7 +261,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteDeploymentEvent
+     * @see DeploymentEvent
      */
     public static final int EVT_TASK_DEPLOYED = 33;
 
@@ -271,7 +271,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteDeploymentEvent
+     * @see DeploymentEvent
      */
     public static final int EVT_TASK_UNDEPLOYED = 34;
 
@@ -281,7 +281,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteDeploymentEvent
+     * @see DeploymentEvent
      */
     public static final int EVT_TASK_DEPLOY_FAILED = 35;
 
@@ -292,7 +292,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteJobEvent
+     * @see JobEvent
      */
     public static final int EVT_JOB_MAPPED = 40;
 
@@ -303,7 +303,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteJobEvent
+     * @see JobEvent
      */
     public static final int EVT_JOB_RESULTED = 41;
 
@@ -313,7 +313,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteJobEvent
+     * @see JobEvent
      */
     public static final int EVT_JOB_FAILED_OVER = 43;
 
@@ -323,7 +323,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteJobEvent
+     * @see JobEvent
      */
     public static final int EVT_JOB_STARTED = 44;
 
@@ -336,7 +336,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteJobEvent
+     * @see JobEvent
      */
     public static final int EVT_JOB_FINISHED = 45;
 
@@ -346,7 +346,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteJobEvent
+     * @see JobEvent
      */
     public static final int EVT_JOB_TIMEDOUT = 46;
 
@@ -356,7 +356,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteJobEvent
+     * @see JobEvent
      */
     public static final int EVT_JOB_REJECTED = 47;
 
@@ -369,7 +369,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteJobEvent
+     * @see JobEvent
      */
     public static final int EVT_JOB_FAILED = 48;
 
@@ -382,7 +382,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteJobEvent
+     * @see JobEvent
      */
     public static final int EVT_JOB_QUEUED = 49;
 
@@ -392,7 +392,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteJobEvent
+     * @see JobEvent
      */
     public static final int EVT_JOB_CANCELLED = 50;
 
@@ -490,7 +490,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteSwapSpaceEvent
+     * @see SwapSpaceEvent
      */
     public static final int EVT_SWAP_SPACE_DATA_READ = 71;
 
@@ -500,7 +500,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteSwapSpaceEvent
+     * @see SwapSpaceEvent
      */
     public static final int EVT_SWAP_SPACE_DATA_STORED = 72;
 
@@ -510,7 +510,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteSwapSpaceEvent
+     * @see SwapSpaceEvent
      */
     public static final int EVT_SWAP_SPACE_DATA_REMOVED = 73;
 
@@ -520,7 +520,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteSwapSpaceEvent
+     * @see SwapSpaceEvent
      */
     public static final int EVT_SWAP_SPACE_CLEARED = 74;
 
@@ -530,7 +530,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteSwapSpaceEvent
+     * @see SwapSpaceEvent
      */
     public static final int EVT_SWAP_SPACE_DATA_EVICTED = 75;
 
@@ -556,7 +556,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteSwapSpaceEvent
+     * @see SwapSpaceEvent
      */
     public static final int EVT_CACHE_PRELOAD_STARTED = 80;
 
@@ -566,7 +566,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteSwapSpaceEvent
+     * @see SwapSpaceEvent
      */
     public static final int EVT_CACHE_PRELOAD_STOPPED = 81;
 
@@ -576,7 +576,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteSwapSpaceEvent
+     * @see SwapSpaceEvent
      */
     public static final int EVT_CACHE_PRELOAD_PART_LOADED = 82;
 
@@ -626,7 +626,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteLicenseEvent
+     * @see LicenseEvent
      */
     public static final int EVT_LIC_VIOLATION = 108;
 
@@ -636,7 +636,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteLicenseEvent
+     * @see LicenseEvent
      */
     public static final int EVT_LIC_CLEARED = 109;
 
@@ -646,7 +646,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteLicenseEvent
+     * @see LicenseEvent
      */
     public static final int EVT_LIC_GRACE_EXPIRED = 110;
 
@@ -659,7 +659,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteAuthenticationEvent
+     * @see AuthenticationEvent
      */
     public static final int EVT_AUTHENTICATION_SUCCEEDED = 111;
 
@@ -672,7 +672,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteAuthenticationEvent
+     * @see AuthenticationEvent
      */
     public static final int EVT_AUTHENTICATION_FAILED = 112;
 
@@ -685,7 +685,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteSecureSessionEvent
+     * @see SecureSessionEvent
      */
     public static final int EVT_SECURE_SESSION_VALIDATION_SUCCEEDED = 113;
 
@@ -698,7 +698,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteSecureSessionEvent
+     * @see SecureSessionEvent
      */
     public static final int EVT_SECURE_SESSION_VALIDATION_FAILED = 114;
 
@@ -863,7 +863,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteAuthorizationEvent
+     * @see AuthorizationEvent
      */
     public static final int EVT_AUTHORIZATION_SUCCEEDED = 128;
 
@@ -876,7 +876,7 @@ public interface IgniteEventType {
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
-     * @see IgniteAuthorizationEvent
+     * @see AuthorizationEvent
      */
     public static final int EVT_AUTHORIZATION_FAILED = 129;
 
@@ -885,7 +885,7 @@ public interface IgniteEventType {
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all license events.
      *
-     * @see IgniteLicenseEvent
+     * @see LicenseEvent
      */
     public static final int[] EVTS_LICENSE = {
         EVT_LIC_CLEARED,
@@ -898,7 +898,7 @@ public interface IgniteEventType {
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all checkpoint events.
      *
-     * @see IgniteCheckpointEvent
+     * @see CheckpointEvent
      */
     public static final int[] EVTS_CHECKPOINT = {
         EVT_CHECKPOINT_SAVED,
@@ -911,7 +911,7 @@ public interface IgniteEventType {
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all deployment events.
      *
-     * @see IgniteDeploymentEvent
+     * @see DeploymentEvent
      */
     public static final int[] EVTS_DEPLOYMENT = {
         EVT_CLASS_DEPLOYED,
@@ -955,7 +955,7 @@ public interface IgniteEventType {
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all discovery events <b>except</b> for {@link #EVT_NODE_METRICS_UPDATED}.
      *
-     * @see IgniteDiscoveryEvent
+     * @see DiscoveryEvent
      */
     public static final int[] EVTS_DISCOVERY = {
         EVT_NODE_JOINED,
@@ -971,7 +971,7 @@ public interface IgniteEventType {
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all discovery events.
      *
-     * @see IgniteDiscoveryEvent
+     * @see DiscoveryEvent
      */
     public static final int[] EVTS_DISCOVERY_ALL = {
         EVT_NODE_JOINED,
@@ -988,7 +988,7 @@ public interface IgniteEventType {
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all grid job execution events.
      *
-     * @see IgniteJobEvent
+     * @see JobEvent
      */
     public static final int[] EVTS_JOB_EXECUTION = {
         EVT_JOB_MAPPED,
@@ -1008,7 +1008,7 @@ public interface IgniteEventType {
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all grid task execution events.
      *
-     * @see IgniteTaskEvent
+     * @see TaskEvent
      */
     public static final int[] EVTS_TASK_EXECUTION = {
         EVT_TASK_STARTED,
@@ -1066,7 +1066,7 @@ public interface IgniteEventType {
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all cloud events.
      *
-     * @see IgniteSwapSpaceEvent
+     * @see SwapSpaceEvent
      */
     public static final int[] EVTS_SWAPSPACE = {
         EVT_SWAP_SPACE_CLEARED,
@@ -1081,7 +1081,7 @@ public interface IgniteEventType {
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all cloud events.
      *
-     * @see IgniteAuthenticationEvent
+     * @see AuthenticationEvent
      */
     public static final int[] EVTS_AUTHENTICATION = {
         EVT_AUTHENTICATION_SUCCEEDED,
@@ -1093,7 +1093,7 @@ public interface IgniteEventType {
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all cloud events.
      *
-     * @see IgniteAuthenticationEvent
+     * @see AuthenticationEvent
      */
     public static final int[] EVTS_AUTHORIZATION = {
         EVT_AUTHORIZATION_SUCCEEDED,
@@ -1117,7 +1117,7 @@ public interface IgniteEventType {
      * {@link org.apache.ignite.IgniteEvents#localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method to
      * subscribe to all cloud events.
      *
-     * @see IgniteSecureSessionEvent
+     * @see SecureSessionEvent
      */
     public static final int[] EVTS_GGFS = {
         EVT_GGFS_FILE_CREATED,

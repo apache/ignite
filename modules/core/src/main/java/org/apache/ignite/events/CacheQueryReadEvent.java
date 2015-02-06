@@ -58,10 +58,10 @@ import java.util.*;
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
  *
- * @see IgniteEventType#EVT_CACHE_QUERY_OBJECT_READ
- * @see IgniteEventType#EVTS_CACHE_QUERY
+ * @see EventType#EVT_CACHE_QUERY_OBJECT_READ
+ * @see EventType#EVTS_CACHE_QUERY
  */
-public class IgniteCacheQueryReadEvent<K, V> extends IgniteEventAdapter {
+public class CacheQueryReadEvent<K, V> extends EventAdapter {
     /** */
     private static final long serialVersionUID = -1984731272984397445L;
 
@@ -125,7 +125,7 @@ public class IgniteCacheQueryReadEvent<K, V> extends IgniteEventAdapter {
      * @param val Value.
      * @param oldVal Old value.
      */
-    public IgniteCacheQueryReadEvent(
+    public CacheQueryReadEvent(
         ClusterNode node,
         String msg,
         int type,
@@ -290,7 +290,7 @@ public class IgniteCacheQueryReadEvent<K, V> extends IgniteEventAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteCacheQueryReadEvent.class, this,
+        return S.toString(CacheQueryReadEvent.class, this,
             "nodeId8", U.id8(node().id()),
             "msg", message(),
             "type", name(),

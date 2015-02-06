@@ -26,7 +26,7 @@ import org.jetbrains.annotations.*;
  * Base adapter for the events. All events (including user-defined ones) should
  * extend this adapter as it provides necessary plumbing implementation details.
  */
-public class IgniteEventAdapter implements IgniteEvent {
+public class EventAdapter implements Event {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,12 +46,12 @@ public class IgniteEventAdapter implements IgniteEvent {
     private int type;
 
     /** */
-    private long locId = IgniteEventLocalOrder.nextOrder();
+    private long locId = EventLocalOrder.nextOrder();
 
     /**
      * No-arg constructor.
      */
-    public IgniteEventAdapter() {
+    public EventAdapter() {
         // No-op.
     }
 
@@ -61,7 +61,7 @@ public class IgniteEventAdapter implements IgniteEvent {
      * @param msg Optional message.
      * @param type Event type.
      */
-    public IgniteEventAdapter(ClusterNode node, String msg, int type) {
+    public EventAdapter(ClusterNode node, String msg, int type) {
         assert tstamp > 0;
 
         A.ensure(type > 0, "Event type ID must be greater than zero.");
@@ -72,7 +72,7 @@ public class IgniteEventAdapter implements IgniteEvent {
     }
 
     /** {@inheritDoc} */
-    @Override public int compareTo(IgniteEvent o) {
+    @Override public int compareTo(Event o) {
         return o == null ? 1 : id.compareTo(o.id());
     }
 
@@ -90,7 +90,7 @@ public class IgniteEventAdapter implements IgniteEvent {
     @Override public boolean equals(Object o) {
         assert id != null;
 
-        return this == o || o instanceof IgniteEventAdapter && id.equals(((IgniteEvent)o).id());
+        return this == o || o instanceof EventAdapter && id.equals(((Event)o).id());
     }
 
     /** {@inheritDoc} */
@@ -163,6 +163,6 @@ public class IgniteEventAdapter implements IgniteEvent {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteEventAdapter.class, this, "name", name());
+        return S.toString(EventAdapter.class, this, "name", name());
     }
 }

@@ -68,9 +68,9 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testJobSubjectId() throws Exception {
-        node2.events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
-                IgniteJobEvent evt0 = (IgniteJobEvent)evt;
+        node2.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                JobEvent evt0 = (JobEvent)evt;
 
                 assert evtSubjId == null;
 
@@ -78,7 +78,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
 
                 return false;
             }
-        }, IgniteEventType.EVT_JOB_STARTED);
+        }, EventType.EVT_JOB_STARTED);
 
         node1.compute().execute(new Task(node2.cluster().localNode().id()), null);
 

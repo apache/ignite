@@ -32,7 +32,7 @@ import org.apache.ignite.spi.deployment.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Deployment storage for {@link org.apache.ignite.configuration.DeploymentMode#PRIVATE} and
@@ -66,10 +66,10 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
         ctxLdr = U.detectClassLoader(getClass());
 
         discoLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof IgniteDiscoveryEvent;
+            @Override public void onEvent(Event evt) {
+                assert evt instanceof DiscoveryEvent;
 
-                UUID nodeId = ((IgniteDiscoveryEvent)evt).eventNode().id();
+                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
                 if (evt.type() == EVT_NODE_LEFT ||
                     evt.type() == EVT_NODE_FAILED) {
@@ -444,7 +444,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
             String msg = (isTask ? "Task" : "Class") + " was deployed in Private or Isolated mode: " + cls;
 
             if (recordEvt && ctx.event().isRecordable(isTask(cls) ? EVT_TASK_DEPLOYED : EVT_CLASS_DEPLOYED)) {
-                IgniteDeploymentEvent evt = new IgniteDeploymentEvent();
+                DeploymentEvent evt = new DeploymentEvent();
 
                 // Record task event.
                 evt.type(isTask ? EVT_TASK_DEPLOYED : EVT_CLASS_DEPLOYED);
@@ -475,7 +475,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
                         "[cls=" + depCls.getValue() + ", alias=" + depCls.getKey() + ']';
 
                     if (evts.isRecordable(!isTask ? EVT_CLASS_UNDEPLOYED : EVT_TASK_UNDEPLOYED)) {
-                        IgniteDeploymentEvent evt = new IgniteDeploymentEvent();
+                        DeploymentEvent evt = new DeploymentEvent();
 
                         evt.node(sndNode);
                         evt.message(msg);

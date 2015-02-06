@@ -45,7 +45,7 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 import static org.apache.ignite.internal.GridNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
@@ -2169,10 +2169,10 @@ public final class GridGgfsImpl implements GridGgfsEx {
      */
     private class FormatDiscoveryListener implements GridLocalEventListener {
         /** {@inheritDoc} */
-        @Override public void onEvent(IgniteEvent evt) {
+        @Override public void onEvent(Event evt) {
             assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-            IgniteDiscoveryEvent evt0 = (IgniteDiscoveryEvent)evt;
+            DiscoveryEvent evt0 = (DiscoveryEvent)evt;
 
             if (evt0.eventNode() != null) {
                 if (sameGgfs((GridGgfsAttributes[])evt0.eventNode().attribute(ATTR_GGFS))) {

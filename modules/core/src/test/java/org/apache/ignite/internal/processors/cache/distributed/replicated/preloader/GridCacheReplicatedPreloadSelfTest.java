@@ -39,7 +39,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests for replicated cache preloader.
@@ -164,10 +164,10 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             Ignite g2 = startGrid(2);
 
-            Collection<IgniteEvent> evts = null;
+            Collection<Event> evts = null;
 
             for (int i = 0; i < 3; i++) {
-                evts = g2.events().localQuery(F.<IgniteEvent>alwaysTrue(),
+                evts = g2.events().localQuery(F.<Event>alwaysTrue(),
                     EVT_CACHE_PRELOAD_STARTED, EVT_CACHE_PRELOAD_STOPPED);
 
                 if (evts.size() != 2) {
@@ -181,7 +181,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             assert evts != null && evts.size() == 2 : "Wrong events received: " + evts;
 
-            Iterator<IgniteEvent> iter = evts.iterator();
+            Iterator<Event> iter = evts.iterator();
 
             assertEquals(EVT_CACHE_PRELOAD_STARTED, iter.next().type());
             assertEquals(EVT_CACHE_PRELOAD_STOPPED, iter.next().type());

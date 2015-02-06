@@ -39,7 +39,7 @@ import java.util.concurrent.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Test that swap is released after entry is reloaded.
@@ -97,8 +97,8 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
         final CountDownLatch swapLatch = new CountDownLatch(1);
         final CountDownLatch unswapLatch = new CountDownLatch(1);
 
-        grid().events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        grid().events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 switch (evt.type()) {
                     case EVT_SWAP_SPACE_DATA_STORED:
                         swapLatch.countDown();
@@ -151,8 +151,8 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
         final CountDownLatch swapLatch = new CountDownLatch(2);
         final CountDownLatch unswapLatch = new CountDownLatch(2);
 
-        grid().events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        grid().events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 switch (evt.type()) {
                     case EVT_SWAP_SPACE_DATA_STORED:
                         swapLatch.countDown();

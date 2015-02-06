@@ -39,7 +39,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
@@ -248,8 +248,8 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
             final Ignite g = startGrid(startIdx++);
 
             if (DEBUG)
-                g.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                    @Override public boolean apply(IgniteEvent evt) {
+                g.events().localListen(new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
                         info("\n>>> Preload event [grid=" + g.name() + ", evt=" + evt + ']');
 
                         return true;

@@ -41,7 +41,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
@@ -800,7 +800,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         }
 
         if (ctx.event().isRecordable(EVT_TASK_SESSION_ATTR_SET)) {
-            IgniteEvent evt = new IgniteTaskEvent(
+            Event evt = new TaskEvent(
                 ctx.discovery().localNode(),
                 "Changed attributes: " + attrs,
                 EVT_TASK_SESSION_ATTR_SET,
@@ -1156,10 +1156,10 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      */
     private class TaskDiscoveryListener implements GridLocalEventListener {
         /** {@inheritDoc} */
-        @Override public void onEvent(IgniteEvent evt) {
+        @Override public void onEvent(Event evt) {
             assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
-            UUID nodeId = ((IgniteDiscoveryEvent)evt).eventNode().id();
+            UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
             lock.readLock();
 

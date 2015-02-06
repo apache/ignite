@@ -63,7 +63,7 @@
             Enable cache events.
         -->
         <property name="includeEventTypes">
-            <util:constant static-field="org.apache.ignite.events.IgniteEventType.EVTS_CACHE"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVTS_CACHE"/>
         </property>
 
         <!--

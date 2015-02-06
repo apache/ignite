@@ -29,7 +29,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests synchronous eviction for replicated cache.
@@ -79,7 +79,7 @@ public class GridCacheReplicatedEvictionSelfTest extends GridCacheAbstractSelfTe
                 assertNotNull(cache(g).peek(String.valueOf(i)));
         }
 
-        Collection<IgniteFuture<IgniteEvent>> futs = new ArrayList<>();
+        Collection<IgniteFuture<Event>> futs = new ArrayList<>();
 
         for (int g = 0 ; g < gridCount(); g++)
             futs.add(waitForLocalEvent(grid(g).events(), nodeEvent(grid(g).localNode().id()), EVT_CACHE_ENTRY_EVICTED));
@@ -91,7 +91,7 @@ public class GridCacheReplicatedEvictionSelfTest extends GridCacheAbstractSelfTe
             }
         }
 
-        for (IgniteFuture<IgniteEvent> fut : futs)
+        for (IgniteFuture<Event> fut : futs)
             fut.get(3000);
 
         boolean evicted = GridTestUtils.waitForCondition(new PA() {
@@ -117,11 +117,11 @@ public class GridCacheReplicatedEvictionSelfTest extends GridCacheAbstractSelfTe
      * @param nodeId Node id.
      * @return Predicate for events belonging to specified node.
      */
-    private IgnitePredicate<IgniteEvent> nodeEvent(final UUID nodeId) {
+    private IgnitePredicate<Event> nodeEvent(final UUID nodeId) {
         assert nodeId != null;
 
-        return new P1<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent e) {
+        return new P1<Event>() {
+            @Override public boolean apply(Event e) {
                 info("Predicate called [e.nodeId()=" + e.node().id() + ", nodeId=" + nodeId + ']');
 
                 return e.node().id().equals(nodeId);

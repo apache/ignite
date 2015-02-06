@@ -47,7 +47,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Common test for marshallers.
@@ -696,8 +696,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         try (Ignite g1 = G.start(cfg)) {
             IgniteEvents evts = events(grid().forNode(g1.cluster().localNode()));
 
-            evts.localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent gridEvt) {
+            evts.localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event gridEvt) {
                     return true;
                 }
             }, EVTS_CACHE);

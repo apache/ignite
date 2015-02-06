@@ -37,7 +37,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.configuration.DeploymentMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Deployment storage for {@link org.apache.ignite.configuration.DeploymentMode#SHARED} and
@@ -84,12 +84,12 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         discoLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof IgniteDiscoveryEvent;
+            @Override public void onEvent(Event evt) {
+                assert evt instanceof DiscoveryEvent;
 
                 assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                 Collection<SharedDeployment> undeployed = new LinkedList<>();
 
@@ -1208,7 +1208,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
             int type = isTask ? EVT_TASK_DEPLOYED : EVT_CLASS_DEPLOYED;
 
             if (ctx.event().isRecordable(type)) {
-                IgniteDeploymentEvent evt = new IgniteDeploymentEvent();
+                DeploymentEvent evt = new DeploymentEvent();
 
                 evt.node(ctx.discovery().localNode());
                 evt.message(msg);
@@ -1239,7 +1239,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 int type = isTask ? EVT_TASK_UNDEPLOYED : EVT_CLASS_UNDEPLOYED;
 
                 if (ctx.event().isRecordable(type)) {
-                    IgniteDeploymentEvent evt = new IgniteDeploymentEvent();
+                    DeploymentEvent evt = new DeploymentEvent();
 
                     evt.node(ctx.discovery().localNode());
                     evt.message(msg);

@@ -59,11 +59,11 @@ import java.io.*;
  * <p>
  * All discovery events are internal:
  * <ul>
- *     <li>{@link IgniteEventType#EVT_NODE_FAILED}</li>
- *     <li>{@link IgniteEventType#EVT_NODE_LEFT}</li>
- *     <li>{@link IgniteEventType#EVT_NODE_JOINED}</li>
- *     <li>{@link IgniteEventType#EVT_NODE_METRICS_UPDATED}</li>
- *     <li>{@link IgniteEventType#EVT_NODE_SEGMENTED}</li>
+ *     <li>{@link EventType#EVT_NODE_FAILED}</li>
+ *     <li>{@link EventType#EVT_NODE_LEFT}</li>
+ *     <li>{@link EventType#EVT_NODE_JOINED}</li>
+ *     <li>{@link EventType#EVT_NODE_METRICS_UPDATED}</li>
+ *     <li>{@link EventType#EVT_NODE_SEGMENTED}</li>
  * </ul>
  * <p>
  * Hidden events are NEVER sent to SPI level. They serve purpose of local
@@ -71,19 +71,19 @@ import java.io.*;
  * <p>
  * Hidden events:
  * <ul>
- *     <li>{@link IgniteEventType#EVT_NODE_METRICS_UPDATED}</li>
+ *     <li>{@link EventType#EVT_NODE_METRICS_UPDATED}</li>
  * </ul>
- * @see IgniteJobEvent
- * @see IgniteCacheEvent
- * @see IgniteCachePreloadingEvent
- * @see IgniteSwapSpaceEvent
- * @see IgniteCheckpointEvent
- * @see IgniteDeploymentEvent
- * @see IgniteDiscoveryEvent
- * @see IgniteTaskEvent
+ * @see JobEvent
+ * @see CacheEvent
+ * @see CachePreloadingEvent
+ * @see SwapSpaceEvent
+ * @see CheckpointEvent
+ * @see DeploymentEvent
+ * @see DiscoveryEvent
+ * @see TaskEvent
  * @see org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)
  */
-public interface IgniteEvent extends Comparable<IgniteEvent>, Serializable {
+public interface Event extends Comparable<Event>, Serializable {
     /**
      * Gets globally unique ID of this event.
      *
@@ -119,18 +119,18 @@ public interface IgniteEvent extends Comparable<IgniteEvent>, Serializable {
 
     /**
      * Gets type of this event. All system event types are defined in
-     * {@link IgniteEventType}.
+     * {@link EventType}.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal GridGain events and should not be used by user-defined events.
      *
      * @return Event's type.
-     * @see IgniteEventType
+     * @see EventType
      */
     public int type();
 
     /**
-     * Gets name of this event. All events are defined in {@link IgniteEventType} class.
+     * Gets name of this event. All events are defined in {@link EventType} class.
      *
      * @return Name of this event.
      */

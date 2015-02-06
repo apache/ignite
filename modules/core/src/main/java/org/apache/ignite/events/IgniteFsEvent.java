@@ -25,7 +25,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * GGFS event.
@@ -59,11 +59,11 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * events are required for GridGain's internal operations and such events will still be generated but not stored by
  * event storage SPI if they are disabled in GridGain configuration.
  *
- * @see IgniteEventType#EVT_GGFS_FILE_CREATED
- * @see IgniteEventType#EVT_GGFS_FILE_RENAMED
- * @see IgniteEventType#EVT_GGFS_FILE_DELETED
+ * @see EventType#EVT_GGFS_FILE_CREATED
+ * @see EventType#EVT_GGFS_FILE_RENAMED
+ * @see EventType#EVT_GGFS_FILE_DELETED
  */
-public class IgniteFsEvent extends IgniteEventAdapter {
+public class IgniteFsEvent extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -95,8 +95,8 @@ public class IgniteFsEvent extends IgniteEventAdapter {
 
     /**
      * Constructs an event instance for path modification event
-     * ({@link IgniteEventType#EVT_GGFS_FILE_RENAMED},
-     * {@link IgniteEventType#EVT_GGFS_DIR_RENAMED}).
+     * ({@link EventType#EVT_GGFS_FILE_RENAMED},
+     * {@link EventType#EVT_GGFS_DIR_RENAMED}).
      *
      * @param path File or directory path.
      * @param newPath New file or directory path.
@@ -111,8 +111,8 @@ public class IgniteFsEvent extends IgniteEventAdapter {
 
     /**
      * Constructs an event instance for close events:
-     * ({@link IgniteEventType#EVT_GGFS_FILE_CLOSED_READ},
-     * {@link IgniteEventType#EVT_GGFS_FILE_CLOSED_WRITE}).
+     * ({@link EventType#EVT_GGFS_FILE_CLOSED_READ},
+     * {@link EventType#EVT_GGFS_FILE_CLOSED_WRITE}).
      *
      * @param path File path.
      * @param node Node.
@@ -127,7 +127,7 @@ public class IgniteFsEvent extends IgniteEventAdapter {
 
     /**
      * Constructs an event instance for file metadata update events
-     * ({@link IgniteEventType#EVT_GGFS_META_UPDATED}).
+     * ({@link EventType#EVT_GGFS_META_UPDATED}).
      *
      * @param path File path.
      * @param node Node.
@@ -151,7 +151,7 @@ public class IgniteFsEvent extends IgniteEventAdapter {
 
     /**
      * New file or directory path for this event (used in
-     * {@link IgniteEventType#EVT_GGFS_FILE_RENAMED} event).
+     * {@link EventType#EVT_GGFS_FILE_RENAMED} event).
      *
      * @return New file or directory path or {@code null},
      *         if not relevant for this event.

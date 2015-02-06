@@ -447,7 +447,7 @@ public class IgniteConfiguration {
     private long metricsLogFreq = DFLT_METRICS_LOG_FREQ;
 
     /** Local event listeners. */
-    private Map<IgnitePredicate<? extends IgniteEvent>, int[]> lsnrs;
+    private Map<IgnitePredicate<? extends Event>, int[]> lsnrs;
 
     /** TCP host. */
     private String restTcpHost;
@@ -2301,7 +2301,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets array of event types, which will be recorded by {@link GridEventStorageManager#record(org.apache.ignite.events.IgniteEvent)}.
+     * Sets array of event types, which will be recorded by {@link GridEventStorageManager#record(org.apache.ignite.events.Event)}.
      * Note, that either the include event types or the exclude event types can be established.
      *
      * @param inclEvtTypes Include event types.
@@ -3076,9 +3076,9 @@ public class IgniteConfiguration {
      * Each listener is mapped to array of event types.
      *
      * @return Pre-configured event listeners map.
-     * @see org.apache.ignite.events.IgniteEventType
+     * @see org.apache.ignite.events.EventType
      */
-    public Map<IgnitePredicate<? extends IgniteEvent>, int[]> getLocalEventListeners() {
+    public Map<IgnitePredicate<? extends Event>, int[]> getLocalEventListeners() {
         return lsnrs;
     }
 
@@ -3088,7 +3088,7 @@ public class IgniteConfiguration {
      *
      * @param lsnrs Pre-configured event listeners map.
      */
-    public void setLocalEventListeners(Map<IgnitePredicate<? extends IgniteEvent>, int[]> lsnrs) {
+    public void setLocalEventListeners(Map<IgnitePredicate<? extends Event>, int[]> lsnrs) {
         this.lsnrs = lsnrs;
     }
 

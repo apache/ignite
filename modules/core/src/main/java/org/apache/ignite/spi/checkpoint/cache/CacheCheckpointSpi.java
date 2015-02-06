@@ -29,7 +29,7 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * This class defines cache-based implementation for checkpoint SPI.
@@ -149,11 +149,11 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         getSpiContext().addLocalEventListener(evtLsnr = new GridLocalEventListener() {
             /** {@inheritDoc} */
-            @Override public void onEvent(IgniteEvent evt) {
+            @Override public void onEvent(Event evt) {
                 assert evt != null;
                 assert evt.type() == EVT_CACHE_OBJECT_REMOVED || evt.type() == EVT_CACHE_OBJECT_EXPIRED;
 
-                IgniteCacheEvent e = (IgniteCacheEvent)evt;
+                CacheEvent e = (CacheEvent)evt;
 
                 if (!F.eq(e.cacheName(), cacheName))
                     return;

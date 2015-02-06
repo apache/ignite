@@ -22,14 +22,14 @@ import java.util.concurrent.atomic.*;
 /**
  * Generator for local atomically incremented IDs for grid events.
  */
-final class IgniteEventLocalOrder {
+final class EventLocalOrder {
     /** Generator implementation. */
     private static final AtomicLong gen = new AtomicLong(0);
 
     /**
      * No-arg constructor enforces the singleton.
      */
-    private IgniteEventLocalOrder() {
+    private EventLocalOrder() {
         // No-op.
     }
 

@@ -26,7 +26,7 @@ import org.apache.ignite.resources.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Demonstrates event consume API that allows to register event listeners on remote nodes.
@@ -72,8 +72,8 @@ public class EventsExample {
 
         Ignite ignite = Ignition.ignite();
 
-        IgnitePredicate<IgniteTaskEvent> lsnr = new IgnitePredicate<IgniteTaskEvent>() {
-            @Override public boolean apply(IgniteTaskEvent evt) {
+        IgnitePredicate<TaskEvent> lsnr = new IgnitePredicate<TaskEvent>() {
+            @Override public boolean apply(TaskEvent evt) {
                 System.out.println("Received task event [evt=" + evt.name() + ", taskName=" + evt.taskName() + ']');
 
                 return true; // Return true to continue listening.
@@ -105,8 +105,8 @@ public class EventsExample {
 
         // This optional local callback is called for each event notification
         // that passed remote predicate listener.
-        IgniteBiPredicate<UUID, IgniteTaskEvent> locLsnr = new IgniteBiPredicate<UUID, IgniteTaskEvent>() {
-            @Override public boolean apply(UUID nodeId, IgniteTaskEvent evt) {
+        IgniteBiPredicate<UUID, TaskEvent> locLsnr = new IgniteBiPredicate<UUID, TaskEvent>() {
+            @Override public boolean apply(UUID nodeId, TaskEvent evt) {
                 // Remote filter only accepts tasks whose name being with "good-task" prefix.
                 assert evt.taskName().startsWith("good-task");
 
@@ -117,8 +117,8 @@ public class EventsExample {
         };
 
         // Remote filter which only accepts tasks whose name begins with "good-task" prefix.
-        IgnitePredicate<IgniteTaskEvent> rmtLsnr = new IgnitePredicate<IgniteTaskEvent>() {
-            @Override public boolean apply(IgniteTaskEvent evt) {
+        IgnitePredicate<TaskEvent> rmtLsnr = new IgnitePredicate<TaskEvent>() {
+            @Override public boolean apply(TaskEvent evt) {
                 return evt.taskName().startsWith("good-task");
             }
         };

@@ -1110,7 +1110,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setRestEnabled(false);
 
-        cfg.setIncludeEventTypes(IgniteEventType.EVTS_ALL);
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }

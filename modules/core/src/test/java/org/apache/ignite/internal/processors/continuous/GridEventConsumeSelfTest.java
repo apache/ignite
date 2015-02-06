@@ -35,7 +35,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousProcessor.*;
 
 /**
@@ -151,13 +151,13 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         try {
             consumeId = grid(0).events().remoteListen(
-                new P2<UUID, IgniteDiscoveryEvent>() {
-                    @Override public boolean apply(UUID uuid, IgniteDiscoveryEvent evt) {
+                new P2<UUID, DiscoveryEvent>() {
+                    @Override public boolean apply(UUID uuid, DiscoveryEvent evt) {
                         return false;
                     }
                 },
-                new P1<IgniteDiscoveryEvent>() {
-                    @Override public boolean apply(IgniteDiscoveryEvent e) {
+                new P1<DiscoveryEvent>() {
+                    @Override public boolean apply(DiscoveryEvent e) {
                         return false;
                     }
                 },
@@ -172,13 +172,13 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         try {
             consumeId = grid(0).events().remoteListen(
-                new P2<UUID, IgniteDiscoveryEvent>() {
-                    @Override public boolean apply(UUID uuid, IgniteDiscoveryEvent evt) {
+                new P2<UUID, DiscoveryEvent>() {
+                    @Override public boolean apply(UUID uuid, DiscoveryEvent evt) {
                         return false;
                     }
                 },
-                new P1<IgniteDiscoveryEvent>() {
-                    @Override public boolean apply(IgniteDiscoveryEvent e) {
+                new P1<DiscoveryEvent>() {
+                    @Override public boolean apply(DiscoveryEvent e) {
                         return false;
                     }
                 }
@@ -192,13 +192,13 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         try {
             consumeId = grid(0).events().remoteListen(
-                new P2<UUID, IgniteEvent>() {
-                    @Override public boolean apply(UUID uuid, IgniteEvent evt) {
+                new P2<UUID, Event>() {
+                    @Override public boolean apply(UUID uuid, Event evt) {
                         return false;
                     }
                 },
-                new P1<IgniteEvent>() {
-                    @Override public boolean apply(IgniteEvent e) {
+                new P1<Event>() {
+                    @Override public boolean apply(Event e) {
                         return false;
                     }
                 }
@@ -220,8 +220,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(GRID_CNT);
 
         UUID consumeId = grid(0).events().remoteListen(
-            new P2<UUID, IgniteEvent>() {
-                @Override public boolean apply(UUID nodeId, IgniteEvent evt) {
+            new P2<UUID, Event>() {
+                @Override public boolean apply(UUID nodeId, Event evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
 
                     if (evt.type() == EVT_JOB_STARTED) {
@@ -260,8 +260,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(GRID_CNT);
 
         UUID consumeId = grid(0).events().remoteListen(
-            new P2<UUID, IgniteEvent>() {
-                @Override public boolean apply(UUID nodeId, IgniteEvent evt) {
+            new P2<UUID, Event>() {
+                @Override public boolean apply(UUID nodeId, Event evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
 
                     assertEquals(EVT_JOB_STARTED, evt.type());
@@ -301,8 +301,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(GRID_CNT);
 
         UUID consumeId = grid(0).events().remoteListen(
-            new P2<UUID, IgniteEvent>() {
-                @Override public boolean apply(UUID nodeId, IgniteEvent evt) {
+            new P2<UUID, Event>() {
+                @Override public boolean apply(UUID nodeId, Event evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
 
                     assertEquals(EVT_JOB_STARTED, evt.type());
@@ -314,8 +314,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     return true;
                 }
             },
-            new P1<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            new P1<Event>() {
+                @Override public boolean apply(Event evt) {
                     return evt.type() == EVT_JOB_STARTED;
                 }
             }
@@ -345,8 +345,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(GRID_CNT);
 
         UUID consumeId = grid(0).events().remoteListen(
-            new P2<UUID, IgniteJobEvent>() {
-                @Override public boolean apply(UUID nodeId, IgniteJobEvent evt) {
+            new P2<UUID, JobEvent>() {
+                @Override public boolean apply(UUID nodeId, JobEvent evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
 
                     assertEquals(EVT_JOB_STARTED, evt.type());
@@ -358,8 +358,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     return true;
                 }
             },
-            new P1<IgniteJobEvent>() {
-                @Override public boolean apply(IgniteJobEvent evt) {
+            new P1<JobEvent>() {
+                @Override public boolean apply(JobEvent evt) {
                     return !"exclude".equals(evt.taskName());
                 }
             },
@@ -391,8 +391,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(GRID_CNT - 1);
 
         UUID consumeId = events(grid(0).forRemotes()).remoteListen(
-            new P2<UUID, IgniteEvent>() {
-                @Override public boolean apply(UUID nodeId, IgniteEvent evt) {
+            new P2<UUID, Event>() {
+                @Override public boolean apply(UUID nodeId, Event evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
 
                     assertEquals(EVT_JOB_STARTED, evt.type());
@@ -432,8 +432,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(GRID_CNT - 1);
 
         UUID consumeId = events(grid(0).forAttribute("include", null)).remoteListen(
-            new P2<UUID, IgniteEvent>() {
-                @Override public boolean apply(UUID nodeId, IgniteEvent evt) {
+            new P2<UUID, Event>() {
+                @Override public boolean apply(UUID nodeId, Event evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
 
                     assertEquals(EVT_JOB_STARTED, evt.type());
@@ -473,8 +473,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(1);
 
         UUID consumeId = events(grid(0).forLocal()).remoteListen(
-            new P2<UUID, IgniteEvent>() {
-                @Override public boolean apply(UUID nodeId, IgniteEvent evt) {
+            new P2<UUID, Event>() {
+                @Override public boolean apply(UUID nodeId, Event evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
 
                     assertEquals(EVT_JOB_STARTED, evt.type());
@@ -513,8 +513,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     public void testEmptyProjection() throws Exception {
         try {
             events(grid(0).forPredicate(F.<ClusterNode>alwaysFalse())).remoteListen(
-                new P2<UUID, IgniteEvent>() {
-                    @Override public boolean apply(UUID nodeId, IgniteEvent evt) {
+                new P2<UUID, Event>() {
+                    @Override public boolean apply(UUID nodeId, Event evt) {
                         return true;
                     }
                 },
@@ -538,8 +538,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(1);
 
         UUID consumeId = grid(0).events().remoteListen(
-            new P2<UUID, IgniteEvent>() {
-                @Override public boolean apply(UUID nodeId, IgniteEvent evt) {
+            new P2<UUID, Event>() {
+                @Override public boolean apply(UUID nodeId, Event evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
 
                     assertEquals(EVT_JOB_STARTED, evt.type());
@@ -579,8 +579,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(1);
 
         UUID consumeId = grid(0).events().remoteListen(
-            new P2<UUID, IgniteEvent>() {
-                @Override public boolean apply(UUID nodeId, IgniteEvent evt) {
+            new P2<UUID, Event>() {
+                @Override public boolean apply(UUID nodeId, Event evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
 
                     assertEquals(EVT_JOB_STARTED, evt.type());
@@ -628,8 +628,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(1);
 
         grid(0).events().localListen(
-            new P1<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            new P1<Event>() {
+                @Override public boolean apply(Event evt) {
                     info("Local event [" + evt.shortDisplay() + ']');
 
                     assertEquals(EVT_JOB_STARTED, evt.type());
@@ -664,8 +664,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(GRID_CNT + 1);
 
         UUID consumeId = grid(0).events().remoteListen(
-            new P2<UUID, IgniteEvent>() {
-                @Override public boolean apply(UUID nodeId, IgniteEvent evt) {
+            new P2<UUID, Event>() {
+                @Override public boolean apply(UUID nodeId, Event evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
 
                     assertEquals(EVT_JOB_STARTED, evt.type());
@@ -677,8 +677,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     return true;
                 }
             },
-            new P1<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            new P1<Event>() {
+                @Override public boolean apply(Event evt) {
                     return evt.type() == EVT_JOB_STARTED;
                 }
             },
@@ -715,8 +715,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(GRID_CNT);
 
         UUID consumeId = events(grid(0).forAttribute("include", null)).remoteListen(
-            new P2<UUID, IgniteEvent>() {
-                @Override public boolean apply(UUID nodeId, IgniteEvent evt) {
+            new P2<UUID, Event>() {
+                @Override public boolean apply(UUID nodeId, Event evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
 
                     assertEquals(EVT_JOB_STARTED, evt.type());
@@ -770,10 +770,10 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         ClassLoader ldr = getExternalClassLoader();
 
         IgnitePredicate<ClusterNode> prjPred = (IgnitePredicate<ClusterNode>)ldr.loadClass(PRJ_PRED_CLS_NAME).newInstance();
-        IgnitePredicate<IgniteEvent> filter = (IgnitePredicate<IgniteEvent>)ldr.loadClass(FILTER_CLS_NAME).newInstance();
+        IgnitePredicate<Event> filter = (IgnitePredicate<Event>)ldr.loadClass(FILTER_CLS_NAME).newInstance();
 
-        UUID consumeId = events(grid(0).forPredicate(prjPred)).remoteListen(new P2<UUID, IgniteEvent>() {
-            @Override public boolean apply(UUID nodeId, IgniteEvent evt) {
+        UUID consumeId = events(grid(0).forPredicate(prjPred)).remoteListen(new P2<UUID, Event>() {
+            @Override public boolean apply(UUID nodeId, Event evt) {
                 info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
 
                 assertEquals(EVT_JOB_STARTED, evt.type());
@@ -815,11 +815,11 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(GRID_CNT);
 
         UUID consumeId = grid(0).events().remoteListen(
-            new P2<UUID, IgniteEvent>() {
+            new P2<UUID, Event>() {
                 @IgniteInstanceResource
                 private Ignite grid;
 
-                @Override public boolean apply(UUID nodeId, IgniteEvent evt) {
+                @Override public boolean apply(UUID nodeId, Event evt) {
                     info("Event from " + nodeId + " [" + evt.shortDisplay() + ']');
 
                     assertEquals(EVT_JOB_STARTED, evt.type());
@@ -832,11 +832,11 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     return true;
                 }
             },
-            new P1<IgniteEvent>() {
+            new P1<Event>() {
                 @IgniteInstanceResource
                 private Ignite grid;
 
-                @Override public boolean apply(IgniteEvent evt) {
+                @Override public boolean apply(Event evt) {
                     assertNotNull(grid);
 
                     return true;
@@ -870,9 +870,9 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(GRID_CNT);
 
         for (int i = 0; i < GRID_CNT; i++) {
-            grid(0).events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    if (nodeId.equals(((IgniteDiscoveryEvent) evt).eventNode().id()))
+            grid(0).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    if (nodeId.equals(((DiscoveryEvent) evt).eventNode().id()))
                         latch.countDown();
 
                     return true;
@@ -882,8 +882,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         g.events().remoteListen(
             null,
-            new P1<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            new P1<Event>() {
+                @Override public boolean apply(Event evt) {
                     return true;
                 }
             },
@@ -905,9 +905,9 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         final CountDownLatch discoLatch = new CountDownLatch(GRID_CNT);
 
         for (int i = 0; i < GRID_CNT; i++) {
-            grid(0).events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    if (nodeId.equals(((IgniteDiscoveryEvent) evt).eventNode().id()))
+            grid(0).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    if (nodeId.equals(((DiscoveryEvent) evt).eventNode().id()))
                         discoLatch.countDown();
 
                     return true;
@@ -923,8 +923,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         g.events().remoteListen(
             1, 0, false,
             null,
-            new P1<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            new P1<Event>() {
+                @Override public boolean apply(Event evt) {
                     consumeLatch.countDown();
                     consumeCnt.incrementAndGet();
 
@@ -966,8 +966,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     try {
                         IgniteEvents evts = grid(idx).events().withAsync();
 
-                        evts.remoteListen(new P2<UUID, IgniteEvent>() {
-                            @Override public boolean apply(UUID uuid, IgniteEvent evt) {
+                        evts.remoteListen(new P2<UUID, Event>() {
+                            @Override public boolean apply(UUID uuid, Event evt) {
                                 return true;
                             }
                         }, null, EVT_JOB_STARTED);

@@ -36,7 +36,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
@@ -47,7 +47,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
     private static GridGgfsImpl ggfs;
 
     /** Event listener. */
-    private IgnitePredicate<IgniteEvent> lsnr;
+    private IgnitePredicate<Event> lsnr;
 
     /**
      * Gets cache configuration.
@@ -184,14 +184,14 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testSingleFileNestedDirs() throws Exception {
-        final List<IgniteEvent> evtList = new ArrayList<>();
+        final List<Event> evtList = new ArrayList<>();
 
         final int evtsCnt = 6 + 1 + 1;
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
-        grid(1).events().localListen(lsnr = new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        grid(1).events().localListen(lsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 log.info("Received event [evt=" + evt + ']');
 
                 evtList.add(evt);
@@ -265,14 +265,14 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testDirWithFiles() throws Exception {
-        final List<IgniteEvent> evtList = new ArrayList<>();
+        final List<Event> evtList = new ArrayList<>();
 
         final int evtsCnt = 4 + 3 + 1;
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
-        grid(1).events().localListen(lsnr = new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        grid(1).events().localListen(lsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 log.info("Received event [evt=" + evt + ']');
 
                 evtList.add(evt);
@@ -346,14 +346,14 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testSingleEmptyDir() throws Exception {
-        final List<IgniteEvent> evtList = new ArrayList<>();
+        final List<Event> evtList = new ArrayList<>();
 
         final int evtsCnt = 1 + 1 + 0 + 1;
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
-        grid(1).events().localListen(lsnr = new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        grid(1).events().localListen(lsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 log.info("Received event [evt=" + evt + ']');
 
                 evtList.add(evt);
@@ -403,14 +403,14 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testTwoFiles() throws Exception {
-        final List<IgniteEvent> evtList = new ArrayList<>();
+        final List<Event> evtList = new ArrayList<>();
 
         final int evtsCnt = 4 + 3 + 2 + 2;
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
-        grid(1).events().localListen(lsnr = new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        grid(1).events().localListen(lsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 log.info("Received event [evt=" + evt + ']');
 
                 evtList.add(evt);
@@ -490,14 +490,14 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testDeleteNonRecursive() throws Exception {
-        final List<IgniteEvent> evtList = new ArrayList<>();
+        final List<Event> evtList = new ArrayList<>();
 
         final int evtsCnt = 2 + 0 + 1;
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
-        grid(1).events().localListen(lsnr = new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        grid(1).events().localListen(lsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 log.info("Received event [evt=" + evt + ']');
 
                 evtList.add(evt);
@@ -544,14 +544,14 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testMoveFile() throws Exception {
-        final List<IgniteEvent> evtList = new ArrayList<>();
+        final List<Event> evtList = new ArrayList<>();
 
         final int evtsCnt = 5 + 1;
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
-        grid(1).events().localListen(lsnr = new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        grid(1).events().localListen(lsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 log.info("Received event [evt=" + evt + ']');
 
                 evtList.add(evt);
@@ -611,14 +611,14 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testNestedEmptyDirs() throws Exception {
-        final List<IgniteEvent> evtList = new ArrayList<>();
+        final List<Event> evtList = new ArrayList<>();
 
         final int evtsCnt = 2 + 1;
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
-        grid(1).events().localListen(lsnr = new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        grid(1).events().localListen(lsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 log.info("Received event [evt=" + evt + ']');
 
                 evtList.add(evt);
@@ -661,14 +661,14 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testSingleFileOverwrite() throws Exception {
-        final List<IgniteEvent> evtList = new ArrayList<>();
+        final List<Event> evtList = new ArrayList<>();
 
         final int evtsCnt = 3 + 4 + 1;
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
-        grid(1).events().localListen(lsnr = new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        grid(1).events().localListen(lsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 log.info("Received event [evt=" + evt + ']');
 
                 evtList.add(evt);
@@ -713,36 +713,36 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
 
         assertOneToOne(
             evtList.subList(3, 8),
-            new P1<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent e) {
+            new P1<Event>() {
+                @Override public boolean apply(Event e) {
                     IgniteFsEvent e0 = (IgniteFsEvent)e;
 
                     return e0.type() == EVT_GGFS_FILE_DELETED && e0.path().equals(file1);
                 }
             },
-            new P1<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent e) {
+            new P1<Event>() {
+                @Override public boolean apply(Event e) {
                     IgniteFsEvent e0 = (IgniteFsEvent)e;
 
                     return e0.type() == EVT_GGFS_FILE_PURGED && e0.path().equals(file1);
                 }
             },
-            new P1<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent e) {
+            new P1<Event>() {
+                @Override public boolean apply(Event e) {
                     IgniteFsEvent e0 = (IgniteFsEvent)e;
 
                     return e0.type() == EVT_GGFS_FILE_CREATED && e0.path().equals(file1);
                 }
             },
-            new P1<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent e) {
+            new P1<Event>() {
+                @Override public boolean apply(Event e) {
                     IgniteFsEvent e0 = (IgniteFsEvent)e;
 
                     return e0.type() == EVT_GGFS_FILE_OPENED_WRITE && e0.path().equals(file1);
                 }
             },
-            new P1<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent e) {
+            new P1<Event>() {
+                @Override public boolean apply(Event e) {
                     IgniteFsEvent e0 = (IgniteFsEvent)e;
 
                     return e0.type() == EVT_GGFS_FILE_CLOSED_WRITE && e0.path().equals(file1);
@@ -757,14 +757,14 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testFileDataEvents() throws Exception {
-        final List<IgniteEvent> evtList = new ArrayList<>();
+        final List<Event> evtList = new ArrayList<>();
 
         final int evtsCnt = 5;
 
         final CountDownLatch latch = new CountDownLatch(evtsCnt);
 
-        grid(1).events().localListen(lsnr = new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        grid(1).events().localListen(lsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 log.info("Received event [evt=" + evt + ']');
 
                 evtList.add(evt);
@@ -821,7 +821,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
     /**
      * Predicate for matching {@link org.apache.ignite.events.IgniteFsEvent}.
      */
-    private static class EventPredicate implements IgnitePredicate<IgniteEvent> {
+    private static class EventPredicate implements IgnitePredicate<Event> {
         /** */
         private final int evt;
 
@@ -839,7 +839,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent e) {
+        @Override public boolean apply(Event e) {
             IgniteFsEvent e0 = (IgniteFsEvent)e;
 
             return e0.type() == evt && e0.path().equals(path);

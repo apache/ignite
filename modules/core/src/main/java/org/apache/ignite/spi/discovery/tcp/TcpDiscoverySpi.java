@@ -45,7 +45,7 @@ import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridNodeAttributes.*;
 import static org.apache.ignite.spi.IgnitePortProtocol.*;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.*;
@@ -1692,7 +1692,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /**
      * Notify external listener on discovery event.
      *
-     * @param type Discovery event type. See {@link org.apache.ignite.events.IgniteDiscoveryEvent} for more details.
+     * @param type Discovery event type. See {@link org.apache.ignite.events.DiscoveryEvent} for more details.
      * @param topVer Topology version.
      * @param node Remote node this event is connected with.
      */
