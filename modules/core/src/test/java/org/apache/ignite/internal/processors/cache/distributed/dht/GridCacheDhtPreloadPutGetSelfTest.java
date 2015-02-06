@@ -38,10 +38,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
- *
- * Forum example <a
- * href="http://www.gridgainsystems.com/jiveforums/thread.jspa?threadID=1449">
- * http://www.gridgainsystems.com/jiveforums/thread.jspa?threadID=1449</a>
  */
 public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     /** Key count. */

@@ -76,8 +76,8 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
 
     /** */
     private void initAttributes() {
-        attrs.put(GridNodeAttributes.ATTR_BUILD_VER, "10");
-        attrs.put(GridNodeAttributes.ATTR_GRID_NAME, "null");
+        attrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, "10");
+        attrs.put(IgniteNodeAttributes.ATTR_GRID_NAME, "null");
     }
 
     /**

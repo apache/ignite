@@ -45,8 +45,8 @@ import static java.util.Collections.*;
  * path.
  */
 public class GridHadoopPopularWordsTest {
-    /** GridGain home. */
-    private static final String IGNITE_HOME = U.getGridGainHome();
+    /** Ignite home. */
+    private static final String IGNITE_HOME = U.getIgniteHome();
 
     /** The path to the input directory. ALl files in that directory will be processed. */
     private static final Path BOOKS_LOCAL_DIR =
@@ -180,7 +180,7 @@ public class GridHadoopPopularWordsTest {
 
         // Use explicit configuration of distributed file system, if provided.
         if (DFS_CFG != null)
-            cfg.addResource(U.resolveGridGainUrl(DFS_CFG));
+            cfg.addResource(U.resolveIgniteUrl(DFS_CFG));
 
         jobCfg.setJobName("HadoopPopularWordExample");
         jobCfg.setJarByClass(GridHadoopPopularWordsTest.class);

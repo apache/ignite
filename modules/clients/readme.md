@@ -1,13 +1,13 @@
 <center>
-![GridGain Logo](http://www.gridgain.com/images/logo/logo_mid.png "GridGain Logo")
+![Ignite Logo](http://www.gridgain.com/images/logo/logo_mid.png "Ignite Logo")
 </center>
 
 ## Java Client README
 
-Java Client is a **lightweight gateway** to GridGain nodes.
+Java Client is a **lightweight gateway** to Ignite nodes.
 
-Client communicates with grid nodes via REST interface and provides reduced but powerful subset of GridGain API.
-Java Client allows to use GridGain features from devices and environments where fully-functional GridGain node
+Client communicates with grid nodes via REST interface and provides reduced but powerful subset of Ignite API.
+Java Client allows to use Ignite features from devices and environments where fully-functional Ignite node
 could not (*or should not*) be started.
 
 ## Client vs Grid Node

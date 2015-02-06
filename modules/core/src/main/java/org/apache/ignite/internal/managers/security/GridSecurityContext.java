@@ -35,15 +35,15 @@ public class GridSecurityContext implements Externalizable {
 
     /** Cache query task name. */
     public static final String VISOR_CACHE_QUERY_TASK_NAME =
-        "org.gridgain.grid.kernal.visor.cmd.tasks.VisorQueryTask";
+        "org.apache.ignite.internal.visor.query.VisorQueryTask";
 
     /** Cache load task name. */
     public static final String VISOR_CACHE_LOAD_TASK_NAME =
-        "org.gridgain.grid.kernal.visor.gui.tasks.VisorCachesLoadTask";
+        "org.apache.ignite.internal.visor.cache.VisorCacheLoadTask";
 
     /** Cache clear task name. */
     public static final String VISOR_CACHE_CLEAR_TASK_NAME =
-        "org.gridgain.grid.kernal.visor.cmd.tasks.VisorCachesClearTask";
+        "org.apache.ignite.internal.visor.query.VisorQueryCleanupTask";
 
     /** Security subject. */
     private GridSecuritySubject subj;

@@ -26,8 +26,6 @@ import static org.jdk8.backport.ConcurrentLinkedDeque8.*;
 
 /**
  * Tests for {@link ConcurrentLinkedDeque8}.
- *
- * TODO: add more tests http://gridgain.jira.com/browse/GG-2153
  */
 public class GridConcurrentLinkedDequeSelfTest extends GridCommonAbstractTest {
     /**

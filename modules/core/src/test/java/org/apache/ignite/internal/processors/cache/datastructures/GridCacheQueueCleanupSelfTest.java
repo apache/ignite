@@ -97,7 +97,7 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
 
         // Kill node containing queue header.
 
-        final String killGridName = node.attribute(GridNodeAttributes.ATTR_GRID_NAME);
+        final String killGridName = node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME);
 
         stopGrid(killGridName);
 

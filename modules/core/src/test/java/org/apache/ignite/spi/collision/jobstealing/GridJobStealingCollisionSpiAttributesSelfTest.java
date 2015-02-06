@@ -29,7 +29,7 @@ import org.apache.ignite.testframework.junits.spi.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi.*;
 
 /**

@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.fs.IgniteFsMode.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.processors.fs.GridGgfsFileInfo.*;
 
@@ -166,7 +166,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 if (!dfltModes.containsKey(e.getKey()))
                     cfgModes.put(e.getKey(), e.getValue());
                 else
-                    U.warn(log, "Ignoring path mode because it conflicts with GridGain reserved path " +
+                    U.warn(log, "Ignoring path mode because it conflicts with Ignite reserved path " +
                         "(use another path) [mode=" + e.getValue() + ", path=" + e.getKey() + ']');
             }
         }

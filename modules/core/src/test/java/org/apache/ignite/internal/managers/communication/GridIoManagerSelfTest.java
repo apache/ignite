@@ -82,7 +82,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, AssertionError.class, "Internal GridGain code should never call the method with local node in a node list.");
+        }, AssertionError.class, "Internal Ignite code should never call the method with local node in a node list.");
     }
 
     /**
@@ -96,7 +96,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, AssertionError.class, "Internal GridGain code should never call the method with local node in a node list.");
+        }, AssertionError.class, "Internal Ignite code should never call the method with local node in a node list.");
     }
 
     /**

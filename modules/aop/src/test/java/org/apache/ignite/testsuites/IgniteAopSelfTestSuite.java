@@ -33,7 +33,7 @@ public class IgniteAopSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Gridgain AOP Test Suite");
+        TestSuite suite = new TestSuite("Ignite AOP Test Suite");
 
         // Test configuration.
         suite.addTest(new TestSuite(BasicAopSelfTest.class));

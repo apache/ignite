@@ -83,10 +83,10 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * <h2 class="header">Spring Example</h2>
  * GridFileSwapSpaceSpi can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
- * &lt;bean id=&quot;grid.cfg&quot; class=&quot;org.gridgain.grid.GridConfiguration&quot; scope=&quot;singleton&quot;&gt;
+ * &lt;bean id=&quot;grid.cfg&quot; class=&quot;org.apache.ignite.configuration.IgniteConfiguration&quot; scope=&quot;singleton&quot;&gt;
  *     ...
  *     &lt;property name=&quot;swapSpaceSpi&quot;&gt;
- *         &lt;bean class=&quot;org.gridgain.grid.spi.swapspace.file.GridFileSwapSpaceSpi&quot;&gt;
+ *         &lt;bean class=&quot;org.apache.ignite.spi.swapspace.file.GridFileSwapSpaceSpi&quot;&gt;
  *             &lt;property name=&quot;baseDirectory&quot; value=&quot;/path/to/swap/folder&quot;/&gt;
  *         &lt;/bean&gt;
  *     &lt;/property&gt;

@@ -165,7 +165,7 @@ final class GridDiagnostic {
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to start background network diagnostics check due to thread pool execution " +
-                "rejection. In most cases it indicates a severe configuration problem with GridGain.",
+                "rejection. In most cases it indicates a severe configuration problem with Ignite.",
                 "Failed to start background network diagnostics.", e);
         }
     }

@@ -54,7 +54,7 @@ import java.util.concurrent.*;
  * annotation. Refer to the {@link org.apache.ignite.resources.IgniteJobContextResource}
  * documentation for coding examples on how to inject job context.
  * <p>
- * Attribute names that start with {@code "gridgain:"} are reserved for internal system use.
+ * Attribute names that start with {@code "apache.ignite:"} are reserved for internal system use.
  */
 public interface ComputeJobContext extends ComputeJobContinuation {
     /**

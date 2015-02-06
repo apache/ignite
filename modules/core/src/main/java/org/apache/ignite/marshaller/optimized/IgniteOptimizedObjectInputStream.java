@@ -155,7 +155,7 @@ class IgniteOptimizedObjectInputStream extends ObjectInputStream {
                 if (curCls != null)
                     msg.a(" of an instance of the class: ").a(curCls.getName());
 
-                msg.a(". Check that all nodes are running the same version of GridGain and that all nodes have " +
+                msg.a(". Check that all nodes are running the same version of Ignite and that all nodes have " +
                     "GridOptimizedMarshaller configured with identical optimized classes lists, if any " +
                     "(see setClassNames and setClassNamesPath methods). If your serialized classes implement " +
                     "java.io.Externalizable interface, verify that serialization logic is correct.");

@@ -43,9 +43,7 @@ import java.lang.annotation.*;
  * serialized and sent out to remote node. Therefore the class must implement
  * {@link Serializable} interface. If you cannot make the class {@code Serializable},
  * then you must implement custom grid task which will take care of proper state
- * initialization (see
- * <a target="github" href="https://github.com/gridgain/gridgain/tree/master/examples/java/org/gridgain/examples/helloworld/gridify/session">HelloWorld - Gridify With State</a>
- * example). In either case, GridGain must be able to serialize the state passed to remote node.
+ * initialization. In either case, Ignite must be able to serialize the state passed to remote node.
  * <p>
  * Refer to {@link org.apache.ignite.compute.ComputeTask} documentation for more information on how a task
  * can be split into multiple sub-jobs.
@@ -99,7 +97,7 @@ import java.lang.annotation.*;
  * <p>
  * <h1 class="header">Jboss AOP</h1>
  * The following configuration needs to be applied to enable JBoss byte code
- * weaving. Note that GridGain is not shipped with JBoss and necessary
+ * weaving. Note that Ignite is not shipped with JBoss and necessary
  * libraries will have to be downloaded separately (they come standard
  * if you have JBoss installed already):
  * <ul>
@@ -107,8 +105,8 @@ import java.lang.annotation.*;
  *      The following JVM configuration must be present:
  *      <ul>
  *      <li>{@code -javaagent:[path to jboss-aop-jdk50-4.x.x.jar]}</li>
- *      <li>{@code -Djboss.aop.class.path=[path to gridgain.jar]}</li>
- *      <li>{@code -Djboss.aop.exclude=org,com -Djboss.aop.include=org.gridgain.examples}</li>
+ *      <li>{@code -Djboss.aop.class.path=[path to ignite.jar]}</li>
+ *      <li>{@code -Djboss.aop.exclude=org,com -Djboss.aop.include=org.apache.ignite.examples}</li>
  *      </ul>
  * </li>
  * <li>

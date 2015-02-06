@@ -40,8 +40,8 @@ import java.util.concurrent.*;
 import static org.apache.ignite.IgniteState.*;
 
 /**
- * This class defines random command-line GridGain loader. This loader can be used
- * to randomly start and stop GridGain from command line for tests. This loader is a Java
+ * This class defines random command-line Ignite loader. This loader can be used
+ * to randomly start and stop Ignite from command line for tests. This loader is a Java
  * application with {@link #main(String[])} method that accepts command line arguments.
  * See below for details.
  */
@@ -144,7 +144,7 @@ public final class GridRandomCommandLineLoader {
      * Prints logo.
      */
     private static void logo() {
-        echo("GridGain Random Command Line Loader, ver. " + VER);
+        echo("Ignite Random Command Line Loader, ver. " + VER);
         echo(COPYRIGHT);
         echo("");
     }
@@ -293,7 +293,7 @@ public final class GridRandomCommandLineLoader {
         throws IgniteCheckedException {
         assert springCfgPath != null;
 
-        File path = GridTestUtils.resolveGridGainPath(springCfgPath);
+        File path = GridTestUtils.resolveIgnitePath(springCfgPath);
 
         if (path == null)
             throw new IgniteCheckedException("Spring XML configuration file path is invalid: " + new File(springCfgPath) +
@@ -341,7 +341,7 @@ public final class GridRandomCommandLineLoader {
         assert cfg != null;
 
         if (logCfgPath != null)
-            cfg.setGridLogger(new GridTestLog4jLogger(U.resolveGridGainUrl(logCfgPath)));
+            cfg.setGridLogger(new GridTestLog4jLogger(U.resolveIgniteUrl(logCfgPath)));
 
         return cfg;
     }
