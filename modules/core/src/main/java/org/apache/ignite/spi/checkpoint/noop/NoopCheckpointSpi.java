@@ -32,7 +32,7 @@ import org.jetbrains.annotations.*;
 @IgniteSpiMultipleInstancesSupport(true)
 public class NoopCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi {
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** {@inheritDoc} */

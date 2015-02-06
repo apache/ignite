@@ -651,7 +651,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
         private IgnitePredicate<? super ClusterNode>[] filter;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /**

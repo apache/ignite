@@ -68,7 +68,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
      */
     public void testWithName() throws Exception {
         Callable<String> f = new IgniteCallable<String>() {
-            @IgniteTaskSessionResource
+            @TaskSessionResource
             private ComputeTaskSession ses;
 
             @Override public String call() {
@@ -156,7 +156,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) {
             return F.asSet(new ComputeJobAdapter() {
-                @IgniteTaskSessionResource
+                @TaskSessionResource
                 private ComputeTaskSession ses;
 
                 @Override public Object execute() {

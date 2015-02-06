@@ -77,7 +77,7 @@ public class ComputeContinuousMapperExample {
     @ComputeTaskNoResultCache
     private static class ContinuousMapperTask extends ComputeTaskAdapter<String, Integer> {
         /** This field will be injected with task continuous mapper. */
-        @IgniteTaskContinuousMapperResource
+        @TaskContinuousMapperResource
         private ComputeTaskContinuousMapper mapper;
 
         /** Word queue. */

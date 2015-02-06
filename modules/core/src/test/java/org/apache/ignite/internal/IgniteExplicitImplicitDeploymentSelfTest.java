@@ -437,7 +437,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     @SuppressWarnings({"PublicInnerClass"})
     public static final class GridDeploymentResourceTestJob extends ComputeJobAdapter {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */

@@ -93,7 +93,7 @@ public class FifoQueueCollisionSpi extends IgniteSpiAdapter implements Collision
     private volatile int waitJobsNum = DFLT_WAIT_JOBS_NUM;
 
     /** Grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Number of jobs that were active last time. */

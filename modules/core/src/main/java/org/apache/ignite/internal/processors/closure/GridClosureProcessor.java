@@ -1114,7 +1114,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /** */
@@ -1148,7 +1148,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /** */
@@ -1179,7 +1179,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /** */
@@ -1241,7 +1241,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private Runnable job;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /**
@@ -1281,7 +1281,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private Callable<R> job;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /**
@@ -1330,7 +1330,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private final Collection<? extends Callable<R>> jobs;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /**
@@ -1370,7 +1370,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private IgniteBiTuple<GridClosureCallMode, Callable<R>> t;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /**
@@ -1411,7 +1411,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private T arg;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /**
@@ -1455,7 +1455,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private Collection<? extends T> args;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /**
@@ -1511,7 +1511,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private IgniteReducer<R1, R2> rdc;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /**

@@ -105,11 +105,11 @@ public class CacheConsistentHashAffinityFunction implements CacheAffinityFunctio
     private Ignite ignite;
 
     /** Injected cache name. */
-    @IgniteCacheNameResource
+    @CacheNameResource
     private String cacheName;
 
     /** Injected logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Initialization flag. */

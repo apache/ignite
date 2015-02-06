@@ -83,9 +83,9 @@ import java.util.*;
  * resources can be injected:
  * <ul>
  * <li>{@link IgniteInstanceResource}</li>
- * <li>{@link IgniteLoggerResource}</li>
- * <li>{@link IgniteSpringApplicationContextResource}</li>
- * <li>{@link IgniteSpringResource}</li>
+ * <li>{@link org.apache.ignite.resources.LoggerResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringApplicationContextResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  * <h1 class="header">Service Example</h1>

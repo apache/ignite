@@ -101,7 +101,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** @{inheritDoc} */
@@ -123,7 +123,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
         protected Ignite ignite;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         protected IgniteLogger log;
     }
 

@@ -45,7 +45,7 @@ public abstract class MessagingListenActor<T> implements IgniteBiPredicate<UUID,
     private transient Ignite ignite;
 
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private transient IgniteLogger log;
 
     /**

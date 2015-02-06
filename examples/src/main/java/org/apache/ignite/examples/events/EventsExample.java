@@ -132,7 +132,7 @@ public class EventsExample {
         for (int i = 0; i < 10; i++) {
             ignite.compute().withName(i < 5 ? "good-task-" + i : "bad-task-" + i).run(new IgniteRunnable() {
                 // Auto-inject task session.
-                @IgniteTaskSessionResource
+                @TaskSessionResource
                 private ComputeTaskSession ses;
 
                 @Override public void run() {

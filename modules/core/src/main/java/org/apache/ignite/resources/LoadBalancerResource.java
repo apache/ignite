@@ -20,40 +20,42 @@ package org.apache.ignite.resources;
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of {@link org.apache.ignite.compute.ComputeJobContext} instance.
- * It can be injected into grid jobs only.
+ * Annotates a field or a setter method for injection of {@link org.apache.ignite.compute.ComputeLoadBalancer}.
+ * Specific implementation for grid load balancer is defined by
+ * {@link org.apache.ignite.spi.loadbalancing.LoadBalancingSpi}
+ * which is provided to grid via {@link org.apache.ignite.configuration.IgniteConfiguration}..
  * <p>
- * Job context can be injected into instances of following classes:
+ * Load balancer can be injected into instances of following classes:
  * <ul>
- * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
+ * <li>{@link org.apache.ignite.compute.ComputeTask}</li>
  * </ul>
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
- * public class MyGridJob implements ComputeJob {
- *      ...
- *      &#64;IgniteJobContextResource
- *      private ComputeJobContext jobCtx;
- *      ...
- *  }
+ * public class MyGridTask extends ComputeTask&lt;String, Integer&gt; {
+ *    &#64;IgniteLoadBalancerResource
+ *    private ComputeLoadBalancer balancer;
+ * }
  * </pre>
  * or
  * <pre name="code" class="java">
- * public class MyGridJob implements ComputeJob {
+ * public class MyGridTask extends ComputeTask&lt;String, Integer&gt; {
  *     ...
- *     private ComputeJobContext jobCtx;
+ *     private ComputeLoadBalancer balancer;
  *     ...
- *     &#64;IgniteJobContextResource
- *     public void setJobContext(ComputeJobContext jobCtx) {
- *          this.jobCtx = jobCtx;
+ *     &#64;IgniteLoadBalancerResource
+ *     public void setBalancer(ComputeLoadBalancer balancer) {
+ *         this.balancer = balancer;
  *     }
  *     ...
  * }
  * </pre>
+ * <p>
+ * See {@link org.apache.ignite.configuration.IgniteConfiguration#getLoadBalancingSpi()} for Grid configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface IgniteJobContextResource {
+public @interface LoadBalancerResource {
     // No-op.
 }

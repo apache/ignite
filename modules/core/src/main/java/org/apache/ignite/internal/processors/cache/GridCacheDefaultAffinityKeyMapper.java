@@ -70,7 +70,7 @@ public class GridCacheDefaultAffinityKeyMapper implements CacheAffinityKeyMapper
     );
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private transient IgniteLogger log;
 
     /**

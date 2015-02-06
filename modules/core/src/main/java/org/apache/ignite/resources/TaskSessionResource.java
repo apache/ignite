@@ -20,42 +20,41 @@ package org.apache.ignite.resources;
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of {@link org.apache.ignite.compute.ComputeLoadBalancer}.
- * Specific implementation for grid load balancer is defined by
- * {@link org.apache.ignite.spi.loadbalancing.LoadBalancingSpi}
- * which is provided to grid via {@link org.apache.ignite.configuration.IgniteConfiguration}..
+ * Annotates a field or a setter method for injection of {@link org.apache.ignite.compute.ComputeTaskSession} resource.
+ * Task session can be injected into instances of following classes:
  * <p>
- * Load balancer can be injected into instances of following classes:
+ * Distributed Task Session can be injected into instances of following classes:
  * <ul>
  * <li>{@link org.apache.ignite.compute.ComputeTask}</li>
+ * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
  * </ul>
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
- * public class MyGridTask extends ComputeTask&lt;String, Integer&gt; {
- *    &#64;IgniteLoadBalancerResource
- *    private ComputeLoadBalancer balancer;
- * }
+ * public class MyGridJob implements ComputeJob {
+ *      ...
+ *      &#64;IgniteTaskSessionResource
+ *      private ComputeTaskSession taskSes;
+ *      ...
+ *  }
  * </pre>
  * or
  * <pre name="code" class="java">
- * public class MyGridTask extends ComputeTask&lt;String, Integer&gt; {
+ * public class MyGridJob implements ComputeJob {
  *     ...
- *     private ComputeLoadBalancer balancer;
+ *     private ComputeTaskSession taskSes;
  *     ...
- *     &#64;IgniteLoadBalancerResource
- *     public void setBalancer(ComputeLoadBalancer balancer) {
- *         this.balancer = balancer;
+ *     &#64;IgniteTaskSessionResource
+ *     public void setTaskSession(ComputeTaskSession taskSes) {
+ *          this.taskSes = taskSes;
  *     }
  *     ...
  * }
  * </pre>
- * <p>
- * See {@link org.apache.ignite.configuration.IgniteConfiguration#getLoadBalancingSpi()} for Grid configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface IgniteLoadBalancerResource {
+public @interface TaskSessionResource {
     // No-op.
 }

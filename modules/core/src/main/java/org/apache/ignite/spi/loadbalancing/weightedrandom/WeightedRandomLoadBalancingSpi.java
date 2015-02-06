@@ -176,7 +176,7 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
     public static final int DFLT_NODE_WEIGHT = 10;
 
     /** Grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** */

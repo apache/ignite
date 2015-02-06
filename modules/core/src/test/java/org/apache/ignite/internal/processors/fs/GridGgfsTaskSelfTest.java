@@ -262,10 +262,10 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
         @IgniteInstanceResource
         private Ignite ignite;
 
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession ses;
 
-        @IgniteJobContextResource
+        @JobContextResource
         private ComputeJobContext ctx;
 
         /** {@inheritDoc} */

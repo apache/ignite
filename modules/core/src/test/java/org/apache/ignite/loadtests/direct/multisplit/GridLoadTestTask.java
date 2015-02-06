@@ -29,7 +29,7 @@ import java.util.*;
  */
 public class GridLoadTestTask extends ComputeTaskAdapter<Integer, Integer> {
     /** Injected job context. */
-    @IgniteTaskSessionResource
+    @TaskSessionResource
     private ComputeTaskSession ctx;
 
     /** */

@@ -20,18 +20,25 @@ package org.apache.ignite.resources;
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of
- * {@link org.apache.ignite.compute.ComputeTaskContinuousMapper} resource.
+ * Annotates a field or a setter method for injection of Spring ApplicationContext resource.
+ * When GridGain starts using Spring configuration, the Application Context for Spring
+ * Configuration is injected as this resource.
+ * method.
  * <p>
- * Task continuous mapper can be injected into {@link org.apache.ignite.compute.ComputeTask} class
- * instance.
+ * Spring Application Context can be injected into instances of following classes:
+ * <ul>
+ * <li>{@link org.apache.ignite.compute.ComputeTask}</li>
+ * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
+ * <li>{@link org.apache.ignite.spi.IgniteSpi}</li>
+ * <li>{@link org.apache.ignite.lifecycle.LifecycleBean}</li>
+ * </ul>
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
  * public class MyGridJob implements ComputeJob {
  *      ...
- *      &#64;IgniteTaskContinuousMapperResource
- *      private ComputeTaskContinuousMapper mapper;
+ *      &#64;IgniteSpringApplicationContextResource
+ *      private ApplicationContext springCtx;
  *      ...
  *  }
  * </pre>
@@ -39,19 +46,23 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements ComputeJob {
  *     ...
- *     private ComputeTaskContinuousMapper mapper;
+ *     private ApplicationContext springCtx;
  *     ...
- *     &#64;IgniteTaskContinuousMapperResource
- *     public void setMapper(ComputeTaskContinuousMapper mapper) {
- *          this.mapper = mapper;
+ *     &#64;IgniteSpringApplicationContextResource
+ *     public void setApplicationContext(MBeanServer springCtx) {
+ *          this.springCtx = springCtx;
  *     }
  *     ...
  * }
  * </pre>
+ * <p>
+ * <img src="http://www.gridgain.com/images/spring-small.png">
+ * <br>
+ * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface IgniteTaskContinuousMapperResource {
+public @interface SpringApplicationContextResource {
     // No-op.
 }

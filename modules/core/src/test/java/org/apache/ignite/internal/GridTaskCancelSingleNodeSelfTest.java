@@ -152,7 +152,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) {
             return F.asSet(new ComputeJobAdapter() {
                 /** */
-                @IgniteLoggerResource
+                @LoggerResource
                 private IgniteLogger log;
 
                 /** */

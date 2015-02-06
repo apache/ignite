@@ -24,7 +24,7 @@ import java.lang.annotation.*;
  * Grid cache name is provided to cache via {@link org.apache.ignite.configuration.CacheConfiguration#getName()} method.
  * <p>
  * Cache name can be injected into components provided in the {@link org.apache.ignite.configuration.CacheConfiguration},
- * if {@link IgniteCacheNameResource} annotation is used in another classes it is no-op.
+ * if {@link CacheNameResource} annotation is used in another classes it is no-op.
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
@@ -54,6 +54,6 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface IgniteCacheNameResource {
+public @interface CacheNameResource {
     // No-op.
 }

@@ -401,7 +401,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             // Load balancer.
             ComputeLoadBalancer balancer = ctx.loadBalancing().getLoadBalancer(ses, shuffledNodes);
 
-            continuous = ctx.resource().isAnnotationPresent(dep, task, IgniteTaskContinuousMapperResource.class);
+            continuous = ctx.resource().isAnnotationPresent(dep, task, TaskContinuousMapperResource.class);
 
             if (log.isDebugEnabled())
                 log.debug("Injected task resources [continuous=" + continuous + ']');

@@ -224,7 +224,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
 
     /** Grid logger. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Number of jobs that can be executed in parallel. */

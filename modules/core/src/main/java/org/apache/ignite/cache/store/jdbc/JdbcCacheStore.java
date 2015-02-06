@@ -92,7 +92,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements L
     protected static final Object[] EMPTY_COLUMN_VALUE = new Object[] { null };
 
     /** Auto-injected logger instance. */
-    @IgniteLoggerResource
+    @LoggerResource
     protected IgniteLogger log;
 
     /** Lock for metadata cache. */

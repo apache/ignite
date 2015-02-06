@@ -28,11 +28,11 @@ import java.io.*;
  */
 public class GridP2PTestJob extends ComputeJobAdapter {
     /** Injected job context. */
-    @IgniteTaskSessionResource
+    @TaskSessionResource
     private ComputeTaskSession taskSes;
 
     /** Injected logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Ignite instance. */

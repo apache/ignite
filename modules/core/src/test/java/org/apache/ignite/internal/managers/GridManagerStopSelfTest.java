@@ -80,7 +80,7 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
     private void injectLogger(IgniteSpi target) throws IgniteCheckedException {
         ctx.resource().injectBasicResource(
             target,
-            IgniteLoggerResource.class,
+            LoggerResource.class,
             ctx.config().getGridLogger().getLogger(target.getClass())
         );
     }

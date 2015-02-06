@@ -101,7 +101,7 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface IgniteSpringResource {
+public @interface SpringResource {
     /**
      * Resource bean name in provided {@code ApplicationContext} to look up
      * a Spring bean.

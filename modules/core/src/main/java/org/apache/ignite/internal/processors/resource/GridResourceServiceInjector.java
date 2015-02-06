@@ -43,7 +43,7 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
     /** {@inheritDoc} */
     @Override public void inject(GridResourceField field, Object target, Class<?> depCls, GridDeployment dep)
         throws IgniteCheckedException {
-        IgniteServiceResource ann = (IgniteServiceResource)field.getAnnotation();
+        ServiceResource ann = (ServiceResource)field.getAnnotation();
 
         Class svcItf = ann.proxyInterface();
 
@@ -61,7 +61,7 @@ public class GridResourceServiceInjector extends GridResourceBasicInjector<Colle
     /** {@inheritDoc} */
     @Override public void inject(GridResourceMethod mtd, Object target, Class<?> depCls, GridDeployment dep)
         throws IgniteCheckedException {
-        IgniteServiceResource ann = (IgniteServiceResource)mtd.getAnnotation();
+        ServiceResource ann = (ServiceResource)mtd.getAnnotation();
 
         Class svcItf = ann.proxyInterface();
 

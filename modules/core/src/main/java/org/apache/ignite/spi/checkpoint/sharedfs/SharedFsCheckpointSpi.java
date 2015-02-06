@@ -118,7 +118,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
     private static final int CODES_LEN = CODES.length();
 
     /** Grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Ignite instance. */

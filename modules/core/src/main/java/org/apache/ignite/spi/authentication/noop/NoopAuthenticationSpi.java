@@ -68,7 +68,7 @@ import org.apache.ignite.spi.authentication.*;
 public class NoopAuthenticationSpi extends IgniteSpiAdapter
     implements AuthenticationSpi, NoopAuthenticationSpiMBean {
     /** Injected grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     @GridToStringExclude
     private IgniteLogger log;
 

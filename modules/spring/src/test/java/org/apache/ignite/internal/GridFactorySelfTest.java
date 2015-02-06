@@ -543,7 +543,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     @IgniteSpiMultipleInstancesSupport(true)
     private static class TestMultipleInstancesCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
         /** Grid logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
@@ -581,7 +581,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     @IgniteSpiMultipleInstancesSupport(true)
     private static class TestSingleInstancesCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
         /** Grid logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
@@ -617,11 +617,11 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      */
     private static class TestLifecycleBean implements LifecycleBean {
         /** Grid logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
-        @IgniteSpringApplicationContextResource
+        @SpringApplicationContextResource
         private ApplicationContext appCtx;
 
         /** */

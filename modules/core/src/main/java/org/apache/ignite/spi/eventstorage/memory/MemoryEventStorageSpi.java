@@ -99,7 +99,7 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
     public static final int DFLT_EXPIRE_COUNT = 10000;
 
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Event time-to-live value in milliseconds. */

@@ -115,7 +115,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             @IgniteInstanceResource
             private Ignite g;
 
-            @IgniteLoggerResource
+            @LoggerResource
             private IgniteLogger log;
 
             @Override public String name() {

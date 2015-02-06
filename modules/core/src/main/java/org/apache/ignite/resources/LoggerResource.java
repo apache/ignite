@@ -20,12 +20,10 @@ package org.apache.ignite.resources;
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of Spring ApplicationContext resource.
- * When GridGain starts using Spring configuration, the Application Context for Spring
- * Configuration is injected as this resource.
- * method.
+ * Annotates a field or a setter method for injection of {@link org.apache.ignite.IgniteLogger}. Grid logger is provided to grid
+ * via {@link org.apache.ignite.configuration.IgniteConfiguration}.
  * <p>
- * Spring Application Context can be injected into instances of following classes:
+ * Logger can be injected into instances of following classes:
  * <ul>
  * <li>{@link org.apache.ignite.compute.ComputeTask}</li>
  * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
@@ -37,8 +35,8 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements ComputeJob {
  *      ...
- *      &#64;IgniteSpringApplicationContextResource
- *      private ApplicationContext springCtx;
+ *      &#64;IgniteLoggerResource
+ *      private GridLogger log;
  *      ...
  *  }
  * </pre>
@@ -46,23 +44,42 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements ComputeJob {
  *     ...
- *     private ApplicationContext springCtx;
+ *     private Ignite log;
  *     ...
- *     &#64;IgniteSpringApplicationContextResource
- *     public void setApplicationContext(MBeanServer springCtx) {
- *          this.springCtx = springCtx;
+ *     &#64;IgniteLoggerResource
+ *     public void setGridLogger(IgniteLogger log) {
+ *          this.log = log;
  *     }
  *     ...
  * }
  * </pre>
  * <p>
- * <img src="http://www.gridgain.com/images/spring-small.png">
- * <br>
- * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
+ * See {@link org.apache.ignite.configuration.IgniteConfiguration#getGridLogger()} for Grid configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface IgniteSpringApplicationContextResource {
-    // No-op.
+public @interface LoggerResource {
+    /**
+     * Optional log category class. If not provided (i.e. by default
+     * {@link Void} class is returned), then the category will
+     * be the class into which resource is assigned.
+     * <p>
+     * Either {@code categoryClass} or {@link #categoryName()} can be provided,
+     * by not both.
+     *
+     * @return Category class of the injected logger.
+     */
+    public Class categoryClass() default Void.class;
+
+    /**
+     * Optional log category name. If not provided, then {@link #categoryClass()}
+     * value will be used.
+     * <p>
+     * Either {@code categoryName} or {@link #categoryClass()} can be provided,
+     * by not both.
+     *
+     * @return Category name for the injected logger.
+     */
+    public String categoryName() default "";
 }

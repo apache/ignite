@@ -296,7 +296,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         private Ignite ignite;
 
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
@@ -413,7 +413,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         private Ignite ignite;
 
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
@@ -517,7 +517,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
      */
     private static class GridMultiNodeTestCheckpointConsumerJob extends ComputeJobAdapter {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
@@ -643,7 +643,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     @ComputeTaskSessionFullSupport
     private static class GridMultiNodeGlobalConsumerTask extends ComputeTaskSplitAdapter<Object, Integer> {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */

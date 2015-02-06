@@ -62,11 +62,11 @@ public class ComputeFailoverExample {
     @ComputeTaskSessionFullSupport
     private static final class CheckPointJob implements IgniteClosure<String, Integer> {
         /** Injected distributed task session. */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession jobSes;
 
         /** Injected ignite logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */

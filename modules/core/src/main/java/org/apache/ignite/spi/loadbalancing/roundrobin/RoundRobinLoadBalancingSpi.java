@@ -163,7 +163,7 @@ import static org.apache.ignite.events.EventType.*;
 public class RoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements LoadBalancingSpi,
     RoundRobinLoadBalancingSpiMBean {
     /** Grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** */

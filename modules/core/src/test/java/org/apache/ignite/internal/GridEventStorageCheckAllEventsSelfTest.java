@@ -343,7 +343,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      */
     private static class GridAllEventsSuccessTestJob extends ComputeJobAdapter {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
@@ -371,7 +371,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      */
     private static class GridAllEventsTimeoutTestJob extends ComputeJobAdapter {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
@@ -397,7 +397,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      */
     private static class GridAllCheckpointEventsTestJob extends ComputeJobAdapter {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */

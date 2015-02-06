@@ -104,7 +104,7 @@ public abstract class GridTcpDiscoveryIpFinderAbstractSelfTest<T extends TcpDisc
 
         for (Class cls = finder.getClass(); cls != Object.class; cls = cls.getSuperclass())
             for (Field fld : cls.getDeclaredFields())
-                if (fld.getAnnotation(IgniteLoggerResource.class) != null) {
+                if (fld.getAnnotation(LoggerResource.class) != null) {
                     boolean accessible = fld.isAccessible();
 
                     fld.setAccessible(true);

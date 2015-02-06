@@ -53,7 +53,7 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface IgniteServiceResource {
+public @interface ServiceResource {
     /**
      * Service name.
      *

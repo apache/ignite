@@ -66,7 +66,7 @@ public class GridNodeCallableImpl implements GridNodeCallable {
     private final int timeout;
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /**

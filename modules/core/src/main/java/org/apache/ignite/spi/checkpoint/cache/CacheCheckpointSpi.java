@@ -99,7 +99,7 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
     public static final String DFLT_CACHE_NAME = "checkpoints";
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Cache name. */

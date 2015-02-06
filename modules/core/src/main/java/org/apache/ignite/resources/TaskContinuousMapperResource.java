@@ -17,27 +17,21 @@
 
 package org.apache.ignite.resources;
 
-import javax.management.*;
 import java.lang.annotation.*;
 
 /**
- * Annotates a field or a setter method for injection of {@link MBeanServer} resource. MBean server
- * is provided to grid via {@link org.apache.ignite.configuration.IgniteConfiguration}.
+ * Annotates a field or a setter method for injection of
+ * {@link org.apache.ignite.compute.ComputeTaskContinuousMapper} resource.
  * <p>
- * MBean server can be injected into instances of following classes:
- * <ul>
- * <li>{@link org.apache.ignite.compute.ComputeTask}</li>
- * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
- * <li>{@link org.apache.ignite.spi.IgniteSpi}</li>
- * <li>{@link org.apache.ignite.lifecycle.LifecycleBean}</li>
- * </ul>
+ * Task continuous mapper can be injected into {@link org.apache.ignite.compute.ComputeTask} class
+ * instance.
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
  * public class MyGridJob implements ComputeJob {
  *      ...
- *      &#64;IgniteMBeanServerResource
- *      private MBeanServer mbeanSrv;
+ *      &#64;IgniteTaskContinuousMapperResource
+ *      private ComputeTaskContinuousMapper mapper;
  *      ...
  *  }
  * </pre>
@@ -45,21 +39,19 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements ComputeJob {
  *     ...
- *     private MBeanSever mbeanSrv;
+ *     private ComputeTaskContinuousMapper mapper;
  *     ...
- *     &#64;IgniteMBeanServerResource
- *     public void setMBeanServer(MBeanServer mbeanSrv) {
- *          this.mbeanSrv = mbeanSrv;
+ *     &#64;IgniteTaskContinuousMapperResource
+ *     public void setMapper(ComputeTaskContinuousMapper mapper) {
+ *          this.mapper = mapper;
  *     }
  *     ...
  * }
  * </pre>
- * <p>
- * See {@link org.apache.ignite.configuration.IgniteConfiguration#getMBeanServer()} for Grid configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.FIELD})
-public @interface IgniteMBeanServerResource {
+public @interface TaskContinuousMapperResource {
     // No-op.
 }

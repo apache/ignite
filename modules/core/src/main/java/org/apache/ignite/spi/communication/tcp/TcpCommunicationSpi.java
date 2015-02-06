@@ -623,7 +623,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         };
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Local IP address. */

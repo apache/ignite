@@ -229,7 +229,7 @@ public class PriorityQueueCollisionSpi extends IgniteSpiAdapter implements Colli
     private Comparator<GridCollisionJobContextWrapper> priComp;
 
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** {@inheritDoc} */

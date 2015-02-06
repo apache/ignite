@@ -141,7 +141,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     protected IgniteLogger log;
 
     /**

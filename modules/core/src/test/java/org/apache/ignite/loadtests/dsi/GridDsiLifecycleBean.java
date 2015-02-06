@@ -36,7 +36,7 @@ public class GridDsiLifecycleBean implements LifecycleBean {
 
     /** */
     @SuppressWarnings("UnusedDeclaration")
-    @IgniteSpringApplicationContextResource
+    @SpringApplicationContextResource
     private ApplicationContext springCtx;
 
     /** {@inheritDoc} */
