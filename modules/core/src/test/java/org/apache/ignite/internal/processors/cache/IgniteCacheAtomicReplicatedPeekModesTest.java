@@ -19,25 +19,14 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  *
  */
-public class IgniteCacheTxLocalSizeTest extends IgniteCacheSizeAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
-    }
-
+public class IgniteCacheAtomicReplicatedPeekModesTest extends IgniteCacheAtomicPeekModesTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
-        return LOCAL;
+        return REPLICATED;
     }
 }

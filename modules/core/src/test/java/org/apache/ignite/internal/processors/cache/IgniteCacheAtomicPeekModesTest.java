@@ -26,12 +26,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  *
  */
-public class IgniteCacheAtomicSizeTest extends IgniteCacheSizeAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
-
+public class IgniteCacheAtomicPeekModesTest extends IgniteCachePeekModesAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 4;
@@ -40,6 +35,11 @@ public class IgniteCacheAtomicSizeTest extends IgniteCacheSizeAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
     }
 
     /** {@inheritDoc} */

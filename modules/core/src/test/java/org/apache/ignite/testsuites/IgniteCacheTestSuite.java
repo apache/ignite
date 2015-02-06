@@ -367,19 +367,12 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxNearEnabledNoWriteThroughTest.class);
         suite.addTestSuite(IgniteCacheTxLocalNoWriteThroughTest.class);
 
-        suite.addTestSuite(IgniteCacheAtomicPeekTest.class);
-        suite.addTestSuite(IgniteCacheAtomicReplicatedPeekTest.class);
-        suite.addTestSuite(IgniteCacheAtomicLocalPeekTest.class);
-        suite.addTestSuite(IgniteCacheTxPeekTest.class);
-        suite.addTestSuite(IgniteCacheTxLocalPeekTest.class);
-        suite.addTestSuite(IgniteCacheTxReplicatedPeekTest.class);
-
-        suite.addTestSuite(IgniteCacheAtomicSizeTest.class);
-        suite.addTestSuite(IgniteCacheAtomicReplicatedSizeTest.class);
-        suite.addTestSuite(IgniteCacheAtomicLocalSizeTest.class);
-        suite.addTestSuite(IgniteCacheTxSizeTest.class);
-        suite.addTestSuite(IgniteCacheTxReplicatedSizeTest.class);
-        suite.addTestSuite(IgniteCacheTxLocalSizeTest.class);
+        suite.addTestSuite(IgniteCacheAtomicPeekModesTest.class);
+        suite.addTestSuite(IgniteCacheAtomicReplicatedPeekModesTest.class);
+        suite.addTestSuite(IgniteCacheAtomicLocalPeekModesTest.class);
+        suite.addTestSuite(IgniteCacheTxPeekModesTest.class);
+        suite.addTestSuite(IgniteCacheTxLocalPeekModesTest.class);
+        suite.addTestSuite(IgniteCacheTxReplicatedPeekModesTest.class);
 
         // TODO: IGNITE-114.
         // suite.addTestSuite(IgniteCacheInvokeReadThroughTest.class);

@@ -24,7 +24,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  *
  */
-public class IgniteCacheAtomicReplicatedPeekTest extends IgniteCacheAtomicPeekTest {
+public class IgniteCacheTxReplicatedPeekModesTest extends IgniteCacheTxPeekModesTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return REPLICATED;

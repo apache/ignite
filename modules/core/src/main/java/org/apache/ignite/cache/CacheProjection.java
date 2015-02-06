@@ -28,6 +28,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.sql.*;
 import java.util.*;
 import java.util.Date;
@@ -476,8 +477,16 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @param key Key.
      * @param peekModes Peek modes.
      * @return Value.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable public V localPeek(K key, CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
+     * @param peekModes Peek modes.
+     * @return Entries iterable.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Iterable<Cache.Entry<K, V>> localEntries(CachePeekMode[] peekModes) throws IgniteCheckedException;
 
     /**
      * Peeks at cached value using optional set of peek modes. This method will sequentially

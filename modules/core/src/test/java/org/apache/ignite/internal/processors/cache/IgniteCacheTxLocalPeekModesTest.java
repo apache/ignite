@@ -25,10 +25,10 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  *
  */
-public class IgniteCacheAtomicLocalPeekTest extends IgniteCachePeekAbstractTest {
+public class IgniteCacheTxLocalPeekModesTest extends IgniteCachePeekModesAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
+        return TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
