@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -26,7 +27,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
-import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 
@@ -61,10 +61,12 @@ public class GridCacheLocalFullApiSelfTest extends GridCacheAbstractFullApiSelfT
      * @throws Exception In case of error.
      */
     public void testMapKeysToNodes() throws Exception {
-        cache().put("key1", 1);
-        cache().put("key2", 2);
+        IgniteCache<String, Integer> cache = jcache();
 
-        Map<ClusterNode, Collection<String>> map = cache().affinity().mapKeysToNodes(F.asList("key1", "key2"));
+        cache.put("key1", 1);
+        cache.put("key2", 2);
+
+        Map<ClusterNode, Collection<String>> map = grid(0).<String>affinity(null).mapKeysToNodes(F.asList("key1", "key2"));
 
         assert map.size() == 1;
 
@@ -76,7 +78,7 @@ public class GridCacheLocalFullApiSelfTest extends GridCacheAbstractFullApiSelfT
         for (String key : keys)
             assert "key1".equals(key) || "key2".equals(key);
 
-        map = cache().affinity().mapKeysToNodes(F.asList("key1", "key2"));
+        map = grid(0).<String>affinity(null).mapKeysToNodes(F.asList("key1", "key2"));
 
         assert map.size() == 1;
 
@@ -87,56 +89,5 @@ public class GridCacheLocalFullApiSelfTest extends GridCacheAbstractFullApiSelfT
 
         for (String key : keys)
             assert "key1".equals(key) || "key2".equals(key);
-    }
-
-    /**
-     * Based on issue GG-2864
-     *
-     * @throws Exception In case of error.
-     */
-    public void testFilteredKeySet() throws Exception {
-        if (!txEnabled() || portableEnabled())
-            return;
-
-        final GridCache<String, Integer> myCache = cache();
-
-        final AtomicLong cntr = new AtomicLong();
-
-        // Some counter.
-        grid(0).jcache(null).put(new GridCacheInternalKeyImpl("test"), 1);
-
-        // I would like to filter from key set all entities which key name is not started with "a_".
-        IgnitePredicate<Entry<String, Integer>> aPred = new IgnitePredicate<Entry<String, Integer>>() {
-            @Override public boolean apply(Entry<String, Integer> entry) {
-                cntr.incrementAndGet();
-
-                assert entry.getKey() instanceof String;
-
-                return entry.getKey().startsWith("a_");
-            }
-        };
-
-        Set<String> aKeySet = myCache.projection(aPred).keySet();
-
-        aKeySet.size(); // Initiate lazy iteration.
-
-        assertEquals(0, cntr.get());
-
-        // Key set is empty as expected - no entities in cache except atomic counter !!!
-        assertTrue(aKeySet.isEmpty());
-
-        // Add some entities to cache.
-        myCache.putx("a_1", 1);
-        myCache.putx("a_2", 2);
-        myCache.putx("b_1", 3);
-
-        // Repeat key set filtering.
-        aKeySet = myCache.projection(aPred).keySet();
-
-        // This will cause iteration and counter will get incremented.
-        assertEquals(2, aKeySet.size());
-
-        assertEquals(3, cntr.get());
-        assertTrue(aKeySet.containsAll(F.asList("a_1", "a_2")));
     }
 }

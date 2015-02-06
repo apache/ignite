@@ -190,14 +190,14 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
      * @throws Exception If failed.
      */
     public void testPartitionEntrySetRemove() throws Exception {
-        GridCache<String, Integer> cache = cache(0);
+        IgniteCache<String, Integer> cache = jcache(0);
 
         Map<Integer, Collection<String>> partMap = new HashMap<>();
 
         for (int i = 0; i < 1000; i++) {
             String key = String.valueOf(i);
 
-            int part = cache.affinity().partition(key);
+            int part = grid(0).affinity(null).partition(key);
 
             cache.put(key, i);
 

@@ -108,9 +108,7 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
             else
                 cache.localLoadCache(null, PUT_CNT);
 
-            GridCache<Integer, String> cache0 = cache(0);
-
-            CacheAffinity aff = cache0.affinity();
+            CacheAffinity<Integer> aff = grid(0).affinity(null);
 
             int[] parts = aff.allPartitions(grid(0).localNode());
 
@@ -125,7 +123,7 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
 
             int cnt2 = 0;
 
-            for (Entry<Integer, String> e : cache0.entrySet()) {
+            for (CacheEntry<Object, Object> e : cache(0).entrySet()) {
                 assert e.primary() || e.backup();
 
                 cnt2++;

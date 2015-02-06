@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
@@ -101,16 +102,16 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
 
         startGrid();
 
-        GridCache<Integer, String> cache = cache();
+        IgniteCache<Integer, String> cache = jcache();
 
         try {
             cache.get(1);
 
-            IgniteTx tx = cache.txStart();
+            IgniteTx tx = grid().transactions().txStart();
 
             try {
                 for (int i = 1; i <= 10; i++)
-                    cache.putx(i, Integer.toString(i));
+                    cache.put(i, Integer.toString(i));
 
                 tx.commit();
             }
@@ -122,11 +123,11 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
 
             assert putCnt.get() == 10;
 
-            tx = cache.txStart();
+            tx = grid().transactions().txStart();
 
             try {
                 for (int i = 1; i <= 10; i++) {
-                    String val = cache.remove(i);
+                    String val = cache.getAndRemove(i);
 
                     assert val != null;
                     assert val.equals(Integer.toString(i));
