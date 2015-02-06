@@ -69,7 +69,12 @@ public abstract class IgniteJdbcStoreAbstractBenchmark extends IgniteAbstractBen
                 // No-op.
             }
 
-            stmt.executeUpdate("CREATE TABLE IF NOT EXISTS SAMPLE (id integer not null, value integer, PRIMARY KEY(id))");
+            try {
+                stmt.executeUpdate("CREATE TABLE SAMPLE (id integer not null, value integer, PRIMARY KEY(id))");
+            }
+            catch (SQLException ignore) {
+                // No-op.
+            }
 
             conn.commit();
 
