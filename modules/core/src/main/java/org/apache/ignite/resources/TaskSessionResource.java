@@ -33,7 +33,7 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements ComputeJob {
  *      ...
- *      &#64;IgniteTaskSessionResource
+ *      &#64;TaskSessionResource
  *      private ComputeTaskSession taskSes;
  *      ...
  *  }
@@ -44,7 +44,7 @@ import java.lang.annotation.*;
  *     ...
  *     private ComputeTaskSession taskSes;
  *     ...
- *     &#64;IgniteTaskSessionResource
+ *     &#64;TaskSessionResource
  *     public void setTaskSession(ComputeTaskSession taskSes) {
  *          this.taskSes = taskSes;
  *     }

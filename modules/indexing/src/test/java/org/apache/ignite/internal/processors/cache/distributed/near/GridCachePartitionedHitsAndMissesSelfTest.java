@@ -67,7 +67,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         tCfg.setDefaultTxConcurrency(IgniteTxConcurrency.PESSIMISTIC);
         tCfg.setDefaultTxIsolation(IgniteTxIsolation.REPEATABLE_READ);
 
-        cfg.setTransactionsConfiguration(tCfg);
+        cfg.setTransactionConfiguration(tCfg);
 
         return cfg;
     }

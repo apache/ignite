@@ -3730,7 +3730,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public IgniteTx txStart() throws IllegalStateException {
-        TransactionConfiguration cfg = ctx.gridConfig().getTransactionsConfiguration();
+        TransactionConfiguration cfg = ctx.gridConfig().getTransactionConfiguration();
 
         return txStart(cfg.getDefaultTxConcurrency(), cfg.getDefaultTxIsolation());
     }
@@ -3740,7 +3740,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
-        TransactionConfiguration cfg = ctx.gridConfig().getTransactionsConfiguration();
+        TransactionConfiguration cfg = ctx.gridConfig().getTransactionConfiguration();
 
         return txStart(
             concurrency,
@@ -4352,7 +4352,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         IgniteTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx();
 
         if (tx == null || tx.implicit()) {
-            TransactionConfiguration tCfg = ctx.gridConfig().getTransactionsConfiguration();
+            TransactionConfiguration tCfg = ctx.gridConfig().getTransactionConfiguration();
 
             tx = ctx.tm().newTx(
                 true,
@@ -4435,7 +4435,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 ctx.system(),
                 PESSIMISTIC,
                 READ_COMMITTED,
-                ctx.kernalContext().config().getTransactionsConfiguration().getDefaultTxTimeout(),
+                ctx.kernalContext().config().getTransactionConfiguration().getDefaultTxTimeout(),
                 ctx.hasFlag(INVALIDATE),
                 !ctx.hasFlag(SKIP_STORE),
                 0,

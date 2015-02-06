@@ -47,7 +47,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
     /** {@inheritDoc} */
     @Override public IgniteTx txStart() throws IllegalStateException {
-        TransactionConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
+        TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
 
         return txStart0(
             cfg.getDefaultTxConcurrency(),
@@ -63,7 +63,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
-        TransactionConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
+        TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
 
         return txStart0(
             concurrency,
@@ -120,7 +120,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
-        TransactionConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
+        TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
 
         return txStart0(concurrency,
             isolation,
@@ -196,7 +196,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
      */
     private IgniteInternalTx txStart0(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
         long timeout, int txSize, boolean sys) {
-        TransactionConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
+        TransactionConfiguration cfg = cctx.gridConfig().getTransactionConfiguration();
 
         if (!cfg.isTxSerializableEnabled() && isolation == SERIALIZABLE)
             throw new IllegalArgumentException("SERIALIZABLE isolation level is disabled (to enable change " +

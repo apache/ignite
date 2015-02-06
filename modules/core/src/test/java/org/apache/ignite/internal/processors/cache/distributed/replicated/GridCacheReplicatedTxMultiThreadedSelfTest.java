@@ -49,7 +49,7 @@ public class GridCacheReplicatedTxMultiThreadedSelfTest extends IgniteTxMultiThr
 
         tCfg.setTxSerializableEnabled(true);
 
-        c.setTransactionsConfiguration(tCfg);
+        c.setTransactionConfiguration(tCfg);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 

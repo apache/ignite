@@ -645,7 +645,7 @@ public class IgniteConfiguration {
         sysSvcShutdown = cfg.getSystemExecutorServiceShutdown();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
-        txCfg = cfg.getTransactionsConfiguration();
+        txCfg = cfg.getTransactionConfiguration();
         userAttrs = cfg.getUserAttributes();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
@@ -3117,7 +3117,7 @@ public class IgniteConfiguration {
      *
      * @return Transactions configuration.
      */
-    public TransactionConfiguration getTransactionsConfiguration() {
+    public TransactionConfiguration getTransactionConfiguration() {
         return txCfg;
     }
 
@@ -3126,7 +3126,7 @@ public class IgniteConfiguration {
      *
      * @param txCfg Transactions configuration.
      */
-    public void setTransactionsConfiguration(TransactionConfiguration txCfg) {
+    public void setTransactionConfiguration(TransactionConfiguration txCfg) {
         this.txCfg = txCfg;
     }
 

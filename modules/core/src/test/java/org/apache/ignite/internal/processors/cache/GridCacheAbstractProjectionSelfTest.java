@@ -828,7 +828,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
 
         tx.commit();
 
-        TransactionConfiguration tCfg = grid(0).configuration().getTransactionsConfiguration();
+        TransactionConfiguration tCfg = grid(0).configuration().getTransactionConfiguration();
 
         tx = cache().txStart(
             tCfg.getDefaultTxConcurrency(),

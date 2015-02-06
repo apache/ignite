@@ -105,7 +105,7 @@ import java.util.*;
  * public class MyGridUsualTask extends ComputeTaskSplitAdapter&lt;Object, Object&gt; {
  *    public static final int SPLIT_COUNT = 20;
  *
- *    &#64;IgniteTaskSessionResource
+ *    &#64;TaskSessionResource
  *    private ComputeTaskSession taskSes;
  *
  *    &#64;Override
@@ -131,7 +131,7 @@ import java.util.*;
  * public class MyGridUrgentTask extends ComputeTaskSplitAdapter&lt;Object, Object&gt; {
  *    public static final int SPLIT_COUNT = 5;
  *
- *    &#64;IgniteTaskSessionResource
+ *    &#64;TaskSessionResource
  *    private ComputeTaskSession taskSes;
  *
  *    &#64;Override

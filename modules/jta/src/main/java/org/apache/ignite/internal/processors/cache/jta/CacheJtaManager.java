@@ -75,7 +75,7 @@ public class CacheJtaManager<K, V> extends CacheJtaManagerAdapter<K, V> {
 
                         if (tx == null) {
                             TransactionConfiguration tCfg = cctx.kernalContext().config()
-                                .getTransactionsConfiguration();
+                                .getTransactionConfiguration();
 
                             tx = cctx.tm().newTx(
                                 /*implicit*/false,

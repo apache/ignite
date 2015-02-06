@@ -107,7 +107,7 @@ public class IgniteNode implements BenchmarkServer {
 
         }
 
-        TransactionConfiguration tc = c.getTransactionsConfiguration();
+        TransactionConfiguration tc = c.getTransactionConfiguration();
 
         tc.setDefaultTxConcurrency(args.txConcurrency());
         tc.setDefaultTxIsolation(args.txIsolation());

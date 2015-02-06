@@ -30,7 +30,7 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyCacheStore implements GridCacheStore {
  *      ...
- *      &#64;IgniteCacheNameResource
+ *      &#64;CacheNameResource
  *      private String cacheName;
  *      ...
  *  }
@@ -41,7 +41,7 @@ import java.lang.annotation.*;
  *     ...
  *     private String cacheName;
  *     ...
- *     &#64;IgniteCacheNameResource
+ *     &#64;CacheNameResource
  *     public void setCacheName(String cacheName) {
  *          this.cacheName = cacheName;
  *     }

@@ -129,7 +129,7 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
     }
 
     /**
-     * TODO IGNITE-180: move properties to IgniteCollectionConfiguration.
+     * TODO IGNITE-180: move properties to CollectionConfiguration.
      */
     public static class TestCollectionConfiguration {
         /** Default backups number. */

@@ -258,28 +258,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public void localPromote(Set<? extends K> keys) throws CacheException;
 
     /**
-     * Clears an entry from this cache and swap storage only if the entry
-     * is not currently locked, and is not participating in a transaction.
-     * <p>
-     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
-     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
-     * also be cleared from swap.
-     * <p>
-     * Note that this operation is local as it merely clears
-     * an entry from local cache. It does not remove entries from
-     * remote caches or from underlying persistent storage.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
-     *
-     * @param keys Keys to clear.
-     * @return {@code True} if entry was successfully cleared from cache, {@code false}
-     *      if entry was in use at the time of this method invocation and could not be
-     *      cleared.
-     */
-    public boolean clear(Collection<? extends K> keys);
-
-    /**
      * Gets the number of all entries cached across all nodes.
      * <p>
      * NOTE: this operation is distributed and will query all participating nodes for their cache sizes.

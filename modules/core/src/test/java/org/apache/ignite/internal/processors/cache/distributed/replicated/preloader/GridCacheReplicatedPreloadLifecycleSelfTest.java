@@ -50,8 +50,8 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
-        c.getTransactionsConfiguration().setDefaultTxIsolation(READ_COMMITTED);
+        c.getTransactionConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
+        c.getTransactionConfiguration().setDefaultTxIsolation(READ_COMMITTED);
 
         CacheConfiguration cc1 = defaultCacheConfiguration();
 

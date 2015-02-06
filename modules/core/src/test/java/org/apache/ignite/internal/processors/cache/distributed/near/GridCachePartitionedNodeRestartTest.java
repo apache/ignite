@@ -34,7 +34,7 @@ public class GridCachePartitionedNodeRestartTest extends GridCacheAbstractNodeRe
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
+        c.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 

@@ -37,7 +37,7 @@ public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extend
 
         tCfg.setTxSerializableEnabled(true);
 
-        cfg.setTransactionsConfiguration(tCfg);
+        cfg.setTransactionConfiguration(tCfg);
 
         return cfg;
     }

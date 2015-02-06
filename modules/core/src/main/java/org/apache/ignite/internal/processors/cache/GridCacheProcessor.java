@@ -351,8 +351,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException("Cannot start cache in PRIVATE or ISOLATED deployment mode: " +
                 ctx.config().getDeploymentMode());
 
-        if (!c.getTransactionsConfiguration().isTxSerializableEnabled() &&
-            c.getTransactionsConfiguration().getDefaultTxIsolation() == SERIALIZABLE)
+        if (!c.getTransactionConfiguration().isTxSerializableEnabled() &&
+            c.getTransactionConfiguration().getDefaultTxIsolation() == SERIALIZABLE)
             U.warn(log,
                 "Serializable transactions are disabled while default transaction isolation is SERIALIZABLE " +
                     "(most likely misconfiguration - either update 'isTxSerializableEnabled' or " +
@@ -585,7 +585,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         sharedCtx = createSharedContext(ctx);
 
         ctx.performance().add("Disable serializable transactions (set 'txSerializableEnabled' to false)",
-            !ctx.config().getTransactionsConfiguration().isTxSerializableEnabled());
+            !ctx.config().getTransactionConfiguration().isTxSerializableEnabled());
 
         Collection<GridCacheAdapter<?, ?>> startSeq = new ArrayList<>(cfgs.length);
 
@@ -948,7 +948,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         attrs.put(ATTR_CACHE, attrVals);
 
-        attrs.put(ATTR_TX_CONFIG, ctx.config().getTransactionsConfiguration());
+        attrs.put(ATTR_TX_CONFIG, ctx.config().getTransactionConfiguration());
 
         if (!interceptors.isEmpty())
             attrs.put(ATTR_CACHE_INTERCEPTORS, interceptors);
@@ -1229,7 +1229,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         TransactionConfiguration txCfg = rmt.attribute(ATTR_TX_CONFIG);
 
         if (txCfg != null) {
-            TransactionConfiguration locTxCfg = ctx.config().getTransactionsConfiguration();
+            TransactionConfiguration locTxCfg = ctx.config().getTransactionConfiguration();
 
             if (locTxCfg.isTxSerializableEnabled() != txCfg.isTxSerializableEnabled())
                 throw new IgniteCheckedException("Serializable transactions enabled mismatch " +

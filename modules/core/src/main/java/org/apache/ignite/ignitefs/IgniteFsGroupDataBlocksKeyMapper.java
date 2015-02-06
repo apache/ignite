@@ -44,7 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * &lt;bean id="cacheCfgBase" class="org.gridgain.grid.cache.GridCacheConfiguration" abstract="true"&gt;
  *     ...
  *     &lt;property name="affinityMapper"&gt;
- *         &lt;bean class="org.apache.ignite.fs.IgniteFsGroupDataBlocksKeyMapper"&gt;
+ *         &lt;bean class="org.apache.ignite.ignitefs.IgniteFsGroupDataBlocksKeyMapper"&gt;
  *             &lt;!-- How many sequential blocks will be stored on the same node. --&gt;
  *             &lt;constructor-arg value="512"/&gt;
  *         &lt;/bean&gt;

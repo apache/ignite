@@ -34,7 +34,7 @@ public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAb
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
+        c.getTransactionConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 

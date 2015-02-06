@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.util.nodestart.GridNodeStartUtils.*;
+import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.*;
 
 /**
  * Tests for {@code startNodes(..)}, {@code stopNodes(..)}

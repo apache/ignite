@@ -61,8 +61,8 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
 
         c.setAtomicConfiguration(atomicCfg);
 
-        c.getTransactionsConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
-        c.getTransactionsConfiguration().setDefaultTxIsolation(REPEATABLE_READ);
+        c.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
+        c.getTransactionConfiguration().setDefaultTxIsolation(REPEATABLE_READ);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 

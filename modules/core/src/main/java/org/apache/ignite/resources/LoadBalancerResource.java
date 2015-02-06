@@ -33,7 +33,7 @@ import java.lang.annotation.*;
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
  * public class MyGridTask extends ComputeTask&lt;String, Integer&gt; {
- *    &#64;IgniteLoadBalancerResource
+ *    &#64;LoadBalancerResource
  *    private ComputeLoadBalancer balancer;
  * }
  * </pre>
@@ -43,7 +43,7 @@ import java.lang.annotation.*;
  *     ...
  *     private ComputeLoadBalancer balancer;
  *     ...
- *     &#64;IgniteLoadBalancerResource
+ *     &#64;LoadBalancerResource
  *     public void setBalancer(ComputeLoadBalancer balancer) {
  *         this.balancer = balancer;
  *     }

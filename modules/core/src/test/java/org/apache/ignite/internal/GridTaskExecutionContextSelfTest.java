@@ -68,7 +68,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
      */
     public void testWithName() throws Exception {
         IgniteCallable<String> f = new IgniteCallable<String>() {
-            @IgniteTaskSessionResource
+            @TaskSessionResource
             private ComputeTaskSession ses;
 
             @Override public String call() {

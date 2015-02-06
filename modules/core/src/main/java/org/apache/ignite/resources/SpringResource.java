@@ -76,7 +76,7 @@ import java.lang.annotation.*;
  *     private MyUserBean rsrc;
  *     ...
  *     // Inject logger (or any other resource).
- *     &#64;IgniteLoggerResource
+ *     &#64;LoggerResource
  *     private GridLogger log;
  *
  *     // Inject ignite instance (or any other resource).

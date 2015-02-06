@@ -313,7 +313,7 @@ public class IgniteFsConfiguration {
      * Default is {@code 0} which means that pre-fetching will start right away.
      * <h1 class="header">Integration With Hadoop</h1>
      * This parameter can be also overridden for individual Hadoop MapReduce tasks by passing
-     * {@code org.apache.ignite.fs.hadoop.GridGgfsHadoopParameters.PARAM_GGFS_SEQ_READS_BEFORE_PREFETCH}
+     * {@code org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopParameters.PARAM_GGFS_SEQ_READS_BEFORE_PREFETCH}
      * configuration property directly to Hadoop MapReduce task.
      * <p>
      * <b>NOTE:</b> Integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
@@ -333,7 +333,7 @@ public class IgniteFsConfiguration {
      * Default is {@code 0} which means that pre-fetching will start right away.
      * <h1 class="header">Integration With Hadoop</h1>
      * This parameter can be also overridden for individual Hadoop MapReduce tasks by passing
-     * {@code org.apache.ignite.fs.hadoop.GridGgfsHadoopParameters.PARAM_GGFS_SEQ_READS_BEFORE_PREFETCH}
+     * {@code org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopParameters.PARAM_GGFS_SEQ_READS_BEFORE_PREFETCH}
      * configuration property directly to Hadoop MapReduce task.
      * <p>
      * <b>NOTE:</b> Integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.

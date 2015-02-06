@@ -72,7 +72,7 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
         tCfg.setDefaultTxConcurrency(PESSIMISTIC);
         tCfg.setDefaultTxIsolation(READ_COMMITTED);
 
-        c.setTransactionsConfiguration(tCfg);
+        c.setTransactionConfiguration(tCfg);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 

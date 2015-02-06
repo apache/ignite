@@ -117,7 +117,7 @@ import java.util.*;
  * of certain event or state change that occurred during job execution.
  * <p>
  * Distributed task session can be injected into {@link ComputeJob} implementation
- * using {@link org.apache.ignite.resources.TaskSessionResource @IgniteTaskSessionResource} annotation.
+ * using {@link org.apache.ignite.resources.TaskSessionResource @TaskSessionResource} annotation.
  * Both, field and method based injections are supported. Refer to
  * {@link ComputeTaskSession} documentation for more information on session functionality.
  * <p>

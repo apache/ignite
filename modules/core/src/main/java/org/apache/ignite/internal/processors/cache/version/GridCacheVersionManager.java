@@ -86,7 +86,7 @@ public class GridCacheVersionManager<K, V> extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        txSerEnabled = cctx.gridConfig().getTransactionsConfiguration().isTxSerializableEnabled();
+        txSerEnabled = cctx.gridConfig().getTransactionConfiguration().isTxSerializableEnabled();
 
         dataCenterId = cctx.dataCenterId();
 

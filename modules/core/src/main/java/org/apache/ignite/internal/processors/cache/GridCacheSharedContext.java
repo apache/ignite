@@ -158,7 +158,7 @@ public class GridCacheSharedContext<K, V> {
      * @return Transactions configuration.
      */
     public TransactionConfiguration txConfig() {
-        return kernalCtx.config().getTransactionsConfiguration();
+        return kernalCtx.config().getTransactionConfiguration();
     }
 
     /**

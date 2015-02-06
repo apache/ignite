@@ -56,7 +56,7 @@ import static org.apache.ignite.internal.fs.hadoop.GridGgfsHadoopUtils.*;
  *
  *  &lt;property&gt;
  *      &lt;name&gt;fs.ggfs.impl&lt;/name&gt;
- *      &lt;value&gt;org.apache.ignite.fs.hadoop.GridGgfsHadoopFileSystem&lt;/value&gt;
+ *      &lt;value&gt;org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopFileSystem&lt;/value&gt;
  *  &lt;/property&gt;
  * </pre>
  * You should also add GridGain JAR and all libraries to Hadoop classpath. To
