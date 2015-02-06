@@ -826,7 +826,7 @@
                                         <link>http://hadoop.apache.org/docs/current/api/</link>
                                     </links>
                                     <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
-                                    <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.internal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.apache.ignite.portables:org.apache.ignite.yardstick:org.apache.ignite.schema.*</excludePackageNames>
+                                    <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.internal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.apache.ignite.portables:org.apache.ignite.yardstick:org.apache.ignite.schema.*:org.apache.ignite.codegen</excludePackageNames>
                                     <groups>
                                         <group>
                                             <title>Common Grid APIs</title>
