@@ -15,20 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store.jdbc;
+package org.apache.ignite.yardstick.cache.store.jdbc;
 
-import org.h2.jdbcx.*;
+import org.apache.ignite.*;
+import org.apache.ignite.yardstick.cache.model.*;
+
+import java.util.*;
 
 /**
- *
+ * Ignite benchmark that performs put and get operations.
  */
-public class PojoJdbcCacheStoreMultitreadedSelfTest extends AbstractJdbcCacheStoreMultithreadedSelfTest<JdbcPojoCacheStore> {
+public class IgniteJdbcStorePutGetTxBenchmark extends IgniteJdbcStoreAbstractBenchmark {
     /** {@inheritDoc} */
-    @Override protected JdbcPojoCacheStore store() throws Exception {
-        JdbcPojoCacheStore store = new JdbcPojoCacheStore();
+    @Override protected int fillRange() {
+        return 0;
+    }
 
-        store.setDataSource(JdbcConnectionPool.create(DFLT_CONN_URL, "sa", ""));
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        int id = nextRandom(args.range());
 
-        return store;
+        Object val = cache.get(new SampleKey(id));
+
+        if (val != null)
+            id = nextRandom(args.range());
+
+        cache.put(new SampleKey(id), new SampleValue(id));
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteCache<Object, Object> cache() {
+        return ignite().jcache("tx");
     }
 }
