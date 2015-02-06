@@ -49,7 +49,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
     /** Predicate to exclude the second node from topology */
     private final IgnitePredicate<ClusterNode> p = new IgnitePredicate<ClusterNode>() {
         @Override public boolean apply(ClusterNode e) {
-            return !NODE2.equals(e.attribute(GridNodeAttributes.ATTR_GRID_NAME));
+            return !NODE2.equals(e.attribute(IgniteNodeAttributes.ATTR_GRID_NAME));
         }
     };
 

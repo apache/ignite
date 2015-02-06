@@ -177,7 +177,7 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class FailRunnable implements Runnable {
+    private static class FailRunnable implements IgniteRunnable {
         /** {@inheritDoc} */
         @Override public void run() {
             fail();
@@ -187,7 +187,7 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class FailCallable implements Callable<Object> {
+    private static class FailCallable implements IgniteCallable<Object> {
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
             fail();

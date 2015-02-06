@@ -17,6 +17,7 @@
 
 package org.apache.ignite.yardstick.compute;
 
+import org.apache.ignite.lang.*;
 import org.apache.ignite.yardstick.*;
 import org.yardstickframework.*;
 
@@ -28,7 +29,7 @@ import java.util.*;
  */
 public class IgniteRunBenchmark extends IgniteAbstractBenchmark {
     /** Jobs for run */
-    private List<Runnable> jobs;
+    private List<IgniteRunnable> jobs;
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
@@ -52,7 +53,7 @@ public class IgniteRunBenchmark extends IgniteAbstractBenchmark {
     /**
      *
      */
-    public static class NoopRunnable implements Runnable, Externalizable {
+    public static class NoopRunnable implements IgniteRunnable, Externalizable {
         /** {@inheritDoc} */
         @Override public void run() {
             //No-op

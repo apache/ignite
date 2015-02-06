@@ -46,15 +46,15 @@ import java.util.*;
  * cfg.setSecureSessionSpi(spi);
  *
  * // Start grid.
- * GridGain.start(cfg);
+ * Ignition.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * GridNoopSecureSessionSpi can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
+ * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *         ...
  *         &lt;property name="secureSessionSpi"&gt;
- *             &lt;bean class="org.gridgain.grid.spi.SecureSession.noop.GridNoopSecureSessionSpi"/&gt;
+ *             &lt;bean class="org.apache.ignite.spi.SecureSession.noop.GridNoopSecureSessionSpi"/&gt;
  *         &lt;/property&gt;
  *         ...
  * &lt;/bean&gt;

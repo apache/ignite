@@ -31,7 +31,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
 /**
  *

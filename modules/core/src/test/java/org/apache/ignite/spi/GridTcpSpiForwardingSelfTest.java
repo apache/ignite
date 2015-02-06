@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -150,7 +151,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
             assertEquals(2, grid(0).nodes().size());
             assertEquals(2, grid(1).nodes().size());
 
-            Collection<Integer> t = g1.compute().broadcast(new Callable<Integer>() {
+            Collection<Integer> t = g1.compute().broadcast(new IgniteCallable<Integer>() {
                 @Override public Integer call() throws Exception {
                     return 13;
                 }

@@ -281,7 +281,7 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridGgfsCommonA
     public void testLogDirectory() throws Exception {
         startUp();
 
-        assertEquals(Paths.get(U.getGridGainHome()).normalize().toString(),
+        assertEquals(Paths.get(U.getIgniteHome()).normalize().toString(),
             ggfs.clientLogDirectory());
     }
 
@@ -294,14 +294,14 @@ public class GridGgfsHadoopFileSystemLoggerStateSelfTest extends GridGgfsCommonA
     private GridGgfsHadoopFileSystem fileSystem() throws Exception {
         Configuration fsCfg = new Configuration();
 
-        fsCfg.addResource(U.resolveGridGainUrl("modules/core/src/test/config/hadoop/core-site-loopback.xml"));
+        fsCfg.addResource(U.resolveIgniteUrl("modules/core/src/test/config/hadoop/core-site-loopback.xml"));
 
         fsCfg.setBoolean("fs.ggfs.impl.disable.cache", true);
 
         if (logging)
             fsCfg.setBoolean(String.format(PARAM_GGFS_LOG_ENABLED, "ggfs:ggfs-grid@"), logging);
 
-        fsCfg.setStrings(String.format(PARAM_GGFS_LOG_DIR, "ggfs:ggfs-grid@"), U.getGridGainHome());
+        fsCfg.setStrings(String.format(PARAM_GGFS_LOG_DIR, "ggfs:ggfs-grid@"), U.getIgniteHome());
 
         return (GridGgfsHadoopFileSystem)FileSystem.get(new URI("ggfs://ggfs:ggfs-grid@/"), fsCfg);
     }

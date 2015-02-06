@@ -477,8 +477,8 @@ public interface GridKernalContext extends Iterable<GridComponent> {
 
     /**
      * Gets user version for given class loader by checking
-     * {@code META-INF/gridgain.xml} file for {@code userVersion} attribute. If
-     * {@code gridgain.xml} file is not found, or user version is not specified there,
+     * {@code META-INF/ignite.xml} file for {@code userVersion} attribute. If
+     * {@code ignite.xml} file is not found, or user version is not specified there,
      * then default version (empty string) is returned.
      *
      * @param ldr Class loader.

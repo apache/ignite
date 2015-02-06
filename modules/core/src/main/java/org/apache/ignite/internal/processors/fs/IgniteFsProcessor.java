@@ -43,7 +43,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.fs.IgniteFsMode.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
 
 /**
@@ -390,8 +390,8 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
      * @throws IgniteCheckedException If check failed.
      */
     private void checkGgfsOnRemoteNode(ClusterNode rmtNode) throws IgniteCheckedException {
-        GridGgfsAttributes[] locAttrs = ctx.discovery().localNode().attribute(GridNodeAttributes.ATTR_GGFS);
-        GridGgfsAttributes[] rmtAttrs = rmtNode.attribute(GridNodeAttributes.ATTR_GGFS);
+        GridGgfsAttributes[] locAttrs = ctx.discovery().localNode().attribute(IgniteNodeAttributes.ATTR_GGFS);
+        GridGgfsAttributes[] rmtAttrs = rmtNode.attribute(IgniteNodeAttributes.ATTR_GGFS);
 
         if (F.isEmpty(locAttrs) || F.isEmpty(rmtAttrs))
             return;

@@ -23,7 +23,7 @@ import org.apache.ignite.cache.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * This is an adapted test case from DSI-49 (http://www.gridgainsystems.com/jira/browse/DSI-49).
+ * Benchmark cache get load test.
  */
 public class GridBenchmarkCacheGetLoadTest {
     /** */

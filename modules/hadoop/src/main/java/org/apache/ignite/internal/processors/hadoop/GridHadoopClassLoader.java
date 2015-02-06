@@ -68,7 +68,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
     }
 
     /**
-     * Need to parse only GridGain Hadoop and GGFS classes.
+     * Need to parse only Ignite Hadoop and GGFS classes.
      *
      * @param cls Class name.
      * @return {@code true} if we need to check this class.

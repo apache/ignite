@@ -37,14 +37,14 @@ import java.util.*;
  * {@link org.apache.ignite.compute.ComputeJobResult#getNode() GridFailoverContext.getJobResult().node()}
  * method.
  * <p>
- * GridGain comes with the following built-in failover SPI implementations:
+ * Ignite comes with the following built-in failover SPI implementations:
  * <ul>
  *      <li>{@link org.apache.ignite.spi.failover.never.NeverFailoverSpi}</li>
  *      <li>{@link org.apache.ignite.spi.failover.always.AlwaysFailoverSpi}</li>
  *      <li>{@link org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
- * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
+ * internal view on the subsystem and is used internally by Ignite kernal. In rare use cases when
  * access to a specific implementation of this SPI is required - an instance of this SPI can be obtained
  * via {@link org.apache.ignite.Ignite#configuration()} method to check its configuration properties or call other non-SPI
  * methods. Note again that calling methods from this interface on the obtained instance can lead

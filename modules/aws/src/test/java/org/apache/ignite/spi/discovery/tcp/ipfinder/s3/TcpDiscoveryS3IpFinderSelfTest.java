@@ -29,7 +29,7 @@ import java.util.*;
  * TcpDiscoveryS3IpFinder test.
  */
 public class TcpDiscoveryS3IpFinderSelfTest
-    extends GridTcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryS3IpFinder> {
+    extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryS3IpFinder> {
     /**
      * Constructor.
      *

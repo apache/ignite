@@ -147,7 +147,7 @@ public class ClientConnectionConfiguration {
     /**
      * Sets path, either absolute or relative to {@code IGNITE_HOME}, to {@code JETTY}
      * XML configuration file. {@code JETTY} is used to support REST over HTTP protocol for
-     * accessing GridGain APIs remotely.
+     * accessing Ignite APIs remotely.
      *
      * @param jettyPath Path to {@code JETTY} XML configuration file.
      */
@@ -158,7 +158,7 @@ public class ClientConnectionConfiguration {
     /**
      * Gets path, either absolute or relative to {@code IGNITE_HOME}, to {@code Jetty}
      * XML configuration file. {@code Jetty} is used to support REST over HTTP protocol for
-     * accessing GridGain APIs remotely.
+     * accessing Ignite APIs remotely.
      * <p>
      * If not provided, Jetty instance with default configuration will be started picking
      * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_HOST} and {@link org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_PORT}

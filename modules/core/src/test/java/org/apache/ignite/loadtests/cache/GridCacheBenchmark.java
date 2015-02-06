@@ -126,7 +126,7 @@ public class GridCacheBenchmark {
 
                 opCnt.set(0);
 
-                X.println("Starting GridGain cache putx() benchmark...");
+                X.println("Starting Ignite cache putx() benchmark...");
 
                 long durPutx = GridLoadTestUtils.measureTime(new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
@@ -149,7 +149,7 @@ public class GridCacheBenchmark {
                 }, THREADS);
 
                 X.println(">>>");
-                X.println(">> GridGain cache putx() benchmark results [duration=" + durPutx + " ms, tx/sec=" +
+                X.println(">> Ignite cache putx() benchmark results [duration=" + durPutx + " ms, tx/sec=" +
                     (opCnt.get() * 1000 / durPutx) + ", total=" + opCnt.get() + ']');
                 X.println(">>>");
 
@@ -159,7 +159,7 @@ public class GridCacheBenchmark {
 
                 opCnt.set(0);
 
-                X.println("Starting GridGain cache get() benchmark...");
+                X.println("Starting Ignite cache get() benchmark...");
 
                 long durGet = GridLoadTestUtils.measureTime(new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
@@ -182,7 +182,7 @@ public class GridCacheBenchmark {
                 }, THREADS);
 
                 X.println(">>>");
-                X.println(">> GridGain cache get() benchmark results [duration=" + durGet + " ms, tx/sec=" +
+                X.println(">> Ignite cache get() benchmark results [duration=" + durGet + " ms, tx/sec=" +
                     (opCnt.get() * 1000 / durGet) + ", total=" + opCnt.get() + ']');
                 X.println(">>>");
 

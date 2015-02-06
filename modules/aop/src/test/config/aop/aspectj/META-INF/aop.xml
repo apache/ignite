@@ -92,8 +92,8 @@
         <exclude within="scala..*"/>
 
         <!-- Visor Scala classes.-->
-        <exclude within="org.gridgain.visor..*"/>
-        <exclude within="org.gridgain.scalar..*"/>
+        <exclude within="org.apache.ignite.visor..*"/>
+        <exclude within="org.apache.ignite.scalar..*"/>
 
         <!-- Enterprise DT FTP libs. -->
         <exclude within="com.enterprisedt..*"/>
@@ -238,8 +238,8 @@
         <exclude within="scala..*"/>
 
         <!-- Visor Scala classes.-->
-        <exclude within="org.gridgain.visor..*"/>
-        <exclude within="org.gridgain.scalar..*"/>
+        <exclude within="org.apache.ignite.visor..*"/>
+        <exclude within="ye yjhv.scalar..*"/>
 
         <!-- Enterprise DT FTP libs. -->
         <exclude within="com.enterprisedt..*"/>

@@ -20,7 +20,7 @@
 <!DOCTYPE log4j:configuration PUBLIC "-//APACHE//DTD LOG4J 1.2//EN"
     "http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/xml/doc-files/log4j.dtd">
 <!--
-    Default log4j configuration for GridGain.
+    Default log4j configuration for Ignite.
 -->
 <log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
     <!--
@@ -70,7 +70,7 @@
     -->
     <appender name="FILE" class="org.apache.log4j.RollingFileAppender">
         <param name="Threshold" value="DEBUG"/>
-        <param name="File" value="${IGNITE_HOME}/work/log/gridgain.log"/>
+        <param name="File" value="${IGNITE_HOME}/work/log/ignite.log"/>
         <param name="Append" value="true"/>
         <param name="MaxFileSize" value="10MB"/>
         <param name="MaxBackupIndex" value="10"/>
@@ -80,10 +80,10 @@
     </appender>
 
     <!--
-        Uncomment to enable GridGain debugging.
+        Uncomment to enable Ignite debugging.
     -->
     <!--
-    <category name="org.gridgain">
+    <category name="org.apache.ignite">
         <level value="DEBUG"/>
     </category>
     -->
@@ -93,7 +93,7 @@
         query execution tracing.
     -->
     <!--
-    <category name="org.gridgain.cache.queries">
+    <category name="org.apache.ignite.cache.queries">
         <level value="DEBUG"/>
     </category>
     -->
@@ -102,7 +102,7 @@
         Uncomment to enable DGC tracing.
     -->
     <!--
-    <category name="org.gridgain.grid.kernal.processors.cache.GridCacheDgcManager.trace">
+    <category name="org.apache.ignite.grid.kernal.processors.cache.GridCacheDgcManager.trace">
         <level value="DEBUG"/>
     </category>
     -->

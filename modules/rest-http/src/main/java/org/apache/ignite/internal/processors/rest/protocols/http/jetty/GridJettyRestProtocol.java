@@ -133,7 +133,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 log.debug("Jetty configuration file is not provided, using defaults.");
         }
         else {
-            cfgUrl = U.resolveGridGainUrl(jettyPath);
+            cfgUrl = U.resolveIgniteUrl(jettyPath);
 
             if (cfgUrl == null)
                 throw new IgniteSpiException("Invalid Jetty configuration file: " + jettyPath);
@@ -389,17 +389,17 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
     /** {@inheritDoc} */
     @Override protected String getAddressPropertyName() {
-        return GridNodeAttributes.ATTR_REST_JETTY_ADDRS;
+        return IgniteNodeAttributes.ATTR_REST_JETTY_ADDRS;
     }
 
     /** {@inheritDoc} */
     @Override protected String getHostNamePropertyName() {
-        return GridNodeAttributes.ATTR_REST_JETTY_HOST_NAMES;
+        return IgniteNodeAttributes.ATTR_REST_JETTY_HOST_NAMES;
     }
 
     /** {@inheritDoc} */
     @Override protected String getPortPropertyName() {
-        return GridNodeAttributes.ATTR_REST_JETTY_PORT;
+        return IgniteNodeAttributes.ATTR_REST_JETTY_PORT;
     }
 
     /** {@inheritDoc} */

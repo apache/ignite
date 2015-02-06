@@ -58,9 +58,8 @@ public class VisorExecutorServiceConfiguration implements Serializable {
 
         ClientConnectionConfiguration cc = c.getClientConnectionConfiguration();
 
-        if (cc != null) {
+        if (cc != null)
             cfg.restExecutorService(cc.getRestExecutorService());
-        }
 
         return cfg;
     }
@@ -108,17 +107,17 @@ public class VisorExecutorServiceConfiguration implements Serializable {
     }
 
     /**
+     * @param restPoolSz REST requests pool size.
+     */
+    public void restExecutorService(int restPoolSz) {
+        this.restPoolSz = restPoolSz;
+    }
+
+    /**
      * @return REST requests pool size.
      */
     public int restExecutorService() {
         return restPoolSz;
-    }
-
-    /**
-     * @param restExecSvc New REST requests pool size.
-     */
-    public void restExecutorService(int restExecSvc) {
-        this.restPoolSz = restExecSvc;
     }
 
     /** {@inheritDoc} */

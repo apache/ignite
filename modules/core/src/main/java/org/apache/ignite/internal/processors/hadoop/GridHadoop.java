@@ -22,7 +22,7 @@ import org.apache.ignite.internal.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Hadoop facade providing access to GridGain Hadoop features.
+ * Hadoop facade providing access to Ignite Hadoop features.
  */
 public interface GridHadoop {
     /**

@@ -29,7 +29,7 @@ import java.io.*;
  * one shared folder). Compound segment checks may be performed using several
  * resolvers.
  * <p>
- * Note that GridGain support a logical segmentation and not limited to network
+ * Note that Ignite support a logical segmentation and not limited to network
  * related segmentation only. For example, a particular segmentation resolver
  * can check for specific application or service present on the network and
  * mark the topology as segmented in case it is not available. In other words
