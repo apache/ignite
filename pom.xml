@@ -1170,9 +1170,6 @@
                                 <phase>process-resources</phase>
                                 <configuration>
                                     <target>
-                                        <property name="plugin_classpath" refid="maven.plugin.classpath"/>
-
-                                        <echo message="compile classpath: ${plugin_classpath}"/>
                                         <java
                                                 classname="org.apache.ignite.tools.marshaller.optimized.OptimizedClassNamesGenerator"
                                                 fork="true"
