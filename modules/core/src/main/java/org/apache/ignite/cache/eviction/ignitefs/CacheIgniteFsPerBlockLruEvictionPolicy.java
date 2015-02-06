@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.eviction.ggfs;
+package org.apache.ignite.cache.eviction.ignitefs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
@@ -33,8 +33,8 @@ import java.util.regex.*;
 /**
  * GGFS eviction policy which evicts particular blocks.
  */
-public class CacheGgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<GridGgfsBlockKey, byte[]>,
-    CacheGgfsPerBlockLruEvictionPolicyMBean {
+public class CacheIgniteFsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<GridGgfsBlockKey, byte[]>,
+    CacheIgniteFsPerBlockLruEvictionPolicyMXBean {
     /** Meta denoting node in the queue. */
     public static final String META_NODE = "ggfs_node";
 
@@ -63,7 +63,7 @@ public class CacheGgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<G
     /**
      * Default constructor.
      */
-    public CacheGgfsPerBlockLruEvictionPolicy() {
+    public CacheIgniteFsPerBlockLruEvictionPolicy() {
         // No-op.
     }
 
@@ -73,7 +73,7 @@ public class CacheGgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<G
      * @param maxSize Maximum size. When reached, eviction begins.
      * @param maxBlocks Maximum amount of blocks. When reached, eviction begins.
      */
-    public CacheGgfsPerBlockLruEvictionPolicy(long maxSize, int maxBlocks) {
+    public CacheIgniteFsPerBlockLruEvictionPolicy(long maxSize, int maxBlocks) {
         this(maxSize, maxBlocks, null);
     }
 
@@ -84,8 +84,8 @@ public class CacheGgfsPerBlockLruEvictionPolicy implements CacheEvictionPolicy<G
      * @param maxBlocks Maximum amount of blocks. When reached, eviction begins.
      * @param excludePaths Collection of regex for path which must not be evicted.
      */
-    public CacheGgfsPerBlockLruEvictionPolicy(long maxSize, int maxBlocks,
-                                              @Nullable Collection<String> excludePaths) {
+    public CacheIgniteFsPerBlockLruEvictionPolicy(long maxSize, int maxBlocks,
+        @Nullable Collection<String> excludePaths) {
         this.maxSize = maxSize;
         this.maxBlocks = maxBlocks;
         this.excludePaths = excludePaths;

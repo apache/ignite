@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.cache.eviction.ggfs.*;
+import org.apache.ignite.cache.eviction.ignitefs.*;
 import org.apache.ignite.configuration.*;
 
 /**
@@ -30,18 +30,18 @@ public class IgniteFsHelperImpl implements IgniteFsHelper {
     @Override public void preProcessCacheConfiguration(CacheConfiguration cfg) {
         CacheEvictionPolicy evictPlc = cfg.getEvictionPolicy();
 
-        if (evictPlc instanceof CacheGgfsPerBlockLruEvictionPolicy && cfg.getEvictionFilter() == null)
-            cfg.setEvictionFilter(new CacheGgfsEvictionFilter());
+        if (evictPlc instanceof CacheIgniteFsPerBlockLruEvictionPolicy && cfg.getEvictionFilter() == null)
+            cfg.setEvictionFilter(new CacheIgniteFsEvictionFilter());
     }
 
     /** {@inheritDoc} */
     @Override public void validateCacheConfiguration(CacheConfiguration cfg) throws IgniteCheckedException {
         CacheEvictionPolicy evictPlc =  cfg.getEvictionPolicy();
 
-        if (evictPlc != null && evictPlc instanceof CacheGgfsPerBlockLruEvictionPolicy) {
+        if (evictPlc != null && evictPlc instanceof CacheIgniteFsPerBlockLruEvictionPolicy) {
             CacheEvictionFilter evictFilter = cfg.getEvictionFilter();
 
-            if (evictFilter != null && !(evictFilter instanceof CacheGgfsEvictionFilter))
+            if (evictFilter != null && !(evictFilter instanceof CacheIgniteFsEvictionFilter))
                 throw new IgniteCheckedException("Eviction filter cannot be set explicitly when using " +
                     "CacheGgfsPerBlockLruEvictionPolicy:" + cfg.getName());
         }

@@ -635,11 +635,19 @@
                                         </group>
                                         <group>
                                             <title>Data Grid APIs</title>
-                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.cloner:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.ggfs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
+                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.cloner:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.ignitefs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
+                                        </group>
+                                        <group>
+                                            <title>Service Grid APIs</title>
+                                            <packages>org.apache.ignite.services</packages>
+                                        </group>
+                                        <group>
+                                            <title>Ignite File System</title>
+                                            <packages>org.apache.ignite.ignitefs</packages>
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.apache.ignite.fs:org.apache.ignite.ignitefs.hadoop:org.apache.ignite.ignitefs.hadoop.v1:org.apache.ignite.ignitefs.hadoop.v2:org.apache.ignite.ignitefs.mapreduce:org.apache.ignite.ignitefs.mapreduce.records:org.apache.ignite.hadoop</packages>
+                                            <packages>org.apache.ignite.ignitefs.hadoop:org.apache.ignite.ignitefs.hadoop.v1:org.apache.ignite.ignitefs.hadoop.v2:org.apache.ignite.ignitefs.mapreduce:org.apache.ignite.ignitefs.mapreduce.records:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>
@@ -650,16 +658,8 @@
                                             <packages>org.apache.ignite.plugin.security</packages>
                                         </group>
                                         <group>
-                                            <title>Distributed Services APIs</title>
-                                            <packages>org.apache.ignite.services</packages>
-                                        </group>
-                                        <group>
                                             <title>MXBeans classes</title>
                                             <packages>org.apache.ignite.mbean:org.apache.ignite.mxbean</packages>
-                                        </group>
-                                        <group>
-                                            <title>JDBC Driver</title>
-                                            <packages>org.apache.ignite.jdbc</packages>
                                         </group>
                                         <group>
                                             <title>SPI: CheckPoint</title>
@@ -845,11 +845,19 @@
                                         </group>
                                         <group>
                                             <title>Data Grid APIs</title>
-                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.cloner:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.store.jdbc.dialect:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.ggfs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
+                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.cloner:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.store.jdbc.dialect:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.ignitefs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
+                                        </group>
+                                        <group>
+                                            <title>Service Grid APIs</title>
+                                            <packages>org.apache.ignite.services</packages>
+                                        </group>
+                                        <group>
+                                            <title>Ignite File System</title>
+                                            <packages>org.apache.ignite.ignitefs</packages>
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.apache.ignite.fs:org.apache.ignite.ignitefs.hadoop:org.apache.ignite.ignitefs.hadoop.v1:org.apache.ignite.ignitefs.hadoop.v2:org.apache.ignite.ignitefs.mapreduce:org.apache.ignite.ignitefs.mapreduce.records:org.apache.ignite.hadoop</packages>
+                                            <packages>org.apache.ignite.ignitefs.hadoop:org.apache.ignite.ignitefs.hadoop.v1:org.apache.ignite.ignitefs.hadoop.v2:org.apache.ignite.ignitefs.mapreduce:org.apache.ignite.ignitefs.mapreduce.records:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>
@@ -858,14 +866,6 @@
                                         <group>
                                             <title>Security APIs</title>
                                             <packages>org.apache.ignite.plugin.security</packages>
-                                        </group>
-                                        <group>
-                                            <title>Distributed Services APIs</title>
-                                            <packages>org.apache.ignite.services</packages>
-                                        </group>
-                                        <group>
-                                            <title>JDBC Driver</title>
-                                            <packages>org.apache.ignite.jdbc</packages>
                                         </group>
                                         <group>
                                             <title>MXBeans classes</title>

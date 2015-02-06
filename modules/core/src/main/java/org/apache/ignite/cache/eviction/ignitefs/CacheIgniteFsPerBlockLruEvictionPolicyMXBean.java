@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.eviction.ggfs;
+package org.apache.ignite.cache.eviction.ignitefs;
 
 import org.apache.ignite.mxbean.*;
 import org.jetbrains.annotations.*;
@@ -26,7 +26,7 @@ import java.util.*;
  * MBean for {@code GGFS per-block LRU} eviction policy.
  */
 @MXBeanDescription("MBean for GGFS per-block LRU cache eviction policy.")
-public interface CacheGgfsPerBlockLruEvictionPolicyMBean {
+public interface CacheIgniteFsPerBlockLruEvictionPolicyMXBean {
     /**
      * Gets maximum allowed size of all blocks in bytes.
      *

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.eviction.*;
-import org.apache.ignite.cache.eviction.ggfs.*;
+import org.apache.ignite.cache.eviction.ignitefs.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -116,7 +116,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     private Object topic;
 
     /** Eviction policy (if set). */
-    private CacheGgfsPerBlockLruEvictionPolicy evictPlc;
+    private CacheIgniteFsPerBlockLruEvictionPolicy evictPlc;
 
     /**
      * Creates GGFS instance with given context.
@@ -200,8 +200,8 @@ public final class GridGgfsImpl implements GridGgfsEx {
             if (F.eq(dataCacheName, cacheCfg.getName())) {
                 CacheEvictionPolicy evictPlc = cacheCfg.getEvictionPolicy();
 
-                if (evictPlc != null & evictPlc instanceof CacheGgfsPerBlockLruEvictionPolicy)
-                    this.evictPlc = (CacheGgfsPerBlockLruEvictionPolicy)evictPlc;
+                if (evictPlc != null & evictPlc instanceof CacheIgniteFsPerBlockLruEvictionPolicy)
+                    this.evictPlc = (CacheIgniteFsPerBlockLruEvictionPolicy)evictPlc;
 
                 break;
             }

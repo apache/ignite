@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.eviction.ggfs;
+package org.apache.ignite.cache.eviction.ignitefs;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.fs.*;
 /**
  * GGFS eviction filter which will not evict blocks of particular files.
  */
-public class CacheGgfsEvictionFilter implements CacheEvictionFilter {
+public class CacheIgniteFsEvictionFilter implements CacheEvictionFilter {
     /** {@inheritDoc} */
     @Override public boolean evictAllowed(CacheEntry entry) {
         Object key = entry.getKey();

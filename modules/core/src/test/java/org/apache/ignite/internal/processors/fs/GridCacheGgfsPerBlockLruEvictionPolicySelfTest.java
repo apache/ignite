@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.eviction.ggfs.*;
+import org.apache.ignite.cache.eviction.ignitefs.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.*;
@@ -71,7 +71,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
     private static GridCacheAdapter<GridGgfsBlockKey, byte[]> dataCache;
 
     /** Eviction policy */
-    private static CacheGgfsPerBlockLruEvictionPolicy evictPlc;
+    private static CacheIgniteFsPerBlockLruEvictionPolicy evictPlc;
 
     /**
      * Start a grid with the primary file system.
@@ -104,7 +104,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        evictPlc = new CacheGgfsPerBlockLruEvictionPolicy();
+        evictPlc = new CacheIgniteFsPerBlockLruEvictionPolicy();
 
         dataCacheCfg.setEvictionPolicy(evictPlc);
         dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
