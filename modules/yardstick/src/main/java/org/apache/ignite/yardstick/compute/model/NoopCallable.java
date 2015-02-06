@@ -20,7 +20,6 @@ package org.apache.ignite.yardstick.compute.model;
 import org.apache.ignite.lang.*;
 
 import java.io.*;
-import java.util.concurrent.*;
 
 /**
  *
