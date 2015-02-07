@@ -65,7 +65,6 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     private final ConcurrentMap<Integer, Collection<GridCacheSwapListener<K, V>>>
         swapLsnrs = new ConcurrentHashMap8<>();
 
-
     /** Swap listeners. */
     private final ConcurrentMap<Integer, Collection<GridCacheSwapListener<K, V>>>
         offheapLsnrs = new ConcurrentHashMap8<>();
