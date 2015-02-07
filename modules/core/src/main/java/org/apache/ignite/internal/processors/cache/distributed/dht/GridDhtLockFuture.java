@@ -36,7 +36,7 @@ import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -112,7 +112,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     private IgniteLogger log;
 
     /** Filter. */
-    private IgnitePredicate<Entry<K, V>>[] filter;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Transaction. */
     private GridDhtTxLocalAdapter<K, V> tx;
@@ -166,7 +166,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         GridDhtTxLocalAdapter<K, V> tx,
         long threadId,
         long accessTtl,
-        IgnitePredicate<Entry<K, V>>[] filter) {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert nearNodeId != null;

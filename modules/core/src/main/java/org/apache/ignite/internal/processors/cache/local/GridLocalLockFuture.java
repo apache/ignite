@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -82,7 +82,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     private IgniteLogger log;
 
     /** Filter. */
-    private IgnitePredicate<Entry<K, V>>[] filter;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Transaction. */
     private IgniteTxLocalEx<K, V> tx;
@@ -111,7 +111,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         IgniteTxLocalEx<K, V> tx,
         GridLocalCache<K, V> cache,
         long timeout,
-        IgnitePredicate<Entry<K, V>>[] filter) {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         super(cctx.kernalContext());
 
         assert keys != null;

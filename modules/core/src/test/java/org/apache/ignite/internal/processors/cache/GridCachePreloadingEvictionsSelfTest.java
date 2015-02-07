@@ -33,7 +33,7 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -124,7 +124,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                         info("Started evicting...");
 
                         for (int i = 0; i < 3000 && !done.get(); i++) {
-                            Entry<Integer, Object> entry = randomEntry(ignite1);
+                            Cache.Entry<Integer, Object> entry = randomEntry(ignite1);
 
                             if (entry != null)
                                 ignite1.cache(null).evict(entry.getKey());
@@ -164,12 +164,12 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
             info("Evicting on constant topology.");
 
             for (int i = 0; i < 1000; i++) {
-                Entry<Integer, Object> entry = randomEntry(ignite1);
+                Cache.Entry<Integer, Object> entry = randomEntry(ignite1);
 
-//                if (entry != null) // TODO ignite-96
-//                    entry.evict();
-//                else
-//                    info("Entry is null.");
+                if (entry != null)
+                    cache1.evict(entry.getKey());
+                else
+                    info("Entry is null.");
             }
 
             sleepUntilCashesEqualize(ignite1, ignite2, oldSize);
@@ -207,7 +207,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @param g Grid.
      * @return Random entry from cache.
      */
-    @Nullable private Entry<Integer, Object> randomEntry(Ignite g) {
+    @Nullable private Cache.Entry<Integer, Object> randomEntry(Ignite g) {
         IgniteKernal g1 = (IgniteKernal)g;
 
         return g1.<Integer, Object>internalCache().randomEntry();

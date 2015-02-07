@@ -34,7 +34,7 @@ import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
@@ -103,7 +103,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable UUID subjId,
         String taskName,
         final boolean deserializePortable,
-        @Nullable final IgnitePredicate<Entry<K, V>>[] filter
+        @Nullable final IgnitePredicate<Cache.Entry<K, V>>[] filter
     ) {
         ctx.denyOnFlag(LOCAL);
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
@@ -148,7 +148,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     IgniteInternalFuture<Map<K, V>> txLoadAsync(GridNearTxLocal<K, V> tx,
         @Nullable Collection<? extends K> keys,
         boolean readThrough,
-        @Nullable IgnitePredicate<Entry<K, V>>[] filter,
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter,
         boolean deserializePortable,
         @Nullable IgniteCacheExpiryPolicy expiryPlc) {
         assert tx != null;
@@ -418,7 +418,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean retval,
         IgniteTxIsolation isolation,
         long accessTtl,
-        IgnitePredicate<Entry<K, V>>[] filter
+        IgnitePredicate<Cache.Entry<K, V>>[] filter
     ) {
         GridNearLockFuture<K, V> fut = new GridNearLockFuture<>(ctx,
             keys,
@@ -469,7 +469,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys, IgnitePredicate<Entry<K, V>>[] filter) {
+    @Override public void unlockAll(Collection<? extends K> keys, IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         if (keys.isEmpty())
             return;
 

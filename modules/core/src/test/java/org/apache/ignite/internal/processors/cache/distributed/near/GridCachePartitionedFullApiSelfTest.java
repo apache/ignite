@@ -25,7 +25,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
@@ -120,12 +120,12 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
                 if (offheapTiered(nodeCache))
                     continue;
 
-                Set<Entry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
+                Set<Cache.Entry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
 
                 if (nodeCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key)) {
                     Collection<String> cp = new LinkedList<>(vals);
 
-                    for (Entry<String, Integer> e : partEntrySet) {
+                    for (Cache.Entry<String, Integer> e : partEntrySet) {
                         String eKey = e.getKey();
 
                         assertTrue("Got unexpected key:" + eKey, cp.contains(eKey));
@@ -164,13 +164,13 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
 
                 // First node with this partition will remove first key from partition.
                 if (nodeCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key)) {
-                    Set<Entry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
+                    Set<Cache.Entry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
 
-                    Iterator<Entry<String, Integer>> it = partEntrySet.iterator();
+                    Iterator<Cache.Entry<String, Integer>> it = partEntrySet.iterator();
 
                     assertTrue(it.hasNext());
 
-                    Entry<String, Integer> next = it.next();
+                    Cache.Entry<String, Integer> next = it.next();
 
                     deleted.add(next.getKey());
 
@@ -230,7 +230,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
                 if (offheapTiered(nodeCache))
                     continue;
 
-                Set<Entry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
+                Set<Cache.Entry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
 
                 if (nodeCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key)) {
                     assertTrue(partEntrySet.contains(nodeCache.entry(key)));

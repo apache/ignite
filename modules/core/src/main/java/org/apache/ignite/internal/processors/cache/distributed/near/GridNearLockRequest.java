@@ -30,7 +30,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
@@ -53,7 +53,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
     /** Filter. */
     @GridDirectTransient
-    private IgnitePredicate<Entry<K, V>>[] filter;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Implicit flag. */
     private boolean implicitTx;
@@ -228,7 +228,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     /**
      * @return Filter.
      */
-    public IgnitePredicate<Entry<K, V>>[] filter() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] filter() {
         return filter;
     }
 
@@ -237,7 +237,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void filter(IgnitePredicate<Entry<K, V>>[] filter, GridCacheContext<K, V> ctx)
+    public void filter(IgnitePredicate<Cache.Entry<K, V>>[] filter, GridCacheContext<K, V> ctx)
         throws IgniteCheckedException {
         this.filter = filter;
     }

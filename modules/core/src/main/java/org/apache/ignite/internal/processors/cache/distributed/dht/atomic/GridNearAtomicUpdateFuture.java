@@ -37,7 +37,7 @@ import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
@@ -116,7 +116,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     private long topVer;
 
     /** Optional filter. */
-    private final IgnitePredicate<Entry<K, V>>[] filter;
+    private final IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Write synchronization mode. */
     private final CacheWriteSynchronizationMode syncMode;
@@ -198,7 +198,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         final boolean rawRetval,
         @Nullable GridCacheEntryEx<K, V> cached,
         @Nullable ExpiryPolicy expiryPlc,
-        final IgnitePredicate<Entry<K, V>>[] filter,
+        final IgnitePredicate<Cache.Entry<K, V>>[] filter,
         UUID subjId,
         int taskNameHash
     ) {

@@ -26,7 +26,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -36,17 +35,14 @@ import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.Cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.testframework.GridTestUtils.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
@@ -3531,8 +3527,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals(3, primKeys.size());
         assertTrue(primKeys.containsAll(keys));
 
-        primKeys = cache(0).projection(new P1<Entry<String, Integer>>() {
-            @Override public boolean apply(Entry<String, Integer> e) {
+        primKeys = cache(0).projection(new P1<Cache.Entry<String, Integer>>() {
+            @Override public boolean apply(Cache.Entry<String, Integer> e) {
                 return !e.getKey().equals(keys.get(0));
             }
         }).primaryKeySet();
@@ -3549,8 +3545,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals(3, primVals.size());
         assertTrue(primVals.containsAll(F.asList(0, 1, 2)));
 
-        primVals = cache(0).projection(new P1<Entry<String, Integer>>() {
-            @Override public boolean apply(Entry<String, Integer> e) {
+        primVals = cache(0).projection(new P1<Cache.Entry<String, Integer>>() {
+            @Override public boolean apply(Cache.Entry<String, Integer> e) {
                 return !e.getKey().equals(keys.get(0));
             }
         }).primaryValues();
@@ -3562,12 +3558,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         // Entry set checks.
         // -----------------
 
-        Set<Entry<String, Integer>> primEntries = cache(0).primaryEntrySet();
+        Set<Cache.Entry<String, Integer>> primEntries = cache(0).primaryEntrySet();
 
         assertEquals(3, primEntries.size());
 
-        primEntries = cache(0).projection(new P1<Entry<String, Integer>>() {
-            @Override public boolean apply(Entry<String, Integer> e) {
+        primEntries = cache(0).projection(new P1<Cache.Entry<String, Integer>>() {
+            @Override public boolean apply(Cache.Entry<String, Integer> e) {
                 return !e.getKey().equals(keys.get(0));
             }
         }).primaryEntrySet();

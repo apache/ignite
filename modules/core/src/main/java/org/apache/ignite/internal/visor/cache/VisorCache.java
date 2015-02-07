@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
@@ -189,11 +189,11 @@ public class VisorCache implements Serializable {
         int size = ca.size();
         int near = ca.nearSize();
 
-        Set<Entry> set = ca.entrySet();
+        Set<Cache.Entry> set = ca.entrySet();
 
         long memSz = 0;
 
-        Iterator<Entry> it = set.iterator();
+        Iterator<Cache.Entry> it = set.iterator();
 
         int sz = sample > 0 ? sample : DFLT_CACHE_SIZE_SAMPLING;
 

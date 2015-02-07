@@ -31,7 +31,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.IgniteState.*;
@@ -114,7 +114,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
                 IGNITEs.set(i, startGrid(i));
             }
 
-            Entry e = cache(i).entry(KEY);
+            Cache.Entry e = cache(i).entry(KEY);
 
             assert !cache(i).isLocked(KEY) : "Entry is locked for grid [idx=" + i + ", entry=" + e + ']';
         }
@@ -257,7 +257,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         assert !checkCache.lock(KEY, -1);
 
-        Entry e = checkCache.entry(KEY);
+        Cache.Entry e = checkCache.entry(KEY);
 
         assert cache.isLocked(KEY) : "Entry is not locked for grid [idx=" + checkIdx + ", entry=" + e + ']';
 

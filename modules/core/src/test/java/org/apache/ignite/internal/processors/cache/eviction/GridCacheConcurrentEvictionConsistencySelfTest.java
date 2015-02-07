@@ -31,7 +31,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -214,7 +214,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
             info("Test results [threadCnt=" + threadCnt + ", iterCnt=" + ITERATION_CNT + ", cacheSize=" + cache.size() +
                 ", internalQueueSize" + queue.size() + ", duration=" + (System.currentTimeMillis() - start) + ']');
 
-            for (Entry<Integer, Integer> e : queue) {
+            for (Cache.Entry<Integer, Integer> e : queue) {
                 Integer rmv = cache.remove(e.getKey());
 
                 if (rmv == null)
@@ -226,7 +226,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
             if (!cache.isEmpty()) {
                 boolean zombies = false;
 
-                for (Entry<Integer, Integer> e : cache) {
+                for (Cache.Entry<Integer, Integer> e : cache) {
                     U.warn(log, "Zombie entry: " + e);
 
                     zombies = true;

@@ -27,8 +27,8 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.continuous.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -42,7 +42,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import java.util.*;
@@ -1115,8 +1115,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         CacheProjection<Integer, Integer> cache = grid(0).cache(null);
 
         CacheContinuousQuery<Integer, Integer> qry = cache.projection(
-            new P1<Entry<Integer, Integer>>() {
-                @Override public boolean apply(Entry<Integer, Integer> e) {
+            new P1<Cache.Entry<Integer, Integer>>() {
+                @Override public boolean apply(Cache.Entry<Integer, Integer> e) {
                     Integer i = e.getValue();
 
                     return i != null && i > 10;

@@ -21,12 +21,13 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
+
 
 /**
  * Mock cache entry.
  */
-public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implements Entry<K, V> {
+public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implements Cache.Entry<K, V> {
     /** */
     @GridToStringInclude
     private K key;

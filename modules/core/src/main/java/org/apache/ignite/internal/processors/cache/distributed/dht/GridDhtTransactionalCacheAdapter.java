@@ -37,7 +37,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
@@ -553,7 +553,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys,
+    @Override public IgniteInternalFuture<Boolean> lockAllAsync(
+        @Nullable Collection<? extends K> keys,
         long timeout,
         IgniteTxLocalEx<K, V> txx,
         boolean isInvalidate,
@@ -561,8 +562,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean retval,
         IgniteTxIsolation isolation,
         long accessTtl,
-        IgnitePredicate<Entry<K, V>>[] filter) {
-        return lockAllAsyncInternal(keys,
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
+        return lockAllAsyncInternal(
+            keys,
             timeout,
             txx,
             isInvalidate,
@@ -595,7 +597,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean retval,
         IgniteTxIsolation isolation,
         long accessTtl,
-        IgnitePredicate<Entry<K, V>>[] filter) {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         if (keys == null || keys.isEmpty())
             return new GridDhtFinishedFuture<>(ctx.kernalContext(), true);
 
@@ -672,7 +674,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         final GridCacheContext<K, V> cacheCtx,
         final ClusterNode nearNode,
         final GridNearLockRequest<K, V> req,
-        @Nullable final IgnitePredicate<Entry<K, V>>[] filter0) {
+        @Nullable final IgnitePredicate<Cache.Entry<K, V>>[] filter0) {
         final List<K> keys = req.keys();
 
         IgniteInternalFuture<Object> keyFut = null;
@@ -698,7 +700,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     if (exx != null)
                         return new GridDhtFinishedFuture<>(ctx.kernalContext(), exx);
 
-                    IgnitePredicate<Entry<K, V>>[] filter = filter0;
+                    IgnitePredicate<Cache.Entry<K, V>>[] filter = filter0;
 
                     // Set message into thread context.
                     GridDhtTxLocal<K, V> tx = null;

@@ -27,7 +27,7 @@ import org.apache.ignite.mxbean.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -244,7 +244,7 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      *
      * @return Random entry, or {@code null} if cache is empty.
      */
-    @Nullable public Entry<K, V> randomEntry();
+    @Nullable public Cache.Entry<K, V> randomEntry();
 
     /**
      * Forces this cache node to re-balance its partitions. This method is usually used when

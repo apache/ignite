@@ -32,7 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -82,7 +82,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     private GridCacheVersion ver;
 
     /** Filters. */
-    private IgnitePredicate<Entry<K, V>>[] filters;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filters;
 
     /** Logger. */
     private IgniteLogger log;
@@ -133,7 +133,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         boolean readThrough,
         boolean reload,
         boolean forcePrimary,
-        @Nullable IgnitePredicate<Entry<K, V>>[] filters,
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filters,
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,

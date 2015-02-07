@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -37,18 +37,18 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
     private final GridCacheContext<K, V> ctx;
 
     /** Filter. */
-    private final IgnitePredicate<Entry<K, V>>[] filter;
+    private final IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Base map. */
-    private final Map<K, Entry<K, V>> map;
+    private final Map<K, Cache.Entry<K, V>> map;
 
     /**
      * @param ctx Cache context.
      * @param c Entry collection.
      * @param filter Filter.
      */
-    public GridCacheKeySet(GridCacheContext<K, V> ctx, Collection<? extends Entry<K, V>> c,
-        IgnitePredicate<Entry<K, V>>[] filter) {
+    public GridCacheKeySet(GridCacheContext<K, V> ctx, Collection<? extends Cache.Entry<K, V>> c,
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         map = new HashMap<>(c.size(), 1.0f);
 
         assert ctx != null;
@@ -56,7 +56,7 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
         this.ctx = ctx;
         this.filter = filter == null ? CU.<K, V>empty() : filter;
 
-        for (Entry<K, V> e : c) {
+        for (Cache.Entry<K, V> e : c) {
             if (e != null)
                 map.put(e.getKey(), e);
         }
@@ -77,7 +77,7 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
     /** {@inheritDoc} */
     @SuppressWarnings({"SuspiciousMethodCalls"})
     @Override public boolean remove(Object o) {
-        Entry<K, V> e = map.get(o);
+        Cache.Entry<K, V> e = map.get(o);
 
         if (e == null || !F.isAll(e, filter))
             return false;
@@ -97,7 +97,7 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
     /** {@inheritDoc} */
     @SuppressWarnings({"SuspiciousMethodCalls"})
     @Override public boolean contains(Object o) {
-        Entry<K, V> e = map.get(o);
+        Cache.Entry<K, V> e = map.get(o);
 
         return e != null && F.isAll(e, filter);
     }

@@ -38,7 +38,6 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
-import javax.cache.Cache.*;
 import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
@@ -51,9 +50,8 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
-import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
@@ -338,11 +336,11 @@ public class GridCacheUtils {
      * @param <V> Value type.
      * @return Factory instance.
      */
-    public static <K, V> IgniteClosure<Integer, IgnitePredicate<Entry<K, V>>[]> factory() {
-        return new IgniteClosure<Integer, IgnitePredicate<Entry<K, V>>[]>() {
+    public static <K, V> IgniteClosure<Integer, IgnitePredicate<Cache.Entry<K, V>>[]> factory() {
+        return new IgniteClosure<Integer, IgnitePredicate<Cache.Entry<K, V>>[]>() {
             @SuppressWarnings({"unchecked"})
-            @Override public IgnitePredicate<Entry<K, V>>[] apply(Integer len) {
-                return (IgnitePredicate<Entry<K, V>>[])(len == 0 ? EMPTY : new IgnitePredicate[len]);
+            @Override public IgnitePredicate<Cache.Entry<K, V>>[] apply(Integer len) {
+                return (IgnitePredicate<Cache.Entry<K, V>>[])(len == 0 ? EMPTY : new IgnitePredicate[len]);
             }
         };
     }
@@ -391,10 +389,10 @@ public class GridCacheUtils {
      * @param <V> Cache value type.
      * @return Closure which returns {@code Entry} given cache key or {@code null} if partition is invalid.
      */
-    public static <K, V> IgniteClosure<K, Entry<K, V>> cacheKey2Entry(
+    public static <K, V> IgniteClosure<K, Cache.Entry<K, V>> cacheKey2Entry(
         final GridCacheContext<K, V> ctx) {
-        return new IgniteClosure<K, Entry<K, V>>() {
-            @Nullable @Override public Entry<K, V> apply(K k) {
+        return new IgniteClosure<K, Cache.Entry<K, V>>() {
+            @Nullable @Override public Cache.Entry<K, V> apply(K k) {
                 try {
                     return ctx.cache().entry(k);
                 }
@@ -749,16 +747,16 @@ public class GridCacheUtils {
      * @return Empty filter.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<Entry<K, V>>[] empty() {
-        return (IgnitePredicate<Entry<K, V>>[])EMPTY_FILTER;
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>>[] empty() {
+        return (IgnitePredicate<Cache.Entry<K, V>>[])EMPTY_FILTER;
     }
 
     /**
      * @return Always false filter.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<Entry<K, V>>[] alwaysFalse() {
-        return (IgnitePredicate<Entry<K, V>>[])ALWAYS_FALSE;
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>>[] alwaysFalse() {
+        return (IgnitePredicate<Cache.Entry<K, V>>[])ALWAYS_FALSE;
     }
 
     /**
@@ -1707,17 +1705,17 @@ public class GridCacheUtils {
      * @throws ClassNotFoundException If class not found.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public static <K, V> IgnitePredicate<Entry<K, V>>[] readEntryFilterArray(ObjectInput in)
+    @Nullable public static <K, V> IgnitePredicate<Cache.Entry<K, V>>[] readEntryFilterArray(ObjectInput in)
         throws IOException, ClassNotFoundException {
         int len = in.readInt();
 
-        IgnitePredicate<Entry<K, V>>[] arr = null;
+        IgnitePredicate<Cache.Entry<K, V>>[] arr = null;
 
         if (len > 0) {
             arr = new IgnitePredicate[len];
 
             for (int i = 0; i < len; i++)
-                arr[i] = (IgnitePredicate<Entry<K, V>>)in.readObject();
+                arr[i] = (IgnitePredicate<Cache.Entry<K, V>>)in.readObject();
         }
 
         return arr;
@@ -1732,8 +1730,8 @@ public class GridCacheUtils {
         final CacheAffinity<K> aff,
         final ClusterNode n
     ) {
-        return new IgnitePredicate<Entry<K, V>>() {
-            @Override public boolean apply(Entry<K, V> e) {
+        return new IgnitePredicate<Cache.Entry<K, V>>() {
+            @Override public boolean apply(Cache.Entry<K, V> e) {
                 return aff.isPrimary(n, e.getKey());
             }
         };

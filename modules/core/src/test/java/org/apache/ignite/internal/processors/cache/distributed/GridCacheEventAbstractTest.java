@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -654,8 +654,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 assert e != null;
 
-                IgnitePredicate<Entry<String, Integer>> noPeekVal = F.cacheNoPeekValue();
-                IgnitePredicate<Entry<String, Integer>> hasPeekVal = F.cacheHasPeekValue();
+                IgnitePredicate<Cache.Entry<String, Integer>> noPeekVal = F.cacheNoPeekValue();
+                IgnitePredicate<Cache.Entry<String, Integer>> hasPeekVal = F.cacheHasPeekValue();
 
                 String key = e.getKey();
                 Integer val = e.getValue();
@@ -685,8 +685,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 assert e != null;
 
-                IgnitePredicate<Entry<String, Integer>> noPeekVal = F.cacheNoPeekValue();
-                IgnitePredicate<Entry<String, Integer>> hasPeekVal = F.cacheHasPeekValue();
+                IgnitePredicate<Cache.Entry<String, Integer>> noPeekVal = F.cacheNoPeekValue();
+                IgnitePredicate<Cache.Entry<String, Integer>> hasPeekVal = F.cacheHasPeekValue();
 
                 String key = e.getKey();
                 Integer val = e.getValue();
@@ -721,8 +721,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 assert e != null;
 
-                IgnitePredicate<Entry<String, Integer>> noPeekVal = F.cacheNoPeekValue();
-                IgnitePredicate<Entry<String, Integer>> hasPeekVal = F.cacheHasPeekValue();
+                IgnitePredicate<Cache.Entry<String, Integer>> noPeekVal = F.cacheNoPeekValue();
+                IgnitePredicate<Cache.Entry<String, Integer>> hasPeekVal = F.cacheHasPeekValue();
 
                 String key = e.getKey();
                 Integer val = e.getValue();

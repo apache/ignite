@@ -32,7 +32,7 @@ import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -320,8 +320,8 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
 
         assert cache != null;
 
-        cache.invoke(cacheKey, new EntryProcessor<Object, Object, Entry<Object, Object>>() {
-            @Override public Entry<Object, Object> process(MutableEntry<Object, Object> entry, Object... arguments)
+        cache.invoke(cacheKey, new EntryProcessor<Object, Object, Cache.Entry<Object, Object>>() {
+            @Override public Cache.Entry<Object, Object> process(MutableEntry<Object, Object> entry, Object... arguments)
                 throws EntryProcessorException {
                 if (entry != null)
                     entry.setValue(o);

@@ -24,7 +24,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.concurrent.*;
@@ -377,9 +377,9 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     /**
      *
      */
-    protected static class TestFilter implements IgnitePredicate<Entry<Integer, Integer>> {
+    protected static class TestFilter implements IgnitePredicate<Cache.Entry<Integer, Integer>> {
         /** {@inheritDoc} */
-        @Override public boolean apply(Entry<Integer, Integer> e) {
+        @Override public boolean apply(Cache.Entry<Integer, Integer> e) {
             if (e == null) {
                 failed = true;
 

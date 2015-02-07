@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -85,10 +85,10 @@ public abstract class GridCacheGroupLockPartitionedAbstractSelfTest extends Grid
 
         for (int i = 0; i < 3; i++) {
             try (IgniteTx tx = cache.txStartAffinity(affinityKey, concurrency, isolation, 0, 10)) {
-                Set<Entry<CacheAffinityKey<Integer>, Integer>> set =
+                Set<Cache.Entry<CacheAffinityKey<Integer>, Integer>> set =
                     cache.entrySet(cache(0).affinity().partition(affinityKey));
 
-                for (Entry<CacheAffinityKey<Integer>, Integer> entry : set) {
+                for (Cache.Entry<CacheAffinityKey<Integer>, Integer> entry : set) {
                     Integer old = entry.getValue();
 
                     if (old != null)

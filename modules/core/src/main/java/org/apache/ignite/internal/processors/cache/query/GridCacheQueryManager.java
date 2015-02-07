@@ -43,7 +43,7 @@ import org.apache.ignite.spi.indexing.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.io.*;
 import java.sql.*;
 import java.util.*;
@@ -734,12 +734,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @SuppressWarnings({"unchecked"})
     private GridCloseableIterator<IgniteBiTuple<K, V>> scanIterator(final GridCacheQueryAdapter<?> qry)
         throws IgniteCheckedException {
-        IgnitePredicate<Entry<K, V>> filter = null;
+        IgnitePredicate<Cache.Entry<K, V>> filter = null;
 
         if (qry.projectionFilter() != null) {
-            filter = new P1<Entry<K, V>>() {
-                @Override public boolean apply(Entry<K, V> e) {
-                    return qry.projectionFilter().apply((Entry<Object, Object>)e);
+            filter = new P1<Cache.Entry<K, V>>() {
+                @Override public boolean apply(Cache.Entry<K, V> e) {
+                    return qry.projectionFilter().apply((Cache.Entry<Object, Object>)e);
                 }
             };
         }
@@ -860,7 +860,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     private GridIterator<IgniteBiTuple<K, V>> swapIterator(GridCacheQueryAdapter<?> qry)
         throws IgniteCheckedException {
-        IgnitePredicate<Entry<Object, Object>> prjPred = qry.projectionFilter();
+        IgnitePredicate<Cache.Entry<Object, Object>> prjPred = qry.projectionFilter();
 
         IgniteBiPredicate<K, V> filter = qry.scanFilter();
 
@@ -874,7 +874,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Offheap iterator.
      */
     private GridIterator<IgniteBiTuple<K, V>> offheapIterator(GridCacheQueryAdapter<?> qry) {
-        IgnitePredicate<Entry<Object, Object>> prjPred = qry.projectionFilter();
+        IgnitePredicate<Cache.Entry<Object, Object>> prjPred = qry.projectionFilter();
 
         IgniteBiPredicate<K, V> filter = qry.scanFilter();
 
@@ -899,7 +899,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     private GridIteratorAdapter<IgniteBiTuple<K, V>> scanIterator(
         @Nullable final Iterator<Map.Entry<byte[], byte[]>> it,
-        @Nullable final IgnitePredicate<Entry<Object, Object>> prjPred,
+        @Nullable final IgnitePredicate<Cache.Entry<Object, Object>> prjPred,
         @Nullable final IgniteBiPredicate<K, V> filter,
         final boolean keepPortable) {
         if (it == null)
@@ -938,9 +938,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     final LazySwapEntry e = new LazySwapEntry(it.next());
 
                     if (prjPred != null) {
-                        Entry<K, V> Entry = new GridCacheScanSwapEntry(e);
+                        Cache.Entry<K, V> Entry = new GridCacheScanSwapEntry(e);
 
-                        if (!prjPred.apply((Entry<Object, Object>)Entry))
+                        if (!prjPred.apply((Cache.Entry<Object, Object>)Entry))
                             continue;
                     }
 
@@ -1000,7 +1000,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             try {
                 // Preparing query closures.
-                IgnitePredicate<Entry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
+                IgnitePredicate<Cache.Entry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
                 IgniteClosure<Object, Object> trans = (IgniteClosure<Object, Object>)qryInfo.transformer();
                 IgniteReducer<Object, Object> rdc = (IgniteReducer<Object, Object>)qryInfo.reducer();
 
@@ -1167,7 +1167,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             try {
                 // Preparing query closures.
-                IgnitePredicate<Entry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
+                IgnitePredicate<Cache.Entry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
                 IgniteClosure<Map.Entry<K, V>, Object> trans = (IgniteClosure<Map.Entry<K, V>, Object>)qryInfo.transformer();
                 IgniteReducer<Map.Entry<K, V>, Object> rdc = (IgniteReducer<Map.Entry<K, V>, Object>)qryInfo.reducer();
 
@@ -1756,7 +1756,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @Nullable private GridIndexingQueryFilter projectionFilter(GridCacheQueryAdapter<?> qry) {
         assert qry != null;
 
-        final IgnitePredicate<Entry<Object, Object>> prjFilter = qry.projectionFilter();
+        final IgnitePredicate<Cache.Entry<Object, Object>> prjFilter = qry.projectionFilter();
 
         if (prjFilter == null || F.isAlwaysTrue(prjFilter))
             return null;
@@ -1769,9 +1769,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 return new IgniteBiPredicate<K, V>() {
                     @Override public boolean apply(K k, V v) {
                         try {
-                            Entry<K, V> entry = context().cache().entry(k);
+                            Cache.Entry<K, V> entry = context().cache().entry(k);
 
-                            return entry != null && prjFilter.apply((Entry<Object, Object>)entry);
+                            return entry != null && prjFilter.apply((Cache.Entry<Object, Object>)entry);
                         }
                         catch (GridDhtInvalidPartitionException ignore) {
                             return false;
@@ -2438,7 +2438,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private static final long serialVersionUID = 7410163202728985912L;
 
         /** */
-        private IgnitePredicate<Entry<Object, Object>> prjPred;
+        private IgnitePredicate<Cache.Entry<Object, Object>> prjPred;
 
         /** */
         private IgniteBiPredicate<K, V> filter;
@@ -2452,7 +2452,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @param keepPortable Keep portable flag.
          */
         private OffheapIteratorClosure(
-            @Nullable IgnitePredicate<Entry<Object, Object>> prjPred,
+            @Nullable IgnitePredicate<Cache.Entry<Object, Object>> prjPred,
             @Nullable IgniteBiPredicate<K, V> filter,
             boolean keepPortable) {
             assert prjPred != null || filter != null;
@@ -2469,9 +2469,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             LazyOffheapEntry e = new LazyOffheapEntry(keyPtr, valPtr);
 
             if (prjPred != null) {
-                Entry<K, V> Entry = new GridCacheScanSwapEntry(e);
+                Cache.Entry<K, V> entry = new GridCacheScanSwapEntry(e);
 
-                if (!prjPred.apply((Entry<Object, Object>)Entry))
+                if (!prjPred.apply((Cache.Entry<Object, Object>)entry))
                     return null;
             }
 
@@ -2551,7 +2551,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      *
      */
-    private class GridCacheScanSwapEntry implements Entry<K, V> {
+    private class GridCacheScanSwapEntry implements Cache.Entry<K, V> {
         /** */
         private static final long serialVersionUID = 1262515168518736214L;
 

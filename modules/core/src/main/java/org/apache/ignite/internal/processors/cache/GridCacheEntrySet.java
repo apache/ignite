@@ -22,29 +22,29 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.util.*;
 
 /**
  * Entry set backed by cache itself.
  */
-public class GridCacheEntrySet<K, V> extends AbstractSet<Entry<K, V>> {
+public class GridCacheEntrySet<K, V> extends AbstractSet<Cache.Entry<K, V>> {
     /** Cache context. */
     private final GridCacheContext<K, V> ctx;
 
     /** Filter. */
-    private final IgnitePredicate<Entry<K, V>>[] filter;
+    private final IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Base set. */
-    private final Set<Entry<K, V>> set;
+    private final Set<Cache.Entry<K, V>> set;
 
     /**
      * @param ctx Cache context.
      * @param c Entry collection.
      * @param filter Filter.
      */
-    public GridCacheEntrySet(GridCacheContext<K, V> ctx, Collection<? extends Entry<K, V>> c,
-        @Nullable IgnitePredicate<Entry<K, V>>... filter) {
+    public GridCacheEntrySet(GridCacheContext<K, V> ctx, Collection<? extends Cache.Entry<K, V>> c,
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) {
         set = new HashSet<>(c.size(), 1.0f);
 
         assert ctx != null;
@@ -52,15 +52,15 @@ public class GridCacheEntrySet<K, V> extends AbstractSet<Entry<K, V>> {
         this.ctx = ctx;
         this.filter = filter;
 
-        for (Entry<K, V> e : c) {
+        for (Cache.Entry<K, V> e : c) {
             if (e != null)
                 set.add(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Entry<K, V>> iterator() {
-        return new GridCacheIterator<>(ctx, set, F.<Entry<K, V>>identity(), filter);
+    @Override public Iterator<Cache.Entry<K, V>> iterator() {
+        return new GridCacheIterator<>(ctx, set, F.<Cache.Entry<K, V>>identity(), filter);
     }
 
     /** {@inheritDoc} */
@@ -74,7 +74,7 @@ public class GridCacheEntrySet<K, V> extends AbstractSet<Entry<K, V>> {
         if (!(o instanceof CacheEntryImpl))
             return false;
 
-        Entry<K, V> e = (Entry<K,V>)o;
+        Cache.Entry<K, V> e = (Cache.Entry<K,V>)o;
 
         if (F.isAll(e, filter) && set.remove(e)) {
             try {
@@ -101,7 +101,7 @@ public class GridCacheEntrySet<K, V> extends AbstractSet<Entry<K, V>> {
         if (!(o instanceof CacheEntryImpl))
             return false;
 
-        Entry<K,V> e = (Entry<K, V>)o;
+        Cache.Entry<K,V> e = (Cache.Entry<K, V>)o;
 
         return F.isAll(e, filter) && set.contains(e);
     }

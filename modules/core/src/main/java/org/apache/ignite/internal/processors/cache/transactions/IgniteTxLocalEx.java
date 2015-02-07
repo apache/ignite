@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import javax.cache.processor.*;
 import java.util.*;
 
@@ -77,7 +77,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
         boolean deserializePortable,
-        IgnitePredicate<Entry<K, V>>[] filter);
+        IgnitePredicate<Cache.Entry<K, V>>[] filter);
 
     /**
      * @param cacheCtx Cache context.
@@ -94,7 +94,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
         boolean retval,
         @Nullable GridCacheEntryEx<K, V> cached,
         long ttl,
-        IgnitePredicate<Entry<K, V>>[] filter);
+        IgnitePredicate<Cache.Entry<K, V>>[] filter);
 
     /**
      * @param cacheCtx Cache context.
@@ -120,7 +120,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
         boolean retval,
-        IgnitePredicate<Entry<K, V>>[] filter);
+        IgnitePredicate<Cache.Entry<K, V>>[] filter);
 
     /**
      * @param cacheCtx Cache context.

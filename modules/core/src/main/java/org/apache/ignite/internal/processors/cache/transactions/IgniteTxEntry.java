@@ -29,7 +29,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
@@ -102,7 +102,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
 
     /** Put filters. */
     @GridToStringInclude
-    private IgnitePredicate<Entry<K, V>>[] filters;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filters;
 
     /** Flag indicating whether filters passed. Used for fast-commit transactions. */
     private boolean filtersPassed;
@@ -217,7 +217,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         Object[] invokeArgs,
         long ttl,
         GridCacheEntryEx<K, V> entry,
-        IgnitePredicate<Entry<K, V>>[] filters,
+        IgnitePredicate<Cache.Entry<K, V>>[] filters,
         GridCacheVersion drVer) {
         assert ctx != null;
         assert tx != null;
@@ -725,14 +725,14 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     /**
      * @return Put filters.
      */
-    public IgnitePredicate<Entry<K, V>>[] filters() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] filters() {
         return filters;
     }
 
     /**
      * @param filters Put filters.
      */
-    public void filters(IgnitePredicate<Entry<K, V>>[] filters) {
+    public void filters(IgnitePredicate<Cache.Entry<K, V>>[] filters) {
         filterBytes = null;
 
         this.filters = filters;

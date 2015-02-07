@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import javax.cache.event.*;
 import java.io.*;
 
@@ -37,7 +37,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheValueBytes.*;
  * Entry implementation.
  */
 @SuppressWarnings("TypeParameterHidesVisibleType")
-public class GridCacheContinuousQueryEntry<K, V> implements Entry<K, V>, GridCacheDeployable, Externalizable,
+public class GridCacheContinuousQueryEntry<K, V> implements Cache.Entry<K, V>, GridCacheDeployable, Externalizable,
     CacheContinuousQueryEntry<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -53,7 +53,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements Entry<K, V>, GridCac
     /** Cache entry. */
     @SuppressWarnings("TransientFieldNotInitialized")
     @GridToStringExclude
-    private final transient Entry<K, V> impl;
+    private final transient Cache.Entry<K, V> impl;
 
     /** Key. */
     @GridToStringInclude
@@ -107,7 +107,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements Entry<K, V>, GridCac
      * @param evtType Event type.
      */
     GridCacheContinuousQueryEntry(GridCacheContext<K, V> ctx,
-        Entry<K, V> impl,
+        Cache.Entry<K, V> impl,
         K key,
         @Nullable V newVal,
         @Nullable GridCacheValueBytes newValBytes,
@@ -132,7 +132,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements Entry<K, V>, GridCac
     /**
      * @return Cache entry.
      */
-    Entry<K, V> entry() {
+    Cache.Entry<K, V> entry() {
         return impl;
     }
 

@@ -30,7 +30,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
@@ -277,7 +277,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
      * @return Extras size.
      * @throws Exception If failed.
      */
-    private int extrasSize(Entry entry) throws Exception {
+    private int extrasSize(Cache.Entry entry) throws Exception {
         assert false : "ignite-96";
 
         return -1;

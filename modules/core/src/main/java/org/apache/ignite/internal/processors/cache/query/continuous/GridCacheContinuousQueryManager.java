@@ -28,7 +28,7 @@ import org.apache.ignite.resources.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.event.*;
 import java.io.*;
@@ -102,7 +102,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
      * @param prjPred Projection predicate.
      * @return New continuous query.
      */
-    public CacheContinuousQuery<K, V> createQuery(@Nullable IgnitePredicate<Entry<K, V>> prjPred) {
+    public CacheContinuousQuery<K, V> createQuery(@Nullable IgnitePredicate<Cache.Entry<K, V>> prjPred) {
         Object topic = TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement());
 
         return new GridCacheContinuousQueryAdapter<>(cctx, topic, prjPred);
@@ -363,7 +363,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
                 cctx.projectionPerCall(cctx.cache().<K, V>keepPortable0());
             }
 
-            Set<Entry<K, V>> entries;
+            Set<Cache.Entry<K, V>> entries;
 
             if (cctx.isReplicated())
                 entries = internal ? cctx.cache().entrySetx() :
@@ -374,7 +374,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
 
             boolean evt = !internal && cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
-            for (Entry<K, V> e : entries) {
+            for (Cache.Entry<K, V> e : entries) {
                 GridCacheContinuousQueryEntry<K, V> qryEntry = new GridCacheContinuousQueryEntry<>(cctx,
                     e,
                     e.getKey(),

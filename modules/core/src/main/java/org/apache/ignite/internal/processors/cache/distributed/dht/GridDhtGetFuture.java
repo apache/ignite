@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -80,7 +80,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     private IgniteTxLocalEx<K, V> tx;
 
     /** Filters. */
-    private IgnitePredicate<Entry<K, V>>[] filters;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filters;
 
     /** Logger. */
     private IgniteLogger log;
@@ -131,7 +131,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         boolean reload,
         @Nullable IgniteTxLocalEx<K, V> tx,
         long topVer,
-        @Nullable IgnitePredicate<Entry<K, V>>[] filters,
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filters,
         @Nullable UUID subjId,
         int taskNameHash,
         boolean deserializePortable,

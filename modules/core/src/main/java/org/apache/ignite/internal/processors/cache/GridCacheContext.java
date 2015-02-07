@@ -55,7 +55,7 @@ import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.portables.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import java.io.*;
@@ -144,19 +144,19 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheAdapter<K, V> cache;
 
     /** No-value filter array. */
-    private IgnitePredicate<Entry<K, V>>[] noValArr;
+    private IgnitePredicate<Cache.Entry<K, V>>[] noValArr;
 
     /** Has-value filter array. */
-    private IgnitePredicate<Entry<K, V>>[] hasValArr;
+    private IgnitePredicate<Cache.Entry<K, V>>[] hasValArr;
 
     /** No-peek-value filter array. */
-    private IgnitePredicate<Entry<K, V>>[] noPeekArr;
+    private IgnitePredicate<Cache.Entry<K, V>>[] noPeekArr;
 
     /** Has-peek-value filter array. */
-    private IgnitePredicate<Entry<K, V>>[] hasPeekArr;
+    private IgnitePredicate<Cache.Entry<K, V>>[] hasPeekArr;
 
     /** No-op filter array. */
-    private IgnitePredicate<Entry<K, V>>[] trueArr;
+    private IgnitePredicate<Cache.Entry<K, V>>[] trueArr;
 
     /** Cached local rich node. */
     private ClusterNode locNode;
@@ -926,28 +926,28 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return No get-value filter.
      */
-    public IgnitePredicate<Entry<K, V>>[] noGetArray() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] noGetArray() {
         return noValArr;
     }
 
     /**
      * @return Has get-value filer.
      */
-    public IgnitePredicate<Entry<K, V>>[] hasGetArray() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] hasGetArray() {
         return hasValArr;
     }
 
     /**
      * @return No get-value filter.
      */
-    public IgnitePredicate<Entry<K, V>>[] noPeekArray() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] noPeekArray() {
         return noPeekArr;
     }
 
     /**
      * @return Has get-value filer.
      */
-    public IgnitePredicate<Entry<K, V>>[] hasPeekArray() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] hasPeekArray() {
         return hasPeekArr;
     }
 
@@ -956,7 +956,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Predicate array that checks for value.
      */
     @SuppressWarnings({"unchecked"})
-    public IgnitePredicate<Entry<K, V>>[] equalsPeekArray(V val) {
+    public IgnitePredicate<Cache.Entry<K, V>>[] equalsPeekArray(V val) {
         assert val != null;
 
         return new IgnitePredicate[]{F.cacheContainsPeek(val)};
@@ -965,14 +965,14 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Empty filter.
      */
-    public IgnitePredicate<Entry<K, V>> truex() {
+    public IgnitePredicate<Cache.Entry<K, V>> truex() {
         return F.alwaysTrue();
     }
 
     /**
      * @return No-op array.
      */
-    public IgnitePredicate<Entry<K, V>>[] trueArray() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] trueArray() {
         return trueArr;
     }
 
@@ -988,7 +988,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Array containing single predicate.
      */
     @SuppressWarnings({"unchecked"})
-    public IgnitePredicate<Entry<K, V>>[] vararg(IgnitePredicate<Entry<K, V>> p) {
+    public IgnitePredicate<Cache.Entry<K, V>>[] vararg(IgnitePredicate<Cache.Entry<K, V>> p) {
         return p == null ? CU.<K, V>empty() : new IgnitePredicate[]{p};
     }
 
@@ -1002,7 +1002,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     @SuppressWarnings({"ErrorNotRethrown"})
     public <K1, V1> boolean isAll(GridCacheEntryEx<K1, V1> e,
-        @Nullable IgnitePredicate<Entry<K1, V1>>[] p) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Cache.Entry<K1, V1>>[] p) throws IgniteCheckedException {
         return F.isEmpty(p) || isAll(e.wrap(), p);
     }
 

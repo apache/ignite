@@ -20,14 +20,14 @@ package org.apache.ignite.cache.eviction.ignitefs;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.internal.processors.fs.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 
 /**
  * GGFS eviction filter which will not evict blocks of particular files.
  */
 public class CacheIgniteFsEvictionFilter implements CacheEvictionFilter {
     /** {@inheritDoc} */
-    @Override public boolean evictAllowed(Entry entry) {
+    @Override public boolean evictAllowed(Cache.Entry entry) {
         Object key = entry.getKey();
 
         return !(key instanceof GridGgfsBlockKey && ((GridGgfsBlockKey)key).evictExclude());

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.local;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
@@ -75,8 +75,8 @@ public class GridCacheLocalIteratorsSelfTest extends GridCacheAbstractIteratorsS
         while (it0.hasNext()) {
             Object obj = it0.next();
 
-            if (obj instanceof Entry)
-                checkEntry((Entry<String, Integer>)obj, bound);
+            if (obj instanceof Cache.Entry)
+                checkEntry((Cache.Entry<String, Integer>)obj, bound);
             else if (obj instanceof String)
                 checkKey((String)obj);
             else if (obj instanceof Integer)
@@ -95,7 +95,7 @@ public class GridCacheLocalIteratorsSelfTest extends GridCacheAbstractIteratorsS
      * @param bound Value bound.
      * @throws Exception If failed.
      */
-    private void checkEntry(Entry<String, Integer> entry, int bound) throws Exception {
+    private void checkEntry(Cache.Entry<String, Integer> entry, int bound) throws Exception {
         assert entry != null;
 
         checkKey(entry.getKey());

@@ -29,7 +29,7 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -194,7 +194,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
                             GridCache<Integer, Integer> cache = g2.cache(null);
 
                             for (int j = 0; j < KEY_CNT; j++) {
-                                Entry<Integer, Integer> entry = cache.entry(j);
+                                Cache.Entry<Integer, Integer> entry = cache.entry(j);
 
                                 assert entry != null;
 
@@ -238,7 +238,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
                         done.set(true);
 
                         for (int j = 0; j < KEY_CNT; j++) {
-                            Entry<Integer, Integer> entry = cache.entry(j);
+                            Cache.Entry<Integer, Integer> entry = cache.entry(j);
 
                             assert entry != null;
 

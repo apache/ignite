@@ -17,9 +17,7 @@
 
 package org.apache.ignite.cache.eviction;
 
-import org.apache.ignite.cache.*;
-
-import javax.cache.Cache.*;
+import javax.cache.*;
 
 /**
  * Eviction filter to specify which entries should not be evicted. Not applicable when
@@ -38,5 +36,5 @@ public interface CacheEvictionFilter<K, V> {
      * @param entry Cache entry.
      * @return {@code True} if it is allowed to evict this entry.
      */
-    public boolean evictAllowed(Entry<K, V> entry);
+    public boolean evictAllowed(Cache.Entry<K, V> entry);
 }

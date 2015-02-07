@@ -28,7 +28,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.nio.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -172,7 +172,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void prepareFilter(@Nullable IgnitePredicate<Entry<K, V>>[] filters,
+    protected final void prepareFilter(@Nullable IgnitePredicate<Cache.Entry<K, V>>[] filters,
         GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         if (filters != null)
             for (IgnitePredicate filter : filters)
@@ -304,8 +304,10 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void marshalInfos(Iterable<? extends GridCacheEntryInfo<K, V>> infos, GridCacheSharedContext<K, V> ctx)
-        throws IgniteCheckedException {
+    protected final void marshalInfos(
+        Iterable<? extends GridCacheEntryInfo<K, V>> infos,
+        GridCacheSharedContext<K, V> ctx
+    ) throws IgniteCheckedException {
         assert ctx != null;
 
         if (infos != null)
@@ -439,7 +441,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @return Marshalled collection.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable protected final <T> byte[][] marshalFilter(@Nullable IgnitePredicate<Entry<K, V>>[] filter,
+    @Nullable protected final <T> byte[][] marshalFilter(@Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter,
         GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         assert ctx != null;
 
@@ -449,7 +451,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
         byte[][] filterBytes = new byte[filter.length][];
 
         for (int i = 0; i < filter.length; i++) {
-            IgnitePredicate<Entry<K, V>> p = filter[i];
+            IgnitePredicate<Cache.Entry<K, V>> p = filter[i];
 
             if (ctx.deploymentEnabled())
                 prepareObject(p, ctx);
@@ -468,7 +470,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable protected final <T> IgnitePredicate<Entry<K, V>>[] unmarshalFilter(
+    @Nullable protected final <T> IgnitePredicate<Cache.Entry<K, V>>[] unmarshalFilter(
         @Nullable byte[][] byteCol, GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
         assert ldr != null;
         assert ctx != null;
@@ -476,13 +478,13 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
         if (byteCol == null)
             return null;
 
-        IgnitePredicate<Entry<K, V>>[] filter = new IgnitePredicate[byteCol.length];
+        IgnitePredicate<Cache.Entry<K, V>>[] filter = new IgnitePredicate[byteCol.length];
 
         Marshaller marsh = ctx.marshaller();
 
         for (int i = 0; i < byteCol.length; i++)
             filter[i] = byteCol[i] == null ? null :
-                marsh.<IgnitePredicate<Entry<K, V>>>unmarshal(byteCol[i], ldr);
+                marsh.<IgnitePredicate<Cache.Entry<K, V>>>unmarshal(byteCol[i], ldr);
 
         return filter;
     }

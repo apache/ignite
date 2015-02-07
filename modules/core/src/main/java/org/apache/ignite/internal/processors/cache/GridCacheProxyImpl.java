@@ -36,7 +36,7 @@ import org.apache.ignite.mxbean.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
@@ -250,7 +250,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Entry<K, V> randomEntry() {
+    @Nullable @Override public Cache.Entry<K, V> randomEntry() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -286,7 +286,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgnitePredicate<Entry<K, V>> predicate() {
+    @Override public IgnitePredicate<Cache.Entry<K, V>> predicate() {
         return delegate.predicate();
     }
 
@@ -310,7 +310,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public CacheProjection<K, V> projection(
-        @Nullable IgnitePredicate<Entry<K, V>> filter) {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>> filter) {
         return delegate.projection(filter);
     }
 
@@ -371,7 +371,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void forEach(IgniteInClosure<Entry<K, V>> vis) {
+    @Override public void forEach(IgniteInClosure<Cache.Entry<K, V>> vis) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -383,7 +383,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public boolean forAll(IgnitePredicate<Entry<K, V>> vis) {
+    @Override public boolean forAll(IgnitePredicate<Cache.Entry<K, V>> vis) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -481,7 +481,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public V get(K key, @Nullable GridCacheEntryEx<K, V> entry, boolean deserializePortable,
-        @Nullable IgnitePredicate<Entry<K, V>>... filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -637,7 +637,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V put(K key, V val, @Nullable IgnitePredicate<Entry<K, V>>[] filter)
+    @Nullable @Override public V put(K key, V val, @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter)
         throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -651,7 +651,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public V put(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
-        @Nullable IgnitePredicate<Entry<K, V>>... filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -664,7 +664,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> putAsync(K key, V val,
-        @Nullable IgnitePredicate<Entry<K, V>>[] filter) {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -677,7 +677,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> putAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
-        @Nullable IgnitePredicate<Entry<K, V>>... filter) {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -690,7 +690,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public boolean putx(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
-        @Nullable IgnitePredicate<Entry<K, V>>... filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -702,7 +702,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putx(K key, V val, @Nullable IgnitePredicate<Entry<K, V>>[] filter)
+    @Override public boolean putx(K key, V val, @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter)
         throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -826,7 +826,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> putxAsync(K key, V val,
-        @Nullable IgnitePredicate<Entry<K, V>>[] filter) {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -842,7 +842,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         V val,
         @Nullable GridCacheEntryEx<K, V> entry,
         long ttl,
-        @Nullable IgnitePredicate<Entry<K, V>>... filter) {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -975,7 +975,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public void putAll(@Nullable Map<? extends K, ? extends V> m,
-        @Nullable IgnitePredicate<Entry<K, V>>[] filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -988,7 +988,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> putAllAsync(@Nullable Map<? extends K, ? extends V> m,
-        @Nullable IgnitePredicate<Entry<K, V>>[] filter) {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1012,7 +1012,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public Set<K> keySet(@Nullable IgnitePredicate<Entry<K, V>>... filter) {
+    @Override public Set<K> keySet(@Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1060,7 +1060,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Entry<K, V>> entrySet() {
+    @Override public Set<Cache.Entry<K, V>> entrySet() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1072,7 +1072,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Entry<K, V>> entrySet(int part) {
+    @Override public Set<Cache.Entry<K, V>> entrySet(int part) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1084,7 +1084,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Entry<K, V>> entrySetx(IgnitePredicate<Entry<K, V>>... filter) {
+    @Override public Set<Cache.Entry<K, V>> entrySetx(IgnitePredicate<Cache.Entry<K, V>>... filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1096,7 +1096,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Entry<K, V>> primaryEntrySetx(IgnitePredicate<Entry<K, V>>... filter) {
+    @Override public Set<Cache.Entry<K, V>> primaryEntrySetx(IgnitePredicate<Cache.Entry<K, V>>... filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1108,7 +1108,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Entry<K, V>> primaryEntrySet() {
+    @Override public Set<Cache.Entry<K, V>> primaryEntrySet() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1244,7 +1244,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Entry<K, V> entry(K key) {
+    @Nullable @Override public Cache.Entry<K, V> entry(K key) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1365,7 +1365,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V remove(K key, @Nullable IgnitePredicate<Entry<K, V>>[] filter)
+    @Nullable @Override public V remove(K key, @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter)
         throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -1379,7 +1379,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public V remove(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<Entry<K, V>>... filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1391,7 +1391,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<V> removeAsync(K key, IgnitePredicate<Entry<K, V>>[] filter) {
+    @Override public IgniteInternalFuture<V> removeAsync(K key, IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1404,7 +1404,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<Entry<K, V>>... filter) {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1416,7 +1416,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(K key, @Nullable IgnitePredicate<Entry<K, V>>[] filter)
+    @Override public boolean removex(K key, @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter)
         throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -1454,7 +1454,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public boolean removex(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<Entry<K, V>>... filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1467,7 +1467,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> removexAsync(K key,
-        @Nullable IgnitePredicate<Entry<K, V>>[] filter) {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1480,7 +1480,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<Entry<K, V>>... filter) {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1565,7 +1565,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public void removeAll(@Nullable Collection<? extends K> keys,
-        @Nullable IgnitePredicate<Entry<K, V>>[] filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1578,7 +1578,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync(@Nullable Collection<? extends K> keys,
-        @Nullable IgnitePredicate<Entry<K, V>>[] filter) {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1603,7 +1603,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeAllAsync(@Nullable IgnitePredicate<Entry<K, V>>[] filter) {
+    @Override public IgniteInternalFuture<?> removeAllAsync(@Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1615,7 +1615,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lock(K key, long timeout, @Nullable IgnitePredicate<Entry<K, V>>[] filter)
+    @Override public boolean lock(K key, long timeout, @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter)
         throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
@@ -1629,7 +1629,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAsync(K key, long timeout,
-        @Nullable IgnitePredicate<Entry<K, V>>[] filter) {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1642,7 +1642,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout,
-        @Nullable IgnitePredicate<Entry<K, V>>[] filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1655,7 +1655,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys, long timeout,
-        @Nullable IgnitePredicate<Entry<K, V>>[] filter) {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1667,7 +1667,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(K key, IgnitePredicate<Entry<K, V>>[] filter) throws IgniteCheckedException {
+    @Override public void unlock(K key, IgnitePredicate<Cache.Entry<K, V>>[] filter) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1680,7 +1680,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public void unlockAll(@Nullable Collection<? extends K> keys,
-        @Nullable IgnitePredicate<Entry<K, V>>[] filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>[] filter) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1872,7 +1872,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<Entry<K, V>> iterator() {
+    @Override public Iterator<Cache.Entry<K, V>> iterator() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.lang.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -70,11 +70,11 @@ public class VisorCacheSwapBackupsTask extends VisorOneNodeTask<Set<String>, Map
                 CacheAffinity<Object> aff = g.affinity(c.name());
 
                 if (names.contains(cacheName)) {
-                    Set<Entry> entries = c.entrySet();
+                    Set<Cache.Entry> entries = c.entrySet();
 
                     int before = entries.size(), after = before;
 
-                    for (Entry entry: entries) {
+                    for (Cache.Entry entry : entries) {
                         if (aff.isBackup(locNode, entry.getKey()) && c.evict(entry.getKey()))
                             after--;
                     }

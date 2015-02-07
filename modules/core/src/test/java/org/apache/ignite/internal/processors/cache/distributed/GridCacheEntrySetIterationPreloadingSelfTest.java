@@ -22,7 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -69,7 +69,7 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
             for (int i = 0; i < entryCnt; i++)
                 cache.put(String.valueOf(i), i);
 
-            Collection<Entry<String, Integer>> entries = new ArrayList<>(10_000);
+            Collection<Cache.Entry<String, Integer>> entries = new ArrayList<>(10_000);
 
             for (int i = 0; i < 10_000; i++)
                 entries.add(cache.randomEntry());
@@ -78,7 +78,7 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
             startGrid(2);
             startGrid(3);
 
-            for (Entry<String, Integer> entry : entries)
+            for (Cache.Entry<String, Integer> entry : entries)
                 entry.getValue();
 
             for (int i = 0; i < entryCnt; i++)

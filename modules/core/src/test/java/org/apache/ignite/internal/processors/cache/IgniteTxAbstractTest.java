@@ -31,7 +31,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -410,7 +410,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
         for (int i = 1; i <= maxKeyValue(); i++) {
             for (int k = 0; k < 3; k++) {
                 try {
-                    Entry<Integer, String> e1 = null;
+                    Cache.Entry<Integer, String> e1 = null;
 
                     String v1 = null;
 
@@ -427,7 +427,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                             v1 = e1.getValue();
                         }
                         else {
-                            Entry<Integer, String> e2 = cache.entry(i);
+                            Cache.Entry<Integer, String> e2 = cache.entry(i);
 
                             String v2 = e2.getValue();
 

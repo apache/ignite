@@ -27,7 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -218,7 +218,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
         private final ConcurrentMap<Object, AtomicInteger> cnts = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
-        @Override public boolean evictAllowed(Entry<Object, Object> entry) {
+        @Override public boolean evictAllowed(Cache.Entry<Object, Object> entry) {
             AtomicInteger i = cnts.get(entry.getKey());
 
             if (i == null) {

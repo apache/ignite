@@ -26,7 +26,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 
@@ -86,16 +86,16 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
      * @param prj Projection.
      * @param c Visitor closure.
      */
-    private void iterate(CacheProjection<Integer, Integer> prj, IgniteInClosure<Entry<Integer, Integer>> c) {
+    private void iterate(CacheProjection<Integer, Integer> prj, IgniteInClosure<Cache.Entry<Integer, Integer>> c) {
         prj.forEach(c);
     }
 
     /**
      * @return Empty filter.
      */
-    private IgniteInClosure<Entry<Integer, Integer>> emptyFilter() {
-        return new CI1<Entry<Integer, Integer>>() {
-            @Override public void apply(Entry<Integer, Integer> e) {
+    private IgniteInClosure<Cache.Entry<Integer, Integer>> emptyFilter() {
+        return new CI1<Cache.Entry<Integer, Integer>>() {
+            @Override public void apply(Cache.Entry<Integer, Integer> e) {
                 // No-op
             }
         };
@@ -112,7 +112,7 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
 
         assert cache.size() == SMALL_ENTRY_CNT;
 
-        IgniteInClosure<Entry<Integer, Integer>> c = emptyFilter();
+        IgniteInClosure<Cache.Entry<Integer, Integer>> c = emptyFilter();
 
         // Warmup.
         for (int i = 0; i < 10; i ++)
@@ -141,7 +141,7 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
 
         assert cache.size() == LARGE_ENTRY_CNT;
 
-        IgniteInClosure<Entry<Integer, Integer>> c = emptyFilter();
+        IgniteInClosure<Cache.Entry<Integer, Integer>> c = emptyFilter();
 
         // Warmup.
         for (int i = 0; i < 3; i++)
@@ -170,7 +170,7 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
 
         assert cache.size() == LARGE_ENTRY_CNT;
 
-        IgniteInClosure<Entry<Integer, Integer>> c = emptyFilter();
+        IgniteInClosure<Cache.Entry<Integer, Integer>> c = emptyFilter();
 
         CacheProjection<Integer, Integer> prj = cache.projection(new P2<Integer, Integer>() {
             @Override public boolean apply(Integer key, Integer val) {
@@ -210,8 +210,8 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
 
         final BoxedInt cnt = new BoxedInt();
 
-        IgniteInClosure<Entry<Integer, Integer>> c = new CI1<Entry<Integer, Integer>>() {
-            @Override public void apply(Entry<Integer, Integer> t) {
+        IgniteInClosure<Cache.Entry<Integer, Integer>> c = new CI1<Cache.Entry<Integer, Integer>>() {
+            @Override public void apply(Cache.Entry<Integer, Integer> t) {
                 if (t.getValue() < SMALL_ENTRY_CNT)
                     cnt.increment();
             }

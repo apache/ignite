@@ -38,7 +38,7 @@ import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -98,7 +98,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     private IgniteLogger log;
 
     /** Filter. */
-    private IgnitePredicate<Entry<K, V>>[] filter;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Transaction. */
     @GridToStringExclude
@@ -150,7 +150,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         boolean retval,
         long timeout,
         long accessTtl,
-        IgnitePredicate<Entry<K, V>>[] filter) {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert keys != null;

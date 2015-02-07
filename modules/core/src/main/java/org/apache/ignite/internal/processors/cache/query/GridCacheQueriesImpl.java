@@ -26,7 +26,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
@@ -238,7 +238,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
      * @return Optional projection filter.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private IgnitePredicate<Entry<Object, Object>> filter() {
+    @Nullable private IgnitePredicate<Cache.Entry<Object, Object>> filter() {
         return prj == null ? null : ((GridCacheProjectionImpl<Object, Object>)prj).predicate();
     }
 

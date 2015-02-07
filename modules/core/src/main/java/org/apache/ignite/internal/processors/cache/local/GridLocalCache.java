@@ -28,7 +28,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
@@ -104,13 +104,13 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         IgniteTxIsolation isolation,
         boolean invalidate,
         long accessTtl,
-        IgnitePredicate<Entry<K, V>>[] filter) {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         return lockAllAsync(keys, timeout, tx, filter);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        IgnitePredicate<Entry<K, V>>[] filter) {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         IgniteTxLocalEx<K, V> tx = ctx.tm().localTx();
 
         return lockAllAsync(keys, timeout, tx, filter);
@@ -124,7 +124,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
      * @return Future.
      */
     public IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        @Nullable IgniteTxLocalEx<K, V> tx, IgnitePredicate<Entry<K, V>>[] filter) {
+        @Nullable IgniteTxLocalEx<K, V> tx, IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), true);
 
@@ -176,7 +176,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void unlockAll(Collection<? extends K> keys,
-        IgnitePredicate<Entry<K, V>>[] filter) throws IgniteCheckedException {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) throws IgniteCheckedException {
         long topVer = ctx.affinity().affinityTopologyVersion();
 
         for (K key : keys) {

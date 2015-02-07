@@ -20,20 +20,19 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
 /**
  * Multi-node tests for partitioned cache.
@@ -230,7 +229,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             GridCache<String, Integer> c = cache(i);
 
-            Entry<String, Integer> e = c.entry("key");
+            Cache.Entry<String, Integer> e = c.entry("key");
 
             if (c.affinity().isBackup(grid(i).localNode(), "key")) {
                 assertNull(c.peek("key", F.asList(NEAR_ONLY)));

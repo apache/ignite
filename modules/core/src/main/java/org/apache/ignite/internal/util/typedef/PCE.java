@@ -20,7 +20,8 @@ package org.apache.ignite.internal.util.typedef;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
+
 
 /**
  * Defines {@code alias} for <tt>GridPredicate&lt;Entry&lt;K, V&gt;&gt;</tt> by extending
@@ -30,4 +31,4 @@ import javax.cache.Cache.*;
  * @see org.apache.ignite.lang.IgnitePredicate
  * @see GridFunc
  */
-public interface PCE<K, V> extends IgnitePredicate<Entry<K, V>> { /* No-op. */ }
+public interface PCE<K, V> extends IgnitePredicate<Cache.Entry<K, V>> { /* No-op. */ }

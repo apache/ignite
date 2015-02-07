@@ -28,7 +28,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -152,7 +152,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
      * @param c1 Policy collection.
      * @param c2 Expected list.
      */
-    protected void check(Collection<Entry<String, String>> c1, MockEntry... c2) {
+    protected void check(Collection<Cache.Entry<String, String>> c1, MockEntry... c2) {
         check(c1, F.asList(c2));
     }
 
@@ -184,7 +184,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
      * @param c1 Policy collection.
      * @param c2 Expected list.
      */
-    protected void check(Collection<Entry<String, String>> c1, List<MockEntry> c2) {
+    protected void check(Collection<Cache.Entry<String, String>> c1, List<MockEntry> c2) {
         assert c1.size() == c2.size() : "Mismatch [actual=" + string(c1) + ", expected=" + string(c2) + ']';
 
         assert c1.containsAll(c2) : "Mismatch [actual=" + string(c1) + ", expected=" + string(c2) + ']';
@@ -192,7 +192,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
         int i = 0;
 
         // Check order.
-        for (Entry<String, String> e : c1)
+        for (Cache.Entry<String, String> e : c1)
             assertEquals(e, c2.get(i++));
     }
 
@@ -200,9 +200,9 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
      * @param c Collection.
      * @return String.
      */
-    protected String string(Iterable<? extends Entry> c) {
-        return "[" + F.fold(c, "", new C2<Entry, String, String>() {
-            @Override public String apply(Entry e, String b) {
+    protected String string(Iterable<? extends Cache.Entry> c) {
+        return "[" + F.fold(c, "", new C2<Cache.Entry, String, String>() {
+            @Override public String apply(Cache.Entry e, String b) {
                 return b.isEmpty() ? e.getKey().toString() : b + ", " + e.getKey();
             }
         }) + "]]";
