@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -34,22 +32,31 @@ public class GridCacheIterator<K, V, T> implements GridSerializableIterator<T> {
     private static final long serialVersionUID = 0L;
 
     /** Base iterator. */
-    private final Iterator<? extends Entry<K, V>> it;
+    private final Iterator<? extends Cache.Entry<K, V>> it;
 
     /** Transformer. */
-    private final IgniteClosure<Entry<K, V>, T> trans;
+    private final IgniteClosure<Cache.Entry<K, V>, T> trans;
 
     /** Current element. */
-    private Entry<K, V> cur;
+    private Cache.Entry<K, V> cur;
+
+    /** Context. */
+    private GridCacheContext<K, V> cctx;
 
     /**
+     * @param cctx Context.
      * @param c Cache entry collection.
      * @param trans Transformer.
      * @param filter Filter.
      */
-    public GridCacheIterator(Iterable<? extends Entry<K, V>> c,
-        IgniteClosure<Entry<K, V>, T> trans,
-        IgnitePredicate<Entry<K, V>>[] filter) {
+    public GridCacheIterator(
+        GridCacheContext<K, V> cctx,
+        Iterable<? extends Cache.Entry<K, V>> c,
+        IgniteClosure<Cache.Entry<K, V>, T> trans,
+        IgnitePredicate<Cache.Entry<K, V>>[] filter
+    ) {
+        this.cctx = cctx;
+
         it = F.iterator0(c, false, filter);
 
         this.trans = trans;
@@ -75,14 +82,6 @@ public class GridCacheIterator<K, V, T> implements GridSerializableIterator<T> {
     @Override public void remove() {
         it.remove();
 
-//        try {
-            // Back remove operation by actual cache.
-            // cur.removex();
-        // TODO ignite-96
-
-//        }
-//        catch (IgniteCheckedException e) {
-//            throw new GridClosureException(e);
-//        }
+        cctx.grid().jcache(cctx.name()).remove(cur.getKey(), cur.getValue());
     }
 }

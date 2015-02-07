@@ -1003,7 +1003,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     @SuppressWarnings({"ErrorNotRethrown"})
     public <K1, V1> boolean isAll(GridCacheEntryEx<K1, V1> e,
         @Nullable IgnitePredicate<Entry<K1, V1>>[] p) throws IgniteCheckedException {
-        return F.isEmpty(p) || isAll(e.wrap(false), p);
+        return F.isEmpty(p) || isAll(e.wrap(), p);
     }
 
     /**

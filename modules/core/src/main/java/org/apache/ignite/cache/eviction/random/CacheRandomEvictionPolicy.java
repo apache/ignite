@@ -84,6 +84,7 @@ public class CacheRandomEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V
         if (!entry.isCached())
             return;
 
+        assert false : "ignite-96";
 //        TODO ignite-96
 //        GridCache<K, V> cache = entry.projection().cache();
 //

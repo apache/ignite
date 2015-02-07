@@ -145,7 +145,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
 
         GridCacheContinuousQueryEntry<K, V> e0 = new GridCacheContinuousQueryEntry<>(
             cctx,
-            e.wrap(false),
+            e.wrap(),
             key,
             newVal,
             newBytes,
@@ -186,7 +186,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
         if (cctx.isReplicated() || cctx.affinity().primary(cctx.localNode(), key, -1)) {
             GridCacheContinuousQueryEntry<K, V> e0 = new GridCacheContinuousQueryEntry<>(
                 cctx,
-                e.wrap(false),
+                e.wrap(),
                 key,
                 null,
                 null,

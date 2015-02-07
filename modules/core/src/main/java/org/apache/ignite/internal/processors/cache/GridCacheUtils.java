@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -36,6 +37,7 @@ import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.Cache.*;
 import javax.cache.expiry.*;
 import java.io.*;
@@ -1719,5 +1721,21 @@ public class GridCacheUtils {
         }
 
         return arr;
+    }
+
+    /**
+     * @param aff Affinity.
+     * @param n Node.
+     * @return Predicate that evaulates to {@code true} if entry is primary for node.
+     */
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cachePrimary(
+        final CacheAffinity<K> aff,
+        final ClusterNode n
+    ) {
+        return new IgnitePredicate<Entry<K, V>>() {
+            @Override public boolean apply(Entry<K, V> e) {
+                return aff.isPrimary(n, e.getKey());
+            }
+        };
     }
 }

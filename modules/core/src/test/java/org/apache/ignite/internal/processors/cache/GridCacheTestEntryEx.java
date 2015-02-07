@@ -338,7 +338,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public Entry<K, V> wrap(boolean prjAware) {
+    @Override public Entry<K, V> wrap() {
         assert false; return null;
     }
 

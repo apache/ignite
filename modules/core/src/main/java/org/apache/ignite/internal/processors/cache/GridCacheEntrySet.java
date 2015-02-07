@@ -60,7 +60,7 @@ public class GridCacheEntrySet<K, V> extends AbstractSet<Entry<K, V>> {
 
     /** {@inheritDoc} */
     @Override public Iterator<Entry<K, V>> iterator() {
-        return new GridCacheIterator<>(set, F.<Entry<K, V>>identity(), filter);
+        return new GridCacheIterator<>(ctx, set, F.<Entry<K, V>>identity(), filter);
     }
 
     /** {@inheritDoc} */

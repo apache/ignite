@@ -24,6 +24,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -34,6 +35,7 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -2762,9 +2764,9 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
             cache.put("k1", "v1");
             cache.put("k2", "v2");
 
-            Map.Entry<String, String> e1 = new AbstractMap.SimpleImmutableEntry<>("k1", "v1");
-            Map.Entry<String, String> e2 = new AbstractMap.SimpleImmutableEntry<>("k2", "v2");
-            Map.Entry<String, String> e3 = new AbstractMap.SimpleImmutableEntry<>("k2", "v1");
+            Cache.Entry<String, String> e1 = new CacheEntryImpl<>("k1", "v1");
+            Cache.Entry<String, String> e2 = new CacheEntryImpl<>("k2", "v2");
+            Cache.Entry<String, String> e3 = new CacheEntryImpl<>("k2", "v1");
 
             assert cache.forAll(F.cacheContainsEntriesGet(Arrays.asList(e1, e2)));
             assert !cache.forAll(F.cacheContainsEntriesGet(Arrays.asList(e1)));

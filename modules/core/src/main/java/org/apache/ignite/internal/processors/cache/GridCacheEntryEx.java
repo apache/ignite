@@ -136,12 +136,11 @@ public interface GridCacheEntryEx<K, V> {
     /**
      * Wraps this map entry into cache entry.
      *
-     * @param prjAware {@code true} if entry should inherit projection properties.
      * @return Wrapped entry.
      *
      */
     @Deprecated
-    public Entry<K, V> wrap(boolean prjAware);
+    public Entry<K, V> wrap();
 
     /**
      * Wraps this map entry into cache entry for filter evaluation inside entry lock.

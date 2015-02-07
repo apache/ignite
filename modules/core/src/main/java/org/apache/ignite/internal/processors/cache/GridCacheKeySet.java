@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -65,12 +64,12 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
 
     /** {@inheritDoc} */
     @Override public Iterator<K> iterator() {
-        return new GridCacheIterator<>(map.values(), F.<K, V>cacheEntry2Key(), filter);
+        return new GridCacheIterator<>(ctx, map.values(), F.<K, V>cacheEntry2Key(), filter);
     }
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        ctx.cache().clearLocally0(F.viewReadOnly(map.values(), F.<K>mapEntry2Key(), filter), CU.<K, V>empty());
+        ctx.cache().clearLocally0(F.viewReadOnly(map.values(), F.<K, V>cacheEntry2Key(), filter), CU.<K, V>empty());
 
         map.clear();
     }
@@ -85,14 +84,7 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
 
         map.remove(o);
 
-        //                // TODO ignite-96
-
-//        try {
-//            e.removex();
-//        }
-//        catch (IgniteCheckedException ex) {
-//            throw new IgniteException(ex);
-//        }
+        ctx.grid().jcache(ctx.name()).remove(e.getKey());
 
         return true;
     }

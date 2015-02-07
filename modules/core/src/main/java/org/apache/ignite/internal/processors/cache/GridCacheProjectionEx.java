@@ -27,6 +27,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.Cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
@@ -381,7 +382,7 @@ public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
      * @param filter Optional filter.
      * @return Primary entry set.
      */
-    public Set<Entry<K, V>> primaryEntrySetx(IgnitePredicate<Entry<K, V>>... filter);
+    public Set<Cache.Entry<K, V>> primaryEntrySetx(IgnitePredicate<Entry<K, V>>... filter);
 
     /**
      * @return {@link ExpiryPolicy} associated with this projection.

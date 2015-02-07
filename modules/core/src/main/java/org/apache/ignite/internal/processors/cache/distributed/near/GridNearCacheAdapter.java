@@ -390,7 +390,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
                                 p.entries(),
                                 new C1<GridDhtCacheEntry<K, V>, Entry<K, V>>() {
                                     @Override public Entry<K, V> apply(GridDhtCacheEntry<K, V> e) {
-                                        return e.wrap(true);
+                                        return e.wrap();
                                     }
                                 },
                                 new P1<GridDhtCacheEntry<K, V>>() {
@@ -434,9 +434,11 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public Collection<V> primaryValues(@Nullable IgnitePredicate<Entry<K, V>>... filter) {
-        return null;
-        // return new GridCacheValueCollection<>(ctx, entrySet(filter), ctx.vararg(F.<K, V>cachePrimary()));
-        // TODO ignite-96
+        return new GridCacheValueCollection<>(
+            ctx,
+            entrySet(filter),
+            ctx.vararg(
+                CU.<K, V>cachePrimary(ctx.grid().<K>affinity(ctx.name()), ctx.localNode())));
     }
 
     /** {@inheritDoc} */

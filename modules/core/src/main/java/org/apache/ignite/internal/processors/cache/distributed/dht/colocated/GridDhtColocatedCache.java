@@ -429,7 +429,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             for (K key : keys) {
                 GridDistributedCacheEntry<K, V> entry = peekExx(key);
 
-                Entry<K, V> Entry = entry == null ? entry(key) : entry.wrap(false);
+                Entry<K, V> Entry = entry == null ? entry(key) : entry.wrap();
 
                 if (!ctx.isAll(Entry, filter))
                     break; // While.

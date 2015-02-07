@@ -30,7 +30,7 @@ import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache.*;
+import javax.cache.*;
 import java.io.*;
 import java.lang.reflect.*;
 import java.math.*;
@@ -344,6 +344,17 @@ public class GridFunc {
     };
 
     /** */
+    private static final IgniteClosure CACHE_ENTRY_KEY = new IgniteClosure() {
+        @Override public Object apply(Object o) {
+            return ((Cache.Entry)o).getKey();
+        }
+
+        @Override public String toString() {
+            return "Map entry to key transformer closure.";
+        }
+    };
+
+    /** */
     private static final IgniteClosure MAP_ENTRY_VAL = new IgniteClosure() {
         @Override public Object apply(Object o) {
             return ((Map.Entry)o).getValue();
@@ -358,7 +369,7 @@ public class GridFunc {
     private static final IgniteClosure CACHE_ENTRY_VAL_GET = new IgniteClosure() {
         @SuppressWarnings({"unchecked"})
         @Nullable @Override public Object apply(Object o) {
-            return ((Entry)o).getValue();
+            return ((Cache.Entry)o).getValue();
         }
 
         @Override public String toString() {
@@ -370,7 +381,7 @@ public class GridFunc {
     private static final IgniteClosure CACHE_ENTRY_VAL_PEEK = new IgniteClosure() {
         @SuppressWarnings({"unchecked"})
         @Nullable @Override public Object apply(Object o) {
-            return ((Entry<?, ?>)o).getValue();
+            return ((Cache.Entry<?, ?>)o).getValue();
         }
 
         @Override public String toString() {
@@ -382,7 +393,7 @@ public class GridFunc {
     private static final IgnitePredicate CACHE_ENTRY_HAS_GET_VAL = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
-            return ((Entry)o).getValue() != null;
+            return ((Cache.Entry)o).getValue() != null;
         }
 
         @Override public String toString() {
@@ -394,7 +405,7 @@ public class GridFunc {
     private static final IgnitePredicate CACHE_ENTRY_NO_GET_VAL = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
-            return ((Entry)o).getValue() == null;
+            return ((Cache.Entry)o).getValue() == null;
         }
 
         @Override public String toString() {
@@ -406,7 +417,7 @@ public class GridFunc {
     private static final IgnitePredicate CACHE_ENTRY_HAS_PEEK_VAL = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
-            return ((Entry)o).getValue() != null;
+            return ((Cache.Entry)o).getValue() != null;
         }
 
         @Override public String toString() {
@@ -418,7 +429,7 @@ public class GridFunc {
     private static final IgnitePredicate CACHE_ENTRY_NO_PEEK_VAL = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
-            return ((Entry)o).getValue() == null;
+            return ((Cache.Entry)o).getValue() == null;
         }
 
         @Override public String toString() {
@@ -7172,13 +7183,13 @@ public class GridFunc {
     }
 
     /**
-     * Gets utility predicate that accepts {@link Entry} value and compares
+     * Gets utility predicate that accepts {@link Map.Entry} value and compares
      * its value to the given value.
      *
      * @param val Value to compare entry's value.
      * @param <K> Map key type.
      * @param <V> Map value type.
-     * @return Predicate that accepts {@link Entry} value and compares its value
+     * @return Predicate that accepts {@link Map.Entry} value and compares its value
      *      to the given value.
      */
     public static <K, V> IgnitePredicate<Map.Entry<K, V>> mapValue(@Nullable final V val) {
@@ -7653,8 +7664,8 @@ public class GridFunc {
      * @return Closure that returns key for an entry.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K> IgniteClosure<Entry<K, ?>, K> mapEntry2Key() {
-        return (IgniteClosure<Entry<K, ?>, K>)MAP_ENTRY_KEY;
+    public static <K> IgniteClosure<Map.Entry<K, ?>, K> mapEntry2Key() {
+        return (IgniteClosure<Map.Entry<K, ?>, K>)MAP_ENTRY_KEY;
     }
 
     /**
@@ -7665,8 +7676,8 @@ public class GridFunc {
      * @return Closure that returns key for an entry.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<Entry<K, V>, K> cacheEntry2Key() {
-        return (IgniteClosure<Entry<K, V>, K>)MAP_ENTRY_KEY;
+    public static <K, V> IgniteClosure<Cache.Entry<K, V>, K> cacheEntry2Key() {
+        return (IgniteClosure<Cache.Entry<K, V>, K>)CACHE_ENTRY_KEY;
     }
 
     /**
@@ -7677,8 +7688,8 @@ public class GridFunc {
      * @return Closure that returns key for an entry.
      */
     @SuppressWarnings({"unchecked"})
-    public static <V> IgniteClosure<Entry<?, V>, V> mapEntry2Value() {
-        return (IgniteClosure<Entry<?, V>, V>)MAP_ENTRY_VAL;
+    public static <V> IgniteClosure<Map.Entry<?, V>, V> mapEntry2Value() {
+        return (IgniteClosure<Map.Entry<?, V>, V>)MAP_ENTRY_VAL;
     }
 
     /**
@@ -7690,8 +7701,8 @@ public class GridFunc {
      * @return Closure that returns value for an entry.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<Entry<K, V>, V> cacheEntry2Get() {
-        return (IgniteClosure<Entry<K, V>, V>)CACHE_ENTRY_VAL_GET;
+    public static <K, V> IgniteClosure<Cache.Entry<K, V>, V> cacheEntry2Get() {
+        return (IgniteClosure<Cache.Entry<K, V>, V>)CACHE_ENTRY_VAL_GET;
     }
 
     /**
@@ -7704,8 +7715,8 @@ public class GridFunc {
      *      {@link org.apache.ignite.cache.Entry#peek()} method.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<Entry<K, V>, V> cacheEntry2Peek() {
-        return (IgniteClosure<Entry<K, V>, V>)CACHE_ENTRY_VAL_PEEK;
+    public static <K, V> IgniteClosure<Cache.Entry<K, V>, V> cacheEntry2Peek() {
+        return (IgniteClosure<Cache.Entry<K, V>, V>)CACHE_ENTRY_VAL_PEEK;
     }
 
     /**
@@ -7718,11 +7729,11 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if entry's key is contained in given collection.
      */
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheHasKeys(
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheHasKeys(
         @Nullable final Collection<? extends K> keys) {
-        return isEmpty(keys) ? F.<Entry<K, V>>alwaysFalse() :
-            new IgnitePredicate<Entry<K, V>>() {
-                @Override public boolean apply(Entry<K, V> e) {
+        return isEmpty(keys) ? F.<Cache.Entry<K, V>>alwaysFalse() :
+            new IgnitePredicate<Cache.Entry<K, V>>() {
+                @Override public boolean apply(Cache.Entry<K, V> e) {
                     return keys != null && keys.contains(e.getKey());
                 }
             };
@@ -7739,7 +7750,7 @@ public class GridFunc {
      * @return Predicate which returns {@code true} if entry's key
      *      is equal to any of provided keys.
      */
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheHasKeys(@Nullable K... keys) {
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheHasKeys(@Nullable K... keys) {
         if (isEmpty(keys))
             return alwaysFalse();
 
@@ -7756,8 +7767,8 @@ public class GridFunc {
      *      method returns {@code non-null} value.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheHasGetValue() {
-        return (IgnitePredicate<Entry<K, V>>)CACHE_ENTRY_HAS_GET_VAL;
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheHasGetValue() {
+        return (IgnitePredicate<Cache.Entry<K, V>>)CACHE_ENTRY_HAS_GET_VAL;
     }
 
     /**
@@ -7770,8 +7781,8 @@ public class GridFunc {
      *      method returns {@code null} value.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheNoGetValue() {
-        return (IgnitePredicate<Entry<K, V>>)CACHE_ENTRY_NO_GET_VAL;
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheNoGetValue() {
+        return (IgnitePredicate<Cache.Entry<K, V>>)CACHE_ENTRY_NO_GET_VAL;
     }
 
     /**
@@ -7786,8 +7797,8 @@ public class GridFunc {
      *      method returns {@code non-null} value.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheHasPeekValue() {
-        return (IgnitePredicate<Entry<K, V>>)CACHE_ENTRY_HAS_PEEK_VAL;
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheHasPeekValue() {
+        return (IgnitePredicate<Cache.Entry<K, V>>)CACHE_ENTRY_HAS_PEEK_VAL;
     }
 
     /**
@@ -7802,8 +7813,8 @@ public class GridFunc {
      *      method returns {@code null} value.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheNoPeekValue() {
-        return (IgnitePredicate<Entry<K, V>>)CACHE_ENTRY_NO_PEEK_VAL;
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheNoPeekValue() {
+        return (IgnitePredicate<Cache.Entry<K, V>>)CACHE_ENTRY_NO_PEEK_VAL;
     }
 
     /**
@@ -7818,11 +7829,11 @@ public class GridFunc {
      * @return Predicate which returns true if {@link org.apache.ignite.cache.Entry#get()} methods returns
      *      value that is contained in given collection.
      */
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheContainsGet(
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheContainsGet(
         @Nullable final Collection<? extends V> vals) {
-        return isEmpty(vals) ? F.<Entry<K, V>>alwaysFalse() :
-            new IgnitePredicate<Entry<K, V>>() {
-                @Override public boolean apply(Entry<K, V> e) {
+        return isEmpty(vals) ? F.<Cache.Entry<K, V>>alwaysFalse() :
+            new IgnitePredicate<Cache.Entry<K, V>>() {
+                @Override public boolean apply(Cache.Entry<K, V> e) {
                     V v = e.getValue();
 
                     assert vals != null;
@@ -7844,7 +7855,7 @@ public class GridFunc {
      * @return Predicate which returns true if {@link org.apache.ignite.cache.Entry#get()} methods returns
      *      value that is contained among given values.
      */
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheContainsGet(@Nullable V... vals) {
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheContainsGet(@Nullable V... vals) {
         if (isEmpty(vals))
             return alwaysFalse();
 
@@ -7863,11 +7874,11 @@ public class GridFunc {
      * @return Predicate which returns true if {@link org.apache.ignite.cache.Entry#peek()} methods returns
      *      value that is contained in given collection.
      */
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheContainsPeek(
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheContainsPeek(
         @Nullable final Collection<? extends V> vals) {
-        return isEmpty(vals) ? F.<Entry<K, V>>alwaysFalse() :
-            new IgnitePredicate<Entry<K, V>>() {
-                @Override public boolean apply(Entry<K, V> e) {
+        return isEmpty(vals) ? F.<Cache.Entry<K, V>>alwaysFalse() :
+            new IgnitePredicate<Cache.Entry<K, V>>() {
+                @Override public boolean apply(Cache.Entry<K, V> e) {
                     V v = e.getValue();
 
                     assert vals != null;
@@ -7893,7 +7904,7 @@ public class GridFunc {
      * @return Predicate which returns true if {@link org.apache.ignite.cache.Entry#peek()} methods returns
      *      value that is contained among given values.
      */
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheContainsPeek(@Nullable V... vals) {
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheContainsPeek(@Nullable V... vals) {
         if (isEmpty(vals))
             return alwaysFalse();
 
@@ -7910,10 +7921,10 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if cache contains all given key-value pairs.
      */
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheContainsGet(@Nullable final Map<K, V> map) {
-        return isEmpty(map) ? F.<Entry<K, V>>alwaysFalse() :
-            new IgnitePredicate<Entry<K, V>>() {
-                @Override public boolean apply(Entry<K, V> e) {
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheContainsGet(@Nullable final Map<K, V> map) {
+        return isEmpty(map) ? F.<Cache.Entry<K, V>>alwaysFalse() :
+            new IgnitePredicate<Cache.Entry<K, V>>() {
+                @Override public boolean apply(Cache.Entry<K, V> e) {
                     assert map != null;
 
                     return eq(e.getValue(), map.get(e.getKey()));
@@ -7931,11 +7942,11 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if cache entry matches any given key-value pair.
      */
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheContainsPeek(
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheContainsPeek(
         @Nullable final Map<K, V> map) {
-        return isEmpty(map) ? F.<Entry<K, V>>alwaysFalse() :
-            new IgnitePredicate<Entry<K, V>>() {
-                @Override public boolean apply(Entry<K, V> e) {
+        return isEmpty(map) ? F.<Cache.Entry<K, V>>alwaysFalse() :
+            new IgnitePredicate<Cache.Entry<K, V>>() {
+                @Override public boolean apply(Cache.Entry<K, V> e) {
                     assert map != null;
 
                     return eq(e.getValue(), map.get(e.getKey()));
@@ -7957,17 +7968,17 @@ public class GridFunc {
      */
     // cacheEntryPredicateForContainsEntriesGet
     // ptCacheContainsEntriesGet
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheContainsEntriesGet(
-        @Nullable final Collection<? extends Map.Entry<K, V>> entries) {
-        return isEmpty(entries) ? F.<Entry<K, V>>alwaysFalse() :
-            new IgnitePredicate<Entry<K, V>>() {
-                @Override public boolean apply(Entry<K, V> e) {
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheContainsEntriesGet(
+        @Nullable final Collection<? extends Cache.Entry<K, V>> entries) {
+        return isEmpty(entries) ? F.<Cache.Entry<K, V>>alwaysFalse() :
+            new IgnitePredicate<Cache.Entry<K, V>>() {
+                @Override public boolean apply(Cache.Entry<K, V> e) {
                     K k = e.getKey();
                     V v = e.getValue();
 
                     assert entries != null;
 
-                    for (Map.Entry<K, V> entry : entries) {
+                    for (Cache.Entry<K, V> entry : entries) {
                         if (k.equals(entry.getKey()) && v!= null && v.equals(entry.getValue()))
                             return true;
                     }
@@ -7989,17 +8000,17 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if cache entry matches any given key-value pair.
      */
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheContainsEntriesPeek(
-        @Nullable final Collection<? extends Map.Entry<K, V>> entries) {
-        return isEmpty(entries) ? F.<Entry<K, V>>alwaysFalse() :
-            new IgnitePredicate<Entry<K, V>>() {
-                @Override public boolean apply(Entry<K, V> e) {
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheContainsEntriesPeek(
+        @Nullable final Collection<? extends Cache.Entry<K, V>> entries) {
+        return isEmpty(entries) ? F.<Cache.Entry<K, V>>alwaysFalse() :
+            new IgnitePredicate<Cache.Entry<K, V>>() {
+                @Override public boolean apply(Cache.Entry<K, V> e) {
                     K k = e.getKey();
                     V v = e.getValue();
 
                     assert entries != null;
 
-                    for (Map.Entry<K, V> entry : entries) {
+                    for (Cache.Entry<K, V> entry : entries) {
                         if (eq(k, entry.getKey()) && eq(v, entry.getValue()))
                             return true;
                     }
@@ -8021,8 +8032,8 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if cache entry matches any given key-value pair.
      */
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheContainsEntriesGet(
-        @Nullable Map.Entry<K, V>... entries) {
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheContainsEntriesGet(
+        @Nullable Cache.Entry<K, V>... entries) {
         if (isEmpty(entries))
             return alwaysFalse();
 
@@ -8041,8 +8052,8 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if cache entry matches any given key-value pair.
      */
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheContainsEntriesPeek(
-        @Nullable Map.Entry<K, V>... entries) {
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheContainsEntriesPeek(
+        @Nullable Cache.Entry<K, V>... entries) {
         if (isEmpty(entries))
             return alwaysFalse();
 
@@ -8057,12 +8068,12 @@ public class GridFunc {
      * @param ps Key filter(s) to convert.
      * @return Entry filter.
      */
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheKeys(
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheKeys(
         @Nullable final IgnitePredicate<? super K>... ps) {
-        return isEmpty(ps) || isAlwaysTrue(ps) ? F.<Entry<K, V>>alwaysTrue() :
-            isAlwaysFalse(ps) ? F.<Entry<K, V>>alwaysFalse() :
-            new IgnitePredicate<Entry<K, V>>() {
-                @Override public boolean apply(Entry<K, V> e) {
+        return isEmpty(ps) || isAlwaysTrue(ps) ? F.<Cache.Entry<K, V>>alwaysTrue() :
+            isAlwaysFalse(ps) ? F.<Cache.Entry<K, V>>alwaysFalse() :
+            new IgnitePredicate<Cache.Entry<K, V>>() {
+                @Override public boolean apply(Cache.Entry<K, V> e) {
                     return F.isAll(e.getKey(), ps);
                 }
             };
@@ -8076,12 +8087,12 @@ public class GridFunc {
      * @param ps Value filter(s) to convert.
      * @return Entry filter.
      */
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheValuesGet(
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheValuesGet(
         @Nullable final IgnitePredicate<? super V>... ps) {
-        return isEmpty(ps) || isAlwaysTrue(ps) ? F.<Entry<K, V>>alwaysTrue() :
-            isAlwaysFalse(ps) ? F.<Entry<K, V>>alwaysFalse() :
-            new IgnitePredicate<Entry<K, V>>() {
-                @Override public boolean apply(Entry<K, V> e) {
+        return isEmpty(ps) || isAlwaysTrue(ps) ? F.<Cache.Entry<K, V>>alwaysTrue() :
+            isAlwaysFalse(ps) ? F.<Cache.Entry<K, V>>alwaysFalse() :
+            new IgnitePredicate<Cache.Entry<K, V>>() {
+                @Override public boolean apply(Cache.Entry<K, V> e) {
                     V v = e.getValue();
 
                     return v != null && F.isAll(v, ps);
@@ -8097,12 +8108,12 @@ public class GridFunc {
      * @param ps Value filter(s) to convert.
      * @return Entry filter.
      */
-    public static <K, V> IgnitePredicate<Entry<K, V>> cacheValuesPeek(
+    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cacheValuesPeek(
         @Nullable final IgnitePredicate<? super V>... ps) {
-        return isEmpty(ps) || isAlwaysTrue(ps) ? F.<Entry<K, V>>alwaysTrue() :
-            isAlwaysFalse(ps) ? F.<Entry<K, V>>alwaysFalse() :
-            new IgnitePredicate<Entry<K, V>>() {
-                @Override public boolean apply(Entry<K, V> e) {
+        return isEmpty(ps) || isAlwaysTrue(ps) ? F.<Cache.Entry<K, V>>alwaysTrue() :
+            isAlwaysFalse(ps) ? F.<Cache.Entry<K, V>>alwaysFalse() :
+            new IgnitePredicate<Cache.Entry<K, V>>() {
+                @Override public boolean apply(Cache.Entry<K, V> e) {
                     V v = e.getValue();
 
                     return v != null && F.isAll(v, ps);

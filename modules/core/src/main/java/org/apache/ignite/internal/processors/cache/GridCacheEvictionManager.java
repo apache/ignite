@@ -869,7 +869,10 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         if (evictSyncAgr) {
             assert !cctx.isNear(); // Make sure cache is not NEAR.
 
-            if (/*entry.wrap(false).backup() && TODO ignite-96*/evictSync)
+            if (cctx.affinity().backups(
+                    entry.key(),
+                    cctx.topology().topologyVersion()).contains(cctx.localNode()) &&
+                evictSync)
                 // Do not track backups if evicts are synchronized.
                 return !explicit;
 
@@ -1316,7 +1319,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         if (log.isDebugEnabled())
             log.debug("Notifying eviction policy with entry: " + e);
 
-        if (filter == null || filter.evictAllowed(e.wrap(false)))
+        if (filter == null || filter.evictAllowed(e.wrap()))
             plc.onEntryAccessed(e.obsoleteOrDeleted(), e.evictWrap());
     }
 

@@ -959,8 +959,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             if (last == null)
                 throw new IllegalStateException();
 
-            // TODO ignite-96
-            // ctx.cache().remove(last.getKey(), last.getValue());
+            ctx.grid().jcache(ctx.name()).remove(last.getKey(), last.getValue());
         }
 
         /**
@@ -974,7 +973,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     if (next.isInternal() || !next.visitable(CU.<K, V>empty()))
                         continue;
 
-                    entry = next.wrap(true);
+                    entry = next.wrap();
 
                     return;
                 }

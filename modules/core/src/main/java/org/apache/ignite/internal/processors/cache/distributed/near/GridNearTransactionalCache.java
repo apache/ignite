@@ -486,7 +486,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                 while (true) {
                     GridDistributedCacheEntry<K, V> entry = peekExx(key);
 
-                    if (entry == null || !ctx.isAll(entry.wrap(false), filter))
+                    if (entry == null || !ctx.isAll(entry.wrap(), filter))
                         break; // While.
 
                     try {

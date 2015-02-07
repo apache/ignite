@@ -2946,7 +2946,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     val = rawGetOrUnmarshalUnlocked(false);
                 }
 
-                if (!cctx.isAll(wrap(false), filter))
+                if (!cctx.isAll(wrap(), filter))
                     return F.t(CU.<V>failed(failFast));
 
                 if (F.isEmptyOrNulls(filter) || ver.equals(version()))
@@ -2972,7 +2972,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     @SuppressWarnings({"unchecked"})
     @Nullable private GridTuple<V> peekSwap(boolean failFast, IgnitePredicate<Entry<K, V>>[] filter)
         throws IgniteCheckedException, GridCacheFilterFailedException {
-        if (!cctx.isAll(wrap(false), filter))
+        if (!cctx.isAll(wrap(), filter))
             return F.t((V)CU.failed(failFast));
 
         synchronized (this) {
@@ -2995,7 +2995,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     @SuppressWarnings({"unchecked"})
     @Nullable private V peekDb(boolean failFast, IgnitePredicate<Entry<K, V>>[] filter)
         throws IgniteCheckedException, GridCacheFilterFailedException {
-        if (!cctx.isAll(wrap(false), filter))
+        if (!cctx.isAll(wrap(), filter))
             return CU.failed(failFast);
 
         synchronized (this) {
@@ -3693,7 +3693,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         return rawGetOrUnmarshalUnlocked(false);
     }
 
-    @Override public Entry<K, V> wrap(boolean prjAware) {
+    /** {@inheritDoc} */
+    @Override public Entry<K, V> wrap() {
         try {
             CacheEntryImpl<K, V> entry = new CacheEntryImpl<>(key, rawGetOrUnmarshal(true));
 
@@ -3702,7 +3703,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             return entry;
         }
         catch (IgniteCheckedException e) {
-            throw new RuntimeException("Fixme"); //TODO ignite-96
+            throw new IgniteException("Failed to wrap entry: " + this, e);
         }
     }
 
@@ -3887,7 +3888,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      */
     public boolean visitable(IgnitePredicate<Entry<K, V>>[] filter) {
         try {
-            if (obsoleteOrDeleted() || (filter != CU.<K, V>empty() && !cctx.isAll(wrap(false), filter)))
+            if (obsoleteOrDeleted() || (filter != CU.<K, V>empty() && !cctx.isAll(wrap(), filter)))
                 return false;
         }
         catch (IgniteCheckedException e) {
