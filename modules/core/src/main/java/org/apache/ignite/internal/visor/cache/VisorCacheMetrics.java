@@ -32,41 +32,53 @@ public class VisorCacheMetrics implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Gets the number of all entries cached on this node. */
+    /** Number of non-{@code null} values in the cache. */
     private int size;
 
-    /** Create time of the owning entity (either cache or entry). */
-    private long createTm;
-
-    /** Last write time of the owning entity (either cache or entry). */
-    private long writeTm;
-
-    /** Last read time of the owning entity (either cache or entry). */
-    private long readTm;
-
-    /** Last time transaction was committed. */
-    private long commitTm;
-
-    /** Last time transaction was rollback. */
-    private long rollbackTm;
+    /** Gets number of keys in the cache, possibly with {@code null} values. */
+    private int keySize;
 
     /** Total number of reads of the owning entity (either cache or entry). */
-    private int reads;
+    private long reads;
+
+    /** The mean time to execute gets. */
+    private float avgReadTime;
 
     /** Total number of writes of the owning entity (either cache or entry). */
-    private int writes;
+    private long writes;
 
     /** Total number of hits for the owning entity (either cache or entry). */
-    private int hits;
+    private long hits;
 
     /** Total number of misses for the owning entity (either cache or entry). */
-    private int misses;
+    private long misses;
 
     /** Total number of transaction commits. */
-    private int txCommits;
+    private long txCommits;
+
+    /** The mean time to execute tx commit. */
+    private float avgTxCommitTime;
 
     /** Total number of transaction rollbacks. */
-    private int txRollbacks;
+    private long txRollbacks;
+
+    /** The mean time to execute tx rollbacks. */
+    private float avgTxRollbackTime;
+
+    /** The total number of puts to the cache. */
+    private long puts;
+
+    /** The mean time to execute puts. */
+    private float avgPutTime;
+
+    /** The total number of removals from the cache. */
+    private long removals;
+
+    /** The mean time to execute removes. */
+    private float avgRemovalTime;
+
+    /** The total number of evictions from the cache. */
+    private long evictions;
 
     /** Reads per second. */
     private int readsPerSec;
@@ -89,6 +101,51 @@ public class VisorCacheMetrics implements Serializable {
     /** Gets query metrics for cache. */
     private VisorCacheQueryMetrics qryMetrics;
 
+    /** Current size of evict queue used to batch up evictions. */
+    private int dhtEvictQueueCurrentSize;
+
+    /** Gets transaction per-thread map size. */
+    private int txThreadMapSize;
+
+    /** Transaction per-Xid map size. */
+    private int txXidMapSize;
+
+    /** Committed transaction queue size. */
+    private int txCommitQueueSize;
+
+    /** Prepared transaction queue size. */
+    private int txPrepareQueueSize;
+
+    /** Start version counts map size. */
+    private int txStartVersionCountsSize;
+
+    /** Number of cached committed transaction IDs. */
+    private int txCommittedVersionsSize;
+
+    /** Number of cached rolled back transaction IDs. */
+    private int txRolledbackVersionsSize;
+
+    /** DHT thread map size */
+    private int txDhtThreadMapSize;
+
+    /** Transaction DHT per-Xid map size. */
+    private int txDhtXidMapSize;
+
+    /** Committed DHT transaction queue size. */
+    private int txDhtCommitQueueSize;
+
+    /** Prepared DHT transaction queue size. */
+    private int txDhtPrepareQueueSize;
+
+    /** DHT start version counts map size. */
+    private int txDhtStartVersionCountsSize;
+
+    /** Number of cached committed DHT transaction IDs. */
+    private int txDhtCommittedVersionsSize;
+
+    /** Number of cached rolled back DHT transaction IDs. */
+    private int txDhtRolledbackVersionsSize;
+
     /** Calculate rate of metric per second. */
     private static int perSecond(int metric, long time, long createTime) {
         long seconds = (time - createTime) / 1000;
@@ -105,15 +162,27 @@ public class VisorCacheMetrics implements Serializable {
 
         CacheMetrics m = c.metrics();
 
-        cm.size = c.size();
+        cm.size = m.getSize();
+        cm.keySize = m.getKeySize();
 
-        cm.reads = (int)m.getCacheGets();
-        cm.writes = (int)(m.getCachePuts() + m.getCacheRemovals());
-        cm.hits = (int)m.getCacheHits();
-        cm.misses = (int)m.getCacheMisses();
+        cm.reads = m.getCacheGets();
+        cm.writes = m.getCachePuts() + m.getCacheRemovals();
+        cm.hits = m.getCacheHits();
+        cm.misses = m.getCacheMisses();
 
-        cm.txCommits = (int)m.getCacheTxCommits();
-        cm.txRollbacks = (int)m.getCacheTxRollbacks();
+        cm.txCommits = m.getCacheTxCommits();
+        cm.txRollbacks = m.getCacheTxRollbacks();
+
+        cm.avgTxCommitTime = m.getAverageTxCommitTime();
+        cm.avgTxRollbackTime = m.getAverageTxRollbackTime();
+
+        cm.puts = m.getCachePuts();
+        cm.removals = m.getCacheRemovals();
+        cm.evictions = m.getCacheEvictions();
+
+        cm.avgReadTime = m.getAverageGetTime();
+        cm.avgPutTime = m.getAveragePutTime();
+        cm.avgRemovalTime = m.getAverageRemoveTime();
 
         cm.readsPerSec = (int)(MICROSECONDS_IN_SECOND * 1.f / m.getAverageGetTime());
         cm.writesPerSec = (int)(MICROSECONDS_IN_SECOND * 1.f / m.getAveragePutTime());
@@ -124,83 +193,120 @@ public class VisorCacheMetrics implements Serializable {
 
         cm.qryMetrics = VisorCacheQueryMetrics.from(c.queries().metrics());
 
+        cm.dhtEvictQueueCurrentSize = m.getDhtEvictQueueCurrentSize();
+        cm.txThreadMapSize = m.getTxThreadMapSize();
+        cm.txXidMapSize = m.getTxXidMapSize();
+        cm.txCommitQueueSize = m.getTxCommitQueueSize();
+        cm.txPrepareQueueSize = m.getTxPrepareQueueSize();
+        cm.txStartVersionCountsSize = m.getTxStartVersionCountsSize();
+        cm.txCommittedVersionsSize = m.getTxCommittedVersionsSize();
+        cm.txRolledbackVersionsSize = m.getTxRolledbackVersionsSize();
+        cm.txDhtThreadMapSize = m.getTxDhtThreadMapSize();
+        cm.txDhtXidMapSize = m.getTxDhtXidMapSize();
+        cm.txDhtCommitQueueSize = m.getTxDhtCommitQueueSize();
+        cm.txDhtPrepareQueueSize = m.getTxDhtPrepareQueueSize();
+        cm.txDhtStartVersionCountsSize = m.getTxDhtStartVersionCountsSize();
+        cm.txDhtCommittedVersionsSize = m.getTxDhtCommittedVersionsSize();
+        cm.txDhtRolledbackVersionsSize = m.getTxDhtRolledbackVersionsSize();
+
         return cm;
-    }
-
-    /**
-     * @return Create time of the owning entity (either cache or entry).
-     */
-    public long createTime() {
-        return createTm;
-    }
-
-    /**
-     * @return Last write time of the owning entity (either cache or entry).
-     */
-    public long writeTime() {
-        return writeTm;
-    }
-
-    /**
-     * @return Last read time of the owning entity (either cache or entry).
-     */
-    public long readTime() {
-        return readTm;
-    }
-
-    /**
-     * @return Last time transaction was committed.
-     */
-    public long commitTime() {
-        return commitTm;
-    }
-
-    /**
-     * @return Last time transaction was rollback.
-     */
-    public long rollbackTime() {
-        return rollbackTm;
     }
 
     /**
      * @return Total number of reads of the owning entity (either cache or entry).
      */
-    public int reads() {
+    public long reads() {
         return reads;
+    }
+
+    /**
+     * @return The mean time to execute gets
+     */
+    public float avgReadTime() {
+        return avgReadTime;
     }
 
     /**
      * @return Total number of writes of the owning entity (either cache or entry).
      */
-    public int writes() {
+    public long writes() {
         return writes;
     }
 
     /**
      * @return Total number of hits for the owning entity (either cache or entry).
      */
-    public int hits() {
+    public long hits() {
         return hits;
     }
 
     /**
      * @return Total number of misses for the owning entity (either cache or entry).
      */
-    public int misses() {
+    public long misses() {
         return misses;
     }
 
     /**
      * @return Total number of transaction commits.
      */
-    public int txCommits() {
+    public long txCommits() {
         return txCommits;
+    }
+
+    /**
+     * @return avgTxCommitTime
+     */
+    public float avgTxCommitTime() {
+        return avgTxCommitTime;
+    }
+
+    /**
+     * @return The mean time to execute tx rollbacks.
+     */
+    public float avgTxRollbackTime() {
+        return avgTxRollbackTime;
+    }
+
+    /**
+     * @return The total number of puts to the cache.
+     */
+    public long puts() {
+        return puts;
+    }
+
+    /**
+     * @return The mean time to execute puts.
+     */
+    public float avgPutTime() {
+        return avgPutTime;
+    }
+
+    /**
+     * @return The total number of removals from the cache.
+     */
+    public long removals() {
+        return removals;
+    }
+
+    /**
+     * @return The mean time to execute removes.
+     */
+    public float avgRemovalTime() {
+        return avgRemovalTime;
+    }
+
+    /**
+     * @return The total number of evictions from the cache.
+     */
+    public long evictions() {
+        return evictions;
     }
 
     /**
      * @return Total number of transaction rollbacks.
      */
-    public int txRollbacks() {
+    public long txRollbacks() {
         return txRollbacks;
     }
 
@@ -247,10 +353,17 @@ public class VisorCacheMetrics implements Serializable {
     }
 
     /**
-     * @return Gets the number of all entries cached on this node.
+     * @return Number of non-{@code null} values in the cache.
      */
     public int size() {
         return size;
+    }
+
+    /**
+     * @return Gets number of keys in the cache, possibly with {@code null} values.
+     */
+    public int keySize() {
+        return keySize;
     }
 
     /**
@@ -258,6 +371,110 @@ public class VisorCacheMetrics implements Serializable {
      */
     public VisorCacheQueryMetrics queryMetrics() {
         return qryMetrics;
+    }
+
+    /**
+     * @return Current size of evict queue used to batch up evictions.
+     */
+    public int dhtEvictQueueCurrentSize() {
+        return dhtEvictQueueCurrentSize;
+    }
+
+    /**
+     * @return Gets transaction per-thread map size.
+     */
+    public int txThreadMapSize() {
+        return txThreadMapSize;
+    }
+
+    /**
+     * @return Transaction per-Xid map size.
+     */
+    public int txXidMapSize() {
+        return txXidMapSize;
+    }
+
+    /** Committed transaction queue size.
+     */
+    public int txCommitQueueSize() {
+        return txCommitQueueSize;
+    }
+
+    /**
+     * @return Prepared transaction queue size.
+     */
+    public int txPrepareQueueSize() {
+        return txPrepareQueueSize;
+    }
+
+    /**
+     * @return Start version counts map size.
+     */
+    public int txStartVersionCountsSize() {
+        return txStartVersionCountsSize;
+    }
+
+    /**
+     * @return Number of cached committed transaction IDs.
+     */
+    public int txCommittedVersionsSize() {
+        return txCommittedVersionsSize;
+    }
+
+    /**
+     * @return Number of cached rolled back transaction IDs.
+     */
+    public int txRolledbackVersionsSize() {
+        return txRolledbackVersionsSize;
+    }
+
+    /**
+     * @return DHT thread map size
+     */
+    public int txDhtThreadMapSize() {
+        return txDhtThreadMapSize;
+    }
+
+    /**
+     * @return Transaction DHT per-Xid map size.
+     */
+    public int txDhtXidMapSize() {
+        return txDhtXidMapSize;
+    }
+
+    /**
+     * @return Committed DHT transaction queue size.
+     */
+    public int txDhtCommitQueueSize() {
+        return txDhtCommitQueueSize;
+    }
+
+    /**
+     * @return Prepared DHT transaction queue size.
+     */
+    public int txDhtPrepareQueueSize() {
+        return txDhtPrepareQueueSize;
+    }
+
+    /**
+     * @return DHT start version counts map size.
+     */
+    public int txDhtStartVersionCountsSize() {
+        return txDhtStartVersionCountsSize;
+    }
+
+    /**
+     * @return Number of cached committed DHT transaction IDs.
+     */
+    public int txDhtCommittedVersionsSize() {
+        return txDhtCommittedVersionsSize;
+    }
+
+    /**
+     * @return Number of cached rolled back DHT transaction IDs.
+     */
+    public int txDhtRolledbackVersionsSize() {
+        return txDhtRolledbackVersionsSize;
     }
 
     /** {@inheritDoc} */
