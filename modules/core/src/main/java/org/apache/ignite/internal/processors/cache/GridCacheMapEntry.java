@@ -510,7 +510,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     e = detached() ? cctx.swap().read(this, true, true, true) : cctx.swap().readAndRemove(this);
 
                 if (log.isDebugEnabled())
-                    log.debug("Read swap entry [swapEntry=" + e + ", Entry=" + this + ']');
+                    log.debug("Read swap entry [swapEntry=" + e + ", cacheEntry=" + this + ']');
 
                 flags |= IS_UNSWAPPED_MASK;
 
@@ -3695,7 +3695,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     /** {@inheritDoc} */
     @Override public Cache.Entry<K, V> wrap() {
         try {
-            CacheEntryImpl<K, V> entry = new CacheEntryImpl<>(key, rawGetOrUnmarshal(true));
+            CacheEntryImpl<K, V> entry = new CacheEntryImpl<>(key, rawGetOrUnmarshal(false));
 
             entry.version(ver);
 
