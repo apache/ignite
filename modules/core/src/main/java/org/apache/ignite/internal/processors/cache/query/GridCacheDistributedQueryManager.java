@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 
 /**
@@ -89,8 +89,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         });
 
         cctx.events().addListener(new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
-                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+            @Override public void onEvent(Event evt) {
+                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                 for (GridCacheDistributedQueryFuture fut : futs.values())
                     fut.onNodeLeft(discoEvt.eventNode().id());

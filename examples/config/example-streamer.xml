@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
     Ignite Spring configuration file to startup ignite with streamers.
@@ -47,7 +47,7 @@
     -->
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
+            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
                 <!-- Set to false to allow non-serializable objects in examples, default is true. -->
                 <property name="requireSerializable" value="false"/>
             </bean>

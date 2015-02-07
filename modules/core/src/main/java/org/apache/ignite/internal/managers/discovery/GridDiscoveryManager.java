@@ -27,7 +27,6 @@ import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.managers.security.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
-import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -52,8 +51,8 @@ import java.util.concurrent.atomic.*;
 import java.util.zip.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
 /**
@@ -150,7 +149,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private long segChkFreq;
 
     /** Local node join to topology event. */
-    private GridFutureAdapterEx<IgniteDiscoveryEvent> locJoinEvt = new GridFutureAdapterEx<>();
+    private GridFutureAdapterEx<DiscoveryEvent> locJoinEvt = new GridFutureAdapterEx<>();
 
     /** GC CPU load. */
     private volatile double gcCpuLoad;
@@ -179,7 +178,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         // at java.lang.management.MemoryUsage.<init>(MemoryUsage.java:105)
         // at com.ibm.lang.management.MemoryMXBeanImpl.getNonHeapMemoryUsageImpl(Native Method)
         // at com.ibm.lang.management.MemoryMXBeanImpl.getNonHeapMemoryUsage(MemoryMXBeanImpl.java:143)
-        // at org.gridgain.grid.spi.metrics.jdk.GridJdkLocalMetricsSpi.getMetrics(GridJdkLocalMetricsSpi.java:242)
+        // at org.apache.ignite.spi.metrics.jdk.GridJdkLocalMetricsSpi.getMetrics(GridJdkLocalMetricsSpi.java:242)
         //
         // We so had to workaround this with exception handling, because we can not control classes from WebSphere.
         try {
@@ -207,7 +206,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             // No-op.
         }
 
-        attrs.put(GridNodeAttributes.ATTR_PHY_RAM, totSysMemory);
+        attrs.put(IgniteNodeAttributes.ATTR_PHY_RAM, totSysMemory);
 
         getSpi().setNodeAttributes(attrs, ver);
     }
@@ -284,7 +283,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 // If this is a local join event, just save it and do not notify listeners.
                 if (type == EVT_NODE_JOINED && node.id().equals(locNode.id())) {
-                    IgniteDiscoveryEvent discoEvt = new IgniteDiscoveryEvent();
+                    DiscoveryEvent discoEvt = new DiscoveryEvent();
 
                     discoEvt.node(ctx.discovery().localNode());
                     discoEvt.eventNode(node);
@@ -1149,7 +1148,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /** @return Event that represents a local node joined to topology. */
-    public IgniteDiscoveryEvent localJoinEvent() {
+    public DiscoveryEvent localJoinEvent() {
         try {
             return locJoinEvt.get();
         }
@@ -1285,7 +1284,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /**
          * Method is called when any discovery event occurs.
          *
-         * @param type Discovery event type. See {@link org.apache.ignite.events.IgniteDiscoveryEvent} for more details.
+         * @param type Discovery event type. See {@link org.apache.ignite.events.DiscoveryEvent} for more details.
          * @param topVer Topology version.
          * @param node Remote node this event is connected with.
          * @param topSnapshot Topology snapshot.
@@ -1294,7 +1293,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             assert node != null;
 
             if (ctx.event().isRecordable(type)) {
-                IgniteDiscoveryEvent evt = new IgniteDiscoveryEvent();
+                DiscoveryEvent evt = new DiscoveryEvent();
 
                 evt.node(ctx.discovery().localNode());
                 evt.eventNode(node);
@@ -1678,10 +1677,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         /** {@inheritDoc} */
-        @Override public void onEvent(IgniteEvent evt) {
+        @Override public void onEvent(Event evt) {
             assert evt.type() == EVT_NODE_JOINED || evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-            IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+            DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
             if (discoEvt.topologyVersion() >= awaitVer)
                 onDone(discoEvt.topologyVersion());

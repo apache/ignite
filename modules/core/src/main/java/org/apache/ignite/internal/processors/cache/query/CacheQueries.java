@@ -31,7 +31,7 @@ import java.util.*;
  * <p>
  * Instance of {@code CacheQueries} is obtained from cache projection as follows:
  * <pre name="code" class="java">
- * CacheQueries q = GridGain.grid().cache("myCache").queries();
+ * CacheQueries q = Ignition.ignite().cache("myCache").queries();
  * </pre>
  */
 public interface CacheQueries<K, V> {

@@ -54,8 +54,8 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.cache.query.QueryPredicate.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.junit.Assert.*;
 
 /**
@@ -109,7 +109,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         c.setDiscoverySpi(disco);
 
-        IgniteQueryConfiguration idxCfg = new IgniteQueryConfiguration();
+        QueryConfiguration idxCfg = new QueryConfiguration();
 
         idxCfg.setIndexCustomFunctionClasses(SqlFunctions.class);
 
@@ -118,7 +118,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         // Otherwise noop swap space will be chosen on Windows.
         c.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
-        c.setMarshaller(new IgniteOptimizedMarshaller(false));
+        c.setMarshaller(new OptimizedMarshaller(false));
 
         CacheConfiguration[] ccs = new CacheConfiguration[2];
 
@@ -1051,11 +1051,11 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
 
         for (int i = 0; i < gridCount(); i++) {
-            grid(i).events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    assert evt instanceof IgniteCacheQueryReadEvent;
+            grid(i).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assert evt instanceof CacheQueryReadEvent;
 
-                    IgniteCacheQueryReadEvent<Integer, Integer> qe = (IgniteCacheQueryReadEvent<Integer, Integer>)evt;
+                    CacheQueryReadEvent<Integer, Integer> qe = (CacheQueryReadEvent<Integer, Integer>)evt;
 
                     assertEquals(SQL, qe.queryType());
                     assertNull(qe.cacheName());
@@ -1076,11 +1076,11 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 }
             }, EVT_CACHE_QUERY_OBJECT_READ);
 
-            grid(i).events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    assert evt instanceof IgniteCacheQueryExecutedEvent;
+            grid(i).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assert evt instanceof CacheQueryExecutedEvent;
 
-                    IgniteCacheQueryExecutedEvent qe = (IgniteCacheQueryExecutedEvent)evt;
+                    CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
                     assertEquals(SQL, qe.queryType());
                     assertNull(qe.cacheName());
@@ -1139,11 +1139,11 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
 
         for (int i = 0; i < gridCount(); i++) {
-            grid(i).events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    assert evt instanceof IgniteCacheQueryReadEvent;
+            grid(i).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assert evt instanceof CacheQueryReadEvent;
 
-                    IgniteCacheQueryReadEvent<Integer, Integer> qe = (IgniteCacheQueryReadEvent<Integer, Integer>)evt;
+                    CacheQueryReadEvent<Integer, Integer> qe = (CacheQueryReadEvent<Integer, Integer>)evt;
 
                     assertEquals(SCAN, qe.queryType());
                     assertNull(qe.cacheName());
@@ -1164,11 +1164,11 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 }
             }, EVT_CACHE_QUERY_OBJECT_READ);
 
-            grid(i).events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    assert evt instanceof IgniteCacheQueryExecutedEvent;
+            grid(i).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assert evt instanceof CacheQueryExecutedEvent;
 
-                    IgniteCacheQueryExecutedEvent qe = (IgniteCacheQueryExecutedEvent)evt;
+                    CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
                     assertEquals(SCAN, qe.queryType());
                     assertNull(qe.cacheName());
@@ -1229,11 +1229,11 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
 
         for (int i = 0; i < gridCount(); i++) {
-            grid(i).events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    assert evt instanceof IgniteCacheQueryReadEvent;
+            grid(i).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assert evt instanceof CacheQueryReadEvent;
 
-                    IgniteCacheQueryReadEvent<Integer, Person> qe = (IgniteCacheQueryReadEvent<Integer, Person>)evt;
+                    CacheQueryReadEvent<Integer, Person> qe = (CacheQueryReadEvent<Integer, Person>)evt;
 
                     assertEquals(FULL_TEXT, qe.queryType());
                     assertNull(qe.cacheName());
@@ -1254,11 +1254,11 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 }
             }, EVT_CACHE_QUERY_OBJECT_READ);
 
-            grid(i).events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    assert evt instanceof IgniteCacheQueryExecutedEvent;
+            grid(i).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assert evt instanceof CacheQueryExecutedEvent;
 
-                    IgniteCacheQueryExecutedEvent qe = (IgniteCacheQueryExecutedEvent)evt;
+                    CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
                     assertEquals(FULL_TEXT, qe.queryType());
                     assertNull(qe.cacheName());
@@ -1317,11 +1317,11 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         final CountDownLatch execLatch = new CountDownLatch(cacheMode() == REPLICATED ? 1 : gridCount());
 
         for (int i = 0; i < gridCount(); i++) {
-            grid(i).events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    assert evt instanceof IgniteCacheQueryReadEvent;
+            grid(i).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assert evt instanceof CacheQueryReadEvent;
 
-                    IgniteCacheQueryReadEvent qe = (IgniteCacheQueryReadEvent)evt;
+                    CacheQueryReadEvent qe = (CacheQueryReadEvent)evt;
 
                     assertEquals(SQL_FIELDS, qe.queryType());
                     assertNull(qe.cacheName());
@@ -1344,11 +1344,11 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 }
             }, EVT_CACHE_QUERY_OBJECT_READ);
 
-            grid(i).events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    assert evt instanceof IgniteCacheQueryExecutedEvent;
+            grid(i).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assert evt instanceof CacheQueryExecutedEvent;
 
-                    IgniteCacheQueryExecutedEvent qe = (IgniteCacheQueryExecutedEvent)evt;
+                    CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
                     assertEquals(SQL_FIELDS, qe.queryType());
                     assertNull(qe.cacheName());

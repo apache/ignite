@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.rest;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -555,7 +554,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     public void testLog() throws Exception {
         String path = "work/log/ignite.log." + System.currentTimeMillis();
 
-        File file = new File(U.getGridGainHome(), path);
+        File file = new File(U.getIgniteHome(), path);
 
         assert !file.exists();
 

@@ -18,7 +18,6 @@
 package org.apache.ignite.client;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.client.balancer.*;
 import org.apache.ignite.client.impl.*;
@@ -93,7 +92,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
     public static final int REST_TCP_PORT_BASE = 12345;
 
     static {
-        System.setProperty("CLIENTS_MODULE_PATH", U.resolveGridGainPath("modules/clients").getAbsolutePath());
+        System.setProperty("CLIENTS_MODULE_PATH", U.resolveIgnitePath("modules/clients").getAbsolutePath());
     }
 
     /** Client instance for each test. */

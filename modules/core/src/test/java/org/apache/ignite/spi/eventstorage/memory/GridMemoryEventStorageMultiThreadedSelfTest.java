@@ -37,13 +37,13 @@ public class GridMemoryEventStorageMultiThreadedSelfTest extends GridSpiAbstract
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 for (int i = 0; i < 100000; i++)
-                    getSpi().record(new IgniteDiscoveryEvent(null, "Test event", 1, null));
+                    getSpi().record(new DiscoveryEvent(null, "Test event", 1, null));
 
                 return null;
             }
         }, 10, "event-thread");
 
-        Collection<IgniteEvent> evts = getSpi().localEvents(F.<IgniteEvent>alwaysTrue());
+        Collection<Event> evts = getSpi().localEvents(F.<Event>alwaysTrue());
 
         info("Events count in memory: " + evts.size());
 

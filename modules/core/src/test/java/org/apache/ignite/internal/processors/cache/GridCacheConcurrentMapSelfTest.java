@@ -225,13 +225,13 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
             }
         }, 10);
 
-        cache().get(rand.nextInt(cnt));
+        jcache().get(rand.nextInt(cnt));
 
         System.gc();
 
         Thread.sleep(1000);
 
-        cache().get(rand.nextInt(cnt));
+        jcache().get(rand.nextInt(cnt));
 
         assertEquals(0, local().map.iteratorMapSize());
     }
@@ -320,13 +320,13 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
             }
         }, 10);
 
-        cache().get(rand.nextInt(cnt));
+        jcache().get(rand.nextInt(cnt));
 
         System.gc();
 
         Thread.sleep(1000);
 
-        cache().get(rand.nextInt(cnt));
+        jcache().get(rand.nextInt(cnt));
 
         assertEquals(0, local().map.iteratorMapSize());
     }

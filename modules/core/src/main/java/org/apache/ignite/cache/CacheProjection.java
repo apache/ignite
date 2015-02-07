@@ -314,7 +314,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * </pre>
      * <p>
      * Note that this method makes sense only if cache is working in portable mode
-     * ({@link CacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
+     * ({@link org.apache.ignite.configuration.CacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
      * this method is no-op and will return current projection.
      *
      * @return Projection for portable objects.
@@ -1171,7 +1171,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
 
     /**
      * Starts transaction with default isolation, concurrency, timeout, and invalidation policy.
-     * All defaults are set in {@link CacheConfiguration} at startup.
+     * All defaults are set in {@link org.apache.ignite.configuration.CacheConfiguration} at startup.
      *
      * @return New transaction
      * @throws IllegalStateException If transaction is already started by this thread.
@@ -1311,7 +1311,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * Evicts entry associated with given key from cache. Note, that entry will be evicted
      * only if it's not used (not participating in any locks or transactions).
      * <p>
-     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
      * <h2 class="header">Cache Flags</h2>
@@ -1328,7 +1328,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * evicted only if it's not used (not participating in any locks or
      * transactions).
      * <p>
-     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
      * <h2 class="header">Cache Flags</h2>
@@ -1342,7 +1342,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * that entry will be evicted only if it's not used (not
      * participating in any locks or transactions).
      * <p>
-     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
      * <h2 class="header">Cache Flags</h2>
@@ -1357,7 +1357,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * Clears all entries from this cache only if the entry is not
      * currently locked or participating in a transaction.
      * <p>
-     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
      * also be cleared from swap.
      * <p>
@@ -1374,7 +1374,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * Clears an entry from this cache and swap storage only if the entry
      * is not currently locked, and is not participating in a transaction.
      * <p>
-     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link CacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
      * also be cleared from swap.
      * <p>
@@ -1412,7 +1412,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * nodes and local node, as opposed to {@link CacheProjection#clearLocally()} method which only
      * clears local node's cache.
      * <p>
-     * GridGain will make the best attempt to clearLocally caches on all nodes. If some caches
+     * Ignite will make the best attempt to clearLocally caches on all nodes. If some caches
      * could not be cleared, then exception will be thrown.
      *
      * @param timeout Timeout for clearLocally all task in milliseconds (0 for never).

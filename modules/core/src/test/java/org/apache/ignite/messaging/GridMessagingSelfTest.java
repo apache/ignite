@@ -173,7 +173,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        ((IgniteOptimizedMarshaller)cfg.getMarshaller()).setRequireSerializable(false);
+        ((OptimizedMarshaller)cfg.getMarshaller()).setRequireSerializable(false);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

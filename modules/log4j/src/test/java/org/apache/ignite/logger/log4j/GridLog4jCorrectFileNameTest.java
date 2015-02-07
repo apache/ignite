@@ -56,7 +56,7 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
         if (appender != null) {
             Logger.getRootLogger().removeAppender(IgniteLog4jRollingFileAppender.class.getSimpleName());
 
-            IgniteLog4jLogger.removeAppender(appender);
+            Log4JLogger.removeAppender(appender);
         }
     }
 
@@ -81,7 +81,7 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
         try (Ignite ignite = G.start(getConfiguration("grid" + id))) {
             String id8 = U.id8(ignite.cluster().localNode().id());
             String logPath = "work/log/ignite-" + id8 + ".log";
-            File logFile = U.resolveGridGainPath(logPath);
+            File logFile = U.resolveIgnitePath(logPath);
 
             assertNotNull("Failed to resolve path: " + logPath, logFile);
             assertTrue("Log file does not exist: " + logFile, logFile.exists());
@@ -104,7 +104,7 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName(gridName);
-        cfg.setGridLogger(new IgniteLog4jLogger());
+        cfg.setGridLogger(new Log4JLogger());
         cfg.setRestEnabled(false);
 
         return cfg;

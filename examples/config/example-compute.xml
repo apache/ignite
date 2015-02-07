@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
     Ignite configuration with all defaults and enabled p2p deployment and enabled events.
@@ -33,7 +33,7 @@
         <property name="peerClassLoadingEnabled" value="true"/>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
+            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
                 <!-- Set to false to allow non-serializable objects in examples, default is true. -->
                 <property name="requireSerializable" value="false"/>
             </bean>
@@ -41,7 +41,7 @@
 
         <!-- Enable task execution events for examples. -->
         <property name="includeEventTypes">
-            <util:constant static-field="org.apache.ignite.events.IgniteEventType.EVTS_TASK_EXECUTION"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVTS_TASK_EXECUTION"/>
         </property>
 
         <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->

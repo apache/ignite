@@ -17,10 +17,10 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.dataload.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -74,13 +74,13 @@ import java.util.*;
  *      updates and allow data loader choose most optimal concurrent implementation.
  *  </li>
  *  <li>
- *      {@link #updater(IgniteDataLoadCacheUpdater)} - defines how cache will be updated with loaded entries.
+ *      {@link #updater(org.apache.ignite.IgniteDataLoader.Updater)} - defines how cache will be updated with loaded entries.
  *      It allows to provide user-defined custom logic to update the cache in the most effective and flexible way.
  *  </li>
  *  <li>
  *      {@link #deployClass(Class)} - optional deploy class for peer deployment. All classes
  *      loaded by a data loader must be class-loadable from the same class-loader.
- *      GridGain will make the best effort to detect the most suitable class-loader
+ *      Ignite will make the best effort to detect the most suitable class-loader
  *      for data loading. However, in complex cases, where compound or deeply nested
  *      class-loaders are used, it is best to specify a deploy class which can be any
  *      class loaded by the class-loader for given data.
@@ -111,7 +111,7 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
 
     /**
      * Sets flag indicating that this data loader should assume that there are no other concurrent updates to the cache.
-     * Should not be used when custom cache updater set using {@link #updater(IgniteDataLoadCacheUpdater)} method.
+     * Should not be used when custom cache updater set using {@link #updater(org.apache.ignite.IgniteDataLoader.Updater)} method.
      * Default is {@code false}.
      *
      * @param isolated Flag value.
@@ -213,7 +213,7 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
 
     /**
      * Optional deploy class for peer deployment. All classes loaded by a data loader
-     * must be class-loadable from the same class-loader. GridGain will make the best
+     * must be class-loadable from the same class-loader. Ignite will make the best
      * effort to detect the most suitable class-loader for data loading. However,
      * in complex cases, where compound or deeply nested class-loaders are used,
      * it is best to specify a deploy class which can be any class loaded by
@@ -228,7 +228,7 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
      *
      * @param updater Cache updater.
      */
-    public void updater(IgniteDataLoadCacheUpdater<K, V> updater);
+    public void updater(Updater<K, V> updater);
 
     /**
      * Adds key for removal on remote node. Equivalent to {@link #addData(Object, Object) addData(key, null)}.
@@ -357,4 +357,23 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
      * @throws IgniteInterruptedException If thread has been interrupted.
      */
     @Override public void close() throws IgniteException, IgniteInterruptedException;
+
+    /**
+     * Updates cache with batch of entries. Usually it is enough to configure {@link IgniteDataLoader#isolated(boolean)}
+     * property and appropriate internal cache updater will be chosen automatically. But in some cases to achieve best
+     * performance custom user-defined implementation may help.
+     * <p>
+     * Data loader can be configured to use custom implementation of updater instead of default one using
+     * {@link IgniteDataLoader#updater(IgniteDataLoader.Updater)} method.
+     */
+    interface Updater<K, V> extends Serializable {
+        /**
+         * Updates cache with batch of entries.
+         *
+         * @param cache Cache.
+         * @param entries Collection of entries.
+         * @throws org.apache.ignite.IgniteException If failed.
+         */
+        public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) throws IgniteException;
+    }
 }

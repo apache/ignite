@@ -34,7 +34,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Load balancing SPI that picks a random node for job execution. Note that you can
@@ -146,7 +146,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * Here is how you can configure {@code GridRandomLoadBalancingSpi} using Spring XML configuration:
  * <pre name="code" class="xml">
  * &lt;property name="loadBalancingSpi"&gt;
- *     &lt;bean class="org.gridgain.grid.spi.loadBalancing.weightedrandom.GridWeightedRandomLoadBalancingSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.loadBalancing.weightedrandom.GridWeightedRandomLoadBalancingSpi"&gt;
  *         &lt;property name="useWeights" value="true"/&gt;
  *         &lt;property name="nodeWeight" value="10"/&gt;
  *     &lt;/bean&gt;
@@ -176,7 +176,7 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
     public static final int DFLT_NODE_WEIGHT = 10;
 
     /** Grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** */
@@ -262,12 +262,12 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
     /** {@inheritDoc} */
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         getSpiContext().addLocalEventListener(evtLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof IgniteTaskEvent || evt instanceof IgniteJobEvent;
+            @Override public void onEvent(Event evt) {
+                assert evt instanceof TaskEvent || evt instanceof JobEvent;
 
                 if (evt.type() == EVT_TASK_FINISHED ||
                     evt.type() == EVT_TASK_FAILED) {
-                    IgniteUuid sesId = ((IgniteTaskEvent)evt).taskSessionId();
+                    IgniteUuid sesId = ((TaskEvent)evt).taskSessionId();
 
                     taskTops.remove(sesId);
 
@@ -278,7 +278,7 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
                 // avoid O(n*n/2) complexity, after that we can drop caches.
                 // Here we set mapped property and later cache will be ignored
                 else if (evt.type() == EVT_JOB_MAPPED) {
-                    IgniteUuid sesId = ((IgniteJobEvent)evt).taskSessionId();
+                    IgniteUuid sesId = ((JobEvent)evt).taskSessionId();
 
                     IgniteBiTuple<Boolean, WeightedTopology> weightedTop = taskTops.get(sesId);
 

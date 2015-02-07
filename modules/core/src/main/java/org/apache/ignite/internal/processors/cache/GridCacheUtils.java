@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -50,7 +49,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 
@@ -1622,6 +1621,25 @@ public class GridCacheUtils {
         IgniteTxIsolation isolation, IgniteInClosureX<CacheProjection<K ,V>> clo) throws IgniteCheckedException {
 
         try (IgniteInternalTx tx = cache.txStartEx(concurrency, isolation);) {
+            clo.applyx(cache);
+
+            tx.commit();
+        }
+    }
+
+    /**
+     * Execute closure inside cache transaction.
+     *
+     * @param cache Cache.
+     * @param concurrency Concurrency.
+     * @param isolation Isolation.
+     * @param clo Closure.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static <K, V> void inTx(Ignite ignite, IgniteCache<K, V> cache, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, IgniteInClosureX<IgniteCache<K ,V>> clo) throws IgniteCheckedException {
+
+        try (IgniteTx tx = ignite.transactions().txStart(concurrency, isolation)) {
             clo.applyx(cache);
 
             tx.commit();

@@ -29,7 +29,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.jdbc.IgniteJdbcDriver.*;
+import static org.apache.ignite.IgniteJdbcDriver.*;
 
 /**
  * Test JDBC with several local caches.
@@ -42,7 +42,7 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache";
 
     /** URL. */
-    private static final String URL = "jdbc:gridgain://127.0.0.1/" + CACHE_NAME;
+    private static final String URL = "jdbc:ignite://127.0.0.1/" + CACHE_NAME;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -91,7 +91,7 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
         assert cache2.putx("key1", 3);
         assert cache2.putx("key2", 4);
 
-        Class.forName("org.apache.ignite.jdbc.IgniteJdbcDriver");
+        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */

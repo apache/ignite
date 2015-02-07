@@ -115,7 +115,7 @@ public class StreamingPopularNumbersExample {
 
             // Reset all streamers on all nodes to make sure that
             // consecutive executions start from scratch.
-            ignite.compute().broadcast(new Runnable() {
+            ignite.compute().broadcast(new IgniteRunnable() {
                 @Override public void run() {
                     if (!ExamplesUtils.hasStreamer(ignite, "popular-numbers"))
                         System.err.println("Default streamer not found (is example-streamer.xml " +

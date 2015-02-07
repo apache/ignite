@@ -27,7 +27,7 @@ import java.util.*;
  */
 public class GridTestTask extends ComputeTaskSplitAdapter<Object, Object> {
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** {@inheritDoc} */

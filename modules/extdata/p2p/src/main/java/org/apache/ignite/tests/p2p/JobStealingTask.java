@@ -39,7 +39,7 @@ public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Intege
     private Ignite ignite;
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** {@inheritDoc} */
@@ -83,7 +83,7 @@ public class JobStealingTask extends ComputeTaskAdapter<Object, Map<UUID, Intege
         private Ignite ignite;
 
         /** Logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /**

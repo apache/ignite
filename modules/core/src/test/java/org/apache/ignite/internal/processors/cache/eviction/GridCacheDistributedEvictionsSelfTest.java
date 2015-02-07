@@ -67,12 +67,12 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        TransactionsConfiguration tCfg = new TransactionsConfiguration();
+        TransactionConfiguration tCfg = new TransactionConfiguration();
 
         tCfg.setDefaultTxConcurrency(PESSIMISTIC);
         tCfg.setDefaultTxIsolation(READ_COMMITTED);
 
-        c.setTransactionsConfiguration(tCfg);
+        c.setTransactionConfiguration(tCfg);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -154,8 +154,6 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * http://atlassian.gridgain.com/jira/browse/GG-9002
-     *
      * @throws Throwable If failed.
      */
     public void testLocalSync() throws Throwable {

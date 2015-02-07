@@ -21,12 +21,13 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 
-import static org.apache.ignite.cache.CacheConfiguration.*;
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
@@ -81,13 +82,13 @@ public class GridCacheAttributes implements Externalizable {
     /** Synchronization mode. */
     private CacheWriteSynchronizationMode writeSyncMode;
 
-    /** Flag indicating whether GridGain should use swap storage by default. */
+    /** Flag indicating whether Ignite should use swap storage by default. */
     protected boolean swapEnabled;
 
     /** Flag indicating whether  query indexing is enabled. */
     private boolean qryIdxEnabled;
 
-    /** Flag indicating whether GridGain should use write-behind behaviour for the cache store. */
+    /** Flag indicating whether Ignite should use write-behind behaviour for the cache store. */
     private boolean writeBehindEnabled;
 
     /** Maximum size of write-behind cache. */
@@ -479,7 +480,7 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Flag indicating whether GridGain should use write-behind behaviour for the cache store.
+     * @return Flag indicating whether Ignite should use write-behind behaviour for the cache store.
      */
     public boolean writeBehindEnabled() {
         return writeBehindEnabled;

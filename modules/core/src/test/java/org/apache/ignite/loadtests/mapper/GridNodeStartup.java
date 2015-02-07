@@ -24,7 +24,7 @@ import javax.swing.*;
 
 /**
  * Starts up an empty node with cache configuration.
- * You can also start a stand-alone GridGain instance by passing the path
+ * You can also start a stand-alone Ignite instance by passing the path
  * to configuration file to {@code 'ignite.{sh|bat}'} script, like so:
  * {@code 'ignite.sh examples/config/example-cache.xml'}.
  * <p>
@@ -44,10 +44,10 @@ public class GridNodeStartup {
             JOptionPane.showMessageDialog(
                 null,
                 new JComponent[] {
-                    new JLabel("GridGain started."),
-                    new JLabel("Press OK to stop GridGain.")
+                    new JLabel("Ignite started."),
+                    new JLabel("Press OK to stop Ignite.")
                 },
-                "GridGain",
+                "Ignite",
                 JOptionPane.INFORMATION_MESSAGE
             );
         }

@@ -61,7 +61,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
             cfg.setCacheConfiguration();
 
         cfg.setDiscoverySpi(discovery());
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }

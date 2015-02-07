@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
@@ -44,7 +45,7 @@ import java.util.concurrent.locks.*;
 /**
  * Cache proxy.
  */
-public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCache<K, V>>
+public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V>>
     implements IgniteCache<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -473,12 +474,6 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
         catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean clear(Collection<? extends K> keys) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -924,6 +919,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
         finally {
             gate.leave(prev);
         }
+    }
+
+    @Override public boolean clear(Collection<K> keys) {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

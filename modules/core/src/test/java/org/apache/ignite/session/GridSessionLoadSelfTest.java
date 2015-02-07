@@ -126,11 +126,11 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
     @ComputeTaskSessionFullSupport
     private static class SessionLoadTestTask extends ComputeTaskAdapter<Integer, Boolean> {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
@@ -229,11 +229,11 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
      */
     private static class SessionLoadTestJob extends ComputeJobAdapter {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /**

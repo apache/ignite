@@ -42,7 +42,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests replicated query.
@@ -209,16 +209,16 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
 
         final CountDownLatch latch = new CountDownLatch(keyCnt * 2);
 
-        IgnitePredicate<IgniteEvent> lsnr = new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 latch.countDown();
 
                 return true;
             }
         };
 
-        ignite2.events().localListen(lsnr, IgniteEventType.EVT_CACHE_OBJECT_PUT);
-        ignite3.events().localListen(lsnr, IgniteEventType.EVT_CACHE_OBJECT_PUT);
+        ignite2.events().localListen(lsnr, EventType.EVT_CACHE_OBJECT_PUT);
+        ignite3.events().localListen(lsnr, EventType.EVT_CACHE_OBJECT_PUT);
 
         IgniteTx tx = ignite1.transactions().txStart();
 
@@ -386,9 +386,9 @@ public class IgniteCacheReplicatedQuerySelfTest extends IgniteCacheAbstractQuery
             final UUID nodeId = g.cluster().localNode().id();
             final CountDownLatch latch = new CountDownLatch(1);
 
-            grid(0).events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    if (((IgniteDiscoveryEvent)evt).eventNode().id().equals(nodeId))
+            grid(0).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    if (((DiscoveryEvent)evt).eventNode().id().equals(nodeId))
                         latch.countDown();
 
                     return true;

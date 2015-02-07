@@ -32,7 +32,7 @@ import java.io.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests for cache preloader.
@@ -79,10 +79,10 @@ public abstract class GridCachePreloadLifecycleAbstractTest extends GridCommonAb
 
         c.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
         c.setIncludeProperties();
-        c.setDeploymentMode(IgniteDeploymentMode.SHARED);
+        c.setDeploymentMode(DeploymentMode.SHARED);
         c.setNetworkTimeout(10000);
         c.setRestEnabled(false);
-        c.setMarshaller(new IgniteOptimizedMarshaller(false));
+        c.setMarshaller(new OptimizedMarshaller(false));
 
 //        c.setPeerClassLoadingLocalClassPathExclude(GridCachePreloadLifecycleAbstractTest.class.getName(),
 //            MyValue.class.getName());

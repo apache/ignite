@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.fs.common.*;
 import org.apache.ignite.internal.processors.closure.*;

@@ -32,7 +32,7 @@ public class GridTestDeployment extends GridDeployment {
      * @param sampleClsName Sample class name.
      * @param loc {@code True} if local deployment.
      */
-    public GridTestDeployment(IgniteDeploymentMode depMode, ClassLoader clsLdr, IgniteUuid clsLdrId,
+    public GridTestDeployment(DeploymentMode depMode, ClassLoader clsLdr, IgniteUuid clsLdrId,
         String userVer, String sampleClsName, boolean loc) {
         super(depMode, clsLdr, clsLdrId, userVer, sampleClsName, loc);
     }

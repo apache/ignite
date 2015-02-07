@@ -40,7 +40,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridClosureCallMode.*;
 import static org.apache.ignite.internal.processors.affinity.GridAffinityUtils.*;
 
@@ -65,7 +65,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
     /** Listener. */
     private final GridLocalEventListener lsnr = new GridLocalEventListener() {
-        @Override public void onEvent(IgniteEvent evt) {
+        @Override public void onEvent(Event evt) {
             int evtType = evt.type();
 
             assert evtType == EVT_NODE_FAILED || evtType == EVT_NODE_LEFT || evtType == EVT_NODE_JOINED;
@@ -73,13 +73,13 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             if (affMap.isEmpty())
                 return; // Skip empty affinity map.
 
-            final IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+            final DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
             // Clean up affinity functions if such cache no more exists.
             if (evtType == EVT_NODE_FAILED || evtType == EVT_NODE_LEFT) {
                 final Collection<String> caches = new HashSet<>();
 
-                for (ClusterNode clusterNode : ((IgniteDiscoveryEvent)evt).topologyNodes())
+                for (ClusterNode clusterNode : ((DiscoveryEvent)evt).topologyNodes())
                     caches.addAll(U.cacheNames(clusterNode));
 
                 final Collection<AffinityAssignmentKey> rmv = new HashSet<>();

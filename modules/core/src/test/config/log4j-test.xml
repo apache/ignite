@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!DOCTYPE log4j:configuration PUBLIC "-//APACHE//DTD LOG4J 1.2//EN"
     "http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/xml/doc-files/log4j.dtd">
@@ -76,10 +76,10 @@
     </appender>
 
     <!--
-        Uncomment to enable GridGain query execution debugging.
+        Uncomment to enable Ignite query execution debugging.
     -->
     <!--
-    <category name="org.gridgain.cache.queries">
+    <category name="org.apache.ignite.cache.query">
         <level value="DEBUG"/>
     </category>
     -->
@@ -90,8 +90,8 @@
     </category>
     -->
 
-    <!-- Enable Gridgain debugging.
-     <category name="org.gridgain">
+    <!-- Enable Ignite debugging.
+     <category name="org.apache.ignite">
          <level value="DEBUG"/>
      </category>
     -->

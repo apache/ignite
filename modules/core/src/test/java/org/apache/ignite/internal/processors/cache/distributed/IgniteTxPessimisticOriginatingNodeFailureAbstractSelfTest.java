@@ -245,7 +245,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             for (ClusterNode node : e.getValue()) {
                 final UUID checkNodeId = node.id();
 
-                compute(G.ignite(checkNodeId).cluster().forNode(node)).call(new Callable<Void>() {
+                compute(G.ignite(checkNodeId).cluster().forNode(node)).call(new IgniteCallable<Void>() {
                     /** */
                     @IgniteInstanceResource
                     private Ignite ignite;
@@ -376,7 +376,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             for (ClusterNode node : e.getValue()) {
                 final UUID checkNodeId = node.id();
 
-                compute(G.ignite(checkNodeId).cluster().forNode(node)).call(new Callable<Void>() {
+                compute(G.ignite(checkNodeId).cluster().forNode(node)).call(new IgniteCallable<Void>() {
                     /** */
                     @IgniteInstanceResource
                     private Ignite ignite;
@@ -433,7 +433,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             }
         });
 
-        cfg.getTransactionsConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
+        cfg.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
 
         return cfg;
     }

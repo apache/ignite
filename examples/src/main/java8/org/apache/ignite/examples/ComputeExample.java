@@ -39,13 +39,13 @@ public class ComputeExample {
             System.out.println(">>> Compute broadcast example started.");
 
             // Broadcast closure to all cluster nodes.
-            ignite.compute().broadcast((IgniteRunnable)() -> System.out.println("Hello World"));
+            ignite.compute().broadcast(() -> System.out.println("Hello World"));
 
             // Unicast closure to some cluster node picked by load balancer.
-            ignite.compute().run((IgniteRunnable)() -> System.out.println("Hello World"));
+            ignite.compute().run(() -> System.out.println("Hello World"));
 
             // Unicast closure to some cluster node picked by load balancer and return result.
-            int length = ignite.compute().call((IgniteCallable<Integer>)"Hello World"::length);
+            int length = ignite.compute().call("Hello World"::length);
 
             System.out.println();
             System.out.println(">>> Computed length: " + length);

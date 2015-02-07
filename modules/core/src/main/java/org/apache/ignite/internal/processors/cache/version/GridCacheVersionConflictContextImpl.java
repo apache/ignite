@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.version;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

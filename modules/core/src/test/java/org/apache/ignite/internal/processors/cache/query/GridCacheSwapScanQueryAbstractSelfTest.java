@@ -55,7 +55,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 

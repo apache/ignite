@@ -307,7 +307,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger taskLog;
 
         /**
@@ -339,7 +339,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
                     @Override public void run() {
                         assert ignite != null;
                         assert ignite.configuration() != null;
-                        assert ignite.configuration().getGridGainHome() != null;
+                        assert ignite.configuration().getIgniteHome() != null;
                     }
                 };
 

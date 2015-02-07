@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.misc.client.memcache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -29,7 +28,7 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
 
 /**
  * Starts up an empty node with cache configuration that contains default cache.
@@ -61,7 +60,7 @@ public class MemcacheRestExampleNodeStartup {
         cfg.setDeploymentMode(SHARED);
         cfg.setPeerClassLoadingEnabled(true);
 
-        IgniteOptimizedMarshaller marsh = new IgniteOptimizedMarshaller();
+        OptimizedMarshaller marsh = new OptimizedMarshaller();
 
         marsh.setRequireSerializable(false);
 

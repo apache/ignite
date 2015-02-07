@@ -25,7 +25,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Interface for all main internal GridGain components (managers and processors).
+ * Interface for all main internal Ignite components (managers and processors).
  */
 public interface GridComponent {
     /**

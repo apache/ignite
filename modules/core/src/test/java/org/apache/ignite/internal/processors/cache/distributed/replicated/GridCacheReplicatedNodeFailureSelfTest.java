@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 
@@ -32,7 +31,7 @@ public class GridCacheReplicatedNodeFailureSelfTest extends GridCacheNodeFailure
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+        c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 

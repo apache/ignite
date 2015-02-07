@@ -55,15 +55,15 @@ import org.apache.ignite.*;
  * ignite resources. Both, field and method based injection are supported.
  * The following ignite resources can be injected:
  * <ul>
- * <li>{@link org.apache.ignite.resources.IgniteLoggerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteSpringApplicationContextResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteSpringResource}</li>
+ * <li>{@link org.apache.ignite.resources.LoggerResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringApplicationContextResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteInstanceResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  * <p>
  * <h1 class="header">Usage</h1>
- * If you need to tie your application logic into GridGain lifecycle,
+ * If you need to tie your application logic into Ignition lifecycle,
  * you can configure lifecycle beans via standard grid configuration, add your
  * application library dependencies into {@code IGNITE_HOME/libs} folder, and
  * simply start {@code IGNITE_HOME/ignite.{sh|bat}} scripts.
@@ -84,7 +84,7 @@ import org.apache.ignite.*;
  * </pre>
  * or from Spring XML configuration file as follows:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration"&gt;
+ * &lt;bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *    ...
  *    &lt;property name="lifecycleBeans"&gt;
  *       &lt;list&gt;

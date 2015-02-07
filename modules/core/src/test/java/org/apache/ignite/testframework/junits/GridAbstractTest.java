@@ -19,7 +19,6 @@ package org.apache.ignite.testframework.junits;
 
 import junit.framework.*;
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -57,7 +56,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
- * Common abstract test for GridGain tests.
+ * Common abstract test for Ignite tests.
  */
 @SuppressWarnings({
     "TransientFieldInNonSerializableClass",
@@ -96,7 +95,7 @@ public abstract class GridAbstractTest extends TestCase {
     static {
         System.setProperty(IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
 
-        Thread timer = new Thread(new GridTestClockTimer(), "gridgain-clock-for-tests");
+        Thread timer = new Thread(new GridTestClockTimer(), "ignite-clock-for-tests");
 
         timer.setDaemon(true);
 
@@ -694,7 +693,7 @@ public abstract class GridAbstractTest extends TestCase {
         try {
             Ignite ignite = G.ignite(gridName);
 
-            assert ignite != null : "GridGain returned null grid for name: " + gridName;
+            assert ignite != null : "Ignite returned null grid for name: " + gridName;
 
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() + ']');
 
@@ -864,7 +863,7 @@ public abstract class GridAbstractTest extends TestCase {
      */
     @SuppressWarnings("deprecation")
     protected IgniteConfiguration loadConfiguration(String springCfgPath) throws IgniteCheckedException {
-        URL cfgLocation = U.resolveGridGainUrl(springCfgPath);
+        URL cfgLocation = U.resolveIgniteUrl(springCfgPath);
 
         assert cfgLocation != null;
 
@@ -921,7 +920,7 @@ public abstract class GridAbstractTest extends TestCase {
         try {
             Ignite ignite = G.ignite(gridName);
 
-            assert ignite != null : "GridGain returned null grid for name: " + gridName;
+            assert ignite != null : "Ignite returned null grid for name: " + gridName;
 
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() + ']');
 
@@ -1019,8 +1018,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Path for specific marshaller.
      */
     @SuppressWarnings({"IfMayBeConditional", "deprecation"})
-    protected String getDefaultCheckpointPath(IgniteMarshaller marshaller) {
-        if (marshaller instanceof IgniteJdkMarshaller)
+    protected String getDefaultCheckpointPath(Marshaller marshaller) {
+        if (marshaller instanceof JdkMarshaller)
             return SharedFsCheckpointSpi.DFLT_DIR_PATH + "/jdk/";
         else
             return SharedFsCheckpointSpi.DFLT_DIR_PATH + '/' + marshaller.getClass().getSimpleName() + '/';
@@ -1035,10 +1034,10 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @return GridGain home.
+     * @return Ignite home.
      */
     protected String home() {
-        return getTestResources().getGridgainHome();
+        return getTestResources().getIgniteHome();
     }
 
     /**
@@ -1057,7 +1056,7 @@ public abstract class GridAbstractTest extends TestCase {
         cfg.setGridLogger(rsrcs.getLogger());
         cfg.setMarshaller(rsrcs.getMarshaller());
         cfg.setNodeId(rsrcs.getNodeId());
-        cfg.setGridGainHome(rsrcs.getGridgainHome());
+        cfg.setIgniteHome(rsrcs.getIgniteHome());
         cfg.setMBeanServer(rsrcs.getMBeanServer());
         cfg.setPeerClassLoadingEnabled(true);
         cfg.setMetricsLogFrequency(0);
@@ -1111,7 +1110,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setRestEnabled(false);
 
-        cfg.setIncludeEventTypes(IgniteEventType.EVTS_ALL);
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }
@@ -1189,8 +1188,8 @@ public abstract class GridAbstractTest extends TestCase {
 
                 // Remove resources cached in static, if any.
                 GridClassLoaderCache.clear();
-                IgniteOptimizedMarshaller.clearCache();
-                IgniteMarshallerExclusions.clearCache();
+                OptimizedMarshaller.clearCache();
+                MarshallerExclusions.clearCache();
                 GridEnumCache.clear();
             }
 
@@ -1417,8 +1416,7 @@ public abstract class GridAbstractTest extends TestCase {
                 int cnt = 0;
 
                 for (Method m : GridAbstractTest.this.getClass().getMethods())
-                    if (m.getDeclaringClass().getName().startsWith("org.gridgain") ||
-                        m.getDeclaringClass().getName().startsWith("org.apache.ignite")) {
+                    if (m.getDeclaringClass().getName().startsWith("org.apache.ignite")) {
                         if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
                             cnt++;
                     }

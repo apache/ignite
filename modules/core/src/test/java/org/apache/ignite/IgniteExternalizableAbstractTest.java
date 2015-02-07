@@ -31,11 +31,11 @@ public class IgniteExternalizableAbstractTest extends GridCommonAbstractTest {
     /**
      * @return Marshallers.
      */
-    protected List<IgniteMarshaller> getMarshallers() {
-        List<IgniteMarshaller> marshallers = new ArrayList<>();
+    protected List<Marshaller> getMarshallers() {
+        List<Marshaller> marshallers = new ArrayList<>();
 
-        marshallers.add(new IgniteJdkMarshaller());
-        marshallers.add(new IgniteOptimizedMarshaller());
+        marshallers.add(new JdkMarshaller());
+        marshallers.add(new OptimizedMarshaller());
 
         return marshallers;
     }

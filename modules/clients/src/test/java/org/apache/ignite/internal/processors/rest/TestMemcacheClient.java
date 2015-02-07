@@ -65,10 +65,10 @@ final class TestMemcacheClient {
     private static final short BYTE_ARR_FLAG = (8 << 8);
 
     /** Logger. */
-    private final IgniteLogger log = new IgniteJavaLogger();
+    private final IgniteLogger log = new JavaLogger();
 
     /** JDK marshaller. */
-    private final IgniteMarshaller jdkMarshaller = new IgniteJdkMarshaller();
+    private final Marshaller jdkMarshaller = new JdkMarshaller();
 
     /** Socket. */
     private final Socket sock;

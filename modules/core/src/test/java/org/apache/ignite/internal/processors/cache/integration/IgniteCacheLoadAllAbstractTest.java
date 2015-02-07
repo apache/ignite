@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.jdk8.backport.*;
 
@@ -214,12 +215,12 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
                 String expVal = expVals.get(key);
 
                 if (aff.isPrimaryOrBackup(node, key)) {
-                    assertEquals(expVal, cache.localPeek(key));
+                    assertEquals(expVal, cache.localPeek(key, CachePeekMode.ONHEAP));
 
                     assertEquals(expVal, cache.get(key));
                 }
                 else {
-                    assertNull(cache.localPeek(key));
+                    assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
                     if (!expVals.containsKey(key))
                         assertNull(cache.get(key));
@@ -227,7 +228,7 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
             }
 
             for (int key = keys + 1000; i < keys + 1010; i++) {
-                assertNull(cache.localPeek(key));
+                assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
                 assertNull(cache.get(key));
             }

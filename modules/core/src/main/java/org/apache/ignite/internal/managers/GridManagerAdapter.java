@@ -150,7 +150,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                                 ", attr=" + e.getKey() + ']' +
                                 ". Attribute set by one SPI implementation has the same name (name collision) as " +
                                 "attribute set by other SPI implementation. Such overriding is not allowed. " +
-                                "Please check your GridGain configuration and/or SPI implementation to avoid " +
+                                "Please check your Ignite configuration and/or SPI implementation to avoid " +
                                 "attribute name collisions.");
 
                         attrs.put(e.getKey(), e.getValue());
@@ -364,7 +364,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return true;
                     }
 
-                    @Override public void recordEvent(IgniteEvent evt) {
+                    @Override public void recordEvent(Event evt) {
                         A.notNull(evt, "evt");
 
                         if (ctx.event().isRecordable(evt.type()))

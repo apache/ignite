@@ -80,7 +80,7 @@ public class GridCacheVersionSelfTest extends GridCommonAbstractTest {
         GridCacheVersion ver = version(1, 1);
         GridCacheVersionEx verEx = new GridCacheVersionEx(2, 2, 0, 0, ver);
 
-        IgniteOptimizedMarshaller marsh = new IgniteOptimizedMarshaller(false);
+        OptimizedMarshaller marsh = new OptimizedMarshaller(false);
 
         byte[] verBytes = marsh.marshal(ver);
         byte[] verExBytes = marsh.marshal(verEx);

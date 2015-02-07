@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Grid unique version.
  */
-public class GridCacheVersion implements Comparable<GridCacheVersion>, Externalizable, IgniteOptimizedMarshallable {
+public class GridCacheVersion implements Comparable<GridCacheVersion>, Externalizable, OptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 

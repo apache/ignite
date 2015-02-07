@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated.preloader;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 

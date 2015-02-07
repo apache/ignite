@@ -29,4 +29,5 @@ import org.apache.ignite.internal.util.lang.*;
 public abstract class CA extends GridAbsClosure {
     /** */
     private static final long serialVersionUID = 0L;
- /* No-op. */ }
+ /* No-op. */
+}

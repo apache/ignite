@@ -38,8 +38,8 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
 /**
@@ -74,8 +74,8 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
     private final Map<Long, Object> versions = new HashMap<>();
 
     /** Listener on swap events. Updates counters. */
-    private final IgnitePredicate<IgniteEvent> swapLsnr = new IgnitePredicate<IgniteEvent>() {
-        @Override public boolean apply(IgniteEvent evt) {
+    private final IgnitePredicate<Event> swapLsnr = new IgnitePredicate<Event>() {
+        @Override public boolean apply(Event evt) {
             assert evt != null;
 
             switch (evt.type()) {

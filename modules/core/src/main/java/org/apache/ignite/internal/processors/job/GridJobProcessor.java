@@ -44,7 +44,7 @@ import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
@@ -57,7 +57,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private static final int FINISHED_JOBS_COUNT = Integer.getInteger(IGNITE_JOBS_HISTORY_SIZE, 10240);
 
     /** */
-    private final IgniteMarshaller marsh;
+    private final Marshaller marsh;
 
     /** */
     private final boolean jobAlwaysActivate;
@@ -430,11 +430,11 @@ public class GridJobProcessor extends GridProcessorAdapter {
         };
 
         GridLocalEventListener discoLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof IgniteDiscoveryEvent &&
+            @Override public void onEvent(Event evt) {
+                assert evt instanceof DiscoveryEvent &&
                     (evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) : "Unexpected event: " + evt;
 
-                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                 if (taskNodeId.equals(discoEvt.eventNode().id())) {
                     lock.lock();
@@ -1254,7 +1254,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 ", jobId=" + req.getJobId() + ']');
 
             if (ctx.event().isRecordable(EVT_JOB_FAILED)) {
-                IgniteJobEvent evt = new IgniteJobEvent();
+                JobEvent evt = new JobEvent();
 
                 evt.jobId(req.getJobId());
                 evt.message("Job reply failed (original task node left grid): " + req.getJobId());
@@ -1331,7 +1331,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
             }
 
             if (ctx.event().isRecordable(EVT_JOB_FAILED)) {
-                IgniteJobEvent evt = new IgniteJobEvent();
+                JobEvent evt = new JobEvent();
 
                 evt.jobId(req.getJobId());
                 evt.message("Failed to send reply for job: " + req.getJobId());
@@ -1380,7 +1380,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 (Map<?, ?>)marsh.unmarshal(req.getAttributesBytes(), ses.getClassLoader());
 
             if (ctx.event().isRecordable(EVT_TASK_SESSION_ATTR_SET)) {
-                IgniteEvent evt = new IgniteTaskEvent(
+                Event evt = new TaskEvent(
                     ctx.discovery().localNode(),
                     "Changed attributes: " + attrs,
                     EVT_TASK_SESSION_ATTR_SET,
@@ -1726,12 +1726,12 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @SuppressWarnings("fallthrough")
-        @Override public void onEvent(IgniteEvent evt) {
-            assert evt instanceof IgniteDiscoveryEvent;
+        @Override public void onEvent(Event evt) {
+            assert evt instanceof DiscoveryEvent;
 
             boolean handleCollisions = false;
 
-            UUID nodeId = ((IgniteDiscoveryEvent)evt).eventNode().id();
+            UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
             // We should always process discovery events (even on stop,
             // since we wait for jobs to complete if processor is stopped

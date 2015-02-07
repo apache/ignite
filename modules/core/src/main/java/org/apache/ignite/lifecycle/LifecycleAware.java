@@ -20,7 +20,7 @@ package org.apache.ignite.lifecycle;
 import org.apache.ignite.*;
 
 /**
- * All components provided in GridGain configuration can implement this interface.
+ * All components provided in Ignite configuration can implement this interface.
  * If a component implements this interface, then method {@link #start()} will be called
  * during grid startup and {@link #stop()} will be called during stop.
  */

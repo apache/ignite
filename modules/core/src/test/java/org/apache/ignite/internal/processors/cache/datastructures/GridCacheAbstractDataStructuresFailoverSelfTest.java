@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
@@ -93,7 +92,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+        AtomicConfiguration atomicCfg = new AtomicConfiguration();
 
         atomicCfg.setCacheMode(collectionCacheMode());
         atomicCfg.setBackups(collectionConfiguration().getBackups());
@@ -814,7 +813,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         }, threadCnt, "test-thread");
 
         while (!fut.isDone()) {
-            grid(0).compute().call(new Callable<Object>() {
+            grid(0).compute().call(new IgniteCallable<Object>() {
                     /** */
                     @IgniteInstanceResource
                     private Ignite g;

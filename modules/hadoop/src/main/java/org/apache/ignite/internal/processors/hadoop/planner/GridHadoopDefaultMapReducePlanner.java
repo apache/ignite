@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.planner;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.fs.hadoop.*;
 import org.apache.ignite.internal.processors.fs.*;
@@ -43,7 +43,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
 
     /** Logger. */
     @SuppressWarnings("UnusedDeclaration")
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** {@inheritDoc} */

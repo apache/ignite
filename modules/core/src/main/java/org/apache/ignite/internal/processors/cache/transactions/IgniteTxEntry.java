@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
  * {@link #equals(Object)} method, as transaction entries should use referential
  * equality.
  */
-public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable, IgniteOptimizedMarshallable {
+public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable, OptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -43,7 +43,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Partitioned affinity test.
@@ -426,13 +426,13 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     /**
      *
      */
-    private static class ListenerJob implements Runnable, Serializable {
+    private static class ListenerJob implements IgniteRunnable {
         /** Grid. */
         @IgniteInstanceResource
         private Ignite ignite;
 
         /** Logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
@@ -464,9 +464,9 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         @Override public void run() {
             printAffinity(ignite, keyCnt);
 
-            IgnitePredicate<IgniteEvent> lsnr = new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    IgniteCacheEvent e = (IgniteCacheEvent)evt;
+            IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    CacheEvent e = (CacheEvent)evt;
 
                     switch (e.type()) {
                         case EVT_CACHE_OBJECT_PUT:

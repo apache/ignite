@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cluster.*;
@@ -67,7 +66,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+        c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 

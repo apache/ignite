@@ -58,7 +58,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -101,7 +101,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** @{inheritDoc} */
@@ -123,7 +123,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
         protected Ignite ignite;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         protected IgniteLogger log;
     }
 
@@ -189,7 +189,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @return Future object.
      * @throws IgniteCheckedException If failed.
      */
-    private ComputeTaskFuture<?> runAsync(int idx, Runnable job, @Nullable IgnitePredicate<ClusterNode> p)
+    private ComputeTaskFuture<?> runAsync(int idx, IgniteRunnable job, @Nullable IgnitePredicate<ClusterNode> p)
         throws IgniteCheckedException {
         assert idx >= 0 && idx < NODES_CNT;
         assert job != null;
@@ -212,7 +212,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @return Future object.
      * @throws IgniteCheckedException If failed.
      */
-    private ComputeTaskFuture<?> broadcast(int idx, Runnable job, @Nullable IgnitePredicate<ClusterNode> p)
+    private ComputeTaskFuture<?> broadcast(int idx, IgniteRunnable job, @Nullable IgnitePredicate<ClusterNode> p)
         throws IgniteCheckedException {
         assert idx >= 0 && idx < NODES_CNT;
         assert job != null;
@@ -262,7 +262,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @return Future object.
      */
     private ComputeTaskFuture<Integer> callAsync(int idx,
-        Callable<Integer> job, @Nullable
+        IgniteCallable<Integer> job, @Nullable
         IgnitePredicate<ClusterNode> p) {
         assert idx >= 0 && idx < NODES_CNT;
         assert job != null;
@@ -285,7 +285,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @return Future object.
      * @throws IgniteCheckedException If failed.
      */
-    private ComputeTaskFuture<Collection<Integer>> broadcast(int idx, Callable<Integer> job,
+    private ComputeTaskFuture<Collection<Integer>> broadcast(int idx, IgniteCallable<Integer> job,
         @Nullable IgnitePredicate<ClusterNode> p) throws IgniteCheckedException {
         assert idx >= 0 && idx < NODES_CNT;
         assert job != null;
@@ -340,7 +340,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRunAsyncSingle() throws Exception {
-        Runnable job = new TestRunnable();
+        IgniteRunnable job = new TestRunnable();
 
         ComputeTaskFuture<?> fut = broadcast(0, job, null);
 
@@ -380,7 +380,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCallAsyncSingle() throws Exception {
-        Callable<Integer> job = new TestCallable();
+        IgniteCallable<Integer> job = new TestCallable();
 
         ComputeTaskFuture<Collection<Integer>> fut1 = broadcast(0, job, null);
 
@@ -511,7 +511,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     public void testReducerError() throws Exception {
         final Ignite g = grid(0);
 
-        final Collection<Callable<Integer>> jobs = new ArrayList<>();
+        final Collection<IgniteCallable<Integer>> jobs = new ArrayList<>();
 
         for (int i = 0; i < g.cluster().nodes().size(); i++) {
             jobs.add(new IgniteCallable<Integer>() {

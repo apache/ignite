@@ -34,19 +34,19 @@ public class VisorExecutorServiceConfiguration implements Serializable {
     /** Executor service. */
     private String execSvc;
 
-    /** Whether or not GridGain will stop executor service on node shutdown. */
+    /** Whether or not Ignite will stop executor service on node shutdown. */
     private boolean execSvcShutdown;
 
     /** System executor service. */
     private String sysExecSvc;
 
-    /** Whether or not GridGain will stop system executor service on node shutdown. */
+    /** Whether or not Ignite will stop system executor service on node shutdown. */
     private boolean sysExecSvcShutdown;
 
     /** Peer-to-peer executor service. */
     private String p2pExecSvc;
 
-    /** Whether or not GridGain will stop peer-to-peer executor service on node shutdown. */
+    /** Whether or not Ignite will stop peer-to-peer executor service on node shutdown. */
     private boolean p2pExecSvcShutdown;
 
     /** REST requests executor service. */
@@ -96,14 +96,14 @@ public class VisorExecutorServiceConfiguration implements Serializable {
     }
 
     /**
-     * @return Whether or not GridGain will stop executor service on node shutdown.
+     * @return Whether or not Ignite will stop executor service on node shutdown.
      */
     public boolean executeServiceShutdown() {
         return execSvcShutdown;
     }
 
     /**
-     * @param execSvcShutdown New whether or not GridGain will stop executor service on node shutdown.
+     * @param execSvcShutdown New whether or not Ignite will stop executor service on node shutdown.
      */
     public void executeServiceShutdown(boolean execSvcShutdown) {
         this.execSvcShutdown = execSvcShutdown;
@@ -124,14 +124,14 @@ public class VisorExecutorServiceConfiguration implements Serializable {
     }
 
     /**
-     * @return Whether or not GridGain will stop system executor service on node shutdown.
+     * @return Whether or not Ignite will stop system executor service on node shutdown.
      */
     public boolean systemExecutorServiceShutdown() {
         return sysExecSvcShutdown;
     }
 
     /**
-     * @param sysExecSvcShutdown New whether or not GridGain will stop system executor service on node shutdown.
+     * @param sysExecSvcShutdown New whether or not Ignite will stop system executor service on node shutdown.
      */
     public void systemExecutorServiceShutdown(boolean sysExecSvcShutdown) {
         this.sysExecSvcShutdown = sysExecSvcShutdown;
@@ -152,14 +152,14 @@ public class VisorExecutorServiceConfiguration implements Serializable {
     }
 
     /**
-     * @return Whether or not GridGain will stop peer-to-peer executor service on node shutdown.
+     * @return Whether or not Ignite will stop peer-to-peer executor service on node shutdown.
      */
     public boolean p2pExecutorServiceShutdown() {
         return p2pExecSvcShutdown;
     }
 
     /**
-     * @param p2pExecSvcShutdown New whether or not GridGain will stop peer-to-peer executor service on node shutdown.
+     * @param p2pExecSvcShutdown New whether or not Ignite will stop peer-to-peer executor service on node shutdown.
      */
     public void p2pExecutorServiceShutdown(boolean p2pExecSvcShutdown) {
         this.p2pExecSvcShutdown = p2pExecSvcShutdown;

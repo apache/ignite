@@ -26,7 +26,6 @@ import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
@@ -57,13 +56,13 @@ import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheConfiguration.*;
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -345,15 +344,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     " 'true' [cacheName=" + cc.getName() + ']');
         }
 
-        IgniteDeploymentMode depMode = c.getDeploymentMode();
+        DeploymentMode depMode = c.getDeploymentMode();
 
         if (c.isPeerClassLoadingEnabled() && (depMode == PRIVATE || depMode == ISOLATED) &&
             !CU.isSystemCache(cc.getName()))
             throw new IgniteCheckedException("Cannot start cache in PRIVATE or ISOLATED deployment mode: " +
                 ctx.config().getDeploymentMode());
 
-        if (!c.getTransactionsConfiguration().isTxSerializableEnabled() &&
-            c.getTransactionsConfiguration().getDefaultTxIsolation() == SERIALIZABLE)
+        if (!c.getTransactionConfiguration().isTxSerializableEnabled() &&
+            c.getTransactionConfiguration().getDefaultTxIsolation() == SERIALIZABLE)
             U.warn(log,
                 "Serializable transactions are disabled while default transaction isolation is SERIALIZABLE " +
                     "(most likely misconfiguration - either update 'isTxSerializableEnabled' or " +
@@ -553,7 +552,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        IgniteDeploymentMode depMode = ctx.config().getDeploymentMode();
+        DeploymentMode depMode = ctx.config().getDeploymentMode();
 
         if (!F.isEmpty(ctx.config().getCacheConfiguration())) {
             if (depMode != CONTINUOUS && depMode != SHARED)
@@ -586,7 +585,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         sharedCtx = createSharedContext(ctx);
 
         ctx.performance().add("Disable serializable transactions (set 'txSerializableEnabled' to false)",
-            !ctx.config().getTransactionsConfiguration().isTxSerializableEnabled());
+            !ctx.config().getTransactionConfiguration().isTxSerializableEnabled());
 
         Collection<GridCacheAdapter<?, ?>> startSeq = new ArrayList<>(cfgs.length);
 
@@ -949,7 +948,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         attrs.put(ATTR_CACHE, attrVals);
 
-        attrs.put(ATTR_TX_CONFIG, ctx.config().getTransactionsConfiguration());
+        attrs.put(ATTR_TX_CONFIG, ctx.config().getTransactionConfiguration());
 
         if (!interceptors.isEmpty())
             attrs.put(ATTR_CACHE_INTERCEPTORS, interceptors);
@@ -1062,8 +1061,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (F.isEmpty(rmtAttrs) || F.isEmpty(locAttrs))
             return;
 
-        IgniteDeploymentMode locDepMode = ctx.config().getDeploymentMode();
-        IgniteDeploymentMode rmtDepMode = rmt.attribute(GridNodeAttributes.ATTR_DEPLOYMENT_MODE);
+        DeploymentMode locDepMode = ctx.config().getDeploymentMode();
+        DeploymentMode rmtDepMode = rmt.attribute(IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE);
 
         for (GridCacheAttributes rmtAttr : rmtAttrs) {
             for (GridCacheAttributes locAttr : locAttrs) {
@@ -1227,10 +1226,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If check failed.
      */
     private void checkTransactionConfiguration(ClusterNode rmt) throws IgniteCheckedException {
-        TransactionsConfiguration txCfg = rmt.attribute(ATTR_TX_CONFIG);
+        TransactionConfiguration txCfg = rmt.attribute(ATTR_TX_CONFIG);
 
         if (txCfg != null) {
-            TransactionsConfiguration locTxCfg = ctx.config().getTransactionsConfiguration();
+            TransactionConfiguration locTxCfg = ctx.config().getTransactionConfiguration();
 
             if (locTxCfg.isTxSerializableEnabled() != txCfg.isTxSerializableEnabled())
                 throw new IgniteCheckedException("Serializable transactions enabled mismatch " +

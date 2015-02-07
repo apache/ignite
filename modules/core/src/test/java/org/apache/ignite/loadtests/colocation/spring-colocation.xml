@@ -15,16 +15,16 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
-    GridGain Spring configuration file to startup grid cache.
+    Ignite Spring configuration file to startup grid cache.
 
-    When starting a standalone GridGain node, you need to execute the following command:
+    When starting a standalone Ignite node, you need to execute the following command:
     {IGNITE_HOME}/bin/ignite.{bat|sh} path-to-this-file/example-cache.xml
 
-    When starting GridGain from Java IDE, pass path to this file into GridGain:
-    GridGain.start("path-to-this-file/example-benchmark.xml");
+    When starting Ignite from Java IDE, pass path to this file into Ignition:
+    Ignition.start("path-to-this-file/example-benchmark.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -112,7 +112,7 @@
                 <!--
                     Partitioned cache example configuration.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="partitioned"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>

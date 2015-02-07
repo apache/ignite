@@ -80,7 +80,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
     public static class TestAllMethodsTask extends ComputeTaskAdapter<Object, Object> {
         /** */
         @SuppressWarnings({"UnusedDeclaration"})
-        @IgniteTaskContinuousMapperResource
+        @TaskContinuousMapperResource
         private ComputeTaskContinuousMapper mapper;
 
         /** */
@@ -125,7 +125,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestLifeCycleTask extends ComputeTaskAdapter<Object, Object> {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
@@ -136,7 +136,7 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
          * @throws IgniteCheckedException Thrown if any exception occurs.
          */
         @SuppressWarnings("unused")
-        @IgniteTaskContinuousMapperResource
+        @TaskContinuousMapperResource
         private void setMapper(ComputeTaskContinuousMapper mapper) throws IgniteCheckedException {
             this.mapper = mapper;
 
@@ -215,11 +215,11 @@ public class GridTaskContinuousMapperSelfTest extends GridCommonAbstractTest {
     public static class TestNegativeTask extends ComputeTaskAdapter<Object, Object> {
         /** */
         @SuppressWarnings({"UnusedDeclaration"})
-        @IgniteTaskContinuousMapperResource
+        @TaskContinuousMapperResource
         private ComputeTaskContinuousMapper mapper;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */

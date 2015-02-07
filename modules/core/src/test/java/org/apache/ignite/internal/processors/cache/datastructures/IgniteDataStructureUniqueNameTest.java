@@ -54,7 +54,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+        AtomicConfiguration atomicCfg = new AtomicConfiguration();
 
         atomicCfg.setBackups(1);
         atomicCfg.setCacheMode(PARTITIONED);
