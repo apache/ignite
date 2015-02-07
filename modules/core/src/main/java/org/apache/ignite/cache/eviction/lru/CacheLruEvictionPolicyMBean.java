@@ -22,14 +22,14 @@ import org.apache.ignite.mxbean.*;
 /**
  * MBean for {@code LRU} eviction policy.
  */
-@IgniteMXBeanDescription("MBean for LRU cache eviction policy.")
+@MXBeanDescription("MBean for LRU cache eviction policy.")
 public interface CacheLruEvictionPolicyMBean {
     /**
      * Gets maximum allowed cache size.
      *
      * @return Maximum allowed cache size.
      */
-    @IgniteMXBeanDescription("Maximum allowed cache size.")
+    @MXBeanDescription("Maximum allowed cache size.")
     public int getMaxSize();
 
     /**
@@ -37,7 +37,7 @@ public interface CacheLruEvictionPolicyMBean {
      *
      * @param max Maximum allowed cache size.
      */
-    @IgniteMXBeanDescription("Sets maximum allowed cache size.")
+    @MXBeanDescription("Sets maximum allowed cache size.")
     public void setMaxSize(int max);
 
     /**
@@ -45,6 +45,6 @@ public interface CacheLruEvictionPolicyMBean {
      *
      * @return Current queue size.
      */
-    @IgniteMXBeanDescription("Current queue size.")
+    @MXBeanDescription("Current queue size.")
     public int getCurrentSize();
 }

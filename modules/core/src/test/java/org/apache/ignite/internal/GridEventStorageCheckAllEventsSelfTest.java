@@ -31,7 +31,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Test event storage.
@@ -56,7 +56,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
         ignite.compute().localDeployTask(GridAllEventsTestTask.class, GridAllEventsTestTask.class.getClassLoader());
 
-        List<IgniteEvent> evts = pullEvents(tstamp, 1);
+        List<Event> evts = pullEvents(tstamp, 1);
 
         assertEvent(evts.get(0).type(), EVT_TASK_DEPLOYED, evts);
     }
@@ -71,7 +71,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      * @param expType Expected event type.
      * @param evts Full list of events.
      */
-    private void assertEvent(int evtType, int expType, List<IgniteEvent> evts) {
+    private void assertEvent(int evtType, int expType, List<Event> evts) {
         assert evtType == expType : "Invalid event [evtType=" + evtType + ", expectedType=" + expType +
             ", evts=" + evts + ']';
     }
@@ -84,7 +84,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
         generateEvents(null, new GridAllCheckpointEventsTestJob()).get();
 
-        List<IgniteEvent> evts = pullEvents(tstamp, 11);
+        List<Event> evts = pullEvents(tstamp, 11);
 
         assertEvent(evts.get(0).type(), EVT_TASK_STARTED, evts);
         assertEvent(evts.get(1).type(), EVT_JOB_MAPPED, evts);
@@ -110,7 +110,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
         ignite.compute().undeployTask(GridAllEventsTestTask.class.getName());
         ignite.compute().localDeployTask(GridAllEventsTestTask.class, GridAllEventsTestTask.class.getClassLoader());
 
-        List<IgniteEvent> evts = pullEvents(tstamp, 12);
+        List<Event> evts = pullEvents(tstamp, 12);
 
         assertEvent(evts.get(0).type(), EVT_TASK_STARTED, evts);
         assertEvent(evts.get(1).type(), EVT_JOB_MAPPED, evts);
@@ -134,7 +134,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
         generateEvents(null, new GridAllEventsSuccessTestJob()).get();
 
-        List<IgniteEvent> evts = pullEvents(tstamp, 10);
+        List<Event> evts = pullEvents(tstamp, 10);
 
         assertEvent(evts.get(0).type(), EVT_TASK_STARTED, evts);
         assertEvent(evts.get(1).type(), EVT_JOB_MAPPED, evts);
@@ -165,7 +165,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
             info("Expected exception caught [taskFuture=" + fut + ", exception=" + e + ']');
         }
 
-        List<IgniteEvent> evts = pullEvents(tstamp, 7);
+        List<Event> evts = pullEvents(tstamp, 7);
 
         assertEvent(evts.get(0).type(), EVT_TASK_STARTED, evts);
         assertEvent(evts.get(1).type(), EVT_JOB_MAPPED, evts);
@@ -193,7 +193,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
             info("Expected timeout exception caught [taskFuture=" + fut + ", exception=" + e + ']');
         }
 
-        List<IgniteEvent> evts = pullEvents(tstamp, 6);
+        List<Event> evts = pullEvents(tstamp, 6);
 
         assertEvent(evts.get(0).type(), EVT_TASK_STARTED, evts);
         assertEvent(evts.get(1).type(), EVT_JOB_MAPPED, evts);
@@ -254,11 +254,11 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      * @return List of events.
      * @throws Exception If failed.
      */
-    private List<IgniteEvent> pullEvents(long since, int evtCnt) throws Exception {
-        IgnitePredicate<IgniteEvent> filter = new CustomEventFilter(GridAllEventsTestTask.class.getName(), since);
+    private List<Event> pullEvents(long since, int evtCnt) throws Exception {
+        IgnitePredicate<Event> filter = new CustomEventFilter(GridAllEventsTestTask.class.getName(), since);
 
         for (int i = 0; i < 3; i++) {
-            List<IgniteEvent> evts = new ArrayList<>(ignite.events().localQuery((filter)));
+            List<Event> evts = new ArrayList<>(ignite.events().localQuery((filter)));
 
             info("Filtered events [size=" + evts.size() + ", evts=" + evts + ']');
 
@@ -302,7 +302,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /**
      *
      */
-    private static class CustomEventFilter implements IgnitePredicate<IgniteEvent> {
+    private static class CustomEventFilter implements IgnitePredicate<Event> {
         /** */
         private final String taskName;
 
@@ -322,15 +322,15 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
+        @Override public boolean apply(Event evt) {
             if (evt.timestamp() >= tstamp) {
-                if (evt instanceof IgniteTaskEvent)
-                    return taskName.equals(((IgniteTaskEvent)evt).taskName());
-                else if (evt instanceof IgniteJobEvent)
-                    return taskName.equals(((IgniteJobEvent)evt).taskName());
-                else if (evt instanceof IgniteDeploymentEvent)
-                    return taskName.equals(((IgniteDeploymentEvent)evt).alias());
-                else if (evt instanceof IgniteCheckpointEvent)
+                if (evt instanceof TaskEvent)
+                    return taskName.equals(((TaskEvent)evt).taskName());
+                else if (evt instanceof JobEvent)
+                    return taskName.equals(((JobEvent)evt).taskName());
+                else if (evt instanceof DeploymentEvent)
+                    return taskName.equals(((DeploymentEvent)evt).alias());
+                else if (evt instanceof CheckpointEvent)
                     return true;
             }
 
@@ -343,7 +343,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      */
     private static class GridAllEventsSuccessTestJob extends ComputeJobAdapter {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
@@ -371,7 +371,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      */
     private static class GridAllEventsTimeoutTestJob extends ComputeJobAdapter {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
@@ -397,7 +397,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      */
     private static class GridAllCheckpointEventsTestJob extends ComputeJobAdapter {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */

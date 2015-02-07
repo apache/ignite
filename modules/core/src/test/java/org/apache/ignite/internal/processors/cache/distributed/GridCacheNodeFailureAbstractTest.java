@@ -36,7 +36,7 @@ import java.util.*;
 
 import static org.apache.ignite.IgniteState.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -81,7 +81,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         c.setDiscoverySpi(disco);
 
-        c.setDeploymentMode(IgniteDeploymentMode.SHARED);
+        c.setDeploymentMode(DeploymentMode.SHARED);
 
         return c;
     }
@@ -176,8 +176,8 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
             info("Check grid index: " + checkIdx);
 
-            IgniteFuture<?> f = waitForLocalEvent(grid(checkIdx).events(), new P1<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent e) {
+            IgniteFuture<?> f = waitForLocalEvent(grid(checkIdx).events(), new P1<Event>() {
+                @Override public boolean apply(Event e) {
                     info("Received grid event: " + e);
 
                     return true;
@@ -261,8 +261,8 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         assert cache.isLocked(KEY) : "Entry is not locked for grid [idx=" + checkIdx + ", entry=" + e + ']';
 
-        IgniteFuture<?> f = waitForLocalEvent(grid(checkIdx).events(), new P1<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent e) {
+        IgniteFuture<?> f = waitForLocalEvent(grid(checkIdx).events(), new P1<Event>() {
+            @Override public boolean apply(Event e) {
                 info("Received grid event: " + e);
 
                 return true;

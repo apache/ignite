@@ -37,7 +37,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static javax.cache.event.EventType.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 
 /**

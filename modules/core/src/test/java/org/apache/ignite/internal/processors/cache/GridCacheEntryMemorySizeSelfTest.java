@@ -83,7 +83,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
             NEAR_ENTRY_OVERHEAD = U.<Integer>staticField(GridNearCacheEntry.class, "NEAR_SIZE_OVERHEAD");
             REPLICATED_ENTRY_OVERHEAD = DHT_ENTRY_OVERHEAD;
 
-            IgniteMarshaller marsh = new IgniteOptimizedMarshaller();
+            Marshaller marsh = new OptimizedMarshaller();
 
             KEY_SIZE = marsh.marshal(1).length;
             ONE_KB_VAL_SIZE = marsh.marshal(new Value(new byte[1024])).length;

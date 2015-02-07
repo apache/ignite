@@ -78,7 +78,7 @@ import java.util.regex.*;
 import java.util.zip.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
 /**
@@ -455,7 +455,7 @@ public abstract class IgniteUtils {
         }
 
         // Event names initialization.
-        for (Field field : IgniteEventType.class.getFields()) {
+        for (Field field : EventType.class.getFields()) {
             if (field.getType().equals(int.class)) {
                 try {
                     assert field.getName().startsWith("EVT_") : "Invalid event name (should start with 'EVT_': " +
@@ -485,8 +485,8 @@ public abstract class IgniteUtils {
         // because they may have been initialized to null before GRID_EVTS were initialized.
         if (EVTS_ALL == null || EVTS_ALL_MINUS_METRIC_UPDATE == null) {
             try {
-                Field f1 = IgniteEventType.class.getDeclaredField("EVTS_ALL");
-                Field f2 = IgniteEventType.class.getDeclaredField("EVTS_ALL_MINUS_METRIC_UPDATE");
+                Field f1 = EventType.class.getDeclaredField("EVTS_ALL");
+                Field f2 = EventType.class.getDeclaredField("EVTS_ALL_MINUS_METRIC_UPDATE");
 
                 assert f1 != null;
                 assert f2 != null;
@@ -8448,7 +8448,7 @@ public abstract class IgniteUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static Collection<InetSocketAddress> resolveAddresses(
-        IgniteAddressResolver addrRslvr,
+        AddressResolver addrRslvr,
         Iterable<String> addrs,
         int port
     ) throws IgniteCheckedException {

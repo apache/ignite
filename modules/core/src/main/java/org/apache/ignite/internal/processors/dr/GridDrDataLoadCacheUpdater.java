@@ -18,8 +18,7 @@
 package org.apache.ignite.internal.processors.dr;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.dataload.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
@@ -32,7 +31,7 @@ import java.util.*;
 /**
  * Data center replication cache updater for data loader.
  */
-public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataLoadCacheUpdater<K, V> {
+public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataLoader.Updater<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 

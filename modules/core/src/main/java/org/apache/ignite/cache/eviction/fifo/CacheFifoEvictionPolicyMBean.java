@@ -22,14 +22,14 @@ import org.apache.ignite.mxbean.*;
 /**
  * MBean for {@code FIFO} eviction policy.
  */
-@IgniteMXBeanDescription("MBean for FIFO cache eviction policy.")
+@MXBeanDescription("MBean for FIFO cache eviction policy.")
 public interface CacheFifoEvictionPolicyMBean {
     /**
      * Gets maximum allowed cache size.
      *
      * @return Maximum allowed cache size.
      */
-    @IgniteMXBeanDescription("Maximum allowed cache size.")
+    @MXBeanDescription("Maximum allowed cache size.")
     public int getMaxSize();
 
     /**
@@ -37,7 +37,7 @@ public interface CacheFifoEvictionPolicyMBean {
      *
      * @param max Maximum allowed cache size.
      */
-    @IgniteMXBeanDescription("Set maximum allowed cache size.")
+    @MXBeanDescription("Set maximum allowed cache size.")
     public void setMaxSize(int max);
 
     /**
@@ -45,6 +45,6 @@ public interface CacheFifoEvictionPolicyMBean {
      *
      * @return Current queue size.
      */
-    @IgniteMXBeanDescription("Current FIFO queue size.")
+    @MXBeanDescription("Current FIFO queue size.")
     public int getCurrentSize();
 }

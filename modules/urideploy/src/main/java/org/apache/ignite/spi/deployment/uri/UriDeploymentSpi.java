@@ -377,7 +377,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
     private final Object mux = new Object();
 
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** NOTE: flag for test purposes only. */

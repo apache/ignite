@@ -23,7 +23,6 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.compute.*;
@@ -63,7 +62,7 @@ import java.util.concurrent.locks.*;
 
 import static java.util.Collections.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridClosureCallMode.*;
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
@@ -3738,7 +3737,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public IgniteTx txStart() throws IllegalStateException {
-        TransactionsConfiguration cfg = ctx.gridConfig().getTransactionsConfiguration();
+        TransactionConfiguration cfg = ctx.gridConfig().getTransactionConfiguration();
 
         return txStart(cfg.getDefaultTxConcurrency(), cfg.getDefaultTxIsolation());
     }
@@ -3748,7 +3747,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         A.notNull(concurrency, "concurrency");
         A.notNull(isolation, "isolation");
 
-        TransactionsConfiguration cfg = ctx.gridConfig().getTransactionsConfiguration();
+        TransactionConfiguration cfg = ctx.gridConfig().getTransactionConfiguration();
 
         return txStart(
             concurrency,
@@ -4360,7 +4359,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         IgniteTxLocalAdapter<K, V> tx = ctx.tm().threadLocalTx();
 
         if (tx == null || tx.implicit()) {
-            TransactionsConfiguration tCfg = ctx.gridConfig().getTransactionsConfiguration();
+            TransactionConfiguration tCfg = ctx.gridConfig().getTransactionConfiguration();
 
             tx = ctx.tm().newTx(
                 true,
@@ -4443,7 +4442,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 ctx.system(),
                 PESSIMISTIC,
                 READ_COMMITTED,
-                ctx.kernalContext().config().getTransactionsConfiguration().getDefaultTxTimeout(),
+                ctx.kernalContext().config().getTransactionConfiguration().getDefaultTxTimeout(),
                 ctx.hasFlag(INVALIDATE),
                 !ctx.hasFlag(SKIP_STORE),
                 0,

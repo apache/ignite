@@ -97,10 +97,10 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
-        c.getTransactionsConfiguration().setDefaultTxIsolation(REPEATABLE_READ);
+        c.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
+        c.getTransactionConfiguration().setDefaultTxIsolation(REPEATABLE_READ);
 
-        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+        AtomicConfiguration atomicCfg = new AtomicConfiguration();
 
         atomicCfg.setAtomicSequenceReserveSize(100000);
         atomicCfg.setCacheMode(mode);

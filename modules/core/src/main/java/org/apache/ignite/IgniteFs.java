@@ -17,8 +17,9 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.fs.*;
-import org.apache.ignite.fs.mapreduce.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.ignitefs.mapreduce.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -50,8 +51,8 @@ import java.util.*;
  * <h1 class="header">Integration With Hadoop</h1>
  * In addition to direct file system API, {@code GGFS} can be integrated with {@code Hadoop} by
  * plugging in as {@code Hadoop FileSystem}. Refer to
- * {@code org.apache.ignite.fs.hadoop.v1.GridGgfsHadoopFileSystem} or
- * {@code org.apache.ignite.fs.hadoop.v2.GridGgfsHadoopFileSystem} for more information.
+ * {@code org.apache.ignite.ignitefs.hadoop.v1.GridGgfsHadoopFileSystem} or
+ * {@code org.apache.ignite.ignitefs.hadoop.v2.GridGgfsHadoopFileSystem} for more information.
  * <p>
  * <b>NOTE:</b> integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
  */
@@ -283,7 +284,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
 
     /**
      * Executes GGFS task with overridden maximum range length (see
-     * {@link org.apache.ignite.fs.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
+     * {@link org.apache.ignite.configuration.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
@@ -321,7 +322,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
 
     /**
      * Executes GGFS task with overridden maximum range length (see
-     * {@link org.apache.ignite.fs.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
+     * {@link org.apache.ignite.configuration.IgniteFsConfiguration#getMaximumTaskRangeLength()} for more information).
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *

@@ -34,7 +34,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
     private static final String TASK_NAME = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1";
 
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /** P2P timeout. */
     private static final long P2P_TIMEOUT = 1000;
@@ -57,7 +57,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception If failed.
      */
-    private void processTestHotRedeployment(IgniteDeploymentMode depMode) throws Exception {
+    private void processTestHotRedeployment(DeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;
 
@@ -99,7 +99,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception If failed.
      */
-    private void processTestClassLoaderHotRedeployment(IgniteDeploymentMode depMode) throws Exception {
+    private void processTestClassLoaderHotRedeployment(DeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;
 
@@ -164,7 +164,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testSameClassLoaderIsolatedMode() throws Exception {
-        processTestHotRedeployment(IgniteDeploymentMode.PRIVATE);
+        processTestHotRedeployment(DeploymentMode.PRIVATE);
     }
 
     /**
@@ -173,7 +173,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testSameClassLoaderIsolatedClassLoaderMode() throws Exception {
-        processTestHotRedeployment(IgniteDeploymentMode.ISOLATED);
+        processTestHotRedeployment(DeploymentMode.ISOLATED);
     }
 
     /**
@@ -182,7 +182,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testSameClassLoaderContinuousMode() throws Exception {
-        processTestHotRedeployment(IgniteDeploymentMode.CONTINUOUS);
+        processTestHotRedeployment(DeploymentMode.CONTINUOUS);
     }
 
     /**
@@ -191,7 +191,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testSameClassLoaderSharedMode() throws Exception {
-        processTestHotRedeployment(IgniteDeploymentMode.SHARED);
+        processTestHotRedeployment(DeploymentMode.SHARED);
     }
 
     /**
@@ -200,7 +200,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testNewClassLoaderHotRedeploymentPrivateMode() throws Exception {
-        processTestClassLoaderHotRedeployment(IgniteDeploymentMode.PRIVATE);
+        processTestClassLoaderHotRedeployment(DeploymentMode.PRIVATE);
     }
 
     /**
@@ -209,7 +209,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testNewClassLoaderHotRedeploymentIsolatedMode() throws Exception {
-        processTestClassLoaderHotRedeployment(IgniteDeploymentMode.ISOLATED);
+        processTestClassLoaderHotRedeployment(DeploymentMode.ISOLATED);
     }
 
     /**
@@ -218,7 +218,7 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testNewClassLoaderHotRedeploymentContinuousMode() throws Exception {
-        processTestClassLoaderHotRedeployment(IgniteDeploymentMode.CONTINUOUS);
+        processTestClassLoaderHotRedeployment(DeploymentMode.CONTINUOUS);
     }
 
     /**
@@ -227,6 +227,6 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testNewClassLoaderHotRedeploymentSharedMode() throws Exception {
-        processTestClassLoaderHotRedeployment(IgniteDeploymentMode.SHARED);
+        processTestClassLoaderHotRedeployment(DeploymentMode.SHARED);
     }
 }

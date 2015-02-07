@@ -20,6 +20,7 @@ package org.apache.ignite.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
@@ -260,7 +261,7 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      * {@link org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction#setHashIdResolver(org.apache.ignite.cache.affinity.CacheAffinityNodeHashResolver)} to make sure that
      * a node maps to the same hash ID if re-started.
      * <p>
-     * See {@link CacheConfiguration#getPreloadPartitionedDelay()} for more information on how to configure
+     * See {@link org.apache.ignite.configuration.CacheConfiguration#getPreloadPartitionedDelay()} for more information on how to configure
      * preload re-partition delay.
      * <p>
      * @return Future that will be completed when preloading is finished.

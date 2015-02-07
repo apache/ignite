@@ -18,7 +18,7 @@
 package org.apache.ignite.visor.commands.config
 
 import org.apache.ignite.configuration.IgniteConfiguration
-import org.apache.ignite.events.IgniteEventType._
+import org.apache.ignite.events.EventType._
 import org.apache.ignite.visor.{VisorRuntimeBaseSpec, visor}
 
 import org.apache.ignite.visor.commands.config.VisorConfigurationCommand._

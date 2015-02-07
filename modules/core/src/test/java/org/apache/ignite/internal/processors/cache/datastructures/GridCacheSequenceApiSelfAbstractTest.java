@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.datastructures.*;
 import org.apache.ignite.internal.*;
@@ -84,8 +83,8 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     }
 
     /** {@inheritDoc} */
-    protected IgniteAtomicConfiguration atomicConfiguration() {
-        IgniteAtomicConfiguration atomicCfg = super.atomicConfiguration();
+    protected AtomicConfiguration atomicConfiguration() {
+        AtomicConfiguration atomicCfg = super.atomicConfiguration();
 
         atomicCfg.setAtomicSequenceReserveSize(BATCH_SIZE);
 

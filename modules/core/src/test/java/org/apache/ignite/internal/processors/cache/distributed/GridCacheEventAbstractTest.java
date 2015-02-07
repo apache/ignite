@@ -35,7 +35,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -765,7 +765,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * Local event listener.
      */
-    private static class TestEventListener implements IgnitePredicate<IgniteEvent> {
+    private static class TestEventListener implements IgnitePredicate<Event> {
         /** Events count map. */
         private static ConcurrentMap<Integer, AtomicInteger> cntrs = new ConcurrentHashMap<>();
 
@@ -821,8 +821,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
-            assert evt instanceof IgniteCacheEvent;
+        @Override public boolean apply(Event evt) {
+            assert evt instanceof CacheEvent;
 
             if (!listen)
                 return true;

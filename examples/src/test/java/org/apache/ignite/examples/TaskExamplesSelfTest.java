@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.compute.*;
+import org.apache.ignite.examples.computegrid.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**

@@ -69,7 +69,7 @@ import org.jetbrains.annotations.*;
  *
  * <p>
  * It's recommended to use Ignite logger injection instead of using/instantiating
- * logger in your task/job code. See {@link org.apache.ignite.resources.IgniteLoggerResource} annotation about logger
+ * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
 public class IgniteJclLogger implements IgniteLogger {

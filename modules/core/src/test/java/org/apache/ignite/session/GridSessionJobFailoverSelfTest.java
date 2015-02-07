@@ -77,7 +77,7 @@ public class GridSessionJobFailoverSelfTest extends GridCommonAbstractTest {
     @ComputeTaskSessionFullSupport
     private static class SessionTestTask implements ComputeTask<String, Object> {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession ses;
 
         /** */

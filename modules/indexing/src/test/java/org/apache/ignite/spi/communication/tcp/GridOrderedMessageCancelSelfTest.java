@@ -18,7 +18,6 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.dataload;
 
 import org.apache.ignite.*;
-import org.apache.ignite.dataload.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -49,7 +48,7 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
     private final boolean skipStore;
 
     /** */
-    private final IgniteDataLoadCacheUpdater<K, V> updater;
+    private final IgniteDataLoader.Updater<K, V> updater;
 
     /**
      * @param ctx Context.
@@ -66,7 +65,7 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
         Collection<Map.Entry<K, V>> col,
         boolean ignoreDepOwnership,
         boolean skipStore,
-        IgniteDataLoadCacheUpdater<K, V> updater) {
+        IgniteDataLoader.Updater<K, V> updater) {
         this.ctx = ctx;
         this.log = log;
 

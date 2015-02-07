@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Test cases for multi-threaded tests.
@@ -52,7 +52,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Listeners. */
-    private static Collection<IgnitePredicate<IgniteEvent>> lsnrs = new ArrayList<>();
+    private static Collection<IgnitePredicate<Event>> lsnrs = new ArrayList<>();
 
     /**
      *
@@ -119,7 +119,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param ignite Grid to remove listeners from.
      */
     private void removeListeners(Ignite ignite) {
-        for (IgnitePredicate<IgniteEvent> lsnr : lsnrs)
+        for (IgnitePredicate<Event> lsnr : lsnrs)
             ignite.events().stopLocalListen(lsnr);
     }
 
@@ -127,7 +127,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param ignite Grid
      * @param lsnr Listener.
      */
-    void addListener(Ignite ignite, IgnitePredicate<IgniteEvent> lsnr) {
+    void addListener(Ignite ignite, IgnitePredicate<Event> lsnr) {
         if (!lsnrs.contains(lsnr))
             lsnrs.add(lsnr);
 
@@ -602,7 +602,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * Cache unlock listener.
      */
-    private class UnlockListener implements IgnitePredicate<IgniteEvent> {
+    private class UnlockListener implements IgnitePredicate<Event> {
         /** Latch. */
         private final CountDownLatch latch;
 
@@ -630,11 +630,11 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
+        @Override public boolean apply(Event evt) {
             info("Received cache event: " + evt);
 
-            if (evt instanceof IgniteCacheEvent) {
-                IgniteCacheEvent cacheEvt = (IgniteCacheEvent)evt;
+            if (evt instanceof CacheEvent) {
+                CacheEvent cacheEvt = (CacheEvent)evt;
 
                 Integer key = cacheEvt.key();
 

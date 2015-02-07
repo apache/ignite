@@ -84,7 +84,7 @@ public class IpcSharedMemoryBenchmarkWriter implements IpcSharedMemoryBenchmarkP
 
                     try {
                         client = IpcEndpointFactory.connectEndpoint("shmem:" +
-                                IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, new IgniteJavaLogger());
+                                IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, new JavaLogger());
 
                         OutputStream space = client.outputStream();
 

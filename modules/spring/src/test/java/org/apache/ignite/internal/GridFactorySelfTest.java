@@ -221,7 +221,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         final Object mux = new Object();
 
-        IgniteListener factoryLsnr = new IgniteListener() {
+        IgnitionListener factoryLsnr = new IgnitionListener() {
             @Override public void onStateChange(String name, IgniteState state) {
                 synchronized (mux) {
                     if ("grid-factory-test-1".equals(name))
@@ -354,7 +354,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         final AtomicInteger startedCnt = new AtomicInteger();
         final AtomicInteger stoppedCnt = new AtomicInteger();
 
-        IgniteListener lsnr = new IgniteListener() {
+        IgnitionListener lsnr = new IgnitionListener() {
             @SuppressWarnings("StringEquality")
             @Override public void onStateChange(@Nullable String name, IgniteState state) {
                 assert name == gridName;
@@ -543,7 +543,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     @IgniteSpiMultipleInstancesSupport(true)
     private static class TestMultipleInstancesCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
         /** Grid logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
@@ -581,7 +581,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     @IgniteSpiMultipleInstancesSupport(true)
     private static class TestSingleInstancesCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
         /** Grid logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
@@ -617,11 +617,11 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      */
     private static class TestLifecycleBean implements LifecycleBean {
         /** Grid logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
-        @IgniteSpringApplicationContextResource
+        @SpringApplicationContextResource
         private ApplicationContext appCtx;
 
         /** */
@@ -668,7 +668,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
             if (exec)
                 // Execute any grid method.
-                G.ignite(gridName).events().localQuery(F.<IgniteEvent>alwaysTrue());
+                G.ignite(gridName).events().localQuery(F.<Event>alwaysTrue());
         }
 
         /**

@@ -290,7 +290,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
         cfg.setCollisionSpi(colSpi);
         cfg.setFailoverSpi(failSpi);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }
@@ -304,7 +304,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** Logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** Number of jobs to spawn from task. */
@@ -393,7 +393,7 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** Logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /**

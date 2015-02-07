@@ -46,7 +46,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  */
 public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Addresses. */

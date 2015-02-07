@@ -63,11 +63,11 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        IgniteQueryConfiguration idxCfg = new IgniteQueryConfiguration();
+        QueryConfiguration idxCfg = new QueryConfiguration();
 
         c.setQueryConfiguration(idxCfg);
 
-        c.setMarshaller(new IgniteOptimizedMarshaller(true));
+        c.setMarshaller(new OptimizedMarshaller(true));
 
         // Cache.
         CacheConfiguration cc = defaultCacheConfiguration();

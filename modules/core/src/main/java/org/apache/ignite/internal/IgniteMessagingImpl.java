@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * {@link IgniteMessaging} implementation.
  */
-public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter<IgniteMessaging>
+public class IgniteMessagingImpl extends AsyncSupportAdapter<IgniteMessaging>
     implements IgniteMessaging, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;

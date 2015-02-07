@@ -33,7 +33,7 @@ import org.jetbrains.annotations.*;
 import javax.cache.Cache.*;
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Near cache entry.

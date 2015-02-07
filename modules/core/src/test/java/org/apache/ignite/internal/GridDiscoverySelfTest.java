@@ -37,7 +37,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.lang.IgniteProductVersion.*;
 
 /**
@@ -181,8 +181,8 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
         /** Left nodes counter. */
         final CountDownLatch leftCnt = new CountDownLatch(NODES_CNT);
 
-        IgnitePredicate<IgniteEvent> lsnr = new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 if (EVT_NODE_JOINED == evt.type()) {
                     cnt.incrementAndGet();
 
