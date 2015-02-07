@@ -615,31 +615,31 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 Iterator<Map.Entry<String, Integer>> iter = pairs(2).entrySet().iterator();
 
                 // Optimistic transaction.
-                IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ);
+                try (IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                    Map.Entry<String, Integer> e = iter.next();
 
-                Map.Entry<String, Integer> e = iter.next();
+                    String key = e.getKey();
+                    Integer val = e.getValue();
 
-                String key = e.getKey();
-                Integer val = e.getValue();
+                    assert cache.putIfAbsentAsync(key, val).get() == null;
+                    assert val.equals(cache.putIfAbsentAsync(key, val).get());
 
-                assert cache.putIfAbsentAsync(key, val).get() == null;
-                assert val.equals(cache.putIfAbsentAsync(key, val).get());
+                    assert cache.containsKey(key);
 
-                assert cache.containsKey(key);
+                    e = iter.next();
 
-                e = iter.next();
+                    key = e.getKey();
+                    val = e.getValue();
 
-                key = e.getKey();
-                val = e.getValue();
+                    assert cache.putxIfAbsentAsync(key, val).get();
+                    assert !cache.putxIfAbsentAsync(key, val).get();
 
-                assert cache.putxIfAbsentAsync(key, val).get();
-                assert !cache.putxIfAbsentAsync(key, val).get();
+                    assert cache.containsKey(key);
 
-                assert cache.containsKey(key);
+                    tx.commit();
 
-                tx.commit();
-
-                assert cache.containsKey(key);
+                    assert cache.containsKey(key);
+                }
             }
         }, evts);
     }
