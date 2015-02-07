@@ -616,7 +616,6 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
 
                 // Optimistic transaction.
                 try (IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
-
                     Map.Entry<String, Integer> e = iter.next();
 
                     String key = e.getKey();
@@ -638,9 +637,9 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                     assert cache.containsKey(key);
 
                     tx.commit();
-                }
 
-                assert cache.containsKey(key);
+                    assert cache.containsKey(key);
+                }
             }
         }, evts);
     }
