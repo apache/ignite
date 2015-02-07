@@ -313,20 +313,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
 
             restReq = restTaskReq;
         }
-        else if (msg instanceof GridClientGetMetaDataRequest) {
-            GridClientGetMetaDataRequest req = (GridClientGetMetaDataRequest)msg;
-
-            restReq = new GridRestPortableGetMetaDataRequest(req);
-
-            restReq.command(GET_PORTABLE_METADATA);
-        }
-        else if (msg instanceof GridClientPutMetaDataRequest) {
-            GridClientPutMetaDataRequest req = (GridClientPutMetaDataRequest)msg;
-
-            restReq = new GridRestPortablePutMetaDataRequest(req);
-
-            restReq.command(PUT_PORTABLE_METADATA);
-        }
         else if (msg instanceof GridClientTopologyRequest) {
             GridClientTopologyRequest req = (GridClientTopologyRequest) msg;
 

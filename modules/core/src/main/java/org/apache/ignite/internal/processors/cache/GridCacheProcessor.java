@@ -450,10 +450,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cc.getAtomicityMode() == ATOMIC)
             assertParameter(cc.getTransactionManagerLookupClassName() == null,
                 "transaction manager can not be used with ATOMIC cache");
-
-        if (cc.isPortableEnabled() && !ctx.isEnterprise())
-            throw new IgniteCheckedException("Portable mode for cache is supported only in Enterprise edition " +
-                "(set 'portableEnabled' property to 'false') [cacheName=" + cc.getName() + ']');
     }
 
     /**
@@ -1174,9 +1170,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
                             "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "portableEnabled",
-                            "Portables enabled", locAttr.portableEnabled(), rmtAttr.portableEnabled(), true);
 
                         if (locAttr.cacheMode() == PARTITIONED) {
                             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictSynchronized",

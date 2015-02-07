@@ -15,30 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.rest.request;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.rest.client.message.*;
+import org.apache.ignite.internal.processors.cache.serialization.*;
 
 import java.util.*;
 
 /**
- * Portable get metadata request.
+ * Cache manager responsible for translating user objects into cache objects.
  */
-public class GridRestPortableGetMetaDataRequest extends GridRestRequest {
-    /** */
-    private final GridClientGetMetaDataRequest msg;
-
-    /**
-     * @param msg Client message.
-     */
-    public GridRestPortableGetMetaDataRequest(GridClientGetMetaDataRequest msg) {
-        this.msg = msg;
+public class IgniteCacheOsSerializationManager<K, V> extends GridCacheManagerAdapter<K, V>
+    implements IgniteCacheSerializationManager<K, V> {
+    /** {@inheritDoc} */
+    @Override public boolean portableEnabled() {
+        return false;
     }
 
-    /**
-     * @return Type IDs.
-     */
-    public Collection<Integer> typeIds() {
-        return msg.typeIds();
+    /** {@inheritDoc} */
+    @Override public boolean keepPortableInStore() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
+        return o;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
+        return col;
     }
 }

@@ -76,19 +76,19 @@
         </property>
 
         <property name="portableConfiguration">
-            <bean class="org.apache.ignite.portables.PortableConfiguration">
+            <bean class="org.gridgain.grid.portables.PortableConfiguration">
                 <property name="typeConfigurations">
                     <list>
-                        <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.apache.ignite.client.ClientTestPortable"/>
+                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
+                            <property name="className" value="org.gridgain.client.ClientTestPortable"/>
                         </bean>
-                        <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
+                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
                             <property name="className" value="org.apache.ignite.client.model.GridPortablePerson"/>
                         </bean>
-                        <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
+                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
                             <property name="className" value="org.apache.ignite.client.model.GridImplicitPortablePerson"/>
                         </bean>
-                        <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
+                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
                             <property name="className" value="GridNoDefPortablePerson"/>
                         </bean>
                     </list>

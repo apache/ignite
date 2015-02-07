@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.rest.handlers.*;
 import org.apache.ignite.internal.processors.rest.handlers.cache.*;
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.*;
 import org.apache.ignite.internal.processors.rest.handlers.log.*;
-import org.apache.ignite.internal.processors.rest.handlers.metadata.*;
 import org.apache.ignite.internal.processors.rest.handlers.task.*;
 import org.apache.ignite.internal.processors.rest.handlers.top.*;
 import org.apache.ignite.internal.processors.rest.handlers.version.*;
@@ -255,7 +254,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new GridTopologyCommandHandler(ctx));
             addHandler(new GridVersionCommandHandler(ctx));
             addHandler(new GridLogCommandHandler(ctx));
-            addHandler(new GridPortableMetadataHandler(ctx));
             addHandler(new DataStructuresCommandHandler(ctx));
 
             // Start protocols.
@@ -331,8 +329,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Applies {@link org.apache.ignite.configuration.ClientMessageInterceptor}
-     * from {@link org.apache.ignite.configuration.ClientConnectionConfiguration#getClientMessageInterceptor()}
+     * Applies {@link ClientMessageInterceptor}
+     * from {@link ClientConnectionConfiguration#getClientMessageInterceptor()}
      * to all user parameters in the request.
      *
      * @param req Client request.
@@ -378,8 +376,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Applies {@link org.apache.ignite.configuration.ClientMessageInterceptor} from
-     * {@link org.apache.ignite.configuration.ClientConnectionConfiguration#getClientMessageInterceptor()}
+     * Applies {@link ClientMessageInterceptor} from
+     * {@link ClientConnectionConfiguration#getClientMessageInterceptor()}
      * to all user objects in the response.
      *
      * @param res Response.

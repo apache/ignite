@@ -45,7 +45,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
@@ -458,10 +457,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         Class<? super K1> keyType,
         Class<? super V1> valType
     ) {
-        if (PortableObject.class.isAssignableFrom(keyType) || PortableObject.class.isAssignableFrom(valType))
-            throw new IllegalStateException("Failed to create cache projection for portable objects. " +
-                "Use keepPortable() method instead.");
-
         if (ctx.deploymentEnabled()) {
             try {
                 ctx.deploy().registerClasses(keyType, valType);
@@ -1564,7 +1559,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             try {
                 key = (K)ctx.marshalToPortable(key);
             }
-            catch (PortableException e) {
+            catch (IgniteException e) {
                 throw new IgniteException(e);
             }
         }
@@ -3575,7 +3570,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     try {
                         key0 = (K)ctx.marshalToPortable(key);
                     }
-                    catch (PortableException e) {
+                    catch (IgniteException e) {
                         return new GridFinishedFuture<>(ctx.kernalContext(), e);
                     }
                 }
@@ -3843,7 +3838,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             ctx.store().loadCache(new CIX3<K, V, GridCacheVersion>() {
                 @Override public void applyx(K key, V val, @Nullable GridCacheVersion ver)
-                    throws PortableException {
+                    throws IgniteException {
                     assert ver == null;
 
                     loadEntry(key, val, ver0, p, topVer, replicate, ttl);
@@ -4774,14 +4769,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (keyCheck)
             validateCacheKey(key);
 
-        if (ctx.portableEnabled()) {
-            try {
-                key = (K)ctx.marshalToPortable(key);
-            }
-            catch (PortableException e) {
-                throw new IgniteException(e);
-            }
-        }
+        if (ctx.portableEnabled())
+            key = (K)ctx.marshalToPortable(key);
 
         GridCacheEntryEx<K, V> e = peekEx(key);
 

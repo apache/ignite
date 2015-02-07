@@ -20,7 +20,7 @@ package org.apache.ignite.client;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.portables.*;
+import org.gridgain.grid.portables.*;
 import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 

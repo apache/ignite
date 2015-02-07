@@ -212,10 +212,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     @GridToStringExclude
     private GridSecurity security;
 
-    /** Portables instance. */
-    @GridToStringExclude
-    private IgnitePortables portables;
-
     /** Kernal gateway. */
     @GridToStringExclude
     private final AtomicReference<GridKernalGateway> gw = new AtomicReference<>();
@@ -772,7 +768,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
             if (ctx.isEnterprise()) {
                 security = new GridSecurityImpl(ctx);
-                portables = new GridPortablesImpl(ctx);
             }
 
             gw.writeLock();
@@ -3243,14 +3238,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             throw new UnsupportedOperationException("Security interface available in Enterprise edition only.");
 
         return security;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgnitePortables portables() {
-        if (!ctx.isEnterprise())
-            throw new UnsupportedOperationException("Portables interface available in Enterprise edition only.");
-
-        return portables;
     }
 
     /** {@inheritDoc} */

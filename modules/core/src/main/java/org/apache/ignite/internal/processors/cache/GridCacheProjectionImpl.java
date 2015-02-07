@@ -32,7 +32,6 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
@@ -415,15 +414,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
         Class<? super V1> valType
     ) {
         A.notNull(keyType, "keyType", valType, "valType");
-
-        if (!keepPortable && (PortableObject.class.isAssignableFrom(keyType) ||
-            PortableObject.class.isAssignableFrom(valType)))
-            throw new IllegalStateException("Failed to create cache projection for portable objects. " +
-                "Use keepPortable() method instead.");
-
-        if (keepPortable && (!U.isPortableOrCollectionType(keyType) || !U.isPortableOrCollectionType(valType)))
-            throw new IllegalStateException("Failed to create typed cache projection. If keepPortable() was " +
-                "called, projection can work only with portable classes (see GridPortables JavaDoc for details).");
 
         if (cctx.deploymentEnabled()) {
             try {

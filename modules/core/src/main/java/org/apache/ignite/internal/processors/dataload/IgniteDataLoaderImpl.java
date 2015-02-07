@@ -176,11 +176,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         if (node == null)
             throw new IllegalStateException("Cache doesn't exist: " + cacheName);
 
-        GridCacheAttributes attrs = U.cacheAttributes(node, cacheName);
-
-        assert attrs != null : cacheName;
-
-        portableEnabled = attrs.portableEnabled();
+        portableEnabled = ctx.portable().portableEnabled(node, cacheName);
 
         discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {

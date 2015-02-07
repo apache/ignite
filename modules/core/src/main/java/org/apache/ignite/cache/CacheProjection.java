@@ -289,7 +289,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * so keys and values will be returned from cache API methods without changes. Therefore,
      * signature of the projection can contain only following types:
      * <ul>
-     *     <li>{@link org.apache.ignite.portables.PortableObject} for portable classes</li>
+     *     <li>{@link org.gridgain.grid.portables.PortableObject} for portable classes</li>
      *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
      *     <li>Arrays of primitives (byte[], int[], ...)</li>
      *     <li>{@link String} and array of {@link String}s</li>
