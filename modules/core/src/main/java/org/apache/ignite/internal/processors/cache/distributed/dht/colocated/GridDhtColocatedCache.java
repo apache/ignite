@@ -414,6 +414,11 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
+    @Override public Cache.Entry<K, V> entry(K key) throws GridDhtInvalidPartitionException {
+        return new CacheEntryImpl<>(key, null);
+    }
+
+    /** {@inheritDoc} */
     @Override public void unlockAll(Collection<? extends K> keys,
         IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         if (keys.isEmpty())
@@ -820,5 +825,10 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         if (fut != null)
             fut.onResult(nodeId, res);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridDhtColocatedCache.class, this, super.toString());
     }
 }
