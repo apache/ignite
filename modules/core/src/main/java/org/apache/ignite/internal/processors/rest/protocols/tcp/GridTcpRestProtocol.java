@@ -52,7 +52,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     private GridNioServer<GridClientMessage> srv;
 
     /** JDK marshaller. */
-    private final IgniteMarshaller jdkMarshaller = new IgniteJdkMarshaller();
+    private final Marshaller jdkMarshaller = new JdkMarshaller();
 
     /** NIO server listener. */
     private GridTcpRestNioListener lsnr;
@@ -118,7 +118,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /**
      * @return JDK marshaller.
      */
-    IgniteMarshaller jdkMarshaller() {
+    Marshaller jdkMarshaller() {
         return jdkMarshaller;
     }
 

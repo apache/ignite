@@ -58,7 +58,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -101,7 +101,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** @{inheritDoc} */
@@ -123,7 +123,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
         protected Ignite ignite;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         protected IgniteLogger log;
     }
 

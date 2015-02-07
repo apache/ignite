@@ -34,7 +34,7 @@ import javax.cache.expiry.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -251,7 +251,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
     public void testOptimisticTransaction() throws Exception {
         CountDownLatch latch = new CountDownLatch(9);
 
-        IgnitePredicate<IgniteEvent> lsnr = new CacheEventListener(latch);
+        IgnitePredicate<Event> lsnr = new CacheEventListener(latch);
 
         try {
             GridCache<String, String> cache1 = ignite1.cache(null);
@@ -356,7 +356,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
     /**
      * Event listener.
      */
-    private class CacheEventListener implements IgnitePredicate<IgniteEvent> {
+    private class CacheEventListener implements IgnitePredicate<Event> {
         /** Wait latch. */
         private CountDownLatch latch;
 
@@ -375,7 +375,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
+        @Override public boolean apply(Event evt) {
             assert evt.type() == EVT_CACHE_OBJECT_PUT || evt.type() == EVT_CACHE_OBJECT_REMOVED :
                 "Unexpected event type: " + evt;
 

@@ -66,7 +66,7 @@ public class GridSessionSetJobAttribute2SelfTest extends GridCommonAbstractTest 
     @ComputeTaskSessionFullSupport
     private static class SessionTestTask extends ComputeTaskAdapter<UUID, Object> {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** */
@@ -111,7 +111,7 @@ public class GridSessionSetJobAttribute2SelfTest extends GridCommonAbstractTest 
     /** */
     private static class SessionTestJob extends ComputeJobAdapter {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /**

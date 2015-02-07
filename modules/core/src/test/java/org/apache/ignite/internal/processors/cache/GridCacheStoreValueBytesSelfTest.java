@@ -30,7 +30,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
- * Test for {@link org.apache.ignite.cache.CacheConfiguration#isStoreValueBytes()}.
+ * Test for {@link org.apache.ignite.configuration.CacheConfiguration#isStoreValueBytes()}.
  */
 public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
     /** */

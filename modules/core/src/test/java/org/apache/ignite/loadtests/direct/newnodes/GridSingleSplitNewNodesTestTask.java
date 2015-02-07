@@ -29,11 +29,11 @@ import java.util.*;
  */
 public class GridSingleSplitNewNodesTestTask extends ComputeTaskAdapter<Integer, Integer> {
     /** */
-    @IgniteTaskSessionResource
+    @TaskSessionResource
     private ComputeTaskSession taskSes;
 
     /** */
-    @IgniteLoadBalancerResource
+    @LoadBalancerResource
     private ComputeLoadBalancer balancer;
 
     /** {@inheritDoc} */
@@ -50,7 +50,7 @@ public class GridSingleSplitNewNodesTestTask extends ComputeTaskAdapter<Integer,
         for (int i = 0; i < arg; i++) {
             ComputeJobAdapter job = new ComputeJobAdapter(1) {
                 /** */
-                @IgniteTaskSessionResource
+                @TaskSessionResource
                 private ComputeTaskSession jobSes;
 
                 /** {@inheritDoc} */

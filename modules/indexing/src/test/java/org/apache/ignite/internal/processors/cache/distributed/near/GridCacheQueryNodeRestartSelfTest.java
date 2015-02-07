@@ -140,7 +140,7 @@ public class GridCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest
         CollectingEventListener lsnr = new CollectingEventListener();
 
         for (int i = 0; i < GRID_CNT; i++)
-            grid(i).events().localListen(lsnr, IgniteEventType.EVT_CACHE_PRELOAD_STOPPED);
+            grid(i).events().localListen(lsnr, EventType.EVT_CACHE_PRELOAD_STOPPED);
 
         IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Object>() {
             @SuppressWarnings({"BusyWait"})
@@ -176,18 +176,18 @@ public class GridCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest
         boolean success = lsnr.awaitEvents(GRID_CNT * 2 * restartCnt.get(), 15000);
 
         for (int i = 0; i < GRID_CNT; i++)
-            grid(i).events().stopLocalListen(lsnr, IgniteEventType.EVT_CACHE_PRELOAD_STOPPED);
+            grid(i).events().stopLocalListen(lsnr, EventType.EVT_CACHE_PRELOAD_STOPPED);
 
         assert success;
     }
 
     /** Listener that will wait for specified number of events received. */
-    private class CollectingEventListener implements IgnitePredicate<IgniteEvent> {
+    private class CollectingEventListener implements IgnitePredicate<Event> {
         /** Registered events count. */
         private int evtCnt;
 
         /** {@inheritDoc} */
-        @Override public synchronized boolean apply(IgniteEvent evt) {
+        @Override public synchronized boolean apply(Event evt) {
             evtCnt++;
 
             info("Processed event [evt=" + evt + ", evtCnt=" + evtCnt + ']');

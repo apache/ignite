@@ -18,8 +18,8 @@
 package org.apache.ignite.scalar.examples
 
 import org.apache.ignite.cache.CacheEntry
-import org.apache.ignite.events.IgniteEvent
-import org.apache.ignite.events.IgniteEventType._
+import org.apache.ignite.events.Event
+import org.apache.ignite.events.EventType._
 import org.apache.ignite.lang.IgnitePredicate
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
@@ -129,8 +129,8 @@ object ScalarCacheExample extends App {
         val g = ignite$
 
         g *< (() => {
-            val lsnr = new IgnitePredicate[IgniteEvent] {
-                override def apply(e: IgniteEvent): Boolean = {
+            val lsnr = new IgnitePredicate[Event] {
+                override def apply(e: Event): Boolean = {
                     println(e.shortDisplay)
 
                     true

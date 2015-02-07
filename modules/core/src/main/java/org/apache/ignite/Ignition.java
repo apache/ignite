@@ -20,7 +20,6 @@ package org.apache.ignite;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lifecycle.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
@@ -422,17 +421,17 @@ public class Ignition {
      * @param lsnr Listener for grid life cycle events. If this listener was already added
      *      this method is no-op.
      */
-    public static void addListener(IgniteListener lsnr) {
+    public static void addListener(IgnitionListener lsnr) {
         IgnitionEx.addListener(lsnr);
     }
 
     /**
-     * Removes lsnr added by {@link #addListener(org.apache.ignite.lifecycle.IgniteListener)} method.
+     * Removes lsnr added by {@link #addListener(IgnitionListener)} method.
      *
      * @param lsnr Listener to remove.
      * @return {@code true} if lsnr was added before, {@code false} otherwise.
      */
-    public static boolean removeListener(IgniteListener lsnr) {
+    public static boolean removeListener(IgnitionListener lsnr) {
         return IgnitionEx.removeListener(lsnr);
     }
 }

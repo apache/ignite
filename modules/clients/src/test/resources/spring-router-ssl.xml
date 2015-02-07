@@ -98,7 +98,7 @@
     <!--
         Logger with the same configuration as in default grid instances.
     -->
-    <bean id="router.log" class="org.apache.ignite.logger.log4j.IgniteLog4jLogger">
+    <bean id="router.log" class="org.apache.ignite.logger.log4j.Log4JLogger">
         <constructor-arg type="java.lang.String" value="modules/clients/src/test/resources/log4j.xml"/>
     </bean>
 </beans>

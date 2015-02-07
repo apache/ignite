@@ -137,7 +137,7 @@ public class GridManagementJobSelfTest extends GridCommonAbstractTest {
      */
     private static class TestJob implements IgniteCallable<Object> {
         /** Task session. */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         protected ComputeTaskSession ses;
 
         /** {@inheritDoc} */

@@ -29,7 +29,7 @@ import java.util.*;
  */
 public class GridStealingLoadTestJob extends ComputeJobAdapter {
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Ignite instance. */
@@ -37,7 +37,7 @@ public class GridStealingLoadTestJob extends ComputeJobAdapter {
     private Ignite ignite;
 
     /** */
-    @IgniteJobContextResource
+    @JobContextResource
     private ComputeJobContext ctx;
 
     /** {@inheritDoc} */

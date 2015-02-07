@@ -433,7 +433,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             }
         });
 
-        cfg.getTransactionsConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
+        cfg.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
 
         return cfg;
     }

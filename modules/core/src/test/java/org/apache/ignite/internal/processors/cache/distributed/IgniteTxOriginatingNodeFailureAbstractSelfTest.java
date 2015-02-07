@@ -246,7 +246,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
             }
         });
 
-        cfg.getTransactionsConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
+        cfg.getTransactionConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
 
         return cfg;
     }

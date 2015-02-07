@@ -35,12 +35,12 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheConfiguration.*;
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 
 /**
@@ -276,9 +276,9 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
                 it.remove();
 
-                futs.add(waitForLocalEvent(last.events(), new P1<IgniteEvent>() {
-                    @Override public boolean apply(IgniteEvent e) {
-                        IgniteCachePreloadingEvent evt = (IgniteCachePreloadingEvent)e;
+                futs.add(waitForLocalEvent(last.events(), new P1<Event>() {
+                    @Override public boolean apply(Event e) {
+                        CachePreloadingEvent evt = (CachePreloadingEvent)e;
 
                         ClusterNode node = evt.discoveryNode();
 
@@ -455,8 +455,8 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
             final Ignite g = startGrid(startIdx++);
 
             if (DEBUG)
-                g.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                    @Override public boolean apply(IgniteEvent evt) {
+                g.events().localListen(new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
                         info("\n>>> Preload event [grid=" + g.name() + ", evt=" + evt + ']');
 
                         return true;
@@ -543,9 +543,9 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
                 Collection<IgniteFuture<?>> futs = new LinkedList<>();
 
                 for (Ignite gg : ignites)
-                    futs.add(waitForLocalEvent(gg.events(), new P1<IgniteEvent>() {
-                            @Override public boolean apply(IgniteEvent e) {
-                                IgniteCachePreloadingEvent evt = (IgniteCachePreloadingEvent)e;
+                    futs.add(waitForLocalEvent(gg.events(), new P1<Event>() {
+                            @Override public boolean apply(Event e) {
+                                CachePreloadingEvent evt = (CachePreloadingEvent)e;
 
                                 ClusterNode node = evt.discoveryNode();
 

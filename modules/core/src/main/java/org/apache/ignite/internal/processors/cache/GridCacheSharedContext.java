@@ -157,8 +157,8 @@ public class GridCacheSharedContext<K, V> {
      *
      * @return Transactions configuration.
      */
-    public TransactionsConfiguration txConfig() {
-        return kernalCtx.config().getTransactionsConfiguration();
+    public TransactionConfiguration txConfig() {
+        return kernalCtx.config().getTransactionConfiguration();
     }
 
     /**
@@ -280,7 +280,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Marshaller.
      */
-    public IgniteMarshaller marshaller() {
+    public Marshaller marshaller() {
         return kernalCtx.config().getMarshaller();
     }
 

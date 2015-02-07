@@ -52,9 +52,9 @@ public class TcpDiscoveryMarshallerCheckSelfTest extends GridCommonAbstractTest 
         cfg.setLocalHost("127.0.0.1");
 
         if (flag)
-            cfg.setMarshaller(new IgniteJdkMarshaller());
+            cfg.setMarshaller(new JdkMarshaller());
         else
-            cfg.setMarshaller(sameMarsh ? new IgniteJdkMarshaller() : new IgniteOptimizedMarshaller());
+            cfg.setMarshaller(sameMarsh ? new JdkMarshaller() : new OptimizedMarshaller());
 
         // Flip flag.
         flag = !flag;

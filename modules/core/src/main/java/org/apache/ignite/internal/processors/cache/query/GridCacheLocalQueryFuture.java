@@ -115,7 +115,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
             IgnitePredicate<CacheEntry<Object, Object>> prjPred = qry.query().projectionFilter() == null ?
                 F.<CacheEntry<Object, Object>>alwaysTrue() : qry.query().projectionFilter();
 
-            IgniteMarshaller marsh = cctx.marshaller();
+            Marshaller marsh = cctx.marshaller();
 
             IgniteReducer<Object, Object> rdc = qry.reducer() != null ?
                 marsh.<IgniteReducer<Object, Object>>unmarshal(marsh.marshal(qry.reducer()), null) : null;

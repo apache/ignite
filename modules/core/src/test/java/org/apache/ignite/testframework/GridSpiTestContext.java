@@ -36,7 +36,7 @@ import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Test SPI context.
@@ -167,7 +167,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
                 if (!nodes.contains(node)) {
                     iter.remove();
 
-                    notifyListener(new IgniteDiscoveryEvent(locNode, "Node left", EVT_NODE_LEFT, node));
+                    notifyListener(new DiscoveryEvent(locNode, "Node left", EVT_NODE_LEFT, node));
                 }
             }
         }
@@ -187,7 +187,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     public void addNode(ClusterNode node) {
         rmtNodes.add(node);
 
-        notifyListener(new IgniteDiscoveryEvent(locNode, "Node joined", EVT_NODE_JOINED, node));
+        notifyListener(new DiscoveryEvent(locNode, "Node joined", EVT_NODE_JOINED, node));
     }
 
     /**
@@ -195,7 +195,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
      */
     public void removeNode(ClusterNode node) {
         if (rmtNodes.remove(node))
-            notifyListener(new IgniteDiscoveryEvent(locNode, "Node left", EVT_NODE_LEFT, node));
+            notifyListener(new DiscoveryEvent(locNode, "Node left", EVT_NODE_LEFT, node));
     }
 
     /**
@@ -208,7 +208,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
             if (node.id().equals(nodeId)) {
                 iter.remove();
 
-                notifyListener(new IgniteDiscoveryEvent(locNode, "Node left", EVT_NODE_LEFT, node));
+                notifyListener(new DiscoveryEvent(locNode, "Node left", EVT_NODE_LEFT, node));
             }
         }
     }
@@ -218,7 +218,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
      */
     public void failNode(ClusterNode node) {
         if (rmtNodes.remove(node))
-            notifyListener(new IgniteDiscoveryEvent(locNode, "Node failed", EVT_NODE_FAILED, node));
+            notifyListener(new DiscoveryEvent(locNode, "Node failed", EVT_NODE_FAILED, node));
     }
 
     /**
@@ -226,22 +226,22 @@ public class GridSpiTestContext implements IgniteSpiContext {
      */
     public void updateMetrics(ClusterNode node) {
         if (locNode.equals(node) || rmtNodes.contains(node))
-            notifyListener(new IgniteDiscoveryEvent(locNode, "Metrics updated.", EVT_NODE_METRICS_UPDATED, node));
+            notifyListener(new DiscoveryEvent(locNode, "Metrics updated.", EVT_NODE_METRICS_UPDATED, node));
     }
 
     /** */
     public void updateAllMetrics() {
-        notifyListener(new IgniteDiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, locNode));
+        notifyListener(new DiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, locNode));
 
         for (ClusterNode node : rmtNodes) {
-            notifyListener(new IgniteDiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, node));
+            notifyListener(new DiscoveryEvent(locNode, "Metrics updated", EVT_NODE_METRICS_UPDATED, node));
         }
     }
 
     /**
      * @param evt Event node.
      */
-    private void notifyListener(IgniteEvent evt) {
+    private void notifyListener(Event evt) {
         assert evt.type() > 0;
 
         for (Map.Entry<GridLocalEventListener, Set<Integer>> entry : evtLsnrs.entrySet()) {
@@ -309,13 +309,13 @@ public class GridSpiTestContext implements IgniteSpiContext {
     public void triggerTaskEvent(int type, String taskName, IgniteUuid taskSesId, String msg) {
         assert type > 0;
 
-        triggerEvent(new IgniteTaskEvent(locNode, msg, type, taskSesId, taskName, null, false, null));
+        triggerEvent(new TaskEvent(locNode, msg, type, taskSesId, taskName, null, false, null));
     }
 
     /**
      * @param evt Event to trigger.
      */
-    public void triggerEvent(IgniteEvent evt) {
+    public void triggerEvent(Event evt) {
         notifyListener(evt);
     }
 
@@ -347,7 +347,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void recordEvent(IgniteEvent evt) {
+    @Override public void recordEvent(Event evt) {
         notifyListener(evt);
     }
 

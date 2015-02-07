@@ -21,9 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
-import org.apache.ignite.fs.mapreduce.*;
-import org.apache.ignite.fs.mapreduce.records.*;
+import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.ignitefs.mapreduce.*;
+import org.apache.ignite.ignitefs.mapreduce.records.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -39,10 +39,10 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.fs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 
 /**
- * Tests for {@link org.apache.ignite.fs.mapreduce.IgniteFsTask}.
+ * Tests for {@link org.apache.ignite.ignitefs.mapreduce.IgniteFsTask}.
  */
 public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
     /** Predefined words dictionary. */
@@ -262,10 +262,10 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
         @IgniteInstanceResource
         private Ignite ignite;
 
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession ses;
 
-        @IgniteJobContextResource
+        @JobContextResource
         private ComputeJobContext ctx;
 
         /** {@inheritDoc} */

@@ -27,7 +27,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.cache.CacheConfiguration.*;
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 
 /**
  * Tests grid embedded future use cases.

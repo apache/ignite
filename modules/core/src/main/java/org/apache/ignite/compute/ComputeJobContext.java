@@ -50,8 +50,8 @@ import java.util.concurrent.*;
  * ability to check context attributes from within grid task implementation for every job
  * returned from remote nodes.
  * <p>
- * Job context can be injected into {@link ComputeJob} via {@link org.apache.ignite.resources.IgniteJobContextResource}
- * annotation. Refer to the {@link org.apache.ignite.resources.IgniteJobContextResource}
+ * Job context can be injected into {@link ComputeJob} via {@link org.apache.ignite.resources.JobContextResource}
+ * annotation. Refer to the {@link org.apache.ignite.resources.JobContextResource}
  * documentation for coding examples on how to inject job context.
  * <p>
  * Attribute names that start with {@code "apache.ignite:"} are reserved for internal system use.

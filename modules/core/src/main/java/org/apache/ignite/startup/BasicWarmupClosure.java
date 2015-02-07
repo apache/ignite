@@ -209,7 +209,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
 
                 cfg0.setDiscoverySpi(discoSpi);
 
-                cfg0.setGridLogger(new IgniteNullLogger());
+                cfg0.setGridLogger(new NullLogger());
 
                 cfg0.setGridName("ignite-warmup-grid-" + i);
 

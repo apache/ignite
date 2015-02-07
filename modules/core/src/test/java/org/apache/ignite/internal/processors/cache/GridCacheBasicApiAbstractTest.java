@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Test cases for multi-threaded tests.
@@ -647,7 +647,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     /**
      * Event listener.
      */
-    private class CacheEventListener implements IgnitePredicate<IgniteEvent> {
+    private class CacheEventListener implements IgnitePredicate<Event> {
         /** Wait latch. */
         private CountDownLatch latch;
 
@@ -683,7 +683,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
+        @Override public boolean apply(Event evt) {
             info("Grid cache event: " + evt);
 
             if (U.containsIntArray(types, evt.type()))

@@ -57,7 +57,7 @@
         <property name="peerClassLoadingEnabled" value="true"/>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
+            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
                 <!-- Set to false to allow non-serializable objects in examples, default is true. -->
                 <property name="requireSerializable" value="false"/>
             </bean>
@@ -65,7 +65,7 @@
 
         <property name="ggfsConfiguration">
             <list>
-                <bean class="org.apache.ignite.fs.IgniteFsConfiguration">
+                <bean class="org.apache.ignite.configuration.IgniteFsConfiguration">
                     <property name="name" value="ignitefs"/>
                     <property name="metaCacheName" value="ignitefs-meta"/>
                     <property name="dataCacheName" value="ignitefs-data"/>
@@ -113,7 +113,7 @@
 
         <property name="cacheConfiguration">
             <list>
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="ignitefs-data"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
@@ -122,14 +122,14 @@
                     <property name="distributionMode" value="PARTITIONED_ONLY"/>
                     <property name="backups" value="0"/>
                     <property name="affinityMapper">
-                        <bean class="org.apache.ignite.fs.IgniteFsGroupDataBlocksKeyMapper">
+                        <bean class="org.apache.ignite.ignitefs.IgniteFsGroupDataBlocksKeyMapper">
                             <!-- Haw many blocks in row will be stored on the same node. -->
                             <constructor-arg value="512"/>
                         </bean>
                     </property>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="ignitefs-meta"/>
                     <property name="cacheMode" value="REPLICATED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>

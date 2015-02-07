@@ -25,14 +25,14 @@ import org.apache.ignite.spi.*;
  * Management bean that provides general administrative and configuration information
  * about jdbc checkpoint SPI.
  */
-@IgniteMXBeanDescription("MBean that provides information about jdbc checkpoint SPI.")
+@MXBeanDescription("MBean that provides information about jdbc checkpoint SPI.")
 public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets number of retries in case of DB failure.
      *
      * @return Number of retries.
      */
-    @IgniteMXBeanDescription("Number of retries.")
+    @MXBeanDescription("Number of retries.")
     public int getNumberOfRetries();
 
     /**
@@ -40,7 +40,7 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Description for data source.
      */
-    @IgniteMXBeanDescription("Data source description.")
+    @MXBeanDescription("Data source description.")
     public String getDataSourceInfo();
 
     /**
@@ -48,7 +48,7 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return User name for checkpoint jdbc.
      */
-    @IgniteMXBeanDescription("User name for checkpoint database.")
+    @MXBeanDescription("User name for checkpoint database.")
     public String getUser();
 
     /**
@@ -56,7 +56,7 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Password for checkpoint jdbc.
      */
-    @IgniteMXBeanDescription("Password for checkpoint database.")
+    @MXBeanDescription("Password for checkpoint database.")
     public String getPwd();
 
     /**
@@ -64,7 +64,7 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Checkpoint table name.
      */
-    @IgniteMXBeanDescription("Checkpoint table name.")
+    @MXBeanDescription("Checkpoint table name.")
     public String getCheckpointTableName();
 
     /**
@@ -72,7 +72,7 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Key field name for checkpoint table.
      */
-    @IgniteMXBeanDescription("Key field name for checkpoint table.")
+    @MXBeanDescription("Key field name for checkpoint table.")
     public String getKeyFieldName();
 
     /**
@@ -80,7 +80,7 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Key field type for checkpoint table.
      */
-    @IgniteMXBeanDescription("Key field type for checkpoint table.")
+    @MXBeanDescription("Key field type for checkpoint table.")
     public String getKeyFieldType();
 
     /**
@@ -88,7 +88,7 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Value field name for checkpoint table.
      */
-    @IgniteMXBeanDescription("Value field name for checkpoint table.")
+    @MXBeanDescription("Value field name for checkpoint table.")
     public String getValueFieldName();
 
     /**
@@ -96,7 +96,7 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Value field type for checkpoint table.
      */
-    @IgniteMXBeanDescription("Value field type for checkpoint table.")
+    @MXBeanDescription("Value field type for checkpoint table.")
     public String getValueFieldType();
 
     /**
@@ -104,7 +104,7 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Create date field name for checkpoint table.
      */
-    @IgniteMXBeanDescription("Expiration date field name for checkpoint table.")
+    @MXBeanDescription("Expiration date field name for checkpoint table.")
     public String getExpireDateFieldName();
 
     /**
@@ -112,6 +112,6 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Expiration date field type for checkpoint table.
      */
-    @IgniteMXBeanDescription("Expiration date field type for checkpoint table.")
+    @MXBeanDescription("Expiration date field type for checkpoint table.")
     public String getExpireDateFieldType();
 }

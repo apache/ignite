@@ -23,7 +23,7 @@ import org.apache.ignite.spi.*;
 /**
  * Management bean for {@link NeverFailoverSpi}.
  */
-@IgniteMXBeanDescription("MBean that provides access to never failover SPI configuration.")
+@MXBeanDescription("MBean that provides access to never failover SPI configuration.")
 public interface NeverFailoverSpiMBean extends IgniteSpiManagementMBean {
     // No-op.
 }

@@ -23,9 +23,9 @@ import org.apache.ignite.internal.util.typedef.*;
 /**
  * Filter for event consume test.
  */
-public class GridEventConsumeFilter implements P1<IgniteEvent> {
+public class GridEventConsumeFilter implements P1<Event> {
     /** {@inheritDoc} */
-    @Override public boolean apply(IgniteEvent e) {
+    @Override public boolean apply(Event e) {
         return true;
     }
 }

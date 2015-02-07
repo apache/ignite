@@ -27,7 +27,7 @@ import org.apache.ignite.transactions.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -51,8 +51,8 @@ public abstract class GridCacheExAbstractFullApiSelfTest extends GridCacheAbstra
     public void testGetOutTx() throws Exception {
         final AtomicInteger lockEvtCnt = new AtomicInteger();
 
-        IgnitePredicate<IgniteEvent> lsnr = new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 lockEvtCnt.incrementAndGet();
 
                 return true;

@@ -18,9 +18,8 @@
 package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.hadoop.conf.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.processors.hadoop.fs.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -193,8 +192,8 @@ public abstract class GridHadoopAbstractSelfTest extends GridCommonAbstractTest 
      */
     protected void setupFileSystems(Configuration cfg) {
         cfg.set("fs.defaultFS", ggfsScheme());
-        cfg.set("fs.ggfs.impl", org.apache.ignite.fs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
-        cfg.set("fs.AbstractFileSystem.ggfs.impl", org.apache.ignite.fs.hadoop.v2.GridGgfsHadoopFileSystem.
+        cfg.set("fs.ggfs.impl", org.apache.ignite.ignitefs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
+        cfg.set("fs.AbstractFileSystem.ggfs.impl", org.apache.ignite.ignitefs.hadoop.v2.GridGgfsHadoopFileSystem.
             class.getName());
 
         GridHadoopFileSystemsUtils.setupFileSystems(cfg);

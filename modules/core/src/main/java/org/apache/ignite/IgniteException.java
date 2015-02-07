@@ -71,7 +71,8 @@ public class IgniteException extends RuntimeException {
      * @return {@code True} if one of the causing exception is an instance of passed in classes,
      *      {@code false} otherwise.
      */
-    public boolean hasCause(@Nullable Class<? extends Throwable>... cls) {
+    @SafeVarargs
+    public final boolean hasCause(@Nullable Class<? extends Throwable>... cls) {
         return X.hasCause(this, cls);
     }
 

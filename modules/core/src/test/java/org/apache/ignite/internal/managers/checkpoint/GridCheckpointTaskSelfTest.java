@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.managers.checkpoint;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -135,7 +134,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** Task session. */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
@@ -153,7 +152,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
                     @IgniteInstanceResource
                     private Ignite ignite;
 
-                    @IgniteTaskSessionResource
+                    @TaskSessionResource
                     private ComputeTaskSession ses;
 
                     @Override public Object execute() {
@@ -192,7 +191,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** Task session. */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
@@ -208,7 +207,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
                     @IgniteInstanceResource
                     private Ignite ignite;
 
-                    @IgniteTaskSessionResource
+                    @TaskSessionResource
                     private ComputeTaskSession ses;
 
                     @Override public Object execute() {

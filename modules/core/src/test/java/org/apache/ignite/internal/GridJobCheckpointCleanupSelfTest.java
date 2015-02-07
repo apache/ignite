@@ -138,7 +138,7 @@ public class GridJobCheckpointCleanupSelfTest extends GridCommonAbstractTest {
             for (ClusterNode node : subgrid) {
                 if (node.id().equals(arg.id()))
                     return Collections.singletonMap(new ComputeJobAdapter() {
-                        @IgniteTaskSessionResource
+                        @TaskSessionResource
                         private ComputeTaskSession ses;
 
                         @Nullable @Override public Object execute() {

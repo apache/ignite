@@ -197,7 +197,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         qry.execute(ctx.kernalContext().grid().forLocal());
 
         ctx.kernalContext().event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(final IgniteEvent evt) {
+            @Override public void onEvent(final Event evt) {
                 if (!busyLock.tryReadLock())
                     return;
 
@@ -205,7 +205,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     // Must process discovery callback in a separate thread to avoid deadlock.
                     evtProcSvc.submit(new EventHandler() {
                         @Override protected void body() {
-                            processNodeLeft((IgniteDiscoveryEvent)evt);
+                            processNodeLeft((DiscoveryEvent)evt);
                         }
                     });
                 }
@@ -213,7 +213,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     busyLock.readUnlock();
                 }
             }
-        }, IgniteEventType.EVT_NODE_FAILED, IgniteEventType.EVT_NODE_LEFT);
+        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
     }
 
     /** {@inheritDoc} */
@@ -550,7 +550,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param evt Discovery event.
      */
     @SuppressWarnings("ConstantConditions")
-    private void processNodeLeft(IgniteDiscoveryEvent evt) {
+    private void processNodeLeft(DiscoveryEvent evt) {
         if (log.isDebugEnabled())
             log.debug("Processing discovery event [locNodeId=" + ctx.localNodeId() + ", evt=" + evt + ']');
 
