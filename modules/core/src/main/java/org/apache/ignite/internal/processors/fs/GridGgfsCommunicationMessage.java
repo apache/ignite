@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -27,12 +27,12 @@ import java.nio.*;
 /**
  * Base class for all GGFS communication messages sent between nodes.
  */
-public abstract class GridGgfsCommunicationMessage extends GridTcpCommunicationMessageAdapter {
+public abstract class GridGgfsCommunicationMessage extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
     }
 
     /**

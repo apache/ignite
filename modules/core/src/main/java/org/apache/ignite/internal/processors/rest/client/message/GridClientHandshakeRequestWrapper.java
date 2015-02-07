@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.grid.util.direct.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.nio.*;
 
 /**
  * Client handshake wrapper for direct marshalling.
  */
-public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessageAdapter {
+public class GridClientHandshakeRequestWrapper extends MessageAdapter {
     /** */
     private static final long serialVersionUID = -5705048094821942662L;
 
@@ -34,7 +34,7 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
     public static final byte HANDSHAKE_HEADER = (byte)0x91;
 
     /** Stream. */
-    private final GridTcpCommunicationByteBufferStream stream = new GridTcpCommunicationByteBufferStream(null);
+    private final DirectByteBufferStream stream = new DirectByteBufferStream(null);
 
     /** Handshake bytes. */
     private byte[] bytes;
@@ -95,7 +95,7 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridClientHandshakeRequestWrapper _clone = new GridClientHandshakeRequestWrapper();
 
         clone0(_clone);
@@ -104,7 +104,7 @@ public class GridClientHandshakeRequestWrapper extends GridTcpCommunicationMessa
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridClientHandshakeRequestWrapper _clone = (GridClientHandshakeRequestWrapper)_msg;
 
         _clone.bytes = bytes;

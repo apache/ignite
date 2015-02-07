@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.clock;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Message containing time delta map for all nodes.
  */
-public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAdapter {
+public class GridClockDeltaSnapshotMessage extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -73,7 +73,7 @@ public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAd
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridClockDeltaSnapshotMessage _clone = new GridClockDeltaSnapshotMessage();
 
         clone0(_clone);
@@ -82,7 +82,7 @@ public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAd
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridClockDeltaSnapshotMessage _clone = (GridClockDeltaSnapshotMessage)_msg;
 
         _clone.snapVer = snapVer;

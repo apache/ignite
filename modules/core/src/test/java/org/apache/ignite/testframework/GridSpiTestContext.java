@@ -21,15 +21,15 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.direct.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.gridgain.grid.util.direct.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -519,10 +519,10 @@ public class GridSpiTestContext implements IgniteSpiContext {
     /** {@inheritDoc} */
     @Override public GridTcpMessageFactory messageFactory() {
         return new GridTcpMessageFactory() {
-            @Override public GridTcpCommunicationMessageAdapter create(byte type) {
-                GridTcpCommunicationMessageAdapter msg = GridTcpCommunicationMessageFactory.create(type);
+            @Override public MessageAdapter create(byte type) {
+                MessageAdapter msg = GridTcpCommunicationMessageFactory.create(type);
 
-                msg.setReader(new GridTcpCommunicationMessageReader(null));
+                msg.setReader(new DirectMessageReader(null));
 
                 return msg;
             }

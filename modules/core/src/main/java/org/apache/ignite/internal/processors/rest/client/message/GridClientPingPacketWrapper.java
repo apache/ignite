@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.nio.*;
 
 /**
  * Ping packet wrapper for direct marshalling.
  */
-public class GridClientPingPacketWrapper extends GridTcpCommunicationMessageAdapter {
+public class GridClientPingPacketWrapper extends MessageAdapter {
     /** */
     private static final long serialVersionUID = -3956036611004055629L;
 
@@ -67,7 +67,7 @@ public class GridClientPingPacketWrapper extends GridTcpCommunicationMessageAdap
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridClientPingPacketWrapper _clone = new GridClientPingPacketWrapper();
 
         clone0(_clone);
@@ -76,7 +76,7 @@ public class GridClientPingPacketWrapper extends GridTcpCommunicationMessageAdap
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridClientPingPacketWrapper _clone = (GridClientPingPacketWrapper)_msg;
 
         _clone.size = size;

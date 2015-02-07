@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.managers.deployment;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Deployment request.
  */
-public class GridDeploymentRequest extends GridTcpCommunicationMessageAdapter {
+public class GridDeploymentRequest extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -157,7 +157,7 @@ public class GridDeploymentRequest extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDeploymentRequest _clone = new GridDeploymentRequest();
 
         clone0(_clone);
@@ -166,7 +166,7 @@ public class GridDeploymentRequest extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridDeploymentRequest _clone = (GridDeploymentRequest)_msg;
 
         _clone.resTopic = resTopic;

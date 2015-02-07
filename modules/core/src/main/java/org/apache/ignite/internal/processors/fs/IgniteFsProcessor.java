@@ -26,13 +26,14 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.ignitefs.mapreduce.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.direct.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.license.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -83,7 +84,7 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
         // Register GGFS messages.
         GridTcpCommunicationMessageFactory.registerCommon(new GridTcpCommunicationMessageProducer() {
             @Override
-            public GridTcpCommunicationMessageAdapter create(byte type) {
+            public MessageAdapter create(byte type) {
                 switch (type) {
                     case 64:
                         return new GridGgfsAckMessage();

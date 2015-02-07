@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -46,7 +46,7 @@ public class GridDhtPartitionsSingleRequest<K, V> extends GridDhtPartitionsAbstr
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDhtPartitionsSingleRequest _clone = new GridDhtPartitionsSingleRequest();
 
         clone0(_clone);
@@ -55,7 +55,7 @@ public class GridDhtPartitionsSingleRequest<K, V> extends GridDhtPartitionsAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
     }

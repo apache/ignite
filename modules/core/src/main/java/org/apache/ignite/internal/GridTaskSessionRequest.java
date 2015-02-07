@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Task session request.
  */
-public class GridTaskSessionRequest extends GridTcpCommunicationMessageAdapter implements GridTaskMessage {
+public class GridTaskSessionRequest extends MessageAdapter implements GridTaskMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -99,7 +99,7 @@ public class GridTaskSessionRequest extends GridTcpCommunicationMessageAdapter i
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridTaskSessionRequest _clone = new GridTaskSessionRequest();
 
         clone0(_clone);
@@ -108,7 +108,7 @@ public class GridTaskSessionRequest extends GridTcpCommunicationMessageAdapter i
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridTaskSessionRequest _clone = (GridTaskSessionRequest)_msg;
 
         _clone.sesId = sesId;

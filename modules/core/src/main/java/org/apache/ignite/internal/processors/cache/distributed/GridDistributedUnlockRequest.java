@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -117,7 +117,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors",
         "OverriddenMethodCallDuringObjectConstruction"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDistributedUnlockRequest _clone = new GridDistributedUnlockRequest();
 
         clone0(_clone);
@@ -126,7 +126,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridDistributedUnlockRequest _clone = (GridDistributedUnlockRequest)_msg;

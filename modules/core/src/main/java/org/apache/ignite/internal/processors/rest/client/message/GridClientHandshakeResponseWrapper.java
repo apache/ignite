@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.nio.*;
 
 /**
  * Client handshake wrapper for direct marshalling.
  */
-public class GridClientHandshakeResponseWrapper extends GridTcpCommunicationMessageAdapter {
+public class GridClientHandshakeResponseWrapper extends MessageAdapter {
     /** */
     private static final long serialVersionUID = -1529807975073967381L;
 
@@ -72,7 +72,7 @@ public class GridClientHandshakeResponseWrapper extends GridTcpCommunicationMess
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridClientHandshakeResponseWrapper _clone = new GridClientHandshakeResponseWrapper();
 
         clone0(_clone);
@@ -81,7 +81,7 @@ public class GridClientHandshakeResponseWrapper extends GridTcpCommunicationMess
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridClientHandshakeResponseWrapper _clone = (GridClientHandshakeResponseWrapper)_msg;
 
         _clone.code = code;

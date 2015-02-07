@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.managers.deployment;
 
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  * Grid deployment response containing requested resource bytes.
  */
-public class GridDeploymentResponse extends GridTcpCommunicationMessageAdapter {
+public class GridDeploymentResponse extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -107,7 +107,7 @@ public class GridDeploymentResponse extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDeploymentResponse _clone = new GridDeploymentResponse();
 
         clone0(_clone);
@@ -116,7 +116,7 @@ public class GridDeploymentResponse extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridDeploymentResponse _clone = (GridDeploymentResponse)_msg;
 
         _clone.success = success;

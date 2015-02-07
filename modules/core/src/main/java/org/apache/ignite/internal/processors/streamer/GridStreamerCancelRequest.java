@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.streamer;
 
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -26,7 +26,7 @@ import java.nio.*;
 /**
  * Streamer cancel request.
  */
-public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapter {
+public class GridStreamerCancelRequest extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,7 +56,7 @@ public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapte
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridStreamerCancelRequest _clone = new GridStreamerCancelRequest();
 
         clone0(_clone);
@@ -65,7 +65,7 @@ public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapte
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridStreamerCancelRequest _clone = (GridStreamerCancelRequest)_msg;
 
         _clone.cancelledFutId = cancelledFutId;

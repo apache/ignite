@@ -18,10 +18,10 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Job execution response.
  */
-public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter implements GridTaskMessage {
+public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -206,7 +206,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridJobExecuteResponse _clone = new GridJobExecuteResponse();
 
         clone0(_clone);
@@ -215,7 +215,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridJobExecuteResponse _clone = (GridJobExecuteResponse)_msg;
 
         _clone.nodeId = nodeId;

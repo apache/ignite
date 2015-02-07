@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.streamer;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -31,7 +31,7 @@ import java.util.*;
 /**
  *
  */
-public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAdapter {
+public class GridStreamerExecutionRequest extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -151,7 +151,7 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridStreamerExecutionRequest _clone = new GridStreamerExecutionRequest();
 
         clone0(_clone);
@@ -160,7 +160,7 @@ public class GridStreamerExecutionRequest extends GridTcpCommunicationMessageAda
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridStreamerExecutionRequest _clone = (GridStreamerExecutionRequest)_msg;
 
         _clone.forceLocDep = forceLocDep;

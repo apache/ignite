@@ -31,12 +31,11 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.io.*;
@@ -44,10 +43,6 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
@@ -9231,12 +9226,11 @@ public abstract class IgniteUtils {
      *
      * @param msg Message.
      * @param out Stream to write to.
-     * @param buf Byte buffer that will be passed to {@link GridTcpCommunicationMessageAdapter#writeTo(ByteBuffer)}
-     *            method.
+     * @param buf Byte buffer that will be passed to {@link MessageAdapter#writeTo(ByteBuffer)} method.
      * @return Number of written bytes.
      * @throws IOException In case of error.
      */
-    public static int writeMessageFully(GridTcpCommunicationMessageAdapter msg, OutputStream out, ByteBuffer buf)
+    public static int writeMessageFully(MessageAdapter msg, OutputStream out, ByteBuffer buf)
         throws IOException {
         assert msg != null;
         assert out != null;

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.streamer;
 
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  *
  */
-public class GridStreamerResponse extends GridTcpCommunicationMessageAdapter {
+public class GridStreamerResponse extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -76,7 +76,7 @@ public class GridStreamerResponse extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridStreamerResponse _clone = new GridStreamerResponse();
 
         clone0(_clone);
@@ -85,7 +85,7 @@ public class GridStreamerResponse extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridStreamerResponse _clone = (GridStreamerResponse)_msg;
 
         _clone.futId = futId;

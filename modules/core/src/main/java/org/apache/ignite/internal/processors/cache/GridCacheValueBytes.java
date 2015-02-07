@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
+
+import java.nio.*;
 
 /**
  * Wrapped value bytes of cache entry.
  */
-public class GridCacheValueBytes {
+public class GridCacheValueBytes extends MessageAdapter {
     /** Null instance. */
     private static final GridCacheValueBytes NULL = new GridCacheValueBytes();
 
@@ -111,6 +114,31 @@ public class GridCacheValueBytes {
      */
     public boolean isNull() {
         return bytes == null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf) {
+        return false; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf) {
+        return false; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessageAdapter clone() {
+        return null; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void clone0(MessageAdapter _msg) {
+        // TODO: implement.
     }
 
     /** {@inheritDoc} */

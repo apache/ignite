@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.direct;
+package org.apache.ignite.internal.direct;
+
+import org.apache.ignite.plugin.extensions.communication.*;
 
 /**
- * Message producer. Each component have to register it's own message producer.
+ *
  */
-public interface GridTcpCommunicationMessageProducer {
+public interface GridTcpMessageFactory {
     /**
-     * Create message.
-     *
      * @param type Message type.
-     * @return Communication message.
+     * @return Message instance.
      */
-    public GridTcpCommunicationMessageAdapter create(byte type);
+    public MessageAdapter create(byte type);
 }

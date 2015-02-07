@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  * Job siblings request.
  */
-public class GridJobSiblingsRequest extends GridTcpCommunicationMessageAdapter {
+public class GridJobSiblingsRequest extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -85,7 +85,7 @@ public class GridJobSiblingsRequest extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridJobSiblingsRequest _clone = new GridJobSiblingsRequest();
 
         clone0(_clone);
@@ -94,7 +94,7 @@ public class GridJobSiblingsRequest extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridJobSiblingsRequest _clone = (GridJobSiblingsRequest)_msg;
 
         _clone.sesId = sesId;

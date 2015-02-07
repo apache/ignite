@@ -1,26 +1,34 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
-package org.gridgain.grid.util.direct;
+package org.apache.ignite.internal.direct;
 
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
+import java.util.*;
 
 /**
  * Portable reader implementation.
  */
-public class GridTcpCommunicationMessageReader implements MessageReader {
+public class DirectMessageReader implements MessageReader {
     /** Stream. */
-    private final GridTcpCommunicationByteBufferStream stream;
+    private final DirectByteBufferStream stream;
 
     /** Whether last field was fully read. */
     private boolean lastRead;
@@ -28,8 +36,8 @@ public class GridTcpCommunicationMessageReader implements MessageReader {
     /**
      * @param msgFactory Message factory.
      */
-    public GridTcpCommunicationMessageReader(GridTcpMessageFactory msgFactory) {
-        this.stream = new GridTcpCommunicationByteBufferStream(msgFactory);
+    public DirectMessageReader(GridTcpMessageFactory msgFactory) {
+        this.stream = new DirectByteBufferStream(msgFactory);
     }
 
     /** {@inheritDoc} */
@@ -39,114 +47,74 @@ public class GridTcpCommunicationMessageReader implements MessageReader {
 
     /** {@inheritDoc} */
     @Override public byte readByte(String name) {
-        if (stream.remaining() < 1) {
-            lastRead = false;
+        byte val = stream.readByte();
 
-            return 0;
-        }
-        else {
-            lastRead = true;
+        lastRead = stream.lastFinished();
 
-            return stream.readByte();
-        }
+        return val;
     }
 
     /** {@inheritDoc} */
     @Override public short readShort(String name) {
-        if (stream.remaining() < 2) {
-            lastRead = false;
+        short val = stream.readShort();
 
-            return 0;
-        }
-        else {
-            lastRead = true;
+        lastRead = stream.lastFinished();
 
-            return stream.readShort();
-        }
+        return val;
     }
 
     /** {@inheritDoc} */
     @Override public int readInt(String name) {
-        if (stream.remaining() < 4) {
-            lastRead = false;
+        int val = stream.readInt();
 
-            return 0;
-        }
-        else {
-            lastRead = true;
+        lastRead = stream.lastFinished();
 
-            return stream.readInt();
-        }
+        return val;
     }
 
     /** {@inheritDoc} */
     @Override public long readLong(String name) {
-        if (stream.remaining() < 8) {
-            lastRead = false;
+        long val = stream.readLong();
 
-            return 0;
-        }
-        else {
-            lastRead = true;
+        lastRead = stream.lastFinished();
 
-            return stream.readLong();
-        }
+        return val;
     }
 
     /** {@inheritDoc} */
     @Override public float readFloat(String name) {
-        if (stream.remaining() < 4) {
-            lastRead = false;
+        float val = stream.readFloat();
 
-            return 0;
-        }
-        else {
-            lastRead = true;
+        lastRead = stream.lastFinished();
 
-            return stream.readFloat();
-        }
+        return val;
     }
 
     /** {@inheritDoc} */
     @Override public double readDouble(String name) {
-        if (stream.remaining() < 8) {
-            lastRead = false;
+        double val = stream.readDouble();
 
-            return 0;
-        }
-        else {
-            lastRead = true;
+        lastRead = stream.lastFinished();
 
-            return stream.readDouble();
-        }
+        return val;
     }
 
     /** {@inheritDoc} */
     @Override public char readChar(String name) {
-        if (stream.remaining() < 2) {
-            lastRead = false;
+        char val = stream.readChar();
 
-            return 0;
-        }
-        else {
-            lastRead = true;
+        lastRead = stream.lastFinished();
 
-            return stream.readChar();
-        }
+        return val;
     }
 
     /** {@inheritDoc} */
     @Override public boolean readBoolean(String name) {
-        if (stream.remaining() < 1) {
-            lastRead = false;
+        boolean val = stream.readBoolean();
 
-            return false;
-        }
-        else {
-            lastRead = true;
+        lastRead = stream.lastFinished();
 
-            return stream.readBoolean();
-        }
+        return val;
     }
 
     /** {@inheritDoc} */
@@ -222,12 +190,30 @@ public class GridTcpCommunicationMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridTcpCommunicationMessageAdapter readMessage(String name) {
-        GridTcpCommunicationMessageAdapter msg = stream.readMessage();
+    @Nullable @Override public MessageAdapter readMessage(String name) {
+        MessageAdapter msg = stream.readMessage();
 
         lastRead = stream.lastFinished();
 
         return msg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> Collection<T> readCollection(String name, Class<T> itemCls) {
+        Collection<T> col = stream.readCollection(itemCls);
+
+        lastRead = stream.lastFinished();
+
+        return col;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K, V> Map<K, V> readMap(String name, Class<K> keyCls, Class<V> valCls) {
+        Map<K, V> map = stream.readMap(keyCls, valCls);
+
+        lastRead = stream.lastFinished();
+
+        return map;
     }
 
     /** {@inheritDoc} */

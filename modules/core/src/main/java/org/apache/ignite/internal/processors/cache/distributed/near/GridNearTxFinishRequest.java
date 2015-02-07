@@ -21,9 +21,9 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -162,7 +162,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridNearTxFinishRequest _clone = new GridNearTxFinishRequest();
 
         clone0(_clone);
@@ -171,7 +171,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridNearTxFinishRequest _clone = (GridNearTxFinishRequest)_msg;

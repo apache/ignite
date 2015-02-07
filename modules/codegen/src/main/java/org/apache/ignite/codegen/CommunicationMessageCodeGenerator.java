@@ -15,9 +15,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -63,7 +63,7 @@ public class CommunicationMessageCodeGenerator {
     private static final String SRC_DIR = U.getIgniteHome() + "/modules/core/src/main/java";
 
     /** */
-    private static final Class<?> BASE_CLS = GridTcpCommunicationMessageAdapter.class;
+    private static final Class<?> BASE_CLS = MessageAdapter.class;
 
     /** */
     private static final String EMPTY = "";
@@ -143,9 +143,9 @@ public class CommunicationMessageCodeGenerator {
      * @throws Exception In case of error.
      */
     public void generateAll(boolean write) throws Exception {
-        Collection<Class<? extends GridTcpCommunicationMessageAdapter>> classes = classes();
+        Collection<Class<? extends MessageAdapter>> classes = classes();
 
-        for (Class<? extends GridTcpCommunicationMessageAdapter> cls : classes) {
+        for (Class<? extends MessageAdapter> cls : classes) {
             boolean isAbstract = Modifier.isAbstract(cls.getModifiers());
 
             System.out.println("Processing class: " + cls.getName() + (isAbstract ? " (abstract)" : ""));
@@ -158,7 +158,7 @@ public class CommunicationMessageCodeGenerator {
 
 //        type = 0;
 //
-//        for (Class<? extends GridTcpCommunicationMessageAdapter> cls : classes) {
+//        for (Class<? extends MessageAdapter> cls : classes) {
 //            if (Modifier.isAbstract(cls.getModifiers()))
 //                continue;
 //
@@ -177,7 +177,7 @@ public class CommunicationMessageCodeGenerator {
      * @throws Exception In case of error.
      */
     @SuppressWarnings("ConstantConditions")
-    private void generateAndWrite(Class<? extends GridTcpCommunicationMessageAdapter> cls) throws Exception {
+    private void generateAndWrite(Class<? extends MessageAdapter> cls) throws Exception {
         assert cls != null;
 
         generate(cls);
@@ -228,14 +228,14 @@ public class CommunicationMessageCodeGenerator {
 //
 //                        skip = true;
 //                    }
-                    else if (line.contains("public GridTcpCommunicationMessageAdapter clone()")) {
+                    else if (line.contains("public MessageAdapter clone()")) {
                         src.addAll(clone);
 
                         skip = true;
 
                         cloneFound = true;
                     }
-                    else if (line.contains("protected void clone0(GridTcpCommunicationMessageAdapter _msg)")) {
+                    else if (line.contains("protected void clone0(MessageAdapter _msg)")) {
                         src.addAll(clone0);
 
                         skip = true;
@@ -287,7 +287,7 @@ public class CommunicationMessageCodeGenerator {
      * @param cls Class.
      * @throws Exception In case of error.
      */
-    public void generate(Class<? extends GridTcpCommunicationMessageAdapter> cls) throws Exception {
+    public void generate(Class<? extends MessageAdapter> cls) throws Exception {
         assert cls != null;
 
         write.clear();
@@ -1065,11 +1065,11 @@ public class CommunicationMessageCodeGenerator {
      * @return Classes.
      * @throws Exception In case of error.
      */
-    private Collection<Class<? extends GridTcpCommunicationMessageAdapter>> classes() throws Exception {
-        Collection<Class<? extends GridTcpCommunicationMessageAdapter>> col = new TreeSet<>(
-            new Comparator<Class<? extends GridTcpCommunicationMessageAdapter>>() {
-                @Override public int compare(Class<? extends GridTcpCommunicationMessageAdapter> c1,
-                    Class<? extends GridTcpCommunicationMessageAdapter> c2) {
+    private Collection<Class<? extends MessageAdapter>> classes() throws Exception {
+        Collection<Class<? extends MessageAdapter>> col = new TreeSet<>(
+            new Comparator<Class<? extends MessageAdapter>>() {
+                @Override public int compare(Class<? extends MessageAdapter> c1,
+                    Class<? extends MessageAdapter> c2) {
                     return c1.getName().compareTo(c2.getName());
                 }
             });
@@ -1097,7 +1097,7 @@ public class CommunicationMessageCodeGenerator {
      * @throws Exception In case of error.
      */
     private void processFile(File file, ClassLoader ldr, int prefixLen,
-        Collection<Class<? extends GridTcpCommunicationMessageAdapter>> col) throws Exception {
+        Collection<Class<? extends MessageAdapter>> col) throws Exception {
         assert file != null;
         assert ldr != null;
         assert prefixLen > 0;
@@ -1122,7 +1122,7 @@ public class CommunicationMessageCodeGenerator {
 
                 if (cls.getDeclaringClass() == null && cls.getEnclosingClass() == null &&
                     !BASE_CLS.equals(cls) && BASE_CLS.isAssignableFrom(cls))
-                    col.add((Class<? extends GridTcpCommunicationMessageAdapter>)cls);
+                    col.add((Class<? extends MessageAdapter>)cls);
             }
         }
     }

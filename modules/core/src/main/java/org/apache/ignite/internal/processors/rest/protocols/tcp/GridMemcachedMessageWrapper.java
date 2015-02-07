@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.rest.protocols.tcp;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.direct.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.util.direct.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -34,7 +34,7 @@ import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemca
 /**
  * Memcached message wrapper for direct marshalling.
  */
-public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdapter {
+public class GridMemcachedMessageWrapper extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 3053626103006980626L;
 
@@ -42,7 +42,7 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
     private static final Charset UTF_8 = Charset.forName("UTF-8");
 
     /** Stream. */
-    private final GridTcpCommunicationByteBufferStream stream = new GridTcpCommunicationByteBufferStream(null);
+    private final DirectByteBufferStream stream = new DirectByteBufferStream(null);
 
     /**
      * Memcached message bytes.
@@ -95,7 +95,7 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridMemcachedMessageWrapper _clone = new GridMemcachedMessageWrapper();
 
         clone0(_clone);
@@ -104,7 +104,7 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridMemcachedMessageWrapper _clone = (GridMemcachedMessageWrapper)_msg;
 
         _clone.bytes = bytes;

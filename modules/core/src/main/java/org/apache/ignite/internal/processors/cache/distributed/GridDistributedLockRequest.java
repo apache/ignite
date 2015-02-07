@@ -22,10 +22,10 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
@@ -428,7 +428,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneCallsConstructors", "OverriddenMethodCallDuringObjectConstruction",
         "CloneDoesntCallSuperClone"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDistributedLockRequest _clone = new GridDistributedLockRequest();
 
         clone0(_clone);
@@ -437,7 +437,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridDistributedLockRequest _clone = (GridDistributedLockRequest)_msg;

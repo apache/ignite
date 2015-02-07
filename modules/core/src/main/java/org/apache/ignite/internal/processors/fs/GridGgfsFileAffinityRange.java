@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Affinity range.
  */
-public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapter implements Externalizable {
+public class GridGgfsFileAffinityRange extends MessageAdapter implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -264,7 +264,7 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridGgfsFileAffinityRange _clone = new GridGgfsFileAffinityRange();
 
         clone0(_clone);
@@ -273,7 +273,7 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridGgfsFileAffinityRange _clone = (GridGgfsFileAffinityRange)_msg;
 
         _clone.affKey = affKey;

@@ -19,10 +19,10 @@ package org.apache.ignite.internal.managers.deployment;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Deployment info bean.
  */
-public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter implements GridDeploymentInfo,
+public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploymentInfo,
     Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -139,7 +139,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDeploymentInfoBean _clone = new GridDeploymentInfoBean();
 
         clone0(_clone);
@@ -148,7 +148,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridDeploymentInfoBean _clone = (GridDeploymentInfoBean)_msg;
 
         _clone.clsLdrId = clsLdrId;

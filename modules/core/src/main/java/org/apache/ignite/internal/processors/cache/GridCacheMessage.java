@@ -22,11 +22,11 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Parent of all cache messages.
  */
-public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessageAdapter {
+public abstract class GridCacheMessage<K, V> extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -644,7 +644,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridCacheMessage _clone = (GridCacheMessage)_msg;
 
         _clone.msgId = msgId;

@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.util.ipc;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -143,7 +143,7 @@ public class IpcToNioAdapter<T> {
      * @param msg Buffer to send.
      * @return Send result.
      */
-    private GridNioFuture<?> send(GridTcpCommunicationMessageAdapter msg) {
+    private GridNioFuture<?> send(MessageAdapter msg) {
         assert writeBuf.hasArray();
 
         try {
@@ -188,7 +188,7 @@ public class IpcToNioAdapter<T> {
         @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) {
             assert ses == IpcToNioAdapter.this.ses;
 
-            return send((GridTcpCommunicationMessageAdapter)msg);
+            return send((MessageAdapter)msg);
         }
 
         /** {@inheritDoc} */

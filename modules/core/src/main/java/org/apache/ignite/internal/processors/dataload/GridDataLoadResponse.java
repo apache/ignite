@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.dataload;
 
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.nio.*;
 
 /**
  *
  */
-public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
+public class GridDataLoadResponse extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -84,7 +84,7 @@ public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDataLoadResponse _clone = new GridDataLoadResponse();
 
         clone0(_clone);
@@ -93,7 +93,7 @@ public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridDataLoadResponse _clone = (GridDataLoadResponse)_msg;
 
         _clone.reqId = reqId;

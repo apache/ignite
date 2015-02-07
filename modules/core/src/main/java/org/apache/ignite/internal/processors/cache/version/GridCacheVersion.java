@@ -20,15 +20,18 @@ package org.apache.ignite.internal.processors.cache.version;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.nio.*;
 import java.util.*;
 
 /**
  * Grid unique version.
  */
-public class GridCacheVersion implements Comparable<GridCacheVersion>, Externalizable, OptimizedMarshallable {
+public class GridCacheVersion extends MessageAdapter implements Comparable<GridCacheVersion>, Externalizable,
+    OptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -247,6 +250,31 @@ public class GridCacheVersion implements Comparable<GridCacheVersion>, Externali
         }
         else
             return topologyVersion() < other.topologyVersion() ? -1 : 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf) {
+        return false; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf) {
+        return false; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessageAdapter clone() {
+        return null; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void clone0(MessageAdapter _msg) {
+        // TODO: implement.
     }
 
     /** {@inheritDoc} */

@@ -20,10 +20,10 @@ package org.apache.ignite.internal.managers.communication;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.deployment.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * User message wrapper.
  */
-public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
+public class GridIoUserMessage extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -204,7 +204,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridIoUserMessage _clone = new GridIoUserMessage();
 
         clone0(_clone);
@@ -213,7 +213,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridIoUserMessage _clone = (GridIoUserMessage)_msg;
 
         _clone.body = body;

@@ -18,7 +18,8 @@
 package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.direct.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
@@ -50,7 +51,7 @@ public class GridDirectParser implements GridNioParser {
         if (msgFactory == null)
             msgFactory = spi.getSpiContext().messageFactory();
 
-        GridTcpCommunicationMessageAdapter msg = ses.removeMeta(MSG_META_KEY);
+        MessageAdapter msg = ses.removeMeta(MSG_META_KEY);
 
         if (msg == null && buf.hasRemaining())
             msg = msgFactory.create(buf.get());

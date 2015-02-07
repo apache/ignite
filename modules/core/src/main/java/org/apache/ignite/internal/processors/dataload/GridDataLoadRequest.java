@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.dataload;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -31,7 +31,7 @@ import java.util.*;
 /**
  *
  */
-public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
+public class GridDataLoadRequest extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -506,7 +506,7 @@ public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDataLoadRequest _clone = new GridDataLoadRequest();
 
         clone0(_clone);
@@ -515,7 +515,7 @@ public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridDataLoadRequest _clone = (GridDataLoadRequest)_msg;
 
         _clone.reqId = reqId;

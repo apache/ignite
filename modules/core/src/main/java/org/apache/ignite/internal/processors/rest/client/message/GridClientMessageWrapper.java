@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.grid.util.direct.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.nio.*;
 import java.util.*;
@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Client message wrapper for direct marshalling.
  */
-public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter {
+public class GridClientMessageWrapper extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 5284375300887454697L;
 
@@ -35,7 +35,7 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
     public static final byte REQ_HEADER = (byte)0x90;
 
     /** Stream. */
-    private final GridTcpCommunicationByteBufferStream stream = new GridTcpCommunicationByteBufferStream(null);
+    private final DirectByteBufferStream stream = new DirectByteBufferStream(null);
 
     /** */
     private int msgSize;
@@ -249,7 +249,7 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridClientMessageWrapper _clone = new GridClientMessageWrapper();
 
         clone0(_clone);
@@ -258,7 +258,7 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridClientMessageWrapper _clone = (GridClientMessageWrapper)_msg;
 
         _clone.reqId = reqId;

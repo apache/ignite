@@ -20,10 +20,10 @@ package org.apache.ignite.internal.managers.eventstorage;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Event storage message.
  */
-public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter {
+public class GridEventStorageMessage extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -262,7 +262,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridEventStorageMessage _clone = new GridEventStorageMessage();
 
         clone0(_clone);
@@ -271,7 +271,7 @@ public class GridEventStorageMessage extends GridTcpCommunicationMessageAdapter 
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridEventStorageMessage _clone = (GridEventStorageMessage)_msg;
 
         _clone.resTopic = resTopic;

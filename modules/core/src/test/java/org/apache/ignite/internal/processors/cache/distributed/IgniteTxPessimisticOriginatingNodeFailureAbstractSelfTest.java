@@ -26,10 +26,10 @@ import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -418,7 +418,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi() {
-            @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
+            @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
                 throws IgniteSpiException {
                 if (getSpiContext().localNode().id().equals(failingNodeId)) {
                     if (ignoredMessage((GridIoMessage)msg) && ignoreMsgNodeIds != null) {

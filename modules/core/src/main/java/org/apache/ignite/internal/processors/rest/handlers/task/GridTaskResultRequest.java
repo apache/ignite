@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.rest.handlers.task;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  * Task result request.
  */
-public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
+public class GridTaskResultRequest extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -100,7 +100,7 @@ public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridTaskResultRequest _clone = new GridTaskResultRequest();
 
         clone0(_clone);
@@ -109,7 +109,7 @@ public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridTaskResultRequest _clone = (GridTaskResultRequest)_msg;
 
         _clone.taskId = taskId;

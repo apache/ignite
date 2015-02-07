@@ -18,18 +18,18 @@
 package org.apache.ignite.client.impl.connection;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.direct.*;
 import org.apache.ignite.logger.java.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.impl.*;
 import org.apache.ignite.client.util.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.nio.ssl.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.grid.util.direct.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
@@ -666,7 +666,7 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
                 return new GridClientHandshakeResponse(code);
             }
 
-            GridTcpCommunicationMessageAdapter msg = ses.removeMeta(MSG_META_KEY);
+            MessageAdapter msg = ses.removeMeta(MSG_META_KEY);
 
             if (msg == null && buf.hasRemaining()) {
                 byte type = buf.get();
@@ -674,7 +674,7 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
                 if (type == GridClientMessageWrapper.REQ_HEADER) {
                     msg = new GridClientMessageWrapper();
 
-                    msg.setReader(new GridTcpCommunicationMessageReader(null));
+                    msg.setReader(new DirectMessageReader(null));
                 }
                 else
                     throw new IOException("Invalid message type: " + type);

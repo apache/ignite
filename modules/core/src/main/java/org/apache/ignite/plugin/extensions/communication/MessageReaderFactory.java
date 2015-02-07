@@ -9,9 +9,11 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
+import org.apache.ignite.plugin.*;
+
 /**
  * TODO
  */
-public interface MessageReaderFactory {
+public interface MessageReaderFactory extends IgniteExtension {
     public MessageReader reader();
 }

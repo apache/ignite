@@ -9,15 +9,13 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.plugin.*;
-
 import java.nio.*;
+import java.util.*;
 
 /**
  * TODO
  */
-public interface MessageWriter extends IgniteExtension {
+public interface MessageWriter {
     public void setBuffer(ByteBuffer buf);
 
     public boolean writeByte(String name, byte val);
@@ -52,5 +50,9 @@ public interface MessageWriter extends IgniteExtension {
 
     public boolean writeBooleanArray(String name, boolean[] val);
 
-    public boolean writeMessage(String name, GridTcpCommunicationMessageAdapter val);
+    public boolean writeMessage(String name, MessageAdapter val);
+
+    public <T> boolean writeCollection(String name, Collection<T> col, Class<T> itemCls);
+
+    public <K, V> boolean writeMap(String name, Map<K, V> map, Class<K> keyCls, Class<V> valCls);
 }

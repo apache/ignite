@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -48,7 +48,7 @@ public class GridNearUnlockRequest<K, V> extends GridDistributedUnlockRequest<K,
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridNearUnlockRequest _clone = new GridNearUnlockRequest();
 
         clone0(_clone);
@@ -57,7 +57,7 @@ public class GridNearUnlockRequest<K, V> extends GridDistributedUnlockRequest<K,
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
     }

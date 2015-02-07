@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -74,7 +74,7 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDhtAtomicDeferredUpdateResponse _clone = new GridDhtAtomicDeferredUpdateResponse();
 
         clone0(_clone);
@@ -83,7 +83,7 @@ public class GridDhtAtomicDeferredUpdateResponse<K, V> extends GridCacheMessage<
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridDhtAtomicDeferredUpdateResponse _clone = (GridDhtAtomicDeferredUpdateResponse)_msg;

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.version;
 
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.direct.*;
 
 import java.nio.*;
 

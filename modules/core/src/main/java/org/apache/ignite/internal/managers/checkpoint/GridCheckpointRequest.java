@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.managers.checkpoint;
 
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  * This class defines checkpoint request.
  */
-public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
+public class GridCheckpointRequest extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -85,7 +85,7 @@ public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridCheckpointRequest _clone = new GridCheckpointRequest();
 
         clone0(_clone);
@@ -94,7 +94,7 @@ public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridCheckpointRequest _clone = (GridCheckpointRequest)_msg;
 
         _clone.sesId = sesId;

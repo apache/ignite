@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.collision.jobstealing;
 
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -26,7 +26,7 @@ import java.nio.*;
 /**
  * Job stealing request.
  */
-public class JobStealingRequest extends GridTcpCommunicationMessageAdapter {
+public class JobStealingRequest extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,7 +56,7 @@ public class JobStealingRequest extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         JobStealingRequest _clone = new JobStealingRequest();
 
         clone0(_clone);
@@ -65,7 +65,7 @@ public class JobStealingRequest extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         JobStealingRequest _clone = (JobStealingRequest)_msg;
 
         _clone.delta = delta;

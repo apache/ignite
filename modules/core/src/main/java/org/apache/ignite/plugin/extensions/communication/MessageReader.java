@@ -9,15 +9,13 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.plugin.*;
-
 import java.nio.*;
+import java.util.*;
 
 /**
  * TODO
  */
-public interface MessageReader extends IgniteExtension {
+public interface MessageReader {
     public void setBuffer(ByteBuffer buf);
 
     public byte readByte(String name);
@@ -52,7 +50,11 @@ public interface MessageReader extends IgniteExtension {
 
     public boolean[] readBooleanArray(String name);
 
-    public GridTcpCommunicationMessageAdapter readMessage(String name);
+    public MessageAdapter readMessage(String name);
+
+    public <T> Collection<T> readCollection(String name, Class<T> itemCls);
+
+    public <K, V> Map<K, V> readMap(String name, Class<K> keyCls, Class<V> valCls);
 
     public boolean isLastRead();
 }

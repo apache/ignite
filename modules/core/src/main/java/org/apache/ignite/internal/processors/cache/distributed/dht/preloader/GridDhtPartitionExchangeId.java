@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
+import java.nio.*;
 import java.util.*;
 
 import static org.apache.ignite.events.EventType.*;
@@ -28,7 +30,8 @@ import static org.apache.ignite.events.EventType.*;
 /**
  * Exchange ID.
  */
-public class GridDhtPartitionExchangeId implements Comparable<GridDhtPartitionExchangeId>, Externalizable {
+public class GridDhtPartitionExchangeId extends MessageAdapter implements Comparable<GridDhtPartitionExchangeId>,
+    Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -140,6 +143,31 @@ public class GridDhtPartitionExchangeId implements Comparable<GridDhtPartitionEx
         GridDhtPartitionExchangeId id = (GridDhtPartitionExchangeId)o;
 
         return evt == id.evt && topVer == id.topVer && nodeId.equals(id.nodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf) {
+        return false; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf) {
+        return false; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessageAdapter clone() {
+        return null; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void clone0(MessageAdapter _msg) {
+        // TODO: implement.
     }
 
     /** {@inheritDoc} */

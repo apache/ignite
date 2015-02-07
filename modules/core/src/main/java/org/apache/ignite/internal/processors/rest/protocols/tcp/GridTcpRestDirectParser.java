@@ -19,12 +19,11 @@ package org.apache.ignite.internal.processors.rest.protocols.tcp;
 
 import org.apache.ignite.*;
 import org.apache.ignite.client.marshaller.*;
+import org.apache.ignite.internal.direct.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
-import org.gridgain.grid.util.direct.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -46,7 +45,7 @@ public class GridTcpRestDirectParser implements GridNioParser {
     private static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Message reader. */
-    private final MessageReader rdr = new GridTcpCommunicationMessageReader(null);
+    private final MessageReader rdr = new DirectMessageReader(null);
 
     /** Protocol handler. */
     private final GridTcpRestProtocol proto;
@@ -74,7 +73,7 @@ public class GridTcpRestDirectParser implements GridNioParser {
             return memcacheMsg;
         }
 
-        GridTcpCommunicationMessageAdapter msg = ses.removeMeta(MSG_META_KEY);
+        MessageAdapter msg = ses.removeMeta(MSG_META_KEY);
 
         if (msg == null && buf.hasRemaining()) {
             byte type = buf.get(buf.position());

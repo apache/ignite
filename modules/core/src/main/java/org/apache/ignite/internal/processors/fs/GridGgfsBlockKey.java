@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -31,7 +31,7 @@ import java.nio.*;
  * File's binary data block key.
  */
 @GridInternal
-public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
+public final class GridGgfsBlockKey extends MessageAdapter
     implements Externalizable, Comparable<GridGgfsBlockKey> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -160,7 +160,7 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridGgfsBlockKey _clone = new GridGgfsBlockKey();
 
         clone0(_clone);
@@ -169,7 +169,7 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridGgfsBlockKey _clone = (GridGgfsBlockKey)_msg;
 
         _clone.fileId = fileId;

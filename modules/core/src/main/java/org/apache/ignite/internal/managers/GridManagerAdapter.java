@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.direct.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -29,9 +30,7 @@ import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -319,8 +318,8 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         A.notNull(topic, "topic");
 
                         try {
-                            if (msg instanceof GridTcpCommunicationMessageAdapter)
-                                ctx.io().send(node, topic, (GridTcpCommunicationMessageAdapter)msg, SYSTEM_POOL);
+                            if (msg instanceof MessageAdapter)
+                                ctx.io().send(node, topic, (MessageAdapter)msg, SYSTEM_POOL);
                             else
                                 ctx.io().sendUserMessage(asList(node), msg, topic, false, 0);
                         }

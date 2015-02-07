@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.direct;
+package org.apache.ignite.internal.direct;
 
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.checkpoint.*;
@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.processors.rest.handlers.task.*;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
 import org.apache.ignite.internal.processors.streamer.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.jdk8.backport.*;
@@ -59,7 +60,7 @@ public class GridTcpCommunicationMessageFactory {
 
     static {
         registerCommon(new GridTcpCommunicationMessageProducer() {
-            @Override public GridTcpCommunicationMessageAdapter create(byte type) {
+            @Override public MessageAdapter create(byte type) {
                 switch (type) {
                     case 0:
                         return new GridJobCancelRequest();
@@ -305,7 +306,7 @@ public class GridTcpCommunicationMessageFactory {
      * @param type Message type.
      * @return New message.
      */
-    public static GridTcpCommunicationMessageAdapter create(byte type) {
+    public static MessageAdapter create(byte type) {
         if (type == TcpCommunicationSpi.NODE_ID_MSG_TYPE)
             return new TcpCommunicationSpi.NodeIdMessage();
         else if (type == TcpCommunicationSpi.RECOVERY_LAST_ID_MSG_TYPE)
@@ -320,7 +321,7 @@ public class GridTcpCommunicationMessageFactory {
      * @param type Message type.
      * @return New message.
      */
-    private static GridTcpCommunicationMessageAdapter create0(byte type) {
+    private static MessageAdapter create0(byte type) {
         if (type >= 0 && type < COMMON.length) {
             GridTcpCommunicationMessageProducer producer = COMMON[type];
 

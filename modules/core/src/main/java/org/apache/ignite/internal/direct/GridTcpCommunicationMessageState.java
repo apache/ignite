@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.direct;
+package org.apache.ignite.internal.direct;
 
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
@@ -24,14 +24,13 @@ import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
-import org.gridgain.grid.util.direct.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
 import java.nio.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.util.direct.GridTcpCommunicationMessageAdapter.*;
+import static org.apache.ignite.plugin.extensions.communication.MessageAdapter.*;
 
 /**
  * Communication message state.
@@ -45,7 +44,7 @@ public class GridTcpCommunicationMessageState {
     private static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
 
     /** */
-    private final MessageWriter writer = new GridTcpCommunicationMessageWriter();
+    private final MessageWriter writer = new DirectMessageWriter();
 
     /** */
     private MessageReader reader;
@@ -60,7 +59,7 @@ public class GridTcpCommunicationMessageState {
     public Iterator<?> it;
 
     /** */
-    public Object cur = NULL;
+    public Object cur;
 
     /** */
     public boolean keyDone;
@@ -370,37 +369,6 @@ public class GridTcpCommunicationMessageState {
         return reader.readBooleanArray(name);
     }
 
-    /**
-     * @param name Field name.
-     * @param buf Buffer.
-     * @return Whether value was fully written.
-     */
-    public final boolean putByteBuffer(String name, @Nullable ByteBuffer buf) {
-        byte[] arr = null;
-
-        if (buf != null) {
-            ByteBuffer buf0 = buf.duplicate();
-
-            arr = new byte[buf0.remaining()];
-
-            buf0.get(arr);
-        }
-
-        return putByteArray(name, arr);
-    }
-
-    /**
-     * @param name Field name.
-     * @return {@link ByteBuffer}.
-     */
-    public final ByteBuffer getByteBuffer(String name) {
-        byte[] arr = getByteArray(name);
-
-        if (arr == null)
-            return null;
-        else
-            return ByteBuffer.wrap(arr);
-    }
 
     /**
      * @param name Field name.
@@ -522,14 +490,10 @@ public class GridTcpCommunicationMessageState {
      * @param name Field name.
      * @return {@link GridByteArrayList}.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public final GridByteArrayList getByteArrayList(String name) {
         byte[] arr = getByteArray(name);
 
-        if (arr == null)
-            return null;
-        else
-            return new GridByteArrayList(arr);
+        return arr != null ? new GridByteArrayList(arr) : null;
     }
 
     /**
@@ -545,14 +509,10 @@ public class GridTcpCommunicationMessageState {
      * @param name Field name.
      * @return {@link GridLongList}.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public final GridLongList getLongList(String name) {
         long[] arr = getLongArray(name);
 
-        if (arr == null)
-            return null;
-        else
-            return new GridLongList(arr);
+        return arr != null ? new GridLongList(arr) : null;
     }
 
     /**
@@ -706,14 +666,10 @@ public class GridTcpCommunicationMessageState {
      * @param name Field name.
      * @return {@link String}.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public final String getString(String name) {
         byte[] arr = getByteArray(name);
 
-        if (arr == null)
-            return null;
-        else
-            return new String(arr);
+        return arr != null ? new String(arr) : null;
     }
 
     /**
@@ -729,14 +685,10 @@ public class GridTcpCommunicationMessageState {
      * @param name Field name.
      * @return {@link BitSet}.
      */
-    @SuppressWarnings("IfMayBeConditional")
     public final BitSet getBitSet(String name) {
         long[] arr = getLongArray(name);
 
-        if (arr == null)
-            return null;
-        else
-            return BitSet.valueOf(arr);
+        return arr != null ? BitSet.valueOf(arr) : null;
     }
 
     /**
@@ -750,10 +702,10 @@ public class GridTcpCommunicationMessageState {
 
     /**
      * @param name Field name.
-     * @param msg {@link GridTcpCommunicationMessageAdapter}.
+     * @param msg {@link MessageAdapter}.
      * @return Whether value was fully written.
      */
-    public final boolean putMessage(String name, @Nullable GridTcpCommunicationMessageAdapter msg) {
+    public final boolean putMessage(String name, @Nullable MessageAdapter msg) {
         if (msg != null)
             msg.setWriter(writer);
 
@@ -762,9 +714,9 @@ public class GridTcpCommunicationMessageState {
 
     /**
      * @param name Field name.
-     * @return {@link GridTcpCommunicationMessageAdapter}.
+     * @return {@link MessageAdapter}.
      */
-    public final GridTcpCommunicationMessageAdapter getMessage(String name) {
+    public final MessageAdapter getMessage(String name) {
         return reader.readMessage(name);
     }
 

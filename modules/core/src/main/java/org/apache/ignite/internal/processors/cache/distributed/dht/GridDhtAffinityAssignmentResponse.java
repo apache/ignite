@@ -21,9 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.nio.*;
 import java.util.*;
@@ -90,7 +90,7 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDhtAffinityAssignmentResponse _clone = new GridDhtAffinityAssignmentResponse();
 
         clone0(_clone);
@@ -99,7 +99,7 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridDhtAffinityAssignmentResponse _clone = (GridDhtAffinityAssignmentResponse)_msg;

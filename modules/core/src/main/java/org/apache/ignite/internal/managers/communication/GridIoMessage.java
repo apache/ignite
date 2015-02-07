@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -28,7 +28,7 @@ import java.nio.*;
 /**
  * Wrapper for all grid messages.
  */
-public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
+public class GridIoMessage extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,7 +56,7 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
     private boolean skipOnTimeout;
 
     /** Message. */
-    private GridTcpCommunicationMessageAdapter msg;
+    private MessageAdapter msg;
 
     /**
      * No-op constructor to support {@link Externalizable} interface.
@@ -79,7 +79,7 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
         GridIoPolicy plc,
         Object topic,
         int topicOrd,
-        GridTcpCommunicationMessageAdapter msg,
+        MessageAdapter msg,
         boolean ordered,
         long timeout,
         boolean skipOnTimeout
@@ -180,7 +180,7 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridIoMessage _clone = new GridIoMessage();
 
         clone0(_clone);
@@ -190,7 +190,7 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("RedundantCast")
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridIoMessage _clone = (GridIoMessage)_msg;
 
         _clone.plc = plc;
@@ -200,7 +200,7 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
         _clone.ordered = ordered;
         _clone.timeout = timeout;
         _clone.skipOnTimeout = skipOnTimeout;
-        _clone.msg = msg != null ? (GridTcpCommunicationMessageAdapter)msg.clone() : null;
+        _clone.msg = msg != null ? (MessageAdapter)msg.clone() : null;
     }
 
     /** {@inheritDoc} */
@@ -270,7 +270,7 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                msg = (GridTcpCommunicationMessageAdapter)commState.getMessage("msg");
+                msg = (MessageAdapter)commState.getMessage("msg");
 
                 if (!commState.lastRead())
                     return false;

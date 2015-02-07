@@ -19,9 +19,9 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Job siblings response.
  */
-public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter {
+public class GridJobSiblingsResponse extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -78,7 +78,7 @@ public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridJobSiblingsResponse _clone = new GridJobSiblingsResponse();
 
         clone0(_clone);
@@ -87,7 +87,7 @@ public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter 
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridJobSiblingsResponse _clone = (GridJobSiblingsResponse)_msg;
 
         _clone.siblings = siblings;

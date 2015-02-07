@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.continuous;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -33,7 +33,7 @@ import static org.apache.ignite.internal.processors.continuous.GridContinuousMes
 /**
  * Continuous processor message.
  */
-public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
+public class GridContinuousMessage extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -132,7 +132,7 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridContinuousMessage _clone = new GridContinuousMessage();
 
         clone0(_clone);
@@ -141,7 +141,7 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridContinuousMessage _clone = (GridContinuousMessage)_msg;
 
         _clone.type = type;

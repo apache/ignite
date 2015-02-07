@@ -18,13 +18,15 @@
 package org.apache.ignite.internal.processors.clock;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
+import java.nio.*;
 
 /**
  * Version for time delta snapshot.
  */
-public class GridClockDeltaVersion implements Comparable<GridClockDeltaVersion>, Externalizable {
+public class GridClockDeltaVersion extends MessageAdapter implements Comparable<GridClockDeltaVersion>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -108,6 +110,31 @@ public class GridClockDeltaVersion implements Comparable<GridClockDeltaVersion>,
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         ver = in.readLong();
         topVer = in.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf) {
+        return false; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf) {
+        return false; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessageAdapter clone() {
+        return null; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void clone0(MessageAdapter _msg) {
+        // TODO: implement.
     }
 
     /** {@inheritDoc} */

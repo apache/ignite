@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.direct;
+package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.internal.direct.*;
 
 import java.io.*;
 import java.nio.*;
@@ -26,32 +26,46 @@ import java.util.*;
 /**
  * Communication message adapter.
  */
-public abstract class GridTcpCommunicationMessageAdapter implements Serializable, Cloneable {
+public abstract class MessageAdapter implements Serializable, Cloneable {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
+    // TODO: remove
     protected static final Object NULL = new Object();
 
     /** */
+    // TODO: remove
     protected final GridTcpCommunicationMessageState commState = new GridTcpCommunicationMessageState();
+
+    /** Writer. */
+    protected MessageWriter writer;
+
+    /** Reader. */
+    protected MessageReader reader;
 
     /**
      * @param writer Writer.
      */
     public final void setWriter(MessageWriter writer) {
-        assert writer != null;
-
-        commState.setWriter(writer);
+        if (this.writer == null)
+            this.writer = writer;
     }
 
     /**
      * @param reader Reader.
      */
     public final void setReader(MessageReader reader) {
-        assert reader != null;
+        if (this.reader == null)
+            this.reader = reader;
+    }
 
-        commState.setReader(reader);
+    /**
+     * @param buf Buffer.
+     */
+    public final void setBuffer(ByteBuffer buf) {
+        if (writer != null)
+            writer.setBuffer(buf);
+
+        if (reader != null)
+            reader.setBuffer(buf);
     }
 
     /**
@@ -73,14 +87,14 @@ public abstract class GridTcpCommunicationMessageAdapter implements Serializable
 
     /** {@inheritDoc} */
     @SuppressWarnings("CloneDoesntDeclareCloneNotSupportedException")
-    @Override public abstract GridTcpCommunicationMessageAdapter clone();
+    @Override public abstract MessageAdapter clone();
 
     /**
      * Clones all fields of the provided message to {@code this}.
      *
      * @param _msg Message to clone from.
      */
-    protected abstract void clone0(GridTcpCommunicationMessageAdapter _msg);
+    protected abstract void clone0(MessageAdapter _msg);
 
     /**
      * @return {@code True} if should skip recovery for this message.

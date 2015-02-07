@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.direct.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.internal.managers.communication.*;

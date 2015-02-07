@@ -21,13 +21,13 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.nio.ssl.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -339,7 +339,7 @@ public class GridNioServer<T> {
      * @param msg Message.
      * @return Future for operation.
      */
-    GridNioFuture<?> send(GridNioSession ses, GridTcpCommunicationMessageAdapter msg) {
+    GridNioFuture<?> send(GridNioSession ses, MessageAdapter msg) {
         assert ses instanceof GridSelectorNioSessionImpl;
 
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
@@ -378,7 +378,7 @@ public class GridNioServer<T> {
      * @param msg Message.
      * @return Future.
      */
-    public GridNioFuture<?> sendSystem(GridNioSession ses, GridTcpCommunicationMessageAdapter msg) {
+    public GridNioFuture<?> sendSystem(GridNioSession ses, MessageAdapter msg) {
         return sendSystem(ses, msg, null);
     }
 
@@ -391,7 +391,7 @@ public class GridNioServer<T> {
      * @return Future.
      */
     public GridNioFuture<?> sendSystem(GridNioSession ses,
-        GridTcpCommunicationMessageAdapter msg,
+        MessageAdapter msg,
         @Nullable IgniteInClosure<? super GridNioFuture<?>> lsnr) {
         assert ses instanceof GridSelectorNioSessionImpl;
 
@@ -868,7 +868,7 @@ public class GridNioServer<T> {
                         }
                     }
 
-                    GridTcpCommunicationMessageAdapter msg;
+                    MessageAdapter msg;
                     boolean finished = false;
 
                     if (req != null) {
@@ -1005,7 +1005,7 @@ public class GridNioServer<T> {
                     }
                 }
 
-                GridTcpCommunicationMessageAdapter msg;
+                MessageAdapter msg;
                 boolean finished = false;
 
                 if (req != null) {
@@ -1744,7 +1744,7 @@ public class GridNioServer<T> {
         private ByteBuffer msg;
 
         /** Direct message. */
-        private GridTcpCommunicationMessageAdapter commMsg;
+        private MessageAdapter commMsg;
 
         /** */
         private boolean accepted;
@@ -1820,7 +1820,7 @@ public class GridNioServer<T> {
          * @param commMsg Direct message.
          */
         NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op,
-            GridTcpCommunicationMessageAdapter commMsg) {
+            MessageAdapter commMsg) {
             assert ses != null;
             assert op != null;
             assert op != NioOperation.REGISTER;
@@ -1848,7 +1848,7 @@ public class GridNioServer<T> {
         /**
          * @return Direct message.
          */
-        private GridTcpCommunicationMessageAdapter directMessage() {
+        private MessageAdapter directMessage() {
             return commMsg;
         }
 
@@ -1959,7 +1959,7 @@ public class GridNioServer<T> {
                     return null;
                 }
                 else
-                    return send(ses, (GridTcpCommunicationMessageAdapter)msg);
+                    return send(ses, (MessageAdapter)msg);
             }
             else
                 return send(ses, (ByteBuffer)msg);

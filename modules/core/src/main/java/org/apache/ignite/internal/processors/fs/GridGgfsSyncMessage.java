@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -73,7 +73,7 @@ public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridGgfsSyncMessage _clone = new GridGgfsSyncMessage();
 
         clone0(_clone);
@@ -82,7 +82,7 @@ public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridGgfsSyncMessage _clone = (GridGgfsSyncMessage)_msg;
