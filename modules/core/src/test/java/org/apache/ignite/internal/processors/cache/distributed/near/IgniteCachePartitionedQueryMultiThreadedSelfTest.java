@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.query.QueryPredicate.*;
 
 /**
  * Tests for partitioned cache queries.
@@ -150,7 +151,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
             @Override public void applyx() throws IgniteCheckedException {
                 while (!done.get()) {
                     QueryCursor<Cache.Entry<UUID, Person>> master =
-                        cache0.query(new QueryTextPredicate(Person.class, "Master"));
+                        cache0.query(text(Person.class, "Master"));
 
                     Collection<Cache.Entry<UUID, Person>> entries = master.getAll();
 
@@ -171,7 +172,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
             @Override public void applyx() throws IgniteCheckedException {
                 while (!done.get()) {
                     QueryCursor<Cache.Entry<UUID, Person>> bachelors =
-                            cache0.query(new QuerySqlPredicate(Person.class, "degree = 'Bachelor'"));
+                            cache0.query(sql(Person.class, "degree = 'Bachelor'"));
 
                     Collection<Cache.Entry<UUID, Person>> entries = bachelors.getAll();
 

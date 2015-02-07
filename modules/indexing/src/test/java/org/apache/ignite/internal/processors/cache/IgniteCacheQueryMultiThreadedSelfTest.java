@@ -300,8 +300,8 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                             int from = rnd.nextInt(valCnt);
 
                             QueryCursor<Cache.Entry<Integer, String>> qry = c.query(
-                                    new QuerySqlPredicate(String.class, "_val between ? and ?", String.valueOf(from),
-                                            String.valueOf(from + 250)));
+                                    new QuerySqlPredicate(String.class, "_val between ? and ?").setArgs(
+                                        String.valueOf(from), String.valueOf(from + 250)));
 
                             Collection<Cache.Entry<Integer, String>> res = qry.getAll();
 
@@ -383,7 +383,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                             int from = rnd.nextInt(valCnt);
 
                             Collection<Cache.Entry<Integer, Long>> res = c.query(new QuerySqlPredicate(Long.class,
-                                "_val between ? and ?", from, from + 250)).getAll();
+                                "_val between ? and ?").setArgs(from, from + 250)).getAll();
 
                             for (Cache.Entry<Integer, Long> ignored : res) {
                                 //No-op.
@@ -462,7 +462,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                             int from = rnd.nextInt(valCnt);
 
                             Collection<Cache.Entry<Integer, Object>> res = c.query(
-                                new QuerySqlPredicate(Object.class, "_val between ? and ?", from, from + 250))
+                                new QuerySqlPredicate(Object.class, "_val between ? and ?").setArgs(from, from + 250))
                                 .getAll();
 
                             for (Cache.Entry<Integer, Object> ignored : res) {
@@ -539,7 +539,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                             int from = rnd.nextInt(valCnt);
 
                             Collection<Cache.Entry<Integer, TestValue>> res =
-                                c.query(new QuerySqlPredicate(TestValue.class, "TestValue.val between ? and ?",
+                                c.query(new QuerySqlPredicate(TestValue.class, "TestValue.val between ? and ?").setArgs(
                                     from, from + 250)).getAll();
 
                             for (Cache.Entry<Integer, TestValue> ignored : res) {

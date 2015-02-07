@@ -20,27 +20,11 @@ package org.apache.ignite.cache.query;
 import org.apache.ignite.spi.indexing.*;
 
 /**
- * Predicate to be used by {@link IndexingSpi} implementations.
+ * Query to be used by {@link IndexingSpi} implementations.
  */
-public class QuerySpiPredicate extends QueryPredicate {
+public final class QuerySpiPredicate extends QueryPredicate<QuerySpiPredicate> {
     /** Arguments. */
     private Object[] args;
-
-    /**
-     * Constructs SPI predicate.
-     */
-    public QuerySpiPredicate() {
-        // No-op.
-    }
-
-    /**
-     * Constructs SPI predicate with given arguments.
-     *
-     * @param args Arguments.
-     */
-    public QuerySpiPredicate(Object... args) {
-        this.args = args;
-    }
 
     /**
      * Gets SQL arguments.
@@ -55,8 +39,11 @@ public class QuerySpiPredicate extends QueryPredicate {
      * Sets SQL arguments.
      *
      * @param args SQL arguments.
+     * @return {@code this} For chaining.
      */
-    public void setArgs(Object... args) {
+    public QuerySpiPredicate setArgs(Object... args) {
         this.args = args;
+
+        return this;
     }
 }

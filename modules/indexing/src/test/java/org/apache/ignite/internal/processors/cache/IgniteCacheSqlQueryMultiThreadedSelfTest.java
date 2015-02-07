@@ -96,8 +96,7 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
             @Override public Void call() throws Exception {
                 for (int i = 0; i < 100; i++) {
                     Iterator<Cache.Entry<Integer, Person>> iter =
-                        cache.query(new QuerySqlPredicate("Person", "age >= 0"))
-                        .iterator();
+                        cache.query(QueryPredicate.sql("age >= 0").setType("Person")).iterator();
 
                     int cnt = 0;
 

@@ -53,6 +53,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.query.QueryPredicate.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.processors.cache.query.CacheQueryType.*;
 import static org.junit.Assert.*;
@@ -429,7 +430,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         cache.put(1, val);
 
         QueryCursor<Cache.Entry<Integer, ObjectValue>> qry =
-            cache.query(new QuerySqlPredicate(ObjectValue.class, "_val=?", val));
+            cache.query(sql(ObjectValue.class, "_val=?").setArgs(val));
 
         Iterator<Cache.Entry<Integer, ObjectValue>> iter = qry.iterator();
 
@@ -442,7 +443,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         assert !iter.hasNext();
 
-        qry = cache.query(new QueryTextPredicate(ObjectValue.class, "test"));
+        qry = cache.query(text(ObjectValue.class, "test"));
 
         iter = qry.iterator();
 
@@ -489,7 +490,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
 
         QueryCursor<Cache.Entry<Integer, ObjectValue>> qry =
-            cache.query(new QuerySqlPredicate(ObjectValue.class, "intVal >= ? order by intVal", 0));
+            cache.query(new QuerySqlPredicate(ObjectValue.class, "intVal >= ? order by intVal").setArgs(0));
 
         Iterator<Cache.Entry<Integer, ObjectValue>> iter = qry.iterator();
 
@@ -516,7 +517,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         for (int i = 0; i < cnt; i++)
             assert set.contains(i);
 
-        qry = cache.query(new QuerySqlPredicate(ObjectValue.class, "MOD(intVal, 2) = ? order by intVal", 0));
+        qry = cache.query(new QuerySqlPredicate(ObjectValue.class, "MOD(intVal, 2) = ? order by intVal").setArgs(0));
 
         iter = qry.iterator();
 
@@ -811,14 +812,14 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         for (int i = 0; i < 50; i++)
             cache.put(i, i);
 
-        QueryCursor<Cache.Entry<Integer, Integer>> q = cache.query(new QueryScanPredicate<Integer, Integer>() {
+        QueryCursor<Cache.Entry<Integer, Integer>> q = cache.query(scan(new IgniteBiPredicate<Integer,Integer>() {
             @Override public boolean apply(Integer k, Integer v) {
                 assertNotNull(k);
                 assertNotNull(v);
 
                 return k >= 20 && v < 40;
             }
-        });
+        }));
 
         List<Cache.Entry<Integer, Integer>> list = new ArrayList<>(q.getAll());
 
@@ -870,7 +871,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         cache.put(new BadHashKeyObject("test_key0"), 1005001);
         cache.put(new BadHashKeyObject("test_key1"), 7);
 
-        assertEquals(1005001, cache.query(new QuerySqlPredicate(Integer.class, "_key = ?",
+        assertEquals(1005001, cache.query(new QuerySqlPredicate(Integer.class, "_key = ?").setArgs(
                 new BadHashKeyObject("test_key0"))).iterator().next().getValue().intValue());
     }
 
@@ -1105,7 +1106,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             cache.put(i, i);
 
         QueryCursor<Cache.Entry<Integer, Integer>> q =
-            cache.query(new QuerySqlPredicate(Integer.class, "_key >= ?", 10));
+            cache.query(new QuerySqlPredicate(Integer.class, "_key >= ?").setArgs(10));
 
         if (customSubjId)
             ((GridCacheQueryAdapter)q).subjectId(subjId);
@@ -1192,13 +1193,11 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         for (int i = 0; i < 20; i++)
             cache.put(i, i);
 
-        QueryCursor<Cache.Entry<Integer, Integer>> q = cache.query(
-            new QueryScanPredicate<Integer, Integer>() {
-                @Override public boolean apply(Integer k, Integer v) {
-                    return k >= 10;
-                }
+        QueryCursor<Cache.Entry<Integer, Integer>> q = cache.query(scan(new IgniteBiPredicate<Integer,Integer>() {
+            @Override public boolean apply(Integer k, Integer v) {
+                return k >= 10;
             }
-        );
+        }));
 
         if (customSubjId)
             ((GridCacheQueryAdapter)q).subjectId(subjId);
@@ -1375,7 +1374,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             cache.put(i, new Person("Person " + i, i));
 
         QueryCursor<List<?>> q = cache
-            .queryFields(new QuerySqlPredicate("select _key, name from Person where salary > ?", 10));
+            .queryFields(new QuerySqlPredicate("select _key, name from Person where salary > ?").setArgs(10));
 
         if (customSubjId)
             ((GridCacheQueryAdapter)q).subjectId(subjId);

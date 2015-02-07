@@ -17,13 +17,14 @@
 
 package org.apache.ignite.cache.query;
 
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Query SQL predicate to use with any of the {@code JCache.query(...)} and
  * {@code JCache.queryFields(...)} methods.
  */
-public final class QuerySqlPredicate extends QueryPredicate {
+public final class QuerySqlPredicate extends QueryPredicate<QuerySqlPredicate> {
     /** */
     private String type;
 
@@ -31,49 +32,28 @@ public final class QuerySqlPredicate extends QueryPredicate {
     private String sql;
 
     /** Arguments. */
+    @GridToStringInclude
     private Object[] args;
 
     /**
-     * Empty constructor.
-     */
-    public QuerySqlPredicate() {
-        // No-op.
-    }
-
-    /**
-     * Constructs SQL predicate with given type, SQL clause and arguments.
+     * Constructs query for the given SQL query.
      *
-     * @param type Class.
-     * @param sql SQL clause.
-     * @param args Arguments.
+     * @param sql SQL Query.
      */
-    public QuerySqlPredicate(Class<?> type, String sql, Object... args) {
-        setType(type);
+    public QuerySqlPredicate(String sql) {
         setSql(sql);
-        setArgs(args);
     }
 
     /**
-     * Constructs SQL predicate with given type, SQL clause and arguments.
+     * Constructs query for the given type and SQL query.
      *
-     * @param type Type to query in cache.
-     * @param sql SQL clause.
-     * @param args Arguments.
+     * @param type Type.
+     * @param sql SQL Query.
      */
-    public QuerySqlPredicate(String type, String sql, Object... args) {
+    public QuerySqlPredicate(Class<?> type, String sql) {
+        this(sql);
+
         setType(type);
-        setSql(sql);
-        setArgs(args);
-    }
-
-    /**
-     * Constructs SQL predicate with given SQL clause and arguments.
-     *
-     * @param sql SQL clause.
-     * @param args Arguments.
-     */
-    public QuerySqlPredicate(String sql, Object... args) {
-        this((String)null, sql, args);
     }
 
     /**
@@ -89,9 +69,14 @@ public final class QuerySqlPredicate extends QueryPredicate {
      * Sets SQL clause.
      *
      * @param sql SQL clause.
+     * @return {@code this} For chaining.
      */
-    public void setSql(String sql) {
+    public QuerySqlPredicate setSql(String sql) {
+        A.notNull(sql, "sql");
+
         this.sql = sql;
+
+        return this;
     }
 
     /**
@@ -107,9 +92,12 @@ public final class QuerySqlPredicate extends QueryPredicate {
      * Sets SQL arguments.
      *
      * @param args SQL arguments.
+     * @return {@code this} For chaining.
      */
-    public void setArgs(Object... args) {
+    public QuerySqlPredicate setArgs(Object... args) {
         this.args = args;
+
+        return this;
     }
 
     /**
@@ -125,16 +113,19 @@ public final class QuerySqlPredicate extends QueryPredicate {
      * Sets type for query.
      *
      * @param type Type.
+     * @return {@code this} For chaining.
      */
-    public void setType(String type) {
+    public QuerySqlPredicate setType(String type) {
         this.type = type;
+
+        return this;
     }
 
     /**
      * @param type Type.
      */
-    public void setType(Class<?> type) {
-        setType(name(type));
+    public QuerySqlPredicate setType(Class<?> type) {
+        return setType(name(type));
     }
 
     /**

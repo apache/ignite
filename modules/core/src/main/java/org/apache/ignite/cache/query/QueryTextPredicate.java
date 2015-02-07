@@ -24,7 +24,7 @@ import static org.apache.ignite.cache.query.QuerySqlPredicate.name;
 /**
  * Predicate for Lucene based fulltext search.
  */
-public final class QueryTextPredicate extends QueryPredicate {
+public final class QueryTextPredicate extends QueryPredicate<QueryTextPredicate> {
     /** */
     private String type;
 
@@ -32,21 +32,24 @@ public final class QueryTextPredicate extends QueryPredicate {
     private String txt;
 
     /**
-     * @param type Type to query.
+     * Constructs query for the given search string.
+     *
      * @param txt Search string.
      */
-    public QueryTextPredicate(Class<?> type, String txt) {
-        setType(type);
+    public QueryTextPredicate(String txt) {
         setText(txt);
     }
 
     /**
-     * @param type Type to query.
+     * Constructs query for the given search string.
+     *
+     * @param type Type.
      * @param txt Search string.
      */
-    public QueryTextPredicate(String type, String txt) {
+    public QueryTextPredicate(Class<?> type, String txt) {
+        this(txt);
+
         setType(type);
-        setText(txt);
     }
 
     /**
@@ -62,18 +65,22 @@ public final class QueryTextPredicate extends QueryPredicate {
      * Sets type for query.
      *
      * @param type Type.
+     * @return {@code this} For chaining.
      */
-    public void setType(Class<?> type) {
-        setType(name(type));
+    public QueryTextPredicate setType(Class<?> type) {
+        return setType(name(type));
     }
 
     /**
      * Sets type for query.
      *
      * @param type Type.
+     * @return {@code this} For chaining.
      */
-    public void setType(String type) {
+    public QueryTextPredicate setType(String type) {
         this.type = type;
+
+        return this;
     }
 
     /**
@@ -89,9 +96,14 @@ public final class QueryTextPredicate extends QueryPredicate {
      * Sets text search string.
      *
      * @param txt Text search string.
+     * @return {@code this} For chaining.
      */
-    public void setText(String txt) {
+    public QueryTextPredicate setText(String txt) {
+        A.notNull(txt, "txt");
+
         this.txt = txt;
+
+        return this;
     }
 
     /** {@inheritDoc} */

@@ -20,15 +20,16 @@ package org.apache.ignite.cache.query;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.indexing.*;
 
 import java.io.*;
 
 /**
- * Query predicate to pass into any of {@code Cache.query(...)} methods.
+ * Query to pass into any of {@code Cache.query(...)} methods.
  * Use {@link QuerySqlPredicate} and {@link QueryTextPredicate} for SQL and
  * text queries accordingly.
  */
-public abstract class QueryPredicate implements Serializable {
+public abstract class QueryPredicate<T extends QueryPredicate> implements Serializable {
     /** Page size. */
     private int pageSize;
 
@@ -40,13 +41,74 @@ public abstract class QueryPredicate implements Serializable {
     }
 
     /**
-     * Constructs query predicate with optional page size, if {@code 0},
-     * then {@link CacheQueryConfiguration#getPageSize()} is used.
+     * Factory method for SQL queries.
      *
-     * @param pageSize Optional page size.
+     * @param sql SQL Query string.
+     * @return SQL Query instance.
      */
-    protected QueryPredicate(int pageSize) {
-        this.pageSize = pageSize;
+    public static QuerySqlPredicate sql(String sql) {
+        return new QuerySqlPredicate(sql);
+    }
+
+    /**
+     * Factory method for SQL queries.
+     *
+     * @param type Type to be queried.
+     * @param sql SQL Query string.
+     * @return SQL Query instance.
+     */
+    public static QuerySqlPredicate sql(Class<?> type, String sql) {
+        return sql(sql).setType(type);
+    }
+
+    /**
+     * Factory method for Lucene fulltext queries.
+     *
+     * @param txt Search string.
+     * @return Fulltext query.
+     */
+    public static QueryTextPredicate text(String txt) {
+        return new QueryTextPredicate(txt);
+    }
+
+    /**
+     * Factory method for Lucene fulltext queries.
+     *
+     * @param type Type to be queried.
+     * @param txt Search string.
+     * @return Fulltext query.
+     */
+    public static QueryTextPredicate text(Class<?> type, String txt) {
+        return text(txt).setType(type);
+    }
+
+    /**
+     * Factory method for SPI queries.
+     *
+     * @param filter Filter.
+     * @return SPI Query.
+     */
+    public static <K, V> QueryScanPredicate<K, V> scan(final IgniteBiPredicate<K, V> filter) {
+        return new QueryScanPredicate<>(filter);
+    }
+
+    /**
+     * Factory method for SPI queries returning all entries.
+     *
+     * @return SPI Query.
+     */
+    public static <K, V> QueryScanPredicate<K, V> scan() {
+        return new QueryScanPredicate<>();
+    }
+
+    /**
+     * Factory method for SPI queries.
+     *
+     * @return SPI Query.
+     * @see IndexingSpi
+     */
+    public static QuerySpiPredicate spi() {
+        return new QuerySpiPredicate();
     }
 
     /**
@@ -62,9 +124,13 @@ public abstract class QueryPredicate implements Serializable {
      * Sets optional page size, if {@code 0}, then {@link CacheQueryConfiguration#getPageSize()} is used.
      *
      * @param pageSize Optional page size.
+     * @return {@code this} For chaining.
      */
-    public void setPageSize(int pageSize) {
+    @SuppressWarnings("unchecked")
+    public T setPageSize(int pageSize) {
         this.pageSize = pageSize;
+
+        return (T)this;
     }
 
     /** {@inheritDoc} */

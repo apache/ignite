@@ -96,7 +96,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
 
         // Fields query
         QueryCursor<List<?>> qry = cache0
-            .queryFields(new QuerySqlPredicate("select name from Person where salary > ?", 1600));
+            .queryFields(new QuerySqlPredicate("select name from Person where salary > ?").setArgs(1600));
 
         Collection<List<?>> res = qry.getAll();
 

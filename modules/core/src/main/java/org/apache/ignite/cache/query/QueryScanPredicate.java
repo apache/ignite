@@ -17,14 +17,53 @@
 
 package org.apache.ignite.cache.query;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
 /**
- * Scan predicate over cache entries. By default will accept all the entries.
+ * Scan query over cache entries. By default will accept all the entries.
  */
-public class QueryScanPredicate<K, V> extends QueryPredicate implements IgniteBiPredicate<K, V> {
-    /** {@inheritDoc} */
-    @Override public boolean apply(K k, V v) {
-        return true;
+public class QueryScanPredicate<K, V> extends QueryPredicate<QueryScanPredicate<K, V>> {
+    /** */
+    private IgniteBiPredicate<K,V> filter;
+
+    /**
+     * Create scan query returning all entries.
+     */
+    public QueryScanPredicate() {
+        this(new IgniteBiPredicate<K,V>() {
+            @Override public boolean apply(K k, V v) {
+                return true;
+            }
+        });
+    }
+
+    /**
+     * Create scan query with filter.
+     *
+     * @param filter Filter.
+     */
+    public QueryScanPredicate(IgniteBiPredicate<K,V> filter) {
+        setFilter(filter);
+    }
+
+    /**
+     * Gets filter.
+     *
+     * @return Filter.
+     */
+    public IgniteBiPredicate<K,V> getFilter() {
+        return filter;
+    }
+
+    /**
+     * Sets filter.
+     *
+     * @param filter Filter.
+     */
+    public void setFilter(IgniteBiPredicate<K,V> filter) {
+        A.notNull(filter, "filter");
+
+        this.filter = filter;
     }
 }
