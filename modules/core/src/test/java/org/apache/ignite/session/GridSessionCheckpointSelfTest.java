@@ -17,7 +17,6 @@
 
 package org.apache.ignite.session;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.checkpoint.cache.*;
 import org.apache.ignite.spi.checkpoint.jdbc.*;

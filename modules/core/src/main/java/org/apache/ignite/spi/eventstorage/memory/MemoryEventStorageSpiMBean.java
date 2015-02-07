@@ -29,7 +29,7 @@ import org.apache.ignite.spi.*;
  * <li>Method that removes all items from queue (see {@link #clearAll()})</li>
  * </ul>
  */
-@IgniteMXBeanDescription("MBean that provides access to memory event storage SPI configuration.")
+@MXBeanDescription("MBean that provides access to memory event storage SPI configuration.")
 public interface MemoryEventStorageSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets event time-to-live value. Implementation must guarantee
@@ -37,7 +37,7 @@ public interface MemoryEventStorageSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Event time-to-live.
      */
-    @IgniteMXBeanDescription("Event time-to-live value.")
+    @MXBeanDescription("Event time-to-live value.")
     public long getExpireAgeMs();
 
     /**
@@ -46,7 +46,7 @@ public interface MemoryEventStorageSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Maximum event queue size.
      */
-    @IgniteMXBeanDescription("Maximum event queue size.")
+    @MXBeanDescription("Maximum event queue size.")
     public long getExpireCount();
 
     /**
@@ -54,12 +54,12 @@ public interface MemoryEventStorageSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Current queue size of the event queue.
      */
-    @IgniteMXBeanDescription("Current event queue size.")
+    @MXBeanDescription("Current event queue size.")
     public long getQueueSize();
 
     /**
      * Removes all events from the event queue.
      */
-    @IgniteMXBeanDescription("Removes all events from the event queue.")
+    @MXBeanDescription("Removes all events from the event queue.")
     public void clearAll();
 }

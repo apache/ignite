@@ -55,7 +55,7 @@ public class GridLuceneIndex implements Closeable {
     public static final String EXPIRATION_TIME_FIELD_NAME = "_gg_expires__";
 
     /** */
-    private final IgniteMarshaller marshaller;
+    private final Marshaller marshaller;
 
     /** */
     private final String spaceName;
@@ -91,7 +91,7 @@ public class GridLuceneIndex implements Closeable {
      * @param storeVal Store value in index.
      * @throws IgniteCheckedException If failed.
      */
-    public GridLuceneIndex(IgniteMarshaller marshaller, @Nullable GridUnsafeMemory mem,
+    public GridLuceneIndex(Marshaller marshaller, @Nullable GridUnsafeMemory mem,
         @Nullable String spaceName, GridQueryTypeDescriptor type, boolean storeVal) throws IgniteCheckedException {
         this.marshaller = marshaller;
         this.spaceName = spaceName;

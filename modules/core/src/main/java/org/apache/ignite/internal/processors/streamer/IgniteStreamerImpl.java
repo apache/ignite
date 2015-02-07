@@ -43,7 +43,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 
 /**
@@ -284,8 +284,8 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
         });
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
-                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+            @Override public void onEvent(Event evt) {
+                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                 for (GridStreamerStageExecutionFuture fut : stageFuts.values())
                     fut.onNodeLeft(discoEvt.eventNode().id());

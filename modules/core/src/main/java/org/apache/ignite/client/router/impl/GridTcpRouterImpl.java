@@ -80,7 +80,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
         this.cfg = cfg;
 
         log = cfg.getLogger() != null ?
-            cfg.getLogger().getLogger(getClass()) : new IgniteJavaLogger().getLogger(getClass());
+            cfg.getLogger().getLogger(getClass()) : new JavaLogger().getLogger(getClass());
     }
 
     /**

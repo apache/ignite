@@ -18,7 +18,7 @@
 package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.datagrid.*;
-import org.apache.ignite.examples.datagrid.datastructures.*;
+import org.apache.ignite.examples.datastructures.*;
 import org.apache.ignite.examples.datagrid.starschema.*;
 import org.apache.ignite.examples.datagrid.store.*;
 import org.apache.ignite.testframework.junits.common.*;

@@ -44,7 +44,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         DummyService.exeLatch(name, latch);
 
-        IgniteManaged svcs = g.managed().withAsync();
+        IgniteServices svcs = g.services().withAsync();
 
         svcs.deployClusterSingleton(name, new DummyService());
 
@@ -71,7 +71,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
             info(">>> Passed checks.");
 
-            checkCount(name, g.managed().deployedServices(), 1);
+            checkCount(name, g.services().serviceDescriptors(), 1);
         }
         finally {
             stopExtraNodes(nodeCnt);
@@ -91,7 +91,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         String name = "serviceAffinityUpdateTopology";
 
-        IgniteManaged svcs = g.managed().withAsync();
+        IgniteServices svcs = g.services().withAsync();
 
         svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
             CACHE_NAME, affKey);
@@ -104,14 +104,14 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         info("Finished waiting for service future: " + name);
 
-        checkCount(name, g.managed().deployedServices(), 1);
+        checkCount(name, g.services().serviceDescriptors(), 1);
 
         int nodeCnt = 2;
 
         startExtraNodes(nodeCnt);
 
         try {
-            checkCount(name, g.managed().deployedServices(), 1);
+            checkCount(name, g.services().serviceDescriptors(), 1);
         }
         finally {
             stopExtraNodes(nodeCnt);
@@ -130,7 +130,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         DummyService.exeLatch(name, latch);
 
-        IgniteManaged svcs = g.managed().withAsync();
+        IgniteServices svcs = g.services().withAsync();
 
         svcs.deployNodeSingleton(name, new DummyService());
 
@@ -161,7 +161,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
             TestCase.assertEquals(name, nodeCount() + newNodes, DummyService.started(name));
             TestCase.assertEquals(name, 0, DummyService.cancelled(name));
 
-            checkCount(name, g.managed().deployedServices(), nodeCount() + newNodes);
+            checkCount(name, g.services().serviceDescriptors(), nodeCount() + newNodes);
         }
         finally {
             stopExtraNodes(newNodes);

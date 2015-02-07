@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Log4J {@link org.apache.log4j.RollingFileAppender} with added support for grid node IDs.
  */
-public class GridLog4jRollingFileAppender extends RollingFileAppender implements IgniteLoggerNodeIdAware {
+public class GridLog4jRollingFileAppender extends RollingFileAppender implements LoggerNodeIdAware {
     /** Node ID. */
     private UUID nodeId;
 

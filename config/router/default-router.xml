@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
     Default rest router configuration.
@@ -47,5 +47,5 @@
     <!--
         Logger with the same configuration as in default grid instances.
     -->
-    <bean id="router.log" class="org.apache.ignite.logger.java.IgniteJavaLogger"/>
+    <bean id="router.log" class="org.apache.ignite.logger.java.JavaLogger"/>
 </beans>

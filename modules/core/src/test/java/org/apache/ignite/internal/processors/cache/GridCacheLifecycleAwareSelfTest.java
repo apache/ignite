@@ -72,7 +72,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         /**
          * @param cacheName Cache name.
          */
-        @IgniteCacheNameResource
+        @CacheNameResource
         public void setCacheName(String cacheName) {
             lifecycleAware.cacheName(cacheName);
         }

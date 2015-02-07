@@ -112,7 +112,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
      * @throws Exception If failed.
      */
     private void testAddFailover(boolean collocated) throws Exception {
-        IgniteCollectionConfiguration colCfg = config(collocated);
+        CollectionConfiguration colCfg = config(collocated);
 
         IgniteQueue<Integer> queue = grid(0).queue(QUEUE_NAME, 0, colCfg);
 
@@ -207,7 +207,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
      * @throws Exception If failed.
      */
     private void testPollFailover(boolean collocated) throws Exception {
-        IgniteCollectionConfiguration colCfg = config(collocated);
+        CollectionConfiguration colCfg = config(collocated);
 
         IgniteQueue<Integer> queue = grid(0).queue(QUEUE_NAME, 0, colCfg);
 

@@ -25,7 +25,7 @@ package org.apache.ignite.plugin.segmentation;
 public enum GridSegmentationPolicy {
     /**
      * When segmentation policy is {@code RESTART_JVM}, all listeners will receive
-     * {@link org.apache.ignite.events.IgniteEventType#EVT_NODE_SEGMENTED} event and then JVM will be restarted.
+     * {@link org.apache.ignite.events.EventType#EVT_NODE_SEGMENTED} event and then JVM will be restarted.
      * Note, that this will work <b>only</b> if Ignite is started with {@link org.apache.ignite.startup.cmdline.CommandLineStartup}
      * via standard {@code ignite.{sh|bat}} shell script.
      */
@@ -33,14 +33,14 @@ public enum GridSegmentationPolicy {
 
     /**
      * When segmentation policy is {@code STOP}, all listeners will receive
-     * {@link org.apache.ignite.events.IgniteEventType#EVT_NODE_SEGMENTED} event and then particular grid node
+     * {@link org.apache.ignite.events.EventType#EVT_NODE_SEGMENTED} event and then particular grid node
      * will be stopped via call to {@link org.apache.ignite.Ignition#stop(String, boolean)}.
      */
     STOP,
 
     /**
      * When segmentation policy is {@code NOOP}, all listeners will receive
-     * {@link org.apache.ignite.events.IgniteEventType#EVT_NODE_SEGMENTED} event and it is up to user to
+     * {@link org.apache.ignite.events.EventType#EVT_NODE_SEGMENTED} event and it is up to user to
      * implement logic to handle this event.
      */
     NOOP

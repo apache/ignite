@@ -595,7 +595,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         private Ignite ignite;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */

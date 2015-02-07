@@ -48,8 +48,8 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration c = super.getConfiguration();
 
-        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
-        c.getTransactionsConfiguration().setDefaultTxTimeout(50);
+        c.getTransactionConfiguration().setTxSerializableEnabled(true);
+        c.getTransactionConfiguration().setDefaultTxTimeout(50);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 

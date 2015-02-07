@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
     Ignite Spring configuration file to startup grid cache.
@@ -51,7 +51,7 @@
             Configure optimized marshaller.
         -->
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
+            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
                 <!--
                     For better performance set this property to true in case
                     all marshalled classes implement java.io.Serializable.
@@ -75,7 +75,7 @@
             Enable cache events.
         -->
         <property name="includeEventTypes">
-            <util:constant static-field="org.apache.ignite.events.IgniteEventType.EVTS_CACHE"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVTS_CACHE"/>
         </property>
 
         <property name="cacheConfiguration">
@@ -88,7 +88,7 @@
                 <!--
                     Partitioned cache example configuration (Atomic mode).
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="partitioned"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -133,7 +133,7 @@
                 <!--
                     Partitioned cache example configuration (Transactional mode).
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="partitioned_tx"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -182,7 +182,7 @@
                 <!--
                     Replicated cache example configuration.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="replicated"/>
 
                     <!--
@@ -220,7 +220,7 @@
                 <!--
                     Local cache example configuration.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <!-- Cache name is 'local'. -->
                     <property name="name" value="local"/>
 

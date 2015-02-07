@@ -27,7 +27,7 @@ import java.io.*;
 /**
  * Implementation of {@link EntryProcessorResult}.
  */
-public class CacheInvokeResult<T> implements EntryProcessorResult<T>, Externalizable, IgniteOptimizedMarshallable {
+public class CacheInvokeResult<T> implements EntryProcessorResult<T>, Externalizable, OptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 

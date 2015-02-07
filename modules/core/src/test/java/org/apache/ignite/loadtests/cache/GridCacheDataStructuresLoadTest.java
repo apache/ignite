@@ -52,7 +52,7 @@ public final class GridCacheDataStructuresLoadTest extends GridCacheAbstractLoad
     private static final String TEST_LATCH_NAME = "test-latch";
 
     /** */
-    private static final IgniteCollectionConfiguration colCfg = new IgniteCollectionConfiguration();
+    private static final CollectionConfiguration colCfg = new CollectionConfiguration();
 
     /** Maximum added value. */
     private static final int MAX_INT = 1000;

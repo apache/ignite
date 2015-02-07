@@ -45,7 +45,7 @@ import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -1234,15 +1234,15 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     }
 
     /** Event listener that collects all incoming events. */
-    protected static class CollectingEventListener implements IgnitePredicate<IgniteEvent> {
+    protected static class CollectingEventListener implements IgnitePredicate<Event> {
         /** Collected events. */
         private final Collection<Object> affectedKeys = new GridConcurrentLinkedHashSet<>();
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
+        @Override public boolean apply(Event evt) {
             assert evt.type() == EVT_CACHE_OBJECT_LOCKED || evt.type() == EVT_CACHE_OBJECT_UNLOCKED;
 
-            IgniteCacheEvent cacheEvt = (IgniteCacheEvent)evt;
+            CacheEvent cacheEvt = (CacheEvent)evt;
 
             synchronized (this) {
                 affectedKeys.add(cacheEvt.key());

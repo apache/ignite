@@ -229,7 +229,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
     @ComputeTaskSessionFullSupport
     public static final class GridTestMultipleSpisTask extends ComputeTaskAdapter<UUID, Integer> {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** */
@@ -273,7 +273,7 @@ public class GridMultipleSpisSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession jobSes;
 
         /**

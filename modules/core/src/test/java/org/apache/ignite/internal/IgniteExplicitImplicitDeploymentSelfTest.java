@@ -48,7 +48,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
         cfg.setPeerClassLoadingLocalClassPathExclude(GridDeploymentResourceTestTask.class.getName(),
             GridDeploymentResourceTestJob.class.getName());
 
-        cfg.setDeploymentMode(IgniteDeploymentMode.ISOLATED);
+        cfg.setDeploymentMode(DeploymentMode.ISOLATED);
 
         return cfg;
     }
@@ -437,7 +437,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     @SuppressWarnings({"PublicInnerClass"})
     public static final class GridDeploymentResourceTestJob extends ComputeJobAdapter {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */

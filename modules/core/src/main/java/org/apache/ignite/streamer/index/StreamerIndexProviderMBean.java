@@ -29,7 +29,7 @@ public interface StreamerIndexProviderMBean {
      *
      * @return Index name.
      */
-    @IgniteMXBeanDescription("Index name.")
+    @MXBeanDescription("Index name.")
     @Nullable public String name();
 
     /**
@@ -37,7 +37,7 @@ public interface StreamerIndexProviderMBean {
      *
      * @return Index updater class.
      */
-    @IgniteMXBeanDescription("Index updater class name.")
+    @MXBeanDescription("Index updater class name.")
     public String updaterClass();
 
     /**
@@ -45,7 +45,7 @@ public interface StreamerIndexProviderMBean {
      *
      * @return Index unique flag.
      */
-    @IgniteMXBeanDescription("Index unique flag.")
+    @MXBeanDescription("Index unique flag.")
     public boolean unique();
 
     /**
@@ -53,7 +53,7 @@ public interface StreamerIndexProviderMBean {
      *
      * @return Index sorted flag.
      */
-    @IgniteMXBeanDescription("Index sorted flag.")
+    @MXBeanDescription("Index sorted flag.")
     public boolean sorted();
 
     /**
@@ -61,7 +61,7 @@ public interface StreamerIndexProviderMBean {
      *
      * @return Index policy.
      */
-    @IgniteMXBeanDescription("Index policy.")
+    @MXBeanDescription("Index policy.")
     public StreamerIndexPolicy policy();
 
     /**
@@ -69,6 +69,6 @@ public interface StreamerIndexProviderMBean {
      *
      * @return Current index size.
      */
-    @IgniteMXBeanDescription("Current index size.")
+    @MXBeanDescription("Current index size.")
     public int size();
 }
