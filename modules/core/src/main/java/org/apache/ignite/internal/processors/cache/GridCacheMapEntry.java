@@ -3695,7 +3695,20 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     /** {@inheritDoc} */
     @Override public Cache.Entry<K, V> wrap() {
         try {
-            CacheEntryImpl<K, V> entry = new CacheEntryImpl<>(key, rawGetOrUnmarshal(false));
+            IgniteInternalTx tx = cctx.tm().userTx();
+
+            V val;
+
+            if (tx != null) {
+                val = (V)tx.writeMap().get(txKey());
+
+                if (val == null)
+                    val = (V)tx.readMap().get(txKey());
+            }
+            else
+                val = rawGetOrUnmarshal(false);
+
+            CacheEntryImpl<K, V> entry = new CacheEntryImpl<>(key, val);
 
             entry.version(ver);
 

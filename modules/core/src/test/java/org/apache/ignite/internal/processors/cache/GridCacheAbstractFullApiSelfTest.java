@@ -2676,7 +2676,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testPeekMode() throws Exception {
-        assert false;
+        assert false : "ignite-96";
 //        String key = "testPeekMode";
 //
 //        GridCache<String, Integer> cache = primaryIgnite(key).cache(null);
@@ -2939,7 +2939,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     private void checkTtl(boolean inTx, boolean oldEntry) throws Exception {
-        assert false;
+        assert false : "ignite-96";
 //        int ttl = 1000;
 //
 //        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
@@ -3170,7 +3170,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testUnswap() throws Exception {
-        assert false;
+        assert false : "ignite-96";
 //        GridCache<String, Integer> cache = cache();
 //
 //        List<String> keys = primaryKeysForCache(cache, 3);
