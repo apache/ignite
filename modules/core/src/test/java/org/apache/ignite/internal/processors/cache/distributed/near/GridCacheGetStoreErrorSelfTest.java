@@ -140,9 +140,7 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 1000; i++) {
             key = String.valueOf(i);
 
-            Entry<Object, Object> entry = grid(0).cache(null).entry(key);
-
-            if (!entry.primary() && entry.backup())
+            if (!grid(0).affinity(null).isPrimaryOrBackup(grid(0).localNode(), key))
                 break;
         }
 

@@ -32,6 +32,7 @@ import org.apache.ignite.spi.eventstorage.memory.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
@@ -158,7 +159,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             cache1.put(1, "val1");
             cache1.put(2, "val2");
 
-            Entry<Integer, String> e1 = cache1.entry(1);
+            Cache.Entry<Integer, String> e1 = cache1.entry(1);
 
             assert e1 != null;
 
@@ -191,13 +192,16 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             assertEquals("val1", cache2.peek(1));
             assertEquals("val2", cache2.peek(2));
 
-            Entry<Integer, String> e2 = cache2.entry(1);
+            Cache.Entry<Integer, String> e2 = cache2.entry(1);
 
             assert e2 != null;
             assert e2 != e1;
-            assert e2.version() != null;
 
-            assertEquals(e1.version(), e2.version());
+            assert false : "ignite-96";
+
+//            assert e2.version() != null;
+//
+//            assertEquals(e1.version(), e2.version());
         }
         finally {
             stopAllGrids();

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -325,16 +324,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
         int expPart = affinity().partition(affinityMapper().affinityKey(key));
 
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < gridCount(); i++)
             assertEquals(expPart, grid(i).cache(null).affinity().partition(key));
-            assertEquals(expPart, grid(i).cache(null).entry(key).partition());
-        }
-
-        assertTrue(grid(0).cache(null).putx(key, 1));
-
-        for (int i = 0; i < gridCount(); i++) {
-            assertEquals(expPart, grid(i).cache(null).affinity().partition(key));
-            assertEquals(expPart, grid(i).cache(null).entry(key).partition());
-        }
     }
 }

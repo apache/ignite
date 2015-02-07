@@ -32,6 +32,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 
@@ -141,7 +142,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
                 CacheFifoEvictionPolicy<Integer, Integer> plc0 = (CacheFifoEvictionPolicy<Integer, Integer>) plc;
 
                 if (!plc0.queue().isEmpty()) {
-                    for (Entry<Integer, Integer> e : plc0.queue())
+                    for (Cache.Entry<Integer, Integer> e : plc0.queue())
                         U.warn(log, "Policy queue item: " + e);
 
                     fail("Test failed, see logs for details.");

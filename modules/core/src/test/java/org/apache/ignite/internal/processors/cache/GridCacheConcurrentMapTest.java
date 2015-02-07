@@ -23,6 +23,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -76,7 +77,7 @@ public class GridCacheConcurrentMapTest extends GridCommonAbstractTest {
             cache.put("key" + i, "val" + i);
 
         for (int i = 0; i < 20; i++) {
-            Entry<String, String> entry = cache.randomEntry();
+            Cache.Entry<String, String> entry = cache.randomEntry();
 
             assert entry != null;
 
@@ -116,7 +117,7 @@ public class GridCacheConcurrentMapTest extends GridCommonAbstractTest {
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     while (!done.get()) {
-                        Entry<String, String> entry = cache.randomEntry();
+                        Cache.Entry<String, String> entry = cache.randomEntry();
 
                         info("Random entry key: " + (entry != null ? entry.getKey() : "N/A"));
                     }

@@ -33,6 +33,7 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -587,13 +588,12 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
 
             for (Integer key : failedKeys) {
                 for (int i = 0; i < dataNodes(); i++) {
-                    Entry<Integer, Integer> Entry = caches.get(i).entry(key);
+                    Cache.Entry<Integer, Integer> e = caches.get(i).entry(key);
 
                     UUID nodeId = G.ignite(nodeName(i)).cluster().localNode().id();
 
-                    if (!F.eq(Entry.get(), expVals.get(key)))
-                        log.error("key=" + key + ", expVal=" + expVals.get(key) + ", cacheVal=" + Entry.get() +
-                            ", primary=" + Entry.primary() + ", backup=" + Entry.backup() +
+                    if (!F.eq(e.getValue(), expVals.get(key)))
+                        log.error("key=" + key + ", expVal=" + expVals.get(key) + ", cacheVal=" + e.getValue() +
                             ", nodeId=" + nodeId);
                 }
             }

@@ -30,6 +30,7 @@ import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -195,12 +196,14 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
         CacheProjection prj;
 
         if (portableEnabled()) {
-            prj = cache.projection(new IgnitePredicate<Entry<PortableObject, PortableObject>>() {
-                @Override public boolean apply(Entry<PortableObject, PortableObject> e) {
+            prj = cache.projection(new IgnitePredicate<Cache.Entry<PortableObject, PortableObject>>() {
+                @Override public boolean apply(Cache.Entry<PortableObject, PortableObject> e) {
                     Key key = e.getKey().deserialize();
-                    Person val = e.peek().deserialize();
+                    Person val = e.getValue().deserialize();
 
-                    assertNotNull(e.version());
+                    assert false : "ignite-96";
+
+                    // assertNotNull(e.version());
 
                     assertEquals(key.id, (Integer)val.salary);
 
@@ -209,12 +212,14 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
             });
         }
         else {
-            prj = cache.projection(new IgnitePredicate<Entry<Key, Person>>() {
-                @Override public boolean apply(Entry<Key, Person> e) {
+            prj = cache.projection(new IgnitePredicate<Cache.Entry<Key, Person>>() {
+                @Override public boolean apply(Cache.Entry<Key, Person> e) {
                     Key key = e.getKey();
-                    Person val = e.peek();
+                    Person val = e.getValue();
 
-                    assertNotNull(e.version());
+                    assert false : "ignite-96";
+
+//                    assertNotNull(e.version());
 
                     assertEquals(key.id, (Integer)val.salary);
 

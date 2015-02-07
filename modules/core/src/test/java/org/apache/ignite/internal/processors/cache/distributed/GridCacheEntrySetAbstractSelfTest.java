@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -98,9 +99,9 @@ public abstract class GridCacheEntrySetAbstractSelfTest extends GridCacheAbstrac
 
             int cntr = 0;
 
-            Set<Entry<Object, Object>> entries = cache.entrySet();
+            Set<Cache.Entry<Object, Object>> entries = cache.entrySet();
 
-            for (Entry e : entries) {
+            for (Cache.Entry e : entries) {
                 if (e.getKey() instanceof Integer)
                     cntr++;
             }

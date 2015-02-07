@@ -32,7 +32,6 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.Cache.*;
 import java.io.*;
-import java.lang.reflect.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -40,7 +39,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests from {@link org.apache.ignite.cache.Entry#memorySize()} method.
+ *
  */
 public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
@@ -127,141 +126,148 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testLocal() throws Exception {
-        mode = LOCAL;
-
-        try {
-            GridCache<Integer, Value> cache = startGrid().cache(null);
-
-            assertTrue(cache.putx(1, new Value(new byte[1024])));
-            assertTrue(cache.putx(2, new Value(new byte[2048])));
-
-            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + extrasSize(cache.entry(0)),
-                cache.entry(0).memorySize());
-            assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + extrasSize(cache.entry(1)),
-                cache.entry(1).memorySize());
-            assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + extrasSize(cache.entry(2)),
-                cache.entry(2).memorySize());
-        }
-        finally {
-            stopAllGrids();
-        }
+        assert false : "ignite-96";
+//        mode = LOCAL;
+//
+//        try {
+//            GridCache<Integer, Value> cache = startGrid().cache(null);
+//
+//            assertTrue(cache.putx(1, new Value(new byte[1024])));
+//            assertTrue(cache.putx(2, new Value(new byte[2048])));
+//
+//            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + extrasSize(cache.entry(0)),
+//                cache.entry(0).memorySize());
+//            assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + extrasSize(cache.entry(1)),
+//                cache.entry(1).memorySize());
+//            assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + extrasSize(cache.entry(2)),
+//                cache.entry(2).memorySize());
+//        }
+//        finally {
+//            stopAllGrids();
+//        }
     }
 
     /** @throws Exception If failed. */
     public void testReplicated() throws Exception {
-        mode = REPLICATED;
+        assert false : "ignite-96";
 
-        try {
-            GridCache<Integer, Value> cache = startGrid().cache(null);
-
-            assertTrue(cache.putx(1, new Value(new byte[1024])));
-            assertTrue(cache.putx(2, new Value(new byte[2048])));
-
-            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + REPLICATED_ENTRY_OVERHEAD +
-                extrasSize(cache.entry(0)), cache.entry(0).memorySize());
-            assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + REPLICATED_ENTRY_OVERHEAD +
-                extrasSize(cache.entry(1)), cache.entry(1).memorySize());
-            assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + REPLICATED_ENTRY_OVERHEAD +
-                extrasSize(cache.entry(2)), cache.entry(2).memorySize());
-        }
-        finally {
-            stopAllGrids();
-        }
+//        mode = REPLICATED;
+//
+//        try {
+//            GridCache<Integer, Value> cache = startGrid().cache(null);
+//
+//            assertTrue(cache.putx(1, new Value(new byte[1024])));
+//            assertTrue(cache.putx(2, new Value(new byte[2048])));
+//
+//            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + REPLICATED_ENTRY_OVERHEAD +
+//                extrasSize(cache.entry(0)), cache.entry(0).memorySize());
+//            assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + REPLICATED_ENTRY_OVERHEAD +
+//                extrasSize(cache.entry(1)), cache.entry(1).memorySize());
+//            assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + REPLICATED_ENTRY_OVERHEAD +
+//                extrasSize(cache.entry(2)), cache.entry(2).memorySize());
+//        }
+//        finally {
+//            stopAllGrids();
+//        }
     }
 
     /** @throws Exception If failed. */
     public void testPartitionedNearEnabled() throws Exception {
-        mode = PARTITIONED;
-        nearEnabled = true;
+        assert false : "ignite-96";
 
-        try {
-            startGridsMultiThreaded(2);
-
-            int[] keys = new int[3];
-
-            int key = 0;
-
-            for (int i = 0; i < keys.length; i++) {
-                while (true) {
-                    key++;
-
-                    if (grid(0).mapKeyToNode(null, key).equals(grid(0).localNode())) {
-                        if (i > 0)
-                            assertTrue(cache(0).putx(key, new Value(new byte[i * 1024])));
-
-                        keys[i] = key;
-
-                        break;
-                    }
-                }
-            }
-
-            // Create near entries.
-            assertNotNull(cache(1).get(keys[1]));
-            assertNotNull(cache(1).get(keys[2]));
-
-            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
-                extrasSize(cache(0).entry(keys[0])), cache(0).entry(keys[0]).memorySize());
-            assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD + READER_SIZE +
-                extrasSize(cache(0).entry(keys[1])), cache(0).entry(keys[1]).memorySize());
-            assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD + READER_SIZE +
-                extrasSize(cache(0).entry(keys[2])), cache(0).entry(keys[2]).memorySize());
-
-            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + NEAR_ENTRY_OVERHEAD +
-                extrasSize(cache(1).entry(keys[0])), cache(1).entry(keys[0]).memorySize());
-            assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + NEAR_ENTRY_OVERHEAD +
-                extrasSize(cache(1).entry(keys[1])), cache(1).entry(keys[1]).memorySize());
-            assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + NEAR_ENTRY_OVERHEAD +
-                extrasSize(cache(1).entry(keys[2])), cache(1).entry(keys[2]).memorySize());
-        }
-        finally {
-            stopAllGrids();
-        }
+//        mode = PARTITIONED;
+//        nearEnabled = true;
+//
+//        try {
+//            startGridsMultiThreaded(2);
+//
+//            int[] keys = new int[3];
+//
+//            int key = 0;
+//
+//            for (int i = 0; i < keys.length; i++) {
+//                while (true) {
+//                    key++;
+//
+//                    if (grid(0).mapKeyToNode(null, key).equals(grid(0).localNode())) {
+//                        if (i > 0)
+//                            assertTrue(cache(0).putx(key, new Value(new byte[i * 1024])));
+//
+//                        keys[i] = key;
+//
+//                        break;
+//                    }
+//                }
+//            }
+//
+//            // Create near entries.
+//            assertNotNull(cache(1).get(keys[1]));
+//            assertNotNull(cache(1).get(keys[2]));
+//
+//            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
+//                extrasSize(cache(0).entry(keys[0])), cache(0).entry(keys[0]).memorySize());
+//            assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD + READER_SIZE +
+//                extrasSize(cache(0).entry(keys[1])), cache(0).entry(keys[1]).memorySize());
+//            assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD + READER_SIZE +
+//                extrasSize(cache(0).entry(keys[2])), cache(0).entry(keys[2]).memorySize());
+//
+//            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + NEAR_ENTRY_OVERHEAD +
+//                extrasSize(cache(1).entry(keys[0])), cache(1).entry(keys[0]).memorySize());
+//            assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + NEAR_ENTRY_OVERHEAD +
+//                extrasSize(cache(1).entry(keys[1])), cache(1).entry(keys[1]).memorySize());
+//            assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + NEAR_ENTRY_OVERHEAD +
+//                extrasSize(cache(1).entry(keys[2])), cache(1).entry(keys[2]).memorySize());
+//        }
+//        finally {
+//            stopAllGrids();
+//        }
     }
 
     /** @throws Exception If failed. */
     public void testPartitionedNearDisabled() throws Exception {
-        mode = PARTITIONED;
-        nearEnabled = false;
+        assert false : "ignite-96";
 
-        try {
-            startGridsMultiThreaded(2);
-
-            int[] keys = new int[3];
-
-            int key = 0;
-
-            for (int i = 0; i < keys.length; i++) {
-                while (true) {
-                    key++;
-
-                    if (grid(0).mapKeyToNode(null, key).equals(grid(0).localNode())) {
-                        if (i > 0)
-                            assertTrue(cache(0).putx(key, new Value(new byte[i * 1024])));
-
-                        keys[i] = key;
-
-                        break;
-                    }
-                }
-            }
-
-            // Create near entries.
-            assertNotNull(cache(1).get(keys[1]));
-            assertNotNull(cache(1).get(keys[2]));
-
-            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
-                extrasSize(cache(0).entry(keys[0])), cache(0).entry(keys[0]).memorySize());
-            assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
-                extrasSize(cache(0).entry(keys[1])), cache(0).entry(keys[1]).memorySize());
-            assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
-                extrasSize(cache(0).entry(keys[2])), cache(0).entry(keys[2]).memorySize());
-
-            // Do not test other node since there are no backups.
-        }
-        finally {
-            stopAllGrids();
-        }
+//        mode = PARTITIONED;
+//        nearEnabled = false;
+//
+//        try {
+//            startGridsMultiThreaded(2);
+//
+//            int[] keys = new int[3];
+//
+//            int key = 0;
+//
+//            for (int i = 0; i < keys.length; i++) {
+//                while (true) {
+//                    key++;
+//
+//                    if (grid(0).mapKeyToNode(null, key).equals(grid(0).localNode())) {
+//                        if (i > 0)
+//                            assertTrue(cache(0).putx(key, new Value(new byte[i * 1024])));
+//
+//                        keys[i] = key;
+//
+//                        break;
+//                    }
+//                }
+//            }
+//
+//            // Create near entries.
+//            assertNotNull(cache(1).get(keys[1]));
+//            assertNotNull(cache(1).get(keys[2]));
+//
+//            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
+//                extrasSize(cache(0).entry(keys[0])), cache(0).entry(keys[0]).memorySize());
+//            assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
+//                extrasSize(cache(0).entry(keys[1])), cache(0).entry(keys[1]).memorySize());
+//            assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
+//                extrasSize(cache(0).entry(keys[2])), cache(0).entry(keys[2]).memorySize());
+//
+//            // Do not test other node since there are no backups.
+//        }
+//        finally {
+//            stopAllGrids();
+//        }
     }
 
     /**
@@ -272,15 +278,19 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private int extrasSize(Entry entry) throws Exception {
-        Method mthd = GridCacheMapEntry.class.getDeclaredMethod("extrasSize");
+        assert false : "ignite-96";
 
-        mthd.setAccessible(true);
+        return -1;
 
-        GridCacheContext ctx = U.field(entry, "ctx");
-
-        GridCacheEntryEx entry0 = ((GridCacheEntryImpl)entry).entryEx(false, ctx.discovery().topologyVersion());
-
-        return (Integer)mthd.invoke(entry0);
+//        Method mthd = GridCacheMapEntry.class.getDeclaredMethod("extrasSize");
+//
+//        mthd.setAccessible(true);
+//
+//        GridCacheContext ctx = U.field(entry, "ctx");
+//
+//        GridCacheEntryEx entry0 = ((GridCacheEntryImpl)entry).entryEx(false, ctx.discovery().topologyVersion());
+//
+//        return (Integer)mthd.invoke(entry0);
     }
 
     /** Value. */

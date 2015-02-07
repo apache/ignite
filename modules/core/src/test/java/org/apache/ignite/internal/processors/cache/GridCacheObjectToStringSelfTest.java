@@ -30,6 +30,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -166,7 +167,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
                     assertFalse("Entry is locked after implicit transaction commit: " + entry, entry.lockedByAny());
             }
 
-            Set<Entry<Object, Object>> entries = cache.entrySet();
+            Set<Cache.Entry<Object, Object>> entries = cache.entrySet();
 
             assertNotNull(entries);
             assertFalse(entries.toString().isEmpty());

@@ -27,6 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -191,9 +192,9 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkCache(CacheProjection<Integer, Integer> cache, int key, int expVal) throws Exception {
-        Entry<Integer, Integer> entry = cache.entry(key);
+        Cache.Entry<Integer, Integer> entry = cache.entry(key);
 
         assert F.eq(expVal, entry.getValue()) : "Unexpected cache value [key=" + key + ", expected=" + expVal +
-            ", actual=" + entry.getValue() + ", primary=" + entry.primary() + ", backup=" + entry.backup() + ']';
+            ", actual=" + entry.getValue() + ']';
     }
 }

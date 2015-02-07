@@ -404,12 +404,12 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         assert e2 != null;
 
         // Check entry on primary node.
-        assertTrue(e1.wrap(false).primary());
+        assertTrue(grid(primary.id()).affinity(null).isPrimary(primary, e1.key()));
         assertNotNull(e1.readers());
         assertTrue(e1.readers().isEmpty());
 
         // Check entry on backup node.
-        assertFalse(e2.wrap(false).primary());
+        assertFalse(grid(backup.id()).affinity(null).isBackup(backup, e2.key()));
         assertNotNull(e2.readers());
         assertTrue(e2.readers().isEmpty());
     }
