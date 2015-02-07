@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * Allows to patch message before sending or after reading.
  */
-public interface MessageCallback extends IgniteExtension {
+public interface MessageCallback extends Extension {
     /**
      * Writes delta for provided node and message type.
      *
