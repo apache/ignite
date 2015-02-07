@@ -3691,7 +3691,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @param key Key.
      * @return Cache.
-     * @throws Exception If failed.
      */
     protected IgniteCache<String, Integer> primaryCache(String key) {
         return primaryIgnite(key).jcache(null);
@@ -3722,13 +3721,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (int i = startFrom; i < startFrom + 100_000; i++) {
             String key = "key" + i;
 
-            assert false;
-//            if (cache.entry(key).primary()) {
-//                found.add(key);
-//
-//                if (found.size() == cnt)
-//                    return found;
-//            }
+            if (cache.cache().affinity().isPrimary(cache.gridProjection().ignite().cluster().localNode(), i)) {
+                found.add(key);
+
+                if (found.size() == cnt)
+                    return found;
+            }
         }
 
         throw new IgniteCheckedException("Unable to find " + cnt + " keys as primary for cache.");

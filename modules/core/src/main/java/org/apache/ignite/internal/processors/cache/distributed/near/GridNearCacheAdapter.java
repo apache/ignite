@@ -475,6 +475,13 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         return super.compact(key, filter) | dht().compact(key, filter);
     }
 
+    /** {@inheritDoc} */
+    @Override public Cache.Entry<K, V> entry(K key) {
+        // We don't try wrap entry from near or dht cache.
+        // Created object will be wrapped once some method is called.
+        return new CacheEntryImpl<>(key, null);
+    }
+
     /**
      * Peeks only near cache without looking into DHT cache.
      *
