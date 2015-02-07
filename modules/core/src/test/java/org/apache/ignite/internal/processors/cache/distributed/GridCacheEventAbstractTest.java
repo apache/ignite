@@ -542,30 +542,30 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
             @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
                 Iterator<Map.Entry<String, Integer>> iter = pairs(2).entrySet().iterator();
 
-                IgniteTx tx = cache.txStart();
-
                 Map.Entry<String, Integer> e = iter.next();
 
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                assert cache.putIfAbsent(key, val) == null;
+                try (IgniteTx tx = cache.txStart()) {
+                    assert cache.putIfAbsent(key, val) == null;
 
-                assertEquals(val, cache.putIfAbsent(key, val));
+                    assertEquals(val, cache.putIfAbsent(key, val));
 
-                assert cache.containsKey(key);
+                    assert cache.containsKey(key);
 
-                e = iter.next();
+                    e = iter.next();
 
-                key = e.getKey();
-                val = e.getValue();
+                    key = e.getKey();
+                    val = e.getValue();
 
-                assert cache.putxIfAbsent(key, val);
-                assert !cache.putxIfAbsent(key, val);
+                    assert cache.putxIfAbsent(key, val);
+                    assert !cache.putxIfAbsent(key, val);
 
-                assert cache.containsKey(key);
+                    assert cache.containsKey(key);
 
-                tx.commit();
+                    tx.commit();
+                }
 
                 assert cache.containsKey(key);
             }
@@ -692,19 +692,19 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 Integer val = e.getValue();
 
                 // Optimistic.
-                IgniteTx tx = cache.txStart();
+                try (IgniteTx tx = cache.txStart()) {
+                    assert !cache.putx(key, val, hasPeekVal);
+                    assert cache.putx(key, val, noPeekVal);
 
-                assert !cache.putx(key, val, hasPeekVal);
-                assert cache.putx(key, val, noPeekVal);
+                    assert cache.containsKey(key);
 
-                assert cache.containsKey(key);
+                    assert !cache.removex(key, noPeekVal);
+                    assert cache.removex(key);
 
-                assert !cache.removex(key, noPeekVal);
-                assert cache.removex(key);
+                    assert !cache.containsKey(key);
 
-                assert !cache.containsKey(key);
-
-                tx.commit();
+                    tx.commit();
+                }
 
                 assert !cache.containsKey(key);
             }
@@ -727,24 +727,24 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
                 String key = e.getKey();
                 Integer val = e.getValue();
 
-                IgniteTx tx = cache.txStart();
+                try (IgniteTx tx = cache.txStart()) {
+                    assert !cache.putx(key, val, hasPeekVal);
+                    assert cache.putx(key, val, noPeekVal);
 
-                assert !cache.putx(key, val, hasPeekVal);
-                assert cache.putx(key, val, noPeekVal);
+                    assert cache.containsKey(key);
 
-                assert cache.containsKey(key);
+                    assert !cache.removex(key, noPeekVal);
+                    assert cache.removex(key, hasPeekVal);
 
-                assert !cache.removex(key, noPeekVal);
-                assert cache.removex(key, hasPeekVal);
+                    assert !cache.containsKey(key);
 
-                assert !cache.containsKey(key);
+                    assert !cache.putx(key, val, hasPeekVal);
+                    assert cache.putx(key, val, noPeekVal);
 
-                assert !cache.putx(key, val, hasPeekVal);
-                assert cache.putx(key, val, noPeekVal);
+                    assert cache.containsKey(key);
 
-                assert cache.containsKey(key);
-
-                tx.commit();
+                    tx.commit();
+                }
 
                 assert cache.containsKey(key);
             }
