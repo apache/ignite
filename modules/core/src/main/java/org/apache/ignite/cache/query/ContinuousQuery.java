@@ -106,7 +106,7 @@ import javax.cache.event.*;
  * If you need to repeat execution, use {@link org.apache.ignite.internal.processors.cache.query.CacheQueries#createContinuousQuery()} method to create
  * new query.
  */
-public final class QueryContinuous<K, V> extends Query implements AutoCloseable {
+public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> implements AutoCloseable {
     /**
      * Default buffer size. Size of {@code 1} means that all entries
      * will be sent to master node immediately (buffering is disabled).
