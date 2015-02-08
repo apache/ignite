@@ -26,17 +26,17 @@ import java.io.*;
 
 /**
  * Query to pass into any of {@code Cache.query(...)} methods.
- * Use {@link QuerySqlPredicate} and {@link QueryTextPredicate} for SQL and
+ * Use {@link QuerySql} and {@link QueryText} for SQL and
  * text queries accordingly.
  */
-public abstract class QueryPredicate<T extends QueryPredicate> implements Serializable {
+public abstract class Query<T extends Query> implements Serializable {
     /** Page size. */
     private int pageSize;
 
     /**
      * Empty constructor.
      */
-    protected QueryPredicate() {
+    Query() {
         // No-op.
     }
 
@@ -46,8 +46,8 @@ public abstract class QueryPredicate<T extends QueryPredicate> implements Serial
      * @param sql SQL Query string.
      * @return SQL Query instance.
      */
-    public static QuerySqlPredicate sql(String sql) {
-        return new QuerySqlPredicate(sql);
+    public static QuerySql sql(String sql) {
+        return new QuerySql(sql);
     }
 
     /**
@@ -57,7 +57,7 @@ public abstract class QueryPredicate<T extends QueryPredicate> implements Serial
      * @param sql SQL Query string.
      * @return SQL Query instance.
      */
-    public static QuerySqlPredicate sql(Class<?> type, String sql) {
+    public static QuerySql sql(Class<?> type, String sql) {
         return sql(sql).setType(type);
     }
 
@@ -67,8 +67,8 @@ public abstract class QueryPredicate<T extends QueryPredicate> implements Serial
      * @param txt Search string.
      * @return Fulltext query.
      */
-    public static QueryTextPredicate text(String txt) {
-        return new QueryTextPredicate(txt);
+    public static QueryText text(String txt) {
+        return new QueryText(txt);
     }
 
     /**
@@ -78,7 +78,7 @@ public abstract class QueryPredicate<T extends QueryPredicate> implements Serial
      * @param txt Search string.
      * @return Fulltext query.
      */
-    public static QueryTextPredicate text(Class<?> type, String txt) {
+    public static QueryText text(Class<?> type, String txt) {
         return text(txt).setType(type);
     }
 
@@ -88,8 +88,8 @@ public abstract class QueryPredicate<T extends QueryPredicate> implements Serial
      * @param filter Filter.
      * @return SPI Query.
      */
-    public static <K, V> QueryScanPredicate<K, V> scan(final IgniteBiPredicate<K, V> filter) {
-        return new QueryScanPredicate<>(filter);
+    public static <K, V> QueryScan<K, V> scan(final IgniteBiPredicate<K, V> filter) {
+        return new QueryScan<>(filter);
     }
 
     /**
@@ -97,8 +97,8 @@ public abstract class QueryPredicate<T extends QueryPredicate> implements Serial
      *
      * @return SPI Query.
      */
-    public static <K, V> QueryScanPredicate<K, V> scan() {
-        return new QueryScanPredicate<>();
+    public static <K, V> QueryScan<K, V> scan() {
+        return new QueryScan<>();
     }
 
     /**
@@ -107,8 +107,8 @@ public abstract class QueryPredicate<T extends QueryPredicate> implements Serial
      * @return SPI Query.
      * @see IndexingSpi
      */
-    public static QuerySpiPredicate spi() {
-        return new QuerySpiPredicate();
+    public static QuerySpi spi() {
+        return new QuerySpi();
     }
 
     /**
@@ -135,6 +135,6 @@ public abstract class QueryPredicate<T extends QueryPredicate> implements Serial
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(QueryPredicate.class, this);
+        return S.toString(Query.class, this);
     }
 }

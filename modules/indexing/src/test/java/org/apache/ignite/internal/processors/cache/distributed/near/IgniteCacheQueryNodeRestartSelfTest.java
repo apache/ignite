@@ -121,7 +121,7 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
             @Override public void applyx() throws IgniteCheckedException {
                 while (!done.get()) {
                     Collection<Cache.Entry<Integer, Integer>> res =
-                        cache.query(new QuerySqlPredicate(Integer.class, "_val >= 0")).getAll();
+                        cache.query(new QuerySql(Integer.class, "_val >= 0")).getAll();
 
                     assertFalse(res.isEmpty());
 

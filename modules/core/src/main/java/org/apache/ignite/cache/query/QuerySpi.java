@@ -22,7 +22,7 @@ import org.apache.ignite.spi.indexing.*;
 /**
  * Query to be used by {@link IndexingSpi} implementations.
  */
-public final class QuerySpiPredicate extends QueryPredicate<QuerySpiPredicate> {
+public final class QuerySpi extends Query<QuerySpi> {
     /** Arguments. */
     private Object[] args;
 
@@ -41,7 +41,7 @@ public final class QuerySpiPredicate extends QueryPredicate<QuerySpiPredicate> {
      * @param args SQL arguments.
      * @return {@code this} For chaining.
      */
-    public QuerySpiPredicate setArgs(Object... args) {
+    public QuerySpi setArgs(Object... args) {
         this.args = args;
 
         return this;

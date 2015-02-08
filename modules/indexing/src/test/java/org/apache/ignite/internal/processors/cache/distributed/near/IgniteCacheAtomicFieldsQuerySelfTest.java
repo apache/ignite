@@ -45,7 +45,7 @@ public class IgniteCacheAtomicFieldsQuerySelfTest extends IgniteCachePartitioned
      */
     public void testUnsupportedOperations() {
         try {
-            QueryCursor<List<?>> qry = grid(0).jcache(null).queryFields(new QuerySqlPredicate(
+            QueryCursor<List<?>> qry = grid(0).jcache(null).queryFields(new QuerySql(
                 "update Person set name = ?").setArgs("Mary Poppins"));
 
             qry.getAll();

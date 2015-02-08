@@ -21,16 +21,16 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 
 /**
- * Scan query over cache entries. By default will accept all the entries.
+ * Scan query over cache entries. Will accept all the entries if no predicate was set.
  */
-public class QueryScanPredicate<K, V> extends QueryPredicate<QueryScanPredicate<K, V>> {
+public class QueryScan<K, V> extends Query<QueryScan<K, V>> {
     /** */
     private IgniteBiPredicate<K,V> filter;
 
     /**
      * Create scan query returning all entries.
      */
-    public QueryScanPredicate() {
+    public QueryScan() {
         this(new IgniteBiPredicate<K,V>() {
             @Override public boolean apply(K k, V v) {
                 return true;
@@ -43,7 +43,7 @@ public class QueryScanPredicate<K, V> extends QueryPredicate<QueryScanPredicate<
      *
      * @param filter Filter.
      */
-    public QueryScanPredicate(IgniteBiPredicate<K,V> filter) {
+    public QueryScan(IgniteBiPredicate<K,V> filter) {
         setFilter(filter);
     }
 

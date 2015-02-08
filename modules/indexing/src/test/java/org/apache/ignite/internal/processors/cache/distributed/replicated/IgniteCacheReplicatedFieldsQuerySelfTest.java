@@ -56,7 +56,7 @@ public class IgniteCacheReplicatedFieldsQuerySelfTest extends IgniteCacheAbstrac
 
         for (int i = 0; i < maximumQueryIteratorCount + 1; i++) {
             QueryCursor<List<?>> q = cache
-               .queryFields(new QuerySqlPredicate("select _key from Integer where _key >= 0 order by _key"));
+               .queryFields(new QuerySql("select _key from Integer where _key >= 0 order by _key"));
 
             assertEquals(0, q.iterator().next().get(0));
 

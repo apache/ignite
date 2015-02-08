@@ -21,10 +21,10 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
- * Query SQL predicate to use with any of the {@code JCache.query(...)} and
+ * SQL Query to use with any of the {@code JCache.query(...)} and
  * {@code JCache.queryFields(...)} methods.
  */
-public final class QuerySqlPredicate extends QueryPredicate<QuerySqlPredicate> {
+public final class QuerySql extends Query<QuerySql> {
     /** */
     private String type;
 
@@ -40,7 +40,7 @@ public final class QuerySqlPredicate extends QueryPredicate<QuerySqlPredicate> {
      *
      * @param sql SQL Query.
      */
-    public QuerySqlPredicate(String sql) {
+    public QuerySql(String sql) {
         setSql(sql);
     }
 
@@ -50,7 +50,7 @@ public final class QuerySqlPredicate extends QueryPredicate<QuerySqlPredicate> {
      * @param type Type.
      * @param sql SQL Query.
      */
-    public QuerySqlPredicate(Class<?> type, String sql) {
+    public QuerySql(Class<?> type, String sql) {
         this(sql);
 
         setType(type);
@@ -71,7 +71,7 @@ public final class QuerySqlPredicate extends QueryPredicate<QuerySqlPredicate> {
      * @param sql SQL clause.
      * @return {@code this} For chaining.
      */
-    public QuerySqlPredicate setSql(String sql) {
+    public QuerySql setSql(String sql) {
         A.notNull(sql, "sql");
 
         this.sql = sql;
@@ -94,7 +94,7 @@ public final class QuerySqlPredicate extends QueryPredicate<QuerySqlPredicate> {
      * @param args SQL arguments.
      * @return {@code this} For chaining.
      */
-    public QuerySqlPredicate setArgs(Object... args) {
+    public QuerySql setArgs(Object... args) {
         this.args = args;
 
         return this;
@@ -115,7 +115,7 @@ public final class QuerySqlPredicate extends QueryPredicate<QuerySqlPredicate> {
      * @param type Type.
      * @return {@code this} For chaining.
      */
-    public QuerySqlPredicate setType(String type) {
+    public QuerySql setType(String type) {
         this.type = type;
 
         return this;
@@ -124,7 +124,7 @@ public final class QuerySqlPredicate extends QueryPredicate<QuerySqlPredicate> {
     /**
      * @param type Type.
      */
-    public QuerySqlPredicate setType(Class<?> type) {
+    public QuerySql setType(Class<?> type) {
         return setType(name(type));
     }
 
@@ -145,6 +145,6 @@ public final class QuerySqlPredicate extends QueryPredicate<QuerySqlPredicate> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(QuerySqlPredicate.class, this);
+        return S.toString(QuerySql.class, this);
     }
 }

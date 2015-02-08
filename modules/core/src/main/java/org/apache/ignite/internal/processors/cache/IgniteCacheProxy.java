@@ -249,11 +249,11 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Cursor.
      */
     @SuppressWarnings("unchecked")
-    private QueryCursor<Entry<K,V>> query(QueryPredicate filter, @Nullable ClusterGroup grp) {
+    private QueryCursor<Entry<K,V>> query(Query filter, @Nullable ClusterGroup grp) {
         final CacheQuery<Map.Entry<K,V>> qry;
         final CacheQueryFuture<Map.Entry<K,V>> fut;
 
-        if (filter instanceof QueryScanPredicate) {
+        if (filter instanceof QueryScan) {
             qry = delegate.queries().createScanQuery((IgniteBiPredicate<K,V>)filter);
 
             if (grp != null)
@@ -261,8 +261,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             fut = qry.execute();
         }
-        else if (filter instanceof QueryTextPredicate) {
-            QueryTextPredicate p = (QueryTextPredicate)filter;
+        else if (filter instanceof QueryText) {
+            QueryText p = (QueryText)filter;
 
             qry = delegate.queries().createFullTextQuery(p.getType(), p.getText());
 
@@ -271,13 +271,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             fut = qry.execute();
         }
-        else if (filter instanceof QuerySpiPredicate) {
+        else if (filter instanceof QuerySpi) {
             qry = ((GridCacheQueriesEx)delegate.queries()).createSpiQuery();
 
             if (grp != null)
                 qry.projection(grp);
 
-            fut = qry.execute(((QuerySpiPredicate)filter).getArgs());
+            fut = qry.execute(((QuerySpi)filter).getArgs());
         }
         else
             throw new IgniteException("Unsupported query predicate: " + filter);
@@ -308,14 +308,14 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public QueryCursor<Entry<K,V>> query(QueryPredicate filter) {
+    @Override public QueryCursor<Entry<K,V>> query(Query filter) {
         A.notNull(filter, "filter");
 
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            if (filter instanceof QuerySqlPredicate) {
-                QuerySqlPredicate p = (QuerySqlPredicate)filter;
+            if (filter instanceof QuerySql) {
+                QuerySql p = (QuerySql)filter;
 
                 return ctx.kernalContext().query().queryTwoStep(ctx.name(), p.getType(), p.getSql(), p.getArgs());
             }
@@ -334,7 +334,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> queryFields(QuerySqlPredicate filter) {
+    @Override public QueryCursor<List<?>> queryFields(QuerySql filter) {
         A.notNull(filter, "filter");
 
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
@@ -354,14 +354,14 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public QueryCursor<Entry<K,V>> localQuery(QueryPredicate filter) {
+    @Override public QueryCursor<Entry<K,V>> localQuery(Query filter) {
         A.notNull(filter, "filter");
 
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            if (filter instanceof QuerySqlPredicate) {
-                QuerySqlPredicate p = (QuerySqlPredicate)filter;
+            if (filter instanceof QuerySql) {
+                QuerySql p = (QuerySql)filter;
 
                 return new QueryCursorImpl<>(ctx.kernalContext().query().<K,V>queryLocal(
                     ctx.name(), p.getType(), p.getSql(), p.getArgs()));
@@ -381,7 +381,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> localQueryFields(QuerySqlPredicate filter) {
+    @Override public QueryCursor<List<?>> localQueryFields(QuerySql filter) {
         A.notNull(filter, "filter");
 
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);

@@ -19,12 +19,12 @@ package org.apache.ignite.cache.query;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import static org.apache.ignite.cache.query.QuerySqlPredicate.name;
+import static org.apache.ignite.cache.query.QuerySql.*;
 
 /**
- * Predicate for Lucene based fulltext search.
+ * Query for Lucene based fulltext search.
  */
-public final class QueryTextPredicate extends QueryPredicate<QueryTextPredicate> {
+public final class QueryText extends Query<QueryText> {
     /** */
     private String type;
 
@@ -36,7 +36,7 @@ public final class QueryTextPredicate extends QueryPredicate<QueryTextPredicate>
      *
      * @param txt Search string.
      */
-    public QueryTextPredicate(String txt) {
+    public QueryText(String txt) {
         setText(txt);
     }
 
@@ -46,7 +46,7 @@ public final class QueryTextPredicate extends QueryPredicate<QueryTextPredicate>
      * @param type Type.
      * @param txt Search string.
      */
-    public QueryTextPredicate(Class<?> type, String txt) {
+    public QueryText(Class<?> type, String txt) {
         this(txt);
 
         setType(type);
@@ -67,7 +67,7 @@ public final class QueryTextPredicate extends QueryPredicate<QueryTextPredicate>
      * @param type Type.
      * @return {@code this} For chaining.
      */
-    public QueryTextPredicate setType(Class<?> type) {
+    public QueryText setType(Class<?> type) {
         return setType(name(type));
     }
 
@@ -77,7 +77,7 @@ public final class QueryTextPredicate extends QueryPredicate<QueryTextPredicate>
      * @param type Type.
      * @return {@code this} For chaining.
      */
-    public QueryTextPredicate setType(String type) {
+    public QueryText setType(String type) {
         this.type = type;
 
         return this;
@@ -98,7 +98,7 @@ public final class QueryTextPredicate extends QueryPredicate<QueryTextPredicate>
      * @param txt Text search string.
      * @return {@code this} For chaining.
      */
-    public QueryTextPredicate setText(String txt) {
+    public QueryText setText(String txt) {
         A.notNull(txt, "txt");
 
         this.txt = txt;
@@ -108,6 +108,6 @@ public final class QueryTextPredicate extends QueryPredicate<QueryTextPredicate>
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(QueryTextPredicate.class, this);
+        return S.toString(QueryText.class, this);
     }
 }

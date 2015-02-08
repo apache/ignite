@@ -195,36 +195,44 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public boolean isLocalLocked(K key, boolean byCurrThread);
 
     /**
-     * Queries cache with given predicate.
+     * Queries cache. Accepts any subclass of {@link Query}.
      *
-     * @param filter Filter.
+     * @param qry Query.
      * @return Cursor.
+     * @see QueryScan
+     * @see QuerySql
+     * @see QueryText
+     * @see QuerySpi
      */
-    public QueryCursor<Entry<K, V>> query(QueryPredicate filter);
+    public QueryCursor<Entry<K, V>> query(Query qry);
 
     /**
-     * Queries separate entry fields with given SQL predicate.
+     * Queries separate entry fields.
      *
-     * @param filter SQL Filter.
+     * @param qry SQL Query.
      * @return Cursor.
      */
-    public QueryCursor<List<?>> queryFields(QuerySqlPredicate filter);
+    public QueryCursor<List<?>> queryFields(QuerySql qry);
 
     /**
-     * Queries cache with given predicate only locally.
+     * Queries cache locally. Accepts any subclass of {@link Query}.
      *
-     * @param filter Filter.
+     * @param qry Query.
      * @return Cursor.
+     * @see QueryScan
+     * @see QuerySql
+     * @see QueryText
+     * @see QuerySpi
      */
-    public QueryCursor<Entry<K, V>> localQuery(QueryPredicate filter);
+    public QueryCursor<Entry<K, V>> localQuery(Query qry);
 
     /**
-     * Queries separate entry fields with given SQL predicate only locally.
+     * Queries separate entry fields locally.
      *
-     * @param filter Filter.
+     * @param qry SQL Query.
      * @return Cursor.
      */
-    public QueryCursor<List<?>> localQueryFields(QuerySqlPredicate filter);
+    public QueryCursor<List<?>> localQueryFields(QuerySql qry);
 
     /**
      * Allows for iteration over local cache entries.

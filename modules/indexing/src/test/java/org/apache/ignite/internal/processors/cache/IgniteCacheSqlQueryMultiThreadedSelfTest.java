@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
@@ -96,7 +95,7 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
             @Override public Void call() throws Exception {
                 for (int i = 0; i < 100; i++) {
                     Iterator<Cache.Entry<Integer, Person>> iter =
-                        cache.query(QueryPredicate.sql("age >= 0").setType("Person")).iterator();
+                        cache.query(Query.sql("age >= 0").setType("Person")).iterator();
 
                     int cnt = 0;
 
