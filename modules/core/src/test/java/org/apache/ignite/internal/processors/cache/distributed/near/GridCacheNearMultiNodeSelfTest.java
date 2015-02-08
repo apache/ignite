@@ -514,11 +514,10 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
                 String s = near.getAndPut(3, "3");
 
-                assertNotNull(s);
                 assertEquals("3", s);
 
                 assertEquals("2", near.localPeek(2, CachePeekMode.ONHEAP));
-                assertEquals("3", near.localPeek(3, CachePeekMode.ONHEAP));
+                assertEquals("3", near.get(3));
 
                 assertNotNull(dht(primaryGrid(3)).peek(3, F.asList(GLOBAL)));
 
