@@ -23,7 +23,7 @@ import java.util.concurrent.*;
 /**
  *
  */
-public final class GridUuidCache {
+public final class IgniteUuidCache {
     /** Maximum cache size. */
     private static final int MAX = 1024;
 
@@ -37,7 +37,7 @@ public final class GridUuidCache {
      * @param id Read UUID.
      * @return Cached UUID equivalent to the read one.
      */
-    public static UUID onGridUuidRead(UUID id) {
+    public static UUID onIgniteUuidRead(UUID id) {
         UUID cached = cache.get(id);
 
         if (cached == null) {
@@ -53,7 +53,7 @@ public final class GridUuidCache {
     /**
      * Ensure singleton.
      */
-    private GridUuidCache() {
+    private IgniteUuidCache() {
         // No-op.
     }
 }

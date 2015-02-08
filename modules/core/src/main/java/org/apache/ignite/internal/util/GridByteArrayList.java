@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -28,7 +29,7 @@ import java.util.*;
 /**
  * Re-sizable array implementation of the byte list (eliminating auto-boxing of primitive byte type).
  */
-public class GridByteArrayList implements Externalizable {
+public class GridByteArrayList extends MessageAdapter implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -403,6 +404,31 @@ public class GridByteArrayList implements Externalizable {
         data = new byte[size];
 
         in.readFully(data, 0, size);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf) {
+        return false; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf) {
+        return false; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 0; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessageAdapter clone() {
+        return null; // TODO: implement.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void clone0(MessageAdapter _msg) {
+        // TODO: implement.
     }
 
     /** {@inheritDoc} */

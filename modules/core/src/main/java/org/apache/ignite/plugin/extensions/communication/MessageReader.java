@@ -9,6 +9,8 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
+import org.apache.ignite.lang.*;
+
 import java.nio.*;
 import java.util.*;
 
@@ -50,7 +52,17 @@ public interface MessageReader {
 
     public boolean[] readBooleanArray(String name);
 
+    public String readString(String name);
+
+    public BitSet readBitSet(String name);
+
+    public UUID readUuid(String name);
+
+    public IgniteUuid readIgniteUuid(String name);
+
     public MessageAdapter readMessage(String name);
+
+    public <T> T[] readObjectArray(String name, Class<T> itemCls);
 
     public <T> Collection<T> readCollection(String name, Class<T> itemCls);
 

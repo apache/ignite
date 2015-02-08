@@ -155,17 +155,6 @@ public class CommunicationMessageCodeGenerator {
             else
                 generate(cls);
         }
-
-//        type = 0;
-//
-//        for (Class<? extends MessageAdapter> cls : classes) {
-//            if (Modifier.isAbstract(cls.getModifiers()))
-//                continue;
-//
-//            System.out.println("case " + type++ + ":");
-//            System.out.println("    return new " + cls.getSimpleName() + "();");
-//            System.out.println();
-//        }
     }
 
     /**
@@ -223,11 +212,6 @@ public class CommunicationMessageCodeGenerator {
 
                         readFound = true;
                     }
-//                    else if (type >= 0 && line.contains("public byte directType()")) {
-//                        src.add(TAB + TAB + "return " + type + ';');
-//
-//                        skip = true;
-//                    }
                     else if (line.contains("public MessageAdapter clone()")) {
                         src.addAll(clone);
 
@@ -537,208 +521,66 @@ public class CommunicationMessageCodeGenerator {
         String field = raw ? "null" : '"' + name + '"';
 
         if (type == byte.class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putByte", field, name);
+            returnFalseIfFailed(write, "writer.writeByte", field, name);
         else if (type == short.class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putShort", field, name);
+            returnFalseIfFailed(write, "writer.writeShort", field, name);
         else if (type == int.class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putInt", field, name);
+            returnFalseIfFailed(write, "writer.writeInt", field, name);
         else if (type == long.class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putLong", field, name);
+            returnFalseIfFailed(write, "writer.writeLong", field, name);
         else if (type == float.class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putFloat", field, name);
+            returnFalseIfFailed(write, "writer.writeFloat", field, name);
         else if (type == double.class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putDouble", field, name);
+            returnFalseIfFailed(write, "writer.writeDouble", field, name);
         else if (type == char.class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putChar", field, name);
+            returnFalseIfFailed(write, "writer.writeChar", field, name);
         else if (type == boolean.class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putBoolean", field, name);
+            returnFalseIfFailed(write, "writer.writeBoolean", field, name);
         else if (type == byte[].class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putByteArray", field, name);
+            returnFalseIfFailed(write, "writer.writeByteArray", field, name);
         else if (type == short[].class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putShortArray", field, name);
+            returnFalseIfFailed(write, "writer.writeShortArray", field, name);
         else if (type == int[].class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putIntArray", field, name);
+            returnFalseIfFailed(write, "writer.writeIntArray", field, name);
         else if (type == long[].class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putLongArray", field, name);
+            returnFalseIfFailed(write, "writer.writeLongArray", field, name);
         else if (type == float[].class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putFloatArray", field, name);
+            returnFalseIfFailed(write, "writer.writeFloatArray", field, name);
         else if (type == double[].class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putDoubleArray", field, name);
+            returnFalseIfFailed(write, "writer.writeDoubleArray", field, name);
         else if (type == char[].class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putCharArray", field, name);
+            returnFalseIfFailed(write, "writer.writeCharArray", field, name);
         else if (type == boolean[].class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putBooleanArray", field, name);
+            returnFalseIfFailed(write, "writer.writeBooleanArray", field, name);
         else if (type == UUID.class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putUuid", field, name);
-        else if (type == ByteBuffer.class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putByteBuffer", field, name);
+            returnFalseIfFailed(write, "writer.writeByteArray", field, "U.uuidToBytes(" + name + ")");
         else if (type == IgniteUuid.class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putGridUuid", field, name);
-        else if (type == GridClockDeltaVersion.class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putClockDeltaVersion", field, name);
+            returnFalseIfFailed(write, "writer.writeByteArray", field, "U.igniteUuidToBytes(" + name + ")");
         else if (type == GridByteArrayList.class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putByteArrayList", field, name);
+            returnFalseIfFailed(write, "writer.writeByteArray", field, name);
         else if (type == GridLongList.class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putLongList", field, name);
-        else if (type == GridCacheVersion.class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putCacheVersion", field, name);
-        else if (type == GridDhtPartitionExchangeId.class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putDhtPartitionExchangeId", field, name);
-        else if (type == GridCacheValueBytes.class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putValueBytes", field, name);
-        //else if (type == GridDrInternalRequestEntry.class)
-        //    returnFalseIfFailed(write, COMM_STATE_VAR + ".putDrInternalRequestEntry", field, name);
+            returnFalseIfFailed(write, "writer.writeLongList", field, name);
         else if (type == String.class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putString", field, name);
+            returnFalseIfFailed(write, "writer.writeString", field, name);
         else if (type == BitSet.class)
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putBitSet", field, name);
+            returnFalseIfFailed(write, "writer.writeBitSet", field, name);
         else if (type.isEnum())
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putEnum", field, name);
+            returnFalseIfFailed(write, "writer.writeEnum", field, name);
         else if (BASE_CLS.isAssignableFrom(type))
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putMessage", field, name);
-        else if (type.isArray() || Collection.class.isAssignableFrom(type)) {
-            boolean isArr = type.isArray();
-
-            if (isArr)
-                colItemType = type.getComponentType();
-
+            returnFalseIfFailed(write, "writer.writeMessage", field, name);
+        else if (type.isArray())
+            returnFalseIfFailed(write, "writer.writeArray", field, name);
+        else if (Collection.class.isAssignableFrom(type)) {
             assert colItemType != null;
 
-            write.add(builder().a("if (").a(name).a(" != null) {").toString());
-
-            indent++;
-
-            write.add(builder().a("if (").a(IT_VAR).a(" == null) {").toString());
-
-            indent++;
-
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putInt", "null", name + "." + (isArr ? "length" : "size()"));
-
-            write.add(EMPTY);
-            write.add(builder().a(IT_VAR).a(" = ").a(isArr ? "arrayIterator(" + name + ")" : name + ".iterator()").
-                a(";").toString());
-
-            indent--;
-
-            write.add(builder().a("}").toString());
-            write.add(EMPTY);
-            write.add(builder().a("while (").a(IT_VAR).a(".hasNext() || ").a(CUR_VAR).a(" != NULL").a(") {").
-                toString());
-
-            indent++;
-
-            write.add(builder().a("if (").a(CUR_VAR).a(" == NULL)").toString());
-
-            indent++;
-
-            write.add(builder().a(CUR_VAR).a(" = ").a(IT_VAR).a(".next();").toString());
-
-            indent--;
-
-            write.add(EMPTY);
-
-            returnFalseIfWriteFailed(colItemType, "(" + colItemType.getSimpleName() + ")" + CUR_VAR,
-                null, null, null, true);
-
-            write.add(EMPTY);
-            write.add(builder().a(CUR_VAR).a(" = NULL;").toString());
-
-            indent--;
-
-            write.add(builder().a("}").toString());
-            write.add(EMPTY);
-            write.add(builder().a(IT_VAR).a(" = null;").toString());
-
-            indent--;
-
-            write.add(builder().a("} else {").toString());
-
-            indent++;
-
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putInt", "null", "-1");
-
-            indent--;
-
-            write.add(builder().a("}").toString());
+            returnFalseIfFailed(write, "writer.writeCollection", field, name, colItemType.getSimpleName() + ".class");
         }
         else if (Map.class.isAssignableFrom(type)) {
             assert mapKeyType != null;
             assert mapValType != null;
 
-            write.add(builder().a("if (").a(name).a(" != null) {").toString());
-
-            indent++;
-
-            write.add(builder().a("if (").a(IT_VAR).a(" == null) {").toString());
-
-            indent++;
-
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putInt", "null", name + ".size()");
-
-            write.add(EMPTY);
-            write.add(builder().a(IT_VAR).a(" = ").a(name).a(".entrySet().iterator();").toString());
-
-            indent--;
-
-            write.add(builder().a("}").toString());
-            write.add(EMPTY);
-            write.add(builder().a("while (").a(IT_VAR).a(".hasNext() || ").a(CUR_VAR).a(" != NULL").a(") {").
-                toString());
-
-            indent++;
-
-            write.add(builder().a("if (").a(CUR_VAR).a(" == NULL)").toString());
-
-            indent++;
-
-            write.add(builder().a(CUR_VAR).a(" = ").a(IT_VAR).a(".next();").toString());
-
-            indent--;
-
-            String entryType = "Map.Entry<" + U.box(mapKeyType).getSimpleName() + ", " +
-                U.box(mapValType).getSimpleName() + ">";
-
-            write.add(EMPTY);
-            write.add(builder().a(entryType).a(" e = (").a(entryType).a(")").a(CUR_VAR).a(";").toString());
-            write.add(EMPTY);
-            write.add(builder().a("if (!").a(KEY_DONE_VAR).a(") {").toString());
-
-            indent++;
-
-            returnFalseIfWriteFailed(mapKeyType, "e.getKey()", null, null, null, true);
-
-            write.add(EMPTY);
-            write.add(builder().a(KEY_DONE_VAR).a(" = true;").toString());
-
-            indent--;
-
-            write.add(builder().a("}").toString());
-            write.add(EMPTY);
-
-            returnFalseIfWriteFailed(mapValType, "e.getValue()", null, null, null, true);
-
-            write.add(EMPTY);
-            write.add(builder().a(KEY_DONE_VAR).a(" = false;").toString());
-            write.add(EMPTY);
-            write.add(builder().a(CUR_VAR).a(" = NULL;").toString());
-
-            indent--;
-
-            write.add(builder().a("}").toString());
-            write.add(EMPTY);
-            write.add(builder().a(IT_VAR).a(" = null;").toString());
-
-            indent--;
-
-            write.add(builder().a("} else {").toString());
-
-            indent++;
-
-            returnFalseIfFailed(write, COMM_STATE_VAR + ".putInt", "null", "-1");
-
-            indent--;
-
-            write.add(builder().a("}").toString());
+            returnFalseIfFailed(write, "writer.writeMap", field, name, mapKeyType.getSimpleName() + ".class",
+                mapValType.getSimpleName() + ".class");
         }
         else
             throw new IllegalStateException("Unsupported type: " + type);

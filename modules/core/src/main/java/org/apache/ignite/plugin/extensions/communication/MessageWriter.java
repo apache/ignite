@@ -9,6 +9,8 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
+import org.apache.ignite.lang.*;
+
 import java.nio.*;
 import java.util.*;
 
@@ -50,7 +52,17 @@ public interface MessageWriter {
 
     public boolean writeBooleanArray(String name, boolean[] val);
 
+    public boolean writeString(String name, String val);
+
+    public boolean writeBitSet(String name, BitSet val);
+
+    public boolean writeUuid(String name, UUID val);
+
+    public boolean writeIgniteUuid(String name, IgniteUuid val);
+
     public boolean writeMessage(String name, MessageAdapter val);
+
+    public <T> boolean writeObjectArray(String name, T[] arr, Class<T> itemCls);
 
     public <T> boolean writeCollection(String name, Collection<T> col, Class<T> itemCls);
 

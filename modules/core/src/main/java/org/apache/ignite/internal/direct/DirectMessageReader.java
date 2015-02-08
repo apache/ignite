@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.direct;
 
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
@@ -190,8 +191,53 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
+    @Override public String readString(String name) {
+        String val = stream.readString();
+
+        lastRead = stream.lastFinished();
+
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public BitSet readBitSet(String name) {
+        BitSet val = stream.readBitSet();
+
+        lastRead = stream.lastFinished();
+
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID readUuid(String name) {
+        UUID val = stream.readUuid();
+
+        lastRead = stream.lastFinished();
+
+        return val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteUuid readIgniteUuid(String name) {
+        IgniteUuid val = stream.readIgniteUuid();
+
+        lastRead = stream.lastFinished();
+
+        return val;
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public MessageAdapter readMessage(String name) {
         MessageAdapter msg = stream.readMessage();
+
+        lastRead = stream.lastFinished();
+
+        return msg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T[] readObjectArray(String name, Class<T> itemCls) {
+        T[] msg = stream.readObjectArray(itemCls);
 
         lastRead = stream.lastFinished();
 

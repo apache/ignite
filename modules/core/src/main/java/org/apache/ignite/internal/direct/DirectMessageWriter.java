@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.direct;
 
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
@@ -148,11 +149,46 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean writeString(String name, String val) {
+        stream.writeString(val);
+
+        return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeBitSet(String name, BitSet val) {
+        stream.writeBitSet(val);
+
+        return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeUuid(String name, UUID val) {
+        stream.writeUuid(val);
+
+        return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeIgniteUuid(String name, IgniteUuid val) {
+        stream.writeIgniteUuid(val);
+
+        return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeMessage(String name, @Nullable MessageAdapter msg) {
         if (msg != null)
             msg.setWriter(this);
 
         stream.writeMessage(msg);
+
+        return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> boolean writeObjectArray(String name, T[] arr, Class<T> itemCls) {
+        stream.writeObjectArray(arr, itemCls);
 
         return stream.lastFinished();
     }

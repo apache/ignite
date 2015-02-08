@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.direct;
 
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -208,17 +207,38 @@ public class DirectByteBufferStream {
     private static final Object NULL = new Object();
 
     /** */
-    private static final Map<Class<?>, IgniteInClosure<Object>> WRITERS = U.newHashMap(8);
-
-    /** */
-    private static final Map<Class<?>, IgniteOutClosure<Object>> READERS = U.newHashMap(8);
+    private static final Map<Class<?>, Type> TYPES = U.newHashMap(30);
 
     static {
-        WRITERS.put(byte.class, new CI1<Object>() {
-            @Override public void apply(Object o) {
-                
-            }
-        });
+        TYPES.put(byte.class, Type.BYTE);
+        TYPES.put(Byte.class, Type.BYTE);
+        TYPES.put(short.class, Type.SHORT);
+        TYPES.put(Short.class, Type.SHORT);
+        TYPES.put(int.class, Type.INT);
+        TYPES.put(Integer.class, Type.INT);
+        TYPES.put(long.class, Type.LONG);
+        TYPES.put(Long.class, Type.LONG);
+        TYPES.put(float.class, Type.FLOAT);
+        TYPES.put(Float.class, Type.FLOAT);
+        TYPES.put(double.class, Type.DOUBLE);
+        TYPES.put(Double.class, Type.DOUBLE);
+        TYPES.put(char.class, Type.CHAR);
+        TYPES.put(Character.class, Type.CHAR);
+        TYPES.put(boolean.class, Type.BOOLEAN);
+        TYPES.put(Boolean.class, Type.BOOLEAN);
+        TYPES.put(byte[].class, Type.BYTE_ARR);
+        TYPES.put(short[].class, Type.SHORT_ARR);
+        TYPES.put(int[].class, Type.INT_ARR);
+        TYPES.put(long[].class, Type.LONG_ARR);
+        TYPES.put(float[].class, Type.FLOAT_ARR);
+        TYPES.put(double[].class, Type.DOUBLE_ARR);
+        TYPES.put(char[].class, Type.CHAR_ARR);
+        TYPES.put(boolean[].class, Type.BOOLEAN_ARR);
+        TYPES.put(String.class, Type.STRING);
+        TYPES.put(BitSet.class, Type.BIT_SET);
+        TYPES.put(UUID.class, Type.UUID);
+        TYPES.put(IgniteUuid.class, Type.IGNITE_UUID);
+        TYPES.put(MessageAdapter.class, Type.MSG);
     }
 
     /** */
@@ -265,6 +285,9 @@ public class DirectByteBufferStream {
 
     /** */
     private int readItems;
+
+    /** */
+    private Object[] objArr;
 
     /** */
     private Collection<Object> col;
@@ -485,6 +508,22 @@ public class DirectByteBufferStream {
             writeInt(-1);
     }
 
+    public void writeString(String val) {
+        writeByteArray(val != null ? val.getBytes() : null);
+    }
+
+    public void writeBitSet(BitSet val) {
+        writeLongArray(val != null ? val.toLongArray() : null);
+    }
+
+    public void writeUuid(UUID val) {
+        writeByteArray(val != null ? U.uuidToBytes(val) : null);
+    }
+
+    public void writeIgniteUuid(IgniteUuid val) {
+        writeByteArray(val != null ? U.igniteUuidToBytes(val) : null);
+    }
+
     /**
      * @param msg Message.
      */
@@ -495,24 +534,26 @@ public class DirectByteBufferStream {
             writeByte(Byte.MIN_VALUE);
     }
 
-    public <T> void writeCollection(Collection<T> col, Class<T> itemCls) {
-        if (col != null) {
+    public <T> void writeObjectArray(T[] arr, Class<T> itemCls) {
+        if (arr != null) {
             if (it == null) {
-                writeInt(col.size());
+                writeInt(arr.length);
 
                 if (!lastFinished)
                     return;
 
-                it = col.iterator();
+                it = arrayIterator(arr);
             }
 
-            IgniteInClosure<Object> itemWriter = WRITERS.get(itemCls);
+            Type itemType = TYPES.get(itemCls);
+
+            assert itemType != null;
 
             while (it.hasNext() || cur != NULL) {
                 if (cur == NULL)
                     cur = it.next();
 
-                itemWriter.apply(cur);
+                write(itemType, cur);
 
                 if (!lastFinished)
                     return;
@@ -526,6 +567,40 @@ public class DirectByteBufferStream {
             writeInt(-1);
     }
 
+    public <T> void writeCollection(Collection<T> col, Class<T> itemCls) {
+        if (col != null) {
+            if (it == null) {
+                writeInt(col.size());
+
+                if (!lastFinished)
+                    return;
+
+                it = col.iterator();
+            }
+
+            Type itemType = TYPES.get(itemCls);
+
+            assert itemType != null;
+
+            while (it.hasNext() || cur != NULL) {
+                if (cur == NULL)
+                    cur = it.next();
+
+                write(itemType, cur);
+
+                if (!lastFinished)
+                    return;
+
+                cur = NULL;
+            }
+
+            it = null;
+        }
+        else
+            writeInt(-1);
+    }
+
+    @SuppressWarnings("unchecked")
     public <K, V> void writeMap(Map<K, V> map, Class<K> keyCls, Class<V> valCls) {
         if (map != null) {
             if (it == null) {
@@ -537,8 +612,11 @@ public class DirectByteBufferStream {
                 it = map.entrySet().iterator();
             }
 
-            IgniteInClosure<Object> keyWriter = WRITERS.get(keyCls);
-            IgniteInClosure<Object> valWriter = WRITERS.get(valCls);
+            Type keyType = TYPES.get(keyCls);
+            Type valType = TYPES.get(valCls);
+
+            assert keyType != null;
+            assert valType != null;
 
             while (it.hasNext() || cur != NULL) {
                 if (cur == NULL)
@@ -547,7 +625,7 @@ public class DirectByteBufferStream {
                 Map.Entry<K, V> e = (Map.Entry<K, V>)cur;
 
                 if (!keyDone) {
-                    keyWriter.apply(e.getKey());
+                    write(keyType, e.getKey());
 
                     if (!lastFinished)
                         return;
@@ -555,7 +633,7 @@ public class DirectByteBufferStream {
                     keyDone = true;
                 }
 
-                valWriter.apply(e.getValue());
+                write(valType, e.getValue());
 
                 if (!lastFinished)
                     return;
@@ -738,6 +816,30 @@ public class DirectByteBufferStream {
         return readArray(BOOLEAN_ARR_CREATOR, 0, BOOLEAN_ARR_OFF);
     }
 
+    public String readString() {
+        byte[] arr = readByteArray();
+
+        return arr != null ? new String(arr) : null;
+    }
+
+    public BitSet readBitSet() {
+        long[] arr = readLongArray();
+
+        return arr != null ? BitSet.valueOf(arr) : null;
+    }
+
+    public UUID readUuid() {
+        byte[] arr = readByteArray();
+
+        return arr != null ? U.bytesToUuid(arr, 0) : null;
+    }
+
+    public IgniteUuid readIgniteUuid() {
+        byte[] arr = readByteArray();
+
+        return arr != null ? U.bytesToIgniteUuid(arr, 0) : null;
+    }
+
     /**
      * @return Message.
      */
@@ -770,6 +872,49 @@ public class DirectByteBufferStream {
             return null;
     }
 
+    @SuppressWarnings("unchecked")
+    public <T> T[] readObjectArray(Class<?> itemCls) {
+        if (readSize == -1) {
+            int size = readInt();
+
+            if (!lastFinished)
+                return null;
+
+            readSize = size;
+        }
+
+        if (readSize >= 0) {
+            if (objArr == null)
+                objArr = new Object[readSize];
+
+            Type itemType = TYPES.get(itemCls);
+
+            assert itemType != null;
+
+            for (int i = readItems; i < readSize; i++) {
+                Object item = read(itemType);
+
+                if (!lastFinished)
+                    return null;
+
+                objArr[i] = item;
+
+                readItems++;
+            }
+        }
+
+        readSize = -1;
+        readItems = 0;
+        cur = null;
+
+        T[] objArr0 = (T[])objArr;
+
+        objArr = null;
+
+        return objArr0;
+    }
+
+    @SuppressWarnings("unchecked")
     public <T> Collection<T> readCollection(Class<T> itemCls) {
         if (readSize == -1) {
             int size = readInt();
@@ -784,10 +929,12 @@ public class DirectByteBufferStream {
             if (col == null)
                 col = new ArrayList<>(readSize);
 
-            IgniteOutClosure<Object> itemReader = READERS.get(itemCls);
+            Type itemType = TYPES.get(itemCls);
+
+            assert itemType != null;
 
             for (int i = readItems; i < readSize; i++) {
-                Object item = itemReader.apply();
+                Object item = read(itemType);
 
                 if (!lastFinished)
                     return null;
@@ -800,10 +947,16 @@ public class DirectByteBufferStream {
 
         readSize = -1;
         readItems = 0;
+        cur = null;
 
-        return (Collection<T>)col;
+        Collection<T> col0 = (Collection<T>)col;
+
+        col = null;
+
+        return col0;
     }
 
+    @SuppressWarnings("unchecked")
     public <K, V> Map<K, V> readMap(Class<K> keyCls, Class<V> valCls) {
         if (readSize == -1) {
             int size = readInt();
@@ -818,12 +971,15 @@ public class DirectByteBufferStream {
             if (map == null)
                 map = U.newHashMap(readSize);
 
-            IgniteOutClosure<Object> keyReader = READERS.get(keyCls);
-            IgniteOutClosure<Object> valReader = READERS.get(valCls);
+            Type keyType = TYPES.get(keyCls);
+            Type valType = TYPES.get(valCls);
+
+            assert keyType != null;
+            assert valType != null;
 
             for (int i = readItems; i < readSize; i++) {
                 if (!keyDone) {
-                    Object key = keyReader.apply();
+                    Object key = read(keyType);
 
                     if (!lastFinished)
                         return null;
@@ -832,7 +988,7 @@ public class DirectByteBufferStream {
                     keyDone = true;
                 }
 
-                Object val = valReader.apply();
+                Object val = read(valType);
 
                 if (!lastFinished)
                     return null;
@@ -849,7 +1005,11 @@ public class DirectByteBufferStream {
         readItems = 0;
         cur = null;
 
-        return (Map<K, V>)map;
+        Map<K, V> map0 = (Map<K, V>)map;
+
+        map = null;
+
+        return map0;
     }
 
     /**
@@ -935,6 +1095,7 @@ public class DirectByteBufferStream {
      * @param len Length.
      * @return Array or special value if it was not fully read.
      */
+    @SuppressWarnings("unchecked")
     private <T> T readArray(ArrayCreator<T> creator, int lenShift, long off, int len) {
         assert creator != null;
 
@@ -996,6 +1157,213 @@ public class DirectByteBufferStream {
         }
     }
 
+    private void write(Type type, Object val) {
+        switch (type) {
+            case BYTE:
+                writeByte((Byte)val);
+
+                break;
+
+            case SHORT:
+                writeShort((Short)val);
+
+                break;
+
+            case INT:
+                writeInt((Integer)val);
+
+                break;
+
+            case LONG:
+                writeLong((Long)val);
+
+                break;
+
+            case FLOAT:
+                writeFloat((Float)val);
+
+                break;
+
+            case DOUBLE:
+                writeDouble((Double)val);
+
+                break;
+
+            case CHAR:
+                writeChar((Character)val);
+
+                break;
+
+            case BOOLEAN:
+                writeBoolean((Boolean)val);
+
+                break;
+
+            case BYTE_ARR:
+                writeByteArray((byte[])val);
+
+                break;
+
+            case SHORT_ARR:
+                writeShortArray((short[])val);
+
+                break;
+
+            case INT_ARR:
+                writeIntArray((int[])val);
+
+                break;
+
+            case LONG_ARR:
+                writeLongArray((long[])val);
+
+                break;
+
+            case FLOAT_ARR:
+                writeFloatArray((float[])val);
+
+                break;
+
+            case DOUBLE_ARR:
+                writeDoubleArray((double[])val);
+
+                break;
+
+            case CHAR_ARR:
+                writeCharArray((char[])val);
+
+                break;
+
+            case BOOLEAN_ARR:
+                writeBooleanArray((boolean[])val);
+
+                break;
+
+            case STRING:
+                writeString((String)val);
+
+                break;
+
+            case BIT_SET:
+                writeBitSet((BitSet)val);
+
+                break;
+
+            case UUID:
+                writeUuid((UUID)val);
+
+                break;
+
+            case IGNITE_UUID:
+                writeIgniteUuid((IgniteUuid)val);
+
+                break;
+
+            case MSG:
+                writeMessage((MessageAdapter)val);
+
+                break;
+
+            default:
+                throw new IllegalArgumentException("Unknown type: " + type);
+        }
+    }
+
+    private Object read(Type type) {
+        switch (type) {
+            case BYTE:
+                return readByte();
+
+            case SHORT:
+                return readShort();
+
+            case INT:
+                return readInt();
+
+            case LONG:
+                return readLong();
+
+            case FLOAT:
+                return readFloat();
+
+            case DOUBLE:
+                return readDouble();
+
+            case CHAR:
+                return readChar();
+
+            case BOOLEAN:
+                return readBoolean();
+
+            case BYTE_ARR:
+                return readByteArray();
+
+            case SHORT_ARR:
+                return readShortArray();
+
+            case INT_ARR:
+                return readIntArray();
+
+            case LONG_ARR:
+                return readLongArray();
+
+            case FLOAT_ARR:
+                return readFloatArray();
+
+            case DOUBLE_ARR:
+                return readDoubleArray();
+
+            case CHAR_ARR:
+                return readCharArray();
+
+            case BOOLEAN_ARR:
+                return readBooleanArray();
+
+            case STRING:
+                return readString();
+
+            case BIT_SET:
+                return readBitSet();
+
+            case UUID:
+                return readUuid();
+
+            case IGNITE_UUID:
+                return readIgniteUuid();
+
+            case MSG:
+                return readMessage();
+
+            default:
+                throw new IllegalArgumentException("Unknown type: " + type);
+        }
+    }
+
+    /**
+     * @param arr Array.
+     * @return Array iterator.
+     */
+    private Iterator<?> arrayIterator(final Object[] arr) {
+        return new Iterator<Object>() {
+            private int idx;
+
+            @Override public boolean hasNext() {
+                return idx < arr.length;
+            }
+
+            @Override public Object next() {
+                if (!hasNext())
+                    throw new NoSuchElementException();
+
+                return arr[idx++];
+            }
+
+            @Override public void remove() {
+                throw new UnsupportedOperationException();
+            }
+        };
+    }
+
     /**
      * Array creator.
      */
@@ -1005,5 +1373,49 @@ public class DirectByteBufferStream {
          * @return New array.
          */
         public T create(int len);
+    }
+
+    private enum Type {
+        BYTE,
+
+        SHORT,
+
+        INT,
+
+        LONG,
+
+        FLOAT,
+
+        DOUBLE,
+
+        CHAR,
+
+        BOOLEAN,
+
+        BYTE_ARR,
+
+        SHORT_ARR,
+
+        INT_ARR,
+
+        LONG_ARR,
+
+        FLOAT_ARR,
+
+        DOUBLE_ARR,
+
+        CHAR_ARR,
+
+        BOOLEAN_ARR,
+
+        STRING,
+
+        BIT_SET,
+
+        UUID,
+
+        IGNITE_UUID,
+
+        MSG
     }
 }
