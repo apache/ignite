@@ -411,7 +411,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         for (int i = startFrom; i < startFrom + 100_000; i++) {
             Integer key = i;
 
-            if (!aff.isPrimaryOrBackup(locNode, key)) {
+            if (aff.isPrimary(locNode, key)) {
                 found.add(key);
 
                 if (found.size() == cnt)
