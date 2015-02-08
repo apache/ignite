@@ -90,7 +90,7 @@ public abstract class GridCacheAbstractFlagsTest extends GridCacheAbstractSelfTe
                 }
             }, gridCount() * 3);
 
-            cache(0).flagsOn(CacheFlag.SYNC_COMMIT).put(key, val);
+            ((IgniteCacheProxy)jcache(0)).flagOn(CacheFlag.SYNC_COMMIT).put(key, val);
 
             l.countDown();
 

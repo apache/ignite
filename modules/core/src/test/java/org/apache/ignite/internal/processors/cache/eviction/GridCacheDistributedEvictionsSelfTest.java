@@ -186,7 +186,7 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
             // Put 1 entry to primary node.
             cache.putx(0, 0);
 
-            Integer nearVal = this.<Integer, Integer>cache(2).get(0);
+            Integer nearVal = this.<Integer, Integer>jcache(2).get(0);
 
             assert nearVal == 0 : "Unexpected near value: " + nearVal;
 
@@ -199,8 +199,8 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
 
             for (int i = 0; i < 3; i++) {
                 try {
-                    assert cache(2).get(0) == null : "Entry has not been evicted from near node for key: " + 0;
-                    assert cache(1).get(0) == null : "Entry has not been evicted from backup node for key: " + 0;
+                    assert jcache(2).get(0) == null : "Entry has not been evicted from near node for key: " + 0;
+                    assert jcache(1).get(0) == null : "Entry has not been evicted from backup node for key: " + 0;
                     assert cache.get(0) == null : "Entry has not been evicted from primary node for key: " + 0;
                 }
                 catch (Throwable e) {
@@ -233,7 +233,7 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
                     assert cache.size() == 10 : "Invalid key size [size=" + cache.size() +
                         ", keys=" + new TreeSet<>(cache.keySet()) + ']';
 
-                    assert cache(2).isEmpty();
+                    assert jcache(2).localSize() == 0;
 
                     break;
                 }

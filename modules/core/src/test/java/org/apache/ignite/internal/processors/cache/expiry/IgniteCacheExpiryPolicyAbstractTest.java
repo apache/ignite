@@ -810,7 +810,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             }
         }, 3000);
 
-        GridCache<Integer, Object> cache = cache(0);
+        IgniteCache<Integer, Object> cache = jcache(0);
 
         for (int i = 0; i < gridCount(); i++) {
             ClusterNode node = grid(i).cluster().localNode();
@@ -820,8 +820,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
                 if (val != null) {
                     log.info("Unexpected value [grid=" + i +
-                        ", primary=" + cache.affinity().isPrimary(node, key) +
-                        ", backup=" + cache.affinity().isBackup(node, key) + ']');
+                        ", primary=" + affinity(cache).isPrimary(node, key) +
+                        ", backup=" + affinity(cache).isBackup(node, key) + ']');
                 }
 
                 assertNull("Unexpected non-null value for grid " + i, val);
