@@ -60,13 +60,13 @@ public interface MessageReader {
 
     public IgniteUuid readIgniteUuid(String name);
 
-    public <T extends Enum<T>> Enum<T> readEnum(String name, Class<T> enumCls);
+    public <T extends Enum<T>> T readEnum(String name, Class<T> enumCls);
 
-    public MessageAdapter readMessage(String name);
+    public <T extends MessageAdapter> T readMessage(String name);
 
     public <T> T[] readObjectArray(String name, Class<T> itemCls);
 
-    public <T> Collection<T> readCollection(String name, Class<T> itemCls);
+    public <C extends Collection<T>, T> C readCollection(String name, Class<T> itemCls);
 
     public <K, V> Map<K, V> readMap(String name, Class<K> keyCls, Class<V> valCls);
 

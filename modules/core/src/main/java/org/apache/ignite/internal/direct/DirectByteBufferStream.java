@@ -845,16 +845,17 @@ public class DirectByteBufferStream {
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends Enum<T>> Enum<T> readEnum(Class<T> enumCls) {
+    public <T extends Enum<T>> T readEnum(Class<T> enumCls) {
         byte ord = readByte();
 
-        return ord >= 0 ? (Enum<T>)GridEnumCache.get(enumCls)[ord] : null;
+        return ord >= 0 ? (T)GridEnumCache.get(enumCls)[ord] : null;
     }
 
     /**
      * @return Message.
      */
-    public MessageAdapter readMessage() {
+    @SuppressWarnings("unchecked")
+    public <T extends MessageAdapter> T readMessage() {
         if (!msgTypeDone) {
             if (!buf.hasRemaining()) {
                 lastFinished = false;
@@ -877,7 +878,7 @@ public class DirectByteBufferStream {
             msgTypeDone = false;
             msg = null;
 
-            return msg0;
+            return (T)msg0;
         }
         else
             return null;
@@ -926,7 +927,7 @@ public class DirectByteBufferStream {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> Collection<T> readCollection(Class<T> itemCls) {
+    public <C extends Collection<T>, T> C readCollection(Class<T> itemCls) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -964,7 +965,7 @@ public class DirectByteBufferStream {
 
         col = null;
 
-        return col0;
+        return (C)col0;
     }
 
     @SuppressWarnings("unchecked")

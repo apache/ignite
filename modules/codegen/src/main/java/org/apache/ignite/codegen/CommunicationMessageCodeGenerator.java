@@ -449,7 +449,7 @@ public class CommunicationMessageCodeGenerator {
         indent++;
 
         returnFalseIfReadFailed(field.getType(), field.getName(), colAnn != null ? colAnn.value() : null,
-            mapAnn != null ? mapAnn.keyType() : null, mapAnn != null ? mapAnn.valueType() : null, false);
+            mapAnn != null ? mapAnn.keyType() : null, mapAnn != null ? mapAnn.valueType() : null);
 
         read.add(EMPTY);
         read.add(builder().a(STATE_VAR).a("++;").toString());
@@ -543,75 +543,72 @@ public class CommunicationMessageCodeGenerator {
      * @param colItemType Collection item type.
      * @param mapKeyType Map key type.
      * @param mapValType Map value type.
-     * @param raw Raw read flag.
      */
     private void returnFalseIfReadFailed(Class<?> type, @Nullable String name, @Nullable Class<?> colItemType,
-        @Nullable Class<?> mapKeyType, @Nullable Class<?> mapValType, boolean raw) {
+        @Nullable Class<?> mapKeyType, @Nullable Class<?> mapValType) {
         assert type != null;
 
-        String field = raw ? "null" : '"' + name + '"';
-
-        String retType = type.getSimpleName();
+        String field = '"' + name + '"';
 
         if (type == byte.class)
-            returnFalseIfReadFailed("byte", name, "reader.readByte", field);
+            returnFalseIfReadFailed(name, "reader.readByte", field);
         else if (type == short.class)
-            returnFalseIfReadFailed("short", name, "reader.readShort", field);
+            returnFalseIfReadFailed(name, "reader.readShort", field);
         else if (type == int.class)
-            returnFalseIfReadFailed("int", name, "reader.readInt", field);
+            returnFalseIfReadFailed(name, "reader.readInt", field);
         else if (type == long.class)
-            returnFalseIfReadFailed("long", name, "reader.readLong", field);
+            returnFalseIfReadFailed(name, "reader.readLong", field);
         else if (type == float.class)
-            returnFalseIfReadFailed("float", name, "reader.readFloat", field);
+            returnFalseIfReadFailed(name, "reader.readFloat", field);
         else if (type == double.class)
-            returnFalseIfReadFailed("double", name, "reader.readDouble", field);
+            returnFalseIfReadFailed(name, "reader.readDouble", field);
         else if (type == char.class)
-            returnFalseIfReadFailed("char", name, "reader.readChar", field);
+            returnFalseIfReadFailed(name, "reader.readChar", field);
         else if (type == boolean.class)
-            returnFalseIfReadFailed("boolean", name, "reader.readBoolean", field);
+            returnFalseIfReadFailed(name, "reader.readBoolean", field);
         else if (type == byte[].class)
-            returnFalseIfReadFailed(retType, name, "reader.readByteArray", field);
+            returnFalseIfReadFailed(name, "reader.readByteArray", field);
         else if (type == short[].class)
-            returnFalseIfReadFailed(retType, name, "reader.readShortArray", field);
+            returnFalseIfReadFailed(name, "reader.readShortArray", field);
         else if (type == int[].class)
-            returnFalseIfReadFailed(retType, name, "reader.readIntArray", field);
+            returnFalseIfReadFailed(name, "reader.readIntArray", field);
         else if (type == long[].class)
-            returnFalseIfReadFailed(retType, name, "reader.readLongArray", field);
+            returnFalseIfReadFailed(name, "reader.readLongArray", field);
         else if (type == float[].class)
-            returnFalseIfReadFailed(retType, name, "reader.readFloatArray", field);
+            returnFalseIfReadFailed(name, "reader.readFloatArray", field);
         else if (type == double[].class)
-            returnFalseIfReadFailed(retType, name, "reader.readDoubleArray", field);
+            returnFalseIfReadFailed(name, "reader.readDoubleArray", field);
         else if (type == char[].class)
-            returnFalseIfReadFailed(retType, name, "reader.readCharArray", field);
+            returnFalseIfReadFailed(name, "reader.readCharArray", field);
         else if (type == boolean[].class)
-            returnFalseIfReadFailed(retType, name, "reader.readBooleanArray", field);
+            returnFalseIfReadFailed(name, "reader.readBooleanArray", field);
         else if (type == String.class)
-            returnFalseIfReadFailed(retType, name, "reader.readString", field);
+            returnFalseIfReadFailed(name, "reader.readString", field);
         else if (type == BitSet.class)
-            returnFalseIfReadFailed(retType, name, "reader.readBitSet", field);
+            returnFalseIfReadFailed(name, "reader.readBitSet", field);
         else if (type == UUID.class)
-            returnFalseIfReadFailed(retType, name, "reader.readUuid", field);
+            returnFalseIfReadFailed(name, "reader.readUuid", field);
         else if (type == IgniteUuid.class)
-            returnFalseIfReadFailed(retType, name, "reader.readGridUuid", field);
+            returnFalseIfReadFailed(name, "reader.readIgniteUuid", field);
         else if (type.isEnum())
-            returnFalseIfReadFailed(retType, name, "reader.readEnum", field, retType + ".class");
+            returnFalseIfReadFailed(name, "reader.readEnum", field, type.getSimpleName() + ".class");
         else if (BASE_CLS.isAssignableFrom(type))
-            returnFalseIfReadFailed(retType, name, "reader.readMessage", field);
+            returnFalseIfReadFailed(name, "reader.readMessage", field);
         else if (type.isArray()) {
-            returnFalseIfReadFailed(retType, name, "reader.readObjectArray", field,
+            returnFalseIfReadFailed(name, "reader.readObjectArray", field,
                 type.getComponentType().getSimpleName() + ".class");
         }
         else if (Collection.class.isAssignableFrom(type)) {
             assert colItemType != null;
 
-            returnFalseIfReadFailed(retType, name, "reader.readCollection", field,
+            returnFalseIfReadFailed(name, "reader.readCollection", field,
                 colItemType.getSimpleName() + ".class");
         }
         else if (Map.class.isAssignableFrom(type)) {
             assert mapKeyType != null;
             assert mapValType != null;
 
-            returnFalseIfReadFailed(retType, name, "reader.readMap", field, mapKeyType.getSimpleName() + ".class",
+            returnFalseIfReadFailed(name, "reader.readMap", field, mapKeyType.getSimpleName() + ".class",
                 mapValType.getSimpleName() + ".class");
         }
         else
@@ -619,13 +616,11 @@ public class CommunicationMessageCodeGenerator {
     }
 
     /**
-     * @param retType Return type.
      * @param var Variable name.
      * @param mtd Method name.
      * @param args Method arguments.
      */
-    private void returnFalseIfReadFailed(String retType, String var, String mtd, @Nullable String... args) {
-        assert retType != null;
+    private void returnFalseIfReadFailed(String var, String mtd, @Nullable String... args) {
         assert mtd != null;
 
         String argsStr = "";
@@ -640,7 +635,7 @@ public class CommunicationMessageCodeGenerator {
         read.add(builder().a(var).a(" = ").a(mtd).a("(").a(argsStr).a(");").toString());
         read.add(EMPTY);
 
-        read.add(builder().a("if (!reader.lastRead())").toString());
+        read.add(builder().a("if (!reader.isLastRead())").toString());
 
         indent++;
 

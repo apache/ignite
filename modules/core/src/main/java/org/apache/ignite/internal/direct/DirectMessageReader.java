@@ -227,8 +227,8 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends Enum<T>> Enum<T> readEnum(String name, Class<T> enumCls) {
-        Enum<T> val = stream.readEnum(enumCls);
+    @Override public <T extends Enum<T>> T readEnum(String name, Class<T> enumCls) {
+        T val = stream.readEnum(enumCls);
 
         lastRead = stream.lastFinished();
 
@@ -236,8 +236,8 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public MessageAdapter readMessage(String name) {
-        MessageAdapter msg = stream.readMessage();
+    @Nullable @Override public <T extends MessageAdapter> T readMessage(String name) {
+        T msg = stream.readMessage();
 
         lastRead = stream.lastFinished();
 
@@ -254,8 +254,8 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> Collection<T> readCollection(String name, Class<T> itemCls) {
-        Collection<T> col = stream.readCollection(itemCls);
+    @Override public <C extends Collection<T>, T> C readCollection(String name, Class<T> itemCls) {
+        C col = stream.readCollection(itemCls);
 
         lastRead = stream.lastFinished();
 
