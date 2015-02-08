@@ -250,7 +250,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @throws Exception If failed.
      */
     public void testGetAll() throws Exception {
-        Set<String> keys = new HashSet<>();
+        Set<String> keys = new LinkedHashSet<>();
 
         for (int i = 0; i < 1000; i++)
             keys.add(String.valueOf(i));
@@ -329,9 +329,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
                 }
             };
 
-            if (j == 0) {
+            if (j == 0)
                 map = cache.getAll(keys);
-            }
             else {
                 cacheAsync.getAll(keys);
 
