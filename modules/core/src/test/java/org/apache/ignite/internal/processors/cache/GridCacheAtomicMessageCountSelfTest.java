@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.managers.communication.*;
@@ -143,20 +144,22 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
             for (int i = 0; i < putCnt; i++) {
                 ClusterNode locNode = grid(0).localNode();
 
+                CacheAffinity<Object> affinity = ignite(0).affinity(null);
+
                 if (writeOrderMode == CLOCK) {
-                    if (cache(0).affinity().isPrimary(locNode, i) || cache(0).affinity().isBackup(locNode, i))
+                    if (affinity.isPrimary(locNode, i) || affinity.isBackup(locNode, i))
                         expNearCnt++;
                     else
                         expNearCnt += 2;
                 }
                 else {
-                    if (cache(0).affinity().isPrimary(locNode, i))
+                    if (affinity.isPrimary(locNode, i))
                         expDhtCnt++;
                     else
                         expNearCnt ++;
                 }
 
-                cache(0).put(i, i);
+                jcache(0).put(i, i);
             }
 
             assertEquals(expNearCnt, commSpi.messageCount(GridNearAtomicUpdateRequest.class));

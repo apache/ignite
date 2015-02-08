@@ -610,11 +610,11 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     private void nearReaderUpdate() throws Exception {
         log.info("Test near reader update.");
 
-        Integer key = nearKeys(cache(0), 1, 500_000).get(0);
+        Integer key = nearKeys(jcache(0), 1, 500_000).get(0);
 
         IgniteCache<Integer, Integer> cache0 = jcache(0);
 
-        assertEquals(NEAR_PARTITIONED, cache(0).configuration().getDistributionMode());
+        assertEquals(NEAR_PARTITIONED, jcache(0).getConfiguration(CacheConfiguration.class).getDistributionMode());
 
         cache0.put(key, 1);
 
@@ -722,7 +722,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         testAccess();
 
-        Integer key = primaryKeys(cache(0), 1, 500_000).get(0);
+        Integer key = primaryKeys(jcache(0), 1, 500_000).get(0);
 
         IgniteCache<Integer, Integer> cache0 = jcache(0);
 
@@ -742,7 +742,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         // Test reader update on get.
 
-        key = nearKeys(cache(0), 1, 600_000).get(0);
+        key = nearKeys(jcache(0), 1, 600_000).get(0);
 
         cache0.put(key, 1);
 
@@ -761,16 +761,16 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     private Collection<Integer> keys() throws Exception {
-        GridCache<Integer, Object> cache = cache(0);
+        IgniteCache<Integer, Object> cache = jcache(0);
 
-        ArrayList<Integer> keys = new ArrayList<>();
+        List<Integer> keys = new ArrayList<>();
 
         keys.add(primaryKeys(cache, 1, lastKey).get(0));
 
         if (gridCount() > 1) {
             keys.add(backupKeys(cache, 1, lastKey).get(0));
 
-            if (cache.configuration().getCacheMode() != REPLICATED)
+            if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() != REPLICATED)
                 keys.add(nearKeys(cache, 1, lastKey).get(0));
         }
 
@@ -810,7 +810,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             }
         }, 3000);
 
-        GridCache<Integer, Object> cache = cache(0);
+        IgniteCache<Integer, Object> cache = jcache(0);
 
         for (int i = 0; i < gridCount(); i++) {
             ClusterNode node = grid(i).cluster().localNode();
@@ -820,8 +820,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
                 if (val != null) {
                     log.info("Unexpected value [grid=" + i +
-                        ", primary=" + cache.affinity().isPrimary(node, key) +
-                        ", backup=" + cache.affinity().isBackup(node, key) + ']');
+                        ", primary=" + affinity(cache).isPrimary(node, key) +
+                        ", backup=" + affinity(cache).isBackup(node, key) + ']');
                 }
 
                 assertNull("Unexpected non-null value for grid " + i, val);

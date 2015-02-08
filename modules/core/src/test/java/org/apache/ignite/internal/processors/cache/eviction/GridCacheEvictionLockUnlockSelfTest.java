@@ -136,7 +136,7 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
                 assertEquals(gridCnt, touchCnt.get());
 
                 for (int j = 0; j < gridCnt; j++)
-                    assertFalse(cache(j).containsKey("key"));
+                    assertFalse(jcache(j).containsKey("key"));
             }
         }
         finally {

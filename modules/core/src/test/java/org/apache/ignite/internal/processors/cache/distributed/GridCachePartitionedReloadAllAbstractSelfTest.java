@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -55,7 +56,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
     private final Map<Integer, String> map = new ConcurrentHashMap8<>();
 
     /** Collection of caches, one per grid node. */
-    private List<GridCache<Integer, String>> caches;
+    private List<IgniteCache<Integer, String>> caches;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -129,7 +130,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
         caches = new ArrayList<>(GRID_CNT);
 
         for (int i = 0; i < GRID_CNT; i++)
-            caches.add(startGrid(i).<Integer, String>cache(null));
+            caches.add(startGrid(i).<Integer, String>jcache(null));
 
         awaitPartitionMapExchange();
     }
@@ -155,14 +156,14 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
 
             @Override public void loadCache(IgniteBiInClosure<Integer, String> c,
                 Object... args) {
-                X.println("Loading all on: " + caches.indexOf(g.<Integer, String>cache(null)));
+                X.println("Loading all on: " + caches.indexOf(g.<Integer, String>jcache(null)));
 
                 for (Map.Entry<Integer, String> e : map.entrySet())
                     c.apply(e.getKey(), e.getValue());
             }
 
             @Override public String load(Integer key) {
-                X.println("Loading on: " + caches.indexOf(g.<Integer, String>cache(null)) + " key=" + key);
+                X.println("Loading on: " + caches.indexOf(g.<Integer, String>jcache(null)) + " key=" + key);
 
                 return map.get(key);
             }
@@ -185,8 +186,8 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
      */
     public void testReloadAll() throws Exception {
         // Fill caches with values.
-        for (GridCache<Integer, String> cache : caches) {
-            Iterable<Integer> keys = primaryKeysForCache(cache, 100);
+        for (IgniteCache<Integer, String> cache : caches) {
+            Iterable<Integer> keys = primaryKeys(cache, 100);
 
             info("Values [cache=" + caches.indexOf(cache) + ", size=" + F.size(keys.iterator()) +  ", keys=" + keys + "]");
 
@@ -194,54 +195,33 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
                 map.put(key, "val" + key);
         }
 
-        Collection<GridCache<Integer, String>> emptyCaches = new ArrayList<>(caches);
+        Collection<IgniteCache<Integer, String>> emptyCaches = new ArrayList<>(caches);
 
-        for (GridCache<Integer, String> cache : caches) {
+        for (IgniteCache<Integer, String> cache : caches) {
             info("Reloading cache: " + caches.indexOf(cache));
 
             // Check data is reloaded only on the nodes on which reloadAll() has been called.
             if (!nearEnabled()) {
-                for (GridCache<Integer, String> eCache : emptyCaches)
+                for (IgniteCache<Integer, String> eCache : emptyCaches)
                     assertEquals("Non-null values found in cache [cache=" + caches.indexOf(eCache) +
-                        ", size=" + eCache.size() + ", size=" + eCache.size() +
-                        ", entrySetSize=" + eCache.entrySet().size() + "]",
+                        ", size=" + eCache.size() + ", size=" + eCache.size() + "]",
                         0, eCache.size());
             }
 
-            cache.reloadAll(map.keySet());
+            loadAll(cache, map.keySet(), true);
 
             for (Integer key : map.keySet()) {
-                CacheEntry entry = cache.entry(key);
+                CacheAffinity<Integer> affinity = affinity(cache);
 
-                if (entry.primary() || entry.backup() || nearEnabled())
-                    assertEquals(map.get(key), cache.peek(key));
+                if (affinity.isPrimary(localNode(cache), key)
+                    || affinity.isBackup(localNode(cache), key)
+                    || nearEnabled())
+                    assertEquals(map.get(key), cache.localPeek(key, CachePeekMode.ONHEAP));
                 else
-                    assertNull(cache.peek(key));
+                    assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
             }
 
             emptyCaches.remove(cache);
         }
-    }
-
-    /**
-     * Create list of keys for which the given cache is primary.
-     *
-     * @param cache Cache.
-     * @param cnt Keys count.
-     * @return Collection of keys for which given cache is primary.
-     */
-    private Iterable<Integer> primaryKeysForCache(CacheProjection<Integer,String> cache, int cnt) {
-        Collection<Integer> found = new ArrayList<>(cnt);
-
-        for (int i = 0; i < 10000; i++) {
-            if (cache.entry(i).primary()) {
-                found.add(i);
-
-                if (found.size() == cnt)
-                    return found;
-            }
-        }
-
-        throw new IllegalStateException("Unable to find " + cnt + " keys as primary for cache.");
     }
 }
