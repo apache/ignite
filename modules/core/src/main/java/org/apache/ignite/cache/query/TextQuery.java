@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * @see IgniteCache#query(Query)
  * @see IgniteCache#localQuery(Query)
  */
-public final class QueryText extends Query<QueryText> {
+public final class TextQuery extends Query<TextQuery> {
     /** */
     private String type;
 
@@ -39,7 +39,7 @@ public final class QueryText extends Query<QueryText> {
      *
      * @param txt Search string.
      */
-    public QueryText(String txt) {
+    public TextQuery(String txt) {
         setText(txt);
     }
 
@@ -49,7 +49,7 @@ public final class QueryText extends Query<QueryText> {
      * @param type Type.
      * @param txt Search string.
      */
-    public QueryText(Class<?> type, String txt) {
+    public TextQuery(Class<?> type, String txt) {
         this(txt);
 
         setType(type);
@@ -70,7 +70,7 @@ public final class QueryText extends Query<QueryText> {
      * @param type Type.
      * @return {@code this} For chaining.
      */
-    public QueryText setType(Class<?> type) {
+    public TextQuery setType(Class<?> type) {
         return setType(GridQueryProcessor.typeName(type));
     }
 
@@ -80,7 +80,7 @@ public final class QueryText extends Query<QueryText> {
      * @param type Type.
      * @return {@code this} For chaining.
      */
-    public QueryText setType(String type) {
+    public TextQuery setType(String type) {
         this.type = type;
 
         return this;
@@ -101,7 +101,7 @@ public final class QueryText extends Query<QueryText> {
      * @param txt Text search string.
      * @return {@code this} For chaining.
      */
-    public QueryText setText(String txt) {
+    public TextQuery setText(String txt) {
         A.notNull(txt, "txt");
 
         this.txt = txt;
@@ -111,6 +111,6 @@ public final class QueryText extends Query<QueryText> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(QueryText.class, this);
+        return S.toString(TextQuery.class, this);
     }
 }

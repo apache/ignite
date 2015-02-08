@@ -28,7 +28,7 @@ import org.apache.ignite.spi.indexing.*;
  * @see IgniteCache#query(Query)
  * @see IgniteCache#localQuery(Query)
  */
-public final class QuerySpi extends Query<QuerySpi> {
+public final class SpiQuery extends Query<SpiQuery> {
     /** Arguments. */
     @GridToStringInclude
     private Object[] args;
@@ -48,7 +48,7 @@ public final class QuerySpi extends Query<QuerySpi> {
      * @param args SQL arguments.
      * @return {@code this} For chaining.
      */
-    public QuerySpi setArgs(Object... args) {
+    public SpiQuery setArgs(Object... args) {
         this.args = args;
 
         return this;
@@ -56,6 +56,6 @@ public final class QuerySpi extends Query<QuerySpi> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(QuerySpi.class, this);
+        return S.toString(SpiQuery.class, this);
     }
 }

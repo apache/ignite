@@ -260,8 +260,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         final CacheQuery<Map.Entry<K,V>> qry;
         final CacheQueryFuture<Map.Entry<K,V>> fut;
 
-        if (filter instanceof QueryScan) {
-            IgniteBiPredicate<K,V> p = ((QueryScan)filter).getFilter();
+        if (filter instanceof ScanQuery) {
+            IgniteBiPredicate<K,V> p = ((ScanQuery)filter).getFilter();
 
             qry = delegate.queries().createScanQuery(p != null ? p : ACCEPT_ALL);
 
@@ -270,8 +270,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             fut = qry.execute();
         }
-        else if (filter instanceof QueryText) {
-            QueryText p = (QueryText)filter;
+        else if (filter instanceof TextQuery) {
+            TextQuery p = (TextQuery)filter;
 
             qry = delegate.queries().createFullTextQuery(p.getType(), p.getText());
 
@@ -280,13 +280,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
             fut = qry.execute();
         }
-        else if (filter instanceof QuerySpi) {
+        else if (filter instanceof SpiQuery) {
             qry = ((GridCacheQueriesEx)delegate.queries()).createSpiQuery();
 
             if (grp != null)
                 qry.projection(grp);
 
-            fut = qry.execute(((QuerySpi)filter).getArgs());
+            fut = qry.execute(((SpiQuery)filter).getArgs());
         }
         else
             throw new IgniteException("Unsupported query predicate: " + filter);
@@ -323,8 +323,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            if (filter instanceof QuerySql) {
-                QuerySql p = (QuerySql)filter;
+            if (filter instanceof SqlQuery) {
+                SqlQuery p = (SqlQuery)filter;
 
                 return ctx.kernalContext().query().queryTwoStep(ctx.name(), p.getType(), p.getSql(), p.getArgs());
             }
@@ -369,8 +369,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            if (filter instanceof QuerySql) {
-                QuerySql p = (QuerySql)filter;
+            if (filter instanceof SqlQuery) {
+                SqlQuery p = (SqlQuery)filter;
 
                 return new QueryCursorImpl<>(ctx.kernalContext().query().<K,V>queryLocal(
                     ctx.name(), p.getType(), p.getSql(), p.getArgs()));

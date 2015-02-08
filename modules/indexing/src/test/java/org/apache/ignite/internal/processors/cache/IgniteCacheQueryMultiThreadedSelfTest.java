@@ -259,8 +259,8 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         final IgniteCache<Integer, Long> cl = g.jcache(null);
 
         assertEquals(0, g.cache(null).size());
-        assertEquals(0, c.query(new QuerySql(String.class, "1 = 1")).getAll().size());
-        assertEquals(0, cl.query(new QuerySql(Long.class, "1 = 1")).getAll().size());
+        assertEquals(0, c.query(new SqlQuery(String.class, "1 = 1")).getAll().size());
+        assertEquals(0, cl.query(new SqlQuery(Long.class, "1 = 1")).getAll().size());
 
         Random rnd = new Random();
 
@@ -300,7 +300,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                             int from = rnd.nextInt(valCnt);
 
                             QueryCursor<Cache.Entry<Integer, String>> qry = c.query(
-                                    new QuerySql(String.class, "_val between ? and ?").setArgs(
+                                    new SqlQuery(String.class, "_val between ? and ?").setArgs(
                                         String.valueOf(from), String.valueOf(from + 250)));
 
                             Collection<Cache.Entry<Integer, String>> res = qry.getAll();
@@ -340,8 +340,8 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         final IgniteCache<Integer, String> c1 = g.jcache(null);
 
         assertEquals(0, g.cache(null).size());
-        assertEquals(0, c1.query(new QuerySql(String.class, "1 = 1")).getAll().size());
-        assertEquals(0, c.query(new QuerySql(Long.class, "1 = 1")).getAll().size());
+        assertEquals(0, c1.query(new SqlQuery(String.class, "1 = 1")).getAll().size());
+        assertEquals(0, c.query(new SqlQuery(Long.class, "1 = 1")).getAll().size());
 
         Random rnd = new Random();
 
@@ -382,7 +382,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                         case 4:
                             int from = rnd.nextInt(valCnt);
 
-                            Collection<Cache.Entry<Integer, Long>> res = c.query(new QuerySql(Long.class,
+                            Collection<Cache.Entry<Integer, Long>> res = c.query(new SqlQuery(Long.class,
                                 "_val between ? and ?").setArgs(from, from + 250)).getAll();
 
                             for (Cache.Entry<Integer, Long> ignored : res) {
@@ -419,7 +419,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         final IgniteCache<Integer, Object> c = g.jcache(null);
 
         assertEquals(0, g.jcache(null).size());
-        assertEquals(0, c.query(new QuerySql(Object.class, "1 = 1")).getAll().size());
+        assertEquals(0, c.query(new SqlQuery(Object.class, "1 = 1")).getAll().size());
 
         Random rnd = new Random();
 
@@ -462,7 +462,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                             int from = rnd.nextInt(valCnt);
 
                             Collection<Cache.Entry<Integer, Object>> res = c.query(
-                                new QuerySql(Object.class, "_val between ? and ?").setArgs(from, from + 250))
+                                new SqlQuery(Object.class, "_val between ? and ?").setArgs(from, from + 250))
                                 .getAll();
 
                             for (Cache.Entry<Integer, Object> ignored : res) {
@@ -497,7 +497,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         final IgniteCache<Integer, TestValue> c = g.jcache(null);
 
         assertEquals(0, g.cache(null).size());
-        assertEquals(0, c.query(new QuerySql(TestValue.class, "1 = 1")).getAll().size());
+        assertEquals(0, c.query(new SqlQuery(TestValue.class, "1 = 1")).getAll().size());
 
         Random rnd = new Random();
 
@@ -539,7 +539,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                             int from = rnd.nextInt(valCnt);
 
                             Collection<Cache.Entry<Integer, TestValue>> res =
-                                c.query(new QuerySql(TestValue.class, "TestValue.val between ? and ?").setArgs(
+                                c.query(new SqlQuery(TestValue.class, "TestValue.val between ? and ?").setArgs(
                                     from, from + 250)).getAll();
 
                             for (Cache.Entry<Integer, TestValue> ignored : res) {
@@ -592,7 +592,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                         iter++;
 
                         Collection<Cache.Entry<Integer, Integer>> entries =
-                            c.query(new QuerySql(Integer.class, "_val >= 0")).getAll();
+                            c.query(new SqlQuery(Integer.class, "_val >= 0")).getAll();
 
                         assert entries != null;
 
@@ -654,7 +654,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                     iter++;
 
                     Collection<Cache.Entry<Integer, Integer>> entries =
-                        c.query(new QuerySql(Integer.class, "_val >= 0")).getAll();
+                        c.query(new SqlQuery(Integer.class, "_val >= 0")).getAll();
 
                     assert entries != null;
 
@@ -712,7 +712,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
 
                         // Scan query.
                         Collection<Cache.Entry<Integer, Integer>> entries =
-                            c.query(new QueryScan<Integer, Integer>()).getAll();
+                            c.query(new ScanQuery<Integer, Integer>()).getAll();
 
                         assert entries != null;
 

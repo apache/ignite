@@ -55,7 +55,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
 
         // Tests equals query.
         QueryCursor<Cache.Entry<Integer, String>> qry =
-            cache.localQuery(new QuerySql(String.class, "_val='value1'"));
+            cache.localQuery(new SqlQuery(String.class, "_val='value1'"));
 
         Iterator<Cache.Entry<Integer, String>> iter = qry.iterator();
 
@@ -68,7 +68,7 @@ public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfT
         assert "value1".equals(entry.getValue());
 
         // Tests like query.
-        qry = cache.localQuery(new QuerySql(String.class, "_val like 'value%'"));
+        qry = cache.localQuery(new SqlQuery(String.class, "_val like 'value%'"));
 
         iter = qry.iterator();
 

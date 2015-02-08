@@ -27,8 +27,12 @@ import java.io.*;
 
 /**
  * Base class for all Ignite cache queries.
- * Use {@link QuerySql} and {@link QueryText} for SQL and
+ * Use {@link SqlQuery} and {@link TextQuery} for SQL and
  * text queries accordingly.
+ * <p>
+ * Also contains convenience shortcuts for query object construction:
+ * {@link #sql(Class, String)}, {@link #sql(String)}, {@link #text(Class, String)},
+ * {@link #scan(IgniteBiPredicate)} and {@link #spi()}.
  *
  * @see IgniteCache#query(Query)
  * @see IgniteCache#localQuery(Query)
@@ -63,8 +67,8 @@ public abstract class Query<T extends Query> implements Serializable {
      * @param sql SQL Query string.
      * @return SQL Query instance.
      */
-    public static QuerySql sql(Class<?> type, String sql) {
-        return new QuerySql(type, sql);
+    public static SqlQuery sql(Class<?> type, String sql) {
+        return new SqlQuery(type, sql);
     }
 
     /**
@@ -74,8 +78,8 @@ public abstract class Query<T extends Query> implements Serializable {
      * @param txt Search string.
      * @return Fulltext query.
      */
-    public static QueryText text(Class<?> type, String txt) {
-        return new QueryText(txt).setType(type);
+    public static TextQuery text(Class<?> type, String txt) {
+        return new TextQuery(txt).setType(type);
     }
 
     /**
@@ -84,8 +88,8 @@ public abstract class Query<T extends Query> implements Serializable {
      * @param filter Filter.
      * @return SPI Query.
      */
-    public static <K, V> QueryScan<K, V> scan(final IgniteBiPredicate<K, V> filter) {
-        return new QueryScan<>(filter);
+    public static <K, V> ScanQuery<K, V> scan(final IgniteBiPredicate<K, V> filter) {
+        return new ScanQuery<>(filter);
     }
 
     /**
@@ -94,8 +98,8 @@ public abstract class Query<T extends Query> implements Serializable {
      * @return SPI Query.
      * @see IndexingSpi
      */
-    public static QuerySpi spi() {
-        return new QuerySpi();
+    public static SpiQuery spi() {
+        return new SpiQuery();
     }
 
     /**

@@ -199,10 +199,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @param qry Query.
      * @return Cursor.
-     * @see QueryScan
-     * @see QuerySql
-     * @see QueryText
-     * @see QuerySpi
+     * @see ScanQuery
+     * @see SqlQuery
+     * @see TextQuery
+     * @see SpiQuery
      */
     public QueryCursor<Entry<K, V>> query(Query qry);
 
@@ -219,10 +219,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @param qry Query.
      * @return Cursor.
-     * @see QueryScan
-     * @see QuerySql
-     * @see QueryText
-     * @see QuerySpi
+     * @see ScanQuery
+     * @see SqlQuery
+     * @see TextQuery
+     * @see SpiQuery
      */
     public QueryCursor<Entry<K, V>> localQuery(Query qry);
 

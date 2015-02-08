@@ -28,14 +28,14 @@ import org.jetbrains.annotations.*;
  * @see IgniteCache#query(Query)
  * @see IgniteCache#localQuery(Query)
  */
-public class QueryScan<K, V> extends Query<QueryScan<K, V>> {
+public class ScanQuery<K, V> extends Query<ScanQuery<K, V>> {
     /** */
     private IgniteBiPredicate<K,V> filter;
 
     /**
      * Create scan query returning all entries.
      */
-    public QueryScan() {
+    public ScanQuery() {
         this(null);
     }
 
@@ -44,7 +44,7 @@ public class QueryScan<K, V> extends Query<QueryScan<K, V>> {
      *
      * @param filter Filter. If {@code null} then all entries will be returned.
      */
-    public QueryScan(@Nullable IgniteBiPredicate<K,V> filter) {
+    public ScanQuery(@Nullable IgniteBiPredicate<K,V> filter) {
         setFilter(filter);
     }
 
@@ -68,6 +68,6 @@ public class QueryScan<K, V> extends Query<QueryScan<K, V>> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(QueryScan.class, this);
+        return S.toString(ScanQuery.class, this);
     }
 }

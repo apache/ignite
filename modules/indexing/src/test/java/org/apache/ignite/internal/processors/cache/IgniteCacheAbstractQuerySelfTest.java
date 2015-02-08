@@ -554,11 +554,11 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         // Try to execute on empty cache first.
         QueryCursor<Cache.Entry<Integer, ObjectValue>> qry =
-            cache.query(new QueryText(ObjectValue.class, "full"));
+            cache.query(new TextQuery(ObjectValue.class, "full"));
 
         assert qry.getAll().isEmpty();
 
-        qry = cache.query(new QueryText(ObjectValue.class, "full"));
+        qry = cache.query(new TextQuery(ObjectValue.class, "full"));
 
         assert qry.getAll().isEmpty();
 
@@ -575,7 +575,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         cache.put(key2, val2);
 
-        qry = cache.query(new QueryText(ObjectValue.class, "full"));
+        qry = cache.query(new TextQuery(ObjectValue.class, "full"));
 
         Collection<Cache.Entry<Integer, ObjectValue>> res = qry.getAll();
 
@@ -583,7 +583,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         assert res.size() == 2;
 
-        qry = cache.query(new QueryText(ObjectValue.class, "full"));
+        qry = cache.query(new TextQuery(ObjectValue.class, "full"));
 
         res = qry.getAll();
 
@@ -638,7 +638,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         c1.put("key", "value");
 
         // Scan query.
-        QueryCursor<Cache.Entry<String, String>> qry = c1.query(new QueryScan<String, String>());
+        QueryCursor<Cache.Entry<String, String>> qry = c1.query(new ScanQuery<String, String>());
 
         Iterator<Cache.Entry<String, String>> iter = qry.iterator();
 
@@ -667,14 +667,14 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         c.put(1, new ObjectValue("ObjectValue str", 1));
         c.put("key", new ObjectValueOther("ObjectValueOther str"));
 
-        Collection<Cache.Entry<Object, Object>> res = c.query(new QueryText(ObjectValue.class, "str")).getAll();
+        Collection<Cache.Entry<Object, Object>> res = c.query(new TextQuery(ObjectValue.class, "str")).getAll();
 
         assert res != null;
         int expCnt = 1;
         assert res.size() == expCnt;
         assert F.first(res).getValue().getClass() == ObjectValue.class;
 
-        res = c.query(new QueryText(ObjectValueOther.class, "str")).getAll();
+        res = c.query(new TextQuery(ObjectValueOther.class, "str")).getAll();
 
         assert res != null;
         assert res.size() == expCnt;
@@ -742,7 +742,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         for (int i = 0; i < 50; i++)
             cache.put(i, i);
 
-        QuerySql qry = sql(Integer.class, "_key >= 0");
+        SqlQuery qry = sql(Integer.class, "_key >= 0");
 
         qry.setPageSize(10);
 
@@ -872,7 +872,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         cache.put(new BadHashKeyObject("test_key1"), 7);
 
         assertEquals(1005001, cache.query(sql(Integer.class, "_key = ?").setArgs(
-                new BadHashKeyObject("test_key0"))).iterator().next().getValue().intValue());
+            new BadHashKeyObject("test_key0"))).iterator().next().getValue().intValue());
     }
 
     /**
@@ -886,7 +886,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         cache.put(new ObjectValue("test_key1", 12), 17);
 
         assertEquals(11005,
-                cache.query(new QueryText(Integer.class, "test_key0"))
+                cache.query(new TextQuery(Integer.class, "test_key0"))
                         .iterator().next().getValue().intValue());
     }
 
@@ -1285,7 +1285,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         cache.put(3, new Person("Mike Green", 1000));
 
 
-        QueryCursor<Cache.Entry<Integer, Person>> q = cache.query(new QueryText(Person.class, "White"));
+        QueryCursor<Cache.Entry<Integer, Person>> q = cache.query(new TextQuery(Person.class, "White"));
 
         if (customSubjId)
             ((GridCacheQueryAdapter)q).subjectId(subjId);

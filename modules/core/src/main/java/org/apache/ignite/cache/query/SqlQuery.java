@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * @see IgniteCache#query(Query)
  * @see IgniteCache#localQuery(Query)
  */
-public final class QuerySql extends Query<QuerySql> {
+public final class SqlQuery extends Query<SqlQuery> {
     /** */
     private String type;
 
@@ -44,7 +44,7 @@ public final class QuerySql extends Query<QuerySql> {
      *
      * @param sql SQL Query.
      */
-    public QuerySql(String sql) {
+    public SqlQuery(String sql) {
         setSql(sql);
     }
 
@@ -54,7 +54,7 @@ public final class QuerySql extends Query<QuerySql> {
      * @param type Type.
      * @param sql SQL Query.
      */
-    public QuerySql(Class<?> type, String sql) {
+    public SqlQuery(Class<?> type, String sql) {
         this(sql);
 
         setType(type);
@@ -75,7 +75,7 @@ public final class QuerySql extends Query<QuerySql> {
      * @param sql SQL clause.
      * @return {@code this} For chaining.
      */
-    public QuerySql setSql(String sql) {
+    public SqlQuery setSql(String sql) {
         A.notNull(sql, "sql");
 
         this.sql = sql;
@@ -98,7 +98,7 @@ public final class QuerySql extends Query<QuerySql> {
      * @param args SQL arguments.
      * @return {@code this} For chaining.
      */
-    public QuerySql setArgs(Object... args) {
+    public SqlQuery setArgs(Object... args) {
         this.args = args;
 
         return this;
@@ -119,7 +119,7 @@ public final class QuerySql extends Query<QuerySql> {
      * @param type Type.
      * @return {@code this} For chaining.
      */
-    public QuerySql setType(String type) {
+    public SqlQuery setType(String type) {
         this.type = type;
 
         return this;
@@ -128,12 +128,12 @@ public final class QuerySql extends Query<QuerySql> {
     /**
      * @param type Type.
      */
-    public QuerySql setType(Class<?> type) {
+    public SqlQuery setType(Class<?> type) {
         return setType(GridQueryProcessor.typeName(type));
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(QuerySql.class, this);
+        return S.toString(SqlQuery.class, this);
     }
 }
