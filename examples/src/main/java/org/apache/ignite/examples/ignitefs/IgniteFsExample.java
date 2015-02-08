@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.fs;
+package org.apache.ignite.examples.ignitefs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.ignitefs.*;
@@ -46,7 +46,7 @@ public final class IgniteFsExample {
         Ignite ignite = Ignition.start("examples/config/filesystem/example-ignitefs.xml");
 
         System.out.println();
-        System.out.println(">>> Ignitefs example started.");
+        System.out.println(">>> IgniteFs example started.");
 
         try {
             // Get an instance of Ignite File System.
