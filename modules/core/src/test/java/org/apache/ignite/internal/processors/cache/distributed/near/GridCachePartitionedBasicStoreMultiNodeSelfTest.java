@@ -310,6 +310,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
      */
     public void testMultipleOperations() throws Exception {
         IgniteCache<Integer, String> cache = jcache(0);
+        //GridCache<Integer, String> cache = cache(0);
 
         try (IgniteTx tx = grid(0).transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
             cache.put(1, "val");
@@ -323,7 +324,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
             tx.commit();
         }
 
-        checkStoreUsage(4, 0, 1, 1);
+        checkStoreUsage(1, 0, 1, 1);
     }
 
     /**
