@@ -18,9 +18,8 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.processors.cache.query.*;
 
 import javax.cache.processor.*;
 import java.util.*;
@@ -113,18 +112,13 @@ public class CachePopularNumbersExample {
      */
     private static TimerTask scheduleQuery(final Ignite ignite, Timer timer, final int cnt) {
         TimerTask task = new TimerTask() {
-            private CacheQuery<List<?>> qry;
-
             @Override public void run() {
                 // Get reference to cache.
-                GridCache<Integer, Long> cache = ignite.cache(CACHE_NAME);
-
-                if (qry == null)
-                    qry = cache.queries().
-                        createSqlFieldsQuery("select _key, _val from Long order by _val desc limit " + cnt);
+                IgniteCache<Integer, Long> cache = ignite.jcache(CACHE_NAME);
 
                 try {
-                    List<List<?>> results = new ArrayList<>(qry.execute().get());
+                    List<List<?>> results = new ArrayList<>(cache.queryFields(
+                        new QuerySqlPredicate("select _key, _val from Long order by _val desc limit " + cnt)).getAll());
 
                     Collections.sort(results, new Comparator<List<?>>() {
                         @Override public int compare(List<?> r1, List<?> r2) {
@@ -143,7 +137,7 @@ public class CachePopularNumbersExample {
 
                     System.out.println("----------------");
                 }
-                catch (IgniteCheckedException e) {
+                catch (Exception e) {
                     e.printStackTrace();
                 }
             }
