@@ -121,9 +121,9 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
 
         int idx = RAND.nextInt(GRID_COUNT);
 
-        GridCache<Integer, String> cache = cache(idx);
+        IgniteCache<Integer, String> cache = jcache(idx);
 
-        IgniteTx tx = cache.txStart(concurrency, isolation, TIMEOUT, 0);
+        IgniteTx tx = ignite(idx).transactions().txStart(concurrency, isolation, TIMEOUT, 0);
 
         try {
             info("Storing value in cache [key=1, val=1]");
@@ -146,7 +146,7 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
 
             assert false : "Timeout never happened for transaction: " + tx;
         }
-        catch (IgniteTxTimeoutCheckedException e) {
+        catch (IgniteTxTimeoutException e) {
             info("Received expected timeout exception [msg=" + e.getMessage() + ", tx=" + tx + ']');
         }
         finally {

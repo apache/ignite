@@ -107,11 +107,11 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         lsnrs.clear();
 
         for (int i = 1; i <= 3; i++) {
-            cache(i).clear();
+            jcache(i).clear();
 
             assertTrue(
                 "Cache isn't empty [i=" + i + ", entries=" + ((IgniteKernal)grid(i)).internalCache().entries() + "]",
-                cache(i).isEmpty());
+                jcache(i).localSize() == 0);
         }
     }
 

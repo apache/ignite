@@ -319,9 +319,4 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             assert !cache.isLocalLocked(key, false);
         }
     }
-
-    /** {@inheritDoc} */
-    @Override public void testPrimaryData() throws Exception {
-        // Not needed for near-only cache.
-    }
 }
