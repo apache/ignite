@@ -97,30 +97,30 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (!commState.putGridUuid("futId", futId))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putCacheVersion("txId", txId))
+                if (!writer.writeMessage("txId", txId != null ? txId.clone() : null))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -130,27 +130,27 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                futId = commState.getGridUuid("futId");
+                futId = reader.readIgniteUuid("futId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                txId = commState.getCacheVersion("txId");
+                txId = reader.readMessage("txId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 

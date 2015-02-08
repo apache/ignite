@@ -648,7 +648,7 @@ public abstract class GridCacheMessage<K, V> extends MessageAdapter {
         GridCacheMessage _clone = (GridCacheMessage)_msg;
 
         _clone.msgId = msgId;
-        _clone.depInfo = depInfo != null ? (GridDeploymentInfoBean)depInfo.clone() : null;
+        _clone.depInfo = depInfo;
         _clone.err = err;
         _clone.skipPrepare = skipPrepare;
         _clone.cacheId = cacheId;
@@ -657,33 +657,33 @@ public abstract class GridCacheMessage<K, V> extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putInt("cacheId", cacheId))
+                if (!writer.writeInt("cacheId", cacheId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putMessage("depInfo", depInfo))
+                if (!writer.writeMessage("depInfo", depInfo != null ? depInfo.clone() : null))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putLong("msgId", msgId))
+                if (!writer.writeLong("msgId", msgId))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -693,32 +693,32 @@ public abstract class GridCacheMessage<K, V> extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                cacheId = commState.getInt("cacheId");
+                cacheId = reader.readInt("cacheId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                depInfo = (GridDeploymentInfoBean)commState.getMessage("depInfo");
+                depInfo = reader.readMessage("depInfo");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                msgId = commState.getLong("msgId");
+                msgId = reader.readLong("msgId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 

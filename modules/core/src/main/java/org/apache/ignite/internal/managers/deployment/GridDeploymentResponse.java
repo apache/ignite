@@ -127,33 +127,33 @@ public class GridDeploymentResponse extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putByteArrayList("byteSrc", byteSrc))
+                if (!writer.writeMessage("byteSrc", byteSrc != null ? byteSrc.clone() : null))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putString("errMsg", errMsg))
+                if (!writer.writeString("errMsg", errMsg))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putBoolean("success", success))
+                if (!writer.writeBoolean("success", success))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -163,32 +163,32 @@ public class GridDeploymentResponse extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                byteSrc = commState.getByteArrayList("byteSrc");
+                byteSrc = reader.readMessage("byteSrc");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                errMsg = commState.getString("errMsg");
+                errMsg = reader.readString("errMsg");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                success = commState.getBoolean("success");
+                success = reader.readBoolean("success");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 

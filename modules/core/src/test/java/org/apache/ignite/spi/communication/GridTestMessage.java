@@ -116,39 +116,39 @@ public class GridTestMessage extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putUuid(null, srcNodeId))
+                if (!writer.writeUuid(null, srcNodeId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putLong(null, msgId))
+                if (!writer.writeLong(null, msgId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putLong(null, resId))
+                if (!writer.writeLong(null, resId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                if (!commState.putByteArray(null, payload))
+                if (!writer.writeByteArray(null, payload))
                     return false;
 
-                commState.idx++;
+                state++;
         }
 
         return true;
@@ -157,40 +157,40 @@ public class GridTestMessage extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                srcNodeId = commState.getUuid(null);
+                srcNodeId = reader.readUuid(null);
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (buf.remaining() < 8)
+                msgId = reader.readLong(null);
+
+                if (!reader.isLastRead())
                     return false;
 
-                msgId = commState.getLong(null);
-
-                commState.idx++;
+                state++;
 
             case 2:
-                if (buf.remaining() < 8)
+                resId = reader.readLong(null);
+
+                if (!reader.isLastRead())
                     return false;
 
-                resId = commState.getLong(null);
-
-                commState.idx++;
+                state++;
 
             case 3:
-                payload = commState.getByteArray(null);
+                payload = reader.readByteArray(null);
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
         }
 
         return true;

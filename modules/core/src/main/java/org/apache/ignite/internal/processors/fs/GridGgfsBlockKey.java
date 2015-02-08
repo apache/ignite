@@ -181,39 +181,39 @@ public final class GridGgfsBlockKey extends MessageAdapter
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putGridUuid("affKey", affKey))
+                if (!writer.writeIgniteUuid("affKey", affKey))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putLong("blockId", blockId))
+                if (!writer.writeLong("blockId", blockId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putBoolean("evictExclude", evictExclude))
+                if (!writer.writeBoolean("evictExclude", evictExclude))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                if (!commState.putGridUuid("fileId", fileId))
+                if (!writer.writeIgniteUuid("fileId", fileId))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -223,40 +223,40 @@ public final class GridGgfsBlockKey extends MessageAdapter
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                affKey = commState.getGridUuid("affKey");
+                affKey = reader.readIgniteUuid("affKey");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                blockId = commState.getLong("blockId");
+                blockId = reader.readLong("blockId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                evictExclude = commState.getBoolean("evictExclude");
+                evictExclude = reader.readBoolean("evictExclude");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                fileId = commState.getGridUuid("fileId");
+                fileId = reader.readIgniteUuid("fileId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 

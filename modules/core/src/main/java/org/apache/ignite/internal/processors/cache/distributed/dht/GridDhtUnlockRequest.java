@@ -126,45 +126,24 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 9:
-                if (nearKeyBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(null, nearKeyBytes.size()))
-                            return false;
+                if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, byte[].class))
+                    return false;
 
-                        commState.it = nearKeyBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray(null, (byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(null, -1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -174,41 +153,19 @@ public class GridDhtUnlockRequest<K, V> extends GridDistributedUnlockRequest<K, 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 9:
-                if (commState.readSize == -1) {
-                    int _val = commState.getInt(null);
+                nearKeyBytes = reader.readCollection("nearKeyBytes", byte[].class);
 
-                    if (!commState.lastRead())
-                        return false;
-                    commState.readSize = _val;
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (nearKeyBytes == null)
-                        nearKeyBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray(null);
-
-                        if (!commState.lastRead())
-                            return false;
-
-                        nearKeyBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
         }
 

@@ -184,54 +184,54 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 21:
-                if (!commState.putBoolean("explicitLock", explicitLock))
+                if (!writer.writeBoolean("explicitLock", explicitLock))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 22:
-                if (!commState.putGridUuid("miniId", miniId))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 23:
-                if (!commState.putBoolean("storeEnabled", storeEnabled))
+                if (!writer.writeBoolean("storeEnabled", storeEnabled))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 24:
-                if (!commState.putLong("topVer", topVer))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 25:
-                if (!commState.putUuid("subjId", subjId))
+                if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 26:
-                if (!commState.putInt("taskNameHash", taskNameHash))
+                if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -241,59 +241,59 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 21:
-                explicitLock = commState.getBoolean("explicitLock");
+                explicitLock = reader.readBoolean("explicitLock");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 22:
-                miniId = commState.getGridUuid("miniId");
+                miniId = reader.readIgniteUuid("miniId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 23:
-                storeEnabled = commState.getBoolean("storeEnabled");
+                storeEnabled = reader.readBoolean("storeEnabled");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 24:
-                topVer = commState.getLong("topVer");
+                subjId = reader.readUuid("subjId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 25:
-                subjId = commState.getUuid("subjId");
+                taskNameHash = reader.readInt("taskNameHash");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 26:
-                taskNameHash = commState.getInt("taskNameHash");
+                topVer = reader.readLong("topVer");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 

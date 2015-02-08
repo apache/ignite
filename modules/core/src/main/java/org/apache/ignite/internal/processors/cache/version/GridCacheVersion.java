@@ -254,12 +254,85 @@ public class GridCacheVersion extends MessageAdapter implements Comparable<GridC
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf) {
-        return false; // TODO: implement.
+        writer.setBuffer(buf);
+
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
+                return false;
+
+            typeWritten = true;
+        }
+
+        switch (state) {
+            case 0:
+                if (!writer.writeLong("globalTime", globalTime))
+                    return false;
+
+                state++;
+
+            case 1:
+                if (!writer.writeInt("nodeOrderDrId", nodeOrderDrId))
+                    return false;
+
+                state++;
+
+            case 2:
+                if (!writer.writeLong("order", order))
+                    return false;
+
+                state++;
+
+            case 3:
+                if (!writer.writeInt("topVer", topVer))
+                    return false;
+
+                state++;
+
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
-        return false; // TODO: implement.
+        reader.setBuffer(buf);
+
+        switch (state) {
+            case 0:
+                globalTime = reader.readLong("globalTime");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 1:
+                nodeOrderDrId = reader.readInt("nodeOrderDrId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 2:
+                order = reader.readLong("order");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 3:
+                topVer = reader.readInt("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -269,12 +342,21 @@ public class GridCacheVersion extends MessageAdapter implements Comparable<GridC
 
     /** {@inheritDoc} */
     @Override public MessageAdapter clone() {
-        return null; // TODO: implement.
+        GridCacheVersion _clone = new GridCacheVersion();
+
+        clone0(_clone);
+
+        return _clone;
     }
 
     /** {@inheritDoc} */
     @Override protected void clone0(MessageAdapter _msg) {
-        // TODO: implement.
+        GridCacheVersion _clone = (GridCacheVersion)_msg;
+
+        _clone.topVer = topVer;
+        _clone.nodeOrderDrId = nodeOrderDrId;
+        _clone.globalTime = globalTime;
+        _clone.order = order;
     }
 
     /** {@inheritDoc} */

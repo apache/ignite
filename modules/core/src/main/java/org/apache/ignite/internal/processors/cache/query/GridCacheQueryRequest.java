@@ -485,132 +485,132 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (!commState.putBoolean("all", all))
+                if (!writer.writeBoolean("all", all))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putByteArray("argsBytes", argsBytes))
+                if (!writer.writeByteArray("argsBytes", argsBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                if (!commState.putString("cacheName", cacheName))
+                if (!writer.writeString("cacheName", cacheName))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 6:
-                if (!commState.putBoolean("cancel", cancel))
+                if (!writer.writeBoolean("cancel", cancel))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 7:
-                if (!commState.putString("clause", clause))
+                if (!writer.writeString("clause", clause))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 8:
-                if (!commState.putString("clsName", clsName))
+                if (!writer.writeString("clsName", clsName))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 9:
-                if (!commState.putBoolean("fields", fields))
+                if (!writer.writeBoolean("fields", fields))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 10:
-                if (!commState.putLong("id", id))
+                if (!writer.writeLong("id", id))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 11:
-                if (!commState.putBoolean("incBackups", incBackups))
+                if (!writer.writeBoolean("incBackups", incBackups))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 12:
-                if (!commState.putBoolean("incMeta", incMeta))
+                if (!writer.writeBoolean("incMeta", incMeta))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 13:
-                if (!commState.putByteArray("keyValFilterBytes", keyValFilterBytes))
+                if (!writer.writeBoolean("keepPortable", keepPortable))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 14:
-                if (!commState.putInt("pageSize", pageSize))
+                if (!writer.writeByteArray("keyValFilterBytes", keyValFilterBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 15:
-                if (!commState.putByteArray("prjFilterBytes", prjFilterBytes))
+                if (!writer.writeInt("pageSize", pageSize))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 16:
-                if (!commState.putByteArray("rdcBytes", rdcBytes))
+                if (!writer.writeByteArray("prjFilterBytes", prjFilterBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 17:
-                if (!commState.putByteArray("transBytes", transBytes))
+                if (!writer.writeByteArray("rdcBytes", rdcBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 18:
-                if (!commState.putEnum("type", type))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 19:
-                if (!commState.putBoolean("keepPortable", keepPortable))
+                if (!writer.writeInt("taskHash", taskHash))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 20:
-                if (!commState.putUuid("subjId", subjId))
+                if (!writer.writeByteArray("transBytes", transBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 21:
-                if (!commState.putInt("taskHash", taskHash))
+                if (!writer.writeEnum("type", type))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -620,165 +620,163 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                all = commState.getBoolean("all");
+                all = reader.readBoolean("all");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                argsBytes = commState.getByteArray("argsBytes");
+                argsBytes = reader.readByteArray("argsBytes");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                cacheName = commState.getString("cacheName");
+                cacheName = reader.readString("cacheName");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 6:
-                cancel = commState.getBoolean("cancel");
+                cancel = reader.readBoolean("cancel");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 7:
-                clause = commState.getString("clause");
+                clause = reader.readString("clause");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 8:
-                clsName = commState.getString("clsName");
+                clsName = reader.readString("clsName");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 9:
-                fields = commState.getBoolean("fields");
+                fields = reader.readBoolean("fields");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 10:
-                id = commState.getLong("id");
+                id = reader.readLong("id");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 11:
-                incBackups = commState.getBoolean("incBackups");
+                incBackups = reader.readBoolean("incBackups");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 12:
-                incMeta = commState.getBoolean("incMeta");
+                incMeta = reader.readBoolean("incMeta");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 13:
-                keyValFilterBytes = commState.getByteArray("keyValFilterBytes");
+                keepPortable = reader.readBoolean("keepPortable");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 14:
-                pageSize = commState.getInt("pageSize");
+                keyValFilterBytes = reader.readByteArray("keyValFilterBytes");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 15:
-                prjFilterBytes = commState.getByteArray("prjFilterBytes");
+                pageSize = reader.readInt("pageSize");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 16:
-                rdcBytes = commState.getByteArray("rdcBytes");
+                prjFilterBytes = reader.readByteArray("prjFilterBytes");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 17:
-                transBytes = commState.getByteArray("transBytes");
+                rdcBytes = reader.readByteArray("rdcBytes");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 18:
-                byte type0 = commState.getByte("type");
+                subjId = reader.readUuid("subjId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                type = GridCacheQueryType.fromOrdinal(type0);
-
-                commState.idx++;
+                state++;
 
             case 19:
-                keepPortable = commState.getBoolean("keepPortable");
+                taskHash = reader.readInt("taskHash");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 20:
-                subjId = commState.getUuid("subjId");
+                transBytes = reader.readByteArray("transBytes");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 21:
-                taskHash = commState.getInt("taskHash");
+                type = reader.readEnum("type", GridCacheQueryType.class);
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 

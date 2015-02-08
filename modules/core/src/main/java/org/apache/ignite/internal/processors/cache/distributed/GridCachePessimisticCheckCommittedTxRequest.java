@@ -154,54 +154,54 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 8:
-                if (!commState.putGridUuid("futId", futId))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 9:
-                if (!commState.putGridUuid("miniId", miniId))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 10:
-                if (!commState.putCacheVersion("nearXidVer", nearXidVer))
+                if (!writer.writeBoolean("nearOnlyCheck", nearOnlyCheck))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 11:
-                if (!commState.putUuid("originatingNodeId", originatingNodeId))
+                if (!writer.writeMessage("nearXidVer", nearXidVer != null ? nearXidVer.clone() : null))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 12:
-                if (!commState.putLong("originatingThreadId", originatingThreadId))
+                if (!writer.writeUuid("originatingNodeId", originatingNodeId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 13:
-                if (!commState.putBoolean("nearOnlyCheck", nearOnlyCheck))
+                if (!writer.writeLong("originatingThreadId", originatingThreadId))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -211,59 +211,59 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 8:
-                futId = commState.getGridUuid("futId");
+                futId = reader.readIgniteUuid("futId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 9:
-                miniId = commState.getGridUuid("miniId");
+                miniId = reader.readIgniteUuid("miniId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 10:
-                nearXidVer = commState.getCacheVersion("nearXidVer");
+                nearOnlyCheck = reader.readBoolean("nearOnlyCheck");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 11:
-                originatingNodeId = commState.getUuid("originatingNodeId");
+                nearXidVer = reader.readMessage("nearXidVer");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 12:
-                originatingThreadId = commState.getLong("originatingThreadId");
+                originatingNodeId = reader.readUuid("originatingNodeId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 13:
-                nearOnlyCheck = commState.getBoolean("nearOnlyCheck");
+                originatingThreadId = reader.readLong("originatingThreadId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 

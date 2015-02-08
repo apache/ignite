@@ -381,138 +381,96 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 8:
-                if (!commState.putCacheVersion("baseVer", baseVer))
+                if (!writer.writeMessage("baseVer", baseVer != null ? baseVer.clone() : null))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 9:
-                if (!commState.putBoolean("commit", commit))
+                if (!writer.writeBoolean("commit", commit))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 10:
-                if (!commState.putCacheVersion("commitVer", commitVer))
+                if (!writer.writeMessage("commitVer", commitVer != null ? commitVer.clone() : null))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 11:
-                if (!commState.putGridUuid("futId", futId))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 12:
-                if (!commState.putByteArray("grpLockKeyBytes", grpLockKeyBytes))
+                if (!writer.writeByteArray("grpLockKeyBytes", grpLockKeyBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 13:
-                if (!commState.putBoolean("invalidate", invalidate))
+                if (!writer.writeBoolean("invalidate", invalidate))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 14:
-                if (recoveryWritesBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(null, recoveryWritesBytes.size()))
-                            return false;
+                if (!writer.writeCollection("recoveryWritesBytes", recoveryWritesBytes, byte[].class))
+                    return false;
 
-                        commState.it = recoveryWritesBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray(null, (byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(null, -1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 15:
-                if (!commState.putBoolean("syncCommit", syncCommit))
+                if (!writer.writeBoolean("syncCommit", syncCommit))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 16:
-                if (!commState.putBoolean("syncRollback", syncRollback))
+                if (!writer.writeBoolean("syncRollback", syncRollback))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 17:
-                if (!commState.putBoolean("sys", sys))
+                if (!writer.writeBoolean("sys", sys))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 18:
-                if (!commState.putLong("threadId", threadId))
+                if (!writer.writeLong("threadId", threadId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 19:
-                if (!commState.putInt("txSize", txSize))
+                if (!writer.writeInt("txSize", txSize))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 20:
-                if (writeEntriesBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(null, writeEntriesBytes.size()))
-                            return false;
+                if (!writer.writeCollection("writeEntriesBytes", writeEntriesBytes, byte[].class))
+                    return false;
 
-                        commState.it = writeEntriesBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray(null, (byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(null, -1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -522,159 +480,115 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 8:
-                baseVer = commState.getCacheVersion("baseVer");
+                baseVer = reader.readMessage("baseVer");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 9:
-                commit = commState.getBoolean("commit");
+                commit = reader.readBoolean("commit");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 10:
-                commitVer = commState.getCacheVersion("commitVer");
+                commitVer = reader.readMessage("commitVer");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 11:
-                futId = commState.getGridUuid("futId");
+                futId = reader.readIgniteUuid("futId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 12:
-                grpLockKeyBytes = commState.getByteArray("grpLockKeyBytes");
+                grpLockKeyBytes = reader.readByteArray("grpLockKeyBytes");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 13:
-                invalidate = commState.getBoolean("invalidate");
+                invalidate = reader.readBoolean("invalidate");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 14:
-                if (commState.readSize == -1) {
-                    int _val = commState.getInt(null);
+                recoveryWritesBytes = reader.readCollection("recoveryWritesBytes", byte[].class);
 
-                    if (!commState.lastRead())
-                        return false;
-                    commState.readSize = _val;
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (recoveryWritesBytes == null)
-                        recoveryWritesBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray(null);
-
-                        if (!commState.lastRead())
-                            return false;
-
-                        recoveryWritesBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 15:
-                syncCommit = commState.getBoolean("syncCommit");
+                syncCommit = reader.readBoolean("syncCommit");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 16:
-                syncRollback = commState.getBoolean("syncRollback");
+                syncRollback = reader.readBoolean("syncRollback");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 17:
-                sys = commState.getBoolean("sys");
+                sys = reader.readBoolean("sys");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 18:
-                threadId = commState.getLong("threadId");
+                threadId = reader.readLong("threadId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 19:
-                txSize = commState.getInt("txSize");
+                txSize = reader.readInt("txSize");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 20:
-                if (commState.readSize == -1) {
-                    int _val = commState.getInt(null);
+                writeEntriesBytes = reader.readCollection("writeEntriesBytes", byte[].class);
 
-                    if (!commState.lastRead())
-                        return false;
-                    commState.readSize = _val;
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (writeEntriesBytes == null)
-                        writeEntriesBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray(null);
-
-                        if (!commState.lastRead())
-                            return false;
-
-                        writeEntriesBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
         }
 

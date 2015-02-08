@@ -969,7 +969,7 @@ public class DirectByteBufferStream {
     }
 
     @SuppressWarnings("unchecked")
-    public <K, V> Map<K, V> readMap(Class<K> keyCls, Class<V> valCls) {
+    public <M extends Map<K, V>, K, V> M readMap(Class<K> keyCls, Class<V> valCls) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1021,7 +1021,7 @@ public class DirectByteBufferStream {
 
         map = null;
 
-        return map0;
+        return (M)map0;
     }
 
     /**

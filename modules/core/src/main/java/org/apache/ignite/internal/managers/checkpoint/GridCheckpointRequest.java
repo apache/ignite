@@ -105,33 +105,33 @@ public class GridCheckpointRequest extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putString("cpSpi", cpSpi))
+                if (!writer.writeString("cpSpi", cpSpi))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putString("key", key))
+                if (!writer.writeString("key", key))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putGridUuid("sesId", sesId))
+                if (!writer.writeIgniteUuid("sesId", sesId))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -141,32 +141,32 @@ public class GridCheckpointRequest extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                cpSpi = commState.getString("cpSpi");
+                cpSpi = reader.readString("cpSpi");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                key = commState.getString("key");
+                key = reader.readString("key");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                sesId = commState.getGridUuid("sesId");
+                sesId = reader.readIgniteUuid("sesId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 

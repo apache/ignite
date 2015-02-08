@@ -154,39 +154,39 @@ public class GridContinuousMessage extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putByteArray("dataBytes", dataBytes))
+                if (!writer.writeByteArray("dataBytes", dataBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putGridUuid("futId", futId))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putUuid("routineId", routineId))
+                if (!writer.writeUuid("routineId", routineId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                if (!commState.putEnum("type", type))
+                if (!writer.writeEnum("type", type))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -196,42 +196,40 @@ public class GridContinuousMessage extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                dataBytes = commState.getByteArray("dataBytes");
+                dataBytes = reader.readByteArray("dataBytes");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                futId = commState.getGridUuid("futId");
+                futId = reader.readIgniteUuid("futId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                routineId = commState.getUuid("routineId");
+                routineId = reader.readUuid("routineId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                byte type0 = commState.getByte("type");
+                type = reader.readEnum("type", GridContinuousMessageType.class);
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                type = GridContinuousMessageType.fromOrdinal(type0);
-
-                commState.idx++;
+                state++;
 
         }
 

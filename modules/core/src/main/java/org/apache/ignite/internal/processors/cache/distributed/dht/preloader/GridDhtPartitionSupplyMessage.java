@@ -302,96 +302,54 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (!commState.putBoolean("ack", ack))
+                if (!writer.writeBoolean("ack", ack))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putByteArray("infoBytes", infoBytes))
+                if (!writer.writeByteArray("infoBytes", infoBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                if (last != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(null, last.size()))
-                            return false;
+                if (!writer.writeCollection("last", last, int.class))
+                    return false;
 
-                        commState.it = last.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putInt(null, (int)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(null, -1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 6:
-                if (missed != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(null, missed.size()))
-                            return false;
+                if (!writer.writeCollection("missed", missed, int.class))
+                    return false;
 
-                        commState.it = missed.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putInt(null, (int)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(null, -1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 7:
-                if (!commState.putLong("updateSeq", updateSeq))
+                if (!writer.writeLong("updateSeq", updateSeq))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 8:
-                if (!commState.putInt("workerId", workerId))
+                if (!writer.writeInt("workerId", workerId))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -401,103 +359,59 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                ack = commState.getBoolean("ack");
+                ack = reader.readBoolean("ack");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                infoBytes = commState.getByteArray("infoBytes");
+                infoBytes = reader.readByteArray("infoBytes");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                if (commState.readSize == -1) {
-                    int _val = commState.getInt(null);
+                last = reader.readCollection("last", int.class);
 
-                    if (!commState.lastRead())
-                        return false;
-                    commState.readSize = _val;
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (last == null)
-                        last = new HashSet<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        int _val = commState.getInt(null);
-
-                        if (!commState.lastRead())
-                            return false;
-
-                        last.add((Integer)_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 6:
-                if (commState.readSize == -1) {
-                    int _val = commState.getInt(null);
+                missed = reader.readCollection("missed", int.class);
 
-                    if (!commState.lastRead())
-                        return false;
-                    commState.readSize = _val;
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (missed == null)
-                        missed = new HashSet<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        int _val = commState.getInt(null);
-
-                        if (!commState.lastRead())
-                            return false;
-
-                        missed.add((Integer)_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 7:
-                updateSeq = commState.getLong("updateSeq");
+                updateSeq = reader.readLong("updateSeq");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 8:
-                workerId = commState.getInt("workerId");
+                workerId = reader.readInt("workerId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 

@@ -168,36 +168,36 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 5:
-                if (!commState.putByteArray("affAssignmentBytes", affAssignmentBytes))
+                if (!writer.writeByteArray("affAssignmentBytes", affAssignmentBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 6:
-                if (!commState.putByteArray("partsBytes", partsBytes))
+                if (!writer.writeByteArray("partsBytes", partsBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 7:
-                if (!commState.putLong("topVer", topVer))
+                if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -207,35 +207,35 @@ public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstrac
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 5:
-                affAssignmentBytes = commState.getByteArray("affAssignmentBytes");
+                affAssignmentBytes = reader.readByteArray("affAssignmentBytes");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 6:
-                partsBytes = commState.getByteArray("partsBytes");
+                partsBytes = reader.readByteArray("partsBytes");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 7:
-                topVer = commState.getLong("topVer");
+                topVer = reader.readLong("topVer");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 

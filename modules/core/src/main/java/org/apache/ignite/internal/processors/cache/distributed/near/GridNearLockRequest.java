@@ -364,132 +364,90 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 24:
-                if (!commState.putLong("accessTtl", accessTtl))
+                if (!writer.writeLong("accessTtl", accessTtl))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 25:
-                if (dhtVers != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(null, dhtVers.length))
-                            return false;
+                if (!writer.writeObjectArray("dhtVers", dhtVers, GridCacheVersion.class))
+                    return false;
 
-                        commState.it = arrayIterator(dhtVers);
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putCacheVersion(null, (GridCacheVersion)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(null, -1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 26:
-                if (filterBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(null, filterBytes.length))
-                            return false;
+                if (!writer.writeObjectArray("filterBytes", filterBytes, byte[].class))
+                    return false;
 
-                        commState.it = arrayIterator(filterBytes);
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray(null, (byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(null, -1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 27:
-                if (!commState.putBoolean("implicitSingleTx", implicitSingleTx))
+                if (!writer.writeBoolean("hasTransforms", hasTransforms))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 28:
-                if (!commState.putBoolean("implicitTx", implicitTx))
+                if (!writer.writeBoolean("implicitSingleTx", implicitSingleTx))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 29:
-                if (!commState.putGridUuid("miniId", miniId))
+                if (!writer.writeBoolean("implicitTx", implicitTx))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 30:
-                if (!commState.putBoolean("onePhaseCommit", onePhaseCommit))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 31:
-                if (!commState.putBoolean("syncCommit", syncCommit))
+                if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 32:
-                if (!commState.putLong("topVer", topVer))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 33:
-                if (!commState.putUuid("subjId", subjId))
+                if (!writer.writeBoolean("syncCommit", syncCommit))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 34:
-                if (!commState.putInt("taskNameHash", taskNameHash))
+                if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 35:
-                if (!commState.putBoolean("hasTransforms", hasTransforms))
+                if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -499,151 +457,107 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 24:
-                accessTtl = commState.getLong("accessTtl");
+                accessTtl = reader.readLong("accessTtl");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 25:
-                if (commState.readSize == -1) {
-                    int _val = commState.getInt(null);
+                dhtVers = reader.readObjectArray("dhtVers", GridCacheVersion.class);
 
-                    if (!commState.lastRead())
-                        return false;
-                    commState.readSize = _val;
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (dhtVers == null)
-                        dhtVers = new GridCacheVersion[commState.readSize];
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridCacheVersion _val = commState.getCacheVersion(null);
-
-                        if (!commState.lastRead())
-                            return false;
-
-                        dhtVers[i] = (GridCacheVersion)_val;
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 26:
-                if (commState.readSize == -1) {
-                    int _val = commState.getInt(null);
+                filterBytes = reader.readObjectArray("filterBytes", byte[].class);
 
-                    if (!commState.lastRead())
-                        return false;
-                    commState.readSize = _val;
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (filterBytes == null)
-                        filterBytes = new byte[commState.readSize][];
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray(null);
-
-                        if (!commState.lastRead())
-                            return false;
-
-                        filterBytes[i] = (byte[])_val;
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 27:
-                implicitSingleTx = commState.getBoolean("implicitSingleTx");
+                hasTransforms = reader.readBoolean("hasTransforms");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 28:
-                implicitTx = commState.getBoolean("implicitTx");
+                implicitSingleTx = reader.readBoolean("implicitSingleTx");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 29:
-                miniId = commState.getGridUuid("miniId");
+                implicitTx = reader.readBoolean("implicitTx");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 30:
-                onePhaseCommit = commState.getBoolean("onePhaseCommit");
+                miniId = reader.readIgniteUuid("miniId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 31:
-                syncCommit = commState.getBoolean("syncCommit");
+                onePhaseCommit = reader.readBoolean("onePhaseCommit");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 32:
-                topVer = commState.getLong("topVer");
+                subjId = reader.readUuid("subjId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 33:
-                subjId = commState.getUuid("subjId");
+                syncCommit = reader.readBoolean("syncCommit");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 34:
-                taskNameHash = commState.getInt("taskNameHash");
+                taskNameHash = reader.readInt("taskNameHash");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 35:
-                hasTransforms = commState.getBoolean("hasTransforms");
+                topVer = reader.readLong("topVer");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 

@@ -161,77 +161,45 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putGridUuid("clsLdrId", clsLdrId))
+                if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putEnum("depMode", depMode))
+                if (!writer.writeEnum("depMode", depMode))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putBoolean("locDepOwner", locDepOwner))
+                if (!writer.writeBoolean("locDepOwner", locDepOwner))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                if (participants != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(null, participants.size()))
-                            return false;
-
-                        commState.it = participants.entrySet().iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        Map.Entry<UUID, IgniteUuid> e = (Map.Entry<UUID, IgniteUuid>)commState.cur;
-
-                        if (!commState.keyDone) {
-                            if (!commState.putUuid(null, e.getKey()))
-                                return false;
-
-                            commState.keyDone = true;
-                        }
-
-                        if (!commState.putGridUuid(null, e.getValue()))
-                            return false;
-
-                        commState.keyDone = false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(null, -1))
-                        return false;
-                }
-
-                commState.idx++;
-
-            case 4:
-                if (!commState.putString("userVer", userVer))
+                if (!writer.writeMap("participants", participants, UUID.class, IgniteUuid.class))
                     return false;
 
-                commState.idx++;
+                state++;
+
+            case 4:
+                if (!writer.writeString("userVer", userVer))
+                    return false;
+
+                state++;
 
         }
 
@@ -241,85 +209,48 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                clsLdrId = commState.getGridUuid("clsLdrId");
+                clsLdrId = reader.readIgniteUuid("clsLdrId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                byte depMode0 = commState.getByte("depMode");
+                depMode = reader.readEnum("depMode", DeploymentMode.class);
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                depMode = DeploymentMode.fromOrdinal(depMode0);
-
-                commState.idx++;
+                state++;
 
             case 2:
-                locDepOwner = commState.getBoolean("locDepOwner");
+                locDepOwner = reader.readBoolean("locDepOwner");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                if (commState.readSize == -1) {
-                    int _val = commState.getInt(null);
+                participants = reader.readMap("participants", UUID.class, IgniteUuid.class);
 
-                    if (!commState.lastRead())
-                        return false;
-                    commState.readSize = _val;
-                }
-
-                if (commState.readSize >= 0) {
-                    if (participants == null)
-                        participants = new HashMap<>(commState.readSize, 1.0f);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        if (!commState.keyDone) {
-                            UUID _val = commState.getUuid(null);
-
-                            if (!commState.lastRead())
-                                return false;
-
-                            commState.cur = _val;
-                            commState.keyDone = true;
-                        }
-
-                        IgniteUuid _val = commState.getGridUuid(null);
-
-                        if (!commState.lastRead())
-                            return false;
-
-                        participants.put((UUID)commState.cur, _val);
-
-                        commState.keyDone = false;
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-                commState.cur = null;
-
-                commState.idx++;
-
-            case 4:
-                userVer = commState.getString("userVer");
-
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
+
+            case 4:
+                userVer = reader.readString("userVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
 
         }
 

@@ -65,13 +65,13 @@ public class GridClientHandshakeRequestWrapper extends MessageAdapter {
     @Override public boolean writeTo(ByteBuffer buf) {
         stream.setBuffer(buf);
 
-        if (!commState.typeWritten) {
+        if (!typeWritten) {
             if (!buf.hasRemaining())
                 return false;
 
             stream.writeByte(directType());
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
         stream.writeByteArray(bytes, 0, bytes.length);

@@ -153,57 +153,36 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (!commState.putBoolean("err", err))
+                if (!writer.writeBoolean("err", err))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putLong("futId", futId))
+                if (!writer.writeLong("futId", futId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                if (rejectedKeyBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(null, rejectedKeyBytes.size()))
-                            return false;
+                if (!writer.writeCollection("rejectedKeyBytes", rejectedKeyBytes, byte[].class))
+                    return false;
 
-                        commState.it = rejectedKeyBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray(null, (byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(null, -1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -213,57 +192,35 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                err = commState.getBoolean("err");
+                err = reader.readBoolean("err");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                futId = commState.getLong("futId");
+                futId = reader.readLong("futId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                if (commState.readSize == -1) {
-                    int _val = commState.getInt(null);
+                rejectedKeyBytes = reader.readCollection("rejectedKeyBytes", byte[].class);
 
-                    if (!commState.lastRead())
-                        return false;
-                    commState.readSize = _val;
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (rejectedKeyBytes == null)
-                        rejectedKeyBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray(null);
-
-                        if (!commState.lastRead())
-                            return false;
-
-                        rejectedKeyBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
         }
 

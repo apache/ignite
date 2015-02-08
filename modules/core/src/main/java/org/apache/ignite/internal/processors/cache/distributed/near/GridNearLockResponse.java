@@ -206,111 +206,48 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 11:
-                if (dhtVers != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(null, dhtVers.length))
-                            return false;
+                if (!writer.writeObjectArray("dhtVers", dhtVers, GridCacheVersion.class))
+                    return false;
 
-                        commState.it = arrayIterator(dhtVers);
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putCacheVersion(null, (GridCacheVersion)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(null, -1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 12:
-                if (!commState.putBooleanArray("filterRes", filterRes))
+                if (!writer.writeBooleanArray("filterRes", filterRes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 13:
-                if (mappedVers != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(null, mappedVers.length))
-                            return false;
-
-                        commState.it = arrayIterator(mappedVers);
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putCacheVersion(null, (GridCacheVersion)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(null, -1))
-                        return false;
-                }
-
-                commState.idx++;
-
-            case 14:
-                if (!commState.putGridUuid("miniId", miniId))
+                if (!writer.writeObjectArray("mappedVers", mappedVers, GridCacheVersion.class))
                     return false;
 
-                commState.idx++;
+                state++;
+
+            case 14:
+                if (!writer.writeIgniteUuid("miniId", miniId))
+                    return false;
+
+                state++;
 
             case 15:
-                if (pending != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(null, pending.size()))
-                            return false;
+                if (!writer.writeCollection("pending", pending, GridCacheVersion.class))
+                    return false;
 
-                        commState.it = pending.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putCacheVersion(null, (GridCacheVersion)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(null, -1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -320,117 +257,51 @@ public class GridNearLockResponse<K, V> extends GridDistributedLockResponse<K, V
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 11:
-                if (commState.readSize == -1) {
-                    int _val = commState.getInt(null);
+                dhtVers = reader.readObjectArray("dhtVers", GridCacheVersion.class);
 
-                    if (!commState.lastRead())
-                        return false;
-                    commState.readSize = _val;
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (dhtVers == null)
-                        dhtVers = new GridCacheVersion[commState.readSize];
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridCacheVersion _val = commState.getCacheVersion(null);
-
-                        if (!commState.lastRead())
-                            return false;
-
-                        dhtVers[i] = (GridCacheVersion)_val;
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 12:
-                filterRes = commState.getBooleanArray("filterRes");
+                filterRes = reader.readBooleanArray("filterRes");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 13:
-                if (commState.readSize == -1) {
-                    int _val = commState.getInt(null);
+                mappedVers = reader.readObjectArray("mappedVers", GridCacheVersion.class);
 
-                    if (!commState.lastRead())
-                        return false;
-                    commState.readSize = _val;
-                }
-
-                if (commState.readSize >= 0) {
-                    if (mappedVers == null)
-                        mappedVers = new GridCacheVersion[commState.readSize];
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridCacheVersion _val = commState.getCacheVersion(null);
-
-                        if (!commState.lastRead())
-                            return false;
-
-                        mappedVers[i] = (GridCacheVersion)_val;
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
-
-            case 14:
-                miniId = commState.getGridUuid("miniId");
-
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
+
+            case 14:
+                miniId = reader.readIgniteUuid("miniId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
 
             case 15:
-                if (commState.readSize == -1) {
-                    int _val = commState.getInt(null);
+                pending = reader.readCollection("pending", GridCacheVersion.class);
 
-                    if (!commState.lastRead())
-                        return false;
-                    commState.readSize = _val;
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (pending == null)
-                        pending = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridCacheVersion _val = commState.getCacheVersion(null);
-
-                        if (!commState.lastRead())
-                            return false;
-
-                        pending.add((GridCacheVersion)_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
         }
 

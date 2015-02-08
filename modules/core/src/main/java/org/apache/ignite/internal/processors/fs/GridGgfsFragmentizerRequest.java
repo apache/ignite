@@ -101,51 +101,30 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putGridUuid("fileId", fileId))
+                if (!writer.writeIgniteUuid("fileId", fileId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (fragmentRanges != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(null, fragmentRanges.size()))
-                            return false;
+                if (!writer.writeCollection("fragmentRanges", fragmentRanges, GridGgfsFileAffinityRange.class))
+                    return false;
 
-                        commState.it = fragmentRanges.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putMessage(null, (GridGgfsFileAffinityRange)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(null, -1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -155,49 +134,27 @@ public class GridGgfsFragmentizerRequest extends GridGgfsCommunicationMessage {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                fileId = commState.getGridUuid("fileId");
+                fileId = reader.readIgniteUuid("fileId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (commState.readSize == -1) {
-                    int _val = commState.getInt(null);
+                fragmentRanges = reader.readCollection("fragmentRanges", GridGgfsFileAffinityRange.class);
 
-                    if (!commState.lastRead())
-                        return false;
-                    commState.readSize = _val;
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (fragmentRanges == null)
-                        fragmentRanges = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridGgfsFileAffinityRange _val = (GridGgfsFileAffinityRange)commState.getMessage(null);
-
-                        if (!commState.lastRead())
-                            return false;
-
-                        fragmentRanges.add((GridGgfsFileAffinityRange)_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
         }
 

@@ -92,59 +92,27 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (deltas != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(null, deltas.size()))
-                            return false;
-
-                        commState.it = deltas.entrySet().iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        Map.Entry<UUID, Long> e = (Map.Entry<UUID, Long>)commState.cur;
-
-                        if (!commState.keyDone) {
-                            if (!commState.putUuid(null, e.getKey()))
-                                return false;
-
-                            commState.keyDone = true;
-                        }
-
-                        if (!commState.putLong(null, e.getValue()))
-                            return false;
-
-                        commState.keyDone = false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(null, -1))
-                        return false;
-                }
-
-                commState.idx++;
-
-            case 1:
-                if (!commState.putClockDeltaVersion("snapVer", snapVer))
+                if (!writer.writeMap("deltas", deltas, UUID.class, long.class))
                     return false;
 
-                commState.idx++;
+                state++;
+
+            case 1:
+                if (!writer.writeMessage("snapVer", snapVer != null ? snapVer.clone() : null))
+                    return false;
+
+                state++;
 
         }
 
@@ -154,59 +122,24 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (commState.readSize == -1) {
-                    int _val = commState.getInt(null);
+                deltas = reader.readMap("deltas", UUID.class, long.class);
 
-                    if (!commState.lastRead())
-                        return false;
-                    commState.readSize = _val;
-                }
-
-                if (commState.readSize >= 0) {
-                    if (deltas == null)
-                        deltas = new HashMap<>(commState.readSize, 1.0f);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        if (!commState.keyDone) {
-                            UUID _val = commState.getUuid(null);
-
-                            if (!commState.lastRead())
-                                return false;
-
-                            commState.cur = _val;
-                            commState.keyDone = true;
-                        }
-
-                        long _val = commState.getLong(null);
-
-                        if (!commState.lastRead())
-                            return false;
-
-                        deltas.put((UUID)commState.cur, _val);
-
-                        commState.keyDone = false;
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-                commState.cur = null;
-
-                commState.idx++;
-
-            case 1:
-                snapVer = commState.getClockDeltaVersion("snapVer");
-
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
+
+            case 1:
+                snapVer = reader.readMessage("snapVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
 
         }
 

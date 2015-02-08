@@ -114,12 +114,57 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf) {
-        return false; // TODO: implement.
+        writer.setBuffer(buf);
+
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
+                return false;
+
+            typeWritten = true;
+        }
+
+        switch (state) {
+            case 0:
+                if (!writer.writeLong("topVer", topVer))
+                    return false;
+
+                state++;
+
+            case 1:
+                if (!writer.writeLong("ver", ver))
+                    return false;
+
+                state++;
+
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
-        return false; // TODO: implement.
+        reader.setBuffer(buf);
+
+        switch (state) {
+            case 0:
+                topVer = reader.readLong("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 1:
+                ver = reader.readLong("ver");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -129,12 +174,19 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
 
     /** {@inheritDoc} */
     @Override public MessageAdapter clone() {
-        return null; // TODO: implement.
+        GridClockDeltaVersion _clone = new GridClockDeltaVersion();
+
+        clone0(_clone);
+
+        return _clone;
     }
 
     /** {@inheritDoc} */
     @Override protected void clone0(MessageAdapter _msg) {
-        // TODO: implement.
+        GridClockDeltaVersion _clone = (GridClockDeltaVersion)_msg;
+
+        _clone.ver = ver;
+        _clone.topVer = topVer;
     }
 
     /** {@inheritDoc} */

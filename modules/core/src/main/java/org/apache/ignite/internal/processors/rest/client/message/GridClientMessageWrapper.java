@@ -136,23 +136,23 @@ public class GridClientMessageWrapper extends MessageAdapter {
     @Override public boolean writeTo(ByteBuffer buf) {
         stream.setBuffer(buf);
 
-        if (!commState.typeWritten) {
+        if (!typeWritten) {
             if (stream.remaining() < 1)
                 return false;
 
             stream.writeByte(directType());
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
                 if (stream.remaining() < 4)
                     return false;
 
                 stream.writeInt(msgSize);
 
-                commState.idx++;
+                state++;
 
             case 1:
                 if (stream.remaining() < 8)
@@ -160,7 +160,7 @@ public class GridClientMessageWrapper extends MessageAdapter {
 
                 stream.writeLong(reqId);
 
-                commState.idx++;
+                state++;
 
             case 2:
                 if (stream.remaining() < 16)
@@ -168,7 +168,7 @@ public class GridClientMessageWrapper extends MessageAdapter {
 
                 stream.writeByteArray(U.uuidToBytes(clientId), 0, 16);
 
-                commState.idx++;
+                state++;
 
             case 3:
                 if (stream.remaining() < 16)
@@ -176,12 +176,12 @@ public class GridClientMessageWrapper extends MessageAdapter {
 
                 stream.writeByteArray(U.uuidToBytes(destId), 0, 16);
 
-                commState.idx++;
+                state++;
 
             case 4:
                 stream.writeByteArray(msg.array(), msg.position(), msg.remaining());
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -192,7 +192,7 @@ public class GridClientMessageWrapper extends MessageAdapter {
     @Override public boolean readFrom(ByteBuffer buf) {
         stream.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
                 if (stream.remaining() < 4)
                     return false;
@@ -202,7 +202,7 @@ public class GridClientMessageWrapper extends MessageAdapter {
                 if (msgSize == 0) // Ping message.
                     return true;
 
-                commState.idx++;
+                state++;
 
             case 1:
                 if (stream.remaining() < 8)
@@ -210,7 +210,7 @@ public class GridClientMessageWrapper extends MessageAdapter {
 
                 reqId = stream.readLong();
 
-                commState.idx++;
+                state++;
 
             case 2:
                 if (stream.remaining() < 16)
@@ -218,7 +218,7 @@ public class GridClientMessageWrapper extends MessageAdapter {
 
                 clientId = U.bytesToUuid(stream.readByteArray(16), 0);
 
-                commState.idx++;
+                state++;
 
             case 3:
                 if (stream.remaining() < 16)
@@ -226,7 +226,7 @@ public class GridClientMessageWrapper extends MessageAdapter {
 
                 destId = U.bytesToUuid(stream.readByteArray(16), 0);
 
-                commState.idx++;
+                state++;
 
             case 4:
                 byte[] msg0 = stream.readByteArray(msgSize);
@@ -236,7 +236,7 @@ public class GridClientMessageWrapper extends MessageAdapter {
 
                 msg = ByteBuffer.wrap(msg0);
 
-                commState.idx++;
+                state++;
         }
 
         return true;

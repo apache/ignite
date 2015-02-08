@@ -120,27 +120,27 @@ public class GridTaskResultRequest extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putGridUuid("taskId", taskId))
+                if (!writer.writeIgniteUuid("taskId", taskId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putByteArray("topicBytes", topicBytes))
+                if (!writer.writeByteArray("topicBytes", topicBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -150,24 +150,24 @@ public class GridTaskResultRequest extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                taskId = commState.getGridUuid("taskId");
+                taskId = reader.readIgniteUuid("taskId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                topicBytes = commState.getByteArray("topicBytes");
+                topicBytes = reader.readByteArray("topicBytes");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 

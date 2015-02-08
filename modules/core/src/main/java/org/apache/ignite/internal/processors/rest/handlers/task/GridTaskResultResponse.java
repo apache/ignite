@@ -140,39 +140,39 @@ public class GridTaskResultResponse extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putString("err", err))
+                if (!writer.writeString("err", err))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putBoolean("finished", finished))
+                if (!writer.writeBoolean("finished", finished))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putBoolean("found", found))
+                if (!writer.writeBoolean("found", found))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                if (!commState.putByteArray("resBytes", resBytes))
+                if (!writer.writeByteArray("resBytes", resBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -182,40 +182,40 @@ public class GridTaskResultResponse extends MessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                err = commState.getString("err");
+                err = reader.readString("err");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                finished = commState.getBoolean("finished");
+                finished = reader.readBoolean("finished");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                found = commState.getBoolean("found");
+                found = reader.readBoolean("found");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                resBytes = commState.getByteArray("resBytes");
+                resBytes = reader.readByteArray("resBytes");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 

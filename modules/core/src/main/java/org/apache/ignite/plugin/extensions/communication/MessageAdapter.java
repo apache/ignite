@@ -17,24 +17,13 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.internal.direct.*;
-
 import java.io.*;
 import java.nio.*;
-import java.util.*;
 
 /**
  * Communication message adapter.
  */
 public abstract class MessageAdapter implements Serializable, Cloneable {
-    /** */
-    // TODO: remove
-    protected static final Object NULL = new Object();
-
-    /** */
-    // TODO: remove
-    protected final GridTcpCommunicationMessageState commState = new GridTcpCommunicationMessageState();
-
     /** Writer. */
     protected MessageWriter writer;
 
@@ -61,17 +50,6 @@ public abstract class MessageAdapter implements Serializable, Cloneable {
     public final void setReader(MessageReader reader) {
         if (this.reader == null)
             this.reader = reader;
-    }
-
-    /**
-     * @param buf Buffer.
-     */
-    public final void setBuffer(ByteBuffer buf) {
-        if (writer != null)
-            writer.setBuffer(buf);
-
-        if (reader != null)
-            reader.setBuffer(buf);
     }
 
     /**
@@ -107,30 +85,5 @@ public abstract class MessageAdapter implements Serializable, Cloneable {
      */
     public boolean skipRecovery() {
         return false;
-    }
-
-    /**
-     * @param arr Array.
-     * @return Array iterator.
-     */
-    protected final Iterator<?> arrayIterator(final Object[] arr) {
-        return new Iterator<Object>() {
-            private int idx;
-
-            @Override public boolean hasNext() {
-                return idx < arr.length;
-            }
-
-            @Override public Object next() {
-                if (!hasNext())
-                    throw new NoSuchElementException();
-
-                return arr[idx++];
-            }
-
-            @Override public void remove() {
-                throw new UnsupportedOperationException();
-            }
-        };
     }
 }

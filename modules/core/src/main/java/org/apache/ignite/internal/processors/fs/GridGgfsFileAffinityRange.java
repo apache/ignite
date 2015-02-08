@@ -286,45 +286,45 @@ public class GridGgfsFileAffinityRange extends MessageAdapter implements Externa
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putGridUuid("affKey", affKey))
+                if (!writer.writeIgniteUuid("affKey", affKey))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putBoolean("done", done))
+                if (!writer.writeBoolean("done", done))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putLong("endOff", endOff))
+                if (!writer.writeLong("endOff", endOff))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                if (!commState.putLong("startOff", startOff))
+                if (!writer.writeLong("startOff", startOff))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putInt("status", status))
+                if (!writer.writeInt("status", status))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -334,48 +334,48 @@ public class GridGgfsFileAffinityRange extends MessageAdapter implements Externa
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                affKey = commState.getGridUuid("affKey");
+                affKey = reader.readIgniteUuid("affKey");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                done = commState.getBoolean("done");
+                done = reader.readBoolean("done");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                endOff = commState.getLong("endOff");
+                endOff = reader.readLong("endOff");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                startOff = commState.getLong("startOff");
+                startOff = reader.readLong("startOff");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                status = commState.getInt("status");
+                status = reader.readInt("status");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 

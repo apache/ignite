@@ -234,57 +234,57 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(null, directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putByteArray("gridExBytes", gridExBytes))
+                if (!writer.writeByteArray("gridExBytes", gridExBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putBoolean("isCancelled", isCancelled))
+                if (!writer.writeBoolean("isCancelled", isCancelled))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putByteArray("jobAttrsBytes", jobAttrsBytes))
+                if (!writer.writeByteArray("jobAttrsBytes", jobAttrsBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                if (!commState.putGridUuid("jobId", jobId))
+                if (!writer.writeIgniteUuid("jobId", jobId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putUuid("nodeId", nodeId))
+                if (!writer.writeUuid("nodeId", nodeId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                if (!commState.putByteArray("resBytes", resBytes))
+                if (!writer.writeByteArray("resBytes", resBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 6:
-                if (!commState.putGridUuid("sesId", sesId))
+                if (!writer.writeIgniteUuid("sesId", sesId))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -294,64 +294,64 @@ public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMe
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                gridExBytes = commState.getByteArray("gridExBytes");
+                gridExBytes = reader.readByteArray("gridExBytes");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                isCancelled = commState.getBoolean("isCancelled");
+                isCancelled = reader.readBoolean("isCancelled");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                jobAttrsBytes = commState.getByteArray("jobAttrsBytes");
+                jobAttrsBytes = reader.readByteArray("jobAttrsBytes");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                jobId = commState.getGridUuid("jobId");
+                jobId = reader.readIgniteUuid("jobId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                nodeId = commState.getUuid("nodeId");
+                nodeId = reader.readUuid("nodeId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                resBytes = commState.getByteArray("resBytes");
+                resBytes = reader.readByteArray("resBytes");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 6:
-                sesId = commState.getGridUuid("sesId");
+                sesId = reader.readIgniteUuid("sesId");
 
-                if (!commState.lastRead())
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 

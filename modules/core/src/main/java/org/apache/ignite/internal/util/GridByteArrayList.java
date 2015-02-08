@@ -408,12 +408,57 @@ public class GridByteArrayList extends MessageAdapter implements Externalizable 
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf) {
-        return false; // TODO: implement.
+        writer.setBuffer(buf);
+
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
+                return false;
+
+            typeWritten = true;
+        }
+
+        switch (state) {
+            case 0:
+                if (!writer.writeByteArray("data", data))
+                    return false;
+
+                state++;
+
+            case 1:
+                if (!writer.writeInt("size", size))
+                    return false;
+
+                state++;
+
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
-        return false; // TODO: implement.
+        reader.setBuffer(buf);
+
+        switch (state) {
+            case 0:
+                data = reader.readByteArray("data");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 1:
+                size = reader.readInt("size");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -423,12 +468,19 @@ public class GridByteArrayList extends MessageAdapter implements Externalizable 
 
     /** {@inheritDoc} */
     @Override public MessageAdapter clone() {
-        return null; // TODO: implement.
+        GridByteArrayList _clone = new GridByteArrayList();
+
+        clone0(_clone);
+
+        return _clone;
     }
 
     /** {@inheritDoc} */
     @Override protected void clone0(MessageAdapter _msg) {
-        // TODO: implement.
+        GridByteArrayList _clone = (GridByteArrayList)_msg;
+
+        _clone.data = data;
+        _clone.size = size;
     }
 
     /** {@inheritDoc} */
