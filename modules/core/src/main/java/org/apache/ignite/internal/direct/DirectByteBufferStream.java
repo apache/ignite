@@ -25,6 +25,7 @@ import org.jetbrains.annotations.*;
 import sun.misc.*;
 import sun.nio.ch.*;
 
+import java.lang.reflect.*;
 import java.nio.*;
 import java.util.*;
 
@@ -238,7 +239,22 @@ public class DirectByteBufferStream {
         TYPES.put(BitSet.class, Type.BIT_SET);
         TYPES.put(UUID.class, Type.UUID);
         TYPES.put(IgniteUuid.class, Type.IGNITE_UUID);
-        TYPES.put(MessageAdapter.class, Type.MSG);
+    }
+
+    /**
+     * @param cls Class.
+     * @return Type enum value.
+     */
+    private static Type type(Class<?> cls) {
+        Type type = TYPES.get(cls);
+
+        if (type == null) {
+            assert MessageAdapter.class.isAssignableFrom(cls) : cls;
+
+            type = Type.MSG;
+        }
+
+        return type;
     }
 
     /** */
@@ -549,9 +565,7 @@ public class DirectByteBufferStream {
                 it = arrayIterator(arr);
             }
 
-            Type itemType = TYPES.get(itemCls);
-
-            assert itemType != null;
+            Type itemType = type(itemCls);
 
             while (it.hasNext() || cur != NULL) {
                 if (cur == NULL)
@@ -582,9 +596,7 @@ public class DirectByteBufferStream {
                 it = col.iterator();
             }
 
-            Type itemType = TYPES.get(itemCls);
-
-            assert itemType != null;
+            Type itemType = type(itemCls);
 
             while (it.hasNext() || cur != NULL) {
                 if (cur == NULL)
@@ -616,11 +628,8 @@ public class DirectByteBufferStream {
                 it = map.entrySet().iterator();
             }
 
-            Type keyType = TYPES.get(keyCls);
-            Type valType = TYPES.get(valCls);
-
-            assert keyType != null;
-            assert valType != null;
+            Type keyType = type(keyCls);
+            Type valType = type(valCls);
 
             while (it.hasNext() || cur != NULL) {
                 if (cur == NULL)
@@ -897,11 +906,9 @@ public class DirectByteBufferStream {
 
         if (readSize >= 0) {
             if (objArr == null)
-                objArr = new Object[readSize];
+                objArr = (Object[])Array.newInstance(itemCls, readSize);
 
-            Type itemType = TYPES.get(itemCls);
-
-            assert itemType != null;
+            Type itemType = type(itemCls);
 
             for (int i = readItems; i < readSize; i++) {
                 Object item = read(itemType);
@@ -941,9 +948,7 @@ public class DirectByteBufferStream {
             if (col == null)
                 col = new ArrayList<>(readSize);
 
-            Type itemType = TYPES.get(itemCls);
-
-            assert itemType != null;
+            Type itemType = type(itemCls);
 
             for (int i = readItems; i < readSize; i++) {
                 Object item = read(itemType);
@@ -983,11 +988,8 @@ public class DirectByteBufferStream {
             if (map == null)
                 map = U.newHashMap(readSize);
 
-            Type keyType = TYPES.get(keyCls);
-            Type valType = TYPES.get(valCls);
-
-            assert keyType != null;
-            assert valType != null;
+            Type keyType = type(keyCls);
+            Type valType = type(valCls);
 
             for (int i = readItems; i < readSize; i++) {
                 if (!keyDone) {
