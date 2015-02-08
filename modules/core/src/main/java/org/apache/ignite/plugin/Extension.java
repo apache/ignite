@@ -20,6 +20,6 @@ package org.apache.ignite.plugin;
 /**
  * Marker interface for extensions. Used to help find list of possible extensions.
  */
-public interface IgniteExtension {
+public interface Extension {
     // No-op.
 }

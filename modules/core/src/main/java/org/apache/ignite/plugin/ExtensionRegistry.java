@@ -20,7 +20,7 @@ package org.apache.ignite.plugin;
 /**
  * Context that allows to register extensions.
  */
-public interface IgniteExtensionRegistry {
+public interface ExtensionRegistry {
     /**
      * Registers extension provided by plugin.
      *

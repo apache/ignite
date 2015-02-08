@@ -27,7 +27,7 @@ import java.util.*;
  *
  * TODO 9447: redesign.
  */
-public interface DiscoveryCallback extends IgniteExtension {
+public interface DiscoveryCallback extends Extension {
     /**
      * Handles node start.
      *

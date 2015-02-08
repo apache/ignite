@@ -212,7 +212,7 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class ExtensionRegistry implements IgniteExtensionRegistry {
+    private static class ExtensionRegistry implements org.apache.ignite.plugin.ExtensionRegistry {
         /** */
         private final Map<Class<?>, List<Object>> extensionsCollector = new HashMap<>();
 
