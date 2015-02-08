@@ -3693,17 +3693,17 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public Cache.Entry<K, V> wrap() {
         try {
-            IgniteInternalTx tx = cctx.tm().userTx();
+            IgniteInternalTx<K, V> tx = cctx.tm().userTx();
 
             V val;
 
             if (tx != null) {
-                val = (V)tx.writeMap().get(txKey());
+                GridTuple<V> peek = tx.peek(cctx, false, key, null);
 
-                if (val == null)
-                    val = (V)tx.readMap().get(txKey());
+                val = peek == null ? rawGetOrUnmarshal(false) : peek.get();
             }
             else
                 val = rawGetOrUnmarshal(false);
@@ -3713,6 +3713,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             entry.version(ver);
 
             return entry;
+        }
+        catch (GridCacheFilterFailedException ignored) {
+            throw new IgniteException("Should never happen.");
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to wrap entry: " + this, e);
