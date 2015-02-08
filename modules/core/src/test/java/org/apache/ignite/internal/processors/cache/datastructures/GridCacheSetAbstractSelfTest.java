@@ -21,11 +21,10 @@ import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.datastructures.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -770,7 +769,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
                                 set.add(val.incrementAndGet());
                         }
                     }
-                    catch (DataStructureRemovedException e) {
+                    catch (IllegalStateException e) {
                         log.info("Set removed: " + e);
                     }
 
@@ -814,7 +813,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
                     return null;
                 }
-            }, DataStructureRemovedException.class, null);
+            }, IllegalStateException.class, null);
         }
     }
 
