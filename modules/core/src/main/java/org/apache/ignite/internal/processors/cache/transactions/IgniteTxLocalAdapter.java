@@ -571,7 +571,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                             }
 
                             if (rmvCol == null)
-                                rmvCol = new LinkedList<>();
+                                rmvCol = new ArrayList<>();
 
                             rmvCol.add(key);
 
@@ -1741,7 +1741,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             else {
                 assert optimistic() || readCommitted() || groupLock();
 
-                final Collection<K> redos = new LinkedList<>();
+                final Collection<K> redos = new ArrayList<>();
 
                 if (!missed.isEmpty()) {
                     if (!readCommitted())
@@ -2577,7 +2577,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         try {
             Set<? extends K> keySet = map0 != null ? map0.keySet() : invokeMap0.keySet();
 
-            Collection<K> enlisted = new LinkedList<>();
+            Collection<K> enlisted = new ArrayList<>();
 
             GridCacheProjectionImpl<K, V> prj = cacheCtx.projectionPerCall();
 
@@ -2775,7 +2775,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         init();
 
         try {
-            Collection<K> enlisted = new LinkedList<>();
+            Collection<K> enlisted = new ArrayList<>();
 
             ExpiryPolicy plc;
 
@@ -2954,7 +2954,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
             GridCacheReturn<V> ret = new GridCacheReturn<>(false);
 
-            Collection<K> enlisted = new LinkedList<>();
+            Collection<K> enlisted = new ArrayList<>();
 
             Set<K> skipped = enlistWrite(
                 cacheCtx,

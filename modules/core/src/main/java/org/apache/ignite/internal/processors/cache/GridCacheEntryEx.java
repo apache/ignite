@@ -151,7 +151,13 @@ public interface GridCacheEntryEx<K, V> {
     /**
      * @return Entry which is safe to pass into eviction policy.
      */
-    public EvictableEntry<K, V> evictWrap();
+    public EvictableEntry<K, V> wrapEviction();
+
+    /**
+     * @return Entry which holds key and version (no value, since entry
+     *      is intended to be used in sync evictions checks).
+     */
+    public CacheVersionedEntryImpl<K, V> wrapVersioned();
 
     /**
      * @return Not-null version if entry is obsolete.

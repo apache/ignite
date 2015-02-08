@@ -1000,9 +1000,10 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if predicates passed.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"ErrorNotRethrown"})
-    public <K1, V1> boolean isAll(GridCacheEntryEx<K1, V1> e,
-        @Nullable IgnitePredicate<Cache.Entry<K1, V1>>[] p) throws IgniteCheckedException {
+    public <K1, V1> boolean isAll(
+        GridCacheEntryEx<K1, V1> e,
+        @Nullable IgnitePredicate<Cache.Entry<K1, V1>>[] p
+    ) throws IgniteCheckedException {
         return F.isEmpty(p) || isAll(e.wrap(), p);
     }
 

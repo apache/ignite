@@ -3708,11 +3708,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             else
                 val = rawGetOrUnmarshal(false);
 
-            CacheEntryImpl<K, V> entry = new CacheEntryImpl<>(key, val);
-
-            entry.version(ver);
-
-            return entry;
+            return new CacheEntryImpl<>(key, val);
         }
         catch (GridCacheFilterFailedException ignored) {
             throw new IgniteException("Should never happen.");
@@ -3728,8 +3724,13 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public EvictableEntry<K, V> evictWrap() {
+    @Override public EvictableEntry<K, V> wrapEviction() {
         return new GridCacheEvictionEntry<>(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized CacheVersionedEntryImpl<K, V> wrapVersioned() {
+        return new CacheVersionedEntryImpl<>(key, null, ver);
     }
 
     /** {@inheritDoc} */
@@ -3775,7 +3776,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         v = ver;
                     }
 
-                    if (!cctx.isAll(this, filter))
+                    if (!cctx.isAll(/*version needed for sync evicts*/wrapVersioned(), filter))
                         return false;
 
                     synchronized (this) {

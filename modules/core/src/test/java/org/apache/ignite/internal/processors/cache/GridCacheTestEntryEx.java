@@ -117,7 +117,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public EvictableEntry<K, V> evictWrap() {
+    @Nullable @Override public EvictableEntry<K, V> wrapEviction() {
         return null;
     }
 
@@ -339,6 +339,11 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
 
     /** @inheritDoc */
     @Override public Cache.Entry<K, V> wrap() {
+        assert false; return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheVersionedEntryImpl<K, V> wrapVersioned() {
         assert false; return null;
     }
 

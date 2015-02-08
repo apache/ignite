@@ -17,35 +17,33 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.cache.*;
+import org.jetbrains.annotations.*;
 
 /**
  *
  */
-public class CacheEntryImpl<K, V> implements Cache.Entry<K, V> {
-    /** */
-    private final K key;
-
-    /** */
-    private final V val;
+public class CacheVersionedEntryImpl<K, V> extends CacheEntryImpl<K, V> {
+    /** Version. */
+    private final Object ver;
 
     /**
      * @param key Key.
-     * @param val Value.
+     * @param val Value (always null).
+     * @param ver Version.
      */
-    public CacheEntryImpl(K key, V val) {
-        this.key = key;
-        this.val = val;
+    public CacheVersionedEntryImpl(K key, V val, Object ver) {
+        super(key, val);
+
+        assert val == null;
+
+        this.ver = ver;
     }
 
-    /** {@inheritDoc} */
-    @Override public K getKey() {
-        return key;
-    }
-
-    /** {@inheritDoc} */
-    @Override public V getValue() {
-        return val;
+    /**
+     * @return Version.
+     */
+    @Nullable public Object version() {
+        return ver;
     }
 
     /** {@inheritDoc} */
@@ -59,6 +57,6 @@ public class CacheEntryImpl<K, V> implements Cache.Entry<K, V> {
 
     /** {@inheritDoc} */
     public String toString() {
-        return "Entry [key=" + key + ", val=" + val + ']';
+        return "VersionedEntry [key=" + getKey() + ", val=" + getValue() + ", ver=" + ver + ']';
     }
 }
