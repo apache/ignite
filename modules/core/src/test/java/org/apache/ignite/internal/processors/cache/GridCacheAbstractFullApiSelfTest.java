@@ -1816,10 +1816,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             info("Peek key on grid [i=" + i + ", nodeId=" + grid(i).localNode().id() +
-                ", peekVal=" + grid(i).cache(null).peek("key") + ']');
+                ", peekVal=" + grid(i).jcache(null).localPeek("key", CachePeekMode.ONHEAP) + ']');
 
             info("Peek key2 on grid [i=" + i + ", nodeId=" + grid(i).localNode().id() +
-                ", peekVal=" + grid(i).cache(null).peek("key2") + ']');
+                ", peekVal=" + grid(i).jcache(null).localPeek("key2", CachePeekMode.ONHEAP) + ']');
         }
 
         assertEquals((Integer)6, cache.get("key2"));
