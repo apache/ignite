@@ -17,11 +17,15 @@
 
 package org.apache.ignite.cache.query;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Query for Lucene based fulltext search.
+ *
+ * @see IgniteCache#query(Query)
+ * @see IgniteCache#localQuery(Query)
  */
 public final class QueryText extends Query<QueryText> {
     /** */

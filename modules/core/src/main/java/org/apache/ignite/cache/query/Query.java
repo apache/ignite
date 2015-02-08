@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.query;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -25,9 +26,14 @@ import org.apache.ignite.spi.indexing.*;
 import java.io.*;
 
 /**
- * Query to pass into any of {@code Cache.query(...)} methods.
+ * Base class for all Ignite cache queries.
  * Use {@link QuerySql} and {@link QueryText} for SQL and
  * text queries accordingly.
+ *
+ * @see IgniteCache#query(Query)
+ * @see IgniteCache#localQuery(Query)
+ * @see IgniteCache#queryFields(SqlFieldsQuery)
+ * @see IgniteCache#localQueryFields(SqlFieldsQuery)
  */
 public abstract class Query<T extends Query> implements Serializable {
     /** Page size. */
@@ -41,13 +47,13 @@ public abstract class Query<T extends Query> implements Serializable {
     }
 
     /**
-     * Factory method for SQL queries.
+     * Factory method for SQL fields queries.
      *
      * @param sql SQL Query string.
-     * @return SQL Query instance.
+     * @return SQL Fields query instance.
      */
-    public static QuerySql sql(String sql) {
-        return new QuerySql(sql);
+    public static SqlFieldsQuery sql(String sql) {
+        return new SqlFieldsQuery(sql);
     }
 
     /**
@@ -58,17 +64,7 @@ public abstract class Query<T extends Query> implements Serializable {
      * @return SQL Query instance.
      */
     public static QuerySql sql(Class<?> type, String sql) {
-        return sql(sql).setType(type);
-    }
-
-    /**
-     * Factory method for Lucene fulltext queries.
-     *
-     * @param txt Search string.
-     * @return Fulltext query.
-     */
-    public static QueryText text(String txt) {
-        return new QueryText(txt);
+        return new QuerySql(type, sql);
     }
 
     /**
@@ -79,7 +75,7 @@ public abstract class Query<T extends Query> implements Serializable {
      * @return Fulltext query.
      */
     public static QueryText text(Class<?> type, String txt) {
-        return text(txt).setType(type);
+        return new QueryText(txt).setType(type);
     }
 
     /**
@@ -90,15 +86,6 @@ public abstract class Query<T extends Query> implements Serializable {
      */
     public static <K, V> QueryScan<K, V> scan(final IgniteBiPredicate<K, V> filter) {
         return new QueryScan<>(filter);
-    }
-
-    /**
-     * Factory method for SPI queries returning all entries.
-     *
-     * @return SPI Query.
-     */
-    public static <K, V> QueryScan<K, V> scan() {
-        return new QueryScan<>();
     }
 
     /**

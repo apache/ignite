@@ -17,11 +17,16 @@
 
 package org.apache.ignite.cache.query;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.jetbrains.annotations.*;
 
 /**
  * Scan query over cache entries. Will accept all the entries if no predicate was set.
+ *
+ * @see IgniteCache#query(Query)
+ * @see IgniteCache#localQuery(Query)
  */
 public class QueryScan<K, V> extends Query<QueryScan<K, V>> {
     /** */
@@ -31,19 +36,15 @@ public class QueryScan<K, V> extends Query<QueryScan<K, V>> {
      * Create scan query returning all entries.
      */
     public QueryScan() {
-        this(new IgniteBiPredicate<K,V>() {
-            @Override public boolean apply(K k, V v) {
-                return true;
-            }
-        });
+        this(null);
     }
 
     /**
      * Create scan query with filter.
      *
-     * @param filter Filter.
+     * @param filter Filter. If {@code null} then all entries will be returned.
      */
-    public QueryScan(IgniteBiPredicate<K,V> filter) {
+    public QueryScan(@Nullable IgniteBiPredicate<K,V> filter) {
         setFilter(filter);
     }
 
@@ -59,11 +60,14 @@ public class QueryScan<K, V> extends Query<QueryScan<K, V>> {
     /**
      * Sets filter.
      *
-     * @param filter Filter.
+     * @param filter Filter. If {@code null} then all entries will be returned.
      */
-    public void setFilter(IgniteBiPredicate<K,V> filter) {
-        A.notNull(filter, "filter");
-
+    public void setFilter(@Nullable IgniteBiPredicate<K,V> filter) {
         this.filter = filter;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(QueryScan.class, this);
     }
 }

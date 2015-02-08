@@ -50,6 +50,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static final IgniteBiPredicate ACCEPT_ALL = new IgniteBiPredicate() {
+        @Override public boolean apply(Object k, Object v) {
+            return true;
+        }
+    };
+
     /** Context. */
     private GridCacheContext<K, V> ctx;
 
@@ -254,7 +261,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         final CacheQueryFuture<Map.Entry<K,V>> fut;
 
         if (filter instanceof QueryScan) {
-            qry = delegate.queries().createScanQuery((IgniteBiPredicate<K,V>)filter);
+            IgniteBiPredicate<K,V> p = ((QueryScan)filter).getFilter();
+
+            qry = delegate.queries().createScanQuery(p != null ? p : ACCEPT_ALL);
 
             if (grp != null)
                 qry.projection(grp);
@@ -334,7 +343,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> queryFields(QuerySql filter) {
+    @Override public QueryCursor<List<?>> queryFields(SqlFieldsQuery filter) {
         A.notNull(filter, "filter");
 
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
@@ -381,7 +390,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> localQueryFields(QuerySql filter) {
+    @Override public QueryCursor<List<?>> localQueryFields(SqlFieldsQuery filter) {
         A.notNull(filter, "filter");
 
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);

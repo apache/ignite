@@ -17,13 +17,16 @@
 
 package org.apache.ignite.cache.query;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
- * SQL Query to use with any of the {@code JCache.query(...)} and
- * {@code JCache.queryFields(...)} methods.
+ * SQL Query.
+ *
+ * @see IgniteCache#query(Query)
+ * @see IgniteCache#localQuery(Query)
  */
 public final class QuerySql extends Query<QuerySql> {
     /** */

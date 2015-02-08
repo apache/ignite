@@ -20,18 +20,52 @@ package org.apache.ignite.cache.query;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.indexing.*;
 
 /**
- * Query to be used by {@link IndexingSpi} implementations.
+ * SQL Fields query.
  *
- * @see IgniteCache#query(Query)
- * @see IgniteCache#localQuery(Query)
+ * @see IgniteCache#queryFields(SqlFieldsQuery)
+ * @see IgniteCache#localQueryFields(SqlFieldsQuery)
  */
-public final class QuerySpi extends Query<QuerySpi> {
+public final class SqlFieldsQuery extends Query<SqlFieldsQuery>{
+    /** SQL Query. */
+    private String sql;
+
     /** Arguments. */
     @GridToStringInclude
     private Object[] args;
+
+    /**
+     * Constructs sql fields query.
+     *
+     * @param sql SQL Query.
+     */
+    public SqlFieldsQuery(String sql) {
+        setSql(sql);
+    }
+
+    /**
+     * Gets SQL clause.
+     *
+     * @return SQL clause.
+     */
+    public String getSql() {
+        return sql;
+    }
+
+    /**
+     * Sets SQL clause.
+     *
+     * @param sql SQL clause.
+     * @return {@code this} For chaining.
+     */
+    public SqlFieldsQuery setSql(String sql) {
+        A.notNull(sql, "sql");
+
+        this.sql = sql;
+
+        return this;
+    }
 
     /**
      * Gets SQL arguments.
@@ -48,7 +82,7 @@ public final class QuerySpi extends Query<QuerySpi> {
      * @param args SQL arguments.
      * @return {@code this} For chaining.
      */
-    public QuerySpi setArgs(Object... args) {
+    public SqlFieldsQuery setArgs(Object... args) {
         this.args = args;
 
         return this;
@@ -56,6 +90,6 @@ public final class QuerySpi extends Query<QuerySpi> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(QuerySpi.class, this);
+        return S.toString(SqlFieldsQuery.class, this);
     }
 }

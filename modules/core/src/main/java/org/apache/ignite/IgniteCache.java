@@ -212,7 +212,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param qry SQL Query.
      * @return Cursor.
      */
-    public QueryCursor<List<?>> queryFields(QuerySql qry);
+    public QueryCursor<List<?>> queryFields(SqlFieldsQuery qry);
 
     /**
      * Queries cache locally. Accepts any subclass of {@link Query}.
@@ -232,7 +232,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param qry SQL Query.
      * @return Cursor.
      */
-    public QueryCursor<List<?>> localQueryFields(QuerySql qry);
+    public QueryCursor<List<?>> localQueryFields(SqlFieldsQuery qry);
 
     /**
      * Allows for iteration over local cache entries.
