@@ -41,7 +41,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
     /** Partition. */
     @GridToStringInclude
     @GridDirectCollection(int.class)
-    private Set<Integer> parts;
+    private Collection<Integer> parts;
 
     /** Topic. */
     @GridDirectTransient
@@ -112,7 +112,7 @@ public class GridDhtPartitionDemandMessage<K, V> extends GridCacheMessage<K, V> 
     /**
      * @return Partition.
      */
-    Set<Integer> partitions() {
+    Collection<Integer> partitions() {
         return parts;
     }
 

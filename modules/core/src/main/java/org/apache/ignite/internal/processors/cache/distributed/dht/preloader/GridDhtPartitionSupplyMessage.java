@@ -46,12 +46,12 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
 
     /** Partitions that have been fully sent. */
     @GridDirectCollection(int.class)
-    private Set<Integer> last;
+    private Collection<Integer> last;
 
     /** Partitions which were not found. */
     @GridToStringInclude
     @GridDirectCollection(int.class)
-    private Set<Integer> missed;
+    private Collection<Integer> missed;
 
     /** Entries. */
     @GridDirectTransient
@@ -130,7 +130,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
     /**
      * @return Flag to indicate last message for partition.
      */
-    Set<Integer> last() {
+    Collection<Integer> last() {
         return last == null ? Collections.<Integer>emptySet() : last;
     }
 
@@ -166,7 +166,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
     /**
      * @return Missed partitions.
      */
-    Set<Integer> missed() {
+    Collection<Integer> missed() {
         return missed == null ? Collections.<Integer>emptySet() : missed;
     }
 

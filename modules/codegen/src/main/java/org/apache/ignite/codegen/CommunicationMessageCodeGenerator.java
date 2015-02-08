@@ -536,7 +536,7 @@ public class CommunicationMessageCodeGenerator {
             returnFalseIfFailed(write, "writer.writeObjectArray", field, name,
                 type.getComponentType().getSimpleName() + ".class");
         }
-        else if (Collection.class.isAssignableFrom(type)) {
+        else if (Collection.class.isAssignableFrom(type) && !Set.class.isAssignableFrom(type)) {
             assert colItemType != null;
 
             returnFalseIfFailed(write, "writer.writeCollection", field, name, colItemType.getSimpleName() + ".class");
@@ -613,7 +613,7 @@ public class CommunicationMessageCodeGenerator {
             returnFalseIfReadFailed(name, "reader.readObjectArray", field,
                 type.getComponentType().getSimpleName() + ".class");
         }
-        else if (Collection.class.isAssignableFrom(type)) {
+        else if (Collection.class.isAssignableFrom(type) && !Set.class.isAssignableFrom(type)) {
             assert colItemType != null;
 
             returnFalseIfReadFailed(name, "reader.readCollection", field,

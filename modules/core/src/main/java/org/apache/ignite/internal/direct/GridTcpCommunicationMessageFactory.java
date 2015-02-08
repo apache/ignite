@@ -51,7 +51,7 @@ import java.util.*;
  */
 public class GridTcpCommunicationMessageFactory {
     /** Common message producers. */
-    private static final GridTcpCommunicationMessageProducer[] COMMON = new GridTcpCommunicationMessageProducer[83];
+    private static final GridTcpCommunicationMessageProducer[] COMMON = new GridTcpCommunicationMessageProducer[89];
 
     /**
      * Custom messages registry. Used for test purposes.

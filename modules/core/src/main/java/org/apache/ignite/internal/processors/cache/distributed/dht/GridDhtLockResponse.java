@@ -55,7 +55,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     /** Invalid partitions. */
     @GridToStringInclude
     @GridDirectCollection(int.class)
-    private Set<Integer> invalidParts = new GridLeanSet<>();
+    private Collection<Integer> invalidParts = new GridLeanSet<>();
 
     @GridDirectTransient
     /** Preload entries. */
@@ -138,7 +138,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     /**
      * @return Invalid partitions.
      */
-    public Set<Integer> invalidPartitions() {
+    public Collection<Integer> invalidPartitions() {
         return invalidParts;
     }
 
