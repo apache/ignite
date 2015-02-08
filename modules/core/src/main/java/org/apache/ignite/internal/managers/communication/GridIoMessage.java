@@ -200,7 +200,7 @@ public class GridIoMessage extends MessageAdapter {
         _clone.ordered = ordered;
         _clone.timeout = timeout;
         _clone.skipOnTimeout = skipOnTimeout;
-        _clone.msg = msg;
+        _clone.msg = msg != null ? (MessageAdapter)msg.clone() : null;
     }
 
     /** {@inheritDoc} */
@@ -217,7 +217,7 @@ public class GridIoMessage extends MessageAdapter {
 
         switch (state) {
             case 0:
-                if (!writer.writeMessage("msg", msg != null ? msg.clone() : null))
+                if (!writer.writeMessage("msg", msg))
                     return false;
 
                 state++;
