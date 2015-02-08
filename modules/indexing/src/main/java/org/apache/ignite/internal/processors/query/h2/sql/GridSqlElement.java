@@ -22,19 +22,12 @@ import java.util.*;
 /**
  * Abstract SQL element.
  */
-public abstract class GridSqlElement implements Cloneable {
+public abstract class GridSqlElement implements Cloneable, Iterable<GridSqlElement> {
     /** */
     protected List<GridSqlElement> children = new ArrayList<>();
 
     /** {@inheritDoc} */
     public abstract String getSQL();
-
-    /**
-     * @return Children.
-     */
-    public List<GridSqlElement> children() {
-        return children;
-    }
 
     /**
      * Clears all children.
@@ -100,5 +93,10 @@ public abstract class GridSqlElement implements Cloneable {
      */
     public int size() {
         return children.size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Iterator<GridSqlElement> iterator() {
+        return children.iterator();
     }
 }

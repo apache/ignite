@@ -111,13 +111,13 @@ public class GridSqlFunction extends GridSqlElement {
 
         if (type == CAST) {
             assert !F.isEmpty(castType) : castType;
-            assert children().size() == 1;
+            assert size() == 1;
 
             buff.append(child().getSQL()).append(" AS ").append(castType);
         }
         else if (type == CONVERT) {
             assert !F.isEmpty(castType) : castType;
-            assert children().size() == 1;
+            assert size() == 1;
 
             buff.append(child().getSQL()).append(',').append(castType);
         }

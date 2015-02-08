@@ -28,7 +28,7 @@ import java.io.*;
  */
 public class GridCacheSqlQuery implements Externalizable {
     /** */
-    private static final Object[] EMPTY_PARAMS = {};
+    public static final Object[] EMPTY_PARAMS = {};
 
     /** */
     String alias;

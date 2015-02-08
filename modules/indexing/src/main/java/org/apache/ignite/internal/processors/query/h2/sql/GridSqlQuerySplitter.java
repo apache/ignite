@@ -124,11 +124,64 @@ public class GridSqlQuerySplitter {
         }
 
         // Build resulting two step query.
-        GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(rdcQry.getSQL());
+        GridCacheTwoStepQuery res = new GridCacheTwoStepQuery(rdcQry.getSQL(),
+            findParams(rdcQry, params, new ArrayList<>()).toArray());
 
-        res.addMapQuery(mergeTable, mapQry.getSQL(), params);
+        res.addMapQuery(mergeTable, mapQry.getSQL(),
+            findParams(mapQry, params, new ArrayList<>(params.length)).toArray());
 
         return res;
+    }
+
+    /**
+     * @param qry Select.
+     * @param params Parameters.
+     * @param target Extracted parameters.
+     * @return Extracted parameters list.
+     */
+    private static List<Object> findParams(GridSqlSelect qry, Object[] params, ArrayList<Object> target) {
+        for (GridSqlElement el : qry.select())
+            findParams(el, params, target);
+
+        findParams(qry.from(), params, target);
+        findParams(qry.where(), params, target);
+
+        for (GridSqlElement el : qry.groups())
+            findParams(el, params, target);
+
+        findParams(qry.having(), params, target);
+
+        for (GridSqlElement el : qry.sort().keySet())
+            findParams(el, params, target);
+
+        findParams(qry.limit(), params, target);
+        findParams(qry.offset(), params, target);
+
+        return target;
+    }
+
+    /**
+     * @param el Element.
+     * @param params Parameters.
+     * @param target Extracted parameters.
+     */
+    private static void findParams(GridSqlElement el, Object[] params, ArrayList<Object> target) {
+        if (el == null)
+            return;
+
+        if (el instanceof GridSqlParameter) {
+            // H2 Supports queries like "select ?5" but first 4 non-existing parameters are need to be set to any value.
+            // Here we will set them to NULL.
+            int idx = ((GridSqlParameter)el).index();
+
+            while (target.size() < idx)
+                target.add(null);
+
+            target.add(idx, params[idx]);
+        }
+        else
+            for (GridSqlElement child : el)
+                findParams(child, params, target);
     }
 
     /**

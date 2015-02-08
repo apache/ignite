@@ -108,13 +108,20 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testAllExampless() throws Exception {
+    public void testAllExamples() throws Exception {
+        checkQuery("select ? limit ? offset ?");
+
         checkQuery("select cool1()");
         checkQuery("select cool1() z");
 
         checkQuery("select b,a from table0('aaa', 100)");
         checkQuery("select * from table0('aaa', 100)");
         checkQuery("select * from table0('aaa', 100) t0");
+        checkQuery("select x.a, y.b from table0('aaa', 100) x natural join table0('bbb', 100) y");
+        checkQuery("select * from table0('aaa', 100) x join table0('bbb', 100) y on x.a=y.a and x.b = 'bbb'");
+        checkQuery("select * from table0('aaa', 100) x left join table0('bbb', 100) y on x.a=y.a and x.b = 'bbb'");
+        checkQuery("select * from table0('aaa', 100) x left join table0('bbb', 100) y on x.a=y.a where x.b = 'bbb'");
+        checkQuery("select * from table0('aaa', 100) x left join table0('bbb', 100) y where x.b = 'bbb'");
 
         checkQuery("select avg(old) from Person left join Address on Person.addrId = Address.id " +
             "where lower(Address.street) = lower(?)");

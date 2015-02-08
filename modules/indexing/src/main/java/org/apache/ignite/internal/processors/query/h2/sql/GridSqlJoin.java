@@ -61,7 +61,7 @@ public class GridSqlJoin extends GridSqlElement {
      * @return {@code JOIN ON} condition.
      */
     @Nullable public GridSqlElement on() {
-        return children.size() < 3 ? null : child(2);
+        return size() < 3 ? null : child(2);
     }
 
     /** {@inheritDoc} */
@@ -76,15 +76,8 @@ public class GridSqlJoin extends GridSqlElement {
 
         GridSqlElement on = on();
 
-        if (on != null) {
-            String onSql = on.getSQL();
-
-            // This is needed for parsing tests to work correctly.
-            if (onSql.charAt(0) == '(' && onSql.charAt(onSql.length() - 1) == ')')
-                onSql = onSql.substring(1, onSql.length() - 1);
-
-            buff.append(" \n ON ").append(onSql);
-        }
+        if (on != null)
+            buff.append(" \n ON ").append(StringUtils.unEnclose(on.getSQL()));
 
         return buff.toString();
     }
