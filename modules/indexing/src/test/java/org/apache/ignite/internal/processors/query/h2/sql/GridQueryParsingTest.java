@@ -36,7 +36,7 @@ import org.h2.engine.*;
 import org.h2.jdbc.*;
 
 import java.io.*;
-import java.util.*;
+import java.sql.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
@@ -64,6 +64,8 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         c.setDiscoverySpi(disco);
 
         QueryConfiguration idxCfg = new QueryConfiguration();
+
+        idxCfg.setIndexCustomFunctionClasses(GridQueryParsingTest.class);
 
         c.setQueryConfiguration(idxCfg);
 
@@ -107,6 +109,22 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      */
     public void testAllExampless() throws Exception {
+        checkQuery("select cool1()");
+        checkQuery("select cool1() z");
+
+        checkQuery("select b,a from table0('aaa', 100)");
+        checkQuery("select * from table0('aaa', 100)");
+        checkQuery("select * from table0('aaa', 100) t0");
+
+        checkQuery("select avg(old) from Person left join Address on Person.addrId = Address.id " +
+            "where lower(Address.street) = lower(?)");
+
+        checkQuery("select avg(old) from Person join Address on Person.addrId = Address.id " +
+            "where lower(Address.street) = lower(?)");
+
+        checkQuery("select avg(old) from Person left join Address where Person.addrId = Address.id " +
+            "and lower(Address.street) = lower(?)");
+
         checkQuery("select avg(old) from Person, Address where Person.addrId = Address.id " +
             "and lower(Address.street) = lower(?)");
 
@@ -265,12 +283,22 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         System.out.println(normalizeSql(res));
     }
 
+    @QuerySqlFunction
+    public static int cool1() {
+        return 1;
+    }
+
+    @QuerySqlFunction
+    public static ResultSet table0(Connection c, String a, int b) throws SQLException {
+        return c.createStatement().executeQuery("select '" + a + "' as a, " +  b + " as b");
+    }
+
     /**
      *
      */
     public static class Person implements Serializable {
         @QuerySqlField(index = true)
-        public Date date = new Date();
+        public Date date = new Date(System.currentTimeMillis());
 
         @QuerySqlField(index = true)
         public String name = "Ivan";

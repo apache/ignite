@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import org.apache.ignite.internal.util.typedef.*;
+import org.h2.command.*;
 import org.h2.util.*;
 import org.h2.value.*;
 
@@ -90,7 +91,7 @@ public class GridSqlFunction extends GridSqlElement {
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        StatementBuilder buff = new StatementBuilder(name);
+        StatementBuilder buff = new StatementBuilder(Parser.quoteIdentifier(name));
 
         if (type == CASE) {
             if (!children.isEmpty())

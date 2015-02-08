@@ -94,11 +94,8 @@ import static org.h2.result.SortOrder.*;
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})
 public class IgniteH2Indexing implements GridQueryIndexing {
     /** Default DB options. */
-    private static final String DFLT_DB_OPTIONS = ";LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE" +
-        ";DEFAULT_LOCK_TIMEOUT=10000";
-
-    /** Options for optimized mode to work properly. */
-    private static final String OPTIMIZED_DB_OPTIONS = ";OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0;" +
+    private static final String DB_OPTIONS = ";LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE" +
+        ";DEFAULT_LOCK_TIMEOUT=10000;FUNCTIONS_IN_SCHEMA=false;OPTIMIZE_REUSE_RESULTS=0;QUERY_CACHE_SIZE=0;" +
         "RECOMPILE_ALWAYS=1;MAX_OPERATION_MEMORY=0";
 
     /** Field name for key. */
@@ -1200,13 +1197,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             offheap = new GridUnsafeMemory(maxOffHeapMemory);
         }
 
-        SB opt = new SB();
-
-        opt.a(DFLT_DB_OPTIONS).a(OPTIMIZED_DB_OPTIONS);
-
         String dbName = UUID.randomUUID().toString();
 
-        dbUrl = "jdbc:h2:mem:" + dbName + opt;
+        dbUrl = "jdbc:h2:mem:" + dbName + DB_OPTIONS;
 
         try {
             Class.forName("org.h2.Driver");
@@ -1306,19 +1299,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     String clause = "CREATE ALIAS " + alias + (ann.deterministic() ? " DETERMINISTIC FOR \"" :
                         " FOR \"") + cls.getName() + '.' + m.getName() + '"';
 
-                    Collection<String> schemas = new ArrayList<>(schemaNames);
+                    Connection c = connectionForThread(schema(null));
 
-                    if (!schemaNames.contains(schema(null)))
-                        schemas.add(schema(null));
-
-                    for (String schema : schemas) {
-                        Connection c = connectionForThread(schema);
-
-                        Statement s = c.createStatement();
-
+                    try (Statement s = c.createStatement()) {
                         s.execute(clause);
-
-                        s.close();
                     }
                 }
             }

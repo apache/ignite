@@ -144,6 +144,9 @@ public class GridSqlQueryParser {
     private static final Getter<RangeTable, Expression> RANGE_MAX = getter(RangeTable.class, "max");
 
     /** */
+    private static final Getter<FunctionTable, Expression> FUNC_EXPR = getter(FunctionTable.class, "functionExpr");
+
+    /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
     /**
@@ -160,7 +163,7 @@ public class GridSqlQueryParser {
     /**
      * @param filter Filter.
      */
-    private GridSqlElement parse(TableFilter filter) {
+    private GridSqlElement parseTable(TableFilter filter) {
         GridSqlElement res = (GridSqlElement)h2ObjToGridObj.get(filter);
 
         if (res == null) {
@@ -175,6 +178,9 @@ public class GridSqlQueryParser {
 
                 res = new GridSqlSubquery(parse((Select)qry));
             }
+            else if (tbl instanceof FunctionTable) {
+                res = parseExpression(FUNC_EXPR.get((FunctionTable)tbl));
+            }
             else if (tbl instanceof RangeTable) {
                 res = new GridSqlFunction("SYSTEM_RANGE");
 
@@ -182,7 +188,7 @@ public class GridSqlQueryParser {
                 res.addChild(parseExpression(RANGE_MAX.get((RangeTable)tbl)));
             }
             else
-                throw new IgniteException("Unsupported query: " + filter);
+                assert0(false, filter.getSelect().getSQL());
 
             String alias = ALIAS.get(filter);
 
@@ -218,17 +224,15 @@ public class GridSqlQueryParser {
         GridSqlElement from = null;
 
         TableFilter filter = select.getTopTableFilter();
+
         do {
             assert0(filter != null, select);
-            assert0(!filter.isJoinOuter(), select); // TODO 3
-            assert0(!filter.isJoinOuterIndirect(), select);
             assert0(filter.getNestedJoin() == null, select);
-            assert0(filter.getJoinCondition() == null, select); // TODO 1
-            assert0(filter.getFilterCondition() == null, select); // TODO 2
 
-            GridSqlElement gridFilter = parse(filter);
+            GridSqlElement gridFilter = parseTable(filter);
 
-            from = from == null ? gridFilter : new GridSqlJoin(from, gridFilter);
+            from = from == null ? gridFilter : new GridSqlJoin(from, gridFilter, filter.isJoinOuter(),
+                parseExpression(filter.getJoinCondition()));
 
             allFilters.remove(filter);
 
@@ -313,7 +317,7 @@ public class GridSqlQueryParser {
         if (expression instanceof ExpressionColumn) {
             TableFilter tblFilter = ((ExpressionColumn)expression).getTableFilter();
 
-            GridSqlElement gridTblFilter = parse(tblFilter);
+            GridSqlElement gridTblFilter = parseTable(tblFilter);
 
             return new GridSqlColumn(gridTblFilter, expression.getColumnName(), expression.getSQL());
         }
