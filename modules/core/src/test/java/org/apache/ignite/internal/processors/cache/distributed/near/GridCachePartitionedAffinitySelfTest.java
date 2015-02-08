@@ -379,7 +379,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     /** @param g Grid. */
     private static void partitionMap(Ignite g) {
         X.println(">>> Full partition map for grid: " + g.name());
-        X.println(">>> " + dht(g.cache(null)).topology().partitionMap(false).toFullString());
+        X.println(">>> " + dht(g.jcache(null)).topology().partitionMap(false).toFullString());
     }
 
     /** @throws Exception If failed. */

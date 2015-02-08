@@ -100,7 +100,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         Collection <Event> partEvts =
             g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_PRELOAD_PART_UNLOADED);
 
-        checkPartitionUnloadEvents(partEvts, g1, dht(g2.cache(null)).topology().localPartitions());
+        checkPartitionUnloadEvents(partEvts, g1, dht(g2.jcache(null)).topology().localPartitions());
     }
 
     /**

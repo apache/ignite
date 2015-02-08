@@ -33,9 +33,9 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.configuration.DeploymentMode.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 
@@ -134,16 +134,16 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
      * @param cache Cache.
      * @return Affinity.
      */
-    private CacheAffinity<Integer> affinity(GridCache<Integer, ?> cache) {
-        return cache.affinity();
+    private CacheAffinity<Integer> affinity(IgniteCache<Integer, ?> cache) {
+        return cache.unwrap(Ignite.class).affinity(null);
     }
 
     /**
      * @param c Cache.
      * @return {@code True} if synchronoous preloading.
      */
-    private boolean isSync(GridCache<?, ?> c) {
-        return c.configuration().getPreloadMode() == SYNC;
+    private boolean isSync(IgniteCache<?, ?> c) {
+        return c.getConfiguration(CacheConfiguration.class).getPreloadMode() == SYNC;
     }
 
     /**
@@ -187,7 +187,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
         try {
             Ignite g1 = startGrid(0);
 
-            GridCache<Integer, String> c1 = g1.cache(null);
+            IgniteCache<Integer, String> c1 = g1.jcache(null);
 
             putKeys(c1, keyCnt);
             checkKeys(c1, keyCnt);
@@ -198,7 +198,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
 
             // Check all nodes.
             for (Ignite g : ignites) {
-                GridCache<Integer, String> c = g.cache(null);
+                IgniteCache<Integer, String> c = g.jcache(null);
 
                 checkKeys(c, keyCnt);
             }
@@ -237,9 +237,8 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
     /**
      * @param c Cache.
      * @param cnt Key count.
-     * @throws IgniteCheckedException If failed.
      */
-    private void putKeys(GridCache<Integer, String> c, int cnt) throws IgniteCheckedException {
+    private void putKeys(IgniteCache<Integer, String> c, int cnt) {
         for (int i = 0; i < cnt; i++)
             c.put(i, Integer.toString(i));
     }
@@ -247,20 +246,19 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
     /**
      * @param c Cache.
      * @param cnt Key count.
-     * @throws IgniteCheckedException If failed.
      */
-    private void checkKeys(GridCache<Integer, String> c, int cnt) throws IgniteCheckedException {
+    private void checkKeys(IgniteCache<Integer, String> c, int cnt) {
         CacheAffinity<Integer> aff = affinity(c);
 
         boolean sync = isSync(c);
 
-        Ignite ignite = c.gridProjection().ignite();
+        Ignite ignite = c.unwrap(Ignite.class);
 
         for (int i = 0; i < cnt; i++) {
             if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(ignite.cluster().localNode())) {
-                String val = sync ? c.peek(i) : c.get(i);
+                String val = sync ? c.localPeek(i, CachePeekMode.ONHEAP) : c.get(i);
 
-                assertEquals("Key check failed [grid=" + ignite.name() + ", cache=" + c.name() + ", key=" + i + ']',
+                assertEquals("Key check failed [grid=" + ignite.name() + ", cache=" + c.getName() + ", key=" + i + ']',
                     Integer.toString(i), val);
             }
         }

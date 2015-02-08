@@ -126,9 +126,18 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @return DHT cache.
      */
-    protected static <K, V> GridDhtCacheAdapter<K, V> dht(CacheProjection<K,V> cache) {
+    protected static <K, V> GridDhtCacheAdapter<K, V> dht(GridCache<K,V> cache) {
         return nearEnabled(cache) ? near(cache).dht() :
             ((IgniteKernal)cache.gridProjection().ignite()).<K, V>internalCache(cache.name()).context().dht();
+    }
+
+    /**
+     * @param cache Cache.
+     * @return DHT cache.
+     */
+    protected static <K, V> GridDhtCacheAdapter<K, V> dht(IgniteCache<K,V> cache) {
+        return nearEnabled(cache) ? near(cache).dht() :
+            ((IgniteKernal)cache.unwrap(Ignite.class)).<K, V>internalCache(cache.getName()).context().dht();
     }
 
     /**
@@ -168,7 +177,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @return {@code True} if near cache is enabled.
      */
-    protected static <K, V> boolean nearEnabled(CacheProjection<K,V> cache) {
+    protected static <K, V> boolean nearEnabled(GridCache<K,V> cache) {
         CacheConfiguration cfg = ((IgniteKernal)cache.gridProjection().ignite()).
             <K, V>internalCache(cache.name()).context().config();
 
@@ -177,18 +186,37 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /**
      * @param cache Cache.
+     * @return {@code True} if near cache is enabled.
+     */
+    protected static <K, V> boolean nearEnabled(IgniteCache<K,V> cache) {
+        CacheConfiguration cfg = ((IgniteKernal)cache.unwrap(Ignite.class)).
+            <K, V>internalCache(cache.getName()).context().config();
+
+        return isNearEnabled(cfg);
+    }
+
+    /**
+     * @param cache Cache.
      * @return Near cache.
      */
-    protected static <K, V> GridNearCacheAdapter<K, V> near(CacheProjection<K,V> cache) {
+    protected static <K, V> GridNearCacheAdapter<K, V> near(GridCache<K,V> cache) {
         return ((IgniteKernal)cache.gridProjection().ignite()).<K, V>internalCache(cache.name()).context().near();
+    }
+
+    /**
+     * @param cache Cache.
+     * @return Near cache.
+     */
+    protected static <K, V> GridNearCacheAdapter<K, V> near(IgniteCache<K,V> cache) {
+        return ((IgniteKernal)cache.unwrap(Ignite.class)).<K, V>internalCache(cache.getName()).context().near();
     }
 
     /**
      * @param cache Cache.
      * @return Colocated cache.
      */
-    protected static <K, V> GridDhtColocatedCache<K, V> colocated(CacheProjection<K,V> cache) {
-        return ((IgniteKernal)cache.gridProjection().ignite()).<K, V>internalCache(cache.name()).context().colocated();
+    protected static <K, V> GridDhtColocatedCache<K, V> colocated(IgniteCache<K,V> cache) {
+        return ((IgniteKernal)cache.unwrap(Ignite.class)).<K, V>internalCache(cache.getName()).context().colocated();
     }
 
     /**
