@@ -81,12 +81,10 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
     /** Indexes of keys for which values were generated on primary node (used if originating node has near cache). */
     @GridDirectCollection(int.class)
-    @GridDirectVersion(1)
     private List<Integer> nearValsIdxs;
 
     /** Indexes of keys for which update was skipped (used if originating node has near cache). */
     @GridDirectCollection(int.class)
-    @GridDirectVersion(1)
     private List<Integer> nearSkipIdxs;
 
     /** Values generated on primary node which should be put to originating node's near cache. */
@@ -97,11 +95,9 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
     /** Serialized values generated on primary node which should be put to originating node's near cache. */
     @GridToStringInclude
     @GridDirectCollection(GridCacheValueBytes.class)
-    @GridDirectVersion(1)
     private List<GridCacheValueBytes> nearValBytes;
 
     /** Version generated on primary node to be used for originating node's near cache update. */
-    @GridDirectVersion(1)
     private GridCacheVersion nearVer;
 
     /** Near TTLs. */

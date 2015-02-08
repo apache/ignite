@@ -65,7 +65,6 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
     /** Evicted reader key bytes. */
     @GridDirectCollection(byte[].class)
-    @GridDirectVersion(1)
     private Collection<byte[]> nearEvictedBytes;
 
     /**

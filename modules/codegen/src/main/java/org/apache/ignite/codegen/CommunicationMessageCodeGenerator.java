@@ -10,11 +10,6 @@
 package org.apache.ignite.codegen;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.processors.clock.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -23,7 +18,6 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.lang.reflect.*;
 import java.net.*;
-import java.nio.*;
 import java.util.*;
 
 import static java.lang.reflect.Modifier.*;
@@ -35,27 +29,7 @@ public class CommunicationMessageCodeGenerator {
     /** */
     private static final Comparator<Field> FIELD_CMP = new Comparator<Field>() {
         @Override public int compare(Field f1, Field f2) {
-            int ver1 = 0;
-
-            GridDirectVersion verAnn1 = f1.getAnnotation(GridDirectVersion.class);
-
-            if (verAnn1 != null) {
-                ver1 = verAnn1.value();
-
-                assert ver1 > 0;
-            }
-
-            int ver2 = 0;
-
-            GridDirectVersion verAnn2 = f2.getAnnotation(GridDirectVersion.class);
-
-            if (verAnn2 != null) {
-                ver2 = verAnn2.value();
-
-                assert ver2 > 0;
-            }
-
-            return ver1 < ver2 ? -1 : ver1 > ver2 ? 1 : f1.getName().compareTo(f2.getName());
+            return f1.getName().compareTo(f2.getName());
         }
     };
 
@@ -552,24 +526,22 @@ public class CommunicationMessageCodeGenerator {
             returnFalseIfFailed(write, "writer.writeCharArray", field, name);
         else if (type == boolean[].class)
             returnFalseIfFailed(write, "writer.writeBooleanArray", field, name);
-        else if (type == UUID.class)
-            returnFalseIfFailed(write, "writer.writeByteArray", field, "U.uuidToBytes(" + name + ")");
-        else if (type == IgniteUuid.class)
-            returnFalseIfFailed(write, "writer.writeByteArray", field, "U.igniteUuidToBytes(" + name + ")");
-        else if (type == GridByteArrayList.class)
-            returnFalseIfFailed(write, "writer.writeByteArray", field, name);
-        else if (type == GridLongList.class)
-            returnFalseIfFailed(write, "writer.writeLongList", field, name);
         else if (type == String.class)
             returnFalseIfFailed(write, "writer.writeString", field, name);
         else if (type == BitSet.class)
             returnFalseIfFailed(write, "writer.writeBitSet", field, name);
+        else if (type == UUID.class)
+            returnFalseIfFailed(write, "writer.writeUuid", field, name);
+        else if (type == IgniteUuid.class)
+            returnFalseIfFailed(write, "writer.writeIgniteUuid", field, name);
         else if (type.isEnum())
             returnFalseIfFailed(write, "writer.writeEnum", field, name);
         else if (BASE_CLS.isAssignableFrom(type))
             returnFalseIfFailed(write, "writer.writeMessage", field, name);
-        else if (type.isArray())
-            returnFalseIfFailed(write, "writer.writeArray", field, name);
+        else if (type.isArray()) {
+            returnFalseIfFailed(write, "writer.writeObjectArray", field, name,
+                type.getComponentType().getSimpleName() + ".class");
+        }
         else if (Collection.class.isAssignableFrom(type)) {
             assert colItemType != null;
 
@@ -603,223 +575,65 @@ public class CommunicationMessageCodeGenerator {
         String retType = type.getSimpleName();
 
         if (type == byte.class)
-            returnFalseIfReadFailed("byte", name, null, COMM_STATE_VAR + ".getByte", field, false);
+            returnFalseIfReadFailed("byte", name, "reader.readByte", field);
         else if (type == short.class)
-            returnFalseIfReadFailed("short", name, null, COMM_STATE_VAR + ".getShort", field, false);
+            returnFalseIfReadFailed("short", name, "reader.readShort", field);
         else if (type == int.class)
-            returnFalseIfReadFailed("int", name, null, COMM_STATE_VAR + ".getInt", field, false);
+            returnFalseIfReadFailed("int", name, "reader.readInt", field);
         else if (type == long.class)
-            returnFalseIfReadFailed("long", name, null, COMM_STATE_VAR + ".getLong", field, false);
+            returnFalseIfReadFailed("long", name, "reader.readLong", field);
         else if (type == float.class)
-            returnFalseIfReadFailed("float", name, null, COMM_STATE_VAR + ".getFloat", field, false);
+            returnFalseIfReadFailed("float", name, "reader.readFloat", field);
         else if (type == double.class)
-            returnFalseIfReadFailed("double", name, null, COMM_STATE_VAR + ".getDouble", field, false);
+            returnFalseIfReadFailed("double", name, "reader.readDouble", field);
         else if (type == char.class)
-            returnFalseIfReadFailed("char", name, null, COMM_STATE_VAR + ".getChar", field, false);
+            returnFalseIfReadFailed("char", name, "reader.readChar", field);
         else if (type == boolean.class)
-            returnFalseIfReadFailed("boolean", name, null, COMM_STATE_VAR + ".getBoolean", field, false);
+            returnFalseIfReadFailed("boolean", name, "reader.readBoolean", field);
         else if (type == byte[].class)
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getByteArray", field, false);
+            returnFalseIfReadFailed(retType, name, "reader.readByteArray", field);
         else if (type == short[].class)
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getShortArray", field, false);
+            returnFalseIfReadFailed(retType, name, "reader.readShortArray", field);
         else if (type == int[].class)
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getIntArray", field, false);
+            returnFalseIfReadFailed(retType, name, "reader.readIntArray", field);
         else if (type == long[].class)
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getLongArray", field, false);
+            returnFalseIfReadFailed(retType, name, "reader.readLongArray", field);
         else if (type == float[].class)
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getFloatArray", field, false);
+            returnFalseIfReadFailed(retType, name, "reader.readFloatArray", field);
         else if (type == double[].class)
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getDoubleArray", field, false);
+            returnFalseIfReadFailed(retType, name, "reader.readDoubleArray", field);
         else if (type == char[].class)
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getCharArray", field, false);
+            returnFalseIfReadFailed(retType, name, "reader.readCharArray", field);
         else if (type == boolean[].class)
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getBooleanArray", field, false);
-        else if (type == UUID.class)
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getUuid", field, false);
-        else if (type == ByteBuffer.class)
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getByteBuffer", field, false);
-        else if (type == IgniteUuid.class)
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getGridUuid", field, false);
-        else if (type == GridClockDeltaVersion.class)
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getClockDeltaVersion", field, false);
-        else if (type == GridLongList.class)
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getLongList", field, false);
-        else if (type == GridByteArrayList.class)
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getByteArrayList", field, false);
-        else if (type == GridCacheVersion.class)
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getCacheVersion", field, false);
-        else if (type == GridDhtPartitionExchangeId.class)
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getDhtPartitionExchangeId", field, false);
-        else if (type == GridCacheValueBytes.class)
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getValueBytes", field, false);
-        //else if (type == GridDrInternalRequestEntry.class)
-        //    returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getDrInternalRequestEntry", field, false);
+            returnFalseIfReadFailed(retType, name, "reader.readBooleanArray", field);
         else if (type == String.class)
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getString", field, false);
+            returnFalseIfReadFailed(retType, name, "reader.readString", field);
         else if (type == BitSet.class)
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getBitSet", field, false);
-        else if (type.isEnum()) {
-            assert name != null;
-
-            returnFalseIfReadFailed("byte", null, name + "0", COMM_STATE_VAR + ".getByte", field, false);
-
-            read.add(EMPTY);
-            read.add(builder().a(name).a(" = ").a(type.getSimpleName()).a(".fromOrdinal(").a(name).a("0);").toString());
-        }
+            returnFalseIfReadFailed(retType, name, "reader.readBitSet", field);
+        else if (type == UUID.class)
+            returnFalseIfReadFailed(retType, name, "reader.readUuid", field);
+        else if (type == IgniteUuid.class)
+            returnFalseIfReadFailed(retType, name, "reader.readGridUuid", field);
+        else if (type.isEnum())
+            returnFalseIfReadFailed(retType, name, "reader.readEnum", field);
         else if (BASE_CLS.isAssignableFrom(type))
-            returnFalseIfReadFailed(retType, name, null, COMM_STATE_VAR + ".getMessage", field, true);
-        else if (type.isArray() || Collection.class.isAssignableFrom(type)) {
-            assert name != null;
-
-            boolean isArr = type.isArray();
-
-            if (isArr)
-                colItemType = type.getComponentType();
-
+            returnFalseIfReadFailed(retType, name, "reader.readMessage", field);
+        else if (type.isArray()) {
+            returnFalseIfReadFailed(retType, name, "reader.readObjectArray", field,
+                type.getComponentType().getSimpleName() + ".class");
+        }
+        else if (Collection.class.isAssignableFrom(type)) {
             assert colItemType != null;
 
-            Class<?> colType = Set.class.isAssignableFrom(type) ? HashSet.class : ArrayList.class;
-
-            read.add(builder().a("if (").a(READ_SIZE_VAR).a(" == -1) {").toString());
-
-            indent++;
-
-            returnFalseIfReadFailed(int.class, null, null, null, null, true);
-
-            read.add(builder().a(READ_SIZE_VAR).a(" = ").a(DFLT_LOC_VAR).a(";").toString());
-
-            indent--;
-
-            read.add(builder().a("}").toString());
-            read.add(EMPTY);
-            read.add(builder().a("if (").a(READ_SIZE_VAR).a(" >= 0) {").toString());
-
-            indent++;
-
-            read.add(builder().a("if (").a(name).a(" == null)").toString());
-
-            indent++;
-
-            if (isArr) {
-                String val = colItemType.isArray() ?
-                    colItemType.getComponentType().getSimpleName() + "[" + READ_SIZE_VAR + "][]" :
-                    colItemType.getSimpleName() + "[" + READ_SIZE_VAR + "]";
-
-                read.add(builder().a(name).a(" = new ").a(val).a(";").
-                    toString());
-            }
-            else {
-                read.add(builder().a(name).a(" = new ").a(colType.getSimpleName()).a("<>(").a(READ_SIZE_VAR).a(");").
-                    toString());
-            }
-
-            indent--;
-
-            read.add(EMPTY);
-            read.add(builder().a("for (int i = ").a(READ_ITEMS_VAR).a("; i < ").a(READ_SIZE_VAR).a("; i++) {").
-                toString());
-
-            indent++;
-
-            String var = colItemType.isPrimitive() ? colItemType.getSimpleName() + " " + DFLT_LOC_VAR : null;
-
-            returnFalseIfReadFailed(colItemType, var, null, null, null, true);
-
-            read.add(EMPTY);
-            read.add(builder().a(name).a(isArr ? "[i] = " : ".add(").a("(").a(U.box(colItemType).getSimpleName()).
-                a(")").a(DFLT_LOC_VAR).a(isArr ? ";" : ");").toString());
-            read.add(EMPTY);
-            read.add(builder().a(READ_ITEMS_VAR).a("++;").toString());
-
-            indent--;
-
-            read.add(builder().a("}").toString());
-
-            indent--;
-
-            read.add(builder().a("}").toString());
-            read.add(EMPTY);
-            read.add(builder().a(READ_SIZE_VAR).a(" = -1;").toString());
-            read.add(builder().a(READ_ITEMS_VAR).a(" = 0;").toString());
+            returnFalseIfReadFailed(retType, name, "reader.readCollection", field,
+                colItemType.getSimpleName() + ".class");
         }
         else if (Map.class.isAssignableFrom(type)) {
-            assert name != null;
             assert mapKeyType != null;
             assert mapValType != null;
 
-            Class<?> mapType = LinkedHashMap.class.isAssignableFrom(type) ? LinkedHashMap.class : HashMap.class;
-
-            read.add(builder().a("if (").a(READ_SIZE_VAR).a(" == -1) {").toString());
-
-            indent++;
-
-            returnFalseIfReadFailed(int.class, null, null, null, null, true);
-
-            read.add(builder().a(READ_SIZE_VAR).a(" = ").a(DFLT_LOC_VAR).a(";").toString());
-
-            indent--;
-
-            read.add(builder().a("}").toString());
-            read.add(EMPTY);
-            read.add(builder().a("if (").a(READ_SIZE_VAR).a(" >= 0) {").toString());
-
-            indent++;
-
-            read.add(builder().a("if (").a(name).a(" == null)").toString());
-
-            indent++;
-
-            read.add(builder().a(name).a(" = new ").a(mapType.getSimpleName()).a("<>(").a(READ_SIZE_VAR).a(", 1.0f);").
-                toString());
-
-            indent--;
-
-            read.add(EMPTY);
-            read.add(builder().a("for (int i = ").a(READ_ITEMS_VAR).a("; i < ").a(READ_SIZE_VAR).a("; i++) {").
-                toString());
-
-            indent++;
-
-            read.add(builder().a("if (!").a(KEY_DONE_VAR).a(") {").toString());
-
-            indent++;
-
-            String var = mapKeyType.isPrimitive() ? mapKeyType.getSimpleName() + " " + DFLT_LOC_VAR : null;
-
-            returnFalseIfReadFailed(mapKeyType, var, null, null, null, true);
-
-            read.add(EMPTY);
-            read.add(builder().a(CUR_VAR).a(" = ").a(DFLT_LOC_VAR).a(";").toString());
-            read.add(builder().a(KEY_DONE_VAR).a(" = true;").toString());
-
-            indent--;
-
-            read.add(builder().a("}").toString());
-            read.add(EMPTY);
-
-            var = mapValType.isPrimitive() ? mapValType.getSimpleName() + " " + DFLT_LOC_VAR : null;
-
-            returnFalseIfReadFailed(mapValType, var, null, null, null, true);
-
-            read.add(EMPTY);
-            read.add(builder().a(name).a(".put((").a(U.box(mapKeyType).getSimpleName()).a(")").a(CUR_VAR).
-                a(", ").a(DFLT_LOC_VAR).a(");").toString());
-            read.add(EMPTY);
-            read.add(builder().a(KEY_DONE_VAR).a(" = false;").toString());
-            read.add(EMPTY);
-            read.add(builder().a(READ_ITEMS_VAR).a("++;").toString());
-
-            indent--;
-
-            read.add(builder().a("}").toString());
-
-            indent--;
-
-            read.add(builder().a("}").toString());
-            read.add(EMPTY);
-            read.add(builder().a(READ_SIZE_VAR).a(" = -1;").toString());
-            read.add(builder().a(READ_ITEMS_VAR).a(" = 0;").toString());
-            read.add(builder().a(CUR_VAR).a(" = null;").toString());
+            returnFalseIfReadFailed(retType, name, "reader.readMap", field, mapKeyType.getSimpleName() + ".class",
+                mapValType.getSimpleName() + ".class");
         }
         else
             throw new IllegalStateException("Unsupported type: " + type);
@@ -828,24 +642,26 @@ public class CommunicationMessageCodeGenerator {
     /**
      * @param retType Return type.
      * @param var Variable name.
-     * @param locVar Local variable name.
      * @param mtd Method name.
-     * @param arg Method argument.
-     * @param cast Whether cast is needed.
+     * @param args Method arguments.
      */
-    private void returnFalseIfReadFailed(String retType, @Nullable String var, @Nullable String locVar, String mtd,
-        @Nullable String arg, boolean cast) {
+    private void returnFalseIfReadFailed(String retType, String var, String mtd, @Nullable String... args) {
         assert retType != null;
         assert mtd != null;
 
-        if (var == null)
-            var = retType + " " + (locVar != null ? locVar : DFLT_LOC_VAR);
+        String argsStr = "";
 
-        read.add(builder().a(var).a(" = ").a(cast ? "(" + retType + ")" : "").a(mtd).
-            a(arg != null ? "(" + arg + ");" : "();").toString());
+        if (args != null && args.length > 0) {
+            for (String arg : args)
+                argsStr += arg + ", ";
+
+            argsStr = argsStr.substring(0, argsStr.length() - 2);
+        }
+
+        read.add(builder().a(var).a(" = ").a(mtd).a("(").a(argsStr).a(");").toString());
         read.add(EMPTY);
 
-        read.add(builder().a("if (!").a(COMM_STATE_VAR).a(".lastRead())").toString());
+        read.add(builder().a("if (!reader.lastRead())").toString());
 
         indent++;
 
@@ -872,7 +688,7 @@ public class CommunicationMessageCodeGenerator {
             argsStr = argsStr.substring(0, argsStr.length() - 2);
         }
 
-        code.add(builder().a("if (!").a(accessor).a("(" + argsStr + ")").a(")").toString());
+        code.add(builder().a("if (!").a(accessor).a("(").a(argsStr).a("))").toString());
 
         indent++;
 

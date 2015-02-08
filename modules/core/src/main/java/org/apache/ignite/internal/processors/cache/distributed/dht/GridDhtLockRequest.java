@@ -71,15 +71,12 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     private long topVer;
 
     /** Subject ID. */
-    @GridDirectVersion(1)
     private UUID subjId;
 
     /** Task name hash. */
-    @GridDirectVersion(2)
     private int taskNameHash;
 
     /** Indexes of keys needed to be preloaded. */
-    @GridDirectVersion(3)
     private BitSet preloadKeys;
 
     /** TTL for read operation. */

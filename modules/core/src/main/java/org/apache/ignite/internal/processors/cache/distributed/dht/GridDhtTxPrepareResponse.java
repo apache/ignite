@@ -65,7 +65,6 @@ public class GridDhtTxPrepareResponse<K, V> extends GridDistributedTxPrepareResp
 
     /** */
     @GridDirectCollection(byte[].class)
-    @GridDirectVersion(1)
     private List<byte[]> preloadEntriesBytes;
 
     /**

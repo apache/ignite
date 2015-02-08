@@ -76,11 +76,9 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     private IgnitePredicate<CacheEntry<K, V>>[] filter;
 
     /** Subject ID. */
-    @GridDirectVersion(1)
     private UUID subjId;
 
     /** Task name hash. */
-    @GridDirectVersion(2)
     private int taskNameHash;
 
     /** TTL for read operation. */

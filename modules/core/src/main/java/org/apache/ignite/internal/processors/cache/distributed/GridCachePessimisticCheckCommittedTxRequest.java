@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -52,7 +51,6 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
     private long originatingThreadId;
 
     /** Flag indicating that this is near-only check. */
-    @GridDirectVersion(1)
     private boolean nearOnlyCheck;
 
     /**

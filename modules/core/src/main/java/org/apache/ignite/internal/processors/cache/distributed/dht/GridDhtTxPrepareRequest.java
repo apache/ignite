@@ -80,14 +80,11 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
     private boolean last;
 
     /** Subject ID. */
-    @GridDirectVersion(1)
     private UUID subjId;
 
     /** Task name hash. */
-    @GridDirectVersion(2)
     private int taskNameHash;
 
-    @GridDirectVersion(3)
     /** Preload keys. */
     private BitSet preloadKeys;
 

@@ -109,15 +109,12 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
     private boolean all;
 
     /** */
-    @GridDirectVersion(1)
     private boolean keepPortable;
 
     /** */
-    @GridDirectVersion(2)
     private UUID subjId;
 
     /** */
-    @GridDirectVersion(2)
     private int taskHash;
 
     /**

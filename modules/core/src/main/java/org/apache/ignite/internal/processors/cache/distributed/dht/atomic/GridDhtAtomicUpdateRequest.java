@@ -102,7 +102,6 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     /** Key bytes. */
     @GridToStringInclude
     @GridDirectCollection(byte[].class)
-    @GridDirectVersion(1)
     private List<byte[]> nearKeyBytes;
 
     /** Values to update. */
@@ -113,11 +112,9 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     /** Value bytes. */
     @GridToStringInclude
     @GridDirectCollection(GridCacheValueBytes.class)
-    @GridDirectVersion(1)
     private List<GridCacheValueBytes> nearValBytes;
 
     /** Force transform backups flag. */
-    @GridDirectVersion(2)
     private boolean forceTransformBackups;
 
     /** Entry processors. */
@@ -126,7 +123,6 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
     /** Entry processors bytes. */
     @GridDirectCollection(byte[].class)
-    @GridDirectVersion(2)
     private List<byte[]> entryProcessorsBytes;
 
     /** Near entry processors. */
@@ -135,7 +131,6 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
     /** Near entry processors bytes. */
     @GridDirectCollection(byte[].class)
-    @GridDirectVersion(2)
     private List<byte[]> nearEntryProcessorsBytes;
 
     /** Optional arguments for entry processor. */
@@ -146,11 +141,9 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     private byte[][] invokeArgsBytes;
 
     /** Subject ID. */
-    @GridDirectVersion(3)
     private UUID subjId;
 
     /** Task name hash. */
-    @GridDirectVersion(4)
     private int taskNameHash;
 
     /**

@@ -270,7 +270,7 @@ public class GridIoMessage extends MessageAdapter {
 
         switch (commState.idx) {
             case 0:
-                msg = (MessageAdapter)commState.getMessage("msg");
+                msg = commState.getMessage("msg");
 
                 if (!commState.lastRead())
                     return false;

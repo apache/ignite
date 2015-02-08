@@ -58,11 +58,9 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     private Collection<UUID> lastBackups;
 
     /** Subject ID. */
-    @GridDirectVersion(1)
     private UUID subjId;
 
     /** Task name hash. */
-    @GridDirectVersion(2)
     private int taskNameHash;
 
     /**

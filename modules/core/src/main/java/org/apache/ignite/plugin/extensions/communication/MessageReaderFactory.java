@@ -14,6 +14,6 @@ import org.apache.ignite.plugin.*;
 /**
  * TODO
  */
-public interface MessageReaderFactory extends IgniteExtension {
+public interface MessageReaderFactory extends Extension {
     public MessageReader reader();
 }

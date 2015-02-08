@@ -78,11 +78,9 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     private GridCacheVersion writeVer;
 
     /** Subject ID. */
-    @GridDirectVersion(1)
     private UUID subjId;
 
     /** Task name hash. */
-    @GridDirectVersion(2)
     private int taskNameHash;
 
     /** TTLs for optimistic transaction. */

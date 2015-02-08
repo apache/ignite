@@ -63,7 +63,6 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
     /** */
     @GridDirectCollection(byte[].class)
-    @GridDirectVersion(1)
     private List<byte[]> preloadEntriesBytes;
 
     /**

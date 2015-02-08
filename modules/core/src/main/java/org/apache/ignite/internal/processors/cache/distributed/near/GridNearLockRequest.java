@@ -69,15 +69,12 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     private GridCacheVersion[] dhtVers;
 
     /** Subject ID. */
-    @GridDirectVersion(1)
     private UUID subjId;
 
     /** Task name hash. */
-    @GridDirectVersion(2)
     private int taskNameHash;
 
     /** Has transforms flag. */
-    @GridDirectVersion(3)
     private boolean hasTransforms;
 
     /** Sync commit flag. */

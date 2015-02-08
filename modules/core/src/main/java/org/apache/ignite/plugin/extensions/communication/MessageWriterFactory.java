@@ -14,6 +14,6 @@ import org.apache.ignite.plugin.*;
 /**
  * TODO
  */
-public interface MessageWriterFactory extends IgniteExtension {
+public interface MessageWriterFactory extends Extension {
     public MessageWriter writer();
 }

@@ -125,15 +125,12 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     private boolean hasPrimary;
 
     /** Force transform backups flag. */
-    @GridDirectVersion(2)
     private boolean forceTransformBackups;
 
     /** Subject ID. */
-    @GridDirectVersion(3)
     private UUID subjId;
 
     /** Task name hash. */
-    @GridDirectVersion(4)
     private int taskNameHash;
 
     /**
