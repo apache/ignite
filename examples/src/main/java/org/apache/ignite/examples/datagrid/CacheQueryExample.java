@@ -260,9 +260,6 @@ public class CacheQueryExample {
         cache.put(p2.key(), p2);
         cache.put(p3.key(), p3);
         cache.put(p4.key(), p4);
-
-        // Wait 1 second to be sure that all nodes processed put requests.
-        Thread.sleep(1000);
     }
 
     /**
