@@ -29,13 +29,16 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.processors.rest.handlers.task.*;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
 import org.apache.ignite.internal.processors.streamer.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -56,7 +59,7 @@ public class GridTcpCommunicationMessageFactory {
     private static final Map<Byte, GridTcpCommunicationMessageProducer> CUSTOM = new ConcurrentHashMap8<>();
 
     /** */
-    public static final int MAX_COMMON_TYPE = 82;
+    public static final int MAX_COMMON_TYPE = 88;
 
     static {
         registerCommon(new GridTcpCommunicationMessageProducer() {
@@ -254,7 +257,29 @@ public class GridTcpCommunicationMessageFactory {
                     case 63:
                         return new GridDataLoadResponse();
 
-                    // 64-71: IgniteFS messages.
+                    case 64:
+                        return new GridGgfsAckMessage();
+
+                    case 65:
+                        return new GridGgfsBlockKey();
+
+                    case 66:
+                        return new GridGgfsBlocksMessage();
+
+                    case 67:
+                        return new GridGgfsDeleteMessage();
+
+                    case 68:
+                        return new GridGgfsFileAffinityRange();
+
+                    case 69:
+                        return new GridGgfsFragmentizerRequest();
+
+                    case 70:
+                        return new GridGgfsFragmentizerResponse();
+
+                    case 71:
+                        return new GridGgfsSyncMessage();
 
                     case 72:
                         return new GridClientHandshakeRequestWrapper();
@@ -289,6 +314,24 @@ public class GridTcpCommunicationMessageFactory {
                     case 82:
                         return new JobStealingRequest();
 
+                    case 83:
+                        return new GridClockDeltaVersion();
+
+                    case 84:
+                        return new GridByteArrayList();
+
+                    case 85:
+                        return new GridLongList();
+
+                    case 86:
+                        return new GridCacheVersion();
+
+                    case 87:
+                        return new GridDhtPartitionExchangeId();
+
+                    case 88:
+                        return new GridCacheValueBytes();
+
                     default:
                         assert false : "Invalid message type.";
 
@@ -298,8 +341,8 @@ public class GridTcpCommunicationMessageFactory {
         },  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
            20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
            40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
-           60, 61, 62, 63, /* 64-71: IgniteFS messages. */ 72, 73, 74, 75, 76, 77, 78, 79,
-           80, 81, 82);
+           60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
+           80, 81, 82, 83, 84, 85, 86, 87, 88);
     }
 
     /**

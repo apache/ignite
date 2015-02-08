@@ -26,14 +26,12 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.ignitefs.mapreduce.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.direct.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.communication.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -80,43 +78,6 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
         IgniteFsConfiguration[] cfgs = ctx.config().getGgfsConfiguration();
 
         assert cfgs != null && cfgs.length > 0;
-
-        // Register GGFS messages.
-        GridTcpCommunicationMessageFactory.registerCommon(new GridTcpCommunicationMessageProducer() {
-            @Override
-            public MessageAdapter create(byte type) {
-                switch (type) {
-                    case 64:
-                        return new GridGgfsAckMessage();
-
-                    case 65:
-                        return new GridGgfsBlockKey();
-
-                    case 66:
-                        return new GridGgfsBlocksMessage();
-
-                    case 67:
-                        return new GridGgfsDeleteMessage();
-
-                    case 68:
-                        return new GridGgfsFileAffinityRange();
-
-                    case 69:
-                        return new GridGgfsFragmentizerRequest();
-
-                    case 70:
-                        return new GridGgfsFragmentizerResponse();
-
-                    case 71:
-                        return new GridGgfsSyncMessage();
-
-                    default:
-                        assert false : "Invalid GGFS message type.";
-
-                        return null;
-                }
-            }
-        }, 64, 65, 66, 67, 68, 69, 70, 71);
 
         // Register HDFS edition usage with license manager.
         GridLicenseUseRegistry.onUsage(HADOOP, getClass());

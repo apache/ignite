@@ -463,10 +463,11 @@ public class GridByteArrayList extends MessageAdapter implements Externalizable 
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 0; // TODO: implement.
+        return 84;
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("CloneDoesntCallSuperClone")
     @Override public MessageAdapter clone() {
         GridByteArrayList _clone = new GridByteArrayList();
 

@@ -173,10 +173,11 @@ public class GridCacheValueBytes extends MessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 0; // TODO: implement.
+        return 88;
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("CloneDoesntCallSuperClone")
     @Override public MessageAdapter clone() {
         GridCacheValueBytes _clone = new GridCacheValueBytes();
 

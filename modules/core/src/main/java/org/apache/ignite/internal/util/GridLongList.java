@@ -561,10 +561,11 @@ public class GridLongList extends MessageAdapter implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 0; // TODO: implement.
+        return 85;
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("CloneDoesntCallSuperClone")
     @Override public MessageAdapter clone() {
         GridLongList _clone = new GridLongList();
 

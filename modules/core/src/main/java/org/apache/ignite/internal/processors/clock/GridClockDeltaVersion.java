@@ -169,10 +169,11 @@ public class GridClockDeltaVersion extends MessageAdapter implements Comparable<
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 0; // TODO: implement.
+        return 83;
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("CloneDoesntCallSuperClone")
     @Override public MessageAdapter clone() {
         GridClockDeltaVersion _clone = new GridClockDeltaVersion();
 

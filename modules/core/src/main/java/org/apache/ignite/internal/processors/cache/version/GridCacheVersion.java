@@ -337,10 +337,11 @@ public class GridCacheVersion extends MessageAdapter implements Comparable<GridC
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 0; // TODO: implement.
+        return 86;
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("CloneDoesntCallSuperClone")
     @Override public MessageAdapter clone() {
         GridCacheVersion _clone = new GridCacheVersion();
 

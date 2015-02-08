@@ -216,10 +216,11 @@ public class GridDhtPartitionExchangeId extends MessageAdapter implements Compar
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 0; // TODO: implement.
+        return 87;
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("CloneDoesntCallSuperClone")
     @Override public MessageAdapter clone() {
         GridDhtPartitionExchangeId _clone = new GridDhtPartitionExchangeId();
 
