@@ -147,7 +147,9 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         log.info("Get 1.");
 
-        assertEquals(null, cache(0).get(key));
+        IgniteCache<String, Integer> cache = jcache(0);
+
+        assertEquals(null, cache.get(key));
 
         assertEquals(1, interceptor.invokeCnt.get());
 
@@ -163,7 +165,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         log.info("Get 2.");
 
-        assertEquals((Integer)1, cache(0).get(key));
+        assertEquals((Integer)1, cache.get(key));
 
         assertEquals(1, interceptor.invokeCnt.get());
 
@@ -175,7 +177,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         interceptor.disabled = true;
 
-        cache(0).put(key, 100);
+        cache.put(key, 100);
 
         interceptor.disabled = false;
 
@@ -189,7 +191,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         log.info("Get 3.");
 
-        assertEquals(null, cache(0).get(key));
+        assertEquals(null, cache.get(key));
 
         assertEquals(1, interceptor.invokeCnt.get());
 
@@ -209,7 +211,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         log.info("Get 4.");
 
-        assertEquals((Integer)101, cache(0).get(key));
+        assertEquals((Integer)101, cache.get(key));
 
         assertEquals(1, interceptor.invokeCnt.get());
 
@@ -229,7 +231,11 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         log.info("GetAsync 1.");
 
-        assertEquals((Integer)101, cache(0).getAsync(key).get());
+        IgniteCache<String, Integer> cacheAsync = cache.withAsync();
+
+        cacheAsync.get(key);
+
+        assertEquals((Integer)101, cacheAsync.<Integer>future().get());
 
         assertEquals(1, interceptor.invokeCnt.get());
 
@@ -244,7 +250,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @throws Exception If failed.
      */
     public void testGetAll() throws Exception {
-        List<String> keys = new ArrayList<>();
+        Set<String> keys = new LinkedHashSet<>();
 
         for (int i = 0; i < 1000; i++)
             keys.add(String.valueOf(i));
@@ -255,7 +261,11 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             }
         };
 
-        Map<String, Integer> map = cache(0).getAll(keys);
+        IgniteCache<String, Integer> cache = jcache(0);
+
+        IgniteCache<String, Integer> cacheAsync = cache.withAsync();
+
+        Map<String, Integer> map = cache.getAll(keys);
 
         for (String key : keys)
             assertEquals(null, map.get(key));
@@ -272,7 +282,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             }
         };
 
-        map = cache(0).getAll(keys);
+        map = cache.getAll(keys);
 
         for (String key : keys) {
             int k = Integer.valueOf(key);
@@ -290,7 +300,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         interceptor.disabled = true;
 
         for (int i = 0; i < 500; i++)
-            cache(0).put(String.valueOf(i), i);
+            cache.put(String.valueOf(i), i);
 
         interceptor.disabled = false;
 
@@ -319,11 +329,17 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
                 }
             };
 
-            map = j == 0 ? cache(0).getAll(keys) : cache(0).getAllAsync(keys).get();
+            if (j == 0)
+                map = cache.getAll(keys);
+            else {
+                cacheAsync.getAll(keys);
 
-            for (int i = 0; i < keys.size(); i++) {
-                String key = keys.get(i);
+                map = cacheAsync.<Map<String, Integer>>future().get();
+            }
 
+            int i = 0;
+
+            for (String key : keys) {
                 switch (i % 3) {
                     case 0:
                         assertEquals(null, map.get(key));
@@ -345,6 +361,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
                     default:
                         fail();
                 }
+
+                i++;
             }
 
             assertEquals(1000, interceptor.invokeCnt.get());
@@ -437,7 +455,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         clearCaches();
 
-        cache(0).put(key, 1);
+        jcache(0).put(key, 1);
 
         checkCacheValue(key, 1);
 
@@ -617,7 +635,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         clearCaches();
 
-        cache(0).put(key, 1);
+        jcache(0).put(key, 1);
 
         checkCacheValue(key, 1);
 
@@ -744,7 +762,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         clearCaches();
 
-        cache(0).put(key, 1);
+        jcache(0).put(key, 1);
 
         checkCacheValue(key, 1);
 
@@ -783,7 +801,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         clearCaches();
 
-        cache(0).put(key, 2);
+        jcache(0).put(key, 2);
 
         checkCacheValue(key, 2);
 
@@ -861,7 +879,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         interceptor.disabled = true;
 
         // Put from grid 1 to be sure grid 0 does not have value for near key.
-        cache(1).putAll(F.asMap(key1, 1, key2, 2, key3, 3));
+        jcache(1).putAll(F.asMap(key1, 1, key2, 2, key3, 3));
 
         interceptor.disabled = false;
 
@@ -872,7 +890,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             assertNotNull(txIsolation);
             assertNotNull(op);
 
-            try (IgniteTx tx = cache(0).txStart(txConcurrency, txIsolation)) {
+            try (IgniteTx tx = ignite(0).transactions().txStart(txConcurrency, txIsolation)) {
                 update(0, op, key1, 100, 1);
                 update(0, op, key2, 200, 2);
                 update(0, op, key3, 300, 3);
@@ -881,7 +899,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             }
         }
         else
-            cache(0).putAll(F.asMap(key1, 100, key2, 200, key3, 300));
+            jcache(0).putAll(F.asMap(key1, 100, key2, 200, key3, 300));
 
         checkCacheValue(key1, 101);
         checkCacheValue(key2, 201);
@@ -1052,7 +1070,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         interceptor.disabled = true;
 
-        cache(0).putAll(map);
+        jcache(0).putAll(map);
 
         interceptor.disabled = false;
 
@@ -1089,7 +1107,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
         interceptor.disabled = true;
 
-        cache(0).putAll(map);
+        jcache(0).putAll(map);
 
         interceptor.disabled = false;
 
@@ -1351,7 +1369,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     private List<String> primaryKeys(int idx, int cnt) {
         assert cnt > 0;
 
-        CacheAffinity aff = cache(0).affinity();
+        CacheAffinity aff = ignite(0).affinity(null);
 
         List<String> keys = new ArrayList<>(cnt);
 
@@ -1376,7 +1394,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @return Primary key for grid.
      */
     private String backupKey(int idx) {
-        CacheAffinity aff = cache(0).affinity();
+        CacheAffinity aff = ignite(0).affinity(null);
 
         String key = null;
 
@@ -1398,7 +1416,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @return Key which does not belong to the grid.
      */
     private String nearKey(int idx) {
-        CacheAffinity aff = cache(0).affinity();
+        CacheAffinity aff = ignite(0).affinity(null);
 
         String key = null;
 
@@ -1440,7 +1458,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      */
     private void clearCaches() throws Exception {
         for (int i = 0; i < gridCount(); i++)
-            cache(i).removeAll();
+            jcache(i).removeAll();
     }
 
     /**

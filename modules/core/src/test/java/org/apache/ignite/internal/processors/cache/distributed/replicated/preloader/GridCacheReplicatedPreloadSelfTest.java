@@ -302,13 +302,13 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < keyCnt; i++)
                 cache1.put(i, "val" + i);
 
-            GridCache<Integer, String> cache2 = startGrid(2).cache(null);
+            IgniteCache<Integer, String> cache2 = startGrid(2).jcache(null);
 
-            int size = cache2.size();
+            int size = cache2.localSize();
 
             info("Size of cache2: " + size);
 
-            assert waitCacheSize(cache2, keyCnt, getTestTimeout()) : "Actual cache size: " + cache2.size();
+            assert waitCacheSize(cache2, keyCnt, getTestTimeout()) : "Actual cache size: " + cache2.localSize();
         }
         finally {
             stopAllGrids();
@@ -323,7 +323,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      * @throws InterruptedException If thread was interrupted.
      */
     @SuppressWarnings({"BusyWait"})
-    private boolean waitCacheSize(CacheProjection<Integer, String> cache, int expSize, long timeout)
+    private boolean waitCacheSize(IgniteCache<Integer, String> cache, int expSize, long timeout)
         throws InterruptedException {
         assert cache != null;
         assert expSize > 0;
@@ -331,14 +331,14 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
         long end = System.currentTimeMillis() + timeout;
 
-        while (cache.size() < expSize) {
+        while (cache.localSize() < expSize) {
             Thread.sleep(50);
 
             if (end - System.currentTimeMillis() <= 0)
                 break;
         }
 
-        return cache.size() >= expSize;
+        return cache.localSize() >= expSize;
     }
 
     /**
@@ -455,7 +455,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
                 info("Cache size is OK for grid index: " + gridIdx);
             }
 
-            GridCache<Integer, String> lastCache = startGrid(gridCnt).cache(null);
+            IgniteCache<Integer, String> lastCache = startGrid(gridCnt).jcache(null);
 
             // Let preloading start.
             Thread.sleep(1000);
@@ -467,7 +467,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             stopGrid(idx);
 
-            assert waitCacheSize(lastCache, cnt, 20 * 1000) : "Actual cache size: " + lastCache.size();
+            assert waitCacheSize(lastCache, cnt, 20 * 1000) : "Actual cache size: " + lastCache.localSize();
         }
         finally {
             stopAllGrids();

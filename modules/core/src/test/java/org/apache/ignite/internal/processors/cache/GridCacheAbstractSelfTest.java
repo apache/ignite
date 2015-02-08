@@ -37,7 +37,6 @@ import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -386,7 +385,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @return Default cache.
      */
     @SuppressWarnings({"unchecked"})
-    protected IgniteCache<String, Integer> jcache(int idx) {
+    @Override protected IgniteCache<String, Integer> jcache(int idx) {
         return ignite(idx).jcache(null);
     }
 
@@ -426,18 +425,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Executes regular peek or peek from swap.
      *
-     * @param prj Cache projection.
-     * @param key Key.
-     * @return Value.
-     * @throws Exception If failed.
-     */
-    @Nullable protected <K, V> V peek(CacheProjection<K, V> prj, K key) throws Exception {
-        return offheapTiered(prj.cache()) ? prj.peek(key, F.asList(GridCachePeekMode.SWAP)) : prj.peek(key);
-    }
-
-    /**
-     * Executes regular peek or peek from swap.
-     *
      * @param cache Cache projection.
      * @param key Key.
      * @return Value.
@@ -454,8 +441,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    protected boolean containsKey(GridCache cache, Object key) throws Exception {
-        return offheapTiered(cache) ? containsOffheapKey(cache, key) : cache.containsKey(key);
+    protected boolean containsKey(IgniteCache cache, Object key) throws Exception {
+        return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.OFFHEAP) != null : cache.containsKey(key);
     }
 
     /**
@@ -467,24 +454,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("unchecked")
     protected boolean containsValue(GridCache cache, Object val) throws Exception {
         return offheapTiered(cache) ? containsOffheapValue(cache, val) : cache.containsValue(val);
-    }
-
-    /**
-     * @param cache Cache.
-     * @param key Key.
-     * @return {@code True} if offheap contains given key.
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("unchecked")
-    protected boolean containsOffheapKey(GridCache cache, Object key) throws Exception {
-        for (Iterator<Map.Entry> it = cache.offHeapIterator(); it.hasNext();) {
-            Map.Entry e = it.next();
-
-            if (key.equals(e.getKey()))
-                return true;
-        }
-
-        return false;
     }
 
     /**

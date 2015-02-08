@@ -287,29 +287,24 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
                     long threadId = Thread.currentThread().getId();
 
-                    try {
-                        long itNum;
+                    long itNum;
 
-                        while ((itNum = iterCnt.getAndIncrement()) < maxIterCnt) {
-                            Collections.shuffle(threadKeys);
+                    while ((itNum = iterCnt.getAndIncrement()) < maxIterCnt) {
+                        Collections.shuffle(threadKeys);
 
-                            List<Integer> iterKeys = threadKeys.subList(0, keysCnt);
+                        List<Integer> iterKeys = threadKeys.subList(0, keysCnt);
 
-                            Collections.sort(iterKeys);
+                        Collections.sort(iterKeys);
 
-                            Map<Integer, String> vals = U.newLinkedHashMap(keysCnt);
+                        Map<Integer, String> vals = U.newLinkedHashMap(keysCnt);
 
-                            for (Integer key : iterKeys)
-                                vals.put(key, String.valueOf(key) + threadId);
+                        for (Integer key : iterKeys)
+                            vals.put(key, String.valueOf(key) + threadId);
 
-                            cache(0).putAll(vals);
+                        jcache(0).putAll(vals);
 
-                            if (itNum > 0 && itNum % 5000 == 0)
-                                info(">>> " + itNum + " iterations completed.");
-                        }
-                    }
-                    catch (IgniteCheckedException e) {
-                        fail("Unexpected exception caught: " + e);
+                        if (itNum > 0 && itNum % 5000 == 0)
+                            info(">>> " + itNum + " iterations completed.");
                     }
                 }
             }, THREAD_CNT);

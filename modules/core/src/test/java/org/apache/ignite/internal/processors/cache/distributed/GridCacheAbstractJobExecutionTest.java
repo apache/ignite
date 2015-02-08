@@ -162,12 +162,12 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
             fut.get(); // Wait for completion.
 
         for (int i = 0; i < GRID_CNT; i++) {
-            CacheProjection<String, int[]> c = grid(i).cache(null).projection(String.class, int[].class);
+            IgniteCache<String, int[]> c = grid(i).jcache(null);
 
             // Do within transaction to make sure that lock is acquired
             // which means that all previous transactions have committed.
 
-            try (IgniteTx tx = c.txStart(concur, isolation)) {
+            try (IgniteTx tx = grid(i).transactions().txStart(concur, isolation)) {
                 int[] arr = c.get("TestKey");
 
                 assertNotNull(arr);

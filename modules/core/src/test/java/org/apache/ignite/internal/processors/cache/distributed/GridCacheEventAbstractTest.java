@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -139,11 +140,11 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     private void clearCaches() throws IgniteCheckedException {
         for (int i = 0; i < gridCnt; i++) {
-            GridCache<String, Integer> cache = cache(i);
+            IgniteCache<String, Integer> cache = jcache(i);
 
             cache.removeAll();
 
-            assert cache.isEmpty();
+            assert cache.localSize() == 0;
         }
     }
 
@@ -223,7 +224,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testGetPutRemove() throws Exception {
         // TODO: GG-7578.
-        if (cache(0).configuration().getCacheMode() == CacheMode.REPLICATED)
+        if (jcache(0).getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.REPLICATED)
             return;
 
         runTest(
@@ -322,7 +323,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testGetPutRemoveAsync() throws Exception {
         // TODO: GG-7578.
-        if (cache(0).configuration().getCacheMode() == CacheMode.REPLICATED)
+        if (jcache(0).getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.REPLICATED)
             return;
 
         runTest(new TestCacheRunnable() {

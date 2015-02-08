@@ -175,52 +175,49 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     public void testPartitionedNearEnabled() throws Exception {
         assert false : "ignite-96";
 
-//        mode = PARTITIONED;
-//        nearEnabled = true;
-//
-//        try {
-//            startGridsMultiThreaded(2);
-//
-//            int[] keys = new int[3];
-//
-//            int key = 0;
-//
-//            for (int i = 0; i < keys.length; i++) {
-//                while (true) {
-//                    key++;
-//
-//                    if (grid(0).mapKeyToNode(null, key).equals(grid(0).localNode())) {
-//                        if (i > 0)
-//                            assertTrue(cache(0).putx(key, new Value(new byte[i * 1024])));
-//
-//                        keys[i] = key;
-//
-//                        break;
-//                    }
-//                }
-//            }
-//
-//            // Create near entries.
-//            assertNotNull(cache(1).get(keys[1]));
-//            assertNotNull(cache(1).get(keys[2]));
-//
-//            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
-//                extrasSize(cache(0).entry(keys[0])), cache(0).entry(keys[0]).memorySize());
-//            assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD + READER_SIZE +
-//                extrasSize(cache(0).entry(keys[1])), cache(0).entry(keys[1]).memorySize());
-//            assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD + READER_SIZE +
-//                extrasSize(cache(0).entry(keys[2])), cache(0).entry(keys[2]).memorySize());
-//
-//            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + NEAR_ENTRY_OVERHEAD +
-//                extrasSize(cache(1).entry(keys[0])), cache(1).entry(keys[0]).memorySize());
-//            assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + NEAR_ENTRY_OVERHEAD +
-//                extrasSize(cache(1).entry(keys[1])), cache(1).entry(keys[1]).memorySize());
-//            assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + NEAR_ENTRY_OVERHEAD +
-//                extrasSize(cache(1).entry(keys[2])), cache(1).entry(keys[2]).memorySize());
-//        }
-//        finally {
-//            stopAllGrids();
-//        }
+        try {
+            startGridsMultiThreaded(2);
+
+            int[] keys = new int[3];
+
+            int key = 0;
+
+            for (int i = 0; i < keys.length; i++) {
+                while (true) {
+                    key++;
+
+                    if (grid(0).mapKeyToNode(null, key).equals(grid(0).localNode())) {
+                        if (i > 0)
+                            jcache(0).put(key, new Value(new byte[i * 1024]));
+
+                        keys[i] = key;
+
+                        break;
+                    }
+                }
+            }
+
+            // Create near entries.
+            assertNotNull(jcache(1).get(keys[1]));
+            assertNotNull(jcache(1).get(keys[2]));
+
+            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
+                extrasSize(cache(0).entry(keys[0])), cache(0).entry(keys[0]).memorySize());
+            assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD + READER_SIZE +
+                extrasSize(cache(0).entry(keys[1])), cache(0).entry(keys[1]).memorySize());
+            assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD + READER_SIZE +
+                extrasSize(cache(0).entry(keys[2])), cache(0).entry(keys[2]).memorySize());
+
+            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + NEAR_ENTRY_OVERHEAD +
+                extrasSize(cache(1).entry(keys[0])), cache(1).entry(keys[0]).memorySize());
+            assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + NEAR_ENTRY_OVERHEAD +
+                extrasSize(cache(1).entry(keys[1])), cache(1).entry(keys[1]).memorySize());
+            assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + NEAR_ENTRY_OVERHEAD +
+                extrasSize(cache(1).entry(keys[2])), cache(1).entry(keys[2]).memorySize());
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /** @throws Exception If failed. */

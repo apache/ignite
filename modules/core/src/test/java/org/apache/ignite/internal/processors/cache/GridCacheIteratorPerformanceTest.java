@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
@@ -83,11 +83,12 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
     /**
      * Iterates over cache.
      *
-     * @param prj Projection.
+     * @param cache Projection.
      * @param c Visitor closure.
      */
-    private void iterate(CacheProjection<Integer, Integer> prj, IgniteInClosure<Cache.Entry<Integer, Integer>> c) {
-        prj.forEach(c);
+    private void iterate(IgniteCache<Integer, Integer> cache, IgniteInClosure<Cache.Entry<Integer, Integer>> c) {
+        for (Cache.Entry<Integer, Integer> entry : cache.localEntries())
+            c.apply(entry);
     }
 
     /**
@@ -105,10 +106,10 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSmall() throws Exception {
-        CacheProjection<Integer, Integer> cache = grid().cache(null);
+        IgniteCache<Integer, Integer> cache = grid().jcache(null);
 
         for (int i = 0; i < SMALL_ENTRY_CNT; i++)
-            assert cache.putx(i, i);
+            cache.put(i, i);
 
         assert cache.size() == SMALL_ENTRY_CNT;
 
@@ -134,10 +135,10 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLarge() throws Exception {
-        CacheProjection<Integer, Integer> cache = grid().cache(null);
+        IgniteCache<Integer, Integer> cache = grid().jcache(null);
 
         for (int i = 0; i < LARGE_ENTRY_CNT; i++)
-            assert cache.putx(i, i);
+            cache.put(i, i);
 
         assert cache.size() == LARGE_ENTRY_CNT;
 
@@ -162,49 +163,11 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testProjectionFiltered() throws Exception {
-        GridCache<Integer, Integer> cache = grid().cache(null);
-
-        for (int i = 0; i < LARGE_ENTRY_CNT; i++)
-            assert cache.putx(i, i);
-
-        assert cache.size() == LARGE_ENTRY_CNT;
-
-        IgniteInClosure<Cache.Entry<Integer, Integer>> c = emptyFilter();
-
-        CacheProjection<Integer, Integer> prj = cache.projection(new P2<Integer, Integer>() {
-            @Override public boolean apply(Integer key, Integer val) {
-                return val < SMALL_ENTRY_CNT;
-            }
-        });
-
-        assert prj.size() == SMALL_ENTRY_CNT;
-
-        // Warmup.
-        for (int i = 0; i < 3; i++)
-            iterate(prj, c);
-
-        long start = System.currentTimeMillis();
-
-        iterate(prj, c);
-
-        long time = System.currentTimeMillis() - start;
-
-        X.println(">>>");
-        X.println(">>> Iterated over " + prj.size() + " entries.");
-        X.println(">>> Iteration time: " + time + "ms.");
-        X.println(">>>");
-    }
-
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testFiltered() throws Exception {
-        GridCache<Integer, Integer> cache = grid().cache(null);
+        IgniteCache<Integer, Integer> cache = grid().jcache(null);
 
         for (int i = 0; i < LARGE_ENTRY_CNT; i++)
-            assert cache.putx(i, i);
+            cache.put(i, i);
 
         assert cache.size() == LARGE_ENTRY_CNT;
 
@@ -251,6 +214,9 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
             this.i = i;
         }
 
+        /**
+         * Default constructor.
+         */
         BoxedInt() {
             // No-op.
         }

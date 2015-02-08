@@ -78,7 +78,7 @@ public class GridCacheSynchronousEvictionsFailoverSelfTest extends GridCacheAbst
      * @throws Exception If failed.
      */
     public void testSynchronousEvictions() throws Exception {
-        GridCache<String, Integer> cache = cache(0);
+        IgniteCache<String, Integer> cache = jcache(0);
 
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -87,9 +87,9 @@ public class GridCacheSynchronousEvictionsFailoverSelfTest extends GridCacheAbst
         try {
             Map<String, Integer> data = new HashMap<>();
 
-            addKeysForNode(cache.affinity(), grid(0).localNode(), data);
-            addKeysForNode(cache.affinity(), grid(1).localNode(), data);
-            addKeysForNode(cache.affinity(), grid(2).localNode(), data);
+            addKeysForNode(affinity(cache), grid(0).localNode(), data);
+            addKeysForNode(affinity(cache), grid(1).localNode(), data);
+            addKeysForNode(affinity(cache), grid(2).localNode(), data);
 
             fut = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -119,12 +119,11 @@ public class GridCacheSynchronousEvictionsFailoverSelfTest extends GridCacheAbst
                 try {
                     cache.putAll(data);
                 }
-                catch (IgniteCheckedException ignore) {
+                catch (IgniteException ignore) {
                     continue;
                 }
 
-                for (String key : data.keySet())
-                    cache.evict(key);
+                cache.localEvict(data.keySet());
             }
         }
         finally {

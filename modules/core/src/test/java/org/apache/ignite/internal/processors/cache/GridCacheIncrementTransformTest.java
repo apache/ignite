@@ -89,7 +89,7 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++)
             grids.set(i, grid(i));
 
-        cache(0).put("key", new TestObject(0));
+        jcache(0).put("key", new TestObject(0));
     }
 
     /** {@inheritDoc} */
