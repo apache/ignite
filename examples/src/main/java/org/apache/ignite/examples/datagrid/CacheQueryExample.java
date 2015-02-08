@@ -147,8 +147,8 @@ public class CacheQueryExample {
             + "and lower(Organization.name) = lower(?)";
 
         // Execute queries for find employees for different organizations.
-        print("Following people are 'Ignite' employees: ",
-            cache.query(sql(Person.class, joinSql).setArgs("Ignite")).getAll());
+        print("Following people are 'GridGain' employees: ",
+            cache.query(sql(Person.class, joinSql).setArgs("GridGain")).getAll());
         print("Following people are 'Other' employees: ",
             cache.query(sql(Person.class, joinSql).setArgs("Other")).getAll());
     }
@@ -181,13 +181,13 @@ public class CacheQueryExample {
     private static void sqlQueryWithAggregation() throws IgniteCheckedException {
         IgniteCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().jcache(CACHE_NAME);
 
-        // Calculate average of salary of all persons in Ignite.
+        // Calculate average of salary of all persons in GridGain.
         QueryCursor<List<?>> cursor = cache.queryFields(sql(
             "select avg(salary) from Person, Organization where Person.orgId = Organization.id and "
-                + "lower(Organization.name) = lower(?)").setArgs("Ignite"));
+                + "lower(Organization.name) = lower(?)").setArgs("GridGain"));
 
         // Calculate average salary for a specific organization.
-        print("Average salary for 'Ignite' employees: " + cursor.getAll());
+        print("Average salary for 'GridGain' employees: " + cursor.getAll());
     }
 
     /**
@@ -242,7 +242,7 @@ public class CacheQueryExample {
         IgniteCache cache = Ignition.ignite().jcache(CACHE_NAME);
 
         // Organizations.
-        Organization org1 = new Organization("Ignite");
+        Organization org1 = new Organization("GridGain");
         Organization org2 = new Organization("Other");
 
         // People.
