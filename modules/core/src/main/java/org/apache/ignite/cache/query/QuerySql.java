@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.query;
 
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -125,22 +126,7 @@ public final class QuerySql extends Query<QuerySql> {
      * @param type Type.
      */
     public QuerySql setType(Class<?> type) {
-        return setType(name(type));
-    }
-
-    /**
-     * @param type Type class.
-     * @return Type name.
-     */
-    static String name(Class<?> type) {
-        if (type == null)
-            return null;
-
-        String name = type.getName();
-
-        int dot = name.lastIndexOf('.');
-
-        return dot == -1 ? name : name.substring(dot + 1);
+        return setType(GridQueryProcessor.typeName(type));
     }
 
     /** {@inheritDoc} */

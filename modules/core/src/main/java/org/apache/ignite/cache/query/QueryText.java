@@ -17,9 +17,8 @@
 
 package org.apache.ignite.cache.query;
 
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-
-import static org.apache.ignite.cache.query.QuerySql.*;
 
 /**
  * Query for Lucene based fulltext search.
@@ -68,7 +67,7 @@ public final class QueryText extends Query<QueryText> {
      * @return {@code this} For chaining.
      */
     public QueryText setType(Class<?> type) {
-        return setType(name(type));
+        return setType(GridQueryProcessor.typeName(type));
     }
 
     /**
