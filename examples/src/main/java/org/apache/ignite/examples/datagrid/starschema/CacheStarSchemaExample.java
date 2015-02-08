@@ -26,6 +26,8 @@ import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.apache.ignite.cache.query.Query.*;
+
 /**
  * <a href="http://en.wikipedia.org/wiki/Snowflake_schema">Snowflake Schema</a> is a logical
  * arrangement of data in which data is split into {@code dimensions} and {@code facts}.
@@ -155,11 +157,10 @@ public class CacheStarSchemaExample {
         // ========================
 
         // Create cross cache query to get all purchases made at store1.
-        QueryCursor<Cache.Entry<Integer, FactPurchase>> storePurchases = factCache.query(new QuerySqlPredicate(
-                FactPurchase.class,
-                "from \"replicated\".DimStore, \"partitioned\".FactPurchase "
-                    + "where DimStore.id=FactPurchase.storeId and DimStore.name=?",
-                "Store1"));
+        QueryCursor<Cache.Entry<Integer, FactPurchase>> storePurchases = factCache.query(sql(
+            FactPurchase.class,
+            "from \"replicated\".DimStore, \"partitioned\".FactPurchase "
+                + "where DimStore.id=FactPurchase.storeId and DimStore.name=?").setArgs("Store1"));
 
         printQueryResults("All purchases made at store1:", storePurchases.getAll());
     }
@@ -186,11 +187,12 @@ public class CacheStarSchemaExample {
 
         // Create cross cache query to get all purchases made at store2
         // for specified products.
-        QueryCursor<Cache.Entry<Integer, FactPurchase>> prodPurchases = factCache.query(new QuerySqlPredicate(
+        QueryCursor<Cache.Entry<Integer, FactPurchase>> prodPurchases = factCache.query(sql(
             FactPurchase.class,
             "from \"replicated\".DimStore, \"replicated\".DimProduct, \"partitioned\".FactPurchase "
                 + "where DimStore.id=FactPurchase.storeId and DimProduct.id=FactPurchase.productId "
-                + "and DimStore.name=? and DimProduct.id in(?, ?, ?)", "Store2", p1.getId(), p2.getId(), p3.getId()));
+                + "and DimStore.name=? and DimProduct.id in(?, ?, ?)")
+            .setArgs("Store2", p1.getId(), p2.getId(), p3.getId()));
 
         printQueryResults("All purchases made at store2 for 3 specific products:", prodPurchases.getAll());
     }
