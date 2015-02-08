@@ -525,7 +525,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         set.clear();
 
-        while ((next = iter.next()) != null) {
+        while (iter.hasNext()) {
+            next = iter.next();
+
             ObjectValue v = next.getValue();
 
             assert !set.contains(v.intValue());
@@ -1022,7 +1024,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         cache.put(2, new ArrayObject(new Long[] {4L, 5L, 6L}));
 
         QueryCursor<Cache.Entry<Integer, ArrayObject>> q =
-            cache.query(sql(ArrayObject.class, "array_contains(arr, cast(4 as long))"));
+            cache.query(sql(ArrayObject.class, "array_contains(arr, cast(? as long))").setArgs(4));
 
         Collection<Cache.Entry<Integer, ArrayObject>> res = q.getAll();
 

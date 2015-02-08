@@ -317,19 +317,22 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public QueryCursor<Entry<K,V>> query(Query filter) {
-        A.notNull(filter, "filter");
+    @Override public QueryCursor<Entry<K,V>> query(Query qry) {
+        A.notNull(qry, "qry");
 
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            if (filter instanceof SqlQuery) {
-                SqlQuery p = (SqlQuery)filter;
+            if (qry instanceof SqlQuery) {
+                SqlQuery p = (SqlQuery)qry;
+
+                if (ctx.isReplicated())
+                    return doLocalQuery(p);
 
                 return ctx.kernalContext().query().queryTwoStep(ctx.name(), p.getType(), p.getSql(), p.getArgs());
             }
 
-            return query(filter, null);
+            return query(qry, null);
         }
         catch (Exception e) {
             if (e instanceof CacheException)
@@ -343,13 +346,57 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> queryFields(SqlFieldsQuery filter) {
-        A.notNull(filter, "filter");
+    @Override public QueryCursor<List<?>> queryFields(SqlFieldsQuery qry) {
+        A.notNull(qry, "qry");
 
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return ctx.kernalContext().query().queryTwoStep(ctx.name(), filter.getSql(), filter.getArgs());
+            if (ctx.isReplicated())
+                return doLocalFieldsQuery(qry);
+
+            return ctx.kernalContext().query().queryTwoStep(ctx.name(), qry.getSql(), qry.getArgs());
+        }
+        catch (Exception e) {
+            if (e instanceof CacheException)
+                throw e;
+
+            throw new CacheException(e);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /**
+     * @param p Query.
+     * @return Cursor.
+     */
+    private QueryCursor<Entry<K,V>> doLocalQuery(SqlQuery p) {
+        return new QueryCursorImpl<>(ctx.kernalContext().query().<K,V>queryLocal(
+            ctx.name(), p.getType(), p.getSql(), p.getArgs()));
+    }
+
+    /**
+     * @param q Query.
+     * @return Cursor.
+     */
+    private QueryCursor<List<?>> doLocalFieldsQuery(SqlFieldsQuery q) {
+        return new QueryCursorImpl<>(ctx.kernalContext().query().queryLocalFields(
+            ctx.name(), q.getSql(), q.getArgs()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public QueryCursor<Entry<K,V>> localQuery(Query qry) {
+        A.notNull(qry, "qry");
+
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            if (qry instanceof SqlQuery)
+                return doLocalQuery((SqlQuery)qry);
+
+            return query(qry, ctx.kernalContext().grid().forLocal());
         }
         catch (Exception e) {
             if (e instanceof CacheException)
@@ -363,41 +410,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public QueryCursor<Entry<K,V>> localQuery(Query filter) {
-        A.notNull(filter, "filter");
+    @Override public QueryCursor<List<?>> localQueryFields(SqlFieldsQuery qry) {
+        A.notNull(qry, "qry");
 
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            if (filter instanceof SqlQuery) {
-                SqlQuery p = (SqlQuery)filter;
-
-                return new QueryCursorImpl<>(ctx.kernalContext().query().<K,V>queryLocal(
-                    ctx.name(), p.getType(), p.getSql(), p.getArgs()));
-            }
-
-            return query(filter, ctx.kernalContext().grid().forLocal());
-        }
-        catch (Exception e) {
-            if (e instanceof CacheException)
-                throw e;
-
-            throw new CacheException(e);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public QueryCursor<List<?>> localQueryFields(SqlFieldsQuery filter) {
-        A.notNull(filter, "filter");
-
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return new QueryCursorImpl<>(ctx.kernalContext().query().queryLocalFields(
-                ctx.name(), filter.getSql(), filter.getArgs()));
+            return doLocalFieldsQuery(qry);
         }
         catch (Exception e) {
             if (e instanceof CacheException)
