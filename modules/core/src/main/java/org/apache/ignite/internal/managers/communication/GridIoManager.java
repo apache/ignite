@@ -960,8 +960,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         assert msg != null;
         assert plc != null;
 
-        GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
-
         if (locNodeId.equals(node.id())) {
             assert plc != P2P_POOL;
 
@@ -970,12 +968,16 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             if (commLsnr == null)
                 throw new IgniteCheckedException("Trying to send message when grid is not fully started.");
 
+            GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg, ordered, timeout, skipOnTimeout);
+
             if (ordered)
                 processOrderedMessage(locNodeId, ioMsg, plc, null);
             else
                 processRegularMessage0(ioMsg, locNodeId);
         }
         else {
+            GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg.clone(), ordered, timeout, skipOnTimeout);
+
             ioMsg.setWriter(writerFactory.writer());
 
             if (topicOrd < 0)
@@ -1302,15 +1304,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             // Small optimization, as communication SPIs may have lighter implementation for sending
             // messages to one node vs. many.
             if (!nodes.isEmpty()) {
-                boolean first = true;
-
-                for (ClusterNode node : nodes) {
-                    MessageAdapter msg0 = first ? msg : msg.clone();
-
-                    first = false;
-
-                    send(node, topic, topicOrd, msg0, plc, ordered, timeout, skipOnTimeout);
-                }
+                for (ClusterNode node : nodes)
+                    send(node, topic, topicOrd, msg, plc, ordered, timeout, skipOnTimeout);
             }
             else if (log.isDebugEnabled())
                 log.debug("Failed to send message to empty nodes collection [topic=" + topic + ", msg=" +

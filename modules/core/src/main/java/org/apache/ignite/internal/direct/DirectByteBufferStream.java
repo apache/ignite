@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.direct;
 
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -568,8 +569,12 @@ public class DirectByteBufferStream {
             Type itemType = type(itemCls);
 
             while (it.hasNext() || cur != NULL) {
-                if (cur == NULL)
+                if (cur == NULL) {
                     cur = it.next();
+
+                    if (itemType == Type.MSG)
+                        cur = ((MessageAdapter)cur).clone();
+                }
 
                 write(itemType, cur);
 
@@ -599,8 +604,12 @@ public class DirectByteBufferStream {
             Type itemType = type(itemCls);
 
             while (it.hasNext() || cur != NULL) {
-                if (cur == NULL)
+                if (cur == NULL) {
                     cur = it.next();
+
+                    if (itemType == Type.MSG)
+                        cur = ((MessageAdapter)cur).clone();
+                }
 
                 write(itemType, cur);
 
@@ -632,10 +641,28 @@ public class DirectByteBufferStream {
             Type valType = type(valCls);
 
             while (it.hasNext() || cur != NULL) {
-                if (cur == NULL)
+                Map.Entry<K, V> e;
+
+                if (cur == NULL) {
                     cur = it.next();
 
-                Map.Entry<K, V> e = (Map.Entry<K, V>)cur;
+                    e = (Map.Entry<K, V>)cur;
+
+                    if (keyType == Type.MSG || valType == Type.MSG) {
+                        K k = e.getKey();
+                        V v = e.getValue();
+
+                        if (k != null && keyType == Type.MSG)
+                            k = (K)((MessageAdapter)k).clone();
+
+                        if (v != null && valType == Type.MSG)
+                            v = (V)((MessageAdapter)v).clone();
+
+                        cur = e = F.t(k, v);
+                    }
+                }
+                else
+                    e = (Map.Entry<K, V>)cur;
 
                 if (!keyDone) {
                     write(keyType, e.getKey());
