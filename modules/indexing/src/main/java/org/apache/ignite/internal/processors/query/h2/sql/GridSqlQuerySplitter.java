@@ -58,6 +58,9 @@ public class GridSqlQuerySplitter {
      * @return Two step query.
      */
     public static GridCacheTwoStepQuery split(Connection conn, String query, Object[] params) {
+        if (params == null)
+            params = GridCacheSqlQuery.EMPTY_PARAMS;
+
         GridSqlSelect srcQry = GridSqlQueryParser.parse(conn, query);
 
         final String mergeTable = table(0);
@@ -140,6 +143,9 @@ public class GridSqlQuerySplitter {
      * @return Extracted parameters list.
      */
     private static List<Object> findParams(GridSqlSelect qry, Object[] params, ArrayList<Object> target) {
+        if (params.length == 0)
+            return target;
+
         for (GridSqlElement el : qry.select())
             findParams(el, params, target);
 
@@ -177,7 +183,12 @@ public class GridSqlQuerySplitter {
             while (target.size() < idx)
                 target.add(null);
 
-            target.add(idx, params[idx]);
+            Object param = params[idx];
+
+            if (idx == target.size())
+                target.add(param);
+            else
+                target.set(idx, param);
         }
         else
             for (GridSqlElement child : el)

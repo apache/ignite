@@ -366,7 +366,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 stmt.setObject(idx, obj);
         }
         catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to bind parameter [idx=" + idx + ", obj=" + obj + ']', e);
+            throw new IgniteCheckedException("Failed to bind parameter [idx=" + idx + ", obj=" + obj + ", stmt=" +
+                stmt + ']', e);
         }
     }
 
