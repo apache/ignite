@@ -2503,7 +2503,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.localEvict(Sets.union(ImmutableSet.of("key1", "key2"), keys));
 
-        assert cache.localSize() == 0;
+        assert cache.localSize(CachePeekMode.ONHEAP) == 0;
 
         cache.clear();
 

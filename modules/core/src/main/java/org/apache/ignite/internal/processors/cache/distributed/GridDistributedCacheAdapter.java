@@ -36,6 +36,7 @@ import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -285,6 +286,16 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                             }
                         }
                     }
+
+                    Iterator<Cache.Entry<K, V>> it = dht.context().swap().offheapIterator(true, false, topVer);
+
+                    while (it.hasNext())
+                        dataLdr.removeData(it.next().getKey());
+
+                    it = dht.context().swap().swapIterator(true, false, topVer);
+
+                    while (it.hasNext())
+                        dataLdr.removeData(it.next().getKey());
                 }
             }
             finally {

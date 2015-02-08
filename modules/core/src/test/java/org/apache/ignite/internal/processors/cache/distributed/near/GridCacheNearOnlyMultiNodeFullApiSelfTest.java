@@ -266,7 +266,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             jcache().clear();
 
         for (int i = 0; i < gridCount(); i++)
-            assertTrue(String.valueOf(jcache(i)), jcache(i).localSize() == 0);
+            assertEquals(ignite(i).name(), 0, jcache(i).localSize());
     }
 
     /** {@inheritDoc} */

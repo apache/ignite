@@ -68,6 +68,7 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
         return PARTITIONED_ONLY;
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(null).removeAll();

@@ -4120,7 +4120,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @Override public IgniteInternalFuture<Integer> sizeAsync(CachePeekMode[] peekModes) {
         assert peekModes != null;
 
-        Collection<ClusterNode> nodes = ctx.grid().forDataNodes(name()).nodes();
+        Collection<ClusterNode> nodes = ctx.grid().forCacheNodes(name()).nodes();
 
         if (nodes.isEmpty())
             return new GridFinishedFuture<>(ctx.kernalContext(), 0);
