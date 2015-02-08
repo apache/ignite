@@ -85,7 +85,7 @@ public abstract class GridCacheGroupLockPartitionedAbstractSelfTest extends Grid
 
         for (int i = 0; i < 3; i++) {
             try (IgniteTx tx = ignite(0).transactions().txStartAffinity(null, affinityKey, concurrency, isolation, 0, 10)) {
-                Set<CacheEntry<CacheAffinityKey<Integer>, Integer>> set =
+                Set<Cache.Entry<CacheAffinityKey<Integer>, Integer>> set =
                     cache.entrySet(ignite(0).affinity(null).partition(affinityKey));
 
                 for (Cache.Entry<CacheAffinityKey<Integer>, Integer> entry : set) {

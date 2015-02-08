@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -36,10 +37,12 @@ import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.Cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
@@ -2716,139 +2719,85 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testPeekMode() throws Exception {
-        assert false : "ignite-96";
-//        String key = "testPeekMode";
-//
-//        GridCache<String, Integer> cache = primaryIgnite(key).cache(null);
-//
-//        cache.put(key, 1);
-//
-//        Entry<String, Integer> entry = cache.entry(key);
-//
-//        assert entry.primary();
-//
-//        assert cache.peek(key, F.asList(TX)) == null;
-//        assert cache.peek(key, F.asList(SWAP)) == null;
-//        assert cache.peek(key, F.asList(DB)) == 1;
-//        assert cache.peek(key, F.asList(TX, GLOBAL)) == 1;
-//
-//        if (cacheMode() == LOCAL) {
-//            assert cache.peek(key, F.asList(TX, NEAR_ONLY)) == 1;
-//            assert cache.peek(key, F.asList(TX, PARTITIONED_ONLY)) == 1;
-//        }
-//
-//        assert cache.peek(key, F.asList(SMART)) == 1;
-//
-//        assert entry.peek(F.asList(TX)) == null;
-//        assert entry.peek(F.asList(SWAP)) == null;
-//        assert entry.peek(F.asList(DB)) == 1;
-//        assert entry.peek(F.asList(TX, GLOBAL)) == 1;
-//
-//        if (cacheMode() == LOCAL) {
-//            assert entry.peek(F.asList(TX, NEAR_ONLY)) == 1;
-//            assert entry.peek(F.asList(TX, PARTITIONED_ONLY)) == 1;
-//        }
-//
-//        assert entry.peek(F.asList(SMART)) == 1;
-//
-//        Entry<String, Integer> ew = cache.entry("wrongKey");
-//
-//        assert cache.peek("wrongKey", F.asList(TX, GLOBAL, SWAP, DB)) == null;
-//
-//        if (cacheMode() == LOCAL) {
-//            assert cache.peek("wrongKey", F.asList(TX, NEAR_ONLY, SWAP, DB)) == null;
-//            assert cache.peek("wrongKey", F.asList(TX, PARTITIONED_ONLY, SWAP, DB)) == null;
-//        }
-//
-//        assert ew.peek(F.asList(TX, GLOBAL, SWAP, DB)) == null;
-//
-//        if (cacheMode() != PARTITIONED) {
-//            assert ew.peek(F.asList(TX, NEAR_ONLY, SWAP, DB)) == null;
-//            assert ew.peek(F.asList(TX, PARTITIONED_ONLY, SWAP, DB)) == null;
-//        }
-//
-//        if (txEnabled()) {
-//            IgniteTx tx = cache.txStart();
-//
-//            cache.replace(key, 2);
-//
-//            assert cache.peek(key, F.asList(GLOBAL)) == 1;
-//
-//            if (cacheMode() == LOCAL) {
-//                assert cache.peek(key, F.asList(NEAR_ONLY)) == 1;
-//                assert cache.peek(key, F.asList(PARTITIONED_ONLY)) == 1;
-//            }
-//
-//            assert cache.peek(key, F.asList(TX)) == 2;
-//            assert cache.peek(key, F.asList(SMART)) == 2;
-//            assert cache.peek(key, F.asList(SWAP)) == null;
-//            assert cache.peek(key, F.asList(DB)) == 1;
-//
-//            assertEquals((Integer)1, entry.peek(F.asList(GLOBAL)));
-//
-//            if (cacheMode() == LOCAL) {
-//                assertEquals((Integer)1, entry.peek(F.asList(NEAR_ONLY)));
-//                assertEquals((Integer)1, entry.peek(F.asList(PARTITIONED_ONLY)));
-//            }
-//
-//            assertEquals((Integer)2, entry.peek(F.asList(TX)));
-//            assertEquals((Integer)2, entry.peek(F.asList(SMART)));
-//            assertNull(entry.peek(F.asList(SWAP)));
-//            assertEquals((Integer)1, entry.peek(F.asList(DB)));
-//
-//            tx.commit();
-//        }
-//        else
-//            cache.replace(key, 2);
-//
-//        assertEquals((Integer)2, cache.peek(key, F.asList(GLOBAL)));
-//
-//        if (cacheMode() == LOCAL) {
-//            assertEquals((Integer)2, cache.peek(key, F.asList(NEAR_ONLY)));
-//            assertEquals((Integer)2, cache.peek(key, F.asList(PARTITIONED_ONLY)));
-//        }
-//
-//        assertNull(cache.peek(key, F.asList(TX)));
-//        assertNull(cache.peek(key, F.asList(SWAP)));
-//        assertEquals((Integer)2, cache.peek(key, F.asList(DB)));
-//
-//        assertEquals((Integer)2, entry.peek(F.asList(GLOBAL)));
-//
-//        if (cacheMode() == LOCAL) {
-//            assertEquals((Integer)2, entry.peek(F.asList(NEAR_ONLY)));
-//            assertEquals((Integer)2, entry.peek(F.asList(PARTITIONED_ONLY)));
-//        }
-//
-//        assertNull(entry.peek(F.asList(TX)));
-//        assertNull(entry.peek(F.asList(SWAP)));
-//        assertEquals((Integer)2, entry.peek(F.asList(DB)));
-//
-//        assertTrue(cache.evict(key));
-//
-//        assertNull(cache.peek(key, F.asList(SMART)));
-//        assertNull(cache.peek(key, F.asList(TX, GLOBAL)));
-//
-//        if (cacheMode() == LOCAL) {
-//            assertNull(cache.peek(key, F.asList(TX, NEAR_ONLY)));
-//            assertNull(cache.peek(key, F.asList(TX, PARTITIONED_ONLY)));
-//        }
-//
-//        assertEquals((Integer)2, cache.peek(key, F.asList(SWAP)));
-//        assertEquals((Integer)2, cache.peek(key, F.asList(DB)));
-//        assertEquals((Integer)2, cache.peek(key, F.asList(SMART, SWAP, DB)));
-//
-//        assertNull(entry.peek(F.asList(SMART)));
-//        assertNull(entry.peek(F.asList(TX, GLOBAL)));
-//
-//        if (cacheMode() == LOCAL) {
-//            assertNull(entry.peek(F.asList(TX, NEAR_ONLY)));
-//            assertNull(entry.peek(F.asList(TX, PARTITIONED_ONLY)));
-//        }
-//
-//        assertEquals((Integer)2, cache.peek(key, F.asList(SWAP)));
-//
-//        assertEquals((Integer)2, entry.peek(F.asList(DB)));
-//        assertEquals((Integer)2, entry.peek(F.asList(SMART, SWAP, DB)));
+        String key = "testPeekMode";
+
+        GridCache<String, Integer> cache = primaryIgnite(key).cache(null);
+
+        cache.put(key, 1);
+
+        Cache.Entry<String, Integer> entry = cache.entry(key);
+
+        // assert entry.primary();
+
+        assert cache.peek(key, F.asList(TX)) == null;
+        assert cache.peek(key, F.asList(SWAP)) == null;
+        assert cache.peek(key, F.asList(DB)) == 1;
+        assert cache.peek(key, F.asList(TX, GLOBAL)) == 1;
+
+        if (cacheMode() == LOCAL) {
+            assert cache.peek(key, F.asList(TX, NEAR_ONLY)) == 1;
+            assert cache.peek(key, F.asList(TX, PARTITIONED_ONLY)) == 1;
+        }
+
+        assert cache.peek(key, F.asList(SMART)) == 1;
+
+        Entry<String, Integer> ew = cache.entry("wrongKey");
+
+        assert cache.peek("wrongKey", F.asList(TX, GLOBAL, SWAP, DB)) == null;
+
+        if (cacheMode() == LOCAL) {
+            assert cache.peek("wrongKey", F.asList(TX, NEAR_ONLY, SWAP, DB)) == null;
+            assert cache.peek("wrongKey", F.asList(TX, PARTITIONED_ONLY, SWAP, DB)) == null;
+        }
+
+        if (txEnabled()) {
+            IgniteTx tx = cache.txStart();
+
+            cache.replace(key, 2);
+
+            assert cache.peek(key, F.asList(GLOBAL)) == 1;
+
+            if (cacheMode() == LOCAL) {
+                assert cache.peek(key, F.asList(NEAR_ONLY)) == 1;
+                assert cache.peek(key, F.asList(PARTITIONED_ONLY)) == 1;
+            }
+
+            assert cache.peek(key, F.asList(TX)) == 2;
+            assert cache.peek(key, F.asList(SMART)) == 2;
+            assert cache.peek(key, F.asList(SWAP)) == null;
+            assert cache.peek(key, F.asList(DB)) == 1;
+
+            tx.commit();
+        }
+        else
+            cache.replace(key, 2);
+
+        assertEquals((Integer)2, cache.peek(key, F.asList(GLOBAL)));
+
+        if (cacheMode() == LOCAL) {
+            assertEquals((Integer)2, cache.peek(key, F.asList(NEAR_ONLY)));
+            assertEquals((Integer)2, cache.peek(key, F.asList(PARTITIONED_ONLY)));
+        }
+
+        assertNull(cache.peek(key, F.asList(TX)));
+        assertNull(cache.peek(key, F.asList(SWAP)));
+        assertEquals((Integer)2, cache.peek(key, F.asList(DB)));
+
+        assertTrue(cache.evict(key));
+
+        assertNull(cache.peek(key, F.asList(SMART)));
+        assertNull(cache.peek(key, F.asList(TX, GLOBAL)));
+
+        if (cacheMode() == LOCAL) {
+            assertNull(cache.peek(key, F.asList(TX, NEAR_ONLY)));
+            assertNull(cache.peek(key, F.asList(TX, PARTITIONED_ONLY)));
+        }
+
+        assertEquals((Integer)2, cache.peek(key, F.asList(SWAP)));
+        assertEquals((Integer)2, cache.peek(key, F.asList(DB)));
+        assertEquals((Integer)2, cache.peek(key, F.asList(SMART, SWAP, DB)));
+
+        assertEquals((Integer)2, cache.peek(key, F.asList(SWAP)));
     }
 
     /**
@@ -2990,12 +2939,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (oldEntry)
             c.put(key, 1);
 
-        CacheEntry<String, Integer> entry = c.entry(key);
+        GridCacheEntryEx entry = ((IgniteKernal)grid(0)).internalCache().peekEx(key);
 
         assert entry != null;
 
-        assertEquals(0, entry.timeToLive());
-        assertEquals(0, entry.expirationTime());
+        assertEquals(0, entry.ttl());
+        assertEquals(0, entry.expireTime());
 
         long startTime = System.currentTimeMillis();
 
@@ -3010,8 +2959,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 tx.rollback();
             }
 
-            assertEquals(0, entry.timeToLive());
-            assertEquals(0, entry.expirationTime());
+            entry = ((IgniteKernal)grid(0)).internalCache().peekEx(key);
+
+            assertEquals(0, entry.ttl());
+            assertEquals(0, entry.expireTime());
         }
 
         // Now commit transaction and check that ttl and expire time have been saved.
@@ -3028,14 +2979,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         long[] expireTimes = new long[gridCount()];
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
+            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
+                GridCacheEntryEx<Object, Object> curEntry =
+                    ((IgniteKernal)grid(0)).internalCache().peekEx(key);
 
-            if (curEntry.primary() || curEntry.backup()) {
-                assertEquals(ttl, curEntry.timeToLive());
+                assertEquals(ttl, curEntry.ttl());
 
-                assert curEntry.expirationTime() > startTime;
+                assert curEntry.expireTime() > startTime;
 
-                expireTimes[i] = curEntry.expirationTime();
+                expireTimes[i] = curEntry.expireTime();
             }
         }
 
@@ -3053,14 +3005,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
+            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
+                GridCacheEntryEx<Object, Object> curEntry =
+                    ((IgniteKernal)grid(0)).internalCache().peekEx(key);
 
-            if (curEntry.primary() || curEntry.backup()) {
-                assertEquals(ttl, curEntry.timeToLive());
+                assertEquals(ttl, curEntry.ttl());
 
-                assert curEntry.expirationTime() > expireTimes[i];
+                assert curEntry.expireTime() > startTime;
 
-                expireTimes[i] = curEntry.expirationTime();
+                expireTimes[i] = curEntry.expireTime();
             }
         }
 
@@ -3078,14 +3031,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
+            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
+                GridCacheEntryEx<Object, Object> curEntry =
+                    ((IgniteKernal)grid(0)).internalCache().peekEx(key);
 
-            if (curEntry.primary() || curEntry.backup()) {
-                assertEquals(ttl, curEntry.timeToLive());
+                assertEquals(ttl, curEntry.ttl());
 
-                assert curEntry.expirationTime() > expireTimes[i];
+                assert curEntry.expireTime() > startTime;
 
-                expireTimes[i] = curEntry.expirationTime();
+                expireTimes[i] = curEntry.expireTime();
             }
         }
 
@@ -3107,11 +3061,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         log.info("Put 4 done");
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
+            if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
+                GridCacheEntryEx<Object, Object> curEntry =
+                    ((IgniteKernal)grid(0)).internalCache().peekEx(key);
 
-            if (curEntry.primary() || curEntry.backup()) {
-                assertEquals(ttl, curEntry.timeToLive());
-                assertEquals(expireTimes[i], curEntry.expirationTime());
+                assertEquals(ttl, curEntry.ttl());
+                assertEquals(expireTimes[i], curEntry.expireTime());
             }
         }
 
@@ -3143,33 +3098,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }, Math.min(ttl * 10, getTestTimeout())));
 
         // Ensure that old TTL and expire time are not longer "visible".
-        entry = c.entry(key);
+        entry = ((IgniteKernal)grid(0)).internalCache().peekEx(key);
 
-        assert entry.get() == null;
+        assert c.entry(key).getValue() == null;
 
-        assertEquals(0, entry.timeToLive());
-        assertEquals(0, entry.expirationTime());
-
-        // Ensure that next update will not pick old expire time.
-
-        tx = inTx ? c.txStart() : null;
-
-        try {
-            entry.set(10);
-        }
-        finally {
-            if (tx != null)
-                tx.commit();
-        }
-
-        U.sleep(2000);
-
-        entry = c.entry(key);
-
-        assertEquals((Integer)10, entry.get());
-
-        assertEquals(0, entry.timeToLive());
-        assertEquals(0, entry.expirationTime());
+        assertEquals(0, entry.ttl());
+        assertEquals(0, entry.expireTime());
     }
 
     /**
@@ -3227,11 +3161,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         Collection<String> locKeys = new HashSet<>();
 
         if (CU.isAffinityNode(cache.configuration())) {
-            locKeys.addAll(cache.projection(F.<String, Integer>cachePrimary()).keySet());
+            locKeys.addAll(cache.primaryKeySet());
 
             info("Local keys (primary): " + locKeys);
 
-            locKeys.addAll(cache.projection(F.<String, Integer>cacheBackup()).keySet());
+            locKeys.addAll(cache.keySet(new IgnitePredicate<Cache.Entry<String, Integer>>() {
+                @Override public boolean apply(Cache.Entry<String, Integer> e) {
+                    return grid(0).affinity(null).isBackup(grid(0).localNode(), e.getKey());
+                }
+            }));
 
             info("Local keys (primary + backup): " + locKeys);
         }

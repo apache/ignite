@@ -30,7 +30,6 @@ import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
