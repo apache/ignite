@@ -34,6 +34,12 @@ public class CommunicationMessageCodeGenerator {
     };
 
     /** */
+    private static final String[] EXCLUDED_PACKAGES = new String[] {
+        "org.apache.ignite.internal.processors.rest.client.message",
+        "org.apache.ignite.internal.processors.rest.protocols.tcp"
+    };
+
+    /** */
     private static final String SRC_DIR = U.getIgniteHome() + "/modules/core/src/main/java";
 
     /** */
@@ -46,34 +52,13 @@ public class CommunicationMessageCodeGenerator {
     private static final String TAB = "    ";
 
     /** */
-    private static final String COMM_STATE_VAR = "commState";
-
-    /** */
     private static final String BUF_VAR = "buf";
 
     /** */
-    private static final String STATE_VAR = COMM_STATE_VAR + "." + "idx";
+    private static final String STATE_VAR = "state";
 
     /** */
-    private static final String TYPE_WRITTEN_VAR = COMM_STATE_VAR + "." + "typeWritten";
-
-    /** */
-    private static final String IT_VAR = COMM_STATE_VAR + "." + "it";
-
-    /** */
-    private static final String CUR_VAR = COMM_STATE_VAR + "." + "cur";
-
-    /** */
-    private static final String KEY_DONE_VAR = COMM_STATE_VAR + "." + "keyDone";
-
-    /** */
-    private static final String READ_SIZE_VAR = COMM_STATE_VAR + "." + "readSize";
-
-    /** */
-    private static final String READ_ITEMS_VAR = COMM_STATE_VAR + "." + "readItems";
-
-    /** */
-    private static final String DFLT_LOC_VAR = "_val";
+    private static final String TYPE_WRITTEN_VAR = "typeWritten";
 
     /** */
     private final Collection<String> write = new ArrayList<>();
@@ -297,14 +282,8 @@ public class CommunicationMessageCodeGenerator {
 
             for (Field field : cloningFields) {
                 String name = field.getName();
-                Class<?> type = field.getType();
 
-                String res = name;
-
-                if (BASE_CLS.isAssignableFrom(type))
-                    res = name + " != null ? (" + type.getSimpleName() + ")" + name + ".clone() : null";
-
-                clone0.add(builder().a("_clone.").a(name).a(" = ").a(res).a(";").toString());
+                clone0.add(builder().a("_clone.").a(name).a(" = ").a(name).a(";").toString());
             }
         }
 
@@ -359,12 +338,12 @@ public class CommunicationMessageCodeGenerator {
     /**
      * @param code Code lines.
      * @param superMtd Super class method name.
-     * @param writeType Whether to write message type.
+     * @param write Whether write code is generated.
      */
-    private void start(Collection<String> code, @Nullable String superMtd, boolean writeType) {
+    private void start(Collection<String> code, @Nullable String superMtd, boolean write) {
         assert code != null;
 
-        code.add(builder().a(COMM_STATE_VAR).a(".setBuffer(").a(BUF_VAR).a(");").toString());
+        code.add(builder().a(write ? "writer" : "reader").a(".setBuffer(").a(BUF_VAR).a(");").toString());
         code.add(EMPTY);
 
         if (superMtd != null) {
@@ -373,12 +352,12 @@ public class CommunicationMessageCodeGenerator {
             code.add(EMPTY);
         }
 
-        if (writeType) {
+        if (write) {
             code.add(builder().a("if (!").a(TYPE_WRITTEN_VAR).a(") {").toString());
 
             indent++;
 
-            returnFalseIfFailed(code, COMM_STATE_VAR + ".putByte", "null", "directType()");
+            returnFalseIfFailed(code, "writer.writeByte", "null", "directType()");
 
             code.add(EMPTY);
             code.add(builder().a(TYPE_WRITTEN_VAR).a(" = true;").toString());
@@ -537,7 +516,7 @@ public class CommunicationMessageCodeGenerator {
         else if (type.isEnum())
             returnFalseIfFailed(write, "writer.writeEnum", field, name);
         else if (BASE_CLS.isAssignableFrom(type))
-            returnFalseIfFailed(write, "writer.writeMessage", field, name);
+            returnFalseIfFailed(write, "writer.writeMessage", field, name + " != null ? " + name + ".clone() : null");
         else if (type.isArray()) {
             returnFalseIfFailed(write, "writer.writeObjectArray", field, name,
                 type.getComponentType().getSimpleName() + ".class");
@@ -615,7 +594,7 @@ public class CommunicationMessageCodeGenerator {
         else if (type == IgniteUuid.class)
             returnFalseIfReadFailed(retType, name, "reader.readGridUuid", field);
         else if (type.isEnum())
-            returnFalseIfReadFailed(retType, name, "reader.readEnum", field);
+            returnFalseIfReadFailed(retType, name, "reader.readEnum", field, retType + ".class");
         else if (BASE_CLS.isAssignableFrom(type))
             returnFalseIfReadFailed(retType, name, "reader.readMessage", field);
         else if (type.isArray()) {
@@ -775,6 +754,11 @@ public class CommunicationMessageCodeGenerator {
 
             if (path.endsWith(".class")) {
                 String clsName = path.substring(prefixLen, path.length() - 6).replace(File.separatorChar, '.');
+
+                for (String excluded : EXCLUDED_PACKAGES) {
+                    if (clsName.startsWith(excluded))
+                        return;
+                }
 
                 Class<?> cls = Class.forName(clsName, false, ldr);
 

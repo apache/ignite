@@ -41,6 +41,12 @@ public abstract class MessageAdapter implements Serializable, Cloneable {
     /** Reader. */
     protected MessageReader reader;
 
+    /** */
+    protected boolean typeWritten;
+
+    /** */
+    protected int state;
+
     /**
      * @param writer Writer.
      */

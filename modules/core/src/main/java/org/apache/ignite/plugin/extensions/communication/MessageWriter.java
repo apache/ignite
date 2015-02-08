@@ -60,6 +60,8 @@ public interface MessageWriter {
 
     public boolean writeIgniteUuid(String name, IgniteUuid val);
 
+    public boolean writeEnum(String name, Enum<?> val);
+
     public boolean writeMessage(String name, MessageAdapter val);
 
     public <T> boolean writeObjectArray(String name, T[] arr, Class<T> itemCls);

@@ -177,6 +177,13 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean writeEnum(String name, Enum<?> val) {
+        stream.writeEnum(val);
+
+        return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeMessage(String name, @Nullable MessageAdapter msg) {
         if (msg != null)
             msg.setWriter(this);

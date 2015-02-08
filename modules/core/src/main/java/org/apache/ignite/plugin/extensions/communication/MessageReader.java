@@ -60,6 +60,8 @@ public interface MessageReader {
 
     public IgniteUuid readIgniteUuid(String name);
 
+    public <T extends Enum<T>> Enum<T> readEnum(String name, Class<T> enumCls);
+
     public MessageAdapter readMessage(String name);
 
     public <T> T[] readObjectArray(String name, Class<T> itemCls);
