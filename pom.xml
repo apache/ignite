@@ -444,6 +444,23 @@
                     </execution>
 
                     <execution>
+                        <id>dependencies-schema-load</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>assembly/dependencies-schema-load.xml</descriptor>
+                            </descriptors>
+                            <outputDirectory>${basedir}/bin</outputDirectory>
+                            <finalName>include</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                        </configuration>
+                    </execution>
+
+                    <execution>
                         <id>release</id>
                         <phase>prepare-package</phase>
                         <goals>
@@ -635,6 +652,10 @@
 
                                         <fileset>
                                             <directory>bin/include/visorui</directory>
+                                        </fileset>
+
+                                        <fileset>
+                                            <directory>bin/include/schema-load</directory>
                                         </fileset>
                                     </filesets>
                                 </configuration>

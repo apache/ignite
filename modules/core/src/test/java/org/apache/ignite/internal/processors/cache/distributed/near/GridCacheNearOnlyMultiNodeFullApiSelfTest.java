@@ -130,18 +130,6 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         return jcache(nearIdx);
     }
 
-    /**
-     * Returns primary keys for node of the given cache,
-     * handling possible near-only argument by selecting a single real cache instead.
-     *
-     * {@inheritDoc}
-     */
-    @Override protected List<String> primaryKeysForCache(CacheProjection<String, Integer> cache, int cnt)
-        throws IgniteCheckedException {
-        return cache.equals(cache()) ?
-            super.primaryKeysForCache(fullCache(), cnt) : super.primaryKeysForCache(cache, cnt);
-    }
-
     /** {@inheritDoc} */
     @Override protected List<String> primaryKeysForCache(IgniteCache<String, Integer> cache, int cnt)
         throws IgniteCheckedException {
@@ -318,10 +306,5 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             assert !nearCache.isLocalLocked(key, false);
             assert !cache.isLocalLocked(key, false);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testPrimaryData() throws Exception {
-        // Not needed for near-only cache.
     }
 }

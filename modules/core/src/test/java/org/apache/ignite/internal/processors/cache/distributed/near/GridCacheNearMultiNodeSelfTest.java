@@ -142,10 +142,10 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"SizeReplaceableByIsEmpty"})
     @Override protected void beforeTest() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            assert cache(grid(i)).size() == 0 : "Near cache size is not zero for grid: " + i;
+            assert jcache(i).localSize() == 0 : "Near cache size is not zero for grid: " + i;
             assert dht(grid(i)).size() == 0 : "DHT cache size is not zero for grid: " + i;
 
-            assert cache(grid(i)).isEmpty() : "Near cache is not empty for grid: " + i;
+            assert jcache(i).localSize() == 0 : "Near cache is not empty for grid: " + i;
             assert dht(grid(i)).isEmpty() : "DHT cache is not empty for grid: " + i;
         }
     }
@@ -154,12 +154,12 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"SizeReplaceableByIsEmpty"})
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            cache(grid(i)).removeAll();
+            jcache(i).removeAll();
 
-            assertEquals("Near cache size is not zero for grid: " + i, 0, cache(grid(i)).size());
+            assertEquals("Near cache size is not zero for grid: " + i, 0, jcache(i).localSize());
             assertEquals("DHT cache size is not zero for grid: " + i, 0, dht(grid(i)).size());
 
-            assert cache(grid(i)).isEmpty() : "Near cache is not empty for grid: " + i;
+            assert jcache(i).localSize() == 0 : "Near cache is not empty for grid: " + i;
             assert dht(grid(i)).isEmpty() : "DHT cache is not empty for grid: " + i;
         }
 
@@ -174,14 +174,6 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
                 tx.close();
             }
         }
-    }
-
-    /**
-     * @param g Grid.
-     * @return Near cache.
-     */
-    private CacheProjection<Integer, String> cache(Ignite g) {
-        return g.cache(null);
     }
 
     /**

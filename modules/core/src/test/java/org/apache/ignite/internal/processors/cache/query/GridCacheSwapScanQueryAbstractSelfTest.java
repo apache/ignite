@@ -174,67 +174,12 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
 
             assertEquals(ENTRY_CNT, res.size());
 
-            checkProjectionFilter(cache, ENTRY_CNT / 2 - 5);
-
             testMultithreaded(cache, ENTRY_CNT / 2);
         }
         finally {
             for (int i = 0; i < ENTRY_CNT; i++)
                 assertTrue(cache.removex(new Key(i)));
         }
-    }
-
-    /**
-     * @param cache Cache.
-     * @param expCnt Expected entries in query result.
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings({"unchecked", "IfMayBeConditional"})
-    private void checkProjectionFilter(GridCache cache, int expCnt) throws Exception {
-        CacheProjection prj;
-
-        if (portableEnabled()) {
-            prj = cache.projection(new IgnitePredicate<CacheEntry<PortableObject, PortableObject>>() {
-                @Override public boolean apply(CacheEntry<PortableObject, PortableObject> e) {
-                    Key key = e.getKey().deserialize();
-                    Person val = e.peek().deserialize();
-
-                    assertNotNull(e.version());
-
-                    assertEquals(key.id, (Integer)val.salary);
-
-                    return key.id % 100 != 0;
-                }
-            });
-        }
-        else {
-            prj = cache.projection(new IgnitePredicate<CacheEntry<Key, Person>>() {
-                @Override public boolean apply(CacheEntry<Key, Person> e) {
-                    Key key = e.getKey();
-                    Person val = e.peek();
-
-                    assertNotNull(e.version());
-
-                    assertEquals(key.id, (Integer)val.salary);
-
-                    return key.id % 100 != 0;
-                }
-            });
-        }
-
-        CacheQuery<Map.Entry<Key, Person>> qry = prj.queries().createScanQuery(
-            new IgniteBiPredicate<Key, Person>() {
-                @Override public boolean apply(Key key, Person p) {
-                    assertEquals(key.id, (Integer)p.salary);
-
-                    return key.id % 2 == 0;
-                }
-            }
-        );
-
-        Collection<Map.Entry<Key, Person>> res = qry.execute().get();
-
-        assertEquals(expCnt, res.size());
     }
 
     /**

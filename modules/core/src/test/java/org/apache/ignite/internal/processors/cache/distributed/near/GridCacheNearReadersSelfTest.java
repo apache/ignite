@@ -140,12 +140,12 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         Ignite g1 = grid(n1.id());
         Ignite g2 = grid(n2.id());
 
-        GridCache<Integer, String> cache1 = g1.cache(null);
-        GridCache<Integer, String> cache2 = g2.cache(null);
+        IgniteCache<Integer, String> cache1 = g1.jcache(null);
+        IgniteCache<Integer, String> cache2 = g2.jcache(null);
 
         // Store some values in cache.
-        assertNull(cache1.put(1, "v1"));
-        assertNull(cache1.put(2, "v2"));
+        assertNull(cache1.getAndPut(1, "v1"));
+        assertNull(cache1.getAndPut(2, "v2"));
 
         GridDhtCacheEntry<Integer, String> e1 = (GridDhtCacheEntry<Integer, String>)dht(cache1).entryEx(1);
         GridDhtCacheEntry<Integer, String> e2 = (GridDhtCacheEntry<Integer, String>)dht(cache2).entryEx(2);
@@ -180,7 +180,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         assertTrue(e1.readers().contains(n2.id()));
 
         // Evict locally from cache2.
-        assertTrue(cache2.evict(1));
+        cache2.localEvict(Collections.singleton(1));
 
         assertNull(near(cache2).peek(1));
         assertNull(dht(cache2).peek(1));
@@ -188,7 +188,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         // Node 1 still has node2 in readers map.
         assertTrue(e1.readers().contains(n2.id()));
 
-        assertNotNull((cache1.put(1, "z1")));
+        assertNotNull((cache1.getAndPut(1, "z1")));
 
         // Node 1 still has node2 in readers map.
         assertFalse(e1.readers().contains(n2.id()));
@@ -218,17 +218,17 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         ((IgniteKernal)g1).internalCache(null).preloader().request(F.asList(1, 2), 2).get();
         ((IgniteKernal)g2).internalCache(null).preloader().request(F.asList(1, 2), 2).get();
 
-        GridCache<Integer, String> cache1 = g1.cache(null);
-        GridCache<Integer, String> cache2 = g2.cache(null);
+        IgniteCache<Integer, String> cache1 = g1.jcache(null);
+        IgniteCache<Integer, String> cache2 = g2.jcache(null);
 
-        assertEquals(cache1.affinity().mapKeyToNode(1), g1.cluster().localNode());
-        assertFalse(cache1.affinity().mapKeyToNode(2).equals(g1.cluster().localNode()));
+        assertEquals(g1.affinity(null).mapKeyToNode(1), g1.cluster().localNode());
+        assertFalse(g1.affinity(null).mapKeyToNode(2).equals(g1.cluster().localNode()));
 
-        assertEquals(cache2.affinity().mapKeyToNode(2), g2.cluster().localNode());
-        assertFalse(cache2.affinity().mapKeyToNode(1).equals(g2.cluster().localNode()));
+        assertEquals(g1.affinity(null).mapKeyToNode(2), g2.cluster().localNode());
+        assertFalse(g2.affinity(null).mapKeyToNode(1).equals(g2.cluster().localNode()));
 
         // Store first value in cache.
-        assertNull(cache1.put(1, "v1"));
+        assertNull(cache1.getAndPut(1, "v1"));
 
         assertTrue(cache1.containsKey(1));
         assertTrue(cache2.containsKey(1));
@@ -244,7 +244,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         GridDhtCacheEntry<Integer, String> e1 = (GridDhtCacheEntry<Integer, String>)dht(cache1).entryEx(1);
 
         // Store second value in cache.
-        assertNull(cache1.put(2, "v2"));
+        assertNull(cache1.getAndPut(2, "v2"));
 
         assertTrue(cache1.containsKey(2));
         assertTrue(cache2.containsKey(2));
@@ -274,12 +274,12 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         // Evict locally from cache2.
         // It should not be successful since it's not allowed to evict entry on backup node.
-        assertFalse(cache2.evict(1));
+        cache2.localEvict(Collections.singleton(1));
 
         assertNull(near(cache2).peekNearOnly(1));
         assertEquals("v1", dht(cache2).peek(1));
 
-        assertEquals("v1", cache1.put(1, "z1"));
+        assertEquals("v1", cache1.getAndPut(1, "z1"));
 
         // Node 1 should not have node2 in readers map.
         assertFalse(e1.readers().contains(n2.id()));
@@ -391,11 +391,11 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         assertFalse("Nodes cannot be equal: " + primary, primary.equals(backup));
 
-        GridCache<Integer, String> cache1 = grid(primary.id()).cache(null);
-        GridCache<Integer, String> cache2 = grid(backup.id()).cache(null);
+        IgniteCache<Integer, String> cache1 = grid(primary.id()).jcache(null);
+        IgniteCache<Integer, String> cache2 = grid(backup.id()).jcache(null);
 
         // Store a values in cache.
-        assertNull(cache1.put(1, "v1"));
+        assertNull(cache1.getAndPut(1, "v1"));
 
         GridDhtCacheEntry<Integer, String> e1 = (GridDhtCacheEntry<Integer, String>)dht(cache1).peekEx(1);
         GridDhtCacheEntry<Integer, String> e2 = (GridDhtCacheEntry<Integer, String>)dht(cache2).peekEx(1);
@@ -577,7 +577,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
                 assertNull(near(2).peekEx(key2));
             }
             finally {
-                lock2.lock();
+                lock2.unlock();
             }
         }
         finally {

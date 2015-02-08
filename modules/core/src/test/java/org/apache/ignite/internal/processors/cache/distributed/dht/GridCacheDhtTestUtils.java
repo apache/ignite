@@ -24,7 +24,6 @@ import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -42,14 +41,6 @@ public class GridCacheDhtTestUtils {
      */
     private GridCacheDhtTestUtils() {
         // No-op.
-    }
-
-    /**
-     * @param cache Cache.
-     * @return Dht cache.
-     */
-    static <K, V> GridDhtCacheAdapter<K, V> dht(CacheProjection<K, V> cache) {
-        return ((GridNearCacheAdapter<K, V>)cache.<K, V>cache()).dht();
     }
 
     /**
