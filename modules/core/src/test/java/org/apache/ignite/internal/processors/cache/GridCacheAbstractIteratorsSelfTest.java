@@ -97,7 +97,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
      * @throws Exception If failed.
      */
     public void testEntrySetIterator() throws Exception {
-        assert jcache().size() == entryCount();
+        assert jcache().localSize() == entryCount();
 
         int cnt = 0;
 
