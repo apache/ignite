@@ -21,6 +21,7 @@ import com.google.common.collect.*;
 import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -2984,7 +2985,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         final GridCache<String, Integer> c = cache();
 
-        final String key = primaryKeysForCache(c, 1).get(0);
+        final String key = primaryKeysForCache(jcache(), 1).get(0);
 
         if (oldEntry)
             c.put(key, 1);
@@ -3210,7 +3211,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testUnswap() throws Exception {
         GridCache<String, Integer> cache = cache();
 
-        List<String> keys = primaryKeysForCache(cache, 3);
+        List<String> keys = primaryKeysForCache(jcache(), 3);
 
         String k1 = keys.get(0);
         String k2 = keys.get(1);
@@ -3646,28 +3647,17 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param cache Cache.
      * @param cnt Keys count.
      * @return Collection of keys for which given cache is primary.
-     * @throws IgniteCheckedException If failed.
      */
-    protected List<String> primaryKeysForCache(CacheProjection<String, Integer> cache, int cnt)
-        throws IgniteCheckedException {
-        return primaryKeysForCache(cache, cnt, 1);
-    }
-
-    /**
-     * @param cache Cache.
-     * @param cnt Keys count.
-     * @param startFrom Start value for keys search.
-     * @return Collection of keys for which given cache is primary.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected List<String> primaryKeysForCache(CacheProjection<String, Integer> cache, int cnt, int startFrom)
-        throws IgniteCheckedException {
+    protected List<String> primaryKeysForCache(IgniteCache<String, Integer> cache, int cnt, int startFrom) {
         List<String> found = new ArrayList<>(cnt);
+
+        Ignite ignite = cache.unwrap(Ignite.class);
+        CacheAffinity<Object> affinity = ignite.affinity(cache.getName());
 
         for (int i = startFrom; i < startFrom + 100_000; i++) {
             String key = "key" + i;
 
-            if (cache.entry(key).primary()) {
+            if (affinity.isPrimary(ignite.cluster().localNode(), key)) {
                 found.add(key);
 
                 if (found.size() == cnt)
@@ -3675,20 +3665,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
         }
 
-        throw new IgniteCheckedException("Unable to find " + cnt + " keys as primary for cache.");
-    }
-
-    /**
-     * @param cache Cache.
-     * @param cnt Keys count.
-     * @return Collection of keys for which given cache is primary.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected List<String> primaryKeysForCache(IgniteCache<String, Integer> cache, int cnt, int startFrom)
-        throws IgniteCheckedException {
-        CacheProjection<String, Integer> prj = GridTestUtils.getFieldValue(cache, "delegate");
-
-        return primaryKeysForCache(prj, cnt, startFrom);
+        throw new IgniteException("Unable to find " + cnt + " keys as primary for cache.");
     }
 
     /**
@@ -3699,9 +3676,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     protected List<String> primaryKeysForCache(IgniteCache<String, Integer> cache, int cnt)
         throws IgniteCheckedException {
-        CacheProjection<String, Integer> prj = GridTestUtils.getFieldValue(cache, "delegate");
-
-        return primaryKeysForCache(prj, cnt);
+        return primaryKeysForCache(cache, cnt, 1);
     }
 
     /**

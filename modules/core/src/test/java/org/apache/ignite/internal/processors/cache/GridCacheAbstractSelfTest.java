@@ -425,18 +425,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * Executes regular peek or peek from swap.
      *
-     * @param prj Cache projection.
-     * @param key Key.
-     * @return Value.
-     * @throws Exception If failed.
-     */
-    @Nullable protected <K, V> V peek(CacheProjection<K, V> prj, K key) throws Exception {
-        return offheapTiered(prj.cache()) ? prj.peek(key, F.asList(GridCachePeekMode.SWAP)) : prj.peek(key);
-    }
-
-    /**
-     * Executes regular peek or peek from swap.
-     *
      * @param cache Cache projection.
      * @param key Key.
      * @return Value.

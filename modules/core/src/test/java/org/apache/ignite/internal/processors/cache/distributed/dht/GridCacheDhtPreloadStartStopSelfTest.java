@@ -131,14 +131,6 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
     }
 
     /**
-     * @param cache Cache.
-     * @return Affinity.
-     */
-    private CacheAffinity<Integer> affinity(IgniteCache<Integer, ?> cache) {
-        return cache.unwrap(Ignite.class).affinity(null);
-    }
-
-    /**
      * @param c Cache.
      * @return {@code True} if synchronoous preloading.
      */

@@ -138,27 +138,9 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param cache Cache.
      * @param key Key.
      */
-    private void checkLocked(CacheProjection<Integer,String> cache, Integer key) {
-        assert cache.isLocked(key);
-        assert cache.isLockedByThread(key);
-    }
-
-    /**
-     * @param cache Cache.
-     * @param key Key.
-     */
     private void checkLocked(IgniteCache<Integer,String> cache, Integer key) {
         assert cache.isLocalLocked(key, false);
         assert cache.isLocalLocked(key, true);
-    }
-
-    /**
-     * @param cache Cache.
-     * @param key Key.
-     */
-    private void checkRemoteLocked(CacheProjection<Integer,String> cache, Integer key) {
-        assert cache.isLocked(key);
-        assert !cache.isLockedByThread(key);
     }
 
     /**
@@ -170,30 +152,6 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         assert !cache.isLocalLocked(key, true);
     }
 
-    /**
-     * @param cache Cache.
-     * @param key Key.
-     */
-    @SuppressWarnings({"BusyWait"})
-    private void checkUnlocked(CacheProjection<Integer,String> cache, Integer key) {
-        assert !cache.isLockedByThread(key);
-
-        if (partitioned()) {
-            for(int i = 0; i < 200; i++)
-                if (cache.isLocked(key)) {
-                    try {
-                        Thread.sleep(10);
-                    }
-                    catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-                else
-                    return;
-        }
-
-        assertFalse("Key locked [key=" + key + ", entries=" + entries(key) + "]", cache.isLocked(key));
-    }
     /**
      * @param cache Cache.
      * @param key Key.
@@ -223,16 +181,6 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param cache Cache.
      * @param keys Keys.
      */
-    private void checkLocked(CacheProjection<Integer,String> cache, Iterable<Integer> keys) {
-        for (Integer key : keys) {
-            checkLocked(cache, key);
-        }
-    }
-
-    /**
-     * @param cache Cache.
-     * @param keys Keys.
-     */
     private void checkLocked(IgniteCache<Integer,String> cache, Iterable<Integer> keys) {
         for (Integer key : keys)
             checkLocked(cache, key);
@@ -242,29 +190,9 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param cache Cache.
      * @param keys Keys.
      */
-    private void checkRemoteLocked(CacheProjection<Integer,String> cache, Iterable<Integer> keys) {
-        for (Integer key : keys) {
-            checkRemoteLocked(cache, key);
-        }
-    }
-
-    /**
-     * @param cache Cache.
-     * @param keys Keys.
-     */
     private void checkRemoteLocked(IgniteCache<Integer,String> cache, Iterable<Integer> keys) {
         for (Integer key : keys)
             checkRemoteLocked(cache, key);
-    }
-
-    /**
-     *
-     * @param cache Cache.
-     * @param keys Keys.
-     */
-    private void checkUnlocked(CacheProjection<Integer,String> cache, Iterable<Integer> keys) {
-        for (Integer key : keys)
-            checkUnlocked(cache, key);
     }
 
     /**

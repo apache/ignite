@@ -240,7 +240,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
             Map<Integer, Integer> vals = new HashMap<>();
 
-            for (Integer key : nearKeys(grid.cache(null), 100, 1_000_000))
+            for (Integer key : nearKeys(grid.jcache(null), 100, 1_000_000))
                 vals.put(key, 1);
 
             final AtomicBoolean done = new AtomicBoolean();
