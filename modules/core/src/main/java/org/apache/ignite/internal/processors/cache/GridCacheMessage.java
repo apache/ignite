@@ -648,7 +648,7 @@ public abstract class GridCacheMessage<K, V> extends MessageAdapter {
         GridCacheMessage _clone = (GridCacheMessage)_msg;
 
         _clone.msgId = msgId;
-        _clone.depInfo = depInfo;
+        _clone.depInfo = depInfo != null ? (GridDeploymentInfoBean)depInfo.clone() : null;
         _clone.err = err;
         _clone.skipPrepare = skipPrepare;
         _clone.cacheId = cacheId;
@@ -674,7 +674,7 @@ public abstract class GridCacheMessage<K, V> extends MessageAdapter {
                 state++;
 
             case 1:
-                if (!writer.writeMessage("depInfo", depInfo != null ? depInfo.clone() : null))
+                if (!writer.writeMessage("depInfo", depInfo))
                     return false;
 
                 state++;

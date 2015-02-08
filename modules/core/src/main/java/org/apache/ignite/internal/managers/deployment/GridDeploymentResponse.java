@@ -121,7 +121,7 @@ public class GridDeploymentResponse extends MessageAdapter {
 
         _clone.success = success;
         _clone.errMsg = errMsg;
-        _clone.byteSrc = byteSrc;
+        _clone.byteSrc = byteSrc != null ? (GridByteArrayList)byteSrc.clone() : null;
     }
 
     /** {@inheritDoc} */
@@ -138,7 +138,7 @@ public class GridDeploymentResponse extends MessageAdapter {
 
         switch (state) {
             case 0:
-                if (!writer.writeMessage("byteSrc", byteSrc != null ? byteSrc.clone() : null))
+                if (!writer.writeMessage("byteSrc", byteSrc))
                     return false;
 
                 state++;

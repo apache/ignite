@@ -85,7 +85,7 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
     @Override protected void clone0(MessageAdapter _msg) {
         GridClockDeltaSnapshotMessage _clone = (GridClockDeltaSnapshotMessage)_msg;
 
-        _clone.snapVer = snapVer;
+        _clone.snapVer = snapVer != null ? (GridClockDeltaVersion)snapVer.clone() : null;
         _clone.deltas = deltas;
     }
 
@@ -109,7 +109,7 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
                 state++;
 
             case 1:
-                if (!writer.writeMessage("snapVer", snapVer != null ? snapVer.clone() : null))
+                if (!writer.writeMessage("snapVer", snapVer))
                     return false;
 
                 state++;

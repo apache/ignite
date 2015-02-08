@@ -114,7 +114,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
 
         _clone.futId = futId;
         _clone.miniId = miniId;
-        _clone.nearXidVer = nearXidVer;
+        _clone.nearXidVer = nearXidVer != null ? (GridCacheVersion)nearXidVer.clone() : null;
         _clone.txNum = txNum;
     }
 
@@ -147,7 +147,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
                 state++;
 
             case 10:
-                if (!writer.writeMessage("nearXidVer", nearXidVer != null ? nearXidVer.clone() : null))
+                if (!writer.writeMessage("nearXidVer", nearXidVer))
                     return false;
 
                 state++;

@@ -697,18 +697,18 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         GridDhtAtomicUpdateRequest _clone = (GridDhtAtomicUpdateRequest)_msg;
 
         _clone.nodeId = nodeId;
-        _clone.futVer = futVer;
-        _clone.writeVer = writeVer;
+        _clone.futVer = futVer != null ? (GridCacheVersion)futVer.clone() : null;
+        _clone.writeVer = writeVer != null ? (GridCacheVersion)writeVer.clone() : null;
         _clone.topVer = topVer;
         _clone.keys = keys;
         _clone.keyBytes = keyBytes;
         _clone.vals = vals;
         _clone.valBytes = valBytes;
         _clone.drVers = drVers;
-        _clone.ttls = ttls;
-        _clone.drExpireTimes = drExpireTimes;
-        _clone.nearTtls = nearTtls;
-        _clone.nearExpireTimes = nearExpireTimes;
+        _clone.ttls = ttls != null ? (GridLongList)ttls.clone() : null;
+        _clone.drExpireTimes = drExpireTimes != null ? (GridLongList)drExpireTimes.clone() : null;
+        _clone.nearTtls = nearTtls != null ? (GridLongList)nearTtls.clone() : null;
+        _clone.nearExpireTimes = nearExpireTimes != null ? (GridLongList)nearExpireTimes.clone() : null;
         _clone.syncMode = syncMode;
         _clone.nearKeys = nearKeys;
         _clone.nearKeyBytes = nearKeyBytes;
@@ -742,7 +742,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
         switch (state) {
             case 3:
-                if (!writer.writeMessage("drExpireTimes", drExpireTimes != null ? drExpireTimes.clone() : null))
+                if (!writer.writeMessage("drExpireTimes", drExpireTimes))
                     return false;
 
                 state++;
@@ -766,7 +766,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 state++;
 
             case 7:
-                if (!writer.writeMessage("futVer", futVer != null ? futVer.clone() : null))
+                if (!writer.writeMessage("futVer", futVer))
                     return false;
 
                 state++;
@@ -790,7 +790,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 state++;
 
             case 11:
-                if (!writer.writeMessage("nearExpireTimes", nearExpireTimes != null ? nearExpireTimes.clone() : null))
+                if (!writer.writeMessage("nearExpireTimes", nearExpireTimes))
                     return false;
 
                 state++;
@@ -802,7 +802,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 state++;
 
             case 13:
-                if (!writer.writeMessage("nearTtls", nearTtls != null ? nearTtls.clone() : null))
+                if (!writer.writeMessage("nearTtls", nearTtls))
                     return false;
 
                 state++;
@@ -844,7 +844,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 state++;
 
             case 20:
-                if (!writer.writeMessage("ttls", ttls != null ? ttls.clone() : null))
+                if (!writer.writeMessage("ttls", ttls))
                     return false;
 
                 state++;
@@ -856,7 +856,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 state++;
 
             case 22:
-                if (!writer.writeMessage("writeVer", writeVer != null ? writeVer.clone() : null))
+                if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
                 state++;

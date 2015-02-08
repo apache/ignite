@@ -572,7 +572,7 @@ public class DirectByteBufferStream {
                 if (cur == NULL) {
                     cur = it.next();
 
-                    if (itemType == Type.MSG)
+                    if (cur != null && itemType == Type.MSG)
                         cur = ((MessageAdapter)cur).clone();
                 }
 
@@ -607,7 +607,7 @@ public class DirectByteBufferStream {
                 if (cur == NULL) {
                     cur = it.next();
 
-                    if (itemType == Type.MSG)
+                    if (cur != null && itemType == Type.MSG)
                         cur = ((MessageAdapter)cur).clone();
                 }
 

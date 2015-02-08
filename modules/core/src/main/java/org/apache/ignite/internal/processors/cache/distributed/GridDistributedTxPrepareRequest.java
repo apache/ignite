@@ -421,7 +421,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         _clone.threadId = threadId;
         _clone.concurrency = concurrency;
         _clone.isolation = isolation;
-        _clone.commitVer = commitVer;
+        _clone.commitVer = commitVer != null ? (GridCacheVersion)commitVer.clone() : null;
         _clone.timeout = timeout;
         _clone.invalidate = invalidate;
         _clone.reads = reads;
@@ -456,7 +456,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
         switch (state) {
             case 8:
-                if (!writer.writeMessage("commitVer", commitVer != null ? commitVer.clone() : null))
+                if (!writer.writeMessage("commitVer", commitVer))
                     return false;
 
                 state++;

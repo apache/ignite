@@ -145,7 +145,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
 
         _clone.futId = futId;
         _clone.miniId = miniId;
-        _clone.nearXidVer = nearXidVer;
+        _clone.nearXidVer = nearXidVer != null ? (GridCacheVersion)nearXidVer.clone() : null;
         _clone.originatingNodeId = originatingNodeId;
         _clone.originatingThreadId = originatingThreadId;
         _clone.nearOnlyCheck = nearOnlyCheck;
@@ -186,7 +186,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
                 state++;
 
             case 11:
-                if (!writer.writeMessage("nearXidVer", nearXidVer != null ? nearXidVer.clone() : null))
+                if (!writer.writeMessage("nearXidVer", nearXidVer))
                     return false;
 
                 state++;

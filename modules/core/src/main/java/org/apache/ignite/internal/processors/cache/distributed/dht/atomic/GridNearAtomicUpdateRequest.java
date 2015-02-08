@@ -558,9 +558,9 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         GridNearAtomicUpdateRequest _clone = (GridNearAtomicUpdateRequest)_msg;
 
         _clone.nodeId = nodeId;
-        _clone.futVer = futVer;
+        _clone.futVer = futVer != null ? (GridCacheVersion)futVer.clone() : null;
         _clone.fastMap = fastMap;
-        _clone.updateVer = updateVer;
+        _clone.updateVer = updateVer != null ? (GridCacheVersion)updateVer.clone() : null;
         _clone.topVer = topVer;
         _clone.syncMode = syncMode;
         _clone.op = op;
@@ -571,8 +571,8 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         _clone.invokeArgs = invokeArgs;
         _clone.invokeArgsBytes = invokeArgsBytes;
         _clone.drVers = drVers;
-        _clone.drTtls = drTtls;
-        _clone.drExpireTimes = drExpireTimes;
+        _clone.drTtls = drTtls != null ? (GridLongList)drTtls.clone() : null;
+        _clone.drExpireTimes = drExpireTimes != null ? (GridLongList)drExpireTimes.clone() : null;
         _clone.retval = retval;
         _clone.expiryPlc = expiryPlc;
         _clone.expiryPlcBytes = expiryPlcBytes;
@@ -601,13 +601,13 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
         switch (state) {
             case 3:
-                if (!writer.writeMessage("drExpireTimes", drExpireTimes != null ? drExpireTimes.clone() : null))
+                if (!writer.writeMessage("drExpireTimes", drExpireTimes))
                     return false;
 
                 state++;
 
             case 4:
-                if (!writer.writeMessage("drTtls", drTtls != null ? drTtls.clone() : null))
+                if (!writer.writeMessage("drTtls", drTtls))
                     return false;
 
                 state++;
@@ -643,7 +643,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 state++;
 
             case 10:
-                if (!writer.writeMessage("futVer", futVer != null ? futVer.clone() : null))
+                if (!writer.writeMessage("futVer", futVer))
                     return false;
 
                 state++;
@@ -703,7 +703,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 state++;
 
             case 20:
-                if (!writer.writeMessage("updateVer", updateVer != null ? updateVer.clone() : null))
+                if (!writer.writeMessage("updateVer", updateVer))
                     return false;
 
                 state++;

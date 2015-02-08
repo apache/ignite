@@ -372,11 +372,11 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         _clone.topVer = topVer;
         _clone.pendingVers = pendingVers;
         _clone.onePhaseCommit = onePhaseCommit;
-        _clone.writeVer = writeVer;
+        _clone.writeVer = writeVer != null ? (GridCacheVersion)writeVer.clone() : null;
         _clone.subjId = subjId;
         _clone.taskNameHash = taskNameHash;
-        _clone.ttls = ttls;
-        _clone.nearTtls = nearTtls;
+        _clone.ttls = ttls != null ? (GridLongList)ttls.clone() : null;
+        _clone.nearTtls = nearTtls != null ? (GridLongList)nearTtls.clone() : null;
     }
 
     /** {@inheritDoc} */
@@ -414,7 +414,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
                 state++;
 
             case 24:
-                if (!writer.writeMessage("nearTtls", nearTtls != null ? nearTtls.clone() : null))
+                if (!writer.writeMessage("nearTtls", nearTtls))
                     return false;
 
                 state++;
@@ -462,13 +462,13 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
                 state++;
 
             case 32:
-                if (!writer.writeMessage("ttls", ttls != null ? ttls.clone() : null))
+                if (!writer.writeMessage("ttls", ttls))
                     return false;
 
                 state++;
 
             case 33:
-                if (!writer.writeMessage("writeVer", writeVer != null ? writeVer.clone() : null))
+                if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
                 state++;

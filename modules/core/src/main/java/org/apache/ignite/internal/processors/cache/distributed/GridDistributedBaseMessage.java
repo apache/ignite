@@ -245,7 +245,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
 
         GridDistributedBaseMessage _clone = (GridDistributedBaseMessage)_msg;
 
-        _clone.ver = ver;
+        _clone.ver = ver != null ? (GridCacheVersion)ver.clone() : null;
         _clone.candsByIdx = candsByIdx;
         _clone.candsByIdxBytes = candsByIdxBytes;
         _clone.candsByKey = candsByKey;
@@ -296,7 +296,7 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
                 state++;
 
             case 7:
-                if (!writer.writeMessage("ver", ver != null ? ver.clone() : null))
+                if (!writer.writeMessage("ver", ver))
                     return false;
 
                 state++;

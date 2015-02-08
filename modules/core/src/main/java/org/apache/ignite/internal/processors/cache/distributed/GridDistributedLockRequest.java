@@ -443,7 +443,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         GridDistributedLockRequest _clone = (GridDistributedLockRequest)_msg;
 
         _clone.nodeId = nodeId;
-        _clone.nearXidVer = nearXidVer;
+        _clone.nearXidVer = nearXidVer != null ? (GridCacheVersion)nearXidVer.clone() : null;
         _clone.threadId = threadId;
         _clone.futId = futId;
         _clone.timeout = timeout;
@@ -529,7 +529,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 state++;
 
             case 16:
-                if (!writer.writeMessage("nearXidVer", nearXidVer != null ? nearXidVer.clone() : null))
+                if (!writer.writeMessage("nearXidVer", nearXidVer))
                     return false;
 
                 state++;

@@ -336,7 +336,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
         _clone.nearWritesBytes = nearWritesBytes;
         _clone.owned = owned;
         _clone.ownedBytes = ownedBytes;
-        _clone.nearXidVer = nearXidVer;
+        _clone.nearXidVer = nearXidVer != null ? (GridCacheVersion)nearXidVer.clone() : null;
         _clone.last = last;
         _clone.subjId = subjId;
         _clone.taskNameHash = taskNameHash;
@@ -396,7 +396,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
                 state++;
 
             case 28:
-                if (!writer.writeMessage("nearXidVer", nearXidVer != null ? nearXidVer.clone() : null))
+                if (!writer.writeMessage("nearXidVer", nearXidVer))
                     return false;
 
                 state++;

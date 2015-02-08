@@ -193,7 +193,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
         GridDhtAtomicUpdateResponse _clone = (GridDhtAtomicUpdateResponse)_msg;
 
-        _clone.futVer = futVer;
+        _clone.futVer = futVer != null ? (GridCacheVersion)futVer.clone() : null;
         _clone.failedKeys = failedKeys;
         _clone.failedKeysBytes = failedKeysBytes;
         _clone.err = err;
@@ -231,7 +231,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
                 state++;
 
             case 5:
-                if (!writer.writeMessage("futVer", futVer != null ? futVer.clone() : null))
+                if (!writer.writeMessage("futVer", futVer))
                     return false;
 
                 state++;

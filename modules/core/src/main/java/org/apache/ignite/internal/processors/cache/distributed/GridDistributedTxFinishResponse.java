@@ -90,7 +90,7 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
 
         GridDistributedTxFinishResponse _clone = (GridDistributedTxFinishResponse)_msg;
 
-        _clone.txId = txId;
+        _clone.txId = txId != null ? (GridCacheVersion)txId.clone() : null;
         _clone.futId = futId;
     }
 
@@ -117,7 +117,7 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
                 state++;
 
             case 4:
-                if (!writer.writeMessage("txId", txId != null ? txId.clone() : null))
+                if (!writer.writeMessage("txId", txId))
                     return false;
 
                 state++;

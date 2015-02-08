@@ -217,7 +217,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
 
         _clone.futId = futId;
         _clone.miniId = miniId;
-        _clone.ver = ver;
+        _clone.ver = ver != null ? (GridCacheVersion)ver.clone() : null;
         _clone.entries = entries;
         _clone.entriesBytes = entriesBytes;
         _clone.invalidParts = invalidParts;
@@ -279,7 +279,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
                 state++;
 
             case 9:
-                if (!writer.writeMessage("ver", ver != null ? ver.clone() : null))
+                if (!writer.writeMessage("ver", ver))
                     return false;
 
                 state++;

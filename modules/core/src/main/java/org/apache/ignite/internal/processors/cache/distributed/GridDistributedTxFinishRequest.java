@@ -362,12 +362,12 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
         _clone.futId = futId;
         _clone.threadId = threadId;
-        _clone.commitVer = commitVer;
+        _clone.commitVer = commitVer != null ? (GridCacheVersion)commitVer.clone() : null;
         _clone.invalidate = invalidate;
         _clone.commit = commit;
         _clone.syncCommit = syncCommit;
         _clone.syncRollback = syncRollback;
-        _clone.baseVer = baseVer;
+        _clone.baseVer = baseVer != null ? (GridCacheVersion)baseVer.clone() : null;
         _clone.writeEntries = writeEntries;
         _clone.writeEntriesBytes = writeEntriesBytes;
         _clone.recoveryWrites = recoveryWrites;
@@ -395,7 +395,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
         switch (state) {
             case 8:
-                if (!writer.writeMessage("baseVer", baseVer != null ? baseVer.clone() : null))
+                if (!writer.writeMessage("baseVer", baseVer))
                     return false;
 
                 state++;
@@ -407,7 +407,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                 state++;
 
             case 10:
-                if (!writer.writeMessage("commitVer", commitVer != null ? commitVer.clone() : null))
+                if (!writer.writeMessage("commitVer", commitVer))
                     return false;
 
                 state++;

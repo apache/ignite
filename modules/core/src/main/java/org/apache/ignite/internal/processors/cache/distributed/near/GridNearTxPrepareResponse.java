@@ -242,7 +242,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
         _clone.pending = pending;
         _clone.futId = futId;
         _clone.miniId = miniId;
-        _clone.dhtVer = dhtVer;
+        _clone.dhtVer = dhtVer != null ? (GridCacheVersion)dhtVer.clone() : null;
         _clone.invalidParts = invalidParts;
         _clone.ownedVals = ownedVals;
         _clone.ownedValsBytes = ownedValsBytes;
@@ -265,7 +265,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
         switch (state) {
             case 10:
-                if (!writer.writeMessage("dhtVer", dhtVer != null ? dhtVer.clone() : null))
+                if (!writer.writeMessage("dhtVer", dhtVer))
                     return false;
 
                 state++;

@@ -80,8 +80,8 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
 
         GridDhtPartitionsAbstractMessage _clone = (GridDhtPartitionsAbstractMessage)_msg;
 
-        _clone.exchId = exchId;
-        _clone.lastVer = lastVer;
+        _clone.exchId = exchId != null ? (GridDhtPartitionExchangeId)exchId.clone() : null;
+        _clone.lastVer = lastVer != null ? (GridCacheVersion)lastVer.clone() : null;
     }
 
     /** {@inheritDoc} */
@@ -101,13 +101,13 @@ abstract class GridDhtPartitionsAbstractMessage<K, V> extends GridCacheMessage<K
 
         switch (state) {
             case 3:
-                if (!writer.writeMessage("exchId", exchId != null ? exchId.clone() : null))
+                if (!writer.writeMessage("exchId", exchId))
                     return false;
 
                 state++;
 
             case 4:
-                if (!writer.writeMessage("lastVer", lastVer != null ? lastVer.clone() : null))
+                if (!writer.writeMessage("lastVer", lastVer))
                     return false;
 
                 state++;
