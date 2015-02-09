@@ -1393,28 +1393,7 @@ public class IgnitionEx {
 
             ClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
 
-            if (clientCfg == null) {
-                clientCfg = new ClientConnectionConfiguration();
-
-                clientCfg.setClientMessageInterceptor(cfg.getClientMessageInterceptor());
-                clientCfg.setRestAccessibleFolders(cfg.getRestAccessibleFolders());
-                clientCfg.setRestIdleTimeout(cfg.getRestIdleTimeout());
-                clientCfg.setRestJettyPath(cfg.getRestJettyPath());
-                clientCfg.setRestPortRange(cfg.getRestPortRange());
-                clientCfg.setRestSecretKey(cfg.getRestSecretKey());
-                clientCfg.setRestTcpDirectBuffer(cfg.isRestTcpDirectBuffer());
-                clientCfg.setRestTcpHost(cfg.getRestTcpHost());
-                clientCfg.setRestTcpNoDelay(cfg.isRestTcpNoDelay());
-                clientCfg.setRestTcpPort(cfg.getRestTcpPort());
-                clientCfg.setRestTcpReceiveBufferSize(cfg.getRestTcpReceiveBufferSize());
-                clientCfg.setRestTcpSelectorCount(cfg.getRestTcpSelectorCount());
-                clientCfg.setRestTcpSendBufferSize(cfg.getRestTcpSendBufferSize());
-                clientCfg.setRestTcpSendQueueLimit(cfg.getRestTcpSendQueueLimit());
-                clientCfg.setRestTcpSslClientAuth(cfg.isRestTcpSslClientAuth());
-                clientCfg.setRestTcpSslContextFactory(cfg.getRestTcpSslContextFactory());
-                clientCfg.setRestTcpSslEnabled(cfg.isRestTcpSslEnabled());
-            }
-            else
+            if (clientCfg != null)
                 clientCfg = new ClientConnectionConfiguration(clientCfg);
 
 
@@ -1531,13 +1510,15 @@ public class IgnitionEx {
                 0,
                 new LinkedBlockingQueue<Runnable>());
 
-            restExecSvc = new IgniteThreadPoolExecutor(
-                "rest-" + cfg.getGridName(),
-                clientCfg.getRestThreadPoolSize(),
-                clientCfg.getRestThreadPoolSize(),
-                DFLT_REST_KEEP_ALIVE_TIME,
-                new LinkedBlockingQueue<Runnable>(DFLT_REST_THREADPOOL_QUEUE_CAP)
-            );
+            if (clientCfg != null) {
+                restExecSvc = new IgniteThreadPoolExecutor(
+                    "rest-" + cfg.getGridName(),
+                    clientCfg.getRestThreadPoolSize(),
+                    clientCfg.getRestThreadPoolSize(),
+                    DFLT_REST_KEEP_ALIVE_TIME,
+                    new LinkedBlockingQueue<Runnable>(DFLT_REST_THREADPOOL_QUEUE_CAP)
+                );
+            }
 
             utilityCacheExecSvc = new IgniteThreadPoolExecutor(
                 "utility-" + cfg.getGridName(),
@@ -2172,7 +2153,8 @@ public class IgnitionEx {
 
             ggfsExecSvc = null;
 
-            U.shutdownNow(getClass(), restExecSvc, log);
+            if (restExecSvc != null)
+                U.shutdownNow(getClass(), restExecSvc, log);
 
             restExecSvc = null;
 
