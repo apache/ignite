@@ -15,30 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cluster.*;
-import org.jetbrains.annotations.*;
 
-import java.util.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Internal projection interface.
+ *
  */
-public interface ClusterGroupEx extends ClusterGroup {
-    /**
-     * Creates projection for specified subject ID.
-     *
-     * @param subjId Subject ID.
-     * @return Internal projection.
-     */
-    public ClusterGroupEx forSubjectId(UUID subjId);
+public class IgniteCacheAtomicPeekModesTest extends IgniteCachePeekModesAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 4;
+    }
 
-    /**
-     * @param cacheName Cache name.
-     * @param distributionModes Cache distribution modes.
-     * @return Cluster group.
-     */
-    public ClusterGroup forCacheNodes(@Nullable String cacheName, Set<CacheDistributionMode> distributionModes);
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
+        return PRIMARY;
+    }
 }

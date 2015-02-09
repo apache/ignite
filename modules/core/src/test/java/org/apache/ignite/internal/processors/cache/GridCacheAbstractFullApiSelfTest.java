@@ -2183,7 +2183,21 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception In case of error.
      */
-    public void testRemoveAll() throws Exception {
+    public void testGlobalRemoveAll() throws Exception {
+        globalRemoveAll(false);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testGlobalRemoveAllAsync() throws Exception {
+        globalRemoveAll(true);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    private void globalRemoveAll(boolean async) throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         cache.put("key1", 1);
@@ -2192,7 +2206,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         checkSize(F.asSet("key1", "key2", "key3"));
 
-        cache.removeAll(F.asSet("key1", "key2"));
+        IgniteCache<String, Integer> asyncCache = cache.withAsync();
+
+        if (async) {
+            asyncCache.removeAll(F.asSet("key1", "key2"));
+
+            asyncCache.future().get();
+        }
+        else
+            cache.removeAll(F.asSet("key1", "key2"));
 
         checkSize(F.asSet("key3"));
 
@@ -2205,20 +2227,34 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.put("key2", 2);
         cache.put("key3", 3);
 
-        jcache(gridCount() > 1 ? 1 : 0).removeAll();
+        if (async) {
+            IgniteCache<String, Integer> asyncCache0 = jcache(gridCount() > 1 ? 1 : 0).withAsync();
 
-        assert cache.localSize() == 0;
-        long entryCount = hugeRemoveAllEntryCount();
+            asyncCache0.removeAll();
 
-        for (int i = 0; i < entryCount; i++)
+            asyncCache0.future().get();
+        }
+        else
+            jcache(gridCount() > 1 ? 1 : 0).removeAll();
+
+        assertEquals(0, cache.localSize());
+        long entryCnt = hugeRemoveAllEntryCount();
+
+        for (int i = 0; i < entryCnt; i++)
             cache.put(String.valueOf(i), i);
 
-        for (int i = 0; i < entryCount; i++)
+        for (int i = 0; i < entryCnt; i++)
             assertEquals(Integer.valueOf(i), cache.get(String.valueOf(i)));
 
-        cache.removeAll();
+        if (async) {
+            asyncCache.removeAll();
 
-        for (int i = 0; i < entryCount; i++)
+            asyncCache.future().get();
+        }
+        else
+            cache.removeAll();
+
+        for (int i = 0; i < entryCnt; i++)
             assertNull(cache.get(String.valueOf(i)));
     }
 
@@ -2508,7 +2544,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.localEvict(Sets.union(ImmutableSet.of("key1", "key2"), keys));
 
-        assert cache.localSize() == 0;
+        assert cache.localSize(CachePeekMode.ONHEAP) == 0;
 
         cache.clear();
 
@@ -2519,9 +2555,24 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * @throws Exception In case of error.
+     * @throws Exception If failed.
      */
     public void testGlobalClearAll() throws Exception {
+        globalClearAll(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGlobalClearAllAsync() throws Exception {
+        globalClearAll(true);
+    }
+
+    /**
+     * @param async If {@code true} uses async method.
+     * @throws Exception If failed.
+     */
+    protected void globalClearAll(boolean async) throws Exception {
         // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
         // because some of them were blocked due to having readers.
         for (int i = 0; i < gridCount(); i++) {
@@ -2529,7 +2580,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 jcache(i).put(key, 1);
         }
 
-        jcache().clear();
+        if (async) {
+            IgniteCache<String, Integer> asyncCache = jcache().withAsync();
+
+            asyncCache.clear();
+
+            asyncCache.future().get();
+        }
+        else
+            jcache().clear();
 
         for (int i = 0; i < gridCount(); i++)
             assert jcache(i).localSize() == 0;

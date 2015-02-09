@@ -325,6 +325,16 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
     }
 
     /** {@inheritDoc} */
+    @Override public long count(@Nullable String spaceName, Set<Integer> parts) throws IgniteSpiException {
+        Space space = space(spaceName, false);
+
+        if (space == null)
+            return 0;
+
+        return space.count(parts);
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public byte[] read(@Nullable String spaceName, SwapKey key, SwapContext ctx)
         throws IgniteSpiException {
         assert key != null;
@@ -1526,6 +1536,23 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
          */
         public long count() {
             return cnt.get();
+        }
+
+        /**
+         * @param parts Partitions.
+         * @return Total count of keys for given partitions.
+         */
+        public long count(Set<Integer> parts) {
+            long cnt = 0;
+
+            for (Integer part : parts) {
+                ConcurrentMap<SwapKey, SwapValue> map = partition(part, false);
+
+                if (map != null)
+                    cnt += map.size();
+            }
+
+            return cnt;
         }
 
         /**
