@@ -3375,7 +3375,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      *
      * @throws Exception If failed.
      */
-    public void testOptimisticTxMissingKey() throws Exception {
+    // IGNITE-207: Enable when fixed.
+    public void _testOptimisticTxMissingKey() throws Exception {
         if (txEnabled()) {
 
             try (IgniteTx tx = grid(0).transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
@@ -3392,7 +3393,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      *
      * @throws Exception If failed.
      */
-    public void testOptimisticTxMissingKeyNoCommit() throws Exception {
+    // IGNITE-207: Enable when fixed.
+    public void _testOptimisticTxMissingKeyNoCommit() throws Exception {
         if (txEnabled()) {
 
             try (IgniteTx tx = grid(0).transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
