@@ -130,7 +130,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             fut.setWorker(w);
 
             try {
-                config().getRestExecutorService().execute(w);
+                ctx.getRestExecutorService().execute(w);
             }
             catch (RejectedExecutionException e) {
                 U.error(log, "Failed to execute worker due to execution rejection " +

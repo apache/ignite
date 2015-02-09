@@ -192,7 +192,7 @@ public class GridJobContextImpl implements ComputeJobContext, Externalizable {
                             @Override public void onTimeout() {
                                 try {
                                     ExecutorService execSvc = job.isInternal() ?
-                                        ctx.config().getManagementExecutorService() : ctx.config().getExecutorService();
+                                        ctx.getManagementExecutorService() : ctx.getExecutorService();
 
                                     assert execSvc != null;
 

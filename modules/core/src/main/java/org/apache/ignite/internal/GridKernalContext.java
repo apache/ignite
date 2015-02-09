@@ -512,4 +512,48 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Message type code.
      */
     public byte registerMessageProducer(GridTcpCommunicationMessageProducer producer);
+
+    /**
+     * @return Thread pool implementation to be used in grid to process job execution
+     *      requests and user messages sent to the node.
+     */
+    public ExecutorService getExecutorService();
+
+    /**
+     * Executor service that is in charge of processing internal system messages.
+     *
+     * @return Thread pool implementation to be used in grid for internal system messages.
+     */
+    public ExecutorService getSystemExecutorService();
+
+    /**
+     * Executor service that is in charge of processing internal and Visor
+     * {@link org.apache.ignite.compute.ComputeJob GridJobs}.
+     *
+     * @return Thread pool implementation to be used in grid for internal and Visor
+     *      jobs processing.
+     */
+    public ExecutorService getManagementExecutorService();
+
+    /**
+     * @return Thread pool implementation to be used for peer class loading
+     *      requests handling.
+     */
+    public ExecutorService getPeerClassLoadingExecutorService();
+
+    /**
+     * Executor service that is in charge of processing outgoing GGFS messages.
+     *
+     * @return Thread pool implementation to be used for GGFS outgoing message sending.
+     */
+    public ExecutorService getGgfsExecutorService();
+
+    /**
+     * Should return an instance of fully configured thread pool to be used for
+     * processing of client messages (REST requests).
+     *
+     * @return Thread pool implementation to be used for processing of client
+     *      messages.
+     */
+    public ExecutorService getRestExecutorService();
 }
