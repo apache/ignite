@@ -639,11 +639,11 @@ public final class GridTestUtils {
     }
 
     /**
-     * @return GridGain home.
+     * @return Ignite home.
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ProhibitedExceptionThrown"})
-    public static String getGridGainHome() throws Exception {
+    public static String getIgniteHome() throws Exception {
         String ggHome = System.getProperty("IGNITE_HOME");
 
         if (ggHome == null)
@@ -655,10 +655,10 @@ public final class GridTestUtils {
         File dir = new File(ggHome);
 
         if (!dir.exists())
-            throw new Exception("Gridgain home does not exist [girdgain-home=" + dir.getAbsolutePath() + ']');
+            throw new Exception("Ignite home does not exist [ignite-home=" + dir.getAbsolutePath() + ']');
 
         if (!dir.isDirectory())
-            throw new Exception("Gridgain home is not a directory [gridgain-home=" + dir.getAbsolutePath() + ']');
+            throw new Exception("Ignite home is not a directory [ignite-home=" + dir.getAbsolutePath() + ']');
 
         return ggHome;
     }
@@ -795,37 +795,37 @@ public final class GridTestUtils {
      * If not, then the check is made if path is relative to ${IGNITE_HOME}. If both checks fail,
      * then {@code null} is returned, otherwise file representing path is returned.
      * <p>
-     * See {@link #getGridGainHome()} for information on how {@code IGNITE_HOME} is retrieved.
+     * See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
      * @param path Path to resolve.
      * @return Resolved path, or {@code null} if file cannot be resolved.
-     * @see #getGridGainHome()
+     * @see #getIgniteHome()
      */
-    @Nullable public static File resolveGridGainPath(String path) {
-        return resolveGridGainPath(null, path);
+    @Nullable public static File resolveIgnitePath(String path) {
+        return resolveIgnitePath(null, path);
     }
 
     /**
-     * @param ggHome Optional gridgain home path.
+     * @param igniteHome Optional ignite home path.
      * @param path Path to resolve.
      * @return Resolved path, or {@code null} if file cannot be resolved.
      */
-    @Nullable public static File resolveGridGainPath(@Nullable String ggHome, String path) {
-        File file = resolvePath(ggHome, path);
+    @Nullable public static File resolveIgnitePath(@Nullable String igniteHome, String path) {
+        File file = resolvePath(igniteHome, path);
 
-        return file != null ? file : resolvePath(ggHome, "os/" + path);
+        return file != null ? file : resolvePath(igniteHome, "os/" + path);
     }
 
     /**
-     * @param ggHome Optional gridgain home path.
+     * @param igniteHome Optional ignite home path.
      * @param path Path to resolve.
      * @return Resolved path, or {@code null} if file cannot be resolved.
      */
-    @Nullable private static File resolvePath(@Nullable String ggHome, String path) {
+    @Nullable private static File resolvePath(@Nullable String igniteHome, String path) {
         File file = new File(path).getAbsoluteFile();
 
         if (!file.exists()) {
-            String home = ggHome != null ? ggHome : U.getGridGainHome();
+            String home = igniteHome != null ? igniteHome : U.getIgniteHome();
 
             if (home == null)
                 return null;
@@ -842,7 +842,7 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return Cache context.
      */
-    public static <K, V> GridCacheContext<K, V> cacheContext(CacheProjection<K, V> cache) {
+    public static <K, V> GridCacheContext<K, V> cacheContext(GridCache<K, V> cache) {
         return ((IgniteKernal)cache.gridProjection().ignite()).<K, V>internalCache().context();
     }
 
@@ -850,7 +850,7 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return Near cache.
      */
-    public static <K, V> GridNearCacheAdapter<K, V> near(CacheProjection<K, V> cache) {
+    public static <K, V> GridNearCacheAdapter<K, V> near(GridCache<K, V> cache) {
         return cacheContext(cache).near();
     }
 
@@ -858,7 +858,7 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return DHT cache.
      */
-    public static <K, V> GridDhtCacheAdapter<K, V> dht(CacheProjection<K, V> cache) {
+    public static <K, V> GridDhtCacheAdapter<K, V> dht(GridCache<K, V> cache) {
         return near(cache).dht();
     }
 
@@ -866,7 +866,7 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return Affinity.
      */
-    static <K, V> CacheConsistentHashAffinityFunction affinity(CacheProjection<K, V> cache) {
+    static <K, V> CacheConsistentHashAffinityFunction affinity(GridCache<K, V> cache) {
         return (CacheConsistentHashAffinityFunction)cache.cache().configuration().getAffinity();
     }
 
@@ -1323,7 +1323,7 @@ public final class GridTestUtils {
 
         KeyStore keyStore = KeyStore.getInstance("JKS");
 
-        keyStore.load(new FileInputStream(U.resolveGridGainPath(GridTestProperties.getProperty("ssl.keystore.path"))),
+        keyStore.load(new FileInputStream(U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path"))),
             storePass);
 
         keyMgrFactory.init(keyStore, storePass);
@@ -1343,7 +1343,7 @@ public final class GridTestUtils {
         GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
 
         factory.setKeyStoreFilePath(
-            U.resolveGridGainPath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
+            U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
         factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
 
         factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
@@ -1433,6 +1433,6 @@ public final class GridTestUtils {
      * @return Path to apache ignite.
      */
     public static String apacheIgniteTestPath() {
-        return System.getProperty("IGNITE_TEST_PATH", U.getGridGainHome() + "/target/ignite");
+        return System.getProperty("IGNITE_TEST_PATH", U.getIgniteHome() + "/target/ignite");
     }
 }

@@ -34,7 +34,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePeekMode.*;
+import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
@@ -396,7 +396,7 @@ public class GridCacheEntryImpl<K, V> implements CacheEntry<K, V>, Externalizabl
 
     /** {@inheritDoc} */
     @Override public boolean clear() {
-        return proxy.clear(key);
+        return proxy.clearLocally(key);
     }
 
     /** {@inheritDoc} */

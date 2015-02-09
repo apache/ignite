@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.query.*;
@@ -816,7 +817,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (!sqlAnn.name().isEmpty())
                 prop.name(sqlAnn.name());
 
-            if (sqlAnn.index() || sqlAnn.unique()) {
+            if (sqlAnn.index()) {
                 String idxName = prop.name() + "_idx";
 
                 desc.addIndex(idxName, isGeometryClass(prop.type()) ? GEO_SPATIAL : SORTED);

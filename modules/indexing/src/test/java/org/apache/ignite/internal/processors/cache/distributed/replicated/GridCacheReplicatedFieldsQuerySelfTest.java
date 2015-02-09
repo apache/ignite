@@ -35,7 +35,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests for fields queries.
@@ -96,9 +96,9 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
             final UUID nodeId = g.cluster().localNode().id();
             final CountDownLatch latch = new CountDownLatch(1);
 
-            grid(0).events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    if (((IgniteDiscoveryEvent) evt).eventNode().id().equals(nodeId))
+            grid(0).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    if (((DiscoveryEvent) evt).eventNode().id().equals(nodeId))
                         latch.countDown();
 
                     return true;

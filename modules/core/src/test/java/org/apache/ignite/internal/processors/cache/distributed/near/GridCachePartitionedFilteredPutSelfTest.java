@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -86,35 +87,12 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
-    public void testFilteredPutCheckNear() throws Exception {
-        doFilteredPut();
-
-        GridCache<Integer, Integer> c = cache();
-
-        assert c.entrySet().isEmpty() : "Actual size: " + c.entrySet().size();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testFilteredPutCheckDht() throws Exception {
-        doFilteredPut();
-
-        GridCache<Integer, Integer> c =
-            ((GridNearCacheAdapter<Integer, Integer>)cache().<Integer, Integer>cache()).dht();
-
-        assert c.entrySet().isEmpty() : "Actual size: " + c.entrySet().size();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testPutAndRollbackCheckNear() throws Exception {
         doPutAndRollback();
 
-        GridCache<Integer, Integer> c = cache();
+        IgniteCache<Object, Object> c = jcache();
 
-        assert c.entrySet().isEmpty() : "Actual size: " + c.entrySet().size();
+        assert c.size() == 0 : "Actual size: " + c.size();
     }
 
     /**
@@ -132,34 +110,17 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception If failed.
      */
-    private void doFilteredPut() throws Exception {
-        GridCache<Integer, Integer> c = cache();
-
-        try (IgniteTx tx = c.txStart()) {
-            assert !c.putx(1, 1, F.<Integer, Integer>cacheHasPeekValue());
-
-            tx.commit();
-        }
-
-        assert c.isEmpty();
-        assert c.peek(1) == null;
-        assert c.get(1) == null;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     private void doPutAndRollback() throws Exception {
-        GridCache<Integer, Integer> c = cache();
+        IgniteCache<Object, Object> c = jcache();
 
-        try (IgniteTx tx = c.txStart()) {
-            assert c.putx(1, 1);
+        try (IgniteTx tx = grid().transactions().txStart()) {
+            c.put(1, 1);
 
             tx.rollback();
         }
 
-        assert c.isEmpty();
-        assert c.peek(1) == null;
+        assert c.localSize() == 0;
+        assert c.localPeek(1, CachePeekMode.ONHEAP) == null;
         assert c.get(1) == null;
     }
 }

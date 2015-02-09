@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -205,7 +206,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
             assertFalse(e.getValue().isEmpty());
 
             for (ClusterNode node : e.getValue()) {
-                compute(G.ignite(node.id()).cluster().forNode(node)).call(new Callable<Void>() {
+                compute(G.ignite(node.id()).cluster().forNode(node)).call(new IgniteCallable<Void>() {
                     /** */
                     @IgniteInstanceResource
                     private Ignite ignite;
@@ -245,7 +246,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
             }
         });
 
-        cfg.getTransactionsConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
+        cfg.getTransactionConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
 
         return cfg;
     }

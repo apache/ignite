@@ -44,7 +44,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousMessageType.*;
@@ -99,7 +99,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     private long ackTimeout;
 
     /** Marshaller. */
-    private IgniteMarshaller marsh;
+    private Marshaller marsh;
 
     /**
      * @param ctx Kernal context.
@@ -129,10 +129,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @SuppressWarnings({"fallthrough", "TooBroadScope"})
-            @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof IgniteDiscoveryEvent;
+            @Override public void onEvent(Event evt) {
+                assert evt instanceof DiscoveryEvent;
 
-                UUID nodeId = ((IgniteDiscoveryEvent)evt).eventNode().id();
+                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
                 Collection<GridContinuousMessage> reqs;
 
@@ -308,6 +308,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Continuous processor stopped.");
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return DiscoveryDataExchangeType.CONTINUOUS_PROC;
     }
 
     /** {@inheritDoc} */
@@ -1271,7 +1276,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * @return Object to send or {@code null} if there is nothing to send for now.
          */
         @Nullable Collection<Object> add(@Nullable Object obj) {
-            Collection<Object> toSnd = null;
+            ConcurrentLinkedDeque8 buf0 = null;
 
             if (buf.sizex() >= bufSize - 1) {
                 lock.writeLock().lock();
@@ -1279,7 +1284,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 try {
                     buf.add(obj);
 
-                    toSnd = buf;
+                    buf0 = buf;
 
                     buf = new ConcurrentLinkedDeque8<>();
 
@@ -1301,7 +1306,16 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 }
             }
 
-            return toSnd != null ? new ArrayList<>(toSnd) : null;
+            Collection<Object> toSnd = null;
+
+            if (buf0 != null) {
+                toSnd = new ArrayList<>(buf0.sizex());
+
+                for (Object o : buf0)
+                    toSnd.add(o);
+            }
+
+            return toSnd;
         }
 
         /**
@@ -1400,7 +1414,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * @param marsh Marshaller.
          * @throws IgniteCheckedException In case of error.
          */
-        void p2pMarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
+        void p2pMarshal(Marshaller marsh) throws IgniteCheckedException {
             assert marsh != null;
 
             prjPredBytes = marsh.marshal(prjPred);
@@ -1411,7 +1425,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * @param ldr Class loader.
          * @throws IgniteCheckedException In case of error.
          */
-        void p2pUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
+        void p2pUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
             assert marsh != null;
 
             assert prjPred == null;

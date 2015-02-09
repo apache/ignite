@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.email.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
@@ -258,6 +259,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    private DataStructuresProcessor dataStructuresProc;
+
+    /** */
+    @GridToStringExclude
     private List<GridComponent> comps = new LinkedList<>();
 
     /** */
@@ -336,7 +341,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         catch (IgniteCheckedException ignored) {
             if (log != null && log.isDebugEnabled())
                 log.debug("Failed to load spring component, will not be able to extract userVersion from " +
-                    "META-INF/gridgain.xml.");
+                    "META-INF/ignite.xml.");
         }
     }
 
@@ -443,6 +448,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             pluginProc = (IgnitePluginProcessor)comp;
         else if (comp instanceof GridQueryProcessor)
             qryProc = (GridQueryProcessor)comp;
+        else if (comp instanceof DataStructuresProcessor)
+            dataStructuresProc = (DataStructuresProcessor)comp;
         else
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
@@ -692,6 +699,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridQueryProcessor query() {
         return qryProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DataStructuresProcessor dataStructures() {
+        return dataStructuresProc;
     }
 
     /** {@inheritDoc} */

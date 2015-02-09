@@ -29,7 +29,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Load balancer that works in global (not-per-task) mode.
@@ -70,10 +70,10 @@ class RoundRobinGlobalLoadBalancer {
 
         ctx.addLocalEventListener(
             lsnr = new GridLocalEventListener() {
-                @Override public void onEvent(IgniteEvent evt) {
-                    assert evt instanceof IgniteDiscoveryEvent;
+                @Override public void onEvent(Event evt) {
+                    assert evt instanceof DiscoveryEvent;
 
-                    UUID nodeId = ((IgniteDiscoveryEvent)evt).eventNode().id();
+                    UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
                     synchronized (mux) {
                         if (evt.type() == EVT_NODE_JOINED) {

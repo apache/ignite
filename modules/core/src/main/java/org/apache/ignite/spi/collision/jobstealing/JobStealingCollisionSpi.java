@@ -37,7 +37,7 @@ import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Collision SPI that supports job stealing from over-utilized nodes to
@@ -141,7 +141,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * Here is an example of how this SPI can be configured from Spring XML configuration:
  * <pre name="code" class="xml">
  * &lt;property name="collisionSpi"&gt;
- *     &lt;bean class="org.gridgain.grid.spi.collision.jobstealing.GridJobStealingCollisionSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.collision.jobstealing.GridJobStealingCollisionSpi"&gt;
  *         &lt;property name="activeJobsThreshold" value="100"/&gt;
  *         &lt;property name="waitJobsThreshold" value="0"/&gt;
  *         &lt;property name="messageExpireTime" value="1000"/&gt;
@@ -224,7 +224,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
 
     /** Grid logger. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Number of jobs that can be executed in parallel. */
@@ -446,10 +446,10 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
         spiCtx.addLocalEventListener(
             discoLsnr = new GridLocalEventListener() {
                 @SuppressWarnings("fallthrough")
-                @Override public void onEvent(IgniteEvent evt) {
-                    assert evt instanceof IgniteDiscoveryEvent;
+                @Override public void onEvent(Event evt) {
+                    assert evt instanceof DiscoveryEvent;
 
-                    IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                    DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                     UUID evtNodeId = discoEvt.eventNode().id();
 

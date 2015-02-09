@@ -38,7 +38,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHeartbeatMessage.*;
 
 /**
@@ -612,7 +612,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                             joinTopology(false);
 
-                            getSpiContext().recordEvent(new IgniteDiscoveryEvent(locNode,
+                            getSpiContext().recordEvent(new DiscoveryEvent(locNode,
                                 "Client node reconnected: " + locNode,
                                 EVT_CLIENT_NODE_RECONNECTED, locNode));
                         }
@@ -888,10 +888,10 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                         if (msg.topologyHistory() != null)
                             topHist.putAll(msg.topologyHistory());
 
-                        Collection<List<Object>> dataList = msg.oldNodesDiscoveryData();
+                        Collection<Map<Integer, Object>> dataList = msg.oldNodesDiscoveryData();
 
                         if (dataList != null) {
-                            for (List<Object> discoData : dataList)
+                            for (Map<Integer, Object> discoData : dataList)
                                 exchange.onExchange(discoData);
                         }
 
@@ -912,7 +912,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     if (log.isDebugEnabled())
                         log.debug("Added new node to topology: " + node);
 
-                    List<Object> data = msg.newNodeDiscoveryData();
+                    Map<Integer, Object> data = msg.newNodeDiscoveryData();
 
                     if (data != null)
                         exchange.onExchange(data);
@@ -1132,7 +1132,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     joinErr = null;
                     reconFailed = true;
 
-                    getSpiContext().recordEvent(new IgniteDiscoveryEvent(locNode,
+                    getSpiContext().recordEvent(new DiscoveryEvent(locNode,
                         "Client node disconnected: " + locNode,
                         EVT_CLIENT_NODE_DISCONNECTED, locNode));
 

@@ -26,7 +26,6 @@
         http://www.springframework.org/schema/beans  http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
 
     <bean id="sampleTypeMetadata" class="org.apache.ignite.cache.CacheTypeMetadata">
-        <property name="databaseSchema" value="PUBLIC"/>
         <property name="databaseTable" value="SAMPLE"/>
         <property name="keyType" value="org.apache.ignite.yardstick.cache.model.SampleKey"/>
         <property name="valueType" value="org.apache.ignite.yardstick.cache.model.SampleValue"/>
@@ -43,7 +42,7 @@
         <property name="valueFields">
             <list>
                 <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="databaseName" value="ID"/>
+                    <property name="databaseName" value="VALUE"/>
                     <property name="databaseType" value="4"/>
                     <property name="javaName" value="id"/>
                     <property name="javaType" value="java.lang.Integer"/>
@@ -56,7 +55,7 @@
         <property name="peerClassLoadingEnabled" value="false"/>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
+            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
                 <property name="requireSerializable" value="true"/>
                 <property name="classNames">
                     <list>
@@ -75,7 +74,7 @@
 
         <property name="cacheConfiguration">
             <list>
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="atomic"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -95,10 +94,10 @@
                     <property name="cacheStoreFactory">
                         <bean class="javax.cache.configuration.FactoryBuilder$SingletonFactory">
                             <constructor-arg>
-                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcPojoCacheStore">
+                                <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore">
                                     <property name="dataSource">
                                         <bean class="org.h2.jdbcx.JdbcConnectionPool" factory-method="create">
-                                            <constructor-arg value="jdbc:h2:tcp://localhost//Users/nva/work/h2-test"/>
+                                            <constructor-arg value="jdbc:h2:tcp://localhost/store-benchmark/h2-benchmark"/>
                                             <constructor-arg value="sa"/>
                                             <constructor-arg value=""/>
                                         </bean>
@@ -115,7 +114,7 @@
                     <property name="writeBehindEnabled" value="false"/>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="tx"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -135,10 +134,10 @@
                     <property name="cacheStoreFactory">
                         <bean class="javax.cache.configuration.FactoryBuilder$SingletonFactory">
                             <constructor-arg>
-                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcPojoCacheStore">
+                                <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore">
                                     <property name="dataSource">
                                         <bean class="org.h2.jdbcx.JdbcConnectionPool" factory-method="create">
-                                            <constructor-arg value="jdbc:h2:tcp://localhost//Users/nva/work/h2-test"/>
+                                            <constructor-arg value="jdbc:h2:tcp://localhost/store-benchmark/h2-benchmark"/>
                                             <constructor-arg value="sa"/>
                                             <constructor-arg value=""/>
                                         </bean>

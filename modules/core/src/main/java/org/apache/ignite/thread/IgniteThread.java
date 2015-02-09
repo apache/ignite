@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.*;
  */
 public class IgniteThread extends Thread {
     /** Default thread's group. */
-    private static final ThreadGroup DFLT_GRP = new ThreadGroup("gridgain");
+    private static final ThreadGroup DFLT_GRP = new ThreadGroup("ignite");
 
     /** Number of all grid threads in the system. */
     private static final AtomicLong threadCntr = new AtomicLong(0);

@@ -51,7 +51,7 @@ import java.util.*;
  * Here is an example on how to configure grid with {@code GridNeverFailoverSpi} from Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;property name="failoverSpi"&gt;
- *     &lt;bean class="org.gridgain.grid.spi.failover.never.GridNeverFailoverSpi"/&gt;
+ *     &lt;bean class="org.apache.ignite.spi.failover.never.GridNeverFailoverSpi"/&gt;
  * &lt;/property&gt;
  * </pre>
  * <p>
@@ -63,7 +63,7 @@ import java.util.*;
 @IgniteSpiMultipleInstancesSupport(true)
 public class NeverFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, NeverFailoverSpiMBean {
     /** Injected grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** {@inheritDoc} */

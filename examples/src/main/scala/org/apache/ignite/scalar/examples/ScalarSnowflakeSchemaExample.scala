@@ -68,8 +68,8 @@ object ScalarSnowflakeSchemaExample {
     def main(args: Array[String]) {
         scalar("examples/config/example-cache.xml") {
             // Clean up caches on all nodes before run.
-            cache$(REPL_CACHE_NAME).get.globalClearAll(0)
-            cache$(PART_CACHE_NAME).get.globalClearAll(0)
+            cache$(REPL_CACHE_NAME).get.clear(0)
+            cache$(PART_CACHE_NAME).get.clear(0)
 
             populateDimensions()
             populateFacts()

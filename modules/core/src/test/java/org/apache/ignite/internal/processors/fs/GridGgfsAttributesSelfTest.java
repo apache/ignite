@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 
 import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-import static org.apache.ignite.fs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 
 /**
  * {@link GridGgfsAttributes} test case.

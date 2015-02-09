@@ -57,7 +57,7 @@ import java.util.concurrent.*;
 public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi, LocalDeploymentSpiMBean {
     /** */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Map of all resources. */

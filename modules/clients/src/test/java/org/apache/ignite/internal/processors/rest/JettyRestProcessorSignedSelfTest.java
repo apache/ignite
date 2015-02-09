@@ -51,7 +51,7 @@ public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstract
      * @throws Exception If failed.
      */
     public void testUnauthorized() throws Exception {
-        String addr = "http://" + LOC_HOST + ":" + restPort() + "/gridgain?cmd=top";
+        String addr = "http://" + LOC_HOST + ":" + restPort() + "/ignite?cmd=top";
 
         URL url = new URL(addr);
 
@@ -63,7 +63,7 @@ public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstract
         assert ((HttpURLConnection)conn).getResponseCode() == 401;
 
         // Request with authentication info.
-        addr = "http://" + LOC_HOST + ":" + restPort() + "/gridgain?cmd=top";
+        addr = "http://" + LOC_HOST + ":" + restPort() + "/ignite?cmd=top";
 
         url = new URL(addr);
 

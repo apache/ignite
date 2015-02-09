@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -27,6 +28,9 @@ import javax.cache.processor.*;
  * Implementation of {@link MutableEntry} passed to the {@link EntryProcessor#process(MutableEntry, Object...)}.
  */
 public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
+    /** */
+    private final GridCacheContext cctx;
+
     /** */
     @GridToStringInclude
     private final K key;
@@ -42,9 +46,11 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
      * @param key Key.
      * @param val Value.
      */
-    public CacheInvokeEntry(K key, @Nullable V val) {
+    public CacheInvokeEntry(GridCacheContext cctx, K key, @Nullable V val) {
+        assert cctx != null;
         assert key != null;
 
+        this.cctx = cctx;
         this.key = key;
         this.val = val;
     }
@@ -82,7 +88,11 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> clazz) {
+        if (clazz.equals(Ignite.class))
+            return (T)cctx.kernalContext().grid();
+
         throw new IllegalArgumentException();
     }
 

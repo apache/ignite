@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
 
@@ -169,10 +170,49 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
         return null;
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return DiscoveryDataExchangeType.PLUGIN;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Object collectDiscoveryData(UUID nodeId) {
+        Map<String, Object> discData = null;
+
+        for (Map.Entry<String, PluginProvider> e : plugins.entrySet()) {
+            Object data = e.getValue().provideDiscoveryData(nodeId);
+
+            if (data != null) {
+                if (discData == null)
+                    discData = new HashMap<>();
+
+                discData.put(e.getKey(), data);
+            }
+        }
+
+        return discData;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDiscoveryDataReceived(Object data) {
+        Map<String, Object> discData = (Map<String, Object>)data;
+
+        if (discData != null) {
+            for (Map.Entry<String, Object> e : discData.entrySet()) {
+                PluginProvider provider = plugins.get(e.getKey());
+
+                if (provider != null)
+                    provider.receiveDiscoveryData(e.getValue());
+                else
+                    U.warn(log, "Received discovery data for unknown plugin: " + e.getKey());
+            }
+        }
+    }
+
     /**
      *
      */
-    private static class ExtensionRegistry implements IgniteExtensionRegistry {
+    private static class ExtensionRegistry implements org.apache.ignite.plugin.ExtensionRegistry {
         /** */
         private final Map<Class<?>, List<Object>> extensionsCollector = new HashMap<>();
 

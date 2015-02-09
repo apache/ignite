@@ -19,7 +19,7 @@ package org.apache.ignite.internal.fs.hadoop;
 
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;

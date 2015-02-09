@@ -97,7 +97,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     private File tokDir;
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Local node ID. */

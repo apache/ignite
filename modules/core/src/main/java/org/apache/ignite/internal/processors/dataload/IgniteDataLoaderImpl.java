@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.dataload;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.dataload.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
@@ -45,8 +44,7 @@ import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 
@@ -54,11 +52,8 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
  * Data loader implementation.
  */
 public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delayed {
-    /** */
-    public static final IgniteProductVersion COMPACT_MAP_ENTRIES_SINCE = IgniteProductVersion.fromString("1.0.0");
-
     /** Cache updater. */
-    private IgniteDataLoadCacheUpdater<K, V> updater = GridDataLoadCacheUpdaters.individual();
+    private Updater<K, V> updater = GridDataLoadCacheUpdaters.individual();
 
     /** */
     private byte[] updaterBytes;
@@ -181,17 +176,17 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         if (node == null)
             throw new IllegalStateException("Cache doesn't exist: " + cacheName);
 
-        Map<String, Boolean> attrPortable = node.attribute(ATTR_CACHE_PORTABLE);
+        GridCacheAttributes attrs = U.cacheAttributes(node, cacheName);
 
-        Boolean portableEnabled0 = attrPortable == null ? null : attrPortable.get(CU.mask(cacheName));
+        assert attrs != null : cacheName;
 
-        portableEnabled = portableEnabled0 == null ? false : portableEnabled0;
+        portableEnabled = attrs.portableEnabled();
 
         discoLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
+            @Override public void onEvent(Event evt) {
                 assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
-                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                 UUID id = discoEvt.eventNode().id();
 
@@ -280,7 +275,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public void updater(IgniteDataLoadCacheUpdater<K, V> updater) {
+    @Override public void updater(Updater<K, V> updater) {
         A.notNull(updater, "updater");
 
         this.updater = updater;
@@ -984,21 +979,8 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
                 try {
                     if (compact) {
-                        if (node.version().compareTo(COMPACT_MAP_ENTRIES_SINCE) < 0) {
-                            Collection<Map.Entry<K, V>> entries0 = new ArrayList<>(entries.size());
-
-                            GridPortableProcessor portable = ctx.portable();
-
-                            for (Map.Entry<K, V> entry : entries)
-                                entries0.add(new Entry0<>(
-                                    portableEnabled ? (K)portable.marshalToPortable(entry.getKey()) : entry.getKey(),
-                                    portableEnabled ? (V)portable.marshalToPortable(entry.getValue()) : entry.getValue()));
-
-                            entriesBytes = ctx.config().getMarshaller().marshal(entries0);
-                        }
-                        else
-                            entriesBytes = ctx.config().getMarshaller()
-                                .marshal(new Entries0<>(entries, portableEnabled ? ctx.portable() : null));
+                        entriesBytes = ctx.config().getMarshaller()
+                            .marshal(new Entries0<>(entries, portableEnabled ? ctx.portable() : null));
                     }
                     else
                         entriesBytes = ctx.config().getMarshaller().marshal(entries);

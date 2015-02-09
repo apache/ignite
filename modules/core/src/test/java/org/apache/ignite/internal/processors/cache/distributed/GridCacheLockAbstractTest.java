@@ -28,6 +28,7 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
@@ -123,9 +124,29 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
         cache1.removeAll();
 
+        // Fix for tests where mapping was removed at primary node
+        // but was not removed at others.
+        // removeAll() removes mapping only when it presents at a primary node.
+        // To remove all mappings used force remove by key.
+        if (cache1.size() > 0) {
+            Iterator<Cache.Entry<Integer, String>> it = cache1.iterator();
+            while (it.hasNext())
+                cache1.remove(it.next().getKey());
+        }
+
         info("Before 2nd removeAll().");
 
         cache2.removeAll();
+
+        // Fix for tests where mapping was removed at primary node
+        // but was not removed at others.
+        // removeAll() removes mapping only when it presents at a primary node.
+        // To remove all mappings used force remove by key.
+        if (cache2.size() > 0) {
+            Iterator<Cache.Entry<Integer, String>> it = cache2.iterator();
+            while (it.hasNext())
+                cache2.remove(it.next().getKey());
+        }
 
         assert cache1.size() == 0 : "Cache is not empty: " + cache1;
         assert cache2.size() == 0 : "Cache is not empty: " + cache2;
@@ -147,7 +168,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         if (isPartitioned())
             return near(idx).isLockedNearOnly(k);
 
-        return cache(idx).isLocked(k);
+        return jcache(idx).isLocalLocked(k, false);
     }
 
     /**
@@ -160,7 +181,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
             return near(idx).isAllLockedNearOnly(keys);
 
         for (Integer key : keys) {
-            if (!cache(idx).isLocked(key))
+            if (!jcache(idx).isLocalLocked(key, true))
                 return false;
         }
 

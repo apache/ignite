@@ -366,7 +366,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** @{inheritDoc} */
@@ -387,7 +387,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */

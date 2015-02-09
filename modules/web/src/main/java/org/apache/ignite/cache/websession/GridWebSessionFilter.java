@@ -19,6 +19,7 @@ package org.apache.ignite.cache.websession;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -49,7 +50,7 @@ import static org.apache.ignite.transactions.IgniteTxIsolation.*;
  * &lt;/listener&gt;
  *
  * &lt;filter&gt;
- *     &lt;filter-name&gt;GridGainWebSessionsFilter&lt;/filter-name&gt;
+ *     &lt;filter-name&gt;GridWebSessionFilter&lt;/filter-name&gt;
  *     &lt;filter-class&gt;org.apache.ignite.cache.websession.GridWebSessionFilter&lt;/filter-class&gt;
  * &lt;/filter&gt;
  *
@@ -63,12 +64,12 @@ import static org.apache.ignite.transactions.IgniteTxIsolation.*;
  * be used in this case:
  * <pre name="code" class="xml">
  * &lt;filter&gt;
- *     &lt;filter-name&gt;GridGainWebSessionsFilter&lt;/filter-name&gt;
+ *     &lt;filter-name&gt;GridWebSessionFilter&lt;/filter-name&gt;
  *     &lt;filter-class&gt;org.apache.ignite.cache.websession.GridWebSessionFilter&lt;/filter-class&gt;
  * &lt;/filter&gt;
  *
  * &lt;filter-mapping&gt;
- *     &lt;filter-name&gt;GridGainWebSessionsFilter&lt;/filter-name&gt;
+ *     &lt;filter-name&gt;GridWebSessionFilter&lt;/filter-name&gt;
  *     &lt;servlet-name&gt;YourServletName&lt;/servlet-name&gt;
  * &lt;/filter-mapping&gt;
  * </pre>
@@ -106,7 +107,7 @@ import static org.apache.ignite.transactions.IgniteTxIsolation.*;
  * servlet context parameters. You can specify filter init parameters as follows:
  * <pre name="code" class="xml">
  * &lt;filter&gt;
- *     &lt;filter-name&gt;GridGainWebSessionsFilter&lt;/filter-name&gt;
+ *     &lt;filter-name&gt;GridWebSessionFilter&lt;/filter-name&gt;
  *     &lt;filter-class&gt;org.apache.ignite.cache.websession.GridWebSessionFilter&lt;/filter-class&gt;
  *     &lt;init-param&gt;
  *         &lt;param-name&gt;IgniteWebSessionsGridName&lt;/param-name&gt;

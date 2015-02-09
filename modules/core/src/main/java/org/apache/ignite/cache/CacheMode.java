@@ -20,7 +20,7 @@ package org.apache.ignite.cache;
 import org.jetbrains.annotations.*;
 
 /**
- * Enumeration of all supported caching modes. Cache mode is specified in {@link CacheConfiguration}
+ * Enumeration of all supported caching modes. Cache mode is specified in {@link org.apache.ignite.configuration.CacheConfiguration}
  * and cannot be changed after cache has started.
  */
 public enum CacheMode {
@@ -53,7 +53,7 @@ public enum CacheMode {
      * <p>
      * Note that partitioned cache is always fronted by local
      * {@code 'near'} cache which stores most recent data. You
-     * can configure the size of near cache via {@link CacheConfiguration#getNearEvictionPolicy()}
+     * can configure the size of near cache via {@link org.apache.ignite.configuration.CacheConfiguration#getNearEvictionPolicy()}
      * configuration property.
      */
     PARTITIONED;

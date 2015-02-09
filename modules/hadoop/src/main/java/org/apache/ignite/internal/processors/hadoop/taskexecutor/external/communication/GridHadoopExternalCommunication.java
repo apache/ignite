@@ -141,7 +141,7 @@ public class GridHadoopExternalCommunication {
     private GridHadoopProcessDescriptor locProcDesc;
 
     /** Marshaller. */
-    private IgniteMarshaller marsh;
+    private Marshaller marsh;
 
     /** Message notification executor service. */
     private ExecutorService execSvc;
@@ -230,7 +230,7 @@ public class GridHadoopExternalCommunication {
     public GridHadoopExternalCommunication(
         UUID parentNodeId,
         UUID procId,
-        IgniteMarshaller marsh,
+        Marshaller marsh,
         IgniteLogger log,
         ExecutorService execSvc,
         String gridName

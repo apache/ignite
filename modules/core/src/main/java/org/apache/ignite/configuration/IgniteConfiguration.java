@@ -18,28 +18,22 @@
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.managed.*;
+import org.apache.ignite.services.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.streamer.*;
-import org.apache.ignite.client.ssl.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.plugin.segmentation.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.spi.communication.*;
@@ -47,12 +41,9 @@ import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.spi.failover.*;
-import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.securesession.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.streamer.*;
 
 import javax.management.*;
 import java.lang.management.*;
@@ -67,7 +58,7 @@ import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
  * {@link org.apache.ignite.Ignition#start(IgniteConfiguration)} method. It defines all configuration
  * parameters required to start a grid instance. Usually, a special
  * class called "loader" will create an instance of this interface and apply
- * {@link org.apache.ignite.Ignition#start(IgniteConfiguration)} method to initialize GridGain instance.
+ * {@link org.apache.ignite.Ignition#start(IgniteConfiguration)} method to initialize Ignite instance.
  * <p>
  * Note that you should only set values that differ from defaults, as grid
  * will automatically pick default values for all values that are not set.
@@ -115,8 +106,8 @@ public class IgniteConfiguration {
     /** Default discovery startup delay in milliseconds (value is {@code 60,000ms}). */
     public static final long DFLT_DISCOVERY_STARTUP_DELAY = 60000;
 
-    /** Default deployment mode (value is {@link IgniteDeploymentMode#SHARED}). */
-    public static final IgniteDeploymentMode DFLT_DEPLOYMENT_MODE = IgniteDeploymentMode.SHARED;
+    /** Default deployment mode (value is {@link DeploymentMode#SHARED}). */
+    public static final DeploymentMode DFLT_DEPLOYMENT_MODE = DeploymentMode.SHARED;
 
     /** Default cache size for missed resources. */
     public static final int DFLT_P2P_MISSED_RESOURCES_CACHE_SIZE = 100;
@@ -268,10 +259,10 @@ public class IgniteConfiguration {
     /** Executor service. */
     private ExecutorService p2pSvc;
 
-    /** Gridgain installation folder. */
+    /** Ignite installation folder. */
     private String ggHome;
 
-    /** Gridgain work folder. */
+    /** Ignite work folder. */
     private String ggWork;
 
     /** MBean server. */
@@ -281,7 +272,7 @@ public class IgniteConfiguration {
     private UUID nodeId;
 
     /** Marshaller. */
-    private IgniteMarshaller marsh;
+    private Marshaller marsh;
 
     /** Marshal local jobs. */
     private boolean marshLocJobs = DFLT_MARSHAL_LOCAL_JOBS;
@@ -386,13 +377,13 @@ public class IgniteConfiguration {
     private GridIndexingSpi indexingSpi;
 
     /** Address resolver. */
-    private IgniteAddressResolver addrRslvr;
+    private AddressResolver addrRslvr;
 
     /** Cache configurations. */
     private CacheConfiguration[] cacheCfg;
 
     /** Transactions configuration. */
-    private TransactionsConfiguration txCfg = new TransactionsConfiguration();
+    private TransactionConfiguration txCfg = new TransactionConfiguration();
 
     /** */
     private Collection<? extends PluginConfiguration> pluginCfgs;
@@ -404,7 +395,7 @@ public class IgniteConfiguration {
     private long discoStartupDelay = DFLT_DISCOVERY_STARTUP_DELAY;
 
     /** Tasks classes sharing mode. */
-    private IgniteDeploymentMode deployMode = DFLT_DEPLOYMENT_MODE;
+    private DeploymentMode deployMode = DFLT_DEPLOYMENT_MODE;
 
     /** Cache size of missed resources. */
     private int p2pMissedCacheSize = DFLT_P2P_MISSED_RESOURCES_CACHE_SIZE;
@@ -456,7 +447,7 @@ public class IgniteConfiguration {
     private long metricsLogFreq = DFLT_METRICS_LOG_FREQ;
 
     /** Local event listeners. */
-    private Map<IgnitePredicate<? extends IgniteEvent>, int[]> lsnrs;
+    private Map<IgnitePredicate<? extends Event>, int[]> lsnrs;
 
     /** TCP host. */
     private String restTcpHost;
@@ -513,7 +504,7 @@ public class IgniteConfiguration {
     private GridSecurityCredentialsProvider securityCred;
 
     /** Service configuration. */
-    private ManagedServiceConfiguration[] svcCfgs;
+    private ServiceConfiguration[] svcCfgs;
 
     /** Hadoop configuration. */
     private GridHadoopConfiguration hadoopCfg;
@@ -528,7 +519,10 @@ public class IgniteConfiguration {
     private IgniteInClosure<IgniteConfiguration> warmupClos;
 
     /** */
-    private IgniteQueryConfiguration qryCfg;
+    private QueryConfiguration qryCfg;
+
+    /** */
+    private AtomicConfiguration atomicCfg = new AtomicConfiguration();
 
     /**
      * Creates valid grid configuration with all default values.
@@ -567,6 +561,7 @@ public class IgniteConfiguration {
         addrRslvr = cfg.getAddressResolver();
         adminEmails = cfg.getAdminEmails();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
+        atomicCfg = cfg.getAtomicConfiguration();
         daemon = cfg.isDaemon();
         cacheCfg = cfg.getCacheConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
@@ -578,7 +573,7 @@ public class IgniteConfiguration {
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         execSvc = cfg.getExecutorService();
         execSvcShutdown = cfg.getExecutorServiceShutdown();
-        ggHome = cfg.getGridGainHome();
+        ggHome = cfg.getIgniteHome();
         ggWork = cfg.getWorkDirectory();
         gridName = cfg.getGridName();
         ggfsCfg = cfg.getGgfsConfiguration();
@@ -650,7 +645,7 @@ public class IgniteConfiguration {
         sysSvcShutdown = cfg.getSystemExecutorServiceShutdown();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
-        txCfg = cfg.getTransactionsConfiguration();
+        txCfg = cfg.getTransactionConfiguration();
         userAttrs = cfg.getUserAttributes();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
@@ -684,7 +679,7 @@ public class IgniteConfiguration {
     /**
      * Whether or not to use SSL fot SMTP. Default is {@link #DFLT_SMTP_SSL}.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -703,7 +698,7 @@ public class IgniteConfiguration {
     /**
      * Whether or not to use STARTTLS fot SMTP. Default is {@link #DFLT_SMTP_STARTTLS}.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -722,7 +717,7 @@ public class IgniteConfiguration {
     /**
      * Gets SMTP host name or {@code null} if SMTP is not configured.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -740,7 +735,7 @@ public class IgniteConfiguration {
     /**
      * Gets SMTP port. Default value is {@link #DFLT_SMTP_PORT}.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -759,7 +754,7 @@ public class IgniteConfiguration {
     /**
      * Gets SMTP username or {@code null} if not used.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -777,7 +772,7 @@ public class IgniteConfiguration {
     /**
      * SMTP password or {@code null} if not used.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -795,7 +790,7 @@ public class IgniteConfiguration {
     /**
      * Gets optional set of admin emails where email notifications will be set.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -844,7 +839,7 @@ public class IgniteConfiguration {
     /**
      * Sets whether or not SMTP uses SSL.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -862,7 +857,7 @@ public class IgniteConfiguration {
     /**
      * Sets whether or not SMTP uses STARTTLS.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -880,7 +875,7 @@ public class IgniteConfiguration {
     /**
      * Sets SMTP host.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -898,7 +893,7 @@ public class IgniteConfiguration {
     /**
      * Sets SMTP port. Default value is {@link #DFLT_SMTP_PORT}.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -917,7 +912,7 @@ public class IgniteConfiguration {
     /**
      * Sets SMTP username or {@code null} if not used.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -935,7 +930,7 @@ public class IgniteConfiguration {
     /**
      * Sets SMTP password or {@code null} if not used.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -953,7 +948,7 @@ public class IgniteConfiguration {
     /**
      * Sets optional set of admin emails where email notifications will be set.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -999,7 +994,7 @@ public class IgniteConfiguration {
      * way to see daemon nodes is to use {@link org.apache.ignite.cluster.ClusterGroup#forDaemons()} method.
      * <p>
      * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on GridGain and needs to participate in the topology but also needs to be
+     * is build on Ignite and needs to participate in the topology but also needs to be
      * excluded from "normal" topology so that it won't participate in task execution
      * or in-memory data grid storage.
      *
@@ -1018,7 +1013,7 @@ public class IgniteConfiguration {
      * way to see daemon nodes is to use {@link org.apache.ignite.cluster.ClusterGroup#forDaemons()} method.
      * <p>
      * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on GridGain and needs to participate in the topology but also needs to be
+     * is build on Ignite and needs to participate in the topology but also needs to be
      * excluded from "normal" topology so that it won't participate in task execution
      * or in-memory data grid storage.
      *
@@ -1053,7 +1048,7 @@ public class IgniteConfiguration {
      * to grid node attributes also. SPIs may also add node attributes that are
      * used for SPI implementation.
      * <p>
-     * <b>NOTE:</b> attributes names starting with {@code org.gridgain} are reserved
+     * <b>NOTE:</b> attributes names starting with {@code org.apache.ignite} are reserved
      * for internal use.
      *
      * @return User defined attributes for this node.
@@ -1187,8 +1182,8 @@ public class IgniteConfiguration {
      * Shutdown flag for executor service.
      * <p>
      * If not provided, default value {@code true} will be used which will shutdown
-     * executor service when GridGain stops regardless of whether it was started before
-     * GridGain or by GridGain.
+     * executor service when Ignite stops regardless of whether it was started before
+     * Ignite or by Ignition.
      *
      * @return Executor service shutdown flag.
      */
@@ -1200,8 +1195,8 @@ public class IgniteConfiguration {
      * Shutdown flag for system executor service.
      * <p>
      * If not provided, default value {@code true} will be used which will shutdown
-     * executor service when GridGain stops regardless of whether it was started before
-     * GridGain or by GridGain.
+     * executor service when Ignite stops regardless of whether it was started before
+     * Ignite or by Ignition.
      *
      * @return System executor service shutdown flag.
      */
@@ -1213,8 +1208,8 @@ public class IgniteConfiguration {
      * Shutdown flag for management executor service.
      * <p>
      * If not provided, default value {@code true} will be used which will shutdown
-     * executor service when GridGain stops regardless of whether it was started before
-     * GridGain or by GridGain.
+     * executor service when Ignite stops regardless of whether it was started before
+     * Ignite or by Ignition.
      *
      * @return Management executor service shutdown flag.
      */
@@ -1238,8 +1233,8 @@ public class IgniteConfiguration {
      * Shutdown flag for GGFS executor service.
      * <p>
      * If not provided, default value {@code true} will be used which will shutdown
-     * executor service when GridGain stops regardless whether it was started before GridGain
-     * or by GridGain.
+     * executor service when Ignite stops regardless whether it was started before Ignition
+     * or by Ignition.
      *
      * @return GGFS executor service shutdown flag.
      */
@@ -1348,39 +1343,39 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Should return GridGain installation home folder. If not provided, the system will check
+     * Should return Ignite installation home folder. If not provided, the system will check
      * {@code IGNITE_HOME} system property and environment variable in that order. If
      * {@code IGNITE_HOME} still could not be obtained, then grid will not start and exception
      * will be thrown.
      *
-     * @return GridGain installation home or {@code null} to make the system attempt to
+     * @return Ignite installation home or {@code null} to make the system attempt to
      *      infer it automatically.
      * @see org.apache.ignite.IgniteSystemProperties#IGNITE_HOME
      */
-    public String getGridGainHome() {
+    public String getIgniteHome() {
         return ggHome;
     }
 
     /**
-     * Sets GridGain installation folder.
+     * Sets Ignite installation folder.
      *
-     * @param ggHome {@code GridGain} installation folder.
-     * @see IgniteConfiguration#getGridGainHome()
+     * @param ggHome {@code Ignition} installation folder.
+     * @see IgniteConfiguration#getIgniteHome()
      * @see org.apache.ignite.IgniteSystemProperties#IGNITE_HOME
      */
-    public void setGridGainHome(String ggHome) {
+    public void setIgniteHome(String ggHome) {
         this.ggHome = ggHome;
     }
 
     /**
-     * Gets GridGain work folder. If not provided, the method will use work folder under
-     * {@code IGNITE_HOME} specified by {@link IgniteConfiguration#setGridGainHome(String)} or
+     * Gets Ignite work folder. If not provided, the method will use work folder under
+     * {@code IGNITE_HOME} specified by {@link IgniteConfiguration#setIgniteHome(String)} or
      * {@code IGNITE_HOME} environment variable or system property.
      * <p>
      * If {@code IGNITE_HOME} is not provided, then system temp folder is used.
      *
-     * @return GridGain work folder or {@code null} to make the system attempt to infer it automatically.
-     * @see IgniteConfiguration#getGridGainHome()
+     * @return Ignite work folder or {@code null} to make the system attempt to infer it automatically.
+     * @see IgniteConfiguration#getIgniteHome()
      * @see org.apache.ignite.IgniteSystemProperties#IGNITE_HOME
      */
     public String getWorkDirectory() {
@@ -1388,9 +1383,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets GridGain work folder.
+     * Sets Ignite work folder.
      *
-     * @param ggWork {@code GridGain} work folder.
+     * @param ggWork {@code Ignite} work folder.
      * @see IgniteConfiguration#getWorkDirectory()
      */
     public void setWorkDirectory(String ggWork) {
@@ -1438,12 +1433,12 @@ public class IgniteConfiguration {
 
     /**
      * Should return an instance of marshaller to use in grid. If not provided,
-     * {@link org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller} will be used on Java HotSpot VM, and
-     * {@link org.apache.ignite.marshaller.jdk.IgniteJdkMarshaller} will be used on other VMs.
+     * {@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller} will be used on Java HotSpot VM, and
+     * {@link org.apache.ignite.marshaller.jdk.JdkMarshaller} will be used on other VMs.
      *
      * @return Marshaller to use in grid.
      */
-    public IgniteMarshaller getMarshaller() {
+    public Marshaller getMarshaller() {
         return marsh;
     }
 
@@ -1453,7 +1448,7 @@ public class IgniteConfiguration {
      * @param marsh Marshaller to use within grid.
      * @see IgniteConfiguration#getMarshaller()
      */
-    public void setMarshaller(IgniteMarshaller marsh) {
+    public void setMarshaller(Marshaller marsh) {
         this.marsh = marsh;
     }
 
@@ -2182,7 +2177,7 @@ public class IgniteConfiguration {
      *
      * @return Address resolver.
      */
-    public IgniteAddressResolver getAddressResolver() {
+    public AddressResolver getAddressResolver() {
         return addrRslvr;
     }
 
@@ -2191,7 +2186,7 @@ public class IgniteConfiguration {
      *
      * @param addrRslvr Address resolver.
      */
-    public void setAddressResolver(IgniteAddressResolver addrRslvr) {
+    public void setAddressResolver(AddressResolver addrRslvr) {
         this.addrRslvr = addrRslvr;
     }
 
@@ -2200,17 +2195,17 @@ public class IgniteConfiguration {
      *
      * @param deployMode Task classes and resources sharing mode.
      */
-    public void setDeploymentMode(IgniteDeploymentMode deployMode) {
+    public void setDeploymentMode(DeploymentMode deployMode) {
         this.deployMode = deployMode;
     }
 
     /**
      * Gets deployment mode for deploying tasks and other classes on this node.
-     * Refer to {@link IgniteDeploymentMode} documentation for more information.
+     * Refer to {@link DeploymentMode} documentation for more information.
      *
      * @return Deployment mode.
      */
-    public IgniteDeploymentMode getDeploymentMode() {
+    public DeploymentMode getDeploymentMode() {
         return deployMode;
     }
 
@@ -2256,7 +2251,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets flag indicating whether cache sanity check is enabled. If enabled, then GridGain
+     * Gets flag indicating whether cache sanity check is enabled. If enabled, then Ignite
      * will perform the following checks and throw an exception if check fails:
      * <ul>
      *     <li>Cache entry is not externally locked with {@code lock(...)} or {@code lockAsync(...)}
@@ -2291,13 +2286,13 @@ public class IgniteConfiguration {
     /**
      * Gets array of event types, which will be recorded.
      * <p>
-     * Note that by default all events in GridGain are disabled. GridGain can and often does generate thousands
+     * Note that by default all events in Ignite are disabled. Ignite can and often does generate thousands
      * events per seconds under the load and therefore it creates a significant additional load on the system.
      * If these events are not needed by the application this load is unnecessary and leads to significant
      * performance degradation. So it is <b>highly recommended</b> to enable only those events that your
-     * application logic requires. Note that certain events are required for GridGain's internal operations
+     * application logic requires. Note that certain events are required for Ignite's internal operations
      * and such events will still be generated but not stored by event storage SPI if they are disabled
-     * in GridGain configuration.
+     * in Ignite configuration.
      *
      * @return Include event types.
      */
@@ -2306,7 +2301,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets array of event types, which will be recorded by {@link GridEventStorageManager#record(org.apache.ignite.events.IgniteEvent)}.
+     * Sets array of event types, which will be recorded by {@link GridEventStorageManager#record(org.apache.ignite.events.Event)}.
      * Note, that either the include event types or the exclude event types can be established.
      *
      * @param inclEvtTypes Include event types.
@@ -2318,7 +2313,7 @@ public class IgniteConfiguration {
     /**
      * Sets path, either absolute or relative to {@code IGNITE_HOME}, to {@code JETTY}
      * XML configuration file. {@code JETTY} is used to support REST over HTTP protocol for
-     * accessing GridGain APIs remotely.
+     * accessing Ignite APIs remotely.
      *
      * @param jettyPath Path to {@code JETTY} XML configuration file.
      * @deprecated Use {@link ClientConnectionConfiguration#setRestJettyPath(String)}.
@@ -2331,7 +2326,7 @@ public class IgniteConfiguration {
     /**
      * Gets path, either absolute or relative to {@code IGNITE_HOME}, to {@code Jetty}
      * XML configuration file. {@code Jetty} is used to support REST over HTTP protocol for
-     * accessing GridGain APIs remotely.
+     * accessing Ignite APIs remotely.
      * <p>
      * If not provided, Jetty instance with default configuration will be started picking
      * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_HOST} and {@link org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_PORT}
@@ -2772,8 +2767,8 @@ public class IgniteConfiguration {
      * Shutdown flag for REST executor service.
      * <p>
      * If not provided, default value {@code true} will be used which will shutdown
-     * executor service when GridGain stops regardless whether it was started before GridGain
-     * or by GridGain.
+     * executor service when Ignite stops regardless whether it was started before Ignite
+     * or by Ignite.
      *
      * @return REST executor service shutdown flag.
      * @deprecated Use {@link ClientConnectionConfiguration#isRestExecutorServiceShutdown()}.
@@ -2784,8 +2779,8 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets system-wide local address or host for all GridGain components to bind to. If provided it will
-     * override all default local bind settings within GridGain or any of its SPIs.
+     * Sets system-wide local address or host for all Ignite components to bind to. If provided it will
+     * override all default local bind settings within Ignite or any of its SPIs.
      *
      * @param locHost Local IP address or host to bind to.
      */
@@ -2794,10 +2789,10 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets system-wide local address or host for all GridGain components to bind to. If provided it will
-     * override all default local bind settings within GridGain or any of its SPIs.
+     * Gets system-wide local address or host for all Ignite components to bind to. If provided it will
+     * override all default local bind settings within Ignite or any of its SPIs.
      * <p>
-     * If {@code null} then GridGain tries to use local wildcard address. That means that
+     * If {@code null} then Ignite tries to use local wildcard address. That means that
      * all services will be available on all network interfaces of the host machine.
      * <p>
      * It is strongly recommended to set this parameter for all production environments.
@@ -3063,7 +3058,7 @@ public class IgniteConfiguration {
      *
      * @return Configurations for services to be deployed on the grid.
      */
-    public ManagedServiceConfiguration[] getServiceConfiguration() {
+    public ServiceConfiguration[] getServiceConfiguration() {
         return svcCfgs;
     }
 
@@ -3072,7 +3067,7 @@ public class IgniteConfiguration {
      *
      * @param svcCfgs Configurations for services to be deployed on the grid.
      */
-    public void setServiceConfiguration(ManagedServiceConfiguration... svcCfgs) {
+    public void setServiceConfiguration(ServiceConfiguration... svcCfgs) {
         this.svcCfgs = svcCfgs;
     }
 
@@ -3081,9 +3076,9 @@ public class IgniteConfiguration {
      * Each listener is mapped to array of event types.
      *
      * @return Pre-configured event listeners map.
-     * @see org.apache.ignite.events.IgniteEventType
+     * @see org.apache.ignite.events.EventType
      */
-    public Map<IgnitePredicate<? extends IgniteEvent>, int[]> getLocalEventListeners() {
+    public Map<IgnitePredicate<? extends Event>, int[]> getLocalEventListeners() {
         return lsnrs;
     }
 
@@ -3093,7 +3088,7 @@ public class IgniteConfiguration {
      *
      * @param lsnrs Pre-configured event listeners map.
      */
-    public void setLocalEventListeners(Map<IgnitePredicate<? extends IgniteEvent>, int[]> lsnrs) {
+    public void setLocalEventListeners(Map<IgnitePredicate<? extends Event>, int[]> lsnrs) {
         this.lsnrs = lsnrs;
     }
 
@@ -3122,7 +3117,7 @@ public class IgniteConfiguration {
      *
      * @return Transactions configuration.
      */
-    public TransactionsConfiguration getTransactionsConfiguration() {
+    public TransactionConfiguration getTransactionConfiguration() {
         return txCfg;
     }
 
@@ -3131,7 +3126,7 @@ public class IgniteConfiguration {
      *
      * @param txCfg Transactions configuration.
      */
-    public void setTransactionsConfiguration(TransactionsConfiguration txCfg) {
+    public void setTransactionConfiguration(TransactionConfiguration txCfg) {
         this.txCfg = txCfg;
     }
 
@@ -3152,15 +3147,29 @@ public class IgniteConfiguration {
     /**
      * @return Query configuration.
      */
-    public IgniteQueryConfiguration getQueryConfiguration() {
+    public QueryConfiguration getQueryConfiguration() {
         return qryCfg;
     }
 
     /**
      * @param qryCfg Query configuration.
      */
-    public void setQueryConfiguration(IgniteQueryConfiguration qryCfg) {
+    public void setQueryConfiguration(QueryConfiguration qryCfg) {
         this.qryCfg = qryCfg;
+    }
+
+    /**
+     * @return Atomic data structures configuration.
+     */
+    public AtomicConfiguration getAtomicConfiguration() {
+        return atomicCfg;
+    }
+
+    /**
+     * @param atomicCfg Atomic data structures configuration.
+     */
+    public void setAtomicConfiguration(AtomicConfiguration atomicCfg) {
+        this.atomicCfg = atomicCfg;
     }
 
     /** {@inheritDoc} */

@@ -57,7 +57,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         ctx.config().setCommunicationSpi(new TcpCommunicationSpi());
-        ctx.config().setMarshaller(new IgniteJdkMarshaller());
+        ctx.config().setMarshaller(new JdkMarshaller());
 
         // Turn off peer class loading to simplify mocking.
         ctx.config().setPeerClassLoadingEnabled(false);
@@ -82,7 +82,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, AssertionError.class, "Internal GridGain code should never call the method with local node in a node list.");
+        }, AssertionError.class, "Internal Ignite code should never call the method with local node in a node list.");
     }
 
     /**
@@ -96,7 +96,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, AssertionError.class, "Internal GridGain code should never call the method with local node in a node list.");
+        }, AssertionError.class, "Internal Ignite code should never call the method with local node in a node list.");
     }
 
     /**

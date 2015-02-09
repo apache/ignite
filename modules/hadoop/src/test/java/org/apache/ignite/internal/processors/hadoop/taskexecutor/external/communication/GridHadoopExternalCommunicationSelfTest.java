@@ -53,7 +53,7 @@ public class GridHadoopExternalCommunicationSelfTest extends GridCommonAbstractT
     private void checkSimpleMessageSending(boolean useShmem) throws Exception {
         UUID parentNodeId = UUID.randomUUID();
 
-        IgniteMarshaller marsh = new IgniteOptimizedMarshaller();
+        Marshaller marsh = new OptimizedMarshaller();
 
         IgniteLogger log = log();
 

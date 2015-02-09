@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -41,7 +42,7 @@ import java.util.concurrent.locks.*;
 /**
  * Cache proxy.
  */
-public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCache<K, V>>
+public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V>>
     implements IgniteCache<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -265,14 +266,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
     /** {@inheritDoc} */
     @Nullable @Override public V localPeek(K key, CachePeekMode... peekModes) {
-        // TODO IGNITE-1.
-        if (peekModes.length != 0)
-            throw new UnsupportedOperationException();
-
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.peek(key);
+            return delegate.localPeek(key, peekModes);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
         }
         finally {
             gate.leave(prev);
@@ -294,12 +294,6 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
         catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean clear(Collection<? extends K> keys) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -417,23 +411,6 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
         try {
             return delegate.entrySetx(filter);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /**
-     * @param filter Filter.
-     */
-    public void removeAll(IgnitePredicate<CacheEntry<K, V>>... filter) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            delegate.removeAll(filter);
-        }
-        catch (IgniteCheckedException e) {
-            throw cacheException(e);
         }
         finally {
             gate.leave(prev);
@@ -733,31 +710,8 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
         }
     }
 
-    /**
-     * @param keys Keys to remove.
-     */
-    public void removeAll(Collection<? extends K> keys) {
-        try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-            try {
-                if (isAsync())
-                    setFuture(delegate.removeAllAsync(keys));
-                else
-                    delegate.removeAll(keys);
-            }
-            finally {
-                gate.leave(prev);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw cacheException(e);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public void removeAll() {
-        // TODO IGNITE-1.
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -777,7 +731,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            delegate.globalClearAll(0);
+            delegate.clear();
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);

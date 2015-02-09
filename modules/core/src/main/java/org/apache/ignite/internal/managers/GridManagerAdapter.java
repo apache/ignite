@@ -150,7 +150,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                                 ", attr=" + e.getKey() + ']' +
                                 ". Attribute set by one SPI implementation has the same name (name collision) as " +
                                 "attribute set by other SPI implementation. Such overriding is not allowed. " +
-                                "Please check your GridGain configuration and/or SPI implementation to avoid " +
+                                "Please check your Ignite configuration and/or SPI implementation to avoid " +
                                 "attribute name collisions.");
 
                         attrs.put(e.getKey(), e.getValue());
@@ -364,7 +364,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return true;
                     }
 
-                    @Override public void recordEvent(IgniteEvent evt) {
+                    @Override public void recordEvent(Event evt) {
                         A.notNull(evt, "evt");
 
                         if (ctx.event().isRecordable(evt.type()))
@@ -538,7 +538,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                             if (cctx.isNear())
                                 cctx = cctx.near().dht().context();
 
-                            GridCacheSwapEntry e = cctx.swap().read(key);
+                            GridCacheSwapEntry e = cctx.swap().read(key, true, true);
 
                             return e != null ? (V)e.value() : null;
                         }
@@ -578,6 +578,11 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
         for (IgniteSpi spi : spis)
             spi.onContextDestroyed();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return null;
     }
 
     /** {@inheritDoc} */

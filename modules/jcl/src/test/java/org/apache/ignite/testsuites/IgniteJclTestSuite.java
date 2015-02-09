@@ -31,7 +31,7 @@ public class IgniteJclTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Commons Logging Test Suite");
 
-        suite.addTest(new TestSuite(GridJclLoggerTest.class));
+        suite.addTest(new TestSuite(IgniteJclLoggerTest.class));
 
         return suite;
     }

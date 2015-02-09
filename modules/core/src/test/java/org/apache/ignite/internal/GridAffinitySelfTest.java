@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -111,7 +110,7 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
     private Collection<CacheConfiguration> caches(Ignite g) {
         return F.view(Arrays.asList(g.configuration().getCacheConfiguration()), new IgnitePredicate<CacheConfiguration>() {
             @Override public boolean apply(CacheConfiguration c) {
-                return c.getName() == null || !c.getName().equals(CU.UTILITY_CACHE_NAME);
+                return !CU.UTILITY_CACHE_NAME.equals(c.getName()) && !CU.ATOMICS_CACHE_NAME.equals(c.getName());
             }
         });
     }

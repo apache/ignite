@@ -144,7 +144,7 @@ public interface IgniteSpiContext {
      * @param lsnr Event listener for local events.
      * @param types Optional types for which this listener will be notified. If no types are provided
      *      this listener will be notified for all local events.
-     * @see org.apache.ignite.events.IgniteEvent
+     * @see org.apache.ignite.events.Event
      */
     public void addLocalEventListener(GridLocalEventListener lsnr, int... types);
 
@@ -169,7 +169,7 @@ public interface IgniteSpiContext {
      *
      * @param evt Local grid event to record.
      */
-    public void recordEvent(IgniteEvent evt);
+    public void recordEvent(Event evt);
 
     /**
      * Registers open port.

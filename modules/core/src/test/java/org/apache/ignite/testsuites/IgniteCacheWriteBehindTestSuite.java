@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.*;
  */
 public class IgniteCacheWriteBehindTestSuite extends TestSuite {
     /**
-     * @return GridGain Bamboo in-memory data grid test suite.
+     * @return Ignite Bamboo in-memory data grid test suite.
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {

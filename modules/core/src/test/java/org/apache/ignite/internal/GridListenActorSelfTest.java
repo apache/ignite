@@ -63,8 +63,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
         final AtomicInteger cnt = new AtomicInteger(0);
 
         grid().message().localListen(null, new MessagingListenActor<String>() {
-            @Override
-            public void receive(UUID uuid, String rcvMsg) {
+            @Override public void receive(UUID uuid, String rcvMsg) {
                 if ("TEST".equals(rcvMsg)) {
                     cnt.incrementAndGet();
 
@@ -116,7 +115,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
             final ClusterNode rmt = grid(1).localNode();
 
             grid().message().localListen(null, new MessagingListenActor<String>() {
-                @Override protected void receive(UUID nodeId, String rcvMsg) throws IgniteCheckedException {
+                @Override protected void receive(UUID nodeId, String rcvMsg) throws IgniteException {
                     System.out.println("Local node received message: '" + rcvMsg + "'");
 
                     respond(rmt.id(), "RESPONSE");
@@ -159,8 +158,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(PING_PONG_STEPS);
 
         grid().message().localListen(null, new MessagingListenActor<String>() {
-            @Override
-            protected void receive(UUID nodeId, String rcvMsg) throws IgniteCheckedException {
+            @Override protected void receive(UUID nodeId, String rcvMsg) {
                 System.out.println("Received message: '" + rcvMsg + "'");
 
                 if ("PING".equals(rcvMsg)) {
@@ -200,8 +198,7 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
         final AtomicInteger cnt = new AtomicInteger(0);
 
         grid().message().localListen(null, new MessagingListenActor<String>() {
-            @Override
-            protected void receive(UUID nodeId, String rcvMsg) {
+            @Override protected void receive(UUID nodeId, String rcvMsg) {
                 System.out.println(Thread.currentThread().getName() + "# Received message: '" + rcvMsg + "'");
 
                 cnt.incrementAndGet();

@@ -18,14 +18,14 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.fs.split.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
- * Test suite for Hadoop file system over GridGain cache.
+ * Test suite for Hadoop file system over Ignite cache.
  * Contains platform independent tests only.
  */
 public class IgniteFsTestSuite extends TestSuite {

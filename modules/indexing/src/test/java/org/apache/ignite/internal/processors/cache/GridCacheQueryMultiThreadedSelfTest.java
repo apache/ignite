@@ -82,7 +82,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         cfg.setDiscoverySpi(disco);
 
         cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -105,7 +105,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        IgniteQueryConfiguration indexing = new IgniteQueryConfiguration();
+        QueryConfiguration indexing = new QueryConfiguration();
 
         indexing.setMaxOffheapRowsCacheSize(128);
 
@@ -184,7 +184,17 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         for (int i = 0; i < GRID_CNT; i++) {
             GridCache<Object, Object> c = grid(i).cache(null);
 
-            c.removeAll(F.<CacheEntry<Object, Object>>alwaysTrue());
+            c.removeAll();
+
+            // Fix for tests where mapping was removed at primary node
+            // but was not removed at others.
+            // removeAll() removes mapping only when it presents at a primary node.
+            // To remove all mappings used force remove by key.
+            if (c.size() > 0) {
+                for (Object k : c.keySet()) {
+                    c.remove(k);
+                }
+            }
 
             Iterator<Map.Entry<Object, Object>> it = c.swapIterator();
 

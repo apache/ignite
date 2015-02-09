@@ -41,7 +41,7 @@ import java.util.logging.*;
 
 import static java.util.logging.Level.*;
 import static org.apache.ignite.client.impl.connection.GridClientConnectionCloseReason.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
 /**
  * Cached connections manager.
@@ -176,7 +176,7 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
 
         if (cfg.getProtocol() == GridClientProtocol.TCP) {
             try {
-                IgniteLogger gridLog = new IgniteJavaLogger(false);
+                IgniteLogger gridLog = new JavaLogger(false);
 
                 GridNioFilter[] filters;
 

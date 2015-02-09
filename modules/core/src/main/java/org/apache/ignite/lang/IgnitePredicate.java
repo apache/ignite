@@ -21,7 +21,7 @@ import java.io.*;
 
 /**
  * Defines a predicate which accepts a parameter and returns {@code true} or {@code false}. In
- * GridGain, predicates are generally used for filtering nodes within grid projections, or for
+ * Ignite, predicates are generally used for filtering nodes within grid projections, or for
  * providing atomic filters when performing cache operation, like in
  * {@link org.apache.ignite.cache.GridCache#put(Object, Object, IgnitePredicate[])} method.
  *

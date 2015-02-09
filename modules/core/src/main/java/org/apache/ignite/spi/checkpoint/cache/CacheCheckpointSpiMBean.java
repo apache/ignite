@@ -26,13 +26,13 @@ import org.apache.ignite.spi.*;
  *
  *
  */
-@IgniteMXBeanDescription("MBean provides information about cache checkpoint SPI.")
+@MXBeanDescription("MBean provides information about cache checkpoint SPI.")
 public interface CacheCheckpointSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets cache name to be used by this SPI..
      *
      * @return Cache name to be used by this SPI.
      */
-    @IgniteMXBeanDescription("Cache name to be used by this SPI.")
+    @MXBeanDescription("Cache name to be used by this SPI.")
     public String getCacheName();
 }

@@ -48,7 +48,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
     private final GridRestProtocolHandler hnd;
 
     /** JDK marshaller. */
-    private final IgniteMarshaller jdkMarshaller = new IgniteJdkMarshaller();
+    private final Marshaller jdkMarshaller = new JdkMarshaller();
 
     /** Context. */
     private final GridKernalContext ctx;
@@ -266,38 +266,48 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
      * @return REST request.
      */
     @SuppressWarnings("unchecked")
-    private GridRestCacheRequest createRestRequest(GridMemcachedMessage req, GridRestCommand cmd) {
+    private GridRestRequest createRestRequest(GridMemcachedMessage req, GridRestCommand cmd) {
         assert req != null;
 
-        GridRestCacheRequest restReq = new GridRestCacheRequest();
+        if (cmd == ATOMIC_INCREMENT || cmd == ATOMIC_DECREMENT) {
+            DataStructuresRequest restReq = new DataStructuresRequest();
 
-        restReq.command(cmd);
-        restReq.clientId(req.clientId());
-        restReq.ttl(req.expiration());
-        restReq.delta(req.delta());
-        restReq.initial(req.initial());
-        restReq.cacheName(req.cacheName());
-        restReq.key(req.key());
+            restReq.command(cmd);
+            restReq.key(req.key());
+            restReq.delta(req.delta());
+            restReq.initial(req.initial());
 
-        if (cmd == CACHE_REMOVE_ALL) {
-            Object[] keys = (Object[]) req.value();
-
-            if (keys != null) {
-                Map<Object, Object> map = new HashMap<>();
-
-                for (Object key : keys) {
-                    map.put(key, null);
-                }
-
-                restReq.values(map);
-            }
+            return restReq;
         }
         else {
-            if (req.value() != null)
-                restReq.value(req.value());
-        }
+            GridRestCacheRequest restReq = new GridRestCacheRequest();
 
-        return restReq;
+            restReq.command(cmd);
+            restReq.clientId(req.clientId());
+            restReq.ttl(req.expiration());
+            restReq.cacheName(req.cacheName());
+            restReq.key(req.key());
+
+            if (cmd == CACHE_REMOVE_ALL) {
+                Object[] keys = (Object[]) req.value();
+
+                if (keys != null) {
+                    Map<Object, Object> map = new HashMap<>();
+
+                    for (Object key : keys) {
+                        map.put(key, null);
+                    }
+
+                    restReq.values(map);
+                }
+            }
+            else {
+                if (req.value() != null)
+                    restReq.value(req.value());
+            }
+
+            return restReq;
+        }
     }
 
     /**
@@ -333,11 +343,11 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
 
                 break;
             case 0x05:
-                cmd = CACHE_INCREMENT;
+                cmd = ATOMIC_INCREMENT;
 
                 break;
             case 0x06:
-                cmd = CACHE_DECREMENT;
+                cmd = ATOMIC_DECREMENT;
 
                 break;
             case 0x07:
@@ -403,12 +413,12 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
 
                 break;
             case 0x15:
-                cmd = CACHE_INCREMENT;
+                cmd = ATOMIC_INCREMENT;
                 quiet = true;
 
                 break;
             case 0x16:
-                cmd = CACHE_DECREMENT;
+                cmd = ATOMIC_DECREMENT;
                 quiet = true;
 
                 break;

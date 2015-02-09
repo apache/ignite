@@ -35,10 +35,10 @@ import java.util.jar.*;
  * It {@code should NOT} have any {@code 'test'} modules in the class path.
  */
 public class OptimizedClassNamesGenerator {
-    /** Defines GridGain installation folder. */
+    /** Defines Ignite installation folder. */
     public static final String IGNITE_HOME_SYS_PROP = "IGNITE_HOME";
 
-    /** Defines GridGain installation folder.  */
+    /** Defines Ignite installation folder.  */
     public static final String IGNITE_HOME_ENV_VAR = "IGNITE_HOME";
 
     /** File name to generate. */
@@ -208,7 +208,7 @@ public class OptimizedClassNamesGenerator {
      * @param cls Class.
      */
     private void checkSerialVersionUid(Class cls) {
-        // Check only GridGain classes.
+        // Check only Ignite classes.
         if (cls.isEnum() || cls.getSimpleName().isEmpty() || (!cls.getName().startsWith("org.gridgain.grid") &&
             !cls.getName().startsWith("org.gridgain.client") && !cls.getName().startsWith("org.apache.ignite")))
             return;
@@ -290,7 +290,7 @@ public class OptimizedClassNamesGenerator {
             String home = home();
 
             if (home == null)
-                throw new Exception("Failed to find GridGain home.");
+                throw new Exception("Failed to find Ignite home.");
 
             dir = new File(home, "modules/core/src/main/java/org/apache/ignite/marshaller/optimized");
         }
