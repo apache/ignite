@@ -40,6 +40,9 @@ import java.io.*;
  * @see IgniteCache#localQueryFields(SqlFieldsQuery)
  */
 public abstract class Query<T extends Query> implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Page size. */
     private int pageSize;
 

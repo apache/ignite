@@ -30,6 +30,9 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  */
 public final class SqlQuery extends Query<SqlQuery> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private String type;
 
     /** SQL clause. */

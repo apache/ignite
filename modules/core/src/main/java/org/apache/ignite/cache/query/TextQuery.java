@@ -29,6 +29,9 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  */
 public final class TextQuery extends Query<TextQuery> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private String type;
 
     /** SQL clause. */

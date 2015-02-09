@@ -29,6 +29,9 @@ import org.apache.ignite.spi.indexing.*;
  * @see IgniteCache#localQuery(Query)
  */
 public final class SpiQuery extends Query<SpiQuery> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Arguments. */
     @GridToStringInclude
     private Object[] args;

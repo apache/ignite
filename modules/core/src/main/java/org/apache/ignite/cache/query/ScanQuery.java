@@ -30,6 +30,9 @@ import org.jetbrains.annotations.*;
  */
 public class ScanQuery<K, V> extends Query<ScanQuery<K, V>> {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private IgniteBiPredicate<K,V> filter;
 
     /**

@@ -28,6 +28,9 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * @see IgniteCache#localQueryFields(SqlFieldsQuery)
  */
 public final class SqlFieldsQuery extends Query<SqlFieldsQuery>{
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** SQL Query. */
     private String sql;
 
