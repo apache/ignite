@@ -138,8 +138,11 @@ public class GridNextPageResponse implements Externalizable {
                 first = false;
             }
 
-            for (Value val : row)
+            for (Value val : row) {
+                data.checkCapacity(data.getValueLen(val));
+
                 data.writeValue(val);
+            }
         }
 
         out.writeInt(data.length());

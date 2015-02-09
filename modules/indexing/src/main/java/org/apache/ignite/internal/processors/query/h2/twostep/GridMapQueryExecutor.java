@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.h2.jdbc.*;
 import org.h2.result.*;
@@ -83,14 +84,26 @@ public class GridMapQueryExecutor {
 
         ctx.io().addUserMessageListener(GridTopic.TOPIC_QUERY, new IgniteBiPredicate<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
-                assert msg != null;
+                try {
+                    assert msg != null;
 
-                ClusterNode node = ctx.discovery().node(nodeId);
+                    ClusterNode node = ctx.discovery().node(nodeId);
 
-                if (msg instanceof GridQueryRequest)
-                    executeLocalQuery(node, (GridQueryRequest)msg);
-                else if (msg instanceof GridNextPageRequest)
-                    sendNextPage(node, (GridNextPageRequest)msg);
+                    boolean processed = true;
+
+                    if (msg instanceof GridQueryRequest)
+                        executeLocalQuery(node, (GridQueryRequest)msg);
+                    else if (msg instanceof GridNextPageRequest)
+                        sendNextPage(node, (GridNextPageRequest)msg);
+                    else
+                        processed = false;
+
+                    if (processed && log.isDebugEnabled())
+                        log.debug("Processed request: " + nodeId + "->" + ctx.localNodeId() + " " + msg);
+                }
+                catch(Throwable th) {
+                    U.error(log, "Failed to process message: " + msg, th);
+                }
 
                 return true;
             }
@@ -148,6 +161,8 @@ public class GridMapQueryExecutor {
             }
         }
         catch (Throwable e) {
+            U.error(log, "Failed to execute local query: " + req, e);
+
             sendError(node, req.requestId(), e);
         }
         finally {
@@ -162,12 +177,13 @@ public class GridMapQueryExecutor {
      */
     private void sendError(ClusterNode node, long qryReqId, Throwable err) {
         try {
-            ctx.io().sendUserMessage(F.asList(node), new GridQueryFailResponse(qryReqId, err));
+            ctx.io().sendUserMessage(F.asList(node), new GridQueryFailResponse(qryReqId, err),
+                GridTopic.TOPIC_QUERY, false, 0);
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             e.addSuppressed(err);
 
-            log.error("Failed to send error message.", e);
+            U.error(log, "Failed to send error message.", e);
         }
     }
 

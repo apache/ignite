@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
+
 import java.io.*;
 
 /**
@@ -50,5 +52,10 @@ public class GridQueryFailResponse implements Serializable {
      */
     public Throwable error() {
         return err;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridQueryFailResponse.class, this);
     }
 }

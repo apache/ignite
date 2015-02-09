@@ -25,8 +25,6 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
-import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
-import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -71,14 +69,26 @@ public class GridReduceQueryExecutor {
 
         ctx.io().addUserMessageListener(GridTopic.TOPIC_QUERY, new IgniteBiPredicate<UUID, Object>() {
             @Override public boolean apply(UUID nodeId, Object msg) {
-                assert msg != null;
+                try {
+                    assert msg != null;
 
-                ClusterNode node = ctx.discovery().node(nodeId);
+                    ClusterNode node = ctx.discovery().node(nodeId);
 
-                if (msg instanceof GridNextPageResponse)
-                    onNextPage(node, (GridNextPageResponse)msg);
-                else if (msg instanceof GridQueryFailResponse)
-                    onFail(node, (GridQueryFailResponse)msg);
+                    boolean processed = true;
+
+                    if (msg instanceof GridNextPageResponse)
+                        onNextPage(node, (GridNextPageResponse)msg);
+                    else if (msg instanceof GridQueryFailResponse)
+                        onFail(node, (GridQueryFailResponse)msg);
+                    else
+                        processed = false;
+
+                    if (processed && log.isDebugEnabled())
+                        log.debug("Processed response: " + nodeId + "->" + ctx.localNodeId() + " " + msg);
+                }
+                catch(Throwable th) {
+                    U.error(log, "Failed to process message: " + msg, th);
+                }
 
                 return true;
             }
@@ -111,7 +121,8 @@ public class GridReduceQueryExecutor {
         idx.addPage(new GridResultPage<UUID>(node.id(), msg) {
             @Override public void fetchNextPage() {
                 try {
-                    ctx.io().sendUserMessage(F.asList(node), new GridNextPageRequest(qryReqId, qry, pageSize));
+                    ctx.io().sendUserMessage(F.asList(node), new GridNextPageRequest(qryReqId, qry, pageSize),
+                        GridTopic.TOPIC_QUERY, false, 0);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -153,7 +164,7 @@ public class GridReduceQueryExecutor {
 
         r.latch = new CountDownLatch(r.tbls.size() * nodes.size());
 
-        this.runs.put(qryReqId, r);
+        runs.put(qryReqId, r);
 
         try {
             ctx.io().sendUserMessage(nodes, new GridQueryRequest(qryReqId, 1000, qry.mapQueries()), // TODO conf page size

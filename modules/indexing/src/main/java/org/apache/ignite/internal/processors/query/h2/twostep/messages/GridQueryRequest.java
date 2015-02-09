@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -33,6 +35,7 @@ public class GridQueryRequest implements Serializable {
     private int pageSize;
 
     /** */
+    @GridToStringInclude
     private Collection<GridCacheSqlQuery> qrys;
 
     /**
@@ -65,5 +68,10 @@ public class GridQueryRequest implements Serializable {
      */
     public Collection<GridCacheSqlQuery> queries() {
         return qrys;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridQueryRequest.class, this);
     }
 }
