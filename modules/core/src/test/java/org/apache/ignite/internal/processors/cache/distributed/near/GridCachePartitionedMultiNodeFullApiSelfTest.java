@@ -26,11 +26,11 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 
-import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CachePeekMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
@@ -58,6 +58,13 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
      */
     public Collection<ClusterNode> affinityNodes() {
         return grid(0).nodes();
+    }
+
+    /**
+     * TODO fix and uncomment
+     */
+    @Override public void testPartitionEntrySetRemove() throws Exception {
+        assert false : "ignite-96";
     }
 
     /**
@@ -228,19 +235,17 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             Integer nearPeekVal = nearEnabled ? 1 : null;
 
-            GridCache<String, Integer> c = cache(i);
+            IgniteCache<String, Integer> c = jcache(i);
 
-            Cache.Entry<String, Integer> e = c.entry("key");
+            if (c.unwrap(Ignite.class).affinity(null).isBackup(grid(i).localNode(), "key")) {
+                assertNull(c.localPeek("key", NEAR));
 
-            if (c.affinity().isBackup(grid(i).localNode(), "key")) {
-                assertNull(c.peek("key", F.asList(NEAR_ONLY)));
-
-                assertEquals((Integer)1, c.peek("key", F.asList(PARTITIONED_ONLY)));
+                assertEquals((Integer)1, c.localPeek("key", BACKUP));
             }
-            else if (!c.affinity().isPrimaryOrBackup(grid(i).localNode(), "key")) {
-                assertEquals(nearPeekVal, c.peek("key", Arrays.asList(NEAR_ONLY)));
+            else if (!c.unwrap(Ignite.class).affinity(null).isPrimaryOrBackup(grid(i).localNode(), "key")) {
+                assertEquals(nearPeekVal, c.localPeek("key", NEAR));
 
-                assert c.peek("key", Arrays.asList(PARTITIONED_ONLY)) == null;
+                assertNull(c.localPeek("key", PRIMARY, BACKUP));
 
                 assertEquals((Integer)1, jcache(i).get("key"));
             }

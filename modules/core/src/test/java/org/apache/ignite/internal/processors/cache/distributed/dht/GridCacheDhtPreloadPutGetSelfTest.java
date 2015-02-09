@@ -191,17 +191,13 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
                         for (int i = 0; i < ITER_CNT; i++) {
                             info("Iteration # " + i);
 
-                            GridCache<Integer, Integer> cache = g2.cache(null);
+                            IgniteCache<Integer, Integer> cache = g2.jcache(null);
 
                             for (int j = 0; j < KEY_CNT; j++) {
-                                Cache.Entry<Integer, Integer> entry = cache.entry(j);
-
-                                assert entry != null;
-
-                                Integer val = entry.getValue();
+                                Integer val = cache.get(j);
 
                                 if (j % FREQUENCY == 0)
-                                    info("Read entry: " + entry.getKey() + " -> " + val);
+                                    info("Read entry: " + j + " -> " + val);
 
                                 if (done.get())
                                     assert val != null && val == j;
