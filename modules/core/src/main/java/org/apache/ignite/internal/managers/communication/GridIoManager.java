@@ -222,10 +222,22 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         };
     }
 
+    /**
+     * @return Message factory.
+     */
     public GridTcpMessageFactory messageFactory() {
         assert msgFactory != null;
 
         return msgFactory;
+    }
+
+    /**
+     * @return Message writer factory.
+     */
+    public MessageWriterFactory messageWriterFactory() {
+        assert writerFactory != null;
+
+        return writerFactory;
     }
 
     /**
@@ -977,8 +989,6 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
         else {
             GridIoMessage ioMsg = new GridIoMessage(plc, topic, topicOrd, msg.clone(), ordered, timeout, skipOnTimeout);
-
-            ioMsg.setWriter(writerFactory.writer());
 
             if (topicOrd < 0)
                 ioMsg.topicBytes(marsh.marshal(topic));

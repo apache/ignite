@@ -17,8 +17,6 @@
 
 package org.apache.ignite.plugin.extensions.communication;
 
-import org.apache.ignite.internal.direct.*;
-
 import java.io.*;
 import java.nio.*;
 
@@ -27,7 +25,7 @@ import java.nio.*;
  */
 public abstract class MessageAdapter implements Serializable, Cloneable {
     /** Writer. */
-    protected final MessageWriter writer = new DirectMessageWriter();
+    protected MessageWriter writer;
 
     /** Reader. */
     protected MessageReader reader;
@@ -42,8 +40,8 @@ public abstract class MessageAdapter implements Serializable, Cloneable {
      * @param writer Writer.
      */
     public final void setWriter(MessageWriter writer) {
-//        if (this.writer == null)
-//            this.writer = writer;
+        if (this.writer == null)
+            this.writer = writer;
     }
 
     /**

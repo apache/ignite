@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.direct.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.internal.managers.communication.*;
@@ -721,6 +722,10 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         /** {@inheritDoc} */
         @Nullable @Override public <T> T readValueFromOffheapAndSwap(@Nullable String spaceName, Object key,
             @Nullable ClassLoader ldr) {
+            return null;
+        }
+
+        @Override public MessageWriterFactory messageWriterFactory() {
             return null;
         }
 

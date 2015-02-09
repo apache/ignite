@@ -516,6 +516,14 @@ public class GridSpiTestContext implements IgniteSpiContext {
         return null;
     }
 
+    @Override public MessageWriterFactory messageWriterFactory() {
+        return new MessageWriterFactory() {
+            @Override public MessageWriter writer() {
+                return new DirectMessageWriter();
+            }
+        };
+    }
+
     /** {@inheritDoc} */
     @Override public GridTcpMessageFactory messageFactory() {
         return new GridTcpMessageFactory() {

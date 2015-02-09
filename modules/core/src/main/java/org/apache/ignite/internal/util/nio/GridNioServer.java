@@ -137,6 +137,9 @@ public class GridNioServer<T> {
     /** */
     private GridNioSslFilter sslFilter;
 
+    /** */
+    private MessageWriterFactory messageWriterFactory;
+
     /** Static initializer ensures single-threaded execution of workaround. */
     static {
         // This is a workaround for JDK bug (NPE in Selector.open()).
@@ -183,6 +186,7 @@ public class GridNioServer<T> {
         boolean directMode,
         boolean daemon,
         GridNioMetricsListener metricsLsnr,
+        MessageWriterFactory messageWriterFactory,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
         A.notNull(addr, "addr");
@@ -247,6 +251,7 @@ public class GridNioServer<T> {
 
         this.directMode = directMode;
         this.metricsLsnr = metricsLsnr;
+        this.messageWriterFactory = messageWriterFactory;
     }
 
     /**
@@ -1013,6 +1018,8 @@ public class GridNioServer<T> {
 
                     assert msg != null;
 
+                    msg.setWriter(messageWriterFactory.writer());
+
                     finished = msg.writeTo(buf);
                 }
 
@@ -1031,6 +1038,8 @@ public class GridNioServer<T> {
                     msg = req.directMessage();
 
                     assert msg != null;
+
+                    msg.setWriter(messageWriterFactory.writer());
 
                     finished = msg.writeTo(buf);
                 }
@@ -2058,6 +2067,9 @@ public class GridNioServer<T> {
         /** Daemon flag. */
         private boolean daemon;
 
+        /** Message writer factory. */
+        private MessageWriterFactory messageWriterFactory;
+
         /**
          * Finishes building the instance.
          *
@@ -2081,6 +2093,7 @@ public class GridNioServer<T> {
                 directMode,
                 daemon,
                 metricsLsnr,
+                messageWriterFactory,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
             );
 
@@ -2270,6 +2283,16 @@ public class GridNioServer<T> {
          */
         public Builder<T> daemon(boolean daemon) {
             this.daemon = daemon;
+
+            return this;
+        }
+
+        /**
+         * @param messageWriterFactory Message writer factory.
+         * @return This for chaining.
+         */
+        public Builder<T> messageWriterFactory(MessageWriterFactory messageWriterFactory) {
+            this.messageWriterFactory = messageWriterFactory;
 
             return this;
         }

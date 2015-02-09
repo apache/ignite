@@ -23,6 +23,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.direct.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.jetbrains.annotations.*;
@@ -396,6 +397,13 @@ public interface IgniteSpiContext {
      */
     @Nullable public <T> T readValueFromOffheapAndSwap(@Nullable String spaceName, Object key,
         @Nullable ClassLoader ldr) throws IgniteException;
+
+    /**
+     * Gets message writer factory.
+     *
+     * @return Message writer factory.
+     */
+    public MessageWriterFactory messageWriterFactory();
 
     /**
      * @return Message factory.
