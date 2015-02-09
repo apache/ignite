@@ -3182,7 +3182,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception In case of error.
      */
-    public void testLocalEvict() throws Exception {
+    // TODO: IGNITE-206: Enable when fixed.
+    public void _testLocalEvict() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         List<String> keys = primaryKeysForCache(cache, 3);
