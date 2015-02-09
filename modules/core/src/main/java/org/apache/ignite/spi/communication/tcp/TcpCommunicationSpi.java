@@ -1851,7 +1851,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             GridCommunicationClient client;
 
             try {
-                client = new GridShmemCommunicationClient(metricsLsnr, port, connTimeout, log);
+                client = new GridShmemCommunicationClient(metricsLsnr, port, connTimeout, log,
+                    getSpiContext().messageWriterFactory());
             }
             catch (IgniteCheckedException e) {
                 // Reconnect for the second time, if connection is not established.
@@ -2420,6 +2421,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     log,
                     endpoint,
                     srvLsnr,
+                    getSpiContext().messageWriterFactory(),
                     new GridNioCodecFilter(new GridDirectParser(TcpCommunicationSpi.this), log, true),
                     new GridConnectionBytesVerifyFilter(log)
                 );

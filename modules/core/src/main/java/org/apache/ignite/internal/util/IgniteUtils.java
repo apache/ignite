@@ -9246,8 +9246,7 @@ public abstract class IgniteUtils {
      * @return Number of written bytes.
      * @throws IOException In case of error.
      */
-    public static int writeMessageFully(MessageAdapter msg, OutputStream out, ByteBuffer buf)
-        throws IOException {
+    public static int writeMessageFully(MessageAdapter msg, OutputStream out, ByteBuffer buf) throws IOException {
         assert msg != null;
         assert out != null;
         assert buf != null;

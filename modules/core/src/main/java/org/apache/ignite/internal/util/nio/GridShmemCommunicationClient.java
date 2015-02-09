@@ -38,15 +38,19 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
     /** */
     private final ByteBuffer writeBuf;
 
+    /** */
+    private final MessageWriterFactory writerFactory;
+
     /**
      * @param metricsLsnr Metrics listener.
      * @param port Shared memory IPC server port.
      * @param connTimeout Connection timeout.
      * @param log Logger.
+     * @param writerFactory Message writer factory.
      * @throws IgniteCheckedException If failed.
      */
     public GridShmemCommunicationClient(GridNioMetricsListener metricsLsnr, int port, long connTimeout,
-        IgniteLogger log) throws IgniteCheckedException {
+        IgniteLogger log, MessageWriterFactory writerFactory) throws IgniteCheckedException {
         super(metricsLsnr);
 
         assert metricsLsnr != null;
@@ -58,10 +62,12 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
         writeBuf = ByteBuffer.allocate(8 << 10);
 
         writeBuf.order(ByteOrder.nativeOrder());
+
+        this.writerFactory = writerFactory;
     }
 
     /** {@inheritDoc} */
-    @Override public  synchronized void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC)
+    @Override public synchronized void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC)
         throws IgniteCheckedException {
         handshakeC.applyx(shmem.inputStream(), shmem.outputStream());
     }
@@ -110,6 +116,8 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
         assert writeBuf.hasArray();
 
         try {
+            msg.setWriter(writerFactory.writer());
+
             int cnt = U.writeMessageFully(msg, shmem.outputStream(), writeBuf);
 
             metricsLsnr.onBytesSent(cnt);
