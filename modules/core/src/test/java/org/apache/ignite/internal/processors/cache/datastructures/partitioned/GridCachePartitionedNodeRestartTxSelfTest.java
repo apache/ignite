@@ -246,7 +246,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
         try (IgniteTx tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             // Put simple value.
-            grid(0).cache(null).put(key, INIT_GRID_NUM);
+            grid(0).jcache(null).put(key, INIT_GRID_NUM);
 
             tx.commit();
         }
