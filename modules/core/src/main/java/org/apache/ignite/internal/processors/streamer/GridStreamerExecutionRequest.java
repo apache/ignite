@@ -271,7 +271,7 @@ public class GridStreamerExecutionRequest extends MessageAdapter {
                 state++;
 
             case 4:
-                ldrParticipants = reader.readMap("ldrParticipants", UUID.class, IgniteUuid.class);
+                ldrParticipants = reader.readMap("ldrParticipants", UUID.class, IgniteUuid.class, false);
 
                 if (!reader.isLastRead())
                     return false;

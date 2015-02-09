@@ -76,7 +76,7 @@ public interface MessageReader {
 
     public <C extends Collection<T>, T> C readCollection(String name, Class<T> itemCls);
 
-    public <M extends Map<K, V>, K, V> M readMap(String name, Class<K> keyCls, Class<V> valCls);
+    public <M extends Map<K, V>, K, V> M readMap(String name, Class<K> keyCls, Class<V> valCls, boolean linked);
 
     public boolean isLastRead();
 }

@@ -327,7 +327,7 @@ public class GridIoUserMessage extends MessageAdapter {
                 state++;
 
             case 4:
-                ldrParties = reader.readMap("ldrParties", UUID.class, IgniteUuid.class);
+                ldrParties = reader.readMap("ldrParties", UUID.class, IgniteUuid.class, false);
 
                 if (!reader.isLastRead())
                     return false;

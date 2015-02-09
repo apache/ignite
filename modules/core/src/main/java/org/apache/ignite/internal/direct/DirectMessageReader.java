@@ -263,8 +263,9 @@ public class DirectMessageReader implements MessageReader {
     }
 
     /** {@inheritDoc} */
-    @Override public <M extends Map<K, V>, K, V> M readMap(String name, Class<K> keyCls, Class<V> valCls) {
-        M map = stream.readMap(keyCls, valCls);
+    @Override public <M extends Map<K, V>, K, V> M readMap(String name, Class<K> keyCls, Class<V> valCls,
+        boolean linked) {
+        M map = stream.readMap(keyCls, valCls, linked);
 
         lastRead = stream.lastFinished();
 

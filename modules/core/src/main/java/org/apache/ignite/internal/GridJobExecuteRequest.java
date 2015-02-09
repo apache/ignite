@@ -676,7 +676,7 @@ public class GridJobExecuteRequest extends MessageAdapter implements GridTaskMes
                 state++;
 
             case 9:
-                ldrParticipants = reader.readMap("ldrParticipants", UUID.class, IgniteUuid.class);
+                ldrParticipants = reader.readMap("ldrParticipants", UUID.class, IgniteUuid.class, false);
 
                 if (!reader.isLastRead())
                     return false;

@@ -622,8 +622,10 @@ public class CommunicationMessageCodeGenerator {
             assert mapKeyType != null;
             assert mapValType != null;
 
+            boolean linked = type.equals(LinkedHashMap.class);
+
             returnFalseIfReadFailed(name, "reader.readMap", field, mapKeyType.getSimpleName() + ".class",
-                mapValType.getSimpleName() + ".class");
+                mapValType.getSimpleName() + ".class", linked ? "true" : "false");
         }
         else
             throw new IllegalStateException("Unsupported type: " + type);

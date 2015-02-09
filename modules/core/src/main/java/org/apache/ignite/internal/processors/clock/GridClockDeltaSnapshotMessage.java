@@ -126,7 +126,7 @@ public class GridClockDeltaSnapshotMessage extends MessageAdapter {
 
         switch (state) {
             case 0:
-                deltas = reader.readMap("deltas", UUID.class, long.class);
+                deltas = reader.readMap("deltas", UUID.class, long.class, false);
 
                 if (!reader.isLastRead())
                     return false;

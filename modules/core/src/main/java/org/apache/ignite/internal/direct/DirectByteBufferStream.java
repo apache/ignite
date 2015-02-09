@@ -1001,7 +1001,7 @@ public class DirectByteBufferStream {
     }
 
     @SuppressWarnings("unchecked")
-    public <M extends Map<K, V>, K, V> M readMap(Class<K> keyCls, Class<V> valCls) {
+    public <M extends Map<K, V>, K, V> M readMap(Class<K> keyCls, Class<V> valCls, boolean linked) {
         if (readSize == -1) {
             int size = readInt();
 
@@ -1013,7 +1013,7 @@ public class DirectByteBufferStream {
 
         if (readSize >= 0) {
             if (map == null)
-                map = U.newHashMap(readSize);
+                map = linked ? U.newLinkedHashMap(readSize) : U.newHashMap(readSize);
 
             Type keyType = type(keyCls);
             Type valType = type(valCls);

@@ -237,7 +237,7 @@ public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploy
                 state++;
 
             case 3:
-                participants = reader.readMap("participants", UUID.class, IgniteUuid.class);
+                participants = reader.readMap("participants", UUID.class, IgniteUuid.class, false);
 
                 if (!reader.isLastRead())
                     return false;

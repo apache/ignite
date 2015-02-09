@@ -153,7 +153,7 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
 
         switch (state) {
             case 0:
-                blocks = reader.readMap("blocks", GridGgfsBlockKey.class, byte[].class);
+                blocks = reader.readMap("blocks", GridGgfsBlockKey.class, byte[].class, false);
 
                 if (!reader.isLastRead())
                     return false;

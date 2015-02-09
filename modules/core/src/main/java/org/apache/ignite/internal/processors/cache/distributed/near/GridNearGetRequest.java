@@ -399,7 +399,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 state++;
 
             case 6:
-                keyBytes = reader.readMap("keyBytes", byte[].class, boolean.class);
+                keyBytes = reader.readMap("keyBytes", byte[].class, boolean.class, true);
 
                 if (!reader.isLastRead())
                     return false;

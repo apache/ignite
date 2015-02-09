@@ -371,7 +371,7 @@ public class GridDataLoadRequest extends MessageAdapter {
                 state++;
 
             case 6:
-                ldrParticipants = reader.readMap("ldrParticipants", UUID.class, IgniteUuid.class);
+                ldrParticipants = reader.readMap("ldrParticipants", UUID.class, IgniteUuid.class, false);
 
                 if (!reader.isLastRead())
                     return false;
