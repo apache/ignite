@@ -102,7 +102,7 @@ public class ClientConnectionConfiguration {
     private String[] restAccessibleFolders;
 
     /** REST requests thread pool size. */
-    private int restSvcPoolSz = DFLT_REST_CORE_THREAD_CNT;
+    private int restSvcPoolSize = DFLT_REST_CORE_THREAD_CNT;
 
     /** Client message interceptor. */
     private ClientMessageInterceptor clientMsgInterceptor;
@@ -125,7 +125,7 @@ public class ClientConnectionConfiguration {
 
         clientMsgInterceptor = cfg.getClientMessageInterceptor();
         restAccessibleFolders = cfg.getRestAccessibleFolders();
-        restSvcPoolSz = cfg.getRestThreadPoolSize();
+        restSvcPoolSize = cfg.getRestThreadPoolSize();
         restIdleTimeout = cfg.getRestIdleTimeout();
         jettyPath = cfg.getRestJettyPath();
         restPortRange = cfg.getRestPortRange();
@@ -494,17 +494,17 @@ public class ClientConnectionConfiguration {
      *      messages.
      */
     public int getRestThreadPoolSize() {
-        return restSvcPoolSz;
+        return restSvcPoolSize;
     }
 
     /**
      * Sets thread pool size to use for processing of client messages (REST requests).
      *
-     * @param restSvcPoolSz Thread pool size to use for processing of client messages.
+     * @param restSvcPoolSize Thread pool size to use for processing of client messages.
      * @see #getRestThreadPoolSize()
      */
-    public void setRestThreadPoolSize(int restSvcPoolSz) {
-        this.restSvcPoolSz = restSvcPoolSz;
+    public void setRestThreadPoolSize(int restSvcPoolSize) {
+        this.restSvcPoolSize = restSvcPoolSize;
     }
 
     /**

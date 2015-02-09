@@ -385,7 +385,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
                                 if (msg != null &&
                                     (msg.contains("Default grid instance has already been started.") ||
-                                    msg.contains("Grid instance with this name has already been started:")))
+                                    msg.contains("Ignite instance with this name has already been started:")))
                                     info("Caught expected exception: " + msg);
                                 else
                                     throw e; // Unexpected exception.

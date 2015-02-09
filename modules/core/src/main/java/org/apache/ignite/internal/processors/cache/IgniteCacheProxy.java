@@ -132,7 +132,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Nullable @Override public Entry<K, V> randomEntry() {
-        // TODO IGNITE-1.
+        // TODO: IGNITE-203 (enable GridCacheEntrySetIterationPreloadingSelfTest._testIteration when fixed).
         throw new UnsupportedOperationException();
     }
 

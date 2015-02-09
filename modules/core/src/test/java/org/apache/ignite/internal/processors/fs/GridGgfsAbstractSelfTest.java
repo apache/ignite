@@ -150,11 +150,11 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         for (int i = 0; i < chunk.length; i++)
             chunk[i] = (byte)i;
 
-        Ignite igniteSecondary = startGridWithGgfs("grid-secondary", "ggfs-secondary", PRIMARY, null, SECONDARY_REST_CFG);
+        Ignite igniteSecondary = startGridWithGgfs("ignite-secondary", "ignitefs-secondary", PRIMARY, null, SECONDARY_REST_CFG);
 
-        ggfsSecondary = (GridGgfsImpl) igniteSecondary.fileSystem("ggfs-secondary");
+        ggfsSecondary = (GridGgfsImpl) igniteSecondary.fileSystem("ignitefs-secondary");
 
-        Ignite ignite = startGridWithGgfs("grid", "ggfs", mode, ggfsSecondary, PRIMARY_REST_CFG);
+        Ignite ignite = startGridWithGgfs("ignite", "ggfs", mode, ggfsSecondary, PRIMARY_REST_CFG);
 
         ggfs = (GridGgfsImpl) ignite.fileSystem("ggfs");
     }

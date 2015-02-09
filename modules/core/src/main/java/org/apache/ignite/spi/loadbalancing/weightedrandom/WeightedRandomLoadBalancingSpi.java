@@ -166,11 +166,11 @@ public class WeightedRandomLoadBalancingSpi extends IgniteSpiAdapter implements 
 
     /**
      * Name of node attribute used to indicate load weight of a node
-     * (value is {@code "gridgain.node.weight.attr.name"}).
+     * (value is {@code "ignite.node.weight.attr.name"}).
      *
      * @see org.apache.ignite.cluster.ClusterNode#attributes()
      */
-    public static final String NODE_WEIGHT_ATTR_NAME = "gridgain.node.weight.attr.name";
+    public static final String NODE_WEIGHT_ATTR_NAME = "ignite.node.weight.attr.name";
 
     /** Default weight assigned to every node if explicit one is not provided (value is {@code 10}). */
     public static final int DFLT_NODE_WEIGHT = 10;
