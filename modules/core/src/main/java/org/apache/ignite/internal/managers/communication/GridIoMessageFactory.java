@@ -35,7 +35,6 @@ import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.rest.handlers.task.*;
-import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
@@ -451,11 +450,6 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case 77:
                 msg = new GridTaskResultResponse();
-
-                break;
-
-            case 78:
-                msg = new GridMemcachedMessageWrapper();
 
                 break;
 
