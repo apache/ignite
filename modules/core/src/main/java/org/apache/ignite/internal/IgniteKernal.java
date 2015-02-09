@@ -1494,7 +1494,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         p2PExecSvcMBean = registerExecutorMBean(p2pExecSvc, "GridClassLoadingExecutor");
 
         if (restExecSvc != null)
-            registerExecutorMBean(restExecSvc, "GridRestExecutor");
+            restExecSvcMBean = registerExecutorMBean(restExecSvc, "GridRestExecutor");
     }
 
     /**
