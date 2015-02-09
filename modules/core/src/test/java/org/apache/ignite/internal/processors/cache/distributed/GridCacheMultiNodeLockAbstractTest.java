@@ -241,7 +241,8 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
                 ", de2=" + dht2.peekEx(key) + ']';
         }
 
-        return "Entries [e1=" + ignite1.cache(null).entry(key) + ", e2=" + ignite2.cache(null).entry(key) + ']';
+        return "Entries [e1=" + ((IgniteKernal)ignite1).internalCache(null).entry(key)
+            + ", e2=" + ((IgniteKernal)ignite2).internalCache(null).entry(key) + ']';
     }
 
     /**
@@ -252,18 +253,17 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         IgniteCache<Integer, String> cache2 = ignite2.jcache(null);
 
         Lock lock1_1 = cache1.lock(1);
+        Lock lock2_1 = cache2.lock(1);
 
         lock1_1.lock();
 
-        assert cache1.isLocalLocked(1, false) : entries(1);
-        assert cache1.isLocalLocked(1, true);
-
-        assert cache2.isLocalLocked(1, false) : entries(1);
-        assert !cache2.isLocalLocked(1, true);
-
-        Lock lock2_1 = cache2.lock(1);
-
         try {
+            assert cache1.isLocalLocked(1, false) : entries(1);
+            assert cache1.isLocalLocked(1, true);
+
+            assert cache2.isLocalLocked(1, false) : entries(1);
+            assert !cache2.isLocalLocked(1, true);
+
             assert !lock2_1.tryLock();
 
             assert cache2.isLocalLocked(1, false) : entries(1);
@@ -275,19 +275,19 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
             checkUnlocked(cache1, 1);
         }
 
-        lock2_1.lock();
-
-        assert cache2.isLocalLocked(1, false) : entries(1);
-        assert cache2.isLocalLocked(1, true);
-
-        assert cache1.isLocalLocked(1, false) : entries(1);
-        assert !cache1.isLocalLocked(1, true);
-
         CountDownLatch latch = new CountDownLatch(1);
 
-        addListener(ignite1, new UnlockListener(latch, 1));
+        lock2_1.lock();
 
         try {
+            assert cache2.isLocalLocked(1, false) : entries(1);
+            assert cache2.isLocalLocked(1, true);
+
+            assert cache1.isLocalLocked(1, false) : entries(1);
+            assert !cache1.isLocalLocked(1, true);
+
+            addListener(ignite1, new UnlockListener(latch, 1));
+
             assert !lock1_1.tryLock();
 
             assert cache1.isLocalLocked(1, false) : entries(1);
