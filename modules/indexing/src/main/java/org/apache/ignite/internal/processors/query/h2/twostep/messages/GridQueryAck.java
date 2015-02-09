@@ -24,6 +24,9 @@ import java.io.*;
  */
 public class GridQueryAck implements Serializable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private long reqId;
 
     /**

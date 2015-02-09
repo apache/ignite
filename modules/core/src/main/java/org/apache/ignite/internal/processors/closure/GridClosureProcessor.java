@@ -69,9 +69,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     public GridClosureProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        sysPool = ctx.config().getSystemExecutorService();
-        pubPool = ctx.config().getExecutorService();
-        ggfsPool = ctx.config().getGgfsExecutorService();
+        sysPool = ctx.getSystemExecutorService();
+        pubPool = ctx.getExecutorService();
+        ggfsPool = ctx.getGgfsExecutorService();
     }
 
     /** {@inheritDoc} */
@@ -1675,6 +1675,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      *
      */
     private static class C1MLA<T, R> extends C1<T, R> implements ComputeJobMasterLeaveAware {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          *
          */
@@ -1760,6 +1763,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      *
      */
     private static class C2MLA<R> extends C2<R> implements ComputeJobMasterLeaveAware{
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          *
          */
@@ -1861,6 +1867,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      *
      */
     private static class C3MLA<R> extends C3<R> implements ComputeJobMasterLeaveAware{
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          *
          */
@@ -1943,6 +1952,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      *
      */
     private static class C4MLA extends C4 implements ComputeJobMasterLeaveAware{
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          *
          */
@@ -2039,6 +2051,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      *
      */
     private static class C5MLA extends C5 implements ComputeJobMasterLeaveAware{
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          *
          */

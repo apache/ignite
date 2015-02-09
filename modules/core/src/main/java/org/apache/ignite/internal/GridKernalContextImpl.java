@@ -265,6 +265,31 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private List<GridComponent> comps = new LinkedList<>();
 
     /** */
+    @GridToStringExclude
+    protected ExecutorService execSvc;
+
+    /** */
+    @GridToStringExclude
+    protected ExecutorService sysExecSvc;
+
+    /** */
+    @GridToStringExclude
+    private ExecutorService p2pExecSvc;
+
+    /** */
+    @GridToStringExclude
+    private ExecutorService mgmtExecSvc;
+
+    /** */
+    @GridToStringExclude
+    private ExecutorService ggfsExecSvc;
+
+    /** */
+    @GridToStringExclude
+    protected ExecutorService restExecSvc;
+
+
+    /** */
     private IgniteEx grid;
 
     /** */
@@ -301,19 +326,32 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /**
      * Creates new kernal context.
      *
-     * @param log Logger.
-     * @param grid Grid instance managed by kernal.
-     * @param cfg Grid configuration.
-     * @param gw Kernal gateway.
-     * @param utilityCachePool Utility cache pool.
-     * @param ent Release enterprise flag.
+     *  @param log Logger.
+     *  @param grid Grid instance managed by kernal.
+     *  @param cfg Grid configuration.
+     *  @param gw Kernal gateway.
+     *  @param utilityCachePool Utility cache pool.
+     *  @param execSvc Public executor service.
+     *  @param sysExecSvc System executor service.
+     *  @param p2pExecSvc P2P executor service.
+     *  @param mgmtExecSvc Management executor service.
+     *  @param ggfsExecSvc GGFS executor service.
+     *  @param restExecSvc REST executor service.
+     *  @param ent Release enterprise flag.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    protected GridKernalContextImpl(GridLoggerProxy log,
+    protected GridKernalContextImpl(
+        GridLoggerProxy log,
         IgniteEx grid,
         IgniteConfiguration cfg,
         GridKernalGateway gw,
         ExecutorService utilityCachePool,
+        ExecutorService execSvc,
+        ExecutorService sysExecSvc,
+        ExecutorService p2pExecSvc,
+        ExecutorService mgmtExecSvc,
+        ExecutorService ggfsExecSvc,
+        ExecutorService restExecSvc,
         boolean ent) {
         assert grid != null;
         assert cfg != null;
@@ -324,6 +362,12 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.gw = gw;
         this.ent = ent;
         this.utilityCachePool = utilityCachePool;
+        this.execSvc = execSvc;
+        this.sysExecSvc = sysExecSvc;
+        this.p2pExecSvc = p2pExecSvc;
+        this.mgmtExecSvc = mgmtExecSvc;
+        this.ggfsExecSvc = ggfsExecSvc;
+        this.restExecSvc = restExecSvc;
 
         try {
             spring = SPRING.create(false);
@@ -827,6 +871,36 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         finally {
             stash.remove();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getExecutorService() {
+        return execSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getSystemExecutorService() {
+        return sysExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getManagementExecutorService() {
+        return mgmtExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getPeerClassLoadingExecutorService() {
+        return p2pExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getGgfsExecutorService() {
+        return ggfsExecSvc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public ExecutorService getRestExecutorService() {
+        return restExecSvc;
     }
 
     /** {@inheritDoc} */

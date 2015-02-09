@@ -47,7 +47,7 @@ public class GridClientThreadFactory implements ThreadFactory {
     public GridClientThreadFactory(String name, boolean daemon) {
         this.daemon = daemon;
 
-        prefix = "gridgain-client-" + name + "-" + poolCtr.getAndIncrement() + "-";
+        prefix = "ignite-client-" + name + "-" + poolCtr.getAndIncrement() + "-";
     }
 
     /** {@inheritDoc} */

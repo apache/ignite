@@ -28,7 +28,7 @@ import org.jetbrains.annotations.*;
  * jobs are activated immediately on arrival to mapped node. This approach suits well
  * for large amount of small jobs (which is a wide-spread use case). User still can
  * control the number of concurrent jobs by setting maximum thread pool size defined
- * by {@link org.apache.ignite.configuration.IgniteConfiguration#getExecutorService()} configuration property.
+ * by {@link org.apache.ignite.configuration.IgniteConfiguration#getPublicThreadPoolSize()} configuration property.
  */
 @IgniteSpiNoop
 @IgniteSpiMultipleInstancesSupport(true)
