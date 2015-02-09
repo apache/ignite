@@ -20,8 +20,16 @@ package org.apache.ignite.plugin.extensions.communication;
 import org.apache.ignite.plugin.*;
 
 /**
- * TODO
+ * Factory for message readers.
+ * <p>
+ * A plugin can provide his own message reader factory as
+ * an extension to define a custom binary format.
  */
 public interface MessageReaderFactory extends Extension {
+    /**
+     * Creates new message reader instance.
+     *
+     * @return Message reader.
+     */
     public MessageReader reader();
 }

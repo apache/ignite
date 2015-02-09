@@ -18,14 +18,24 @@
 package org.apache.ignite.plugin.extensions.communication;
 
 import org.apache.ignite.plugin.*;
+import org.jetbrains.annotations.*;
 
 /**
- *
+ * Factory for communication messages.
+ * <p>
+ * A plugin can provide his own message factory as an extension
+ * if it uses any custom messages (all message must extend
+ * {@link MessageAdapter} class).
  */
 public interface MessageFactory extends Extension {
     /**
+     * Creates new message instance of provided type.
+     * <p>
+     * This method should return {@code null} if provided message type
+     * is unknown to this factory.
+     *
      * @param type Message type.
      * @return Message instance.
      */
-    public MessageAdapter create(byte type);
+    @Nullable public MessageAdapter create(byte type);
 }

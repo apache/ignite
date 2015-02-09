@@ -21,23 +21,23 @@ import java.io.*;
 import java.nio.*;
 
 /**
- * Communication message adapter.
+ * Base class for all communication messages.
  */
 public abstract class MessageAdapter implements Serializable, Cloneable {
-    /** Writer. */
+    /** Message writer. */
     protected MessageWriter writer;
 
-    /** Reader. */
+    /** Message reader. */
     protected MessageReader reader;
 
-    /** */
+    /** Whether message type is already written. */
     protected boolean typeWritten;
 
-    /** */
+    /** Current write/read state. */
     protected int state;
 
     /**
-     * @param writer Writer.
+     * @param writer Message writer.
      */
     public final void setWriter(MessageWriter writer) {
         if (this.writer == null)
@@ -45,7 +45,7 @@ public abstract class MessageAdapter implements Serializable, Cloneable {
     }
 
     /**
-     * @param reader Reader.
+     * @param reader Message reader.
      */
     public final void setReader(MessageReader reader) {
         if (this.reader == null)
@@ -53,18 +53,24 @@ public abstract class MessageAdapter implements Serializable, Cloneable {
     }
 
     /**
+     * Writes this message to provided byte buffer.
+     *
      * @param buf Byte buffer.
      * @return Whether message was fully written.
      */
     public abstract boolean writeTo(ByteBuffer buf);
 
     /**
+     * Reads this message from provided byte buffer.
+     *
      * @param buf Byte buffer.
      * @return Whether message was fully read.
      */
     public abstract boolean readFrom(ByteBuffer buf);
 
     /**
+     * Gets message type.
+     *
      * @return Message type.
      */
     public abstract byte directType();
@@ -74,14 +80,16 @@ public abstract class MessageAdapter implements Serializable, Cloneable {
     @Override public abstract MessageAdapter clone();
 
     /**
-     * Clones all fields of the provided message to {@code this}.
+     * Clones all fields of the provided message to this message.
      *
-     * @param _msg Message to clone from.
+     * @param msg Message to clone from.
      */
-    protected abstract void clone0(MessageAdapter _msg);
+    protected abstract void clone0(MessageAdapter msg);
 
     /**
-     * @return {@code True} if should skip recovery for this message.
+     * Defines whether recovery for this message should be skipped.
+     *
+     * @return Whether recovery for this message should be skipped.
      */
     public boolean skipRecovery() {
         return false;
