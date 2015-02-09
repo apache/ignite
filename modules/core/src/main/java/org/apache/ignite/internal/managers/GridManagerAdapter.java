@@ -22,22 +22,21 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
 import java.io.*;
-import java.nio.*;
 import java.util.*;
 
 import static java.util.Arrays.*;
@@ -498,24 +497,6 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         }
 
                         return null;
-                    }
-
-                    @Override public boolean writeDelta(UUID nodeId, Object msg, ByteBuffer buf) {
-                        for (MessageCallback patcher : ctx.plugins().extensions(MessageCallback.class)) {
-                            if (!patcher.onSend(nodeId, msg, buf))
-                                return false;
-                        }
-
-                        return true;
-                    }
-
-                    @Override public boolean readDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
-                        for (MessageCallback patcher : ctx.plugins().extensions(MessageCallback.class)) {
-                            if (!patcher.onReceive(nodeId, msgCls, buf))
-                                return false;
-                        }
-
-                        return true;
                     }
 
                     @Override public Collection<GridSecuritySubject> authenticatedSubjects() {

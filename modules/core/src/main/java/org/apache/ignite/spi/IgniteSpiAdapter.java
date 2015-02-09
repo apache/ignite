@@ -21,21 +21,20 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.spi.securesession.*;
-import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.authentication.*;
+import org.apache.ignite.spi.securesession.*;
+import org.apache.ignite.spi.swapspace.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
 import java.io.*;
-import java.nio.*;
 import java.text.*;
 import java.util.*;
 
@@ -696,16 +695,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         /** {@inheritDoc} */
         @Nullable @Override public IgniteSpiNodeValidationResult validateNode(ClusterNode node) {
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean writeDelta(UUID nodeId, Object msg, ByteBuffer buf) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
-            return false;
         }
 
         /** {@inheritDoc} */

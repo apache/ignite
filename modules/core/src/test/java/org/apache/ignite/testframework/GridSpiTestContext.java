@@ -33,7 +33,6 @@ import org.apache.ignite.spi.swapspace.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -488,16 +487,6 @@ public class GridSpiTestContext implements IgniteSpiContext {
     /** {@inheritDoc} */
     @Nullable @Override public IgniteSpiNodeValidationResult validateNode(ClusterNode node) {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeDelta(UUID nodeId, Object msg, ByteBuffer buf) {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
-        return false;
     }
 
     /** {@inheritDoc} */

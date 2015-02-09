@@ -29,7 +29,6 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import java.io.*;
-import java.nio.*;
 import java.util.*;
 
 /**
@@ -347,26 +346,6 @@ public interface IgniteSpiContext {
      * @return Validation result or {@code null} in case of success.
      */
     @Nullable public IgniteSpiNodeValidationResult validateNode(ClusterNode node);
-
-    /**
-     * Writes delta for provided node and message type.
-     *
-     * @param nodeId Node ID.
-     * @param msg Message.
-     * @param buf Buffer to write to.
-     * @return Whether delta was fully written.
-     */
-    public boolean writeDelta(UUID nodeId, Object msg, ByteBuffer buf);
-
-    /**
-     * Reads delta for provided node and message type.
-     *
-     * @param nodeId Node ID.
-     * @param msgCls Message type.
-     * @param buf Buffer to read from.
-     * @return Whether delta was fully read.
-     */
-    public boolean readDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf);
 
     /**
      * Gets collection of authenticated subjects together with their permissions.
