@@ -502,17 +502,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public <T> T createComponent(Class<T> cls);
 
     /**
-     * @return Message factory.
-     */
-    public GridTcpMessageFactory messageFactory();
-
-    /**
-     * @param producer Message producer.
-     * @return Message type code.
-     */
-    public byte registerMessageProducer(GridTcpCommunicationMessageProducer producer);
-
-    /**
      * @return Thread pool implementation to be used in grid to process job execution
      *      requests and user messages sent to the node.
      */
