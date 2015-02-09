@@ -195,8 +195,8 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
      * @throws Exception If failed.
      */
     private void startAdditionalNodes(int cnt, String queueName) throws Exception {
-        CacheAffinityFunction aff = cache(0).configuration().getAffinity();
-        CacheAffinityKeyMapper mapper = cache(0).configuration().getAffinityMapper();
+        CacheAffinityFunction aff = jcache(0).getConfiguration(CacheConfiguration.class).getAffinity();
+        CacheAffinityKeyMapper mapper = jcache(0).getConfiguration(CacheConfiguration.class).getAffinityMapper();
 
         assertNotNull(aff);
         assertNotNull(mapper);
@@ -205,7 +205,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
 
         Collection<ClusterNode> nodes = grid(0).nodes();
 
-        Collection<ClusterNode> aff0 = cache(0).affinity().mapKeyToPrimaryAndBackups(queueName);
+        Collection<ClusterNode> aff0 = ignite(0).affinity(null).mapKeyToPrimaryAndBackups(queueName);
         Collection<ClusterNode> aff1 = nodes(aff, part, nodes);
 
         assertEquals(new ArrayList<>(aff0), new ArrayList<>(aff1));
@@ -237,7 +237,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollection
             startGrid(i++);
         }
 
-        aff2 = cache(0).affinity().mapKeyToPrimaryAndBackups(queueName);
+        aff2 = ignite(0).affinity(null).mapKeyToPrimaryAndBackups(queueName);
 
         assertFalse("Unexpected affinity [aff1=" + aff1 + ", aff2=" + aff2 + ']', F.containsAny(aff1, aff2));
     }

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -314,16 +315,18 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
         while (keys.size() < 30) {
             String key = String.valueOf(numKey);
 
+            CacheAffinity<Object> affinity = ignite(0).affinity(null);
+
             if (nodeType == NEAR_NODE) {
-                if (!cache(0).affinity().isPrimaryOrBackup(grid(0).localNode(), key))
+                if (!affinity.isPrimaryOrBackup(grid(0).localNode(), key))
                     keys.add(key);
             }
             else if (nodeType == PRIMARY_NODE) {
-                if (cache(0).affinity().isPrimary(grid(0).localNode(), key))
+                if (affinity.isPrimary(grid(0).localNode(), key))
                     keys.add(key);
             }
             else if (nodeType == BACKUP_NODE) {
-                if (cache(0).affinity().isBackup(grid(0).localNode(), key))
+                if (affinity.isBackup(grid(0).localNode(), key))
                     keys.add(key);
             }
 

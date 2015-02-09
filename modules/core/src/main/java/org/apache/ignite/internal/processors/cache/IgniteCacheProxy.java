@@ -132,17 +132,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Nullable @Override public Entry<K, V> randomEntry() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return ctx.<K, V>cache().randomCacheEntry();
-        }
-        catch (IgniteCheckedException e) {
-            throw cacheException(e);
-        }
-        finally {
-            gate.leave(prev);
-        }
+        // TODO: IGNITE-203 (enable GridCacheEntrySetIterationPreloadingSelfTest._testIteration when fixed).
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

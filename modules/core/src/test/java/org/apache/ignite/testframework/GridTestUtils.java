@@ -734,7 +734,7 @@ public final class GridTestUtils {
                 // Exclude log4j because of the design - 1 per VM.
                 if (name.startsWith("spring") || name.startsWith("log4j") ||
                     name.startsWith("commons-logging") || name.startsWith("junit") ||
-                    name.startsWith("gridgain-tests"))
+                    name.startsWith("ignite-tests"))
                     return false;
 
                 boolean ret = true;
@@ -842,7 +842,7 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return Cache context.
      */
-    public static <K, V> GridCacheContext<K, V> cacheContext(CacheProjection<K, V> cache) {
+    public static <K, V> GridCacheContext<K, V> cacheContext(GridCache<K, V> cache) {
         return ((IgniteKernal)cache.gridProjection().ignite()).<K, V>internalCache().context();
     }
 
@@ -850,7 +850,7 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return Near cache.
      */
-    public static <K, V> GridNearCacheAdapter<K, V> near(CacheProjection<K, V> cache) {
+    public static <K, V> GridNearCacheAdapter<K, V> near(GridCache<K, V> cache) {
         return cacheContext(cache).near();
     }
 
@@ -858,7 +858,7 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return DHT cache.
      */
-    public static <K, V> GridDhtCacheAdapter<K, V> dht(CacheProjection<K, V> cache) {
+    public static <K, V> GridDhtCacheAdapter<K, V> dht(GridCache<K, V> cache) {
         return near(cache).dht();
     }
 
@@ -866,7 +866,7 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return Affinity.
      */
-    static <K, V> CacheConsistentHashAffinityFunction affinity(CacheProjection<K, V> cache) {
+    static <K, V> CacheConsistentHashAffinityFunction affinity(GridCache<K, V> cache) {
         return (CacheConsistentHashAffinityFunction)cache.cache().configuration().getAffinity();
     }
 

@@ -90,7 +90,7 @@ public enum GridHadoopJobProperty {
      *
      */
     GridHadoopJobProperty() {
-        ptyName = "gridgain." + name().toLowerCase().replace('_', '.');
+        ptyName = "ignite." + name().toLowerCase().replace('_', '.');
     }
 
     /**

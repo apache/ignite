@@ -444,6 +444,23 @@
                     </execution>
 
                     <execution>
+                        <id>dependencies-schema-load</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>assembly/dependencies-schema-load.xml</descriptor>
+                            </descriptors>
+                            <outputDirectory>${basedir}/bin</outputDirectory>
+                            <finalName>include</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                        </configuration>
+                    </execution>
+
+                    <execution>
                         <id>release</id>
                         <phase>prepare-package</phase>
                         <goals>
@@ -635,6 +652,10 @@
 
                                         <fileset>
                                             <directory>bin/include/visorui</directory>
+                                        </fileset>
+
+                                        <fileset>
+                                            <directory>bin/include/schema-load</directory>
                                         </fileset>
                                     </filesets>
                                 </configuration>
@@ -1014,7 +1035,7 @@
                                     </groups>
                                     <header>
                                         <![CDATA[
-                                    GridGain - In-Memory Data Fabric
+                                    Apache Ignite - In-Memory Data Fabric
                                 ]]>
                                     </header>
                                     <bottom>
@@ -1058,7 +1079,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <b>GridGain Fabric</b>
+                                                            <b>Apache Ignite Fabric</b>
                                                         </td>
                                                         <td>:&nbsp;&nbsp;
                                                             ver. <strong>${ignite.version}</strong>
@@ -1135,7 +1156,7 @@
                                         <![CDATA[
                                     Java Client
                                     <br>
-                                    GridGain ver. <b>${ignite.version}</b>
+                                    Apache Ignite ver. <b>${ignite.version}</b>
                                 ]]>
                                     </header>
                                     <bottom>
@@ -1143,7 +1164,7 @@
                                     <table width="100%" border="0">
                                         <tr>
                                             <td>
-                                                <nobr>GridGain&#153; - Java Client, ver. <strong>${ignite.version}</strong></nobr>
+                                                <nobr>Apache Ignite&#153; - Java Client, ver. <strong>${ignite.version}</strong></nobr>
                                                 <br>
                                                 <a target=_blank href="https://incubator.apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
                                             </td>
@@ -1226,6 +1247,48 @@
                                             <exclude name="allclasses-frame.html"/>
                                             <exclude name="**/class-use/*"/>
                                         </doctask>
+                                    </target>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>optimized-classnames-generation</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>process-resources</phase>
+                                <configuration>
+                                    <target>
+                                        <java
+                                                classname="org.apache.ignite.tools.marshaller.optimized.OptimizedClassNamesGenerator"
+                                                fork="true"
+                                                failonerror="true"
+                                                maxmemory="1g">
+                                            <classpath>
+                                                <path location="${project.basedir}/modules/core/target/classes"/>
+                                                <path location="${project.basedir}/modules/aop/target/classes"/>
+                                                <path location="${project.basedir}/modules/aws/target/classes"/>
+                                                <path location="${project.basedir}/modules/email/target/classes"/>
+                                                <path location="${project.basedir}/modules/hadoop/target/classes"/>
+                                                <path location="${project.basedir}/modules/hibernate/target/classes"/>
+                                                <path location="${project.basedir}/modules/indexing/target/classes"/>
+                                                <path location="${project.basedir}/modules/jcl/target/classes"/>
+                                                <path location="${project.basedir}/modules/jta/target/classes"/>
+                                                <path location="${project.basedir}/modules/log4j/target/classes"/>
+                                                <path location="${project.basedir}/modules/rest-http/target/classes"/>
+                                                <path location="${project.basedir}/modules/schedule/target/classes"/>
+                                                <path location="${project.basedir}/modules/slf4j/target/classes"/>
+                                                <path location="${project.basedir}/modules/spring/target/classes"/>
+                                                <path location="${project.basedir}/modules/ssh/target/classes"/>
+                                                <path location="${project.basedir}/modules/urideploy/target/classes"/>
+                                                <path location="${project.basedir}/modules/web/target/classes"/>
+                                                <path location="${project.basedir}/modules/scalar/target/classes"/>
+                                                <path location="${project.basedir}/modules/visor-console/target/classes"/>
+                                                <path refid="maven.plugin.classpath"/>
+                                            </classpath>
+                                            <arg value="${project.basedir}/modules/core/target/classes"/>
+                                            <jvmarg value="-XX:MaxPermSize=1g"/>
+                                        </java>
                                     </target>
                                 </configuration>
                             </execution>

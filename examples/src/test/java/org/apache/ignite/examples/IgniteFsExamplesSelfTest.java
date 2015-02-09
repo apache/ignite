@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.fs.*;
+import org.apache.ignite.examples.ignitefs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 

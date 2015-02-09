@@ -93,8 +93,8 @@ public class GridCacheContinuousQueryReplicatedSelfTest extends GridCacheContinu
         GridCache<Integer, Integer> cache1 = grid(0).cache(null);
         GridCache<Integer, Integer> cache2 = grid(1).cache(null);
 
-        final int key1 = primaryKey(cache1);
-        final int key2 = primaryKey(cache2);
+        final int key1 = primaryKey(jcache(0));
+        final int key2 = primaryKey(jcache(1));
 
         final CountDownLatch latch1 = new CountDownLatch(2);
         final CountDownLatch latch2 = new CountDownLatch(2);

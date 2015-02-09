@@ -206,7 +206,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
         for (int g = 0; g < gridCount(); g++) {
             info(">>>> Removing all values form cache: " + g);
 
-            cache(g).removeAll();
+            jcache(g).removeAll();
         }
 
         info(">>>> Starting values check");

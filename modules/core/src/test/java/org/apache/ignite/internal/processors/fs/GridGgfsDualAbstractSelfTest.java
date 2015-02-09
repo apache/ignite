@@ -50,7 +50,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testDefaultDirectories() throws Exception {
-        IgniteFsPath gg = new IgniteFsPath("/gridgain");
+        IgniteFsPath gg = new IgniteFsPath("/ignite");
         IgniteFsPath[] paths = paths(
             gg, new IgniteFsPath(gg, "sync"), new IgniteFsPath(gg, "async"), new IgniteFsPath(gg, "primary"));
 

@@ -845,10 +845,10 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            assertNull("For cache [i=" + i + ", val=" + cache(i).peek(key1) + ']', cache(i).peek(key1));
-            assertNull("For cache [i=" + i + ", val=" + cache(i).peek(key2) + ']', cache(i).peek(key2));
+            IgniteCache<Object, Object> cacheI = jcache(i);
 
-            assertTrue("For cache [idx=" + i + ", keySet=" + cache(i).keySet() + ']', cache(i).size() <= 1);
+            assertNull("For cache [i=" + i + ", val=" + cacheI.localPeek(key1, CachePeekMode.ONHEAP) + ']', cacheI.localPeek(key1, CachePeekMode.ONHEAP));
+            assertNull("For cache [i=" + i + ", val=" + cacheI.localPeek(key2, CachePeekMode.ONHEAP) + ']', cacheI.localPeek(key2, CachePeekMode.ONHEAP));
         }
 
         // Check that there are no further locks after transaction commit.
@@ -959,11 +959,11 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     private void checkGetRepeatableRead(IgniteTxConcurrency concurrency) throws Exception {
         UUID key = primaryKeyForCache(grid(0));
 
-        cache(0).put(key, "val");
+        jcache(0).put(key, "val");
 
-        try (IgniteTx ignored = cache(0).txStartPartition(cache(0).affinity().partition(key), concurrency,
-            REPEATABLE_READ, 0, 1)) {
-            assertEquals("val", cache(0).get(key));
+        try (IgniteTx ignored = ignite(0).transactions().txStartPartition(null, ignite(0).affinity(null).partition(key),
+            concurrency, REPEATABLE_READ, 0, 1)) {
+            assertEquals("val", jcache(0).get(key));
         }
     }
 

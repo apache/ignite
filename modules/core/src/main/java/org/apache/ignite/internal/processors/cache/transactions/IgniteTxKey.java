@@ -27,6 +27,9 @@ import java.io.*;
  * for multiple caches.
  */
 public class IgniteTxKey<K> implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Key. */
     @GridToStringInclude
     private K key;

@@ -27,9 +27,6 @@ public class GridProperties {
     /** Properties file path. */
     private static final String FILE_PATH = "ignite.properties";
 
-    /** Enterprise properties file path. */
-    private static final String ENT_FILE_PATH = "gridgain-ent.properties";
-
     /** Properties. */
     private static final Properties PROPS;
 
@@ -40,7 +37,6 @@ public class GridProperties {
         PROPS = new Properties();
 
         readProperties(FILE_PATH, true);
-        readProperties(ENT_FILE_PATH, false);
     }
 
     /**
