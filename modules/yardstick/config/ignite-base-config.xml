@@ -184,8 +184,6 @@
             </list>
         </property>
 
-        <property name="restEnabled" value="false"/>
-
         <property name="includeEventTypes">
             <list/>
         </property>

@@ -68,6 +68,7 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
         return PARTITIONED_ONLY;
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(null).removeAll();
@@ -111,11 +112,11 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
 
         for (String key : keys)
             assertEquals((Integer)i++, nearCache.localPeek(key, CachePeekMode.ONHEAP));
-
     }
 
     /** {@inheritDoc} */
-    @Override public void testEvictExpired() throws Exception {
+    // TODO: IGNITE-206: Enable when fixed.
+    @Override public void _testEvictExpired() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         String key = primaryKeysForCache(cache, 1).get(0);

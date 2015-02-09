@@ -123,5 +123,7 @@ public abstract class IgniteJdbcStoreAbstractBenchmark extends IgniteAbstractBen
 
             U.closeQuiet(stmt);
         }
+
+        super.tearDown();
     }
 }

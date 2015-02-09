@@ -179,7 +179,7 @@ public class GridHadoopSetup {
         Collection<File> jarFiles = new ArrayList<>();
 
         addJarsInFolder(jarFiles, igniteLibs);
-        addJarsInFolder(jarFiles, new File(igniteLibs, "gridgain-hadoop"));
+        addJarsInFolder(jarFiles, new File(igniteLibs, "ignite-hadoop"));
 
         boolean jarsLinksCorrect = true;
 

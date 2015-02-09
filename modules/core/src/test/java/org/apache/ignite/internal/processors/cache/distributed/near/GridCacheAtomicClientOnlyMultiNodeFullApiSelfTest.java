@@ -72,6 +72,16 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
+    @Override public void testReaderTtlNoTx() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testReaderTtlTx() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void testSize() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
@@ -134,7 +144,8 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
-    @Override public void testEvictExpired() throws Exception {
+    // TODO: IGNITE-206: Enable when fixed.
+    @Override public void _testEvictExpired() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         String key = primaryKeysForCache(cache, 1).get(0);
@@ -174,7 +185,8 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
-    @Override public void testLocalEvict() throws Exception {
+    // TODO: IGNITE-206: Enable when fixed.
+    @Override public void _testLocalEvict() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         List<String> keys = primaryKeysForCache(cache, 3);

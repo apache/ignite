@@ -39,7 +39,6 @@ import org.springframework.core.io.*;
 
 import javax.cache.*;
 import javax.cache.integration.*;
-import java.io.*;
 import java.net.*;
 import java.sql.*;
 import java.util.*;
@@ -53,10 +52,10 @@ import static org.apache.ignite.testframework.junits.cache.GridAbstractCacheStor
  */
 public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
     /** Default connection URL (value is <tt>jdbc:h2:mem:jdbcCacheStore;DB_CLOSE_DELAY=-1</tt>). */
-    protected static final String DFLT_CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
+    private static final String DFLT_CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
 
     /** Default config with mapping. */
-    protected static final String DFLT_MAPPING_CONFIG = "modules/core/src/test/config/store/jdbc/Ignite.xml";
+    private static final String DFLT_MAPPING_CONFIG = "modules/core/src/test/config/store/jdbc/Ignite.xml";
 
     /** Organization count. */
     protected static final int ORGANIZATION_CNT = 1000;
@@ -114,19 +113,22 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
 
         GridTestUtils.setFieldValue(store, CacheStore.class, "ses", ses);
 
-        UrlResource metaUrl;
+        URL cfgUrl;
 
         try {
-            metaUrl = new UrlResource(new File(DFLT_MAPPING_CONFIG).toURI().toURL());
+            cfgUrl = new URL(DFLT_MAPPING_CONFIG);
         }
-        catch (MalformedURLException e) {
-            throw new IgniteCheckedException("Failed to resolve metadata path [err=" + e.getMessage() + ']', e);
+        catch (MalformedURLException ignore) {
+            cfgUrl = U.resolveIgniteUrl(DFLT_MAPPING_CONFIG);
         }
+
+        if (cfgUrl == null)
+            throw new Exception("Failed to resolve metadata path: " + DFLT_MAPPING_CONFIG);
 
         try {
             GenericApplicationContext springCtx = new GenericApplicationContext();
 
-            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(metaUrl);
+            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(cfgUrl));
 
             springCtx.refresh();
 
@@ -153,10 +155,10 @@ public class CacheJdbcPojoStoreTest extends GridCommonAbstractTest {
             if (X.hasCause(e, ClassNotFoundException.class))
                 throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
                     "(make sure all classes used in Spring configuration are present at CLASSPATH) " +
-                    "[springUrl=" + metaUrl + ']', e);
+                    "[springUrl=" + cfgUrl + ']', e);
             else
                 throw new IgniteCheckedException("Failed to instantiate Spring XML application context [springUrl=" +
-                    metaUrl + ", err=" + e.getMessage() + ']', e);
+                    cfgUrl + ", err=" + e.getMessage() + ']', e);
         }
     }
 

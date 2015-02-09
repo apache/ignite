@@ -472,6 +472,17 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> removeAllAsync() {
+        return ctx.closures().callLocalSafe(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                removeAll();
+
+                return null;
+            }
+        });
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> removeAllAsync(IgnitePredicate<CacheEntry<K, V>>[] filter) {
         return removeAllAsync(keySet(filter), filter);
     }

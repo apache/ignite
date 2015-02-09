@@ -176,6 +176,9 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
      */
     private class InternalFutureListener implements IgniteInClosure<IgniteInternalFuture<V>> {
         /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
         private final IgniteInClosure<? super IgniteFuture<V>> lsnr;
 
         /**

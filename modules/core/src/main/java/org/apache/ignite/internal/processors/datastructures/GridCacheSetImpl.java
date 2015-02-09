@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.datastructures.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
@@ -459,11 +458,11 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     }
 
     /**
-     * Throws {@link DataStructureRemovedException} if set was removed.
+     * Throws {@link IllegalStateException} if set was removed.
      */
     private void checkRemoved() {
         if (rmvd)
-            throw new DataStructureRemovedException("Set has been removed from cache: " + this);
+            throw new IllegalStateException("Set has been removed from cache: " + this);
     }
 
     /**

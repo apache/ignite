@@ -852,7 +852,7 @@ public class IgnitionEx {
             if (name == null)
                 throw new IgniteCheckedException("Default grid instance has already been started.");
             else
-                throw new IgniteCheckedException("Grid instance with this name has already been started: " + name);
+                throw new IgniteCheckedException("Ignite instance with this name has already been started: " + name);
         }
 
         if (startCtx.config().getWarmupClosure() != null)
@@ -1157,56 +1157,20 @@ public class IgnitionEx {
         /** Executor service. */
         private ExecutorService execSvc;
 
-        /** Auto executor service flag. */
-        private boolean isAutoExecSvc;
-
-        /** Executor service shutdown flag. */
-        private boolean execSvcShutdown;
-
         /** System executor service. */
         private ExecutorService sysExecSvc;
-
-        /** Auto system service flag. */
-        private boolean isAutoSysSvc;
-
-        /** System executor service shutdown flag. */
-        private boolean sysSvcShutdown;
 
         /** Management executor service. */
         private ExecutorService mgmtExecSvc;
 
-        /** Auto management service flag. */
-        private boolean isAutoMgmtSvc;
-
-        /** Management executor service shutdown flag. */
-        private boolean mgmtSvcShutdown;
-
         /** P2P executor service. */
         private ExecutorService p2pExecSvc;
-
-        /** Auto P2P service flag. */
-        private boolean isAutoP2PSvc;
-
-        /** P2P executor service shutdown flag. */
-        private boolean p2pSvcShutdown;
 
         /** GGFS executor service. */
         private ExecutorService ggfsExecSvc;
 
-        /** Auto GGFS service flag. */
-        private boolean isAutoGgfsSvc;
-
-        /** GGFS executor service shutdown flag. */
-        private boolean ggfsSvcShutdown;
-
         /** REST requests executor service. */
         private ExecutorService restExecSvc;
-
-        /** Auto REST service flag. */
-        private boolean isAutoRestSvc;
-
-        /** REST executor service shutdown flag. */
-        private boolean restSvcShutdown;
 
         /** Utility cache executor service. */
         private ExecutorService utilityCacheExecSvc;
@@ -1429,33 +1393,7 @@ public class IgnitionEx {
 
             ClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
 
-            if (clientCfg == null) {
-                // If client config is not provided then create config copying values from GridConfiguration.
-                if (cfg.isRestEnabled()) {
-                    clientCfg = new ClientConnectionConfiguration();
-
-                    clientCfg.setClientMessageInterceptor(cfg.getClientMessageInterceptor());
-                    clientCfg.setRestAccessibleFolders(cfg.getRestAccessibleFolders());
-                    clientCfg.setRestExecutorService(cfg.getRestExecutorService());
-                    clientCfg.setRestExecutorServiceShutdown(cfg.getRestExecutorServiceShutdown());
-                    clientCfg.setRestIdleTimeout(cfg.getRestIdleTimeout());
-                    clientCfg.setRestJettyPath(cfg.getRestJettyPath());
-                    clientCfg.setRestPortRange(cfg.getRestPortRange());
-                    clientCfg.setRestSecretKey(cfg.getRestSecretKey());
-                    clientCfg.setRestTcpDirectBuffer(cfg.isRestTcpDirectBuffer());
-                    clientCfg.setRestTcpHost(cfg.getRestTcpHost());
-                    clientCfg.setRestTcpNoDelay(cfg.isRestTcpNoDelay());
-                    clientCfg.setRestTcpPort(cfg.getRestTcpPort());
-                    clientCfg.setRestTcpReceiveBufferSize(cfg.getRestTcpReceiveBufferSize());
-                    clientCfg.setRestTcpSelectorCount(cfg.getRestTcpSelectorCount());
-                    clientCfg.setRestTcpSendBufferSize(cfg.getRestTcpSendBufferSize());
-                    clientCfg.setRestTcpSendQueueLimit(cfg.getRestTcpSendQueueLimit());
-                    clientCfg.setRestTcpSslClientAuth(cfg.isRestTcpSslClientAuth());
-                    clientCfg.setRestTcpSslContextFactory(cfg.getRestTcpSslContextFactory());
-                    clientCfg.setRestTcpSslEnabled(cfg.isRestTcpSslEnabled());
-                }
-            }
-            else
+            if (clientCfg != null)
                 clientCfg = new ClientConnectionConfiguration(clientCfg);
 
 
@@ -1520,104 +1458,66 @@ public class IgnitionEx {
             SwapSpaceSpi swapspaceSpi = cfg.getSwapSpaceSpi();
             GridIndexingSpi indexingSpi = cfg.getIndexingSpi();
 
-            execSvc = cfg.getExecutorService();
-            sysExecSvc = cfg.getSystemExecutorService();
-            p2pExecSvc = cfg.getPeerClassLoadingExecutorService();
-            mgmtExecSvc = cfg.getManagementExecutorService();
-            ggfsExecSvc = cfg.getGgfsExecutorService();
+            execSvc = new IgniteThreadPoolExecutor(
+                "pub-" + cfg.getGridName(),
+                cfg.getPublicThreadPoolSize(),
+                cfg.getPublicThreadPoolSize(),
+                DFLT_PUBLIC_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>(DFLT_PUBLIC_THREADPOOL_QUEUE_CAP));
 
-            if (execSvc == null) {
-                isAutoExecSvc = true;
+            // Pre-start all threads as they are guaranteed to be needed.
+            ((ThreadPoolExecutor) execSvc).prestartAllCoreThreads();
 
-                execSvc = new IgniteThreadPoolExecutor(
-                    "pub-" + cfg.getGridName(),
-                    DFLT_PUBLIC_CORE_THREAD_CNT,
-                    DFLT_PUBLIC_MAX_THREAD_CNT,
-                    DFLT_PUBLIC_KEEP_ALIVE_TIME,
-                    new LinkedBlockingQueue<Runnable>(DFLT_PUBLIC_THREADPOOL_QUEUE_CAP));
+            // Note that since we use 'LinkedBlockingQueue', number of
+            // maximum threads has no effect.
+            sysExecSvc = new IgniteThreadPoolExecutor(
+                "sys-" + cfg.getGridName(),
+                cfg.getSystemThreadPoolSize(),
+                cfg.getSystemThreadPoolSize(),
+                DFLT_SYSTEM_KEEP_ALIVE_TIME,
+                new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
 
-                // Pre-start all threads as they are guaranteed to be needed.
-                ((ThreadPoolExecutor)execSvc).prestartAllCoreThreads();
-            }
+            // Pre-start all threads as they are guaranteed to be needed.
+            ((ThreadPoolExecutor) sysExecSvc).prestartAllCoreThreads();
 
-            if (sysExecSvc == null) {
-                isAutoSysSvc = true;
+            // Note that since we use 'LinkedBlockingQueue', number of
+            // maximum threads has no effect.
+            // Note, that we do not pre-start threads here as management pool may
+            // not be needed.
+            mgmtExecSvc = new IgniteThreadPoolExecutor(
+                "mgmt-" + cfg.getGridName(),
+                cfg.getManagementThreadPoolSize(),
+                cfg.getManagementThreadPoolSize(),
+                0,
+                new LinkedBlockingQueue<Runnable>());
 
-                // Note that since we use 'LinkedBlockingQueue', number of
-                // maximum threads has no effect.
-                sysExecSvc = new IgniteThreadPoolExecutor(
-                    "sys-" + cfg.getGridName(),
-                    DFLT_SYSTEM_CORE_THREAD_CNT,
-                    DFLT_SYSTEM_MAX_THREAD_CNT,
-                    DFLT_SYSTEM_KEEP_ALIVE_TIME,
-                    new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
+            // Note that since we use 'LinkedBlockingQueue', number of
+            // maximum threads has no effect.
+            // Note, that we do not pre-start threads here as class loading pool may
+            // not be needed.
+            p2pExecSvc = new IgniteThreadPoolExecutor(
+                "p2p-" + cfg.getGridName(),
+                cfg.getPeerClassLoadingThreadPoolSize(),
+                cfg.getPeerClassLoadingThreadPoolSize(),
+                0,
+                new LinkedBlockingQueue<Runnable>());
 
-                // Pre-start all threads as they are guaranteed to be needed.
-                ((ThreadPoolExecutor)sysExecSvc).prestartAllCoreThreads();
-            }
+            // Note that we do not pre-start threads here as ggfs pool may not be needed.
+            ggfsExecSvc = new IgniteThreadPoolExecutor(
+                "ggfs-" + cfg.getGridName(),
+                cfg.getGgfsThreadPoolSize(),
+                cfg.getGgfsThreadPoolSize(),
+                0,
+                new LinkedBlockingQueue<Runnable>());
 
-            if (mgmtExecSvc == null) {
-                isAutoMgmtSvc = true;
-
-                // Note that since we use 'LinkedBlockingQueue', number of
-                // maximum threads has no effect.
-                // Note, that we do not pre-start threads here as management pool may
-                // not be needed.
-                mgmtExecSvc = new IgniteThreadPoolExecutor(
-                    "mgmt-" + cfg.getGridName(),
-                    DFLT_MGMT_THREAD_CNT,
-                    DFLT_MGMT_THREAD_CNT,
-                    0,
-                    new LinkedBlockingQueue<Runnable>());
-            }
-
-            if (p2pExecSvc == null) {
-                isAutoP2PSvc = true;
-
-                // Note that since we use 'LinkedBlockingQueue', number of
-                // maximum threads has no effect.
-                // Note, that we do not pre-start threads here as class loading pool may
-                // not be needed.
-                p2pExecSvc = new IgniteThreadPoolExecutor(
-                    "p2p-" + cfg.getGridName(),
-                    DFLT_P2P_THREAD_CNT,
-                    DFLT_P2P_THREAD_CNT,
-                    0,
-                    new LinkedBlockingQueue<Runnable>());
-            }
-
-            if (ggfsExecSvc == null) {
-                isAutoGgfsSvc = true;
-
-                int procCnt = Runtime.getRuntime().availableProcessors();
-
-                // Note that we do not pre-start threads here as ggfs pool may not be needed.
-                ggfsExecSvc = new IgniteThreadPoolExecutor(
-                    "ggfs-" + cfg.getGridName(),
-                    procCnt,
-                    procCnt,
-                    0,
-                    new LinkedBlockingQueue<Runnable>());
-            }
-
-            restExecSvc = clientCfg != null ? clientCfg.getRestExecutorService() : null;
-
-            if (restExecSvc != null && !cfg.isRestEnabled()) {
-                U.warn(log, "REST executor service is configured, but REST is disabled in configuration " +
-                    "(safely ignoring).");
-            }
-            else if (restExecSvc == null && clientCfg != null) {
-                isAutoRestSvc = true;
-
+            if (clientCfg != null) {
                 restExecSvc = new IgniteThreadPoolExecutor(
                     "rest-" + cfg.getGridName(),
-                    DFLT_REST_CORE_THREAD_CNT,
-                    DFLT_REST_MAX_THREAD_CNT,
+                    clientCfg.getRestThreadPoolSize(),
+                    clientCfg.getRestThreadPoolSize(),
                     DFLT_REST_KEEP_ALIVE_TIME,
                     new LinkedBlockingQueue<Runnable>(DFLT_REST_THREADPOOL_QUEUE_CAP)
                 );
-
-                clientCfg.setRestExecutorService(restExecSvc);
             }
 
             utilityCacheExecSvc = new IgniteThreadPoolExecutor(
@@ -1626,13 +1526,6 @@ public class IgnitionEx {
                 DFLT_SYSTEM_MAX_THREAD_CNT,
                 DFLT_SYSTEM_KEEP_ALIVE_TIME,
                 new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
-
-            execSvcShutdown = cfg.getExecutorServiceShutdown();
-            sysSvcShutdown = cfg.getSystemExecutorServiceShutdown();
-            mgmtSvcShutdown = cfg.getManagementExecutorServiceShutdown();
-            p2pSvcShutdown = cfg.getPeerClassLoadingExecutorServiceShutdown();
-            ggfsSvcShutdown = cfg.getGgfsExecutorServiceShutdown();
-            restSvcShutdown = clientCfg != null && clientCfg.isRestExecutorServiceShutdown();
 
             if (marsh == null) {
                 if (!U.isHotSpot()) {
@@ -1667,16 +1560,6 @@ public class IgnitionEx {
             myCfg.setGridLogger(cfgLog);
             myCfg.setMarshaller(marsh);
             myCfg.setMarshalLocalJobs(cfg.isMarshalLocalJobs());
-            myCfg.setExecutorService(execSvc);
-            myCfg.setSystemExecutorService(sysExecSvc);
-            myCfg.setManagementExecutorService(mgmtExecSvc);
-            myCfg.setPeerClassLoadingExecutorService(p2pExecSvc);
-            myCfg.setGgfsExecutorService(ggfsExecSvc);
-            myCfg.setExecutorServiceShutdown(execSvcShutdown);
-            myCfg.setSystemExecutorServiceShutdown(sysSvcShutdown);
-            myCfg.setManagementExecutorServiceShutdown(mgmtSvcShutdown);
-            myCfg.setPeerClassLoadingExecutorServiceShutdown(p2pSvcShutdown);
-            myCfg.setGgfsExecutorServiceShutdown(ggfsSvcShutdown);
             myCfg.setNodeId(nodeId);
 
             IgniteFsConfiguration[] ggfsCfgs = cfg.getGgfsConfiguration();
@@ -1963,8 +1846,10 @@ public class IgnitionEx {
                 // Init here to make grid available to lifecycle listeners.
                 grid = grid0;
 
-                grid0.start(myCfg, utilityCacheExecSvc, new CA() {
-                    @Override public void apply() {
+                grid0.start(myCfg, utilityCacheExecSvc, execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, ggfsExecSvc,
+                    restExecSvc,
+                    new CA() {
+                        @Override public void apply() {
                         startLatch.countDown();
                     }
                 });
@@ -2245,46 +2130,30 @@ public class IgnitionEx {
         private void stopExecutors0(IgniteLogger log) {
             assert log != null;
 
-            /*
-             * If it was us who started the executor services than we
-             * stop it. Otherwise, we do no-op since executor service
-             * was started before us.
-             */
-            if (isAutoExecSvc || execSvcShutdown) {
-                U.shutdownNow(getClass(), execSvc, log);
+            U.shutdownNow(getClass(), execSvc, log);
 
-                execSvc = null;
-            }
+            execSvc = null;
 
-            if (isAutoSysSvc || sysSvcShutdown) {
-                U.shutdownNow(getClass(), sysExecSvc, log);
+            U.shutdownNow(getClass(), sysExecSvc, log);
 
-                sysExecSvc = null;
-            }
+            sysExecSvc = null;
 
-            if (isAutoMgmtSvc || mgmtSvcShutdown) {
-                U.shutdownNow(getClass(), mgmtExecSvc, log);
+            U.shutdownNow(getClass(), mgmtExecSvc, log);
 
-                mgmtExecSvc = null;
-            }
+            mgmtExecSvc = null;
 
-            if (isAutoP2PSvc || p2pSvcShutdown) {
-                U.shutdownNow(getClass(), p2pExecSvc, log);
+            U.shutdownNow(getClass(), p2pExecSvc, log);
 
-                p2pExecSvc = null;
-            }
+            p2pExecSvc = null;
 
-            if (isAutoGgfsSvc || ggfsSvcShutdown) {
-                U.shutdownNow(getClass(), ggfsExecSvc, log);
+            U.shutdownNow(getClass(), ggfsExecSvc, log);
 
-                ggfsExecSvc = null;
-            }
+            ggfsExecSvc = null;
 
-            if (isAutoRestSvc || restSvcShutdown) {
+            if (restExecSvc != null)
                 U.shutdownNow(getClass(), restExecSvc, log);
 
-                restExecSvc = null;
-            }
+            restExecSvc = null;
 
             U.shutdownNow(getClass(), utilityCacheExecSvc, log);
 

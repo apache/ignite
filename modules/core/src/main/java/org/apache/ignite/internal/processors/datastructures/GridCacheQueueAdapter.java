@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.datastructures.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -419,7 +418,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /**
-     * Checks result of closure modifying queue header, throws {@link DataStructureRemovedException}
+     * Checks result of closure modifying queue header, throws {@link IllegalStateException}
      * if queue was removed.
      *
      * @param idx Result of closure execution.
@@ -430,7 +429,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /**
-     * Checks queue state, throws {@link DataStructureRemovedException} if queue was removed.
+     * Checks queue state, throws {@link IllegalStateException} if queue was removed.
      *
      * @param hdr Queue hdr.
      */
@@ -442,7 +441,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /**
      * Marks queue as removed.
      *
-     * @param throw0 If {@code true} then throws {@link DataStructureRemovedException}.
+     * @param throw0 If {@code true} then throws {@link IllegalStateException}.
      */
     public void onRemoved(boolean throw0) {
         rmvd = true;
@@ -450,7 +449,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         releaseSemaphores();
 
         if (throw0)
-            throw new DataStructureRemovedException("Queue has been removed from cache: " + this);
+            throw new IllegalStateException("Queue has been removed from cache: " + this);
     }
 
     /**

@@ -208,8 +208,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException;
 
-    public Map<K, V> localPartition(int part) throws CacheException;
-
     /**
      * Attempts to evict all entries associated with keys. Note,
      * that entry will be evicted only if it's not used (not
