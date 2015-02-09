@@ -131,6 +131,11 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /** {@inheritDoc} */
+    @Override protected IgniteTransactions transactions() {
+        return grid(nearIdx).transactions();
+    }
+
+    /** {@inheritDoc} */
     @Override protected List<String> primaryKeysForCache(IgniteCache<String, Integer> cache, int cnt)
         throws IgniteCheckedException {
         if (cache.equals(jcache()))
