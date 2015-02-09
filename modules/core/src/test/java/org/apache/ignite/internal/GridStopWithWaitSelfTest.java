@@ -166,7 +166,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
     @ComputeTaskSessionFullSupport
     private static class JobFailTask implements ComputeTask<String, Object> {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession ses;
 
         /** Ignite instance. */
@@ -187,7 +187,7 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
                 private Ignite ignite;
 
                 /** Logger. */
-                @IgniteLoggerResource
+                @LoggerResource
                 private IgniteLogger log;
 
                 @Override public Serializable execute() {

@@ -25,14 +25,14 @@ import java.util.*;
 /**
  * Management bean for {@link UriDeploymentSpi}.
  */
-@IgniteMXBeanDescription("MBean that provides access to URI deployment SPI configuration.")
+@MXBeanDescription("MBean that provides access to URI deployment SPI configuration.")
 public interface UriDeploymentSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets temporary directory path.
      *
      * @return Temporary directory path.
      */
-    @IgniteMXBeanDescription("Temporary directory path.")
+    @MXBeanDescription("Temporary directory path.")
     public String getTemporaryDirectoryPath();
 
     /**
@@ -40,7 +40,7 @@ public interface UriDeploymentSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return List of URIs.
      */
-    @IgniteMXBeanDescription("List of URIs.")
+    @MXBeanDescription("List of URIs.")
     public List<String> getUriList();
 
     /**
@@ -48,6 +48,6 @@ public interface UriDeploymentSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return if files are ckecked for redundancy.
      */
-    @IgniteMXBeanDescription("Indicates if MD5 check is enabled.")
+    @MXBeanDescription("Indicates if MD5 check is enabled.")
     public boolean isCheckMd5();
 }

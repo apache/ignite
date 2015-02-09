@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.version;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
@@ -152,7 +151,7 @@ public class GridCacheRawVersionedEntry<K, V> implements GridCacheVersionedEntry
      * @param marsh Marshaller.
      * @throws IgniteCheckedException If failed.
      */
-    public void unmarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
+    public void unmarshal(Marshaller marsh) throws IgniteCheckedException {
         unmarshalKey(marsh);
 
         if (valBytes != null && val == null)
@@ -166,7 +165,7 @@ public class GridCacheRawVersionedEntry<K, V> implements GridCacheVersionedEntry
      * @param marsh Marshaller.
      * @throws IgniteCheckedException If failed.
      */
-    public void unmarshalKey(IgniteMarshaller marsh) throws IgniteCheckedException {
+    public void unmarshalKey(Marshaller marsh) throws IgniteCheckedException {
         if (key == null)
             key = marsh.unmarshal(keyBytes, null);
     }
@@ -177,7 +176,7 @@ public class GridCacheRawVersionedEntry<K, V> implements GridCacheVersionedEntry
      * @param marsh Marshaller.
      * @throws IgniteCheckedException If failed.
      */
-    public void marshal(IgniteMarshaller marsh) throws IgniteCheckedException {
+    public void marshal(Marshaller marsh) throws IgniteCheckedException {
         if (keyBytes == null)
             keyBytes = marsh.marshal(key);
 

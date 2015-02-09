@@ -66,7 +66,7 @@ public class IgniteNodeCallableImpl implements IgniteNodeCallable {
     private final int timeout;
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /**

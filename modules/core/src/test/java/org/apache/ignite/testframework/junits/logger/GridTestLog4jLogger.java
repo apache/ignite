@@ -61,10 +61,10 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * for additional information.
  * <p>
  * It's recommended to use Ignite logger injection instead of using/instantiating
- * logger in your task/job code. See {@link org.apache.ignite.resources.IgniteLoggerResource} annotation about logger
+ * logger in your task/job code. See {@link org.apache.ignite.resources.LoggerResource} annotation about logger
  * injection.
  */
-public class GridTestLog4jLogger implements IgniteLogger, IgniteLoggerNodeIdAware {
+public class GridTestLog4jLogger implements IgniteLogger, LoggerNodeIdAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -401,8 +401,8 @@ public class GridTestLog4jLogger implements IgniteLogger, IgniteLoggerNodeIdAwar
         this.nodeId = nodeId;
 
         for (FileAppender a : fileAppenders) {
-            if (a instanceof IgniteLoggerNodeIdAware) {
-                ((IgniteLoggerNodeIdAware)a).setNodeId(nodeId);
+            if (a instanceof LoggerNodeIdAware) {
+                ((LoggerNodeIdAware)a).setNodeId(nodeId);
 
                 a.activateOptions();
             }

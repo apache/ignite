@@ -29,7 +29,7 @@ import org.jdk8.backport.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * In-memory {@link org.apache.ignite.spi.eventstorage.EventStorageSpi} implementation. All events are
@@ -99,7 +99,7 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
     public static final int DFLT_EXPIRE_COUNT = 10000;
 
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Event time-to-live value in milliseconds. */
@@ -109,17 +109,17 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
     private long expireCnt = DFLT_EXPIRE_COUNT;
 
     /** Events queue. */
-    private ConcurrentLinkedDeque8<IgniteEvent> evts = new ConcurrentLinkedDeque8<>();
+    private ConcurrentLinkedDeque8<Event> evts = new ConcurrentLinkedDeque8<>();
 
     /** Configured event predicate filter. */
-    private IgnitePredicate<IgniteEvent> filter;
+    private IgnitePredicate<Event> filter;
 
     /**
      * Gets filter for events to be recorded.
      *
      * @return Filter to use.
      */
-    public IgnitePredicate<IgniteEvent> getFilter() {
+    public IgnitePredicate<Event> getFilter() {
         return filter;
     }
 
@@ -129,7 +129,7 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
      * @param filter Filter to use.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setFilter(IgnitePredicate<IgniteEvent> filter) {
+    public void setFilter(IgnitePredicate<Event> filter) {
         this.filter = filter;
     }
 
@@ -212,7 +212,7 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends IgniteEvent> Collection<T> localEvents(IgnitePredicate<T> p) {
+    @Override public <T extends Event> Collection<T> localEvents(IgnitePredicate<T> p) {
         A.notNull(p, "p");
 
         cleanupQueue();
@@ -221,7 +221,7 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
     }
 
     /** {@inheritDoc} */
-    @Override public void record(IgniteEvent evt) throws IgniteSpiException {
+    @Override public void record(Event evt) throws IgniteSpiException {
         assert evt != null;
 
         // Filter out events.
@@ -248,19 +248,19 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
         long queueOversize = evts.sizex() - expireCnt;
 
         for (int i = 0; i < queueOversize && evts.sizex() > expireCnt; i++) {
-            IgniteEvent expired = evts.poll();
+            Event expired = evts.poll();
 
             if (log.isDebugEnabled())
                 log.debug("Event expired by count: " + expired);
         }
 
         while (true) {
-            ConcurrentLinkedDeque8.Node<IgniteEvent> node = evts.peekx();
+            ConcurrentLinkedDeque8.Node<Event> node = evts.peekx();
 
             if (node == null) // Queue is empty.
                 break;
 
-            IgniteEvent evt = node.item();
+            Event evt = node.item();
 
             if (evt == null) // Competing with another thread.
                 continue;

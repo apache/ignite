@@ -63,7 +63,7 @@ import java.util.*;
 @IgniteSpiMultipleInstancesSupport(true)
 public class NeverFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, NeverFailoverSpiMBean {
     /** Injected grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** {@inheritDoc} */

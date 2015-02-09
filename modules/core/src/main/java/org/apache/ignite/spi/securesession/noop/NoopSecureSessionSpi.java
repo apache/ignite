@@ -73,7 +73,7 @@ public class NoopSecureSessionSpi extends IgniteSpiAdapter
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 
     /** Injected grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** {@inheritDoc} */

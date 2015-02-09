@@ -35,7 +35,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.*;
 
 /**
@@ -123,8 +123,8 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
 
         G.setDaemon(false);
 
-        ignite.events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        ignite.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 info("Received event: " + evt.shortDisplay());
 
                 if (evt.type() == EVT_NODE_JOINED) {
@@ -927,7 +927,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @param passwd Password.
      * @param key Private key file.
      * @param nodes Number of nodes.
-     * @param igniteHome IgniteHome home.
+     * @param igniteHome Ignite home.
      * @param cfg Configuration file path.
      * @param script Startup script path.
      * @return Parameters map.
@@ -963,7 +963,7 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
      * @param passwd Password.
      * @param key Private key file.
      * @param nodes Number of nodes.
-     * @param igniteHome IgniteHome home.
+     * @param igniteHome Ignite home.
      * @param cfg Configuration file path.
      * @param script Startup script path.
      * @return Parameters map.

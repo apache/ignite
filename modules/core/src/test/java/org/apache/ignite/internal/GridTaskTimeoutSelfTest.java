@@ -30,7 +30,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  *
@@ -60,9 +60,9 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
     private void checkTimedOutEvents(final IgniteUuid execId) {
         Ignite ignite = G.ignite(getTestGridName());
 
-        Collection<IgniteEvent> evts = ignite.events().localQuery(new PE() {
-            @Override public boolean apply(IgniteEvent evt) {
-                return ((IgniteTaskEvent) evt).taskSessionId().equals(execId);
+        Collection<Event> evts = ignite.events().localQuery(new PE() {
+            @Override public boolean apply(Event evt) {
+                return ((TaskEvent) evt).taskSessionId().equals(execId);
             }
         }, EVT_TASK_TIMEDOUT);
 
@@ -205,7 +205,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
      */
     private static class GridTaskTimeoutTestJob extends ComputeJobAdapter {
         /** Injected logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */

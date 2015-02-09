@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Streamer execution batch which should be processed on one node.
  */
-public class GridStreamerExecutionBatch implements Externalizable, IgniteOptimizedMarshallable {
+public class GridStreamerExecutionBatch implements Externalizable, OptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 

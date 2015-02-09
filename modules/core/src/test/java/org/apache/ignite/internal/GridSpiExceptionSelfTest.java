@@ -64,7 +64,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
 
         try {
             try {
-                ignite.events().localQuery(F.<IgniteEvent>alwaysTrue());
+                ignite.events().localQuery(F.<Event>alwaysTrue());
 
                 assert false : "Exception should be thrown";
             }
@@ -108,12 +108,12 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T extends IgniteEvent> Collection<T> localEvents(IgnitePredicate<T> p) {
+        @Override public <T extends Event> Collection<T> localEvents(IgnitePredicate<T> p) {
             throw new IgniteException(TEST_MSG);
         }
 
         /** {@inheritDoc} */
-        @Override public void record(IgniteEvent evt) throws IgniteSpiException {
+        @Override public void record(Event evt) throws IgniteSpiException {
             // No-op.
         }
     }

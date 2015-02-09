@@ -144,7 +144,7 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("PackageVisibleField")
     private static class ReducerTestClosure implements IgniteCallable<Long> {
         /** Logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** Test flag to check the thread was interrupted. */

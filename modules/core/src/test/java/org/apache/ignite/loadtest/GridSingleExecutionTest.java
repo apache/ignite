@@ -247,7 +247,7 @@ public final class GridSingleExecutionTest {
 
             for (int i = 0; i < JOB_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
-                    @IgniteLoggerResource
+                    @LoggerResource
                     private IgniteLogger log;
 
                     @Override public Serializable execute() {
@@ -274,7 +274,7 @@ public final class GridSingleExecutionTest {
     /** */
     public static class TestSessionTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
@@ -283,7 +283,7 @@ public final class GridSingleExecutionTest {
 
             for (int i = 0; i < JOB_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
-                    @IgniteLoggerResource
+                    @LoggerResource
                     private IgniteLogger log;
 
                     @Override public Serializable execute() {

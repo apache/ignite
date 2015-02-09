@@ -37,7 +37,7 @@ import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Collision SPI that supports job stealing from over-utilized nodes to
@@ -224,7 +224,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
 
     /** Grid logger. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Number of jobs that can be executed in parallel. */
@@ -446,10 +446,10 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
         spiCtx.addLocalEventListener(
             discoLsnr = new GridLocalEventListener() {
                 @SuppressWarnings("fallthrough")
-                @Override public void onEvent(IgniteEvent evt) {
-                    assert evt instanceof IgniteDiscoveryEvent;
+                @Override public void onEvent(Event evt) {
+                    assert evt instanceof DiscoveryEvent;
 
-                    IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                    DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                     UUID evtNodeId = discoEvt.eventNode().id();
 

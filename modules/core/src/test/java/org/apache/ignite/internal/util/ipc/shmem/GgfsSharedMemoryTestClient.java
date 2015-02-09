@@ -50,7 +50,7 @@ public class GgfsSharedMemoryTestClient {
 
         try {
             IpcSharedMemoryClientEndpoint client = (IpcSharedMemoryClientEndpoint) IpcEndpointFactory.connectEndpoint(
-                    "shmem:" + IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, new IgniteJavaLogger());
+                    "shmem:" + IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, new JavaLogger());
 
             os = client.outputStream();
 

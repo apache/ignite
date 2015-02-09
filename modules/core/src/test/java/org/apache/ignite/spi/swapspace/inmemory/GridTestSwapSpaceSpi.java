@@ -27,7 +27,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Test swap space SPI that stores values in map.

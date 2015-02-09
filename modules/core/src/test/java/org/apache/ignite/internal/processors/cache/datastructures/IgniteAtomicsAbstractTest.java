@@ -41,7 +41,7 @@ public abstract class IgniteAtomicsAbstractTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(spi);
 
-        IgniteAtomicConfiguration atomicCfg = atomicConfiguration();
+        AtomicConfiguration atomicCfg = atomicConfiguration();
 
         assertNotNull(atomicCfg);
 
@@ -53,8 +53,8 @@ public abstract class IgniteAtomicsAbstractTest extends GridCommonAbstractTest {
     /**
      * @return Atomic configuration.
      */
-    protected IgniteAtomicConfiguration atomicConfiguration() {
-        IgniteAtomicConfiguration  atomicCfg = new IgniteAtomicConfiguration();
+    protected AtomicConfiguration atomicConfiguration() {
+        AtomicConfiguration atomicCfg = new AtomicConfiguration();
 
         atomicCfg.setCacheMode(atomicsCacheMode());
 

@@ -78,7 +78,7 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /** Grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Client to interact with S3 storage. */

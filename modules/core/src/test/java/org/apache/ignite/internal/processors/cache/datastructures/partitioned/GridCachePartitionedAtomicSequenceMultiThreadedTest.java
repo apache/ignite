@@ -49,8 +49,8 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends IgniteA
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteAtomicConfiguration atomicConfiguration() {
-        IgniteAtomicConfiguration cfg = super.atomicConfiguration();
+    @Override protected AtomicConfiguration atomicConfiguration() {
+        AtomicConfiguration cfg = super.atomicConfiguration();
 
         cfg.setBackups(1);
         cfg.setAtomicSequenceReserveSize(10);

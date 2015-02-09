@@ -99,7 +99,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(spi);
         cfg.setLocalHost("127.0.0.1");
         cfg.setRestEnabled(false);
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi() {
             @Override protected GridCommunicationClient createTcpClient(ClusterNode node) throws IgniteCheckedException {
@@ -124,7 +124,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
             new InetSocketAddress("127.0.0.1", commLocPort), F.asList(new InetSocketAddress("127.0.0.1", commExtPort))
         );
 
-        cfg.setAddressResolver(new IgniteAddressResolver() {
+        cfg.setAddressResolver(new AddressResolver() {
             @Override public Collection<InetSocketAddress> getExternalAddresses(InetSocketAddress addr) {
                 return mp.get(addr);
             }

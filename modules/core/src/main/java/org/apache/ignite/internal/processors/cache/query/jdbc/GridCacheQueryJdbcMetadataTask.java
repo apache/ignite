@@ -42,7 +42,7 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
     private static final long serialVersionUID = 0L;
 
     /** Marshaller. */
-    private static final IgniteMarshaller MARSHALLER = new IgniteJdkMarshaller();
+    private static final Marshaller MARSHALLER = new JdkMarshaller();
 
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
@@ -67,7 +67,7 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
     /**
      * Job for JDBC adapter.
      */
-    private static class JdbcDriverMetadataJob extends ComputeJobAdapter implements IgniteOptimizedMarshallable {
+    private static class JdbcDriverMetadataJob extends ComputeJobAdapter implements OptimizedMarshallable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -83,7 +83,7 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
         private Ignite ignite;
 
         /** Logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /**

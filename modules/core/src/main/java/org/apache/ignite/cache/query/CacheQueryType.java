@@ -20,11 +20,11 @@ package org.apache.ignite.cache.query;
 /**
  * Cache query type.
  * <p>
- * Used in {@link org.apache.ignite.events.IgniteCacheQueryExecutedEvent} and {@link org.apache.ignite.events.IgniteCacheQueryReadEvent}
+ * Used in {@link org.apache.ignite.events.CacheQueryExecutedEvent} and {@link org.apache.ignite.events.CacheQueryReadEvent}
  * to identify the type of query for which an event was fired.
  *
- * @see org.apache.ignite.events.IgniteCacheQueryExecutedEvent#queryType()
- * @see org.apache.ignite.events.IgniteCacheQueryReadEvent#queryType()
+ * @see org.apache.ignite.events.CacheQueryExecutedEvent#queryType()
+ * @see org.apache.ignite.events.CacheQueryReadEvent#queryType()
  */
 public enum CacheQueryType {
     /** SQL query. */

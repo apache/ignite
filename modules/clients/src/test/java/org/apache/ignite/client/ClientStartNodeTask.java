@@ -52,7 +52,7 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
     }};
 
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private transient IgniteLogger log;
 
     /** */

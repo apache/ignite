@@ -33,8 +33,8 @@ import java.util.concurrent.*;
 @GridCommonTest(group = "Marshaller")
 public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteMarshaller createMarshaller() {
-        IgniteOptimizedMarshaller m = new IgniteOptimizedMarshaller();
+    @Override protected Marshaller createMarshaller() {
+        OptimizedMarshaller m = new OptimizedMarshaller();
 
         m.setRequireSerializable(false);
         m.setClassNames(F.asList(GoodMarshallable.class.getName(), NoMarshallable.class.getName()));
@@ -354,8 +354,8 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     /**
      *
      */
-    public static class GoodMarshallable implements IgniteOptimizedMarshallable, Serializable {
-        /** Class ID required by {@link IgniteOptimizedMarshallable}. */
+    public static class GoodMarshallable implements OptimizedMarshallable, Serializable {
+        /** Class ID required by {@link OptimizedMarshallable}. */
         @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
         private static Object GG_CLASS_ID;
 
@@ -431,8 +431,8 @@ public class OptimizedMarshallerSelfTest extends GridMarshallerAbstractTest {
     /**
      *
      */
-    private static class BadMarshallable extends TestObject implements IgniteOptimizedMarshallable {
-        /** Class ID required by {@link IgniteOptimizedMarshallable}. */
+    private static class BadMarshallable extends TestObject implements OptimizedMarshallable {
+        /** Class ID required by {@link OptimizedMarshallable}. */
         @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
         private static Object GG_CLASS_ID;
 

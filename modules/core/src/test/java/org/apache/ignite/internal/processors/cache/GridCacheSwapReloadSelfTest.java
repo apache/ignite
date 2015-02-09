@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import com.google.common.collect.*;
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
@@ -40,7 +42,7 @@ import java.util.concurrent.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Test that swap is released after entry is reloaded.
@@ -98,8 +100,8 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
         final CountDownLatch swapLatch = new CountDownLatch(1);
         final CountDownLatch unswapLatch = new CountDownLatch(1);
 
-        grid().events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        grid().events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 switch (evt.type()) {
                     case EVT_SWAP_SPACE_DATA_STORED:
                         swapLatch.countDown();
@@ -126,11 +128,13 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
 
         assert swap() != null;
 
-        assert cache().putx("key", "val");
+        IgniteCache<String, String> cache = jcache();
+
+        cache.put("key", "val");
 
         assert swap().size(spaceName()) == 0;
 
-        assert cache().evict("key");
+        cache.localEvict(Collections.singleton("key"));
 
         assert swapLatch.await(1, SECONDS);
         Thread.sleep(100);
@@ -138,7 +142,9 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
         assert swap().count(spaceName()) == 1;
         assert swap().size(spaceName()) > 0;
 
-        assert "val".equals(cache().reload("key"));
+        load(cache, "key", true);
+
+        assert "val".equals(cache.localPeek("key", CachePeekMode.ONHEAP));
 
         assert unswapLatch.await(1, SECONDS);
 
@@ -152,8 +158,8 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
         final CountDownLatch swapLatch = new CountDownLatch(2);
         final CountDownLatch unswapLatch = new CountDownLatch(2);
 
-        grid().events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        grid().events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 switch (evt.type()) {
                     case EVT_SWAP_SPACE_DATA_STORED:
                         swapLatch.countDown();
@@ -175,13 +181,15 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
 
         assert swap() != null;
 
-        assert cache().putx("key1", "val1");
-        assert cache().putx("key2", "val2");
+        IgniteCache<String, String> cache = jcache();
+
+        cache.put("key1", "val1");
+        cache.put("key2", "val2");
 
         assert swap().size(spaceName()) == 0;
 
-        assert cache().evict("key1");
-        assert cache().evict("key2");
+        cache.localEvict(Collections.singleton("key1"));
+        cache.localEvict(Collections.singleton("key2"));
 
         assert swapLatch.await(1, SECONDS);
         Thread.sleep(100);
@@ -189,7 +197,7 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
         assert swap().count(spaceName()) == 2;
         assert swap().size(spaceName()) > 0 : swap().size(spaceName());
 
-        cache().reloadAll(F.asList("key1", "key2"));
+        loadAll(cache, ImmutableSet.of("key1", "key2"), true);
 
         assert unswapLatch.await(1, SECONDS);
 

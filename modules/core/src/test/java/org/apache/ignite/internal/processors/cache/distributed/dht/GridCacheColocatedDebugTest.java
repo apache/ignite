@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
@@ -288,29 +287,24 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
                     long threadId = Thread.currentThread().getId();
 
-                    try {
-                        long itNum;
+                    long itNum;
 
-                        while ((itNum = iterCnt.getAndIncrement()) < maxIterCnt) {
-                            Collections.shuffle(threadKeys);
+                    while ((itNum = iterCnt.getAndIncrement()) < maxIterCnt) {
+                        Collections.shuffle(threadKeys);
 
-                            List<Integer> iterKeys = threadKeys.subList(0, keysCnt);
+                        List<Integer> iterKeys = threadKeys.subList(0, keysCnt);
 
-                            Collections.sort(iterKeys);
+                        Collections.sort(iterKeys);
 
-                            Map<Integer, String> vals = U.newLinkedHashMap(keysCnt);
+                        Map<Integer, String> vals = U.newLinkedHashMap(keysCnt);
 
-                            for (Integer key : iterKeys)
-                                vals.put(key, String.valueOf(key) + threadId);
+                        for (Integer key : iterKeys)
+                            vals.put(key, String.valueOf(key) + threadId);
 
-                            cache(0).putAll(vals);
+                        jcache(0).putAll(vals);
 
-                            if (itNum > 0 && itNum % 5000 == 0)
-                                info(">>> " + itNum + " iterations completed.");
-                        }
-                    }
-                    catch (IgniteCheckedException e) {
-                        fail("Unexpected exception caught: " + e);
+                        if (itNum > 0 && itNum % 5000 == 0)
+                            info(">>> " + itNum + " iterations completed.");
                     }
                 }
             }, THREAD_CNT);
@@ -458,19 +452,21 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         startGrid();
 
         try {
-            IgniteTx tx = explicitTx ? cache().txStart(concurrency, isolation) : null;
+            IgniteTx tx = explicitTx ? grid().transactions().txStart(concurrency, isolation) : null;
 
             try {
-                cache().putAll(F.asMap(1, "Hello", 2, "World"));
+                IgniteCache<Object, Object> cache = jcache();
+
+                cache.putAll(F.asMap(1, "Hello", 2, "World"));
 
                 if (tx != null)
                     tx.commit();
 
-                System.out.println(cache().metrics());
+                System.out.println(cache.metrics());
 
-                assertEquals("Hello", cache().get(1));
-                assertEquals("World", cache().get(2));
-                assertNull(cache().get(3));
+                assertEquals("Hello", cache.get(1));
+                assertEquals("World", cache.get(2));
+                assertNull(cache.get(3));
             }
             finally {
                 if (tx != null)
@@ -491,26 +487,28 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         startGrid();
 
         try {
-            IgniteTx tx = cache().txStart(concurrency, isolation);
+            IgniteTx tx = grid().transactions().txStart(concurrency, isolation);
 
             try {
-                String old = (String)cache().get(1);
+                IgniteCache<Object, Object> cache = jcache();
+
+                String old = (String)cache.get(1);
 
                 assert old == null;
 
-                String replaced = (String)cache().put(1, "newVal");
+                String replaced = (String)cache.getAndPut(1, "newVal");
 
                 assert replaced == null;
 
-                replaced = (String)cache().put(1, "newVal2");
+                replaced = (String)cache.getAndPut(1, "newVal2");
 
                 assertEquals("newVal", replaced);
 
                 if (tx != null)
                     tx.commit();
 
-                assertEquals("newVal2", cache().get(1));
-                assertNull(cache().get(3));
+                assertEquals("newVal2", cache.get(1));
+                assertNull(cache.get(3));
             }
             finally {
                 if (tx != null)

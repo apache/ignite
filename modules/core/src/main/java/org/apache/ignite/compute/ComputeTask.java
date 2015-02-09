@@ -132,11 +132,11 @@ import java.util.*;
  * ignite resources. Both, field and method based injection are supported.
  * The following ignite resources can be injected:
  * <ul>
- * <li>{@link org.apache.ignite.resources.IgniteTaskSessionResource}</li>
+ * <li>{@link org.apache.ignite.resources.TaskSessionResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteInstanceResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteLoggerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteSpringApplicationContextResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteSpringResource}</li>
+ * <li>{@link org.apache.ignite.resources.LoggerResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringApplicationContextResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  * <p>
@@ -152,7 +152,7 @@ import java.util.*;
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskAdapter&lt;String, String&gt; {
  *     // Inject load balancer.
- *     &#64;IgniteLoadBalancerResource
+ *     &#64;LoadBalancerResource
  *     ComputeLoadBalancer balancer;
  *
  *     // Map jobs to grid nodes.

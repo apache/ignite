@@ -153,7 +153,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
         private Ignite ignite;
 
         /** Logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */

@@ -84,7 +84,7 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable Void arg) {
             return F.asMap(new ComputeJobAdapter() {
-                @IgniteTaskSessionResource
+                @TaskSessionResource
                 private ComputeTaskSession ses;
 
                 @Override public Object execute() {

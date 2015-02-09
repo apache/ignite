@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.store;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
@@ -63,7 +63,7 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCacheAbstractSelf
         int cnt = 0;
 
         for (int i = 0; i < gridCount(); i++)
-            cnt += cache(i).size();
+            cnt += jcache(i).localSize();
 
         assertEquals(INPUT_SIZE - (INPUT_SIZE/10), cnt);
     }
