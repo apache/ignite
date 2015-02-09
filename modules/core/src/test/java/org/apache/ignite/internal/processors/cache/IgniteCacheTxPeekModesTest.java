@@ -19,25 +19,31 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
 
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  *
  */
-public class IgniteCacheAtomicLocalPeekTest extends IgniteCachePeekAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
-    }
-
+public class IgniteCacheTxPeekModesTest extends IgniteCachePeekModesAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 1;
+        return 4;
     }
 
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
-        return LOCAL;
+        return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
+        return PRIMARY;
     }
 }

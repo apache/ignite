@@ -129,6 +129,13 @@ public interface GridOffHeapMap<K> {
      *
      * @return Number of elements in the map.
      */
+    public long totalSize();
+
+    /**
+     * Gets number of elements in the map.
+     *
+     * @return Number of elements in the map.
+     */
     public long size();
 
     /**
