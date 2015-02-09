@@ -107,7 +107,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         for (int key = 0; key < 10; key++) {
             for (int i = 1; i < gridCount(); i++) {
                 if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key))
-                    assertEquals(key, grid(i).cache(null).peek(key));
+                    assertEquals(key, grid(i).jcache(null).peek(key));
             }
 
             if (nearEnabled())

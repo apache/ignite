@@ -124,15 +124,6 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param i Grid index.
-     * @return Cache.
-     */
-    @SuppressWarnings("unchecked")
-    @Override protected GridCache<Integer, String> cache(int i) {
-        return grid(i).cache(null);
-    }
-
-    /**
      * @return Keys.
      */
     protected Iterable<Integer> getKeys() {
@@ -414,7 +405,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                     String v1 = null;
 
                     for (int j = 0; j < gridCount(); j++) {
-                        GridCache<Integer, String> cache = cache(j);
+                        GridCache<Integer, String> cache = internalCache(j);
 
                         IgniteTx tx = ignite(j).transactions().tx();
 
