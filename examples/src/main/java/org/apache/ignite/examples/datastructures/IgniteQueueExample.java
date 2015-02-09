@@ -153,7 +153,7 @@ public class IgniteQueueExample {
         try {
             queue.poll();
         }
-        catch (IgniteException expected) {
+        catch (IllegalStateException expected) {
             System.out.println("Expected exception - " + expected.getMessage());
         }
     }

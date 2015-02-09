@@ -73,7 +73,7 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
      *
      * @return First value.
      */
-    @Nullable public V1 get1() {
+    public V1 get1() {
         return val1;
     }
 
@@ -82,7 +82,7 @@ public class IgniteBiTuple<V1, V2> implements Map<V1, V2>, Map.Entry<V1, V2>,
      *
      * @return Second value.
      */
-    @Nullable public V2 get2() {
+    public V2 get2() {
         return val2;
     }
 

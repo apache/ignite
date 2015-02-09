@@ -4949,7 +4949,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param filter Filters to evaluate.
      * @return Key set.
      */
+<<<<<<< HEAD
     public Set<K> keySet(@Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) {
+=======
+    @Override public Set<K> keySet(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+>>>>>>> 6a90e0f772cd59b2e21d1788e68a6175d901cb67
         return map.keySet(filter);
     }
 
@@ -5884,7 +5888,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /**
      *
      */
-    protected static abstract class UpdateTimeStatClosure<T> implements CI1<IgniteInternalFuture<T>> {
+    protected abstract static class UpdateTimeStatClosure<T> implements CI1<IgniteInternalFuture<T>> {
         /** */
         protected final CacheMetricsImpl metrics;
 
@@ -5917,7 +5921,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         /**
          * Updates statistics.
          */
-        abstract protected void updateTimeStat();
+        protected abstract void updateTimeStat();
     }
 
     /**
