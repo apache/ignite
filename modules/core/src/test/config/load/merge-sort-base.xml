@@ -60,44 +60,11 @@
         </property>
 
         <!-- Disable pools -->
-        <property name="executorService">
-            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
-                <constructor-arg type="int" value="100"/>
-                <constructor-arg type="int" value="100"/>
-                <constructor-arg type="long">
-                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
-                </constructor-arg>
-                <constructor-arg type="java.util.concurrent.BlockingQueue">
-                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
-                </constructor-arg>
-            </bean>
-        </property>
+        <property name="publicThreadPoolSize" value="100"/>
 
-        <property name="systemExecutorService">
-            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
-                <constructor-arg type="int" value="100"/>
-                <constructor-arg type="int" value="100"/>
-                <constructor-arg type="long">
-                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
-                </constructor-arg>
-                <constructor-arg type="java.util.concurrent.BlockingQueue">
-                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
-                </constructor-arg>
-            </bean>
-        </property>
+        <property name="systemThreadPoolSize" value="100"/>
 
-        <property name="peerClassLoadingExecutorService">
-            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
-                <constructor-arg type="int" value="100"/>
-                <constructor-arg type="int" value="100"/>
-                <constructor-arg type="long">
-                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
-                </constructor-arg>
-                <constructor-arg type="java.util.concurrent.BlockingQueue">
-                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
-                </constructor-arg>
-            </bean>
-        </property>
+        <property name="peerClassLoadingThreadPoolSize" value="100"/>
 
         <!-- Discovery SPI configuration. -->
         <property name="discoverySpi">

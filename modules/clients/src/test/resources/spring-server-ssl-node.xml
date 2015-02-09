@@ -288,37 +288,9 @@
             Explicitly set custom public and system thread pools to increase
             possible started nodes count in one VM.
         -->
-        <property name="executorService">
-            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
-                <constructor-arg value="SERVER"/>
-                <constructor-arg type="int" value="15"/>
-                <constructor-arg type="int" value="15"/>
-                <constructor-arg type="long">
-                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
-                </constructor-arg>
-                <constructor-arg type="java.util.concurrent.BlockingQueue">
-                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
-                </constructor-arg>
-            </bean>
-        </property>
+        <property name="publicThreadPoolSize" value="15"/>
 
-        <property name="executorServiceShutdown" value="true"/>
-
-        <property name="systemExecutorService">
-            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
-                <constructor-arg value="SYS-SERVER"/>
-                <constructor-arg type="int" value="15"/>
-                <constructor-arg type="int" value="15"/>
-                <constructor-arg type="long">
-                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
-                </constructor-arg>
-                <constructor-arg type="java.util.concurrent.BlockingQueue">
-                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
-                </constructor-arg>
-            </bean>
-        </property>
-
-        <property name="systemExecutorServiceShutdown" value="true"/>
+        <property name="systemThreadPoolSize" value="15"/>
 
         <property name="portableConfiguration">
             <bean class="org.apache.ignite.portables.PortableConfiguration">
