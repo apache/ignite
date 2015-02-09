@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.client.marshaller.*;
 import org.apache.ignite.client.marshaller.optimized.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -88,7 +89,7 @@ final class TestBinaryClient {
             req.marshallerId(GridClientOptimizedMarshaller.ID);
 
             // Write handshake.
-            sock.getOutputStream().write(GridClientHandshakeRequestWrapper.HANDSHAKE_HEADER);
+            sock.getOutputStream().write(GridMemcachedMessage.IGNITE_HANDSHAKE_FLAG);
             sock.getOutputStream().write(req.rawBytes());
 
             byte[] buf = new byte[1];
