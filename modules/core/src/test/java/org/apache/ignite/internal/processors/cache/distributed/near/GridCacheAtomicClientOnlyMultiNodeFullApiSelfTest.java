@@ -134,7 +134,8 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
-    @Override public void testEvictExpired() throws Exception {
+    // TODO: IGNITE-206: Enable when fixed.
+    @Override public void _testEvictExpired() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         String key = primaryKeysForCache(cache, 1).get(0);
