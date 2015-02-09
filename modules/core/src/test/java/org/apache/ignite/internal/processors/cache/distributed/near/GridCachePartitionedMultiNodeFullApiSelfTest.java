@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
@@ -73,16 +74,16 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < size; i++)
             putMap.put(i, i * i);
 
-        GridCache<Object, Object> prj0 = grid(0).cache(null);
-        GridCache<Object, Object> prj1 = grid(1).cache(null);
+        IgniteCache<Object, Object> c0 = grid(0).jcache(null);
+        IgniteCache<Object, Object> c1 = grid(1).jcache(null);
 
-        prj0.putAll(putMap);
+        c0.putAll(putMap);
 
-        prj1.removeAll(putMap.keySet());
+        c1.removeAll(putMap.keySet());
 
         for (int i = 0; i < size; i++) {
-            assertNull(prj0.get(i));
-            assertNull(prj1.get(i));
+            assertNull(c0.get(i));
+            assertNull(c1.get(i));
         }
     }
 

@@ -30,8 +30,6 @@ import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.log4j.*;
 
-import java.util.concurrent.*;
-
 /**
  * Single split load test.
  */
@@ -53,8 +51,6 @@ public class SingleSplitsLoadTest extends GridCommonAbstractTest {
         Log4JLogger log = (Log4JLogger)cfg.getGridLogger().getLogger(null);
 
         log.setLevel(Level.INFO);
-
-        ((ThreadPoolExecutor)cfg.getExecutorService()).prestartAllCoreThreads();
 
         return cfg;
     }

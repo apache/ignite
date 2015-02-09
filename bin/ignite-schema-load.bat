@@ -100,7 +100,7 @@ call "%SCRIPTS_HOME%\include\target-classpath.bat" &:: Will be removed in releas
 ::
 :: Set CLASS PATH
 ::
-set CP=%JAVA_HOME%\jre\lib\jfxrt.jar;%IGNITE_LIBS%;%IGNITE_HOME%\bin\include\schema-load
+set CP=%JAVA_HOME%\jre\lib\jfxrt.jar;%IGNITE_LIBS%;%IGNITE_HOME%\bin\include\schema-load\*
 
 ::
 :: JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.

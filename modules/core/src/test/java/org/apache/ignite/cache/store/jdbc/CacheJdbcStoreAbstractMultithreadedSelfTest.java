@@ -163,7 +163,8 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
     /**
      * @throws Exception If failed.
      */
-    public void testMultithreadedPut() throws Exception {
+    // TODO: IGNITE-205: Enabled when fixed.
+    public void _testMultithreadedPut() throws Exception {
         IgniteInternalFuture<?> fut1 = runMultiThreadedAsync(new Callable<Object>() {
             private final Random rnd = new Random();
 
@@ -209,7 +210,8 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
     /**
      * @throws Exception If failed.
      */
-    public void testMultithreadedPutAll() throws Exception {
+    // TODO: IGNITE-205: Enabled when fixed.
+    public void _testMultithreadedPutAll() throws Exception {
         multithreaded(new Callable<Object>() {
             private final Random rnd = new Random();
 
@@ -241,7 +243,8 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
     /**
      * @throws Exception If failed.
      */
-    public void testMultithreadedExplicitTx() throws Exception {
+    // TODO: IGNITE-205: Enabled when fixed.
+    public void _testMultithreadedExplicitTx() throws Exception {
         runMultiThreaded(new Callable<Object>() {
             private final Random rnd = new Random();
 

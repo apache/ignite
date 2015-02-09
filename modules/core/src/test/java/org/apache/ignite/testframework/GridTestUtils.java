@@ -734,7 +734,7 @@ public final class GridTestUtils {
                 // Exclude log4j because of the design - 1 per VM.
                 if (name.startsWith("spring") || name.startsWith("log4j") ||
                     name.startsWith("commons-logging") || name.startsWith("junit") ||
-                    name.startsWith("gridgain-tests"))
+                    name.startsWith("ignite-tests"))
                     return false;
 
                 boolean ret = true;

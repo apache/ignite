@@ -76,7 +76,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setRestEnabled(true);
+        cfg.setClientConnectionConfiguration(new ClientConnectionConfiguration());
 
         return cfg;
     }

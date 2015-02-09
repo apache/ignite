@@ -46,7 +46,7 @@ public class GridHadoopStartup {
 
         cfg.set("dfs.client.block.write.replace-datanode-on-failure.policy", "NEVER");
 
-        cfg.set("mapreduce.framework.name", "gridgain");
+        cfg.set("mapreduce.framework.name", "ignite");
         cfg.set("mapreduce.jobtracker.address", "localhost:11211");
 
         return cfg;

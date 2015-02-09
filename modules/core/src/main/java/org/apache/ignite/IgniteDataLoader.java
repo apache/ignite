@@ -99,7 +99,7 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
      *
      * @return Cache name or {@code null} for default cache.
      */
-    @Nullable public String cacheName();
+    public String cacheName();
 
     /**
      * Gets flag value indicating that this data loader assumes that there are no other concurrent updates to the cache.
