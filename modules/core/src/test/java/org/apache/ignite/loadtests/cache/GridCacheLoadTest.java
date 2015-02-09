@@ -117,14 +117,14 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
                         cache.put(idx = cnt.getAndIncrement(), newArray());
 
                         if (idx % 1000 == 0)
-                            info("Stored '" + idx + "' objects in cache [cache-size=" + cache.size(CachePeekMode.ALL)
+                            info("Stored '" + idx + "' objects in cache [cache-size=" + cache.size()
                                 + ']');
                     }
                 }
             }, threads, "memory-test-worker");
         }
         catch (OutOfMemoryError ignore) {
-            info("Populated '" + cnt.get() + "' 1K objects into cache [cache-size=" + cache.size(CachePeekMode.ALL)
+            info("Populated '" + cnt.get() + "' 1K objects into cache [cache-size=" + cache.size()
                 + ']');
         }
         catch (Exception e) {

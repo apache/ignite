@@ -133,9 +133,9 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
         IgniteTx tx = null;
 
         try {
-            GridCache<Integer, String> cache = ignite.cache(null);
+            IgniteCache<Integer, String> cache = ignite.jcache(null);
 
-            tx = cache.txStart(concurrency, isolation, 50, 0);
+            tx = ignite.transactions().txStart(concurrency, isolation, 50, 0);
 
             cache.put(1, "1");
 
@@ -145,15 +145,8 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
 
             tx.commit();
         }
-        catch (IgniteTxOptimisticCheckedException e) {
+        catch (IgniteException e) {
             info("Received expected optimistic exception: " + e.getMessage());
-
-            wasEx = true;
-
-            tx.rollback();
-        }
-        catch (IgniteTxTimeoutCheckedException e) {
-            info("Received expected timeout exception: " + e.getMessage());
 
             wasEx = true;
 

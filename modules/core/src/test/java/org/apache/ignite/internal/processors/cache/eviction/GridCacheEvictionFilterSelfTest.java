@@ -132,12 +132,12 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
         try {
             Ignite g = grid(0);
 
-            GridCache<Object, Object> c = g.cache(null);
+            IgniteCache<Object, Object> c = g.jcache(null);
 
             int cnt = 1;
 
             for (int i = 0; i < cnt; i++)
-                c.putx(i, i);
+                c.put(i, i);
 
             Map<Object, AtomicInteger> cnts = filter.counts();
 
@@ -187,18 +187,18 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
 
         Ignite g = startGrid();
 
-        GridCache<Object, Object> cache = g.cache(null);
+        IgniteCache<Object, Object> cache = g.jcache(null);
 
         try {
             int id = 1;
 
-            cache.putx(id++, 1);
-            cache.putx(id++, 2);
+            cache.put(id++, 1);
+            cache.put(id++, 2);
 
             for (int i = id + 1; i < 10; i++) {
-                cache.putx(id, id);
+                cache.put(id, id);
 
-                cache.putx(i, String.valueOf(i));
+                cache.put(i, String.valueOf(i));
             }
 
             info(">>>> " + cache.get(1));

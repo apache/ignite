@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.eviction;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -159,7 +161,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
     /** @return Policy. */
     @SuppressWarnings({"unchecked"})
     protected T policy() {
-        return (T)grid().cache(null).configuration().getEvictionPolicy();
+        return (T)internalCache().configuration().getEvictionPolicy();
     }
 
     /**
@@ -168,7 +170,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
      */
     @SuppressWarnings({"unchecked"})
     protected T policy(int i) {
-        return (T)grid(i).cache(null).configuration().getEvictionPolicy();
+        return (T)internalCache(i).configuration().getEvictionPolicy();
     }
 
     /**
@@ -177,7 +179,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
      */
     @SuppressWarnings({"unchecked"})
     protected T nearPolicy(int i) {
-        return (T)grid(i).cache(null).configuration().getNearEvictionPolicy();
+        return (T)internalCache(i).configuration().getNearEvictionPolicy();
     }
 
     /**
@@ -296,7 +298,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
             int cnt = 500;
 
             for (int i = 0; i < cnt; i++) {
-                GridCache<Integer, String> cache = grid(rand.nextInt(2)).cache(null);
+                IgniteCache<Integer, String> cache = grid(rand.nextInt(2)).jcache(null);
 
                 int key = rand.nextInt(100);
                 String val = Integer.toString(key);
@@ -347,12 +349,14 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
                     int cnt = 100;
 
                     for (int i = 0; i < cnt && !Thread.currentThread().isInterrupted(); i++) {
-                        GridCache<Integer, String> cache = grid(rand.nextInt(2)).cache(null);
+                        IgniteEx grid = grid(rand.nextInt(2));
+
+                        IgniteCache<Integer, String> cache = grid.jcache(null);
 
                         int key = rand.nextInt(1000);
                         String val = Integer.toString(key);
 
-                        try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        try (IgniteTx tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             String v = cache.get(key);
 
                             assert v == null || v.equals(Integer.toString(key)) : "Invalid value for key [key=" + key +
