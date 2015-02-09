@@ -73,16 +73,16 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < size; i++)
             putMap.put(i, i * i);
 
-        IgniteCache<Object, Object> prj0 = grid(0).jcache(null);
-        IgniteCache<Object, Object> prj1 = grid(1).jcache(null);
+        IgniteCache<Object, Object> c0 = grid(0).jcache(null);
+        IgniteCache<Object, Object> c1 = grid(1).jcache(null);
 
-        prj0.putAll(putMap);
+        c0.putAll(putMap);
 
-        prj1.removeAll(putMap.keySet());
+        c1.removeAll(putMap.keySet());
 
         for (int i = 0; i < size; i++) {
-            assertNull(prj0.get(i));
-            assertNull(prj1.get(i));
+            assertNull(c0.get(i));
+            assertNull(c1.get(i));
         }
     }
 
