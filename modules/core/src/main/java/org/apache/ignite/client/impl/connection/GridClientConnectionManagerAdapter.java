@@ -170,7 +170,7 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
                     .socketReceiveBufferSize(0)
                     .socketSendBufferSize(0)
                     .idleTimeout(Long.MAX_VALUE)
-                    .gridName("gridClient")
+                    .gridName(routerClient ? "routerClient" : "gridClient")
                     .daemon(cfg.isDaemon())
                     .build();
 

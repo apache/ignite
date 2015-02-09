@@ -134,8 +134,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         if (msg instanceof GridMemcachedMessage)
             memcachedLsnr.onMessage(ses, (GridMemcachedMessage)msg);
         else {
-            if (msg == GridClientPingPacket.PING_MESSAGE)
-                ses.send(new GridClientPingPacket());
+            if (msg instanceof GridClientPingPacket)
+                ses.send(msg);
             else if (msg instanceof GridClientHandshakeRequest) {
                 GridClientHandshakeRequest hs = (GridClientHandshakeRequest)msg;
 

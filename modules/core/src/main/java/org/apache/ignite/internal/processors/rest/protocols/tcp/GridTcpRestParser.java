@@ -144,7 +144,7 @@ public class GridTcpRestParser implements GridNioParser {
 
         if (msg instanceof GridMemcachedMessage)
             return encodeMemcache((GridMemcachedMessage)msg);
-        else if (msg == GridClientPingPacket.PING_MESSAGE)
+        else if (msg instanceof GridClientPingPacket)
             return ByteBuffer.wrap(GridClientPingPacket.PING_PACKET);
         else if (msg instanceof GridClientHandshakeRequest) {
             byte[] bytes = ((GridClientHandshakeRequest)msg).rawBytes();
