@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 
+import javax.cache.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -95,8 +96,19 @@ public class GridReduceQueryExecutor {
         });
     }
 
+    /**
+     * @param node Node.
+     * @param msg Message.
+     */
     private void onFail(ClusterNode node, GridQueryFailResponse msg) {
-        U.error(log, "Failed to execute query.", msg.error());
+        QueryRun r = runs.get(msg.queryRequestId());
+
+        if (r != null && r.latch.getCount() != 0) {
+            r.rmtErr = msg.error();
+
+            while(r.latch.getCount() > 0)
+                r.latch.countDown();
+        }
     }
 
     /**
@@ -109,6 +121,9 @@ public class GridReduceQueryExecutor {
         final int pageSize = msg.rows().size();
 
         QueryRun r = runs.get(qryReqId);
+
+        if (r == null) // Already finished with error or canceled.
+            return;
 
         GridMergeIndex idx = r.tbls.get(msg.query()).getScanIndex(null);
 
@@ -145,7 +160,8 @@ public class GridReduceQueryExecutor {
 
         r.conn = h2.connectionForSpace(space);
 
-        Collection<ClusterNode> nodes = ctx.grid().cluster().nodes(); // TODO filter nodes somehow?
+        // TODO Add topology version.
+        Collection<ClusterNode> nodes = ctx.grid().cluster().forCacheNodes(space).nodes();
 
         for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
             GridMergeTable tbl;
@@ -172,6 +188,9 @@ public class GridReduceQueryExecutor {
 
             r.latch.await();
 
+            if (r.rmtErr != null)
+                throw new CacheException("Failed to run map query remotely.", r.rmtErr);
+
             GridCacheSqlQuery rdc = qry.reduceQuery();
 
             final ResultSet res = h2.executeSqlQueryWithTimer(r.conn, rdc.query(), F.asList(rdc.parameters()));
@@ -181,10 +200,17 @@ public class GridReduceQueryExecutor {
 
             return new QueryCursorImpl<>(new Iter(res));
         }
-        catch (IgniteCheckedException | InterruptedException | SQLException e) {
+        catch (IgniteCheckedException | InterruptedException | SQLException | RuntimeException e) {
             U.closeQuiet(r.conn);
 
-            throw new IgniteException(e);
+            if (e instanceof CacheException)
+                throw (CacheException)e;
+
+            throw new CacheException("Failed to run reduce query locally.", e);
+        }
+        finally {
+            if (!runs.remove(qryReqId, r))
+                U.warn(log, "Query run was removed: " + qryReqId);
         }
     }
 
@@ -237,6 +263,9 @@ public class GridReduceQueryExecutor {
 
         /** */
         private Connection conn;
+
+        /** */
+        private volatile Throwable rmtErr;
     }
 
     /**
