@@ -253,12 +253,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public Map<K, V> localPartition(int part) throws CacheException {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public void localEvict(Collection<? extends K> keys) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
