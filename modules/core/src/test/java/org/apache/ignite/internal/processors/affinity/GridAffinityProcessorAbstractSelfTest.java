@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.affinity;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -119,13 +119,13 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                grid1.cache(CACHE_NAME);
+                grid1.jcache(CACHE_NAME);
 
                 return null;
             }
         }, IllegalArgumentException.class, null);
 
-        GridCache<Integer, Integer> cache = grid2.cache(CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = grid2.jcache(CACHE_NAME);
 
         assertNotNull(cache);
 
@@ -144,7 +144,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
 
         Map<ClusterNode, Collection<Integer>> node1Map = affPrc1.mapKeysToNodes(CACHE_NAME, keys);
         Map<ClusterNode, Collection<Integer>> node2Map = affPrc2.mapKeysToNodes(CACHE_NAME, keys);
-        Map<ClusterNode, Collection<Integer>> cacheMap = cache.affinity().mapKeysToNodes(keys);
+        Map<ClusterNode, Collection<Integer>> cacheMap = affinity(cache).mapKeysToNodes(keys);
 
         assertEquals(cacheMap.size(), node1Map.size());
         assertEquals(cacheMap.size(), node2Map.size());
