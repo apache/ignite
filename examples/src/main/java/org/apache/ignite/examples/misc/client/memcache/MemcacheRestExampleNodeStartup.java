@@ -61,6 +61,8 @@ public class MemcacheRestExampleNodeStartup {
         cfg.setDeploymentMode(SHARED);
         cfg.setPeerClassLoadingEnabled(true);
 
+        cfg.setClientConnectionConfiguration(new ClientConnectionConfiguration());
+
         OptimizedMarshaller marsh = new OptimizedMarshaller();
 
         marsh.setRequireSerializable(false);
