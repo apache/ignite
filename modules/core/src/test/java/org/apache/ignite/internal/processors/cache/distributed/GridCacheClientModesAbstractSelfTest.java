@@ -97,7 +97,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
      * @throws Exception If failed.
      */
     public void testPutFromClientNode() throws Exception {
-        GridCache<Object, Object> nearOnly = nearOnlyCache();
+        IgniteCache<Object, Object> nearOnly = nearOnlyCache();
 
         for (int i = 0; i < 5; i++)
             nearOnly.put(i, i);
@@ -113,7 +113,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
             if (nearEnabled())
                 assertEquals(key, nearOnly.peek(key));
 
-            assertNull(nearOnly.peek(key, F.asList(GridCachePeekMode.PARTITIONED_ONLY)));
+            assertNull(nearOnly.localPeek(key, CachePeekMode.PRIMARY, CachePeekMode.BACKUP));
         }
     }
 
@@ -121,12 +121,12 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
      * @throws Exception If failed.
      */
     public void testGetFromClientNode() throws Exception {
-        GridCache<Object, Object> dht = dhtCache();
+        IgniteCache<Object, Object> dht = dhtCache();
 
         for (int i = 0; i < 10; i++)
             dht.put(i, i);
 
-        GridCache<Object, Object> nearOnly = nearOnlyCache();
+        IgniteCache<Object, Object> nearOnly = nearOnlyCache();
 
         assert dht != nearOnly;
 
@@ -189,19 +189,19 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     /**
      * @return Near only cache for this test.
      */
-    protected GridCache<Object, Object> nearOnlyCache() {
+    protected IgniteCache<Object, Object> nearOnlyCache() {
         assert nearOnlyGridName != null;
 
-        return G.ignite(nearOnlyGridName).cache(null);
+        return G.ignite(nearOnlyGridName).jcache(null);
     }
 
     /**
      * @return DHT cache for this test.
      */
-    protected GridCache<Object, Object> dhtCache() {
+    protected IgniteCache<Object, Object> dhtCache() {
         for (int i = 0; i < gridCount(); i++) {
             if (!nearOnlyGridName.equals(grid(i).name()))
-                return grid(i).cache(null);
+                return grid(i).jcache(null);
         }
 
         assert false : "Cannot find DHT cache for this test.";

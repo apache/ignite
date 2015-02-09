@@ -200,28 +200,6 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * @throws Exception If test failed.
      */
-    public void testFilteredPut() throws Exception {
-        GridCache<String, Integer> cache = grid(0).cache(null);
-
-        String key = "1";
-        int val = 1;
-
-        assert !cache.putx(key, val, F.<String, Integer>cacheHasPeekValue());
-
-        assert !cache.containsKey(key);
-
-        assertEquals(0, TestEventListener.eventCount(EVT_CACHE_OBJECT_PUT));
-
-        assert cache.putx(key, val);
-
-        assert cache.containsKey(key);
-
-        waitForEvents(0, F.t(EVT_CACHE_OBJECT_PUT, gridCnt));
-    }
-
-    /**
-     * @throws Exception If test failed.
-     */
     public void testGetPutRemove() throws Exception {
         // TODO: GG-7578.
         if (jcache(0).getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.REPLICATED)
