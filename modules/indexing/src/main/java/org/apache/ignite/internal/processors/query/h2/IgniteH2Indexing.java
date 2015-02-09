@@ -610,9 +610,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             stmt = conn.prepareStatement(sql);
         }
         catch (SQLException e) {
-            if (e.getErrorCode() == ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1)
-                return null;
-
             throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
         }
 
