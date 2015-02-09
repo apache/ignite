@@ -26,10 +26,8 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.thread.*;
 
 import java.io.*;
-import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.events.EventType.*;
@@ -81,15 +79,14 @@ public abstract class GridCachePreloadLifecycleAbstractTest extends GridCommonAb
         c.setIncludeProperties();
         c.setDeploymentMode(DeploymentMode.SHARED);
         c.setNetworkTimeout(10000);
-        c.setRestEnabled(false);
         c.setMarshaller(new OptimizedMarshaller(false));
 
 //        c.setPeerClassLoadingLocalClassPathExclude(GridCachePreloadLifecycleAbstractTest.class.getName(),
 //            MyValue.class.getName());
 
-        c.setExecutorService(new IgniteThreadPoolExecutor(10, 10, 0, new LinkedBlockingQueue<Runnable>()));
-        c.setSystemExecutorService(new IgniteThreadPoolExecutor(10, 10, 0, new LinkedBlockingQueue<Runnable>()));
-        c.setPeerClassLoadingExecutorService(new IgniteThreadPoolExecutor(3, 3, 0, new LinkedBlockingQueue<Runnable>()));
+        c.setPublicThreadPoolSize(10);
+        c.setSystemThreadPoolSize(10);
+        c.setPeerClassLoadingThreadPoolSize(3);
 
         c.setLifecycleBeans(lifecycleBean);
 

@@ -29,7 +29,6 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -92,23 +91,9 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setExecutorService(
-            new ThreadPoolExecutor(
-                RETRIES * 2,
-                RETRIES * 2,
-                0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>()));
+        cfg.setPublicThreadPoolSize(RETRIES * 2);
 
-        cfg.setExecutorServiceShutdown(true);
-
-        cfg.setSystemExecutorService(
-            new ThreadPoolExecutor(
-                RETRIES * 2,
-                RETRIES * 2,
-                0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>()));
-
-        cfg.setSystemExecutorServiceShutdown(true);
+        cfg.setSystemThreadPoolSize(RETRIES * 2);
 
         cfg.setMarshaller(new OptimizedMarshaller(false));
 
