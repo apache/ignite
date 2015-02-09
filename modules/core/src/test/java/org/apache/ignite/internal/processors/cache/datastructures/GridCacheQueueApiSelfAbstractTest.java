@@ -393,7 +393,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
                         fail("Queue failed");
                     }
-                    catch (IgniteException e) {
+                    catch (IgniteException | IllegalStateException e) {
                         putLatch.countDown();
 
                         assert e.getMessage().contains("removed");
@@ -438,7 +438,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
             fail("Queue must be removed.");
         }
-        catch (IgniteException e) {
+        catch (IgniteException | IllegalStateException e) {
             assert e.getMessage().contains("removed");
 
             assert queue.removed();
