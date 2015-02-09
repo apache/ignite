@@ -401,12 +401,12 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     public void testInvalidateFlag() throws Exception {
         IgniteEx g0 = grid(0);
 
-        GridCache<String, String> cache = g0.cache(PARTITIONED_CACHE_NAME);
+        IgniteCache<String, String> cache = g0.jcache(PARTITIONED_CACHE_NAME);
 
         String key = null;
 
         for (int i = 0; i < 10_000; i++) {
-            if (!cache.affinity().isPrimaryOrBackup(g0.localNode(), String.valueOf(i))) {
+            if (!affinity(cache).isPrimaryOrBackup(g0.localNode(), String.valueOf(i))) {
                 key = String.valueOf(i);
 
                 break;
@@ -424,9 +424,9 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         d.flagsOn(GridClientCacheFlag.INVALIDATE).put(key, "zzz");
 
         for (Ignite g : G.allGrids()) {
-            cache = g.cache(PARTITIONED_CACHE_NAME);
+            cache = g.jcache(PARTITIONED_CACHE_NAME);
 
-            if (cache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key))
+            if (affinity(cache).isPrimaryOrBackup(g.cluster().localNode(), key))
                 assertEquals("zzz", cache.peek(key));
             else
                 assertNull(cache.peek(key));
@@ -619,7 +619,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
             partitioned.put(key, "val" + key);
 
             for (Map.Entry<UUID, Ignite> entry : gridsByLocNode.entrySet()) {
-                Object val = entry.getValue().cache(PARTITIONED_CACHE_NAME).peek(key);
+                Object val = entry.getValue().jcache(PARTITIONED_CACHE_NAME).peek(key);
 
                 if (primaryNodeId.equals(entry.getKey()))
                     assertEquals("val" + key, val);
@@ -641,7 +641,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
             partitioned.pinNodes(node).put(pinnedKey, "val" + pinnedKey);
 
             for (Map.Entry<UUID, Ignite> entry : gridsByLocNode.entrySet()) {
-                Object val = entry.getValue().cache(PARTITIONED_CACHE_NAME).peek(pinnedKey);
+                Object val = entry.getValue().jcache(PARTITIONED_CACHE_NAME).peek(pinnedKey);
 
                 if (primaryNodeId.equals(entry.getKey()) || pinnedNodeId.equals(entry.getKey()))
                     assertEquals("val" + pinnedKey, val);

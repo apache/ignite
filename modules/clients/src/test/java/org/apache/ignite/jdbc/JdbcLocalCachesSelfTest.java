@@ -17,6 +17,8 @@
 
 package org.apache.ignite.jdbc;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
@@ -78,19 +80,19 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(2);
 
-        GridCache<Object, Object> cache1 = grid(0).cache(CACHE_NAME);
+        IgniteCache<Object, Object> cache1 = grid(0).jcache(CACHE_NAME);
 
         assert cache1 != null;
 
-        assert cache1.putx("key1", 1);
-        assert cache1.putx("key2", 2);
+        cache1.put("key1", 1);
+        cache1.put("key2", 2);
 
-        GridCache<Object, Object> cache2 = grid(1).cache(CACHE_NAME);
+        IgniteCache<Object, Object> cache2 = grid(1).jcache(CACHE_NAME);
 
         assert cache2 != null;
 
-        assert cache2.putx("key1", 3);
-        assert cache2.putx("key2", 4);
+        cache2.put("key1", 3);
+        cache2.put("key2", 4);
 
         Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }

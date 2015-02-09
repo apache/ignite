@@ -72,12 +72,12 @@ public class ClientTestPortableAffinityKeyTask extends ComputeTaskAdapter<Object
 
         String expAffKey = (String)it.next();
 
-        Object affKey = ignite.cache(cacheName).affinity().affinityKey(obj);
+        Object affKey = ignite.affinity(cacheName).affinityKey(obj);
 
         if (!expAffKey.equals(affKey))
             throw new IgniteException("Unexpected affinity key: " + affKey);
 
-        if (!ignite.cache(cacheName).affinity().mapKeyToNode(obj).isLocal())
+        if (!ignite.affinity(cacheName).mapKeyToNode(obj).isLocal())
             throw new IgniteException("Job is not run on primary node.");
 
         return true;

@@ -92,6 +92,7 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @return Cache.
      */
+    @Deprecated
     @Override protected <K, V> GridCache<K, V> cache() {
         return grid(0).cache(null);
     }
