@@ -58,7 +58,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * @param ctx Plugin context.
      * @param registry Extension registry.
      */
-    public void initExtensions(PluginContext ctx, IgniteExtensionRegistry registry);
+    public void initExtensions(PluginContext ctx, ExtensionRegistry registry);
 
     /**
      * Starts grid component.

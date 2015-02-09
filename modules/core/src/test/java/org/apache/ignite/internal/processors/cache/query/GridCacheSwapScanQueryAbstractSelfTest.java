@@ -159,8 +159,6 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
 
             assertEquals(ENTRY_CNT, res.size());
 
-            checkProjectionFilter(cache, ENTRY_CNT / 2 - 5);
-
             testMultithreaded(cache, ENTRY_CNT / 2);
         }
         finally {

@@ -110,12 +110,12 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     }
 
     /**
-     * @throws IgniteCheckedException If failed.
+     *
      */
-    private void checkConsistency() throws IgniteCheckedException {
+    private void checkConsistency() {
         for (Cache.Entry<String, Integer> e : jcache())
             for (int i = 1; i < gridCount(); i++) {
-                Integer val = cache(i).get(e.getKey());
+                Integer val = jcache(i).get(e.getKey());
 
                 if (val == null)
                     assert e.getValue() == null;

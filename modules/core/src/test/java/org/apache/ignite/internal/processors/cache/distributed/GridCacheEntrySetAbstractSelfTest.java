@@ -81,7 +81,7 @@ public abstract class GridCacheEntrySetAbstractSelfTest extends GridCacheAbstrac
             }, GRID_CNT, "test");
 
             for (int j = 0; j < gridCount(); j++)
-                cache(j).removeAll();
+                jcache(j).removeAll();
         }
     }
 

@@ -77,7 +77,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @throws Exception If failed.
      */
     public void testTransform() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         checkTransform(primaryKey(cache));
 
@@ -158,7 +158,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @throws Exception If failed.
      */
     public void testPutGetRemove() throws Exception {
-        GridCache<Integer, Integer> c = grid(0).cache(null);
+        IgniteCache<Integer, Integer> c = grid(0).jcache(null);
 
         checkPutGetRemove(primaryKey(c));
 
@@ -171,7 +171,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @throws Exception If failed.
      */
     public void testPutGetRemoveByteArray() throws Exception {
-        GridCache<Integer, Integer> c = grid(0).cache(null);
+        IgniteCache<Integer, Integer> c = grid(0).jcache(null);
 
         checkPutGetRemoveByteArray(primaryKey(c));
 
@@ -286,26 +286,18 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @throws Exception If failed.
      */
     public void testPromote() throws Exception {
-        GridCache<Integer, TestValue> c = grid(0).cache(null);
+        IgniteCache<Integer, TestValue> c = grid(0).jcache(null);
 
         TestValue val = new TestValue(new byte[100 * 1024]);
 
         List<Integer> keys = primaryKeys(c, 200);
 
         for (Integer key : keys)
-            c.putx(key, val);
+            c.put(key, val);
 
-        for (int i = 0; i < 50; i++) {
-            TestValue val0 = c.promote(keys.get(i));
+        c.localPromote(new HashSet<>(keys));
 
-            Assert.assertArrayEquals(val.val, val0.val);
-        }
-
-        List<Integer> keys0 = keys.subList(50, 100);
-
-        c.promoteAll(keys0);
-
-        for (Integer key : keys0) {
+        for (Integer key : keys) {
             TestValue val0 = c.get(key);
 
             Assert.assertArrayEquals(val.val, val0.val);
@@ -417,7 +409,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @throws Exception If failed.
      */
     public void testPutGetRemoveObject() throws Exception {
-        GridCache<Integer, Integer> c = grid(0).cache(null);
+        IgniteCache<Integer, Integer> c = grid(0).jcache(null);
 
         checkPutGetRemoveObject(primaryKey(c));
 
@@ -498,7 +490,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
         if (atomicityMode() == ATOMIC)
             return;
 
-        GridCache<Integer, TestValue> c = grid(0).cache(null);
+        IgniteCache<Integer, TestValue> c = grid(0).jcache(null);
 
         checkLockUnlock(primaryKey(c));
 
@@ -557,7 +549,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
      * @throws Exception If failed.
      */
     public void testUnswap() throws Exception {
-        GridCache<Integer, Integer> c = grid(0).cache(null);
+        IgniteCache<Integer, Integer> c = grid(0).jcache(null);
 
         checkUnswap(primaryKey(c));
 

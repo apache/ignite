@@ -227,7 +227,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         jcache().put("key", 1);
 
         for (int i = 0; i < gridCount(); i++) {
-            boolean nearEnabled = nearEnabled(cache(i));
+            boolean nearEnabled = nearEnabled(jcache(i));
 
             Integer nearPeekVal = nearEnabled ? 1 : null;
 
@@ -264,7 +264,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         jcache().put("key", 1);
 
         for (int i = 0; i < gridCount(); i++) {
-            boolean nearEnabled = nearEnabled(cache(i));
+            boolean nearEnabled = nearEnabled(jcache(i));
 
             Integer nearPeekVal = nearEnabled ? 1 : null;
 
