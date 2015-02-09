@@ -2199,13 +2199,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     private void globalRemoveAll(boolean async) throws Exception {
-        jcache().put("key1", 1);
-        jcache().put("key2", 2);
-        jcache().put("key3", 3);
+        IgniteCache<String, Integer> cache = jcache();
+
+        cache.put("key1", 1);
+        cache.put("key2", 2);
+        cache.put("key3", 3);
 
         checkSize(F.asSet("key1", "key2", "key3"));
 
-        IgniteCache<String, Integer> asyncCache = jcache().withAsync();
+        IgniteCache<String, Integer> asyncCache = cache.withAsync();
 
         if (async) {
             asyncCache.removeAll(F.asSet("key1", "key2"));
@@ -2213,7 +2215,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             asyncCache.future().get();
         }
         else
-            jcache().removeAll(F.asSet("key1", "key2"));
+            cache.removeAll(F.asSet("key1", "key2"));
 
         checkSize(F.asSet("key3"));
 
@@ -2222,9 +2224,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         checkContainsKey(true, "key3");
 
         // Put values again.
-        jcache().put("key1", 1);
-        jcache().put("key2", 2);
-        jcache().put("key3", 3);
+        cache.put("key1", 1);
+        cache.put("key2", 2);
+        cache.put("key3", 3);
 
         if (async) {
             IgniteCache<String, Integer> asyncCache0 = jcache(gridCount() > 1 ? 1 : 0).withAsync();
@@ -2236,14 +2238,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         else
             jcache(gridCount() > 1 ? 1 : 0).removeAll();
 
-        assert cache().isEmpty();
+        assertEquals(0, cache.localSize());
         long entryCnt = hugeRemoveAllEntryCount();
 
         for (int i = 0; i < entryCnt; i++)
-            cache().put(String.valueOf(i), i);
+            cache.put(String.valueOf(i), i);
 
         for (int i = 0; i < entryCnt; i++)
-            assertEquals(Integer.valueOf(i), cache().get(String.valueOf(i)));
+            assertEquals(Integer.valueOf(i), cache.get(String.valueOf(i)));
 
         if (async) {
             asyncCache.removeAll();
@@ -2251,10 +2253,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             asyncCache.future().get();
         }
         else
-            cache().removeAll();
+            cache.removeAll();
 
         for (int i = 0; i < entryCnt; i++)
-            assertNull(cache().get(String.valueOf(i)));
+            assertNull(cache.get(String.valueOf(i)));
     }
 
     /**

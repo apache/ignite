@@ -82,6 +82,12 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** clearLocally() split threshold. */
     public static final int CLEAR_ALL_SPLIT_THRESHOLD = 10000;
 
+    /** Distribution modes to include into global size calculation. */
+    private static final Set<CacheDistributionMode> SIZE_NODES = EnumSet.of(
+        CacheDistributionMode.NEAR_PARTITIONED,
+        CacheDistributionMode.PARTITIONED_ONLY,
+        CacheDistributionMode.NEAR_ONLY);
+
     /** Deserialization stash. */
     private static final ThreadLocal<IgniteBiTuple<String, String>> stash = new ThreadLocal<IgniteBiTuple<String,
                 String>>() {
@@ -4083,31 +4089,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         return e == null || e.obsolete() ? null : e.wrap(true);
     }
 
-    /**
-     * @return Random entry.
-     * @throws IgniteCheckedException If failed.
-     */
-    public Cache.Entry<K, V> randomCacheEntry() throws IgniteCheckedException {
-        boolean keepPortable = ctx.keepPortable();
-
-        while (true) {
-            GridCacheMapEntry<K, V> e = map.randomEntry();
-
-            if (e == null)
-                return null;
-
-            try {
-                Cache.Entry<K, V> entry = toCacheEntry(e, !keepPortable);
-
-                if (entry != null)
-                    return entry;
-            }
-            catch (GridCacheEntryRemovedException ignore) {
-                // No-op.
-            }
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public int size(CachePeekMode[] peekModes) throws IgniteCheckedException {
         if (isLocal())
@@ -4120,7 +4101,16 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @Override public IgniteInternalFuture<Integer> sizeAsync(CachePeekMode[] peekModes) {
         assert peekModes != null;
 
-        Collection<ClusterNode> nodes = ctx.grid().forCacheNodes(name()).nodes();
+        PeekModes modes = parsePeekModes(peekModes);
+
+        ClusterGroup grp;
+
+        if (modes.near)
+            grp = ctx.grid().forCacheNodes(name(), SIZE_NODES);
+        else
+            grp = ctx.grid().forDataNodes(name());
+
+        Collection<ClusterNode> nodes = grp.nodes();
 
         if (nodes.isEmpty())
             return new GridFinishedFuture<>(ctx.kernalContext(), 0);
@@ -4129,7 +4119,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             ctx.closures().broadcastNoFailover(new SizeCallable(ctx.name(), peekModes), null, nodes);
 
         return fut.chain(new CX1<IgniteInternalFuture<Collection<Integer>>, Integer>() {
-            @Override public Integer applyx(IgniteInternalFuture<Collection<Integer>> fut) throws IgniteCheckedException {
+            @Override public Integer applyx(IgniteInternalFuture<Collection<Integer>> fut)
+            throws IgniteCheckedException {
                 Collection<Integer> res = fut.get();
 
                 int totalSize = 0;

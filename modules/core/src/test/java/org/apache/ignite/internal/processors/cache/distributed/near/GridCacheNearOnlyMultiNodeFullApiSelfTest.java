@@ -98,7 +98,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
             GridCacheAttributes[] nodeAttrs = node.attribute(IgniteNodeAttributes.ATTR_CACHE);
 
-            info("Cache attribtues for node [nodeId=" + node.id() + ", attrs=" +
+            info("Cache attributes for node [nodeId=" + node.id() + ", attrs=" +
                 Arrays.asList(nodeAttrs) + ']');
         }
 
@@ -238,23 +238,27 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
         // because some of them were blocked due to having readers.
         for (int i = 0; i < gridCount(); i++) {
-            if (i != nearIdx)
-                for (String key : primaryKeysForCache(jcache(i), 3))
+            if (i != nearIdx) {
+                for (String key : primaryKeysForCache(jcache(i), 3, 100_000))
                     jcache(i).put(key, 1);
+            }
         }
 
         if (async) {
-            IgniteCache<String, Integer> asyncCache = jcache().withAsync();
+            IgniteCache<String, Integer> asyncCache = jcache(nearIdx).withAsync();
 
             asyncCache.clear();
 
             asyncCache.future().get();
         }
         else
-            jcache().clear();
+            jcache(nearIdx).clear();
 
-        for (int i = 0; i < gridCount(); i++)
-            assertEquals(ignite(i).name(), 0, jcache(i).localSize());
+        for (int i = 0; i < gridCount(); i++) {
+            assertEquals("Unexpected size [node=" + ignite(i).name() + ", nearIdx=" + nearIdx + ']',
+                0,
+                jcache(i).localSize());
+        }
     }
 
     /** {@inheritDoc} */

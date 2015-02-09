@@ -556,6 +556,12 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public ClusterGroup forCacheNodes(@Nullable String cacheName,
+        Set<CacheDistributionMode> distributionModes) {
+        return forPredicate(new CachesFilter(cacheName, distributionModes));
+    }
+
+    /** {@inheritDoc} */
     @Override public final ClusterGroup forHost(ClusterNode node) {
         A.notNull(node, "node");
 

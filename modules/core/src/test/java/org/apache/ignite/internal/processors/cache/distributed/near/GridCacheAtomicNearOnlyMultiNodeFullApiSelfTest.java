@@ -112,7 +112,6 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
 
         for (String key : keys)
             assertEquals((Integer)i++, nearCache.localPeek(key, CachePeekMode.ONHEAP));
-
     }
 
     /** {@inheritDoc} */
