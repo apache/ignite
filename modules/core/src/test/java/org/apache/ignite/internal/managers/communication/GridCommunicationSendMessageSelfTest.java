@@ -20,6 +20,7 @@ package org.apache.ignite.internal.managers.communication;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.direct.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -50,11 +51,11 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     private int bufSize;
 
     static {
-        GridTcpCommunicationMessageFactory.registerCustom(new GridTcpCommunicationMessageProducer() {
-            @Override public MessageAdapter create(byte type) {
+        GridIoMessageFactory.registerCustom(DIRECT_TYPE, new CO<MessageAdapter>() {
+            @Override public MessageAdapter apply() {
                 return new TestMessage();
             }
-        }, DIRECT_TYPE);
+        });
     }
 
     /** {@inheritDoc} */

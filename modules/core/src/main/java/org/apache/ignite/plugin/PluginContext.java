@@ -20,7 +20,6 @@ package org.apache.ignite.plugin;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.direct.*;
 import org.apache.ignite.spi.*;
 
 import java.util.*;
@@ -95,10 +94,4 @@ public interface PluginContext {
      * @param cls Class.
      */
     public void deregisterPorts(Class<?> cls);
-
-    /**
-     * @param producer Message producer.
-     * @return Message type code.
-     */
-    public byte registerMessageProducer(GridTcpCommunicationMessageProducer producer);
 }

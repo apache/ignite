@@ -20,7 +20,6 @@ package org.apache.ignite.spi;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.direct.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.plugin.extensions.communication.*;
@@ -408,5 +407,5 @@ public interface IgniteSpiContext {
     /**
      * @return Message factory.
      */
-    public GridTcpMessageFactory messageFactory();
+    public MessageFactory messageFactory();
 }

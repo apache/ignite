@@ -259,7 +259,7 @@ public class DirectByteBufferStream {
     }
 
     /** */
-    private final GridTcpMessageFactory msgFactory;
+    private final MessageFactory msgFactory;
 
     /** */
     private ByteBuffer buf;
@@ -318,7 +318,7 @@ public class DirectByteBufferStream {
     /**
      * @param msgFactory Message factory.
      */
-    public DirectByteBufferStream(@Nullable GridTcpMessageFactory msgFactory) {
+    public DirectByteBufferStream(@Nullable MessageFactory msgFactory) {
         this.msgFactory = msgFactory;
     }
 

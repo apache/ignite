@@ -525,16 +525,12 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridTcpMessageFactory messageFactory() {
-        return new GridTcpMessageFactory() {
-            @Override public MessageAdapter create(byte type) {
-                MessageAdapter msg = GridTcpCommunicationMessageFactory.create(type);
-
-                msg.setReader(new DirectMessageReader(null));
-
-                return msg;
+    @Override public MessageFactory messageFactory() {
+        return new GridIoMessageFactory(new MessageReaderFactory() {
+            @Override public MessageReader reader() {
+                return new DirectMessageReader(null);
             }
-        };
+        }, null);
     }
 
     /**

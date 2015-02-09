@@ -132,19 +132,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private final LongAdder workersCnt = new LongAdder();
 
     /** */
-    private int pluginMsg = GridTcpCommunicationMessageFactory.MAX_COMMON_TYPE;
-
-    /** */
-    private Map<Byte, GridTcpCommunicationMessageProducer> pluginMsgs;
-
-    /** */
-    private GridTcpMessageFactory msgFactory;
+    private MessageFactory msgFactory;
 
     /** */
     private MessageWriterFactory writerFactory;
-
-    /** */
-    private MessageReaderFactory readerFactory;
 
     /**
      * @param ctx Grid kernal context.
@@ -161,71 +152,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
-     * @param producer Message producer.
-     * @return Message type code.
-     */
-    public byte registerMessageProducer(GridTcpCommunicationMessageProducer producer) {
-        int nextMsg = ++pluginMsg;
-
-        if (nextMsg > Byte.MAX_VALUE)
-            throw new IgniteException();
-
-        if (pluginMsgs == null)
-            pluginMsgs = new HashMap<>();
-
-        pluginMsgs.put((byte)nextMsg, producer);
-
-        return (byte)nextMsg;
-    }
-
-    /**
-     * Initializes manager (called prior to discovery start, but after all other components).
-     */
-    public void initMessageFactory() {
-        final GridTcpCommunicationMessageProducer[] common = GridTcpCommunicationMessageFactory.commonProducers();
-
-        final GridTcpCommunicationMessageProducer[] producers;
-
-        if (pluginMsgs != null) {
-            producers = Arrays.copyOf(common, pluginMsg + 1);
-
-            for (Map.Entry<Byte, GridTcpCommunicationMessageProducer> e : pluginMsgs.entrySet()) {
-                assert producers[e.getKey()] == null : e.getKey();
-
-                producers[e.getKey()] = e.getValue();
-            }
-
-            pluginMsgs = null;
-        }
-        else
-            producers = common;
-
-        msgFactory = new GridTcpMessageFactory() {
-            @Override public MessageAdapter create(byte type) {
-                MessageAdapter msg;
-
-                if (type < 0 || type >= producers.length)
-                    msg = GridTcpCommunicationMessageFactory.create(type);
-                else {
-                    GridTcpCommunicationMessageProducer producer = producers[type];
-
-                    if (producer == null)
-                        throw new IllegalStateException("Common message type producer is not registered: " + type);
-
-                    msg = producer.create(type);
-                }
-
-                msg.setReader(readerFactory.reader());
-
-                return msg;
-            }
-        };
-    }
-
-    /**
      * @return Message factory.
      */
-    public GridTcpMessageFactory messageFactory() {
+    public MessageFactory messageFactory() {
         assert msgFactory != null;
 
         return msgFactory;
@@ -291,6 +220,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             };
         }
 
+        MessageReaderFactory readerFactory;
+
         MessageReaderFactory[] readerExt = ctx.plugins().extensions(MessageReaderFactory.class);
 
         if (readerExt != null && readerExt.length > 0)
@@ -302,6 +233,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 }
             };
         }
+
+        msgFactory = new GridIoMessageFactory(readerFactory, ctx.plugins().extensions(MessageFactory.class));
 
         if (log.isDebugEnabled())
             log.debug(startInfo());

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.internal.direct.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
@@ -39,5 +38,5 @@ public interface GridNioMessageReader {
     /**
      * @return Optional message factory.
      */
-    @Nullable public GridTcpMessageFactory messageFactory();
+    @Nullable public MessageFactory messageFactory();
 }
