@@ -24,7 +24,7 @@ import org.jetbrains.annotations.*;
  * This exception defines execution rejection. This exception is used to indicate
  * the situation when execution service provided by the user in configuration
  * rejects execution.
- * @see org.apache.ignite.configuration.IgniteConfiguration#getExecutorService()
+ * @see org.apache.ignite.configuration.IgniteConfiguration#getPublicThreadPoolSize()
  */
 public class ComputeExecutionRejectedException extends IgniteException {
     /** */

@@ -433,7 +433,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     @Override public String getExecutorServiceFormatted() {
         assert cfg != null;
 
-        return cfg.getExecutorService().toString();
+        return String.valueOf(cfg.getPublicThreadPoolSize());
     }
 
     /** {@inheritDoc} */
@@ -553,11 +553,17 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     /**
      * @param cfg Grid configuration to use.
      * @param utilityCachePool Utility cache pool.
-     * @param errHnd Error handler to use for notification about startup problems.
-     * @throws IgniteCheckedException Thrown in case of any errors.
+     * @param execSvc
+     *@param sysExecSvc
+     * @param p2pExecSvc
+     * @param mgmtExecSvc
+     * @param ggfsExecSvc
+     * @param errHnd Error handler to use for notification about startup problems.  @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings({"CatchGenericClass", "unchecked"})
-    public void start(final IgniteConfiguration cfg, ExecutorService utilityCachePool, GridAbsClosure errHnd)
+    public void start(final IgniteConfiguration cfg, ExecutorService utilityCachePool, final ExecutorService execSvc,
+        final ExecutorService sysExecSvc, ExecutorService p2pExecSvc, ExecutorService mgmtExecSvc,
+        ExecutorService ggfsExecSvc, ExecutorService restExecSvc, GridAbsClosure errHnd)
         throws IgniteCheckedException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
 
@@ -624,7 +630,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         ackP2pConfiguration();
 
         // Run background network diagnostics.
-        GridDiagnostic.runBackgroundCheck(gridName, cfg.getExecutorService(), log);
+        GridDiagnostic.runBackgroundCheck(gridName, execSvc, log);
 
         boolean notifyEnabled = IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, true);
 
@@ -634,7 +640,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             try {
                 verChecker0 = new GridUpdateNotifier(gridName, VER, SITE, gw, false);
 
-                verChecker0.checkForNewVersion(cfg.getExecutorService(), log);
+                verChecker0.checkForNewVersion(execSvc, log);
             }
             catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled())
@@ -667,7 +673,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         // Spin out SPIs & managers.
         try {
             GridKernalContextImpl ctx =
-                new GridKernalContextImpl(log, this, cfg, gw, utilityCachePool, ENT);
+                new GridKernalContextImpl(log, this, cfg, gw, utilityCachePool, execSvc, sysExecSvc, p2pExecSvc,
+                    mgmtExecSvc, ggfsExecSvc, restExecSvc, ENT);
 
             nodeLoc = new ClusterNodeLocalMapImpl(ctx);
 
@@ -821,7 +828,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             // Register MBeans.
             registerKernalMBean();
             registerLocalNodeMBean();
-            registerExecutorMBeans();
+            registerExecutorMBeans(execSvc, sysExecSvc, p2pExecSvc, mgmtExecSvc, restExecSvc);
 
             // Lifecycle bean notifications.
             notifyLifecycleBeans(AFTER_GRID_START);
@@ -866,7 +873,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 @Override public void safeRun() throws InterruptedException {
                     verChecker.topologySize(nodes().size());
 
-                    verChecker.checkForNewVersion(cfg.getExecutorService(), log);
+                    verChecker.checkForNewVersion(execSvc, log);
 
                     // Just wait for 10 secs.
                     Thread.sleep(PERIODIC_VER_CHECK_CONN_TIMEOUT);
@@ -893,7 +900,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 private long lastCompletedCnt;
 
                 @Override protected void safeRun() {
-                    ExecutorService e = cfg.getExecutorService();
+                    ExecutorService e = execSvc;
 
                     if (!(e instanceof ThreadPoolExecutor))
                         return;
@@ -1003,7 +1010,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                         int pubPoolIdleThreads = 0;
                         int pubPoolQSize = 0;
 
-                        ExecutorService pubExec = cfg.getExecutorService();
+                        ExecutorService pubExec = execSvc;
 
                         if (pubExec instanceof ThreadPoolExecutor) {
                             ThreadPoolExecutor exec = (ThreadPoolExecutor)pubExec;
@@ -1019,7 +1026,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                         int sysPoolIdleThreads = 0;
                         int sysPoolQSize = 0;
 
-                        ExecutorService sysExec = cfg.getSystemExecutorService();
+                        ExecutorService sysExec = sysExecSvc;
 
                         if (sysExec instanceof ThreadPoolExecutor) {
                             ThreadPoolExecutor exec = (ThreadPoolExecutor)sysExec;
@@ -1124,7 +1131,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         A.notNull(cfg.getMBeanServer(), "cfg.getMBeanServer()");
         A.notNull(cfg.getGridLogger(), "cfg.getGridLogger()");
         A.notNull(cfg.getMarshaller(), "cfg.getMarshaller()");
-        A.notNull(cfg.getExecutorService(), "cfg.getExecutorService()");
+        A.notNull(cfg.getPublicThreadPoolSize(), "cfg.getPublicThreadPoolSize()");
         A.notNull(cfg.getUserAttributes(), "cfg.getUserAttributes()");
 
         // All SPIs should be non-null.
@@ -1479,18 +1486,15 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** @throws IgniteCheckedException If registration failed. */
-    private void registerExecutorMBeans() throws IgniteCheckedException {
-        pubExecSvcMBean = registerExecutorMBean(cfg.getExecutorService(), "GridExecutionExecutor");
-        sysExecSvcMBean = registerExecutorMBean(cfg.getSystemExecutorService(), "GridSystemExecutor");
-        mgmtExecSvcMBean = registerExecutorMBean(cfg.getManagementExecutorService(), "GridManagementExecutor");
-        p2PExecSvcMBean = registerExecutorMBean(cfg.getPeerClassLoadingExecutorService(), "GridClassLoadingExecutor");
+    private void registerExecutorMBeans(ExecutorService execSvc, ExecutorService sysExecSvc, ExecutorService p2pExecSvc,
+        ExecutorService mgmtExecSvc, ExecutorService restExecSvc) throws IgniteCheckedException {
+        pubExecSvcMBean = registerExecutorMBean(execSvc, "GridExecutionExecutor");
+        sysExecSvcMBean = registerExecutorMBean(sysExecSvc, "GridSystemExecutor");
+        mgmtExecSvcMBean = registerExecutorMBean(mgmtExecSvc, "GridManagementExecutor");
+        p2PExecSvcMBean = registerExecutorMBean(p2pExecSvc, "GridClassLoadingExecutor");
 
-        ClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
-
-        if (clientCfg != null) {
-            restExecSvcMBean = clientCfg.getRestExecutorService() != null ?
-                registerExecutorMBean(clientCfg.getRestExecutorService(), "GridRestExecutor") : null;
-        }
+        if (restExecSvc != null)
+            restExecSvcMBean = registerExecutorMBean(restExecSvc, "GridRestExecutor");
     }
 
     /**

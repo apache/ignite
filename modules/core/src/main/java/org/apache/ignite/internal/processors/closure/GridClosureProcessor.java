@@ -69,9 +69,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     public GridClosureProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        sysPool = ctx.config().getSystemExecutorService();
-        pubPool = ctx.config().getExecutorService();
-        ggfsPool = ctx.config().getGgfsExecutorService();
+        sysPool = ctx.getSystemExecutorService();
+        pubPool = ctx.getExecutorService();
+        ggfsPool = ctx.getGgfsExecutorService();
     }
 
     /** {@inheritDoc} */

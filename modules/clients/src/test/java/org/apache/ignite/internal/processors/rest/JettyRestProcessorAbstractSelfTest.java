@@ -66,7 +66,7 @@ abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorS
      * @throws Exception If failed.
      */
     private String content(Map<String, String> params) throws Exception {
-        String addr = "http://" + LOC_HOST + ":" + restPort() + "/gridgain?";
+        String addr = "http://" + LOC_HOST + ":" + restPort() + "/ignite?";
 
         for (Map.Entry<String, String> e : params.entrySet())
             addr += e.getKey() + '=' + e.getValue() + '&';

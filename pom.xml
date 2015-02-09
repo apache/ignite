@@ -1035,7 +1035,7 @@
                                     </groups>
                                     <header>
                                         <![CDATA[
-                                    GridGain - In-Memory Data Fabric
+                                    Apache Ignite - In-Memory Data Fabric
                                 ]]>
                                     </header>
                                     <bottom>
@@ -1079,7 +1079,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <b>GridGain Fabric</b>
+                                                            <b>Apache Ignite Fabric</b>
                                                         </td>
                                                         <td>:&nbsp;&nbsp;
                                                             ver. <strong>${ignite.version}</strong>
@@ -1156,7 +1156,7 @@
                                         <![CDATA[
                                     Java Client
                                     <br>
-                                    GridGain ver. <b>${ignite.version}</b>
+                                    Apache Ignite ver. <b>${ignite.version}</b>
                                 ]]>
                                     </header>
                                     <bottom>
@@ -1164,7 +1164,7 @@
                                     <table width="100%" border="0">
                                         <tr>
                                             <td>
-                                                <nobr>GridGain&#153; - Java Client, ver. <strong>${ignite.version}</strong></nobr>
+                                                <nobr>Apache Ignite&#153; - Java Client, ver. <strong>${ignite.version}</strong></nobr>
                                                 <br>
                                                 <a target=_blank href="https://incubator.apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
                                             </td>

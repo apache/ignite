@@ -77,8 +77,6 @@
 
         <property name="peerClassLoadingEnabled" value="false"/>
 
-        <property name="restEnabled" value="false"/>
-
         <property name="cacheConfiguration">
             <list/>
         </property>
@@ -89,31 +87,9 @@
 
         <property name="deploymentMode" value="SHARED"/>
 
-        <property name="executorService">
-            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
-                <constructor-arg type="int" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() / 2}"/>
-                <constructor-arg type="int" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() / 2}"/>
-                <constructor-arg type="long">
-                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
-                </constructor-arg>
-                <constructor-arg type="java.util.concurrent.BlockingQueue">
-                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
-                </constructor-arg>
-            </bean>
-        </property>
+        <property name="publicThreadPoolSize" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() / 2}"/>
 
-        <property name="systemExecutorService">
-            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
-                <constructor-arg type="int" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() / 2}"/>
-                <constructor-arg type="int" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() / 2}"/>
-                <constructor-arg type="long">
-                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
-                </constructor-arg>
-                <constructor-arg type="java.util.concurrent.BlockingQueue">
-                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
-                </constructor-arg>
-            </bean>
-        </property>
+        <property name="systemThreadPoolSize" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() / 2}"/>
 
         <property name="loadBalancingSpi">
             <bean class="org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi">

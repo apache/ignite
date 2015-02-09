@@ -139,7 +139,6 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(spi);
         cfg.setCacheConfiguration(ccfg);
         cfg.setIncludeProperties();
-        cfg.setRestEnabled(false);
 
         return cfg;
     }
