@@ -139,7 +139,7 @@ public final class IgniteFsExample {
      * @param path Directory path.
      * @throws IgniteException In case of error.
      */
-    private static void mkdirs(org.apache.ignite.IgniteFs fs, IgniteFsPath path) throws IgniteException {
+    private static void mkdirs(IgniteFs fs, IgniteFsPath path) throws IgniteException {
         assert fs != null;
         assert path != null;
 
@@ -166,7 +166,7 @@ public final class IgniteFsExample {
      * @throws IgniteException If file can't be created.
      * @throws IOException If data can't be written.
      */
-    private static void create(org.apache.ignite.IgniteFs fs, IgniteFsPath path, @Nullable byte[] data)
+    private static void create(IgniteFs fs, IgniteFsPath path, @Nullable byte[] data)
         throws IgniteException, IOException {
         assert fs != null;
         assert path != null;
@@ -195,7 +195,7 @@ public final class IgniteFsExample {
      * @throws IgniteException If file can't be created.
      * @throws IOException If data can't be written.
      */
-    private static void append(org.apache.ignite.IgniteFs fs, IgniteFsPath path, byte[] data) throws IgniteException, IOException {
+    private static void append(IgniteFs fs, IgniteFsPath path, byte[] data) throws IgniteException, IOException {
         assert fs != null;
         assert path != null;
         assert data != null;
