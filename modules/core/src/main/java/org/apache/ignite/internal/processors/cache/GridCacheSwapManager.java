@@ -1678,7 +1678,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     private static <K, V> Iterator<Cache.Entry<K, V>> cacheEntryIterator(Iterator<Map.Entry<K, V>> it) {
         return F.iterator(it, new C1<Map.Entry<K, V>, Cache.Entry<K, V>>() {
             @Override public Cache.Entry<K, V> apply(Map.Entry<K, V> e) {
-                // Create Cache.Entry over Map.Entry to do not deserialize key/values if not needed.
+                // Create Cache.Entry over Map.Entry to do not deserialize keys/values if not needed.
                 return new CacheEntryImpl0<>(e);
             }
         }, true);
