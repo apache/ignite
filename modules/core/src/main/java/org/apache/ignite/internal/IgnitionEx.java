@@ -1394,25 +1394,25 @@ public class IgnitionEx {
             ClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
 
             if (clientCfg == null) {
-                    clientCfg = new ClientConnectionConfiguration();
+                clientCfg = new ClientConnectionConfiguration();
 
-                    clientCfg.setClientMessageInterceptor(cfg.getClientMessageInterceptor());
-                    clientCfg.setRestAccessibleFolders(cfg.getRestAccessibleFolders());
-                    clientCfg.setRestIdleTimeout(cfg.getRestIdleTimeout());
-                    clientCfg.setRestJettyPath(cfg.getRestJettyPath());
-                    clientCfg.setRestPortRange(cfg.getRestPortRange());
-                    clientCfg.setRestSecretKey(cfg.getRestSecretKey());
-                    clientCfg.setRestTcpDirectBuffer(cfg.isRestTcpDirectBuffer());
-                    clientCfg.setRestTcpHost(cfg.getRestTcpHost());
-                    clientCfg.setRestTcpNoDelay(cfg.isRestTcpNoDelay());
-                    clientCfg.setRestTcpPort(cfg.getRestTcpPort());
-                    clientCfg.setRestTcpReceiveBufferSize(cfg.getRestTcpReceiveBufferSize());
-                    clientCfg.setRestTcpSelectorCount(cfg.getRestTcpSelectorCount());
-                    clientCfg.setRestTcpSendBufferSize(cfg.getRestTcpSendBufferSize());
-                    clientCfg.setRestTcpSendQueueLimit(cfg.getRestTcpSendQueueLimit());
-                    clientCfg.setRestTcpSslClientAuth(cfg.isRestTcpSslClientAuth());
-                    clientCfg.setRestTcpSslContextFactory(cfg.getRestTcpSslContextFactory());
-                    clientCfg.setRestTcpSslEnabled(cfg.isRestTcpSslEnabled());
+                clientCfg.setClientMessageInterceptor(cfg.getClientMessageInterceptor());
+                clientCfg.setRestAccessibleFolders(cfg.getRestAccessibleFolders());
+                clientCfg.setRestIdleTimeout(cfg.getRestIdleTimeout());
+                clientCfg.setRestJettyPath(cfg.getRestJettyPath());
+                clientCfg.setRestPortRange(cfg.getRestPortRange());
+                clientCfg.setRestSecretKey(cfg.getRestSecretKey());
+                clientCfg.setRestTcpDirectBuffer(cfg.isRestTcpDirectBuffer());
+                clientCfg.setRestTcpHost(cfg.getRestTcpHost());
+                clientCfg.setRestTcpNoDelay(cfg.isRestTcpNoDelay());
+                clientCfg.setRestTcpPort(cfg.getRestTcpPort());
+                clientCfg.setRestTcpReceiveBufferSize(cfg.getRestTcpReceiveBufferSize());
+                clientCfg.setRestTcpSelectorCount(cfg.getRestTcpSelectorCount());
+                clientCfg.setRestTcpSendBufferSize(cfg.getRestTcpSendBufferSize());
+                clientCfg.setRestTcpSendQueueLimit(cfg.getRestTcpSendQueueLimit());
+                clientCfg.setRestTcpSslClientAuth(cfg.isRestTcpSslClientAuth());
+                clientCfg.setRestTcpSslContextFactory(cfg.getRestTcpSslContextFactory());
+                clientCfg.setRestTcpSslEnabled(cfg.isRestTcpSslEnabled());
             }
             else
                 clientCfg = new ClientConnectionConfiguration(clientCfg);

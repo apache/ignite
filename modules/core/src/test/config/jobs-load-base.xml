@@ -77,8 +77,6 @@
 
         <property name="peerClassLoadingEnabled" value="false"/>
 
-        <property name="restEnabled" value="false"/>
-
         <property name="cacheConfiguration">
             <list/>
         </property>

@@ -63,9 +63,6 @@
         <!-- Set to local host address. -->
         <property name="localHost" value="127.0.0.1"/>
 
-        <!-- Enable rest protocol. -->
-        <property name="restEnabled" value="true"/>
-
         <!-- Client configuration. -->
         <property name="clientConnectionConfiguration">
             <bean class="org.apache.ignite.configuration.ClientConnectionConfiguration">
