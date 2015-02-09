@@ -17,8 +17,6 @@
 
 package org.apache.ignite;
 
-import org.jetbrains.annotations.*;
-
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -124,19 +122,19 @@ public interface IgniteQueue<T> extends BlockingQueue<T>, Closeable {
     @Override public int size() throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override @Nullable public T poll() throws IgniteException;
+    @Override public T poll() throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override @Nullable public T peek() throws IgniteException;
+    @Override public T peek() throws IgniteException;
 
     /** {@inheritDoc} */
     @Override public void put(T item) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override @Nullable public T take() throws IgniteException;
+    @Override public T take() throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override @Nullable public T poll(long timeout, TimeUnit unit) throws IgniteException;
+    @Override public T poll(long timeout, TimeUnit unit) throws IgniteException;
 
     /**
      * Removes all of the elements from this queue. Method is used in massive queues with huge numbers of elements.

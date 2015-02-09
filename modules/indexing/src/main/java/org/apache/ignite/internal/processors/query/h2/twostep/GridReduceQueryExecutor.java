@@ -243,6 +243,9 @@ public class GridReduceQueryExecutor {
      *
      */
     private static class Iter extends GridH2ResultSetIterator<List<?>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+        
         /**
          * @param data Data array.
          * @throws IgniteCheckedException If failed.

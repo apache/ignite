@@ -109,7 +109,7 @@ public class IgniteCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheExNearFullApiSelfTest.class);
         suite.addTestSuite(GridCacheExColocatedFullApiSelfTest.class);
 
-        // Multithreaded // TODO: GG-708
+//        Multithreaded // TODO: GG-708
 //        suite.addTestSuite(GridCacheLocalFullApiMultithreadedSelfTest.class);
 //        suite.addTestSuite(GridCacheReplicatedFullApiMultithreadedSelfTest.class);
 //        suite.addTestSuite(GridCachePartitionedFullApiMultithreadedSelfTest.class);

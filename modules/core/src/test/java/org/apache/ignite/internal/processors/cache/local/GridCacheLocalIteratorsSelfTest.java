@@ -20,9 +20,6 @@ package org.apache.ignite.internal.processors.cache.local;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 
-import java.io.*;
-import java.util.*;
-
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -42,82 +39,5 @@ public class GridCacheLocalIteratorsSelfTest extends GridCacheAbstractIteratorsS
     /** {@inheritDoc} */
     @Override protected int entryCount() {
         return 1000;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCacheIteratorSerialization() throws Exception {
-        testIteratorSerialization(jcache().iterator(), entryCount());
-    }
-
-    /**
-     * @param it Iterator.
-     * @param bound Value bound.
-     * @throws Exception If failed.
-     */
-    private void testIteratorSerialization(Iterator<?> it, int bound) throws Exception {
-        ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-
-        try (ObjectOutputStream out = new ObjectOutputStream(byteOut)) {
-            out.writeObject(it);
-        }
-
-        byte[] bytes = byteOut.toByteArray();
-
-        ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(bytes));
-
-        Iterator<?> it0 = (Iterator<?>)in.readObject();
-
-        int cnt = 0;
-
-        while (it0.hasNext()) {
-            Object obj = it0.next();
-
-            if (obj instanceof CacheEntry)
-                checkEntry((CacheEntry<String, Integer>)obj, bound);
-            else if (obj instanceof String)
-                checkKey((String)obj);
-            else if (obj instanceof Integer)
-                checkValue((Integer)obj, bound);
-            else
-                assert false : "Wrong type.";
-
-            cnt++;
-        }
-
-        assert cnt == bound;
-    }
-
-    /**
-     * @param entry Entry.
-     * @param bound Value bound.
-     * @throws Exception If failed.
-     */
-    private void checkEntry(CacheEntry<String, Integer> entry, int bound) throws Exception {
-        assert entry != null;
-
-        checkKey(entry.getKey());
-        checkValue(entry.getValue(), bound);
-        checkValue(entry.get(), bound);
-    }
-
-    /**
-     * @param key Key.
-     * @throws Exception If failed.
-     */
-    private void checkKey(String key) throws Exception {
-        assert key != null;
-        assert key.contains(KEY_PREFIX);
-    }
-
-    /**
-     * @param value Value.
-     * @param bound Value bound.
-     * @throws Exception If failed.
-     */
-    private void checkValue(Integer value, int bound) throws Exception {
-        assert value != null;
-        assert value >= 0 && value < bound;
     }
 }

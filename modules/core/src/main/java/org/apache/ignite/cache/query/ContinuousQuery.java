@@ -107,6 +107,9 @@ import javax.cache.event.*;
  * new query.
  */
 public final class ContinuousQuery<K, V> extends Query<ContinuousQuery<K,V>> implements AutoCloseable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Default buffer size. Size of {@code 1} means that all entries
      * will be sent to master node immediately (buffering is disabled).

@@ -175,7 +175,7 @@ public class GridJettyRestHandler extends AbstractHandler {
         if (log.isDebugEnabled())
             log.debug("Handling request [target=" + target + ", req=" + req + ", srvReq=" + srvReq + ']');
 
-        if (target.startsWith("/gridgain")) {
+        if (target.startsWith("/ignite")) {
             processRequest(target, srvReq, res);
 
             req.setHandled(true);
@@ -444,9 +444,9 @@ public class GridJettyRestHandler extends AbstractHandler {
 
         restReq.command(cmd);
 
-        if (params.containsKey("gridgain.login") || params.containsKey("gridgain.password")) {
+        if (params.containsKey("ignite.login") || params.containsKey("ignite.password")) {
             GridSecurityCredentials cred = new GridSecurityCredentials(
-                (String)params.get("gridgain.login"), (String)params.get("gridgain.password"));
+                (String)params.get("ignite.login"), (String)params.get("ignite.password"));
 
             restReq.credentials(cred);
         }

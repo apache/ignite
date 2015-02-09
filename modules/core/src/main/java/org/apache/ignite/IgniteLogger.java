@@ -157,5 +157,5 @@ public interface IgniteLogger {
      *
      * @return Name of the file being logged to if one is configured or {@code null} otherwise.
      */
-    @Nullable public String fileName();
+    public String fileName();
 }

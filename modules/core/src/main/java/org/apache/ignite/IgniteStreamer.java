@@ -18,7 +18,6 @@
 package org.apache.ignite;
 
 import org.apache.ignite.streamer.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -57,9 +56,9 @@ public interface IgniteStreamer {
     /**
      * Gets streamer name.
      *
-     * @return Streamer name.
+     * @return Streamer name, or {@code null} for default no-name streamer.
      */
-    @Nullable public String name();
+    public String name();
 
     /**
      * Submits group of events for processing. This group of events will be processed on default stage,

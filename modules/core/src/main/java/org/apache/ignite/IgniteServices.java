@@ -20,8 +20,8 @@ package org.apache.ignite;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.services.*;
 import org.apache.ignite.resources.*;
+import org.apache.ignite.services.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -202,10 +202,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @throws IgniteException If failed to deploy service.
      */
     @IgniteAsyncSupported
-    public void deployKeyAffinitySingleton(String name,
-        Service svc,
-        @Nullable String cacheName,
-        Object affKey)
+    public void deployKeyAffinitySingleton(String name, Service svc, @Nullable String cacheName, Object affKey)
         throws IgniteException;
 
     /**
@@ -241,11 +238,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * @throws IgniteException If failed to deploy service.
      */
     @IgniteAsyncSupported
-    public void deployMultiple(String name,
-        Service svc,
-        int totalCnt,
-        int maxPerNodeCnt)
-        throws IgniteException;
+    public void deployMultiple(String name, Service svc, int totalCnt, int maxPerNodeCnt) throws IgniteException;
 
     /**
      * Deploys multiple instances of the service on the grid according to provided

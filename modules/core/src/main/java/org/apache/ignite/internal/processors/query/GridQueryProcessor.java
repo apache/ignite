@@ -119,7 +119,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
             }
 
-            execSvc = ctx.config().getExecutorService();
+            execSvc = ctx.getExecutorService();
         }
     }
 
