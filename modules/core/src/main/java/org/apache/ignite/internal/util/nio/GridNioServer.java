@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -138,6 +139,9 @@ public class GridNioServer<T> {
     private GridNioSslFilter sslFilter;
 
     /** */
+    private IgniteSpiAdapter spi;
+
+    /** */
     private MessageWriterFactory messageWriterFactory;
 
     /** Static initializer ensures single-threaded execution of workaround. */
@@ -186,7 +190,7 @@ public class GridNioServer<T> {
         boolean directMode,
         boolean daemon,
         GridNioMetricsListener metricsLsnr,
-        MessageWriterFactory messageWriterFactory,
+        IgniteSpiAdapter spi,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
         A.notNull(addr, "addr");
@@ -251,7 +255,7 @@ public class GridNioServer<T> {
 
         this.directMode = directMode;
         this.metricsLsnr = metricsLsnr;
-        this.messageWriterFactory = messageWriterFactory;
+        this.spi = spi;
     }
 
     /**
@@ -1018,6 +1022,9 @@ public class GridNioServer<T> {
 
                     assert msg != null;
 
+                    if (messageWriterFactory == null)
+                        messageWriterFactory = spi.getSpiContext().messageWriterFactory();
+
                     msg.setWriter(messageWriterFactory.writer());
 
                     finished = msg.writeTo(buf);
@@ -1038,6 +1045,9 @@ public class GridNioServer<T> {
                     msg = req.directMessage();
 
                     assert msg != null;
+
+                    if (messageWriterFactory == null)
+                        messageWriterFactory = spi.getSpiContext().messageWriterFactory();
 
                     msg.setWriter(messageWriterFactory.writer());
 
@@ -2067,8 +2077,8 @@ public class GridNioServer<T> {
         /** Daemon flag. */
         private boolean daemon;
 
-        /** Message writer factory. */
-        private MessageWriterFactory messageWriterFactory;
+        /** SPI. */
+        private IgniteSpiAdapter spi;
 
         /**
          * Finishes building the instance.
@@ -2093,7 +2103,7 @@ public class GridNioServer<T> {
                 directMode,
                 daemon,
                 metricsLsnr,
-                messageWriterFactory,
+                spi,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
             );
 
@@ -2288,11 +2298,11 @@ public class GridNioServer<T> {
         }
 
         /**
-         * @param messageWriterFactory Message writer factory..
+         * @param spi SPI.
          * @return This for chaining.
          */
-        public Builder<T> messageWriterFactory(MessageWriterFactory messageWriterFactory) {
-            this.messageWriterFactory = messageWriterFactory;
+        public Builder<T> spi(IgniteSpiAdapter spi) {
+            this.spi = spi;
 
             return this;
         }

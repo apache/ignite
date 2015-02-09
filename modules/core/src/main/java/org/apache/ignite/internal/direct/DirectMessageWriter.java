@@ -195,21 +195,21 @@ public class DirectMessageWriter implements MessageWriter {
 
     /** {@inheritDoc} */
     @Override public <T> boolean writeObjectArray(String name, T[] arr, Class<T> itemCls) {
-        stream.writeObjectArray(arr, itemCls);
+        stream.writeObjectArray(arr, itemCls, this);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
     @Override public <T> boolean writeCollection(String name, Collection<T> col, Class<T> itemCls) {
-        stream.writeCollection(col, itemCls);
+        stream.writeCollection(col, itemCls, this);
 
         return stream.lastFinished();
     }
 
     /** {@inheritDoc} */
     @Override public <K, V> boolean writeMap(String name, Map<K, V> map, Class<K> keyCls, Class<V> valCls) {
-        stream.writeMap(map, keyCls, valCls);
+        stream.writeMap(map, keyCls, valCls, this);
 
         return stream.lastFinished();
     }

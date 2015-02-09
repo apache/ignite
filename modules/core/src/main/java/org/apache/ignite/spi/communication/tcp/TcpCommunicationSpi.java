@@ -1489,7 +1489,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         .writeTimeout(sockWriteTimeout)
                         .filters(new GridNioCodecFilter(new GridDirectParser(this), log, true),
                             new GridConnectionBytesVerifyFilter(log))
-                        .messageWriterFactory(getSpiContext().messageWriterFactory())
+                        .spi(this)
                         .build();
 
                 boundTcpPort = port;

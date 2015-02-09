@@ -555,7 +555,7 @@ public class DirectByteBufferStream {
             writeByte(Byte.MIN_VALUE);
     }
 
-    public <T> void writeObjectArray(T[] arr, Class<T> itemCls) {
+    public <T> void writeObjectArray(T[] arr, Class<T> itemCls, MessageWriter writer) {
         if (arr != null) {
             if (it == null) {
                 writeInt(arr.length);
@@ -572,8 +572,11 @@ public class DirectByteBufferStream {
                 if (cur == NULL) {
                     cur = it.next();
 
-                    if (cur != null && itemType == Type.MSG)
+                    if (cur != null && itemType == Type.MSG) {
                         cur = ((MessageAdapter)cur).clone();
+
+                        ((MessageAdapter)cur).setWriter(writer);
+                    }
                 }
 
                 write(itemType, cur);
@@ -590,7 +593,7 @@ public class DirectByteBufferStream {
             writeInt(-1);
     }
 
-    public <T> void writeCollection(Collection<T> col, Class<T> itemCls) {
+    public <T> void writeCollection(Collection<T> col, Class<T> itemCls, MessageWriter writer) {
         if (col != null) {
             if (it == null) {
                 writeInt(col.size());
@@ -607,8 +610,11 @@ public class DirectByteBufferStream {
                 if (cur == NULL) {
                     cur = it.next();
 
-                    if (cur != null && itemType == Type.MSG)
+                    if (cur != null && itemType == Type.MSG) {
                         cur = ((MessageAdapter)cur).clone();
+
+                        ((MessageAdapter)cur).setWriter(writer);
+                    }
                 }
 
                 write(itemType, cur);
@@ -626,7 +632,7 @@ public class DirectByteBufferStream {
     }
 
     @SuppressWarnings("unchecked")
-    public <K, V> void writeMap(Map<K, V> map, Class<K> keyCls, Class<V> valCls) {
+    public <K, V> void writeMap(Map<K, V> map, Class<K> keyCls, Class<V> valCls, MessageWriter writer) {
         if (map != null) {
             if (it == null) {
                 writeInt(map.size());
@@ -652,11 +658,17 @@ public class DirectByteBufferStream {
                         K k = e.getKey();
                         V v = e.getValue();
 
-                        if (k != null && keyType == Type.MSG)
+                        if (k != null && keyType == Type.MSG) {
                             k = (K)((MessageAdapter)k).clone();
 
-                        if (v != null && valType == Type.MSG)
+                            ((MessageAdapter)k).setWriter(writer);
+                        }
+
+                        if (v != null && valType == Type.MSG) {
                             v = (V)((MessageAdapter)v).clone();
+
+                            ((MessageAdapter)v).setWriter(writer);
+                        }
 
                         cur = e = F.t(k, v);
                     }
