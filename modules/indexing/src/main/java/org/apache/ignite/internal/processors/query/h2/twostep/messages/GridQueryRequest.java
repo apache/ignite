@@ -27,6 +27,9 @@ import java.util.*;
  */
 public class GridQueryRequest implements Serializable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private long reqId;
 
     /** */

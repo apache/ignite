@@ -60,7 +60,8 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testIteration()  throws Exception {
+    // TODO: IGNITE-203: Enable when implemented.
+    public void _testIteration()  throws Exception {
         try {
             final IgniteCache<String, Integer> cache = jcache();
 

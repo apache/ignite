@@ -26,6 +26,9 @@ import java.io.*;
  * Tx metrics adapter.
  */
 public class IgniteTxMetricsAdapter implements IgniteTxMetrics, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Number of transaction commits. */
     private volatile int txCommits;
 

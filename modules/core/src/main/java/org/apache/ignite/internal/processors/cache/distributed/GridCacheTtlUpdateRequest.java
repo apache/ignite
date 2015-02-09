@@ -32,6 +32,9 @@ import java.util.*;
  *
  */
 public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Entries keys. */
     @GridToStringInclude
     @GridDirectTransient
