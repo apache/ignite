@@ -25,7 +25,7 @@ import java.nio.*;
 import java.util.*;
 
 /**
- * Portable writer implementation.
+ * Message writer implementation.
  */
 public class DirectMessageWriter implements MessageWriter {
     /** Stream. */

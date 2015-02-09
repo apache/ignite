@@ -25,7 +25,7 @@ import java.nio.*;
 import java.util.*;
 
 /**
- * Portable reader implementation.
+ * Message reader implementation.
  */
 public class DirectMessageReader implements MessageReader {
     /** Stream. */
