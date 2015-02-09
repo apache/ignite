@@ -1399,7 +1399,6 @@ public class IgnitionEx {
             myCfg.setIgniteHome(ggHome);
 
             // Copy values that don't need extra processing.
-            myCfg.setLicenseUrl(cfg.getLicenseUrl());
             myCfg.setPeerClassLoadingEnabled(cfg.isPeerClassLoadingEnabled());
             myCfg.setDeploymentMode(cfg.getDeploymentMode());
             myCfg.setNetworkTimeout(cfg.getNetworkTimeout());

@@ -20,20 +20,18 @@ package org.apache.ignite.configuration;
 import org.apache.ignite.*;
 import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.services.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.spi.authentication.*;
-import org.apache.ignite.spi.indexing.*;
-import org.apache.ignite.streamer.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.plugin.segmentation.*;
+import org.apache.ignite.portables.*;
+import org.apache.ignite.services.*;
+import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.spi.communication.*;
@@ -41,9 +39,11 @@ import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.spi.failover.*;
+import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.securesession.*;
 import org.apache.ignite.spi.swapspace.*;
+import org.apache.ignite.streamer.*;
 
 import javax.management.*;
 import java.lang.management.*;
@@ -439,9 +439,6 @@ public class IgniteConfiguration {
     /** Property names to include into node attributes. */
     private String[] includeProps;
 
-    /** License custom URL. */
-    private String licUrl;
-
     /** Frequency of metrics log print out. */
     @SuppressWarnings("RedundantFieldInitialization")
     private long metricsLogFreq = DFLT_METRICS_LOG_FREQ;
@@ -583,7 +580,6 @@ public class IgniteConfiguration {
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
         jettyPath = cfg.getRestJettyPath();
-        licUrl = cfg.getLicenseUrl();
         lifecycleBeans = cfg.getLifecycleBeans();
         lifeCycleEmailNtf = cfg.isLifeCycleEmailNotification();
         locHost = cfg.getLocalHost();
@@ -664,16 +660,6 @@ public class IgniteConfiguration {
      */
     public boolean isLifeCycleEmailNotification() {
         return lifeCycleEmailNtf;
-    }
-
-    /**
-     * Gets custom license file URL to be used instead of default license file location.
-     *
-     * @return Custom license file URL or {@code null} to use the default
-     *      {@code $IGNITE_HOME}-related location.
-     */
-    public String getLicenseUrl() {
-        return licUrl;
     }
 
     /**
@@ -815,15 +801,6 @@ public class IgniteConfiguration {
      */
     public String getSmtpFromEmail() {
         return smtpFromEmail;
-    }
-
-    /**
-     * Sets license URL different from the default location of the license file.
-     *
-     * @param licUrl License URl to set.
-     */
-    public void setLicenseUrl(String licUrl) {
-        this.licUrl = licUrl;
     }
 
     /**
