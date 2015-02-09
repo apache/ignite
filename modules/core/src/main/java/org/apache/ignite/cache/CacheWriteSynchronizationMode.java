@@ -29,7 +29,7 @@ import org.jetbrains.annotations.*;
  * Note that regardless of write synchronization mode, cache data will always remain fully
  * consistent across all participating nodes.
  * <p>
- * Write synchronization mode may be configured via {@link org.apache.ignite.cache.CacheConfiguration#getWriteSynchronizationMode()}
+ * Write synchronization mode may be configured via {@link org.apache.ignite.configuration.CacheConfiguration#getWriteSynchronizationMode()}
  * configuration property.
  */
 public enum CacheWriteSynchronizationMode {

@@ -23,7 +23,7 @@ import org.apache.ignite.lang.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * This examples demonstrates events API. Note that ignite events are disabled by default and
@@ -57,8 +57,8 @@ public class CacheEventsExample {
 
             // This optional local callback is called for each event notification
             // that passed remote predicate listener.
-            IgniteBiPredicate<UUID, IgniteCacheEvent> locLsnr = new IgniteBiPredicate<UUID, IgniteCacheEvent>() {
-                @Override public boolean apply(UUID uuid, IgniteCacheEvent evt) {
+            IgniteBiPredicate<UUID, CacheEvent> locLsnr = new IgniteBiPredicate<UUID, CacheEvent>() {
+                @Override public boolean apply(UUID uuid, CacheEvent evt) {
                     System.out.println("Received event [evt=" + evt.name() + ", key=" + evt.key() +
                         ", oldVal=" + evt.oldValue() + ", newVal=" + evt.newValue());
 
@@ -68,8 +68,8 @@ public class CacheEventsExample {
 
             // Remote listener which only accepts events for keys that are
             // greater or equal than 10 and if event node is primary for this key.
-            IgnitePredicate<IgniteCacheEvent> rmtLsnr = new IgnitePredicate<IgniteCacheEvent>() {
-                @Override public boolean apply(IgniteCacheEvent evt) {
+            IgnitePredicate<CacheEvent> rmtLsnr = new IgnitePredicate<CacheEvent>() {
+                @Override public boolean apply(CacheEvent evt) {
                     System.out.println("Cache event [name=" + evt.name() + ", key=" + evt.key() + ']');
 
                     int key = evt.key();

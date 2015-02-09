@@ -168,7 +168,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         if (isPartitioned())
             return near(idx).isLockedNearOnly(k);
 
-        return cache(idx).isLocked(k);
+        return jcache(idx).isLocalLocked(k, false);
     }
 
     /**
@@ -181,7 +181,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
             return near(idx).isAllLockedNearOnly(keys);
 
         for (Integer key : keys) {
-            if (!cache(idx).isLocked(key))
+            if (!jcache(idx).isLocalLocked(key, true))
                 return false;
         }
 

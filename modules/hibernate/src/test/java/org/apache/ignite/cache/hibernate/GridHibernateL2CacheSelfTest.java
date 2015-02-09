@@ -45,8 +45,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.cache.hibernate.GridHibernateRegionFactory.*;
 import static org.hibernate.cfg.Environment.*;
 
-import org.apache.ignite.cache.hibernate.GridHibernateL2CacheSelfTest.Entity;
-
 /**
  *
  * Tests Hibernate L2 cache.

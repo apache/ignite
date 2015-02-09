@@ -28,11 +28,11 @@ import java.util.*;
  */
 public class SingleSplitTestTask extends ComputeTaskAdapter<Integer, Integer> {
     /** */
-    @IgniteTaskSessionResource
+    @TaskSessionResource
     private ComputeTaskSession taskSes;
 
     /** */
-    @IgniteLoadBalancerResource
+    @LoadBalancerResource
     private ComputeLoadBalancer balancer;
 
     /** {@inheritDoc} */
@@ -49,7 +49,7 @@ public class SingleSplitTestTask extends ComputeTaskAdapter<Integer, Integer> {
         for (int i = 0; i < arg; i++) {
             ComputeJobAdapter job = new ComputeJobAdapter(1) {
                 /** */
-                @IgniteTaskSessionResource
+                @TaskSessionResource
                 private ComputeTaskSession jobSes;
 
                 /** {@inheritDoc} */

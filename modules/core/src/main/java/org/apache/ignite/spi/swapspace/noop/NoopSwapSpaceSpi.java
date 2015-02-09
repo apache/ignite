@@ -35,7 +35,7 @@ import java.util.*;
 @IgniteSpiMultipleInstancesSupport(true)
 public class NoopSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi {
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** {@inheritDoc} */

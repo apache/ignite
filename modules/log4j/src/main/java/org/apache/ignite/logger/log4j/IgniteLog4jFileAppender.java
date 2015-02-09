@@ -85,7 +85,7 @@ public class IgniteLog4jFileAppender extends FileAppender implements IgniteLog4j
      *
      */
     private void init() {
-        IgniteLog4jLogger.addAppender(this);
+        Log4JLogger.addAppender(this);
     }
 
     /** {@inheritDoc} */

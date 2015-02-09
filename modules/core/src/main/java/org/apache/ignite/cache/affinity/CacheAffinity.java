@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.affinity;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.jetbrains.annotations.*;
 
@@ -43,8 +42,8 @@ public interface CacheAffinity<K> {
      *
      * @return Number of cache partitions.
      * @see CacheAffinityFunction
-     * @see CacheConfiguration#getAffinity()
-     * @see CacheConfiguration#setAffinity(CacheAffinityFunction)
+     * @see org.apache.ignite.configuration.CacheConfiguration#getAffinity()
+     * @see org.apache.ignite.configuration.CacheConfiguration#setAffinity(CacheAffinityFunction)
      */
     public int partitions();
 
@@ -54,8 +53,8 @@ public interface CacheAffinity<K> {
      * @param key Key to get partition id for.
      * @return Partition id.
      * @see CacheAffinityFunction
-     * @see CacheConfiguration#getAffinity()
-     * @see CacheConfiguration#setAffinity(CacheAffinityFunction)
+     * @see org.apache.ignite.configuration.CacheConfiguration#getAffinity()
+     * @see org.apache.ignite.configuration.CacheConfiguration#setAffinity(CacheAffinityFunction)
      */
     public int partition(K key);
 
@@ -105,8 +104,8 @@ public interface CacheAffinity<K> {
      * @param n Grid node.
      * @return Partition ids for which given projection has primary ownership.
      * @see CacheAffinityFunction
-     * @see CacheConfiguration#getAffinity()
-     * @see CacheConfiguration#setAffinity(CacheAffinityFunction)
+     * @see org.apache.ignite.configuration.CacheConfiguration#getAffinity()
+     * @see org.apache.ignite.configuration.CacheConfiguration#setAffinity(CacheAffinityFunction)
      */
     public int[] primaryPartitions(ClusterNode n);
 
@@ -127,8 +126,8 @@ public interface CacheAffinity<K> {
      * @param n Grid node.
      * @return Partition ids for which given projection has backup ownership.
      * @see CacheAffinityFunction
-     * @see CacheConfiguration#getAffinity()
-     * @see CacheConfiguration#setAffinity(CacheAffinityFunction)
+     * @see org.apache.ignite.configuration.CacheConfiguration#getAffinity()
+     * @see org.apache.ignite.configuration.CacheConfiguration#setAffinity(CacheAffinityFunction)
      */
     public int[] backupPartitions(ClusterNode n);
 
@@ -146,8 +145,8 @@ public interface CacheAffinity<K> {
      * @param n Grid node.
      * @return Partition ids for which given projection has ownership.
      * @see CacheAffinityFunction
-     * @see CacheConfiguration#getAffinity()
-     * @see CacheConfiguration#setAffinity(CacheAffinityFunction)
+     * @see org.apache.ignite.configuration.CacheConfiguration#getAffinity()
+     * @see org.apache.ignite.configuration.CacheConfiguration#setAffinity(CacheAffinityFunction)
      */
     public int[] allPartitions(ClusterNode n);
 
@@ -208,13 +207,13 @@ public interface CacheAffinity<K> {
      * first in the returned collection.
      * <p>
      * If there are only cache nodes in the projection with
-     * {@link CacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}, then this
+     * {@link org.apache.ignite.configuration.CacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}, then this
      * method will return an empty collection.
      *
      * @param key Key to get affinity nodes for.
      * @return Collection of primary and backup nodes for the key with primary node
      *      always first, or an empty collection if this projection contains only nodes with
-     *      {@link CacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}.
+     *      {@link org.apache.ignite.configuration.CacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}.
      */
     public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key);
 
@@ -224,8 +223,8 @@ public interface CacheAffinity<K> {
      * @param part Partition id.
      * @return Primary node for the given partition.
      * @see CacheAffinityFunction
-     * @see CacheConfiguration#getAffinity()
-     * @see CacheConfiguration#setAffinity(CacheAffinityFunction)
+     * @see org.apache.ignite.configuration.CacheConfiguration#getAffinity()
+     * @see org.apache.ignite.configuration.CacheConfiguration#setAffinity(CacheAffinityFunction)
      */
     public ClusterNode mapPartitionToNode(int part);
 
@@ -235,8 +234,8 @@ public interface CacheAffinity<K> {
      * @param parts Partition ids.
      * @return Mapping of given partitions to their primary nodes.
      * @see CacheAffinityFunction
-     * @see CacheConfiguration#getAffinity()
-     * @see CacheConfiguration#setAffinity(CacheAffinityFunction)
+     * @see org.apache.ignite.configuration.CacheConfiguration#getAffinity()
+     * @see org.apache.ignite.configuration.CacheConfiguration#setAffinity(CacheAffinityFunction)
      */
     public Map<Integer, ClusterNode> mapPartitionsToNodes(Collection<Integer> parts);
 
@@ -245,13 +244,13 @@ public interface CacheAffinity<K> {
      * first in the returned collection.
      * <p>
      * If there are only cache nodes in the projection with
-     * {@link CacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}, then this
+     * {@link org.apache.ignite.configuration.CacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}, then this
      * method will return an empty collection.
      *
      * @param part Partition to get affinity nodes for.
      * @return Collection of primary and backup nodes for partition with primary node
      *      always first, or an empty collection if this projection contains only nodes with
-     *      {@link CacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}.
+     *      {@link org.apache.ignite.configuration.CacheConfiguration#getDistributionMode()} property set to {@code NEAR_ONLY}.
      */
     public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part);
 }

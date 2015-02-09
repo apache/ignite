@@ -25,8 +25,8 @@ import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorN
 import org.apache.ignite.internal.util.typedef.X
 
 import org.apache.ignite._
-import org.apache.ignite.events.IgniteEventType
-import org.apache.ignite.events.IgniteEventType._
+import org.apache.ignite.events.EventType
+import org.apache.ignite.events.EventType._
 import org.apache.ignite.lang.IgniteUuid
 
 import java.util.UUID

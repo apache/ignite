@@ -87,7 +87,7 @@ public class TcpRouterMultiNodeSelfTest extends ClientAbstractMultiNodeSelfTest 
         cfg.setPort(ROUTER_TCP_PORT_BASE + i);
         cfg.setPortRange(0);
         cfg.setServers(Collections.singleton(HOST + ":" + REST_TCP_PORT_BASE));
-        cfg.setLogger(new IgniteLog4jLogger(ROUTER_LOG_CFG));
+        cfg.setLogger(new Log4JLogger(ROUTER_LOG_CFG));
 
         return cfg;
     }

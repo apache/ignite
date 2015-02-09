@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.task.*;
@@ -37,7 +37,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 
@@ -86,7 +86,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     private final IgniteLogger log;
 
     /** */
-    private final IgniteMarshaller marsh;
+    private final Marshaller marsh;
 
     /** */
     private final GridJobSessionImpl ses;
@@ -627,7 +627,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         assert ctx.event().isRecordable(evtType);
         assert !internal;
 
-        IgniteJobEvent evt = new IgniteJobEvent();
+        JobEvent evt = new JobEvent();
 
         evt.jobId(ses.getJobId());
         evt.message(msg);

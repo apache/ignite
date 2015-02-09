@@ -40,7 +40,7 @@ import java.util.concurrent.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -276,8 +276,8 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
             final CountDownLatch joinLatch = new CountDownLatch(1);
 
-            g0.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            g0.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     assert evt.type() == EVT_NODE_JOINED;
 
                     info(">>> Node has joined: " + evt.node().id());
@@ -428,8 +428,8 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
             final CountDownLatch leaveLatch = new CountDownLatch(1);
 
-            g0.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            g0.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
                     info(">>> Node has left: " + evt.node().id());

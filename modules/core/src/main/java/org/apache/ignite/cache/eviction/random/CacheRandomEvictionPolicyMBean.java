@@ -22,14 +22,14 @@ import org.apache.ignite.mxbean.*;
 /**
  * MBean for {@code random} eviction policy.
  */
-@IgniteMXBeanDescription("MBean for random cache eviction policy.")
+@MXBeanDescription("MBean for random cache eviction policy.")
 public interface CacheRandomEvictionPolicyMBean {
     /**
      * Gets maximum allowed cache size.
      *
      * @return Maximum allowed cache size.
      */
-    @IgniteMXBeanDescription("Maximum allowed cache size.")
+    @MXBeanDescription("Maximum allowed cache size.")
     public int getMaxSize();
 
     /**
@@ -37,6 +37,6 @@ public interface CacheRandomEvictionPolicyMBean {
      *
      * @param max Maximum allowed cache size.
      */
-    @IgniteMXBeanDescription("Sets maximum allowed cache size.")
+    @MXBeanDescription("Sets maximum allowed cache size.")
     public void setMaxSize(int max);
 }

@@ -29,7 +29,7 @@
         <property name="localHost" value="127.0.0.1"/>
 
         <property name="cacheConfiguration">
-            <bean class="org.apache.ignite.cache.CacheConfiguration">
+            <bean class="org.apache.ignite.configuration.CacheConfiguration">
                 <property name="cacheMode" value="LOCAL"/>
 
                 <property name="swapEnabled" value="true"/>

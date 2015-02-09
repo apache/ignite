@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Exchange ID.

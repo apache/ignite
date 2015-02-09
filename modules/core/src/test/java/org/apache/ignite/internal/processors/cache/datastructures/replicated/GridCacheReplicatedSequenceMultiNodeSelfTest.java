@@ -33,8 +33,8 @@ public class GridCacheReplicatedSequenceMultiNodeSelfTest extends GridCacheSeque
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteAtomicConfiguration atomicConfiguration() {
-        IgniteAtomicConfiguration atomicCfg = super.atomicConfiguration();
+    @Override protected AtomicConfiguration atomicConfiguration() {
+        AtomicConfiguration atomicCfg = super.atomicConfiguration();
 
         atomicCfg.setAtomicSequenceReserveSize(BATCH_SIZE);
 

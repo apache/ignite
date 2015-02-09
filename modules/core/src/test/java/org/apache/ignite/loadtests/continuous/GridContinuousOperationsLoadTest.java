@@ -34,7 +34,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.loadtests.util.GridLoadTestArgs.*;
 import static org.apache.ignite.testframework.GridLoadTestUtils.*;
 import static org.apache.ignite.testframework.GridTestUtils.*;
@@ -130,8 +130,8 @@ public class GridContinuousOperationsLoadTest {
                         bufSize,
                         timeInterval,
                         true,
-                        new PX2<UUID, IgniteEvent>() {
-                            @Override public boolean applyx(UUID uuid, IgniteEvent evt)
+                        new PX2<UUID, Event>() {
+                            @Override public boolean applyx(UUID uuid, Event evt)
                                 throws IgniteInterruptedCheckedException {
                                 if (cbSleepMs > 0)
                                     U.sleep(cbSleepMs);
@@ -141,8 +141,8 @@ public class GridContinuousOperationsLoadTest {
                                 return true; // Continue listening.
                             }
                         },
-                        new PX1<IgniteEvent>() {
-                            @Override public boolean applyx(IgniteEvent evt) throws IgniteInterruptedCheckedException {
+                        new PX1<Event>() {
+                            @Override public boolean applyx(Event evt) throws IgniteInterruptedCheckedException {
                                 if (filterSleepMs > 0)
                                     U.sleep(filterSleepMs);
 

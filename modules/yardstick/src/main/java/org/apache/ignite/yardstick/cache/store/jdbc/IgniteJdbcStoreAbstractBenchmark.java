@@ -18,8 +18,8 @@
 package org.apache.ignite.yardstick.cache.store.jdbc;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.jdbc.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.yardstick.*;
 import org.yardstickframework.*;
@@ -123,5 +123,7 @@ public abstract class IgniteJdbcStoreAbstractBenchmark extends IgniteAbstractBen
 
             U.closeQuiet(stmt);
         }
+
+        super.tearDown();
     }
 }

@@ -52,7 +52,7 @@
     <!--
         Abstract GGFS file system configuration to be used as a template.
     -->
-    <bean id="ggfsCfgBase" class="org.apache.ignite.fs.IgniteFsConfiguration" abstract="true">
+    <bean id="ggfsCfgBase" class="org.apache.ignite.configuration.IgniteFsConfiguration" abstract="true">
         <!-- Must correlate with cache affinity mapper. -->
         <property name="blockSize" value="#{128 * 1024}"/>
         <property name="perNodeBatchSize" value="512"/>
@@ -64,13 +64,13 @@
     <!--
         Abstract cache configuration for GGFS file data to be used as a template.
     -->
-    <bean id="dataCacheCfgBase" class="org.apache.ignite.cache.CacheConfiguration" abstract="true">
+    <bean id="dataCacheCfgBase" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
         <property name="cacheMode" value="PARTITIONED"/>
         <property name="atomicityMode" value="TRANSACTIONAL"/>
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
         <property name="backups" value="0"/>
         <property name="affinityMapper">
-            <bean class="org.apache.ignite.fs.IgniteFsGroupDataBlocksKeyMapper">
+            <bean class="org.apache.ignite.ignitefs.IgniteFsGroupDataBlocksKeyMapper">
                 <!-- How many sequential blocks will be stored on the same node. -->
                 <constructor-arg value="512"/>
             </bean>
@@ -80,7 +80,7 @@
     <!--
         Abstract cache configuration for GGFS metadata to be used as a template.
     -->
-    <bean id="metaCacheCfgBase" class="org.apache.ignite.cache.CacheConfiguration" abstract="true">
+    <bean id="metaCacheCfgBase" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
         <property name="cacheMode" value="REPLICATED"/>
         <property name="atomicityMode" value="TRANSACTIONAL"/>
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
@@ -110,7 +110,7 @@
         -->
         <property name="ggfsConfiguration">
             <list>
-                <bean class="org.apache.ignite.fs.IgniteFsConfiguration" parent="ggfsCfgBase">
+                <bean class="org.apache.ignite.configuration.IgniteFsConfiguration" parent="ggfsCfgBase">
                     <property name="name" value="ggfs"/>
 
                     <!-- Caches with these names must be configured. -->
@@ -135,12 +135,12 @@
         <property name="cacheConfiguration">
             <list>
                 <!-- File system metadata cache. -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration" parent="metaCacheCfgBase">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="metaCacheCfgBase">
                     <property name="name" value="ggfs-meta"/>
                 </bean>
 
                 <!-- File system files data cache. -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration" parent="dataCacheCfgBase">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="dataCacheCfgBase">
                     <property name="name" value="ggfs-data"/>
                 </bean>
             </list>
@@ -151,9 +151,9 @@
         -->
         <property name="includeEventTypes">
             <list>
-                <util:constant static-field="org.apache.ignite.events.IgniteEventType.EVT_TASK_FAILED"/>
-                <util:constant static-field="org.apache.ignite.events.IgniteEventType.EVT_TASK_FINISHED"/>
-                <util:constant static-field="org.apache.ignite.events.IgniteEventType.EVT_JOB_MAPPED"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_FAILED"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_FINISHED"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_MAPPED"/>
             </list>
         </property>
 

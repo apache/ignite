@@ -40,8 +40,8 @@ import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Test for cache swap.
@@ -85,7 +85,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
         cfg.setDeploymentMode(SHARED);
         cfg.setPeerClassLoadingLocalClassPathExclude(GridCacheOffHeapSelfTest.class.getName(),
             CacheValue.class.getName());
@@ -204,8 +204,8 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
         try {
             startGrids(1);
 
-            grid(0).events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            grid(0).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     assert evt != null;
 
                     switch (evt.type()) {
@@ -608,7 +608,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private class SwapListener implements IgnitePredicate<IgniteEvent> {
+    private class SwapListener implements IgnitePredicate<Event> {
         /** */
         private final CountDownLatch swapLatch = new CountDownLatch(1);
 
@@ -616,7 +616,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
         private final CountDownLatch unswapLatch = new CountDownLatch(1);
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
+        @Override public boolean apply(Event evt) {
             assert evt != null;
 
             info("Received event: " + evt);

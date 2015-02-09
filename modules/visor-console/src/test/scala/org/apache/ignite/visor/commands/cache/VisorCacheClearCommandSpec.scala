@@ -17,14 +17,13 @@
 
 package org.apache.ignite.visor.commands.cache
 
-import org.apache.ignite.cache.CacheConfiguration
 import org.apache.ignite.cache.{CacheMode, CacheAtomicityMode}
 import CacheAtomicityMode._
 import CacheMode._
 import org.apache.ignite.visor.{VisorRuntimeBaseSpec, visor}
 
 import org.apache.ignite.Ignition
-import org.apache.ignite.configuration.IgniteConfiguration
+import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
 import org.jetbrains.annotations.Nullable

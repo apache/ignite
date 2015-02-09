@@ -59,7 +59,7 @@ public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
 
         ((ThreadPoolExecutor)cfg.getExecutorService()).prestartAllCoreThreads();
 
-        cfg.setDeploymentMode(IgniteDeploymentMode.CONTINUOUS);
+        cfg.setDeploymentMode(DeploymentMode.CONTINUOUS);
 
         return cfg;
     }

@@ -44,7 +44,7 @@ public class GridCacheColocatedTxSingleThreadedSelfTest extends IgniteTxSingleTh
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+        c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 

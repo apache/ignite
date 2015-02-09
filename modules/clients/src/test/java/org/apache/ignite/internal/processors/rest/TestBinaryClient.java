@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.processors.rest.client.message.GridClie
  */
 final class TestBinaryClient {
     /** Logger. */
-    private final IgniteLogger log = new IgniteJavaLogger();
+    private final IgniteLogger log = new JavaLogger();
 
     /** Marshaller. */
     private final GridClientMarshaller marsh = new GridClientOptimizedMarshaller();

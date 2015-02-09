@@ -37,7 +37,7 @@ public class GridLog4jInitializedTest extends TestCase {
 
     /** */
     public void testLogInitialize() {
-        IgniteLogger log = new IgniteLog4jLogger();
+        IgniteLogger log = new Log4JLogger();
 
         assert log.isInfoEnabled() == true;
 
@@ -50,6 +50,6 @@ public class GridLog4jInitializedTest extends TestCase {
         log.error("This is 'error' message.");
         log.error("This is 'error' message.", new Exception("It's a test error exception"));
 
-        assert log.getLogger(GridLog4jInitializedTest.class.getName()) instanceof IgniteLog4jLogger;
+        assert log.getLogger(GridLog4jInitializedTest.class.getName()) instanceof Log4JLogger;
     }
 }

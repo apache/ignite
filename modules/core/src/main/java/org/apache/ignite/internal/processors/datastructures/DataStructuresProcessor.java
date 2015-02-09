@@ -86,7 +86,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     private GridCacheContext dsCacheCtx;
 
     /** Atomic data structures configuration. */
-    private final IgniteAtomicConfiguration atomicCfg;
+    private final AtomicConfiguration atomicCfg;
 
     /** */
     private GridCacheProjectionEx<CacheDataStructuresConfigurationKey, Map<String, DataStructureInfo>> utilityCache;
@@ -680,7 +680,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     public final <T> IgniteQueue<T> queue(final String name,
         int cap,
-        @Nullable final IgniteCollectionConfiguration cfg)
+        @Nullable final CollectionConfiguration cfg)
         throws IgniteCheckedException {
         A.notNull(name, "name");
 
@@ -1055,7 +1055,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     @Nullable public <T> IgniteSet<T> set(final String name,
-        @Nullable final IgniteCollectionConfiguration cfg)
+        @Nullable final CollectionConfiguration cfg)
         throws IgniteCheckedException {
         A.notNull(name, "name");
 

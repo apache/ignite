@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.fs;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
 
-import static org.apache.ignite.fs.IgniteFsConfiguration.*;
+import static org.apache.ignite.configuration.IgniteFsConfiguration.*;
 
 /**
  * Tests for {@link GridGgfsServer} that checks all IPC endpoint registration types

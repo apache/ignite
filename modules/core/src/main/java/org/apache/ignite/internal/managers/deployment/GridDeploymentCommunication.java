@@ -35,7 +35,7 @@ import org.apache.ignite.marshaller.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 
 /**
@@ -60,7 +60,7 @@ class GridDeploymentCommunication {
     private final GridBusyLock busyLock = new GridBusyLock();
 
     /** */
-    private final IgniteMarshaller marsh;
+    private final Marshaller marsh;
 
     /**
      * Creates new instance of deployment communication.
@@ -375,12 +375,12 @@ class GridDeploymentCommunication {
         final GridTuple<GridDeploymentResponse> res = F.t1();
 
         GridLocalEventListener discoLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof IgniteDiscoveryEvent;
+            @Override public void onEvent(Event evt) {
+                assert evt instanceof DiscoveryEvent;
 
                 assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                 UUID nodeId = discoEvt.eventNode().id();
 

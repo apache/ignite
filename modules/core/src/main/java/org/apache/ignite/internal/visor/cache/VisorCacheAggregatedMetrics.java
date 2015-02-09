@@ -44,47 +44,41 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /** Maximum number of elements in the cache. */
     private transient Integer maxSize;
 
-    /** Gets last read time of the owning cache. */
-    private transient Long lastRead;
-
-    /** Gets last read time of the owning cache. */
-    private transient Long lastWrite;
-
     /** Minimum hits of the owning cache. */
-    private transient Integer minHits;
+    private transient Long minHits;
 
     /** Average hits of the owning cache. */
     private transient Double avgHits;
 
     /** Maximum hits of the owning cache. */
-    private transient Integer maxHits;
+    private transient Long maxHits;
 
     /** Minimum misses of the owning cache. */
-    private transient Integer minMisses;
+    private transient Long minMisses;
 
     /** Average misses of the owning cache. */
     private transient Double avgMisses;
 
     /** Maximum misses of the owning cache. */
-    private transient Integer maxMisses;
+    private transient Long maxMisses;
 
     /** Minimum total number of reads of the owning cache. */
-    private transient Integer minReads;
+    private transient Long minReads;
 
     /** Average total number of reads of the owning cache. */
     private transient Double avgReads;
 
     /** Maximum total number of reads of the owning cache. */
-    private transient Integer maxReads;
+    private transient Long maxReads;
 
     /** Minimum total number of writes of the owning cache. */
-    private transient Integer minWrites;
+    private transient Long minWrites;
 
     /** Average total number of writes of the owning cache. */
     private transient Double avgWrites;
 
     /** Maximum total number of writes of the owning cache. */
-    private transient Integer maxWrites;
+    private transient Long maxWrites;
 
     /** Minimum execution time of query. */
     private transient Long minQryTime;
@@ -135,7 +129,7 @@ public class VisorCacheAggregatedMetrics implements Serializable {
             minSize = Integer.MAX_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                minSize = Math.min(minSize, metric.size());
+                minSize = Math.min(minSize, metric.keySize());
         }
 
         return minSize;
@@ -149,7 +143,7 @@ public class VisorCacheAggregatedMetrics implements Serializable {
             avgSize = 0.0d;
 
             for (VisorCacheMetrics metric : metrics.values())
-                avgSize += metric.size();
+                avgSize += metric.keySize();
 
             avgSize /= metrics.size();
         }
@@ -165,46 +159,18 @@ public class VisorCacheAggregatedMetrics implements Serializable {
             maxSize = Integer.MIN_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
-                maxSize = Math.max(maxSize, metric.size());
+                maxSize = Math.max(maxSize, metric.keySize());
         }
 
         return maxSize;
     }
 
     /**
-     * @return Last read time of the owning cache.
-     */
-    public long lastRead() {
-        if (lastRead == null) {
-            lastRead = Long.MIN_VALUE;
-
-            for (VisorCacheMetrics metric : metrics.values())
-                lastRead = Math.max(lastRead, metric.readTime());
-        }
-
-        return lastRead;
-    }
-
-    /**
-     * @return Last read time of the owning cache.
-     */
-    public long lastWrite() {
-        if (lastWrite == null) {
-            lastWrite = Long.MIN_VALUE;
-
-            for (VisorCacheMetrics metric : metrics.values())
-                lastWrite = Math.max(lastWrite, metric.readTime());
-        }
-
-        return lastWrite;
-    }
-
-    /**
      * @return Minimum hits of the owning cache.
      */
-    public int minimumHits() {
+    public long minimumHits() {
         if (minHits == null) {
-            minHits = Integer.MAX_VALUE;
+            minHits = Long.MAX_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
                 minHits = Math.min(minHits, metric.hits());
@@ -232,9 +198,9 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Maximum hits of the owning cache.
      */
-    public int maximumHits() {
+    public long maximumHits() {
         if (maxHits == null) {
-            maxHits = Integer.MIN_VALUE;
+            maxHits = Long.MIN_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
                 maxHits = Math.max(maxHits, metric.hits());
@@ -246,9 +212,9 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Minimum misses of the owning cache.
      */
-    public int minimumMisses() {
+    public long minimumMisses() {
         if (minMisses == null) {
-            minMisses = Integer.MAX_VALUE;
+            minMisses = Long.MAX_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
                 minMisses = Math.min(minMisses, metric.misses());
@@ -276,9 +242,9 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Maximum misses of the owning cache.
      */
-    public int maximumMisses() {
+    public long maximumMisses() {
         if (maxMisses == null) {
-            maxMisses = Integer.MIN_VALUE;
+            maxMisses = Long.MIN_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
                 maxMisses = Math.max(maxMisses, metric.misses());
@@ -290,9 +256,9 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Minimum total number of reads of the owning cache.
      */
-    public int minimumReads() {
+    public long minimumReads() {
         if (minReads == null) {
-            minReads = Integer.MAX_VALUE;
+            minReads = Long.MAX_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
                 minReads = Math.min(minReads, metric.reads());
@@ -320,9 +286,9 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Maximum total number of reads of the owning cache.
      */
-    public int maximumReads() {
+    public long maximumReads() {
         if (maxReads == null) {
-            maxReads = Integer.MIN_VALUE;
+            maxReads = Long.MIN_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
                 maxReads = Math.max(maxReads, metric.reads());
@@ -334,9 +300,9 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Minimum total number of writes of the owning cache.
      */
-    public int minimumWrites() {
+    public long minimumWrites() {
         if (minWrites == null) {
-            minWrites = Integer.MAX_VALUE;
+            minWrites = Long.MAX_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
                 minWrites = Math.min(minWrites, metric.writes());
@@ -364,9 +330,9 @@ public class VisorCacheAggregatedMetrics implements Serializable {
     /**
      * @return Maximum total number of writes of the owning cache.
      */
-    public int maximumWrites() {
+    public long maximumWrites() {
         if (maxWrites == null) {
-            maxWrites = Integer.MIN_VALUE;
+            maxWrites = Long.MIN_VALUE;
 
             for (VisorCacheMetrics metric : metrics.values())
                 maxWrites = Math.max(maxWrites, metric.writes());

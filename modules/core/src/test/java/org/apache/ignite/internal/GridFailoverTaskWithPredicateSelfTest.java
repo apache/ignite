@@ -77,7 +77,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
             }
         });
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }
@@ -197,7 +197,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
     @ComputeTaskSessionFullSupport
     private static class JobFailTask implements ComputeTask<String, Object> {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */

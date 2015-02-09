@@ -113,7 +113,7 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
         protected Thread runner;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         protected IgniteLogger log;
 
         /** {@inheritDoc} */

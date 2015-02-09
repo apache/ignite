@@ -45,7 +45,7 @@ public class GridJobLoadTestJob implements ComputeJob {
     private final int completionDelay;
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Ignite instance. */
@@ -53,11 +53,11 @@ public class GridJobLoadTestJob implements ComputeJob {
     private Ignite ignite;
 
     /** Job context. */
-    @IgniteJobContextResource
+    @JobContextResource
     private ComputeJobContext cntx;
 
     /** Task session. */
-    @IgniteTaskSessionResource
+    @TaskSessionResource
     private ComputeTaskSession taskSes;
 
     /**

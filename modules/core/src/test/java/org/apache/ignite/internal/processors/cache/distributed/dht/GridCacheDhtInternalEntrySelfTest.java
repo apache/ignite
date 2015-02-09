@@ -173,7 +173,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
      * @return DHT entry.
      */
     private GridDhtCacheEntry<Object, Object> peekDhtEntry(ClusterNode node) {
-        return (GridDhtCacheEntry<Object, Object>)dht(grid(node).cache(null)).peekEx(
+        return (GridDhtCacheEntry<Object, Object>)dht(grid(node).jcache(null)).peekEx(
             new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME));
     }
 

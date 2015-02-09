@@ -30,7 +30,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Cache+swap load test.
@@ -94,19 +94,19 @@ public class GridCacheSwapLoadTest {
         parseArgs(args);
 
         try (Ignite g = G.start("modules/core/src/test/config/spring-cache-swap.xml")) {
-            g.events().localListen(new IgnitePredicate<IgniteEvent>() {
+            g.events().localListen(new IgnitePredicate<Event>() {
                 private final AtomicInteger cnt = new AtomicInteger(0);
 
                 private final AtomicBoolean getRmvStartedGuard = new AtomicBoolean(false);
 
-                @Override public boolean apply(IgniteEvent evt) {
+                @Override public boolean apply(Event evt) {
                     int cnt = this.cnt.incrementAndGet();
 
                     if (cnt % LOG_MOD == 0)
                         X.println(">>> Swap count: " + cnt);
 
                     if (getRmvEnabled) {
-                        IgniteCacheEvent ce = (IgniteCacheEvent) evt;
+                        CacheEvent ce = (CacheEvent) evt;
 
                         Integer key = ce.key();
 

@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.dataload.*;
 
 import javax.cache.processor.*;
 import java.util.*;
@@ -158,7 +157,7 @@ public class CachePopularNumbersExample {
     /**
      * Increments value for key.
      */
-    private static class IncrementingUpdater implements IgniteDataLoadCacheUpdater<Integer, Long> {
+    private static class IncrementingUpdater implements IgniteDataLoader.Updater<Integer, Long> {
         /** */
         private static final EntryProcessor<Integer, Long, Void> INC = new EntryProcessor<Integer, Long, Void>() {
             @Override public Void process(MutableEntry<Integer, Long> e, Object... args) {

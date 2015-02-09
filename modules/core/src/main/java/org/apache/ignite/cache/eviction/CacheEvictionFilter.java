@@ -25,7 +25,7 @@ import org.apache.ignite.cache.*;
  * If {@link #evictAllowed(org.apache.ignite.cache.CacheEntry)} method returns {@code false} then eviction
  * policy will not be notified and entry will never be evicted.
  * <p>
- * Eviction filter can be configured via {@link CacheConfiguration#getEvictionFilter()}
+ * Eviction filter can be configured via {@link org.apache.ignite.configuration.CacheConfiguration#getEvictionFilter()}
  * configuration property. Default value is {@code null} which means that all
  * cache entries will be tracked by eviction policy.
  */

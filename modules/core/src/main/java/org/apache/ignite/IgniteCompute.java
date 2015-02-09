@@ -20,7 +20,6 @@ package org.apache.ignite;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.loadbalancing.*;
@@ -55,7 +54,7 @@ import java.util.concurrent.*;
  * not have any alive nodes), then {@link org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException} will be thrown out of result future.
  * <h1 class="header">Serializable</h1>
  * Also note that {@link Runnable} and {@link Callable} implementations must support serialization as required
- * by the configured marshaller. For example, {@link IgniteOptimizedMarshaller} requires {@link Serializable}
+ * by the configured marshaller. For example, {@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller} requires {@link Serializable}
  * objects by default, but can be configured not to. Generally speaking objects that implement {@link Serializable}
  * or {@link Externalizable} will perform better. For {@link Runnable} and {@link Callable} interfaces
  * Ignite provides analogous {@link IgniteRunnable} and {@link IgniteCallable} classes which are
@@ -79,11 +78,11 @@ import java.util.concurrent.*;
  * ignite resources. Both, field and method based injections are supported. The following grid
  * resources can be injected:
  * <ul>
- * <li>{@link IgniteTaskSessionResource}</li>
+ * <li>{@link org.apache.ignite.resources.TaskSessionResource}</li>
  * <li>{@link IgniteInstanceResource}</li>
- * <li>{@link IgniteLoggerResource}</li>
- * <li>{@link IgniteSpringApplicationContextResource}</li>
- * <li>{@link IgniteSpringResource}</li>
+ * <li>{@link org.apache.ignite.resources.LoggerResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringApplicationContextResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  * Here is an example of how to inject instance of {@link Ignite} into a computation:

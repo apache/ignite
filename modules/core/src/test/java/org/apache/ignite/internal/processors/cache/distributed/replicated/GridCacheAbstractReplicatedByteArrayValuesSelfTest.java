@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 
@@ -35,7 +34,7 @@ public abstract class GridCacheAbstractReplicatedByteArrayValuesSelfTest extends
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.getTransactionsConfiguration().setTxSerializableEnabled(true);
+        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         return cfg;
     }
