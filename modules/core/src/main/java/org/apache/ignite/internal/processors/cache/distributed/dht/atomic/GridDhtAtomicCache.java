@@ -232,6 +232,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public Cache.Entry<K, V> entry(K key) throws GridDhtInvalidPartitionException {
+        return new CacheEntryImpl<>(key, peek(key));
+    }
+
+    /** {@inheritDoc} */
     @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException {
         GridTuple<V> val = null;
 

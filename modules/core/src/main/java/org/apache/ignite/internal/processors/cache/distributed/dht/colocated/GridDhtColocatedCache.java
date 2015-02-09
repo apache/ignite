@@ -415,7 +415,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
     /** {@inheritDoc} */
     @Override public Cache.Entry<K, V> entry(K key) throws GridDhtInvalidPartitionException {
-        return new CacheEntryImpl<>(key, null);
+        return new CacheEntryImpl<>(key, peek(key));
     }
 
     /** {@inheritDoc} */

@@ -238,11 +238,11 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
                 assertEquals((Integer)1, c.peek("key", F.asList(PARTITIONED_ONLY)));
             }
             else if (!c.affinity().isPrimaryOrBackup(grid(i).localNode(), "key")) {
-                assertEquals((Integer)1, e.getValue());
-
                 assertEquals(nearPeekVal, c.peek("key", Arrays.asList(NEAR_ONLY)));
 
                 assert c.peek("key", Arrays.asList(PARTITIONED_ONLY)) == null;
+
+                assertEquals((Integer)1, jcache(i).get("key"));
             }
         }
     }
