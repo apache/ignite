@@ -3356,7 +3356,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         Thread.sleep(ttl + 100);
 
         // Peek will actually remove entry from cache.
-        assert cache.localPeek(key, CachePeekMode.ONHEAP) == null;
+        assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
         assert cache.localSize() == 0;
     }
@@ -3695,6 +3695,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             cache.put(Integer.toString(i), i);
 
             entries.put(Integer.toString(i), i);
+
+            if (i > 0 && i % 500 == 0)
+                info("Puts finished: " + i);
         }
 
         checkIteratorHasNext();
