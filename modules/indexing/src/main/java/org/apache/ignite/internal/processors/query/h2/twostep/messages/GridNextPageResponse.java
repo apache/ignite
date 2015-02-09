@@ -29,6 +29,9 @@ import java.util.*;
  */
 public class GridNextPageResponse implements Externalizable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private long qryReqId;
 
     /** */

@@ -117,6 +117,9 @@ public class CacheWeakQueryIteratorsHolder<V> {
      * @param <T> Type for iterator.
      */
     public class WeakQueryFutureIterator<T> extends GridCloseableIteratorAdapter<T> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Query future. */
         private final CacheQueryFuture<V> fut;
 
