@@ -1238,6 +1238,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (int i = 0; i < 100; i++) {
             final String key = "key-" + i;
 
+            assertNull(cache.get(key));
+
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 public Void call() throws Exception {
                     IgniteTransactions txs = grid(0).transactions();
