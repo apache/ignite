@@ -19,7 +19,6 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.direct.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -147,7 +146,7 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
         /** {@inheritDoc} */
         @SuppressWarnings("CloneDoesntCallSuperClone")
         @Override public MessageAdapter clone() {
-            throw new UnsupportedOperationException();
+            return this;
         }
 
         /** {@inheritDoc} */

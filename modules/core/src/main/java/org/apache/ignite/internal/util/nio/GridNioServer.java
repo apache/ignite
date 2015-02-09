@@ -139,6 +139,7 @@ public class GridNioServer<T> {
     private GridNioSslFilter sslFilter;
 
     /** */
+    @GridToStringExclude
     private IgniteSpiAdapter spi;
 
     /** */
