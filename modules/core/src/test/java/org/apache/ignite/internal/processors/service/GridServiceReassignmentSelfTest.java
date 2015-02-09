@@ -122,7 +122,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
                         grow = true;
                 }
 
-                U.sleep(500);
+                U.sleep(2000);
 
                 checkServices(total, maxPerNode, F.first(startedGrids));
             }
