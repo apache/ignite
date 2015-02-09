@@ -230,26 +230,6 @@ public class GridJobContextImpl implements ComputeJobContext, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public String cacheName() {
-        try {
-            return (String)job.getDeployment().annotatedValue(job.getJob(), CacheName.class);
-        }
-        catch (IgniteCheckedException e) {
-            throw F.wrap(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> T affinityKey() {
-        try {
-            return (T)job.getDeployment().annotatedValue(job.getJob(), CacheAffinityKeyMapped.class);
-        }
-        catch (IgniteCheckedException e) {
-            throw F.wrap(e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(ctx);
         U.writeGridUuid(out, jobId);
