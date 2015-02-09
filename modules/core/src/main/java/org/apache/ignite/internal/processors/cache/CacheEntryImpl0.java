@@ -17,16 +17,44 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
-
-import static org.apache.ignite.cache.CacheMode.*;
+import javax.cache.*;
+import java.util.*;
 
 /**
  *
  */
-public class IgniteCacheTxReplicatedPeekTest extends IgniteCacheTxPeekTest {
+public class CacheEntryImpl0<K, V> implements Cache.Entry<K, V> {
+    /** */
+    private final Map.Entry<K, V> e;
+
+    /**
+     * @param e Entry.
+     */
+    public CacheEntryImpl0(Map.Entry<K, V> e) {
+        this.e = e;
+    }
+
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return REPLICATED;
+    @Override public K getKey() {
+        return e.getKey();
+    }
+
+    /** {@inheritDoc} */
+    @Override public V getValue() {
+        return e.getValue();
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <T> T unwrap(Class<T> cls) {
+        if (!cls.equals(getClass()))
+            throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
+
+        return (T)this;
+    }
+
+    /** {@inheritDoc} */
+    public String toString() {
+        return "CacheEntry [key=" + getKey() + ", val=" + getValue() + ']';
     }
 }
