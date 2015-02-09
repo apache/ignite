@@ -761,7 +761,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         IgniteInternalFuture<?> fut;
 
         try {
-            fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+                fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     try {
                         while (!stop.get()) {
