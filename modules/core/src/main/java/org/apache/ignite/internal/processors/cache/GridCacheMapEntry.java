@@ -3822,7 +3822,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         try {
             if (!hasReaders() && markObsolete0(obsoleteVer, false)) {
-                if (!isStartVersion()) {
+                if (!isStartVersion() && hasValueUnlocked()) {
                     boolean plain = val instanceof byte[];
 
                     IgniteUuid valClsLdrId = null;
