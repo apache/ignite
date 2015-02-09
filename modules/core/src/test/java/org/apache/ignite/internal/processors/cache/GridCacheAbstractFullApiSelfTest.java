@@ -3203,6 +3203,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assert cache.localPeek(key2, CachePeekMode.ONHEAP) == null;
         assert cache.localPeek(key3, CachePeekMode.ONHEAP) == 3;
 
+        if (cache.getConfiguration(CacheConfiguration.class).getDistributionMode() == CacheDistributionMode.NEAR_ONLY)
+            return;
+
         loadAll(cache, ImmutableSet.of(key1, key2), true);
 
         assert cache.localPeek(key1, CachePeekMode.ONHEAP) == 1;
@@ -3642,7 +3645,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @param key Key.
      * @return Cache.
-     * @throws Exception If failed.
      */
     protected IgniteCache<String, Integer> primaryCache(String key) {
         return primaryIgnite(key).jcache(null);
