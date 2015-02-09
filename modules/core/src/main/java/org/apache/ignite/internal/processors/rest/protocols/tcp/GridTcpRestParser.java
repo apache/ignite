@@ -81,6 +81,13 @@ public class GridTcpRestParser implements GridNioParser {
 
                     break;
 
+                case IGNITE_HANDSHAKE_RES_FLAG:
+                    buf.get();
+
+                    state.packetType(GridClientPacketType.IGNITE_HANDSHAKE_RES);
+
+                    break;
+
                 default:
                     throw new IOException("Failed to parse incoming packet (invalid packet start) [ses=" + ses +
                         ", b=" + Integer.toHexString(hdr & 0xFF) + ']');
@@ -97,6 +104,12 @@ public class GridTcpRestParser implements GridNioParser {
 
             case IGNITE_HANDSHAKE:
                 res = parseHandshake(buf, state);
+
+                break;
+
+            case IGNITE_HANDSHAKE_RES:
+                if (buf.hasRemaining())
+                    res = new GridClientHandshakeResponse(buf.get());
 
                 break;
 
@@ -123,8 +136,21 @@ public class GridTcpRestParser implements GridNioParser {
             return encodeMemcache((GridMemcachedMessage)msg);
         else if (msg == GridClientPingPacket.PING_MESSAGE)
             return ByteBuffer.wrap(GridClientPingPacket.PING_PACKET);
+        else if (msg instanceof GridClientHandshakeRequest) {
+            byte[] bytes = ((GridClientHandshakeRequest)msg).rawBytes();
+
+            ByteBuffer buf = ByteBuffer.allocate(bytes.length + 1);
+
+            buf.put(IGNITE_HANDSHAKE_FLAG);
+            buf.put(bytes);
+
+            buf.flip();
+
+            return buf;
+        }
         else if (msg instanceof GridClientHandshakeResponse)
             return ByteBuffer.wrap(new byte[] {
+                IGNITE_HANDSHAKE_RES_FLAG,
                 ((GridClientHandshakeResponse)msg).resultCode()
             });
         else {

@@ -106,7 +106,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
 
-        GridNioParser parser = new GridTcpRestDirectParser(this);
+        GridNioParser parser = new GridTcpRestParser();
 
         try {
             host = resolveRestTcpHost(ctx.config());
@@ -207,14 +207,14 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridClientMessage> lsnr,
         GridNioParser parser, @Nullable SSLContext sslCtx, ClientConnectionConfiguration cfg) {
         try {
-            GridNioFilter codec = new GridNioCodecFilter(parser, log, true);
+            GridNioFilter codec = new GridNioCodecFilter(parser, log, false);
 
             GridNioFilter[] filters;
 
             if (sslCtx != null) {
                 GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, log);
 
-                sslFilter.directMode(true);
+                sslFilter.directMode(false);
 
                 boolean auth = cfg.isRestTcpSslClientAuth();
 
@@ -244,7 +244,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 .socketReceiveBufferSize(cfg.getRestTcpReceiveBufferSize())
                 .sendQueueLimit(cfg.getRestTcpSendQueueLimit())
                 .filters(filters)
-                .directMode(true)
+                .directMode(false)
                 .build();
 
             srv.idleTimeout(cfg.getRestIdleTimeout());

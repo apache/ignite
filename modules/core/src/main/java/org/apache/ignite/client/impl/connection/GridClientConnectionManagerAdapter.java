@@ -18,18 +18,17 @@
 package org.apache.ignite.client.impl.connection;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.direct.*;
-import org.apache.ignite.logger.java.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.impl.*;
 import org.apache.ignite.client.util.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.nio.ssl.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.logger.java.*;
+import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;
@@ -143,12 +142,12 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
 
                 GridNioFilter[] filters;
 
-                GridNioFilter codecFilter = new GridNioCodecFilter(new NioParser(), gridLog, true);
+                GridNioFilter codecFilter = new GridNioCodecFilter(new GridTcpRestParser(), gridLog, false);
 
                 if (sslCtx != null) {
                     GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, gridLog);
 
-                    sslFilter.directMode(true);
+                    sslFilter.directMode(false);
                     sslFilter.clientMode(true);
 
                     filters = new GridNioFilter[]{codecFilter, sslFilter};
@@ -166,7 +165,7 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
                     .byteOrder(ByteOrder.nativeOrder())
                     .tcpNoDelay(cfg.isTcpNoDelay())
                     .directBuffer(true)
-                    .directMode(true)
+                    .directMode(false)
                     .socketReceiveBufferSize(0)
                     .socketSendBufferSize(0)
                     .idleTimeout(Long.MAX_VALUE)
@@ -594,22 +593,10 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
 
                 assert conn != null;
 
-                if (msg instanceof GridClientMessageWrapper) {
-                    GridClientMessageWrapper req = (GridClientMessageWrapper)msg;
-
-                    if (req.messageSize() != 0) {
-                        assert req.message() != null;
-
-                        conn.handleResponse(req);
-                    }
-                    else
-                        conn.handlePingResponse();
-                }
-                else {
-                    assert msg instanceof GridClientPingPacket : msg;
-
+                if (msg instanceof GridClientPingPacket)
                     conn.handlePingResponse();
-                }
+                else
+                    conn.handleResponse((GridClientMessage)msg);
             }
         }
 
@@ -645,59 +632,6 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
                 log.fine("Closing NIO session because of idle timeout.");
 
             ses.close();
-        }
-    }
-
-    /**
-     *
-     */
-    private static class NioParser implements GridNioParser {
-        /** Message metadata key. */
-        private static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf)
-            throws IOException, IgniteCheckedException {
-            GridClientFutureAdapter<?> handshakeFut = ses.meta(GridClientNioTcpConnection.SES_META_HANDSHAKE);
-
-            if (handshakeFut != null) {
-                byte code = buf.get();
-
-                return new GridClientHandshakeResponse(code);
-            }
-
-            MessageAdapter msg = ses.removeMeta(MSG_META_KEY);
-
-            if (msg == null && buf.hasRemaining()) {
-                byte type = buf.get();
-
-                if (type == GridClientMessageWrapper.REQ_HEADER) {
-                    msg = new GridClientMessageWrapper();
-
-                    msg.setReader(new DirectMessageReader(null));
-                }
-                else
-                    throw new IOException("Invalid message type: " + type);
-            }
-
-            boolean finished = false;
-
-            if (buf.hasRemaining())
-                finished = msg.readFrom(buf);
-
-            if (finished)
-                return msg;
-            else {
-                ses.addMeta(MSG_META_KEY, msg);
-
-                return null;
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException {
-            // No encoding needed for direct messages.
-            throw new UnsupportedEncodingException();
         }
     }
 }
