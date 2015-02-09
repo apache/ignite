@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.dr.os.*;
+import org.apache.ignite.internal.processors.cache.serialization.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.continuous.*;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.processors.plugin.*;
 import org.apache.ignite.internal.processors.port.*;
 import org.apache.ignite.internal.processors.portable.*;
+import org.apache.ignite.internal.processors.portable.os.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.processors.rest.*;
@@ -800,6 +802,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
         if (cls.equals(GridCacheDrManager.class))
             return (T)new GridOsCacheDrManager();
+        else if (cls.equals(GridPortableProcessor.class))
+            return (T)new GridOsPortableProcessor(this);
+        else if (cls.equals(IgniteCacheSerializationManager.class))
+            return (T)new IgniteCacheOsSerializationManager();
 
         throw new IgniteException("Unsupported component type: " + cls);
     }

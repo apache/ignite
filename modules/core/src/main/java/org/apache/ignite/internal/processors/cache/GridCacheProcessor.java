@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.cache.local.atomic.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
+import org.apache.ignite.internal.processors.cache.serialization.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -630,6 +631,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
             GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
+            IgniteCacheSerializationManager serMgr = ctx.createComponent(IgniteCacheSerializationManager.class);
 
             GridCacheStoreManager storeMgr = new GridCacheStoreManager(ctx, sesHolders, cfgStore, cfg);
 
@@ -652,6 +654,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 dataStructuresMgr,
                 ttlMgr,
                 drMgr,
+                serMgr,
                 jta);
 
             GridCacheAdapter cache = null;
@@ -769,6 +772,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 evictMgr = new GridCacheEvictionManager();
                 evtMgr = new GridCacheEventManager();
                 drMgr = ctx.createComponent(GridCacheDrManager.class);
+                serMgr = ctx.createComponent(IgniteCacheSerializationManager.class);
 
                 cacheCtx = new GridCacheContext(
                     ctx,
@@ -789,6 +793,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     dataStructuresMgr,
                     ttlMgr,
                     drMgr,
+                    serMgr,
                     jta);
 
                 GridDhtCacheAdapter dht = null;

@@ -240,6 +240,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheDataStructuresManager<K, V> dataStructuresMgr,
         GridCacheTtlManager<K, V> ttlMgr,
         GridCacheDrManager<K, V> drMgr,
+        IgniteCacheSerializationManager<K, V> serMgr,
         CacheJtaManagerAdapter<K, V> jtaMgr) {
         assert ctx != null;
         assert sharedCtx != null;
@@ -273,6 +274,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.dataStructuresMgr = add(dataStructuresMgr);
         this.ttlMgr = add(ttlMgr);
         this.drMgr = add(drMgr);
+        this.serMgr = add(serMgr);
         this.jtaMgr = add(jtaMgr);
 
         log = ctx.log(getClass());
