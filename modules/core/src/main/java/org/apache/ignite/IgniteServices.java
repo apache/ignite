@@ -245,7 +245,7 @@ public interface IgniteServices extends IgniteAsyncSupport {
      * configuration. Ignite will deploy a maximum amount of services equal to
      * {@link org.apache.ignite.services.ServiceConfiguration#getTotalCount() cfg.getTotalCount()}  parameter
      * making sure that there are no more than {@link org.apache.ignite.services.ServiceConfiguration#getMaxPerNodeCount() cfg.getMaxPerNodeCount()}
-     * service instances running on each node. Whenever topology changes, GridGain will automatically rebalance
+     * service instances running on each node. Whenever topology changes, Ignite will automatically rebalance
      * the deployed services within cluster to make sure that each node will end up with
      * about equal number of deployed instances whenever possible.
      * <p>
