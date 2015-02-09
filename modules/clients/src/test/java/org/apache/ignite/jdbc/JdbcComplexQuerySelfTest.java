@@ -92,7 +92,7 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
         personCache.put(new CacheAffinityKey<>("p2", "o1"), new Person(2, "Joe Black", 35, 1));
         personCache.put(new CacheAffinityKey<>("p3", "o2"), new Person(3, "Mike Green", 40, 2));
 
-        Class.forName("org.apache.ignite.jdbc.IgniteJdbcDriver");
+        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */

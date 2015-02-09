@@ -38,12 +38,12 @@ public class GridServiceProcessorSingleNodeSelfTest extends GridServiceProcessor
         Ignite ignite = randomGrid();
 
         // Deploy only on remote nodes.
-        ignite.managed(ignite.cluster().forRemotes()).deployNodeSingleton(name, new CounterServiceImpl());
+        ignite.services(ignite.cluster().forRemotes()).deployNodeSingleton(name, new CounterServiceImpl());
 
         info("Deployed service: " + name);
 
         // Get local proxy.
-        CounterService svc = ignite.managed().serviceProxy(name, CounterService.class, false);
+        CounterService svc = ignite.services().serviceProxy(name, CounterService.class, false);
 
         try {
             svc.increment();

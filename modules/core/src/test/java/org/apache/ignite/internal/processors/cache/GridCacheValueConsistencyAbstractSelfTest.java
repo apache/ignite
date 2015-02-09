@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -205,7 +206,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
         for (int g = 0; g < gridCount(); g++) {
             info(">>>> Removing all values form cache: " + g);
 
-            cache(g).removeAll();
+            jcache(g).removeAll();
         }
 
         info(">>>> Starting values check");

@@ -82,7 +82,7 @@ public abstract class CacheLoadOnlyStoreAdapter<K, V, I> extends CacheStore<K, V
     public static final int DFLT_THREADS_COUNT = Runtime.getRuntime().availableProcessors();
 
     /** Auto-injected logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Batch size. */

@@ -60,7 +60,7 @@ public class GridJobContextSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
                     /** */
-                    @IgniteJobContextResource
+                    @JobContextResource
                     private ComputeJobContext jobCtx;
 
                     /** Ignite instance. */

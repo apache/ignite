@@ -34,7 +34,7 @@ import java.util.*;
 @GridCommonTest(group = "P2P")
 public class P2PGridifySelfTest extends GridCommonAbstractTest {
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -53,7 +53,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void processTestBothNodesDeploy(IgniteDeploymentMode depMode) throws Exception {
+    private void processTestBothNodesDeploy(DeploymentMode depMode) throws Exception {
         int res = 0;
 
         try {
@@ -100,7 +100,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception If failed.
      */
-    private void processTestGridifyResource(IgniteDeploymentMode depMode) throws Exception {
+    private void processTestGridifyResource(DeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;
 
@@ -173,7 +173,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testPrivateMode() throws Exception {
-        processTestBothNodesDeploy(IgniteDeploymentMode.PRIVATE);
+        processTestBothNodesDeploy(DeploymentMode.PRIVATE);
     }
 
     /**
@@ -182,7 +182,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testIsolatedMode() throws Exception {
-        processTestBothNodesDeploy(IgniteDeploymentMode.ISOLATED);
+        processTestBothNodesDeploy(DeploymentMode.ISOLATED);
     }
 
     /**
@@ -191,7 +191,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testContinuousMode() throws Exception {
-        processTestBothNodesDeploy(IgniteDeploymentMode.CONTINUOUS);
+        processTestBothNodesDeploy(DeploymentMode.CONTINUOUS);
     }
 
     /**
@@ -200,7 +200,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testSharedMode() throws Exception {
-        processTestBothNodesDeploy(IgniteDeploymentMode.SHARED);
+        processTestBothNodesDeploy(DeploymentMode.SHARED);
     }
 
     /**
@@ -209,7 +209,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testResourcePrivateMode() throws Exception {
-        processTestGridifyResource(IgniteDeploymentMode.PRIVATE);
+        processTestGridifyResource(DeploymentMode.PRIVATE);
     }
 
     /**
@@ -218,7 +218,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testResourceIsolatedMode() throws Exception {
-        processTestGridifyResource(IgniteDeploymentMode.ISOLATED);
+        processTestGridifyResource(DeploymentMode.ISOLATED);
     }
 
     /**
@@ -227,7 +227,7 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testResourceContinuousMode() throws Exception {
-        processTestGridifyResource(IgniteDeploymentMode.CONTINUOUS);
+        processTestGridifyResource(DeploymentMode.CONTINUOUS);
     }
 
     /**
@@ -236,6 +236,6 @@ public class P2PGridifySelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testResourceSharedMode() throws Exception {
-        processTestGridifyResource(IgniteDeploymentMode.SHARED);
+        processTestGridifyResource(DeploymentMode.SHARED);
     }
 }

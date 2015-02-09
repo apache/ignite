@@ -40,7 +40,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests for dht cache eviction.
@@ -179,11 +179,11 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
      * @param nodeId Node id.
      * @return Predicate for events belonging to specified node.
      */
-    private IgnitePredicate<IgniteEvent> nodeEvent(final UUID nodeId) {
+    private IgnitePredicate<Event> nodeEvent(final UUID nodeId) {
         assert nodeId != null;
 
-        return new P1<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent e) {
+        return new P1<Event>() {
+            @Override public boolean apply(Event e) {
                 info("Predicate called [e.nodeId()=" + e.node().id() + ", nodeId=" + nodeId + ']');
 
                 return e.node().id().equals(nodeId);
@@ -243,10 +243,10 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         assertTrue(entryPrimary.readers().isEmpty());
         assertTrue(entryBackup.readers().isEmpty());
 
-        IgniteFuture<IgniteEvent> futBackup =
+        IgniteFuture<Event> futBackup =
             waitForLocalEvent(grid(backup).events(), nodeEvent(backup.id()), EVT_CACHE_ENTRY_EVICTED);
 
-        IgniteFuture<IgniteEvent> futPrimary =
+        IgniteFuture<Event> futPrimary =
             waitForLocalEvent(grid(primary).events(), nodeEvent(primary.id()), EVT_CACHE_ENTRY_EVICTED);
 
         // Evict on primary node.
@@ -308,8 +308,8 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
         final AtomicInteger cntBackup = new AtomicInteger();
 
-        IgniteFuture<IgniteEvent> futBackup = waitForLocalEvent(backupIgnite.events(), new P1<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent e) {
+        IgniteFuture<Event> futBackup = waitForLocalEvent(backupIgnite.events(), new P1<Event>() {
+            @Override public boolean apply(Event e) {
                 return e.node().id().equals(backupIgnite.cluster().localNode().id()) &&
                     cntBackup.incrementAndGet() == keyCnt;
             }
@@ -317,8 +317,8 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
         final AtomicInteger cntPrimary = new AtomicInteger();
 
-        IgniteFuture<IgniteEvent> futPrimary = waitForLocalEvent(primaryIgnite.events(), new P1<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent e) {
+        IgniteFuture<Event> futPrimary = waitForLocalEvent(primaryIgnite.events(), new P1<Event>() {
+            @Override public boolean apply(Event e) {
                 return e.node().id().equals(primaryIgnite.cluster().localNode().id()) &&
                     cntPrimary.incrementAndGet() == keyCnt;
             }

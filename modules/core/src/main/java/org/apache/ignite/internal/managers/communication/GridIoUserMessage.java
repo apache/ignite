@@ -55,7 +55,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
     private byte[] topicBytes;
 
     /** Deployment mode. */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /** Deployment class name. */
     private String depClsName;
@@ -90,7 +90,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
         @Nullable Object topic,
         @Nullable byte[] topicBytes,
         @Nullable IgniteUuid clsLdrId,
-        @Nullable IgniteDeploymentMode depMode,
+        @Nullable DeploymentMode depMode,
         @Nullable String userVer,
         @Nullable Map<UUID, IgniteUuid> ldrParties) {
         this.body = body;
@@ -128,7 +128,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
     /**
      * @return Deployment mode.
      */
-    @Nullable public IgniteDeploymentMode deploymentMode() {
+    @Nullable public DeploymentMode deploymentMode() {
         return depMode;
     }
 
@@ -362,7 +362,7 @@ public class GridIoUserMessage extends GridTcpCommunicationMessageAdapter {
 
                 byte depMode0 = commState.getByte();
 
-                depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
+                depMode = DeploymentMode.fromOrdinal(depMode0);
 
                 commState.idx++;
 

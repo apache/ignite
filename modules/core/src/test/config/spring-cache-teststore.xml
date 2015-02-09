@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
     Ignite Spring configuration file.
@@ -29,7 +29,7 @@
         <property name="localHost" value="127.0.0.1"/>
 
         <property name="cacheConfiguration">
-            <bean class="org.apache.ignite.cache.CacheConfiguration">
+            <bean class="org.apache.ignite.configuration.CacheConfiguration">
                 <property name="cacheMode" value="PARTITIONED"/>
 
                 <property name="swapEnabled" value="false"/>

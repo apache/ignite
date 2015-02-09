@@ -19,7 +19,6 @@ package org.apache.ignite.testframework.junits;
 
 import junit.framework.*;
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -73,7 +72,7 @@ public abstract class GridAbstractTest extends TestCase {
     private static final String NULL_NAME = UUID.randomUUID().toString();
 
     /** */
-    private static final long DFLT_TEST_TIMEOUT = 5 * 60 * 1000;
+    private static final long DFLT_TEST_TIMEOUT = 5000 * 60 * 1000;
 
     /** */
     private static final transient Map<Class<?>, TestCounters> tests = new ConcurrentHashMap<>();
@@ -1019,8 +1018,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Path for specific marshaller.
      */
     @SuppressWarnings({"IfMayBeConditional", "deprecation"})
-    protected String getDefaultCheckpointPath(IgniteMarshaller marshaller) {
-        if (marshaller instanceof IgniteJdkMarshaller)
+    protected String getDefaultCheckpointPath(Marshaller marshaller) {
+        if (marshaller instanceof JdkMarshaller)
             return SharedFsCheckpointSpi.DFLT_DIR_PATH + "/jdk/";
         else
             return SharedFsCheckpointSpi.DFLT_DIR_PATH + '/' + marshaller.getClass().getSimpleName() + '/';
@@ -1109,7 +1108,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setCheckpointSpi(cpSpi);
 
-        cfg.setIncludeEventTypes(IgniteEventType.EVTS_ALL);
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }
@@ -1187,8 +1186,8 @@ public abstract class GridAbstractTest extends TestCase {
 
                 // Remove resources cached in static, if any.
                 GridClassLoaderCache.clear();
-                IgniteOptimizedMarshaller.clearCache();
-                IgniteMarshallerExclusions.clearCache();
+                OptimizedMarshaller.clearCache();
+                MarshallerExclusions.clearCache();
                 GridEnumCache.clear();
             }
 

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import org.apache.ignite.managed.*;
+import org.apache.ignite.services.*;
 import org.jdk8.backport.*;
 
 import java.util.concurrent.*;
@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Dummy service.
  */
-public class DummyService implements ManagedService {
+public class DummyService implements Service {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -46,7 +46,7 @@ public class DummyService implements ManagedService {
     private static final ConcurrentMap<String, AtomicInteger> cancelled = new ConcurrentHashMap8<>();
 
     /** {@inheritDoc} */
-    @Override public void cancel(ManagedServiceContext ctx) {
+    @Override public void cancel(ServiceContext ctx) {
         AtomicInteger cntr = cancelled.get(ctx.name());
 
         if (cntr == null) {
@@ -67,7 +67,7 @@ public class DummyService implements ManagedService {
     }
 
     /** {@inheritDoc} */
-    @Override public void init(ManagedServiceContext ctx) throws Exception {
+    @Override public void init(ServiceContext ctx) throws Exception {
         AtomicInteger cntr = inited.get(ctx.name());
 
         if (cntr == null) {
@@ -83,7 +83,7 @@ public class DummyService implements ManagedService {
     }
 
     /** {@inheritDoc} */
-    @Override public void execute(ManagedServiceContext ctx) {
+    @Override public void execute(ServiceContext ctx) {
         AtomicInteger cntr = started.get(ctx.name());
 
         if (cntr == null) {

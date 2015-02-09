@@ -121,7 +121,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @return Near cache.
      */
-    private CacheProjection<Integer, String> near(Ignite g) {
+    private GridCache<Integer, String> near(Ignite g) {
         return g.cache(null);
     }
 
@@ -151,8 +151,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         ClusterNode primary = t.get1();
         ClusterNode other = t.get2();
 
-        CacheProjection<Integer, String> near0 = near(grid(primary.id()));
-        CacheProjection<Integer, String> near1 = near(grid(other.id()));
+        GridCache<Integer, String> near0 = near(grid(primary.id()));
+        GridCache<Integer, String> near1 = near(grid(other.id()));
 
         assert near0 != near1;
 
@@ -196,8 +196,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         ClusterNode primary = t.get1();
         ClusterNode other = t.get2();
 
-        CacheProjection<Integer, String> near0 = near(grid(primary.id()));
-        CacheProjection<Integer, String> near1 = near(grid(other.id()));
+        GridCache<Integer, String> near0 = near(grid(primary.id()));
+        GridCache<Integer, String> near1 = near(grid(other.id()));
 
         assert near0 != near1;
 
@@ -242,8 +242,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         ClusterNode primary = t.get1();
         ClusterNode other = t.get2();
 
-        CacheProjection<Integer, String> near0 = near(grid(primary.id()));
-        CacheProjection<Integer, String> near1 = near(grid(other.id()));
+        GridCache<Integer, String> near0 = near(grid(primary.id()));
+        GridCache<Integer, String> near1 = near(grid(other.id()));
 
         assert near0 != near1;
 

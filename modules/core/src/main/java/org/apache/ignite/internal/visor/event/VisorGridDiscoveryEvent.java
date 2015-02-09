@@ -24,7 +24,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Lightweight counterpart for {@link org.apache.ignite.events.IgniteDiscoveryEvent}.
+ * Lightweight counterpart for {@link org.apache.ignite.events.DiscoveryEvent}.
  */
 public class VisorGridDiscoveryEvent extends VisorGridEvent {
     /** */

@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.cloner;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -34,7 +33,7 @@ import org.jetbrains.annotations.*;
  * and will affect the cached values returned to other threads even before
  * the transaction commits.
  * <p>
- * Cache cloner can be set in cache configuration via {@link CacheConfiguration#getCloner()}
+ * Cache cloner can be set in cache configuration via {@link org.apache.ignite.configuration.CacheConfiguration#getCloner()}
  * method. By default, cache uses {@link CacheBasicCloner} implementation
  * which will clone only objects implementing {@link Cloneable} interface. You
  * can also configure cache to use {@link CacheDeepCloner} which will perform
@@ -44,8 +43,8 @@ import org.jetbrains.annotations.*;
  *
  * @see CacheBasicCloner
  * @see CacheDeepCloner
- * @see CacheConfiguration#getCloner()
- * @see CacheConfiguration#setCloner(CacheCloner)
+ * @see org.apache.ignite.configuration.CacheConfiguration#getCloner()
+ * @see org.apache.ignite.configuration.CacheConfiguration#setCloner(CacheCloner)
  *
  */
 public interface CacheCloner {

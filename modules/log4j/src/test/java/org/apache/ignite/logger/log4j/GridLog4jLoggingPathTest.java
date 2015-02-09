@@ -31,7 +31,7 @@ public class GridLog4jLoggingPathTest extends TestCase {
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
-        log = new IgniteLog4jLogger("modules/core/src/test/config/log4j-test.xml").getLogger(getClass());
+        log = new Log4JLogger("modules/core/src/test/config/log4j-test.xml").getLogger(getClass());
     }
 
     /**

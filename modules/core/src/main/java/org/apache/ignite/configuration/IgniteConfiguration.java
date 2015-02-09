@@ -18,16 +18,14 @@
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.managed.*;
+import org.apache.ignite.services.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.portables.*;
@@ -107,8 +105,8 @@ public class IgniteConfiguration {
     /** Default discovery startup delay in milliseconds (value is {@code 60,000ms}). */
     public static final long DFLT_DISCOVERY_STARTUP_DELAY = 60000;
 
-    /** Default deployment mode (value is {@link IgniteDeploymentMode#SHARED}). */
-    public static final IgniteDeploymentMode DFLT_DEPLOYMENT_MODE = IgniteDeploymentMode.SHARED;
+    /** Default deployment mode (value is {@link DeploymentMode#SHARED}). */
+    public static final DeploymentMode DFLT_DEPLOYMENT_MODE = DeploymentMode.SHARED;
 
     /** Default cache size for missed resources. */
     public static final int DFLT_P2P_MISSED_RESOURCES_CACHE_SIZE = 100;
@@ -246,7 +244,7 @@ public class IgniteConfiguration {
     private UUID nodeId;
 
     /** Marshaller. */
-    private IgniteMarshaller marsh;
+    private Marshaller marsh;
 
     /** Marshal local jobs. */
     private boolean marshLocJobs = DFLT_MARSHAL_LOCAL_JOBS;
@@ -348,13 +346,13 @@ public class IgniteConfiguration {
     private GridIndexingSpi indexingSpi;
 
     /** Address resolver. */
-    private IgniteAddressResolver addrRslvr;
+    private AddressResolver addrRslvr;
 
     /** Cache configurations. */
     private CacheConfiguration[] cacheCfg;
 
     /** Transactions configuration. */
-    private TransactionsConfiguration txCfg = new TransactionsConfiguration();
+    private TransactionConfiguration txCfg = new TransactionConfiguration();
 
     /** */
     private Collection<? extends PluginConfiguration> pluginCfgs;
@@ -366,7 +364,7 @@ public class IgniteConfiguration {
     private long discoStartupDelay = DFLT_DISCOVERY_STARTUP_DELAY;
 
     /** Tasks classes sharing mode. */
-    private IgniteDeploymentMode deployMode = DFLT_DEPLOYMENT_MODE;
+    private DeploymentMode deployMode = DFLT_DEPLOYMENT_MODE;
 
     /** Cache size of missed resources. */
     private int p2pMissedCacheSize = DFLT_P2P_MISSED_RESOURCES_CACHE_SIZE;
@@ -418,7 +416,7 @@ public class IgniteConfiguration {
     private long metricsLogFreq = DFLT_METRICS_LOG_FREQ;
 
     /** Local event listeners. */
-    private Map<IgnitePredicate<? extends IgniteEvent>, int[]> lsnrs;
+    private Map<IgnitePredicate<? extends Event>, int[]> lsnrs;
 
     /** TCP host. */
     private String restTcpHost;
@@ -475,7 +473,7 @@ public class IgniteConfiguration {
     private GridSecurityCredentialsProvider securityCred;
 
     /** Service configuration. */
-    private ManagedServiceConfiguration[] svcCfgs;
+    private ServiceConfiguration[] svcCfgs;
 
     /** Hadoop configuration. */
     private GridHadoopConfiguration hadoopCfg;
@@ -490,10 +488,10 @@ public class IgniteConfiguration {
     private IgniteInClosure<IgniteConfiguration> warmupClos;
 
     /** */
-    private IgniteQueryConfiguration qryCfg;
+    private QueryConfiguration qryCfg;
 
     /** */
-    private IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+    private AtomicConfiguration atomicCfg = new AtomicConfiguration();
 
     /**
      * Creates valid grid configuration with all default values.
@@ -608,7 +606,7 @@ public class IgniteConfiguration {
         sysPoolSize = cfg.getSystemThreadPoolSize();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
-        txCfg = cfg.getTransactionsConfiguration();
+        txCfg = cfg.getTransactionConfiguration();
         userAttrs = cfg.getUserAttributes();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
@@ -1255,12 +1253,12 @@ public class IgniteConfiguration {
 
     /**
      * Should return an instance of marshaller to use in grid. If not provided,
-     * {@link org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller} will be used on Java HotSpot VM, and
-     * {@link org.apache.ignite.marshaller.jdk.IgniteJdkMarshaller} will be used on other VMs.
+     * {@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller} will be used on Java HotSpot VM, and
+     * {@link org.apache.ignite.marshaller.jdk.JdkMarshaller} will be used on other VMs.
      *
      * @return Marshaller to use in grid.
      */
-    public IgniteMarshaller getMarshaller() {
+    public Marshaller getMarshaller() {
         return marsh;
     }
 
@@ -1270,7 +1268,7 @@ public class IgniteConfiguration {
      * @param marsh Marshaller to use within grid.
      * @see IgniteConfiguration#getMarshaller()
      */
-    public void setMarshaller(IgniteMarshaller marsh) {
+    public void setMarshaller(Marshaller marsh) {
         this.marsh = marsh;
     }
 
@@ -1999,7 +1997,7 @@ public class IgniteConfiguration {
      *
      * @return Address resolver.
      */
-    public IgniteAddressResolver getAddressResolver() {
+    public AddressResolver getAddressResolver() {
         return addrRslvr;
     }
 
@@ -2008,7 +2006,7 @@ public class IgniteConfiguration {
      *
      * @param addrRslvr Address resolver.
      */
-    public void setAddressResolver(IgniteAddressResolver addrRslvr) {
+    public void setAddressResolver(AddressResolver addrRslvr) {
         this.addrRslvr = addrRslvr;
     }
 
@@ -2017,17 +2015,17 @@ public class IgniteConfiguration {
      *
      * @param deployMode Task classes and resources sharing mode.
      */
-    public void setDeploymentMode(IgniteDeploymentMode deployMode) {
+    public void setDeploymentMode(DeploymentMode deployMode) {
         this.deployMode = deployMode;
     }
 
     /**
      * Gets deployment mode for deploying tasks and other classes on this node.
-     * Refer to {@link IgniteDeploymentMode} documentation for more information.
+     * Refer to {@link DeploymentMode} documentation for more information.
      *
      * @return Deployment mode.
      */
-    public IgniteDeploymentMode getDeploymentMode() {
+    public DeploymentMode getDeploymentMode() {
         return deployMode;
     }
 
@@ -2123,7 +2121,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets array of event types, which will be recorded by {@link GridEventStorageManager#record(org.apache.ignite.events.IgniteEvent)}.
+     * Sets array of event types, which will be recorded by {@link GridEventStorageManager#record(org.apache.ignite.events.Event)}.
      * Note, that either the include event types or the exclude event types can be established.
      *
      * @param inclEvtTypes Include event types.
@@ -2795,7 +2793,7 @@ public class IgniteConfiguration {
      *
      * @return Configurations for services to be deployed on the grid.
      */
-    public ManagedServiceConfiguration[] getServiceConfiguration() {
+    public ServiceConfiguration[] getServiceConfiguration() {
         return svcCfgs;
     }
 
@@ -2804,7 +2802,7 @@ public class IgniteConfiguration {
      *
      * @param svcCfgs Configurations for services to be deployed on the grid.
      */
-    public void setServiceConfiguration(ManagedServiceConfiguration... svcCfgs) {
+    public void setServiceConfiguration(ServiceConfiguration... svcCfgs) {
         this.svcCfgs = svcCfgs;
     }
 
@@ -2813,9 +2811,9 @@ public class IgniteConfiguration {
      * Each listener is mapped to array of event types.
      *
      * @return Pre-configured event listeners map.
-     * @see org.apache.ignite.events.IgniteEventType
+     * @see org.apache.ignite.events.EventType
      */
-    public Map<IgnitePredicate<? extends IgniteEvent>, int[]> getLocalEventListeners() {
+    public Map<IgnitePredicate<? extends Event>, int[]> getLocalEventListeners() {
         return lsnrs;
     }
 
@@ -2825,7 +2823,7 @@ public class IgniteConfiguration {
      *
      * @param lsnrs Pre-configured event listeners map.
      */
-    public void setLocalEventListeners(Map<IgnitePredicate<? extends IgniteEvent>, int[]> lsnrs) {
+    public void setLocalEventListeners(Map<IgnitePredicate<? extends Event>, int[]> lsnrs) {
         this.lsnrs = lsnrs;
     }
 
@@ -2854,7 +2852,7 @@ public class IgniteConfiguration {
      *
      * @return Transactions configuration.
      */
-    public TransactionsConfiguration getTransactionsConfiguration() {
+    public TransactionConfiguration getTransactionConfiguration() {
         return txCfg;
     }
 
@@ -2863,7 +2861,7 @@ public class IgniteConfiguration {
      *
      * @param txCfg Transactions configuration.
      */
-    public void setTransactionsConfiguration(TransactionsConfiguration txCfg) {
+    public void setTransactionConfiguration(TransactionConfiguration txCfg) {
         this.txCfg = txCfg;
     }
 
@@ -2884,28 +2882,28 @@ public class IgniteConfiguration {
     /**
      * @return Query configuration.
      */
-    public IgniteQueryConfiguration getQueryConfiguration() {
+    public QueryConfiguration getQueryConfiguration() {
         return qryCfg;
     }
 
     /**
      * @param qryCfg Query configuration.
      */
-    public void setQueryConfiguration(IgniteQueryConfiguration qryCfg) {
+    public void setQueryConfiguration(QueryConfiguration qryCfg) {
         this.qryCfg = qryCfg;
     }
 
     /**
      * @return Atomic data structures configuration.
      */
-    public IgniteAtomicConfiguration getAtomicConfiguration() {
+    public AtomicConfiguration getAtomicConfiguration() {
         return atomicCfg;
     }
 
     /**
      * @param atomicCfg Atomic data structures configuration.
      */
-    public void setAtomicConfiguration(IgniteAtomicConfiguration atomicCfg) {
+    public void setAtomicConfiguration(AtomicConfiguration atomicCfg) {
         this.atomicCfg = atomicCfg;
     }
 

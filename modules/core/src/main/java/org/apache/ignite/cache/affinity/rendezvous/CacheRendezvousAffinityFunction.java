@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.affinity.rendezvous;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
@@ -52,7 +51,7 @@ import java.util.*;
  * </li>
  * </ul>
  * <p>
- * Cache affinity can be configured for individual caches via {@link CacheConfiguration#getAffinity()} method.
+ * Cache affinity can be configured for individual caches via {@link org.apache.ignite.configuration.CacheConfiguration#getAffinity()} method.
  */
 public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, Externalizable {
     /** */
@@ -93,7 +92,7 @@ public class CacheRendezvousAffinityFunction implements CacheAffinityFunction, E
     private CacheAffinityNodeHashResolver hashIdRslvr = new CacheAffinityNodeAddressHashResolver();
 
     /** Marshaller. */
-    private IgniteMarshaller marshaller = new IgniteOptimizedMarshaller(false);
+    private Marshaller marshaller = new OptimizedMarshaller(false);
 
     /**
      * Empty constructor with all defaults.

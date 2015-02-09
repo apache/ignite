@@ -23,7 +23,7 @@ import org.apache.ignite.spi.*;
 /**
  * MBean provide access to TCP-based communication SPI.
  */
-@IgniteMXBeanDescription("MBean provide access to TCP-based communication SPI.")
+@MXBeanDescription("MBean provide access to TCP-based communication SPI.")
 public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets local host address for socket binding.
@@ -32,7 +32,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Grid node IP address.
      */
-    @IgniteMXBeanDescription("Grid node IP address.")
+    @MXBeanDescription("Grid node IP address.")
     public String getLocalAddress();
 
     /**
@@ -40,7 +40,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Port number.
      */
-    @IgniteMXBeanDescription("Port number.")
+    @MXBeanDescription("Port number.")
     public int getLocalPort();
 
     /**
@@ -48,7 +48,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Port number.
      */
-    @IgniteMXBeanDescription("Shared memory endpoint port number.")
+    @MXBeanDescription("Shared memory endpoint port number.")
     public int getSharedMemoryPort();
 
     /**
@@ -57,7 +57,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Local port range.
      */
-    @IgniteMXBeanDescription("Local port range.")
+    @MXBeanDescription("Local port range.")
     public int getLocalPortRange();
 
     /**
@@ -66,7 +66,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Maximum idle connection time.
      */
-    @IgniteMXBeanDescription("Maximum idle connection time.")
+    @MXBeanDescription("Maximum idle connection time.")
     public long getIdleConnectionTimeout();
 
     /**
@@ -74,7 +74,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Flag that indicates whether direct or heap allocated buffer is used.
      */
-    @IgniteMXBeanDescription("Flag that indicates whether direct or heap allocated buffer is used.")
+    @MXBeanDescription("Flag that indicates whether direct or heap allocated buffer is used.")
     public boolean isDirectBuffer();
 
     /**
@@ -83,7 +83,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Count of selectors in TCP server.
      */
-    @IgniteMXBeanDescription("Count of selectors used in TCP server.")
+    @MXBeanDescription("Count of selectors used in TCP server.")
     public int getSelectorsCount();
 
     /**
@@ -91,7 +91,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Sent messages count.
      */
-    @IgniteMXBeanDescription("Sent messages count.")
+    @MXBeanDescription("Sent messages count.")
     public int getSentMessagesCount();
 
     /**
@@ -99,7 +99,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Sent bytes count.
      */
-    @IgniteMXBeanDescription("Sent bytes count.")
+    @MXBeanDescription("Sent bytes count.")
     public long getSentBytesCount();
 
     /**
@@ -107,7 +107,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Received messages count.
      */
-    @IgniteMXBeanDescription("Received messages count.")
+    @MXBeanDescription("Received messages count.")
     public int getReceivedMessagesCount();
 
     /**
@@ -115,7 +115,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Received bytes count.
      */
-    @IgniteMXBeanDescription("Received bytes count.")
+    @MXBeanDescription("Received bytes count.")
     public long getReceivedBytesCount();
 
     /**
@@ -123,7 +123,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Outbound messages queue size.
      */
-    @IgniteMXBeanDescription("Outbound messages queue size.")
+    @MXBeanDescription("Outbound messages queue size.")
     public int getOutboundMessagesQueueSize();
 
     /**
@@ -132,7 +132,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Connect timeout.
      */
-    @IgniteMXBeanDescription("Connect timeout.")
+    @MXBeanDescription("Connect timeout.")
     public long getConnectTimeout();
 
     /**
@@ -140,7 +140,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Maximum connect timeout.
      */
-    @IgniteMXBeanDescription("Maximum connect timeout.")
+    @MXBeanDescription("Maximum connect timeout.")
     public long getMaxConnectTimeout();
 
     /**
@@ -149,7 +149,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Reconnects count.
      */
-    @IgniteMXBeanDescription("Reconnect count on connection failure.")
+    @MXBeanDescription("Reconnect count on connection failure.")
     public int getReconnectCount();
 
     /**
@@ -157,7 +157,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return {@code True} if TCP delay is disabled.
      */
-    @IgniteMXBeanDescription("TCP_NODELAY socket option value.")
+    @MXBeanDescription("TCP_NODELAY socket option value.")
     public boolean isTcpNoDelay();
 
     /**
@@ -169,7 +169,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Flush frequency.
      */
-    @IgniteMXBeanDescription("Connection buffer flush frequency.")
+    @MXBeanDescription("Connection buffer flush frequency.")
     public long getConnectionBufferFlushFrequency();
 
     /**
@@ -186,7 +186,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      * @param connBufFlushFreq Flush frequency.
      * @see #getConnectionBufferSize()
      */
-    @IgniteMXBeanDescription("Sets connection buffer flush frequency.")
+    @MXBeanDescription("Sets connection buffer flush frequency.")
     public void setConnectionBufferFlushFrequency(long connBufFlushFreq);
 
     /**
@@ -196,7 +196,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Connection buffer size.
      */
-    @IgniteMXBeanDescription("Connection buffer size.")
+    @MXBeanDescription("Connection buffer size.")
     public int getConnectionBufferSize();
 
     /**
@@ -204,7 +204,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return {@code True} if direct buffers should be used.
      */
-    @IgniteMXBeanDescription("Direct send buffer.")
+    @MXBeanDescription("Direct send buffer.")
     public boolean isDirectSendBuffer();
 
     /**
@@ -214,7 +214,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Socket receive buffer size.
      */
-    @IgniteMXBeanDescription("Socket receive buffer.")
+    @MXBeanDescription("Socket receive buffer.")
     public int getSocketReceiveBuffer();
 
     /**
@@ -224,7 +224,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Socket send buffer size.
      */
-    @IgniteMXBeanDescription("Socket send buffer.")
+    @MXBeanDescription("Socket send buffer.")
     public int getSocketSendBuffer();
 
     /**
@@ -232,7 +232,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Send queue size limit.
      */
-    @IgniteMXBeanDescription("Message queue size limit.")
+    @MXBeanDescription("Message queue size limit.")
     public int getMessageQueueLimit();
 
     /**
@@ -241,7 +241,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Minimum buffered message count.
      */
-    @IgniteMXBeanDescription("Minimum buffered message count.")
+    @MXBeanDescription("Minimum buffered message count.")
     public int getMinimumBufferedMessageCount();
 
     /**
@@ -250,7 +250,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Buffer size ratio.
      */
-    @IgniteMXBeanDescription("Buffer size ratio.")
+    @MXBeanDescription("Buffer size ratio.")
     public double getBufferSizeRatio();
 
     /**
@@ -259,7 +259,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Socket write timeout for TCP connections.
      */
-    @IgniteMXBeanDescription("Socket write timeout.")
+    @MXBeanDescription("Socket write timeout.")
     public long getSocketWriteTimeout();
 
     /**
@@ -267,7 +267,7 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Number of received messages after which acknowledgment is sent.
      */
-    @IgniteMXBeanDescription("Number of received messages after which acknowledgment is sent.")
+    @MXBeanDescription("Number of received messages after which acknowledgment is sent.")
     public int getAckSendThreshold();
 
     /**
@@ -277,6 +277,6 @@ public interface TcpCommunicationSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Maximum number of unacknowledged messages.
      */
-    @IgniteMXBeanDescription("Maximum number of unacknowledged messages.")
+    @MXBeanDescription("Maximum number of unacknowledged messages.")
     public int getUnacknowledgedMessagesBufferSize();
 }

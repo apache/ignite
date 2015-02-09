@@ -42,7 +42,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.spi.IgnitePortProtocol.*;
 
 /**
@@ -279,14 +279,14 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         final CountDownLatch cnt = new CountDownLatch(1);
 
         pingingNode.events().localListen(
-            new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     cnt.countDown();
 
                     return true;
                 }
             },
-            IgniteEventType.EVT_NODE_FAILED
+            EventType.EVT_NODE_FAILED
         );
 
         info("Nodes were started");
@@ -313,11 +313,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             final CountDownLatch cnt = new CountDownLatch(2);
 
             g1.events().localListen(
-                new IgnitePredicate<IgniteEvent>() {
-                    @Override public boolean apply(IgniteEvent evt) {
+                new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
                         info("Node joined: " + evt.message());
 
-                        IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                        DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                         TcpDiscoveryNode node = ((TcpDiscoveryNode)discoMap.get(g1.name()).
                             getNode(discoEvt.eventNode().id()));
@@ -329,7 +329,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                         return true;
                     }
                 },
-                IgniteEventType.EVT_NODE_JOINED
+                EventType.EVT_NODE_JOINED
             );
 
             startGrid(2);
@@ -356,8 +356,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             final CountDownLatch cnt = new CountDownLatch(2);
 
             g1.events().localListen(
-                new IgnitePredicate<IgniteEvent>() {
-                    @Override public boolean apply(IgniteEvent evt) {
+                new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
                         cnt.countDown();
 
                         return true;
@@ -390,8 +390,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch cnt = new CountDownLatch(1);
 
-            g2.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            g2.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     cnt.countDown();
 
                     return true;
@@ -407,8 +407,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             // Start new grid, ensure that added to topology
             final CountDownLatch cnt2 = new CountDownLatch(1);
 
-            g2.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            g2.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     cnt2.countDown();
 
                     return true;
@@ -436,14 +436,14 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             final CountDownLatch cnt = new CountDownLatch(2);
 
             g1.events().localListen(
-                new IgnitePredicate<IgniteEvent>() {
-                    @Override public boolean apply(IgniteEvent evt) {
+                new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
                         cnt.countDown();
 
                         return true;
                     }
                 },
-                IgniteEventType.EVT_NODE_FAILED
+                EventType.EVT_NODE_FAILED
             );
 
             info("Nodes were started");
@@ -468,13 +468,13 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch cnt = new CountDownLatch(1);
 
-            g2.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            g2.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     cnt.countDown();
 
                     return true;
                 }
-            }, IgniteEventType.EVT_NODE_FAILED);
+            }, EventType.EVT_NODE_FAILED);
 
             info("Nodes were started");
 
@@ -498,8 +498,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             final Ignite g1 = startGrid(1);
 
-            IgnitePredicate<IgniteEvent> lsnr1 = new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            IgnitePredicate<Event> lsnr1 = new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     info(evt.message());
 
                     latch1.countDown();
@@ -522,14 +522,14 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             final Ignite g2 = startGrid(2);
 
             g2.events().localListen(
-                new IgnitePredicate<IgniteEvent>() {
-                    @Override public boolean apply(IgniteEvent evt) {
+                new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
                         if (stopping.get())
                             return true;
 
                         info(evt.message());
 
-                        UUID id = ((IgniteDiscoveryEvent) evt).eventNode().id();
+                        UUID id = ((DiscoveryEvent) evt).eventNode().id();
 
                         if (id.equals(g1.cluster().localNode().id()))
                             latch2_1.countDown();
@@ -544,14 +544,14 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                 EVT_NODE_METRICS_UPDATED
             );
 
-            g1.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            g1.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     if (stopping.get())
                         return true;
 
                     info(evt.message());
 
-                    UUID id = ((IgniteDiscoveryEvent) evt).eventNode().id();
+                    UUID id = ((DiscoveryEvent) evt).eventNode().id();
 
                     if (id.equals(g1.cluster().localNode().id()))
                         latch1_1.countDown();
@@ -586,8 +586,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             final CountDownLatch joinCnt = new CountDownLatch(2);
             final CountDownLatch failCnt = new CountDownLatch(1);
 
-            g1.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            g1.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     if (evt.type() == EVT_NODE_JOINED)
                         joinCnt.countDown();
                     else if (evt.type() == EVT_NODE_FAILED)
@@ -625,8 +625,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch cnt = new CountDownLatch(1);
 
-            g3.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            g3.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     cnt.countDown();
 
                     return true;

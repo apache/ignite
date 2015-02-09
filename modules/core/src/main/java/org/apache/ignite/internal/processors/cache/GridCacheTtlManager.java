@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -30,7 +29,7 @@ import org.apache.ignite.thread.*;
 import java.util.*;
 
 /**
- * Eagerly removes expired entries from cache when {@link CacheConfiguration#isEagerTtl()} flag is set.
+ * Eagerly removes expired entries from cache when {@link org.apache.ignite.configuration.CacheConfiguration#isEagerTtl()} flag is set.
  */
 @SuppressWarnings("NakedNotify")
 public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {

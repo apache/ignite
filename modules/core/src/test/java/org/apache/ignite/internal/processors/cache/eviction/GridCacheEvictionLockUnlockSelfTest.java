@@ -36,7 +36,7 @@ import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  *
@@ -136,7 +136,7 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
                 assertEquals(gridCnt, touchCnt.get());
 
                 for (int j = 0; j < gridCnt; j++)
-                    assertFalse(cache(j).containsKey("key"));
+                    assertFalse(jcache(j).containsKey("key"));
             }
         }
         finally {
@@ -153,9 +153,9 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
     }
 
     /** Eviction event listener. */
-    private static class EvictListener implements IgnitePredicate<IgniteEvent> {
+    private static class EvictListener implements IgnitePredicate<Event> {
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
+        @Override public boolean apply(Event evt) {
             assert evt.type() == EVT_CACHE_ENTRY_EVICTED;
 
             evictCnt.incrementAndGet();

@@ -43,7 +43,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  *
@@ -90,7 +90,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
         cfg.setIncludeProperties();
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         if (useCache) {
             CacheConfiguration cc = defaultCacheConfiguration();
@@ -727,8 +727,8 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch latch = new CountDownLatch(9);
 
-            g.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            g.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     latch.countDown();
 
                     return true;

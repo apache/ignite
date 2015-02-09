@@ -33,7 +33,7 @@ import org.apache.ignite.thread.*;
 import java.net.*;
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
@@ -95,10 +95,10 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
 
         // We care only about node leave and fail events.
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
+            @Override public void onEvent(Event evt) {
                 assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_JOINED;
 
-                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                 if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
                     checkLaunchCoordinator(discoEvt);
@@ -126,7 +126,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
         srv.afterStart();
 
         // Check at startup if this node is a fragmentizer coordinator.
-        IgniteDiscoveryEvent locJoinEvt = ctx.discovery().localJoinEvent();
+        DiscoveryEvent locJoinEvt = ctx.discovery().localJoinEvent();
 
         checkLaunchCoordinator(locJoinEvt);
     }
@@ -210,7 +210,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
      *
      * @param discoEvt Discovery event.
      */
-    private void checkLaunchCoordinator(IgniteDiscoveryEvent discoEvt) {
+    private void checkLaunchCoordinator(DiscoveryEvent discoEvt) {
         rw.readLock();
 
         try {
@@ -332,7 +332,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
          *
          * @param evt Discovery event on which this node became a coordinator.
          */
-        protected TimeCoordinator(IgniteDiscoveryEvent evt) {
+        protected TimeCoordinator(DiscoveryEvent evt) {
             super(ctx.gridName(), "grid-time-coordinator", log);
 
             lastSnapshot = new GridDiscoveryTopologySnapshot(evt.topologyVersion(), evt.topologyNodes());
@@ -386,11 +386,11 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
         /**
          * @param evt Discovery event.
          */
-        public void onDiscoveryEvent(IgniteDiscoveryEvent evt) {
+        public void onDiscoveryEvent(DiscoveryEvent evt) {
             if (log.isDebugEnabled())
                 log.debug("Processing discovery event: " + evt);
 
-            if (evt.type() == IgniteEventType.EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT)
+            if (evt.type() == EventType.EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT)
                 onNodeLeft(evt.eventNode().id());
 
             synchronized (this) {

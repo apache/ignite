@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -46,11 +45,11 @@ public class GridCacheReplicatedTxMultiThreadedSelfTest extends IgniteTxMultiThr
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        TransactionsConfiguration tCfg = new TransactionsConfiguration();
+        TransactionConfiguration tCfg = new TransactionConfiguration();
 
         tCfg.setTxSerializableEnabled(true);
 
-        c.setTransactionsConfiguration(tCfg);
+        c.setTransactionConfiguration(tCfg);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 

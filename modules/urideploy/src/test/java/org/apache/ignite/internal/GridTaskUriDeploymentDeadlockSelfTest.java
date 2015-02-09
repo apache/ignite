@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Test to reproduce gg-2852.
@@ -69,8 +69,8 @@ public class GridTaskUriDeploymentDeadlockSelfTest extends GridCommonAbstractTes
 
             final CountDownLatch latch = new CountDownLatch(1);
 
-            g.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            g.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     assert evt.type() == EVT_NODE_JOINED;
 
                     latch.countDown();

@@ -28,7 +28,7 @@ import java.util.concurrent.*;
 /**
  * Externalizable wrapper for {@link ExpiryPolicy}.
  */
-public class IgniteExternalizableExpiryPolicy implements ExpiryPolicy, Externalizable, IgniteOptimizedMarshallable {
+public class IgniteExternalizableExpiryPolicy implements ExpiryPolicy, Externalizable, OptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 

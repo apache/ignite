@@ -216,7 +216,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      */
     public void testRequireSerializable() throws Exception {
         try {
-            new IgniteOptimizedMarshaller(true, null, null, 0).marshal(new Object());
+            new OptimizedMarshaller(true, null, null, 0).marshal(new Object());
 
             assert false : "Exception not thrown.";
         }
@@ -242,7 +242,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         Arrays.fill(obj.longArr, 100L);
         Arrays.fill(obj.doubleArr, 100.0d);
 
-        final IgniteOptimizedMarshaller marsh = new IgniteOptimizedMarshaller(false, null, null, 5);
+        final OptimizedMarshaller marsh = new OptimizedMarshaller(false, null, null, 5);
 
         try {
             multithreaded(new Callable<Object>() {
@@ -697,7 +697,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReadLine() throws Exception {
-        IgniteOptimizedObjectInputStream in = new IgniteOptimizedObjectInputStream(new GridUnsafeDataInput());
+        OptimizedObjectInputStream in = new OptimizedObjectInputStream(new GridUnsafeDataInput());
 
         byte[] bytes = "line1\nline2\r\nli\rne3\nline4".getBytes();
 
@@ -867,7 +867,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReadToArray() throws Exception {
-        IgniteOptimizedObjectInputStream in = IgniteOptimizedObjectStreamRegistry.in();
+        OptimizedObjectInputStream in = OptimizedObjectStreamRegistry.in();
 
         try {
             byte[] arr = new byte[50];
@@ -906,7 +906,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
                 assertEquals(i < 10 ? 40 + i : 0, buf[i]);
         }
         finally {
-            IgniteOptimizedObjectStreamRegistry.closeIn(in);
+            OptimizedObjectStreamRegistry.closeIn(in);
         }
     }
 
@@ -948,7 +948,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testExcludedClass() throws Exception {
-        Class<?>[] exclClasses = U.staticField(IgniteMarshallerExclusions.class, "EXCL_CLASSES");
+        Class<?>[] exclClasses = U.staticField(MarshallerExclusions.class, "EXCL_CLASSES");
 
         assertFalse(F.isEmpty(exclClasses));
 
@@ -986,11 +986,11 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     private <T> T marshalUnmarshal(@Nullable Object obj) throws Exception {
-        IgniteOptimizedObjectOutputStream out = null;
-        IgniteOptimizedObjectInputStream in = null;
+        OptimizedObjectOutputStream out = null;
+        OptimizedObjectInputStream in = null;
 
         try {
-            out = IgniteOptimizedObjectStreamRegistry.out();
+            out = OptimizedObjectStreamRegistry.out();
 
             out.requireSerializable(true);
 
@@ -998,7 +998,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
             byte[] arr = out.out().array();
 
-            in = IgniteOptimizedObjectStreamRegistry.in();
+            in = OptimizedObjectStreamRegistry.in();
 
             in.classLoader(getClass().getClassLoader());
 
@@ -1011,8 +1011,8 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
             return (T)obj0;
         }
         finally {
-            IgniteOptimizedObjectStreamRegistry.closeOut(out);
-            IgniteOptimizedObjectStreamRegistry.closeIn(in);
+            OptimizedObjectStreamRegistry.closeOut(out);
+            OptimizedObjectStreamRegistry.closeIn(in);
         }
     }
 
@@ -1023,7 +1023,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      * @param in Input stream.
      * @throws Exception If failed.
      */
-    private void checkHandles(IgniteOptimizedObjectOutputStream out, IgniteOptimizedObjectInputStream in)
+    private void checkHandles(OptimizedObjectOutputStream out, OptimizedObjectInputStream in)
         throws Exception {
         Object[] outHandles = out.handledObjects();
         Object[] inHandles = in.handledObjects();

@@ -30,7 +30,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.jdbc.IgniteJdbcDriver.*;
+import static org.apache.ignite.IgniteJdbcDriver.*;
 
 /**
  * Test JDBC with several local caches.
@@ -92,7 +92,7 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
         assert cache2.putx("key1", 3);
         assert cache2.putx("key2", 4);
 
-        Class.forName("org.apache.ignite.jdbc.IgniteJdbcDriver");
+        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */

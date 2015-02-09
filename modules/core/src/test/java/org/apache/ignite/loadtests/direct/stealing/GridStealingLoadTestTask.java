@@ -28,7 +28,7 @@ import java.util.*;
  */
 public class GridStealingLoadTestTask extends ComputeTaskAdapter<UUID, Integer> {
     /** */
-    @IgniteTaskSessionResource
+    @TaskSessionResource
     private ComputeTaskSession taskSes;
 
     /** */

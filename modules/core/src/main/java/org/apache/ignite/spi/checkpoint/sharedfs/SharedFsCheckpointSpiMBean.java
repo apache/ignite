@@ -26,14 +26,14 @@ import java.util.*;
  * Management bean that provides general administrative and configuration information
  * about shared file system checkpoints.
  */
-@IgniteMXBeanDescription("MBean for shared file system based checkpoint SPI.")
+@MXBeanDescription("MBean for shared file system based checkpoint SPI.")
 public interface SharedFsCheckpointSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets path to the directory where all checkpoints are saved.
      *
      * @return Path to the checkpoints directory.
      */
-    @IgniteMXBeanDescription("Gets path to the directory where all checkpoints are saved.")
+    @MXBeanDescription("Gets path to the directory where all checkpoints are saved.")
     public String getCurrentDirectoryPath();
 
 
@@ -42,6 +42,6 @@ public interface SharedFsCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Collection of all configured paths.
      */
-    @IgniteMXBeanDescription("Gets collection of all configured paths where checkpoints can be saved.")
+    @MXBeanDescription("Gets collection of all configured paths where checkpoints can be saved.")
     public Collection<String> getDirectoryPaths();
 }

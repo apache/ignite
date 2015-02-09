@@ -27,7 +27,7 @@ import org.apache.ignite.testframework.junits.common.*;
 @GridCommonTest(group = "Marshaller")
 public class GridJdkMarshallerSelfTest extends GridMarshallerAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteMarshaller createMarshaller() {
-        return new IgniteJdkMarshaller();
+    @Override protected Marshaller createMarshaller() {
+        return new JdkMarshaller();
     }
 }

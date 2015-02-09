@@ -31,7 +31,7 @@ public class TestClosure implements IgniteClosure<Object, Object> {
     private Ignite ignite;
 
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     @Override public Object apply(Object o) {

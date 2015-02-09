@@ -185,7 +185,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     private String hibernateCfgPath;
 
     /** Log. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Ignite instance. */

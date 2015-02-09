@@ -8273,9 +8273,9 @@ public class GridFunc {
      * @param types Event types.
      * @return Event predicate.
      */
-    public static IgnitePredicate<IgniteEvent> eventType(@Nullable final int... types) {
-        return isEmpty(types) ? F.<IgniteEvent>alwaysFalse() : new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent e) {
+    public static IgnitePredicate<Event> eventType(@Nullable final int... types) {
+        return isEmpty(types) ? F.<Event>alwaysFalse() : new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event e) {
                 assert e != null;
 
                 assert types != null;
@@ -8298,13 +8298,13 @@ public class GridFunc {
      * @param ids Event ids.
      * @return Event predicate.
      */
-    public static IgnitePredicate<IgniteEvent> eventId(@Nullable final IgniteUuid... ids) {
-        return isEmpty(ids) ? F.<IgniteEvent>alwaysFalse() :
-            new IgnitePredicate<IgniteEvent>() {
+    public static IgnitePredicate<Event> eventId(@Nullable final IgniteUuid... ids) {
+        return isEmpty(ids) ? F.<Event>alwaysFalse() :
+            new IgnitePredicate<Event>() {
                 // Don't set peer deploy aware as UUID is loaded by
                 // system class loader.
 
-                @Override public boolean apply(IgniteEvent e) {
+                @Override public boolean apply(Event e) {
                     assert e != null;
 
                     return F.isAll(e.id(), in(ids));
@@ -8319,11 +8319,11 @@ public class GridFunc {
      * @param tstamp Timestamp.
      * @return Event predicate.
      */
-    public static IgnitePredicate<IgniteEvent> eventAfter(final long tstamp) {
+    public static IgnitePredicate<Event> eventAfter(final long tstamp) {
         A.ensure(tstamp > 0, "tstamp > 0");
 
-        return new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent e) {
+        return new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event e) {
                 assert e != null;
 
                 return e.timestamp() > tstamp;
@@ -8339,12 +8339,12 @@ public class GridFunc {
      * @param nodeIds Node ids.
      * @return Event predicate.
      */
-    public static IgnitePredicate<IgniteEvent> eventNodeId(@Nullable final UUID... nodeIds) {
-        return isEmpty(nodeIds) ? F.<IgniteEvent>alwaysFalse() : new IgnitePredicate<IgniteEvent>() {
+    public static IgnitePredicate<Event> eventNodeId(@Nullable final UUID... nodeIds) {
+        return isEmpty(nodeIds) ? F.<Event>alwaysFalse() : new IgnitePredicate<Event>() {
             // Don't set peer deploy aware as UUID is loaded by
             // system class loader.
 
-            @Override public boolean apply(IgniteEvent e) {
+            @Override public boolean apply(Event e) {
                 assert e != null;
 
                 return F.isAll(e.node().id(), in(nodeIds));
@@ -8362,11 +8362,11 @@ public class GridFunc {
      * @param p Node predicates.
      * @return Event predicate.
      */
-    public static IgnitePredicate<IgniteEvent> eventNode(@Nullable final String gridName,
+    public static IgnitePredicate<Event> eventNode(@Nullable final String gridName,
         @Nullable final IgnitePredicate<ClusterNode>... p) {
-        return isEmpty(p) || isAlwaysTrue(p) ? F.<IgniteEvent>alwaysTrue() : isAlwaysFalse(p) ? F.<IgniteEvent>alwaysFalse() :
-            new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent e) {
+        return isEmpty(p) || isAlwaysTrue(p) ? F.<Event>alwaysTrue() : isAlwaysFalse(p) ? F.<Event>alwaysFalse() :
+            new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event e) {
                     assert e != null;
 
                     try {
@@ -8389,9 +8389,9 @@ public class GridFunc {
      * @param nodes Nodes.
      * @return Event predicate.
      */
-    public static IgnitePredicate<IgniteEvent> eventNode(@Nullable final Collection<? extends ClusterNode> nodes) {
-        return isEmpty(nodes) ? F.<IgniteEvent>alwaysFalse() : new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent e) {
+    public static IgnitePredicate<Event> eventNode(@Nullable final Collection<? extends ClusterNode> nodes) {
+        return isEmpty(nodes) ? F.<Event>alwaysFalse() : new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event e) {
                 assert e != null;
 
                 return !forAll(nodes, not(nodeForNodeId(e.node().id())));

@@ -28,7 +28,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Test for {@link TcpDiscoverySpi}.
