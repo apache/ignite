@@ -110,7 +110,8 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
         GridClientConfiguration cfg,
         Collection<InetSocketAddress> routers,
         GridClientTopology top,
-        @Nullable Byte marshId)
+        @Nullable Byte marshId,
+        boolean routerClient)
         throws GridClientException {
         assert clientId != null : "clientId != null";
         assert cfg != null : "cfg != null";
@@ -142,7 +143,7 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
 
                 GridNioFilter[] filters;
 
-                GridNioFilter codecFilter = new GridNioCodecFilter(new GridTcpRestParser(), gridLog, false);
+                GridNioFilter codecFilter = new GridNioCodecFilter(new GridTcpRestParser(routerClient), gridLog, false);
 
                 if (sslCtx != null) {
                     GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, gridLog);
@@ -595,8 +596,14 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
 
                 if (msg instanceof GridClientPingPacket)
                     conn.handlePingResponse();
-                else
-                    conn.handleResponse((GridClientMessage)msg);
+                else {
+                    try {
+                        conn.handleResponse((GridClientMessage)msg);
+                    }
+                    catch (IOException e) {
+                        log.log(Level.SEVERE, "Failed to parse response.", e);
+                    }
+                }
             }
         }
 

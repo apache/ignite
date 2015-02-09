@@ -106,7 +106,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
 
-        GridNioParser parser = new GridTcpRestParser();
+        GridNioParser parser = new GridTcpRestParser(false);
 
         try {
             host = resolveRestTcpHost(ctx.config());

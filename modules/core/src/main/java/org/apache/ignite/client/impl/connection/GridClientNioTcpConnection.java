@@ -461,7 +461,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      * @param res Incoming response data.
      */
     @SuppressWarnings({"unchecked", "TooBroadScope"})
-    void handleResponse(GridClientMessage res) {
+    void handleResponse(GridClientMessage res) throws IOException {
         lastMsgRcvTime = U.currentTimeMillis();
 
         TcpClientFuture fut = pendingReqs.get(res.requestId());
@@ -474,22 +474,25 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         }
 
         if (fut.forward()) {
-            // TODO: IGNITE-61
-//            GridRouterResponse msg = new GridRouterResponse(
-//                res.messageArray(),
-//                res.requestId(),
-//                clientId,
-//                res.destinationId());
-//
-//            removePending(msg.requestId());
-//
-//            fut.onDone(msg);
+            removePending(res.requestId());
+
+            fut.onDone(res);
         }
         else {
-            if (res instanceof GridClientResponse)
-                handleClientResponse(fut, (GridClientResponse)res);
+            GridClientMessage res0 = res;
+
+            if (res instanceof GridRouterResponse) {
+                res0 = marsh.unmarshal(((GridRouterResponse)res).body());
+
+                res0.requestId(res.requestId());
+                res0.clientId(res.clientId());
+                res0.destinationId(res.destinationId());
+            }
+
+            if (res0 instanceof GridClientResponse)
+                handleClientResponse(fut, (GridClientResponse)res0);
             else
-                log.warning("Unsupported response type received: " + res);
+                log.warning("Unsupported response type received: " + res0);
         }
     }
 
