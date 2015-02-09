@@ -190,6 +190,8 @@ public class GridSqlQuerySplitter {
             else
                 target.set(idx, param);
         }
+        else if (el instanceof GridSqlSubquery)
+            findParams(((GridSqlSubquery)el).select(), params, target);
         else
             for (GridSqlElement child : el)
                 findParams(child, params, target);
