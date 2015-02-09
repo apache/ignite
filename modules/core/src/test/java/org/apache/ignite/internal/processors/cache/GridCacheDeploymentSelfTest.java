@@ -206,14 +206,14 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             stopGrid(GRID_NAME);
 
             for (int i = 0; i < 10; i++) {
-                if (g1.cache(null).isEmpty() && g2.cache(null).isEmpty())
+                if (g1.jcache(null).isEmpty() && g2.jcache(null).isEmpty())
                     break;
 
                 U.sleep(500);
             }
 
-            assert g1.cache(null).isEmpty();
-            assert g2.cache(null).isEmpty();
+            assert g1.jcache(null).isEmpty();
+            assert g2.jcache(null).isEmpty();
 
             startGrid(3);
         }
@@ -255,11 +255,11 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             stopGrid(GRID_NAME);
 
-            assert g1.cache(null).size() == 1;
-            assert g1.cache(null).size() == 1;
+            assert g1.jcache(null).localSize() == 1;
+            assert g1.jcache(null).localSize() == 1;
 
-            assert g2.cache(null).size() == 1;
-            assert g2.cache(null).size() == 1;
+            assert g2.jcache(null).localSize() == 1;
+            assert g2.jcache(null).localSize() == 1;
 
             startGrid(3);
         }
@@ -294,7 +294,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             info("Key: " + key);
 
-            GridCache<Object, Object> cache = g0.cache(null);
+            IgniteCache<Object, Object> cache = g0.jcache(null);
 
             assert cache != null;
 
@@ -402,7 +402,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             Ignite g = startGrid(0);
 
-            g.cache(null).put(0, valCls.newInstance());
+            g.jcache(null).put(0, valCls.newInstance());
 
             info("Added value to cache 0.");
 
@@ -438,9 +438,9 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             }
             while (!g1.cluster().mapKeyToNode(null, affKey).id().equals(g1.cluster().localNode().id()));
 
-            GridCache<Object, Object> cache = g1.cache(null);
+            IgniteCache<Object, Object> cache = g1.jcache(null);
 
-            try (IgniteTx tx = cache.txStartAffinity(affKey, PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
+            try (IgniteTx tx = g1.transactions().txStartAffinity(null, affKey, PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
                 cache.put(new CacheAffinityKey<>("key1", affKey), "val1");
 
                 tx.commit();
@@ -471,9 +471,9 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
         info("Near: " + near);
 
         for (int i = start; i < start + 10000; i++) {
-            if (g.cache(null).affinity().isPrimary(primary, i) && g.cache(null).affinity().isBackup(backup, i)) {
-                assert !g.cache(null).affinity().isPrimary(near, i) : "Key: " + i;
-                assert !g.cache(null).affinity().isBackup(near, i) : "Key: " + i;
+            if (g.affinity(null).isPrimary(primary, i) && g.affinity(null).isBackup(backup, i)) {
+                assert !g.affinity(null).isPrimary(near, i) : "Key: " + i;
+                assert !g.affinity(null).isBackup(near, i) : "Key: " + i;
 
                 return i;
             }

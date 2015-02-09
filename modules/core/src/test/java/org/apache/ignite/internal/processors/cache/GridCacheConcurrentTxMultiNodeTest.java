@@ -616,12 +616,10 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          *
          */
         private void doWork()  {
-            GridCache cache = ignite.cache(null);
-
             Session ses = new Session(terminalId());
 
             try {
-                try (IgniteTx tx = cache.txStart()) {
+                try (IgniteTx tx = ignite.transactions().txStart()) {
                     Request req = new Request(getId());
 
                     req.setMessageId(getId());
@@ -729,7 +727,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         private <T> Object get(String cacheKey, String terminalId) throws IgniteCheckedException {
             Object key = new CacheAffinityKey<>(cacheKey, terminalId);
 
-            return (T) ignite.cache(null).get(key);
+            return (T) ignite.jcache(null).get(key);
         }
     }
 

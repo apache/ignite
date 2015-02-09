@@ -25,6 +25,7 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -92,6 +93,20 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected <K, V> GridCache<K, V> cache() {
         return grid().cachex();
+    }
+
+    /**
+     * @param idx Grid index.
+     * @return Cache.
+     */
+    protected <K, V> GridCacheAdapter<K, V> internalCache(int idx) {
+        return ((IgniteKernal)grid(idx)).internalCache(null);
+    }
+    /**
+     * @return Cache.
+     */
+    protected <K, V> GridCacheAdapter<K, V> internalCache() {
+        return ((IgniteKernal)grid()).internalCache(null);
     }
 
     /**

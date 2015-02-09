@@ -267,7 +267,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
             int primaryCacheSize = 0;
 
             for (Ignite g : runningWorkers) {
-                info(">>>>> " + g.cache(CACHE_NAME).size());
+                info(">>>>> " + g.jcache(CACHE_NAME).localSize());
 
                 primaryCacheSize += g.cache(CACHE_NAME).primarySize();
             }
@@ -381,7 +381,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> ret = new ArrayList<>(keys.size());
 
-        GridCache<Object, Object> cache = workerNode.cache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = workerNode.jcache(CACHE_NAME);
 
         for (Integer key : keys) {
             if (cache.get(key) == null) // Key is absent.

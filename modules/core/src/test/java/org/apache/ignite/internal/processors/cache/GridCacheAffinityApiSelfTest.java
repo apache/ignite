@@ -325,6 +325,6 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
         int expPart = affinity().partition(affinityMapper().affinityKey(key));
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals(expPart, grid(i).cache(null).affinity().partition(key));
+            assertEquals(expPart, grid(i).affinity(null).partition(key));
     }
 }

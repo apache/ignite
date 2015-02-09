@@ -101,7 +101,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
         try {
             final Ignite ignite1 = startGrid(1);
 
-            GridCache<Integer, Object> cache1 = ignite1.cache(null);
+            IgniteCache<Integer, Object> cache1 = ignite1.jcache(null);
 
             for (int i = 0; i < 5000; i++)
                 cache1.put(i, VALUE + i);
@@ -112,7 +112,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
 
             final CountDownLatch startLatch = new CountDownLatch(1);
 
-            int oldSize = cache1.size();
+            int oldSize = cache1.localSize();
 
             assert false;
 
@@ -127,7 +127,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                             Cache.Entry<Integer, Object> entry = randomEntry(ignite1);
 
                             if (entry != null)
-                                ignite1.cache(null).evict(entry.getKey());
+                                ignite1.jcache(null).evict(entry.getKey());
                             else
                                 info("Entry is null.");
                         }
@@ -195,8 +195,8 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
 
         assertTrue(GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
-                int size1 = ignite1.cache(null).size();
-                return size1 != oldSize && size1 == ignite2.cache(null).size();
+                int size1 = ignite1.jcache(null).localSize();
+                return size1 != oldSize && size1 == ignite2.jcache(null).localSize();
             }
         }, getTestTimeout()));
 

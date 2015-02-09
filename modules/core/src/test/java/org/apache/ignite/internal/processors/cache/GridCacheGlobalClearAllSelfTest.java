@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -29,7 +30,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Test {@link org.apache.ignite.cache.GridCache#clear()} operation in multinode environment with nodes
+ * Test {@link IgniteCache#clear()} operation in multinode environment with nodes
  * having caches with different names.
  */
 public class GridCacheGlobalClearAllSelfTest extends GridCommonAbstractTest {
@@ -139,29 +140,29 @@ public class GridCacheGlobalClearAllSelfTest extends GridCommonAbstractTest {
     public void performTest() throws Exception {
         // Put values into normal replicated cache.
         for (int i = 0; i < KEY_CNT; i++)
-            grid(0).cache(CACHE_NAME).put(i, "val" + i);
+            grid(0).jcache(CACHE_NAME).put(i, "val" + i);
 
         // Put values into a cache with another name.
         for (int i = 0; i < KEY_CNT_OTHER; i++)
-            grid(GRID_CNT - 1).cache(CACHE_NAME_OTHER).put(i, "val" + i);
+            grid(GRID_CNT - 1).jcache(CACHE_NAME_OTHER).put(i, "val" + i);
 
         // Check cache sizes.
         for (int i = 0; i < GRID_CNT - 1; i++) {
-            GridCache<Object, Object> cache = grid(i).cache(CACHE_NAME);
+            IgniteCache<Object, Object> cache = grid(i).jcache(CACHE_NAME);
 
-            assertEquals("Key set [i=" + i + ", keys=" + cache.keySet() + ']', KEY_CNT, cache.size());
+            assertEquals("Key set [i=" + i + ']', KEY_CNT, cache.localSize());
         }
 
-        assert grid(GRID_CNT - 1).cache(CACHE_NAME_OTHER).size() == KEY_CNT_OTHER;
+        assert grid(GRID_CNT - 1).jcache(CACHE_NAME_OTHER).localSize() == KEY_CNT_OTHER;
 
         // Perform clear.
-        grid(0).cache(CACHE_NAME).clear();
+        grid(0).jcache(CACHE_NAME).clear();
 
         // Expect caches with the given name to be clear on all nodes.
         for (int i = 0; i < GRID_CNT - 1; i++)
-            assert grid(i).cache(CACHE_NAME).isEmpty();
+            assert grid(i).jcache(CACHE_NAME).isEmpty();
 
         // ... but cache with another name should remain untouched.
-        assert grid(GRID_CNT - 1).cache(CACHE_NAME_OTHER).size() == KEY_CNT_OTHER;
+        assert grid(GRID_CNT - 1).jcache(CACHE_NAME_OTHER).localSize() == KEY_CNT_OTHER;
     }
 }

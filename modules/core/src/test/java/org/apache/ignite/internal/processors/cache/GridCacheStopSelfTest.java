@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -131,7 +130,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch readyLatch = new CountDownLatch(PUT_THREADS);
 
-            final GridCache<Integer, Integer> cache = grid(0).cache(null);
+            final IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
             assertNotNull(cache);
 
@@ -146,7 +145,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
                 putFuts.add(GridTestUtils.runAsync(new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         if (startTx) {
-                            try (IgniteTx tx = cache.txStart()) {
+                            try (IgniteTx tx = grid(0).transactions().txStart()) {
                                 cache.put(key, key);
 
                                 readyLatch.countDown();

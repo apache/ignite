@@ -92,7 +92,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        final GridCache<Integer, Object> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Object> cache = grid(0).jcache(null);
 
         vals = new ArrayList<>(VALS);
 
@@ -129,7 +129,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      * @throws Exception If failed.
      */
     public void testPut() throws Exception {
-        final GridCache<Integer, Object> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Object> cache = grid(0).jcache(null);
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -140,9 +140,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
 
                     final TestValue val = vals.get(key % VAL_SIZE);
 
-                    TestPredicate p = testPredicate(val.val, false);
-
-                    cache.putx(key, val, p);
+                    cache.put(key, val);
                 }
 
                 return null;
@@ -154,7 +152,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      * @throws Exception If failed.
      */
     public void testRemove() throws Exception {
-        final GridCache<Integer, Object> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Object> cache = grid(0).jcache(null);
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -165,12 +163,10 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
 
                     final TestValue val = vals.get(key % VAL_SIZE);
 
-                    TestPredicate p = testPredicate(val.val, true);
-
                     if (rnd.nextBoolean())
-                        cache.removex(key, p);
+                        cache.remove(key);
                     else
-                        cache.putx(key, val, p);
+                        cache.put(key, val);
                 }
 
                 return null;
