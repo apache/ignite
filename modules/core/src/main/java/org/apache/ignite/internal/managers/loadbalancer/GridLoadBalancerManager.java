@@ -72,16 +72,6 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
         assert top != null;
         assert job != null;
 
-        // Check cache affinity routing first.
-        ClusterNode affNode = cacheAffinityNode(ses.deployment(), job, top);
-
-        if (affNode != null) {
-            if (log.isDebugEnabled())
-                log.debug("Found affinity node for the job [job=" + job + ", affNode=" + affNode.id() + "]");
-
-            return affNode;
-        }
-
         return getSpi(ses.getLoadBalancingSpi()).getBalancedNode(ses, top, job);
     }
 
@@ -111,52 +101,5 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
                 return GridLoadBalancerManager.this.getBalancedNode(ses, nodes, job);
             }
         };
-    }
-
-    /**
-     * @param dep Deployment.
-     * @param job Grid job.
-     * @param nodes Topology nodes.
-     * @return Cache affinity node or {@code null} if this job is not routed with cache affinity key.
-     * @throws IgniteException If failed to determine whether to use affinity routing.
-     */
-    @Nullable private ClusterNode cacheAffinityNode(GridDeployment dep, ComputeJob job, Collection<ClusterNode> nodes)
-        throws IgniteException {
-        assert dep != null;
-        assert job != null;
-        assert nodes != null;
-
-        try {
-            if (log.isDebugEnabled())
-                log.debug("Looking for cache affinity node [job=" + job + "]");
-
-            Object key = dep.annotatedValue(job, CacheAffinityKeyMapped.class);
-
-            if (key == null)
-                return null;
-
-            String cacheName = (String)dep.annotatedValue(job, CacheName.class);
-
-            if (log.isDebugEnabled())
-                log.debug("Affinity properties [key=" + key + ", cacheName=" + cacheName + "]");
-
-            ClusterNode node = ctx.affinity().mapKeyToNode(cacheName, key);
-
-            if (node == null)
-                throw new IgniteException("Failed to map key to node (is cache with given name started?) [gridName=" +
-                    ctx.gridName() + ", key=" + key + ", cacheName=" + cacheName +
-                    ", nodes=" + U.toShortString(nodes) + ']');
-
-            if (!nodes.contains(node))
-                throw new IgniteException("Failed to map key to node (projection nodes do not contain affinity node) " +
-                    "[gridName=" + ctx.gridName() + ", key=" + key + ", cacheName=" + cacheName +
-                    ", nodes=" + U.toShortString(nodes) + ", node=" + U.toShortString(node) + ']');
-
-            return node;
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to map affinity key to node for job [gridName=" + ctx.gridName() +
-                ", job=" + job + ']', e);
-        }
     }
 }

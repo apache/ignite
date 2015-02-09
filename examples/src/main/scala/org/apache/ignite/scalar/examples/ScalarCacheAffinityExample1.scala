@@ -20,7 +20,6 @@ package org.apache.ignite.scalar.examples
 import java.util.concurrent.Callable
 
 import org.apache.ignite._
-import org.apache.ignite.cache.CacheName
 import org.apache.ignite.cache.affinity.CacheAffinityKeyMapped
 import org.apache.ignite.lang.IgniteCallable
 import org.apache.ignite.scalar.scalar
@@ -70,7 +69,8 @@ object ScalarCacheAffinityExample1 {
                         @CacheAffinityKeyMapped
                         def affinityKey(): String = key
 
-                        @CacheName
+                        // @CacheName
+                        // TODO: IGNITE-176 Use affinityCall instead
                         def cacheName(): String = NAME
 
                         @Nullable def call: String = {

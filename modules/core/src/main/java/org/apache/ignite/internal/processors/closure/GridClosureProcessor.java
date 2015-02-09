@@ -416,7 +416,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             // In case cache key is passed instead of affinity key.
             final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
 
-            final ClusterNode node = ctx.affinity().mapKeyToNode(affKey0);
+            final ClusterNode node = ctx.affinity().mapKeyToNode(cacheName, affKey0);
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
@@ -448,7 +448,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             // In case cache key is passed instead of affinity key.
             final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
 
-            final ClusterNode node = ctx.affinity().mapKeyToNode(affKey0);
+            final ClusterNode node = ctx.affinity().mapKeyToNode(cacheName, affKey0);
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
