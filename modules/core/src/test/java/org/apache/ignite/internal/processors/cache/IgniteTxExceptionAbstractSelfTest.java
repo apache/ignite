@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -283,14 +284,14 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
         info("Test transaction [concurrency=" + concurrency + ", isolation=" + isolation + ']');
 
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         if (putBefore) {
             idxSpi.forceFail(false);
 
             info("Start transaction.");
 
-            try (IgniteTx tx = cache.txStart(concurrency, isolation)) {
+            try (IgniteTx tx = grid(0).transactions().txStart(concurrency, isolation)) {
                 for (Integer key : keys) {
                     info("Put " + key);
 
@@ -306,7 +307,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         // Execute get from all nodes to create readers for near cache.
         for (int i = 0; i < gridCount(); i++) {
             for (Integer key : keys)
-                grid(i).cache(null).get(key);
+                grid(i).jcache(null).get(key);
         }
 
         idxSpi.forceFail(true);
@@ -314,7 +315,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         try {
             info("Start transaction.");
 
-            try (IgniteTx tx = cache.txStart(concurrency, isolation)) {
+            try (IgniteTx tx = grid(0).transactions().txStart(concurrency, isolation)) {
                 for (Integer key : keys) {
                     info("Put " + key);
 
@@ -372,7 +373,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         }
 
         for (int i = 0; i < gridCount(); i++)
-            assertEquals("Unexpected value for grid " + i, null, grid(i).cache(null).get(key));
+            assertEquals("Unexpected value for grid " + i, null, grid(i).jcache(null).get(key));
     }
 
     /**
@@ -386,12 +387,12 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
             info("Put key: " + key);
 
-            grid(0).cache(null).put(key, 1);
+            grid(0).jcache(null).put(key, 1);
         }
 
         // Execute get from all nodes to create readers for near cache.
         for (int i = 0; i < gridCount(); i++)
-            grid(i).cache(null).get(key);
+            grid(i).jcache(null).get(key);
 
         idxSpi.forceFail(true);
 
@@ -399,7 +400,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                grid(0).cache(null).put(key, 2);
+                grid(0).jcache(null).put(key, 2);
 
                 return null;
             }
@@ -419,12 +420,12 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
             info("Put key: " + key);
 
-            grid(0).cache(null).put(key, 1);
+            grid(0).jcache(null).put(key, 1);
         }
 
         // Execute get from all nodes to create readers for near cache.
         for (int i = 0; i < gridCount(); i++)
-            grid(i).cache(null).get(key);
+            grid(i).jcache(null).get(key);
 
         idxSpi.forceFail(true);
 
@@ -467,13 +468,13 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
             info("Put data: " + m);
 
-            grid(0).cache(null).putAll(m);
+            grid(0).jcache(null).putAll(m);
         }
 
         // Execute get from all nodes to create readers for near cache.
         for (int i = 0; i < gridCount(); i++) {
             for (Integer key : keys)
-                grid(i).cache(null).get(key);
+                grid(i).jcache(null).get(key);
         }
 
         idxSpi.forceFail(true);
@@ -487,7 +488,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                grid(0).cache(null).putAll(m);
+                grid(0).jcache(null).putAll(m);
 
                 return null;
             }
@@ -508,12 +509,12 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
             info("Put key: " + key);
 
-            grid(0).cache(null).put(key, 1);
+            grid(0).jcache(null).put(key, 1);
         }
 
         // Execute get from all nodes to create readers for near cache.
         for (int i = 0; i < gridCount(); i++)
-            grid(i).cache(null).get(key);
+            grid(i).jcache(null).get(key);
 
         idxSpi.forceFail(true);
 
@@ -521,7 +522,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                grid(0).cache(null).remove(key);
+                grid(0).jcache(null).remove(key);
 
                 return null;
             }
@@ -538,7 +539,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      * @return Key.
      */
     private Integer keyForNode(ClusterNode node, int type) {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         if (cache.configuration().getCacheMode() == LOCAL)
             return ++lastKey;
@@ -549,7 +550,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         for (int key = lastKey + 1; key < (lastKey + 10_000); key++) {
             switch (type) {
                 case NOT_PRIMARY_AND_BACKUP: {
-                    if (!cache.affinity().isPrimaryOrBackup(node, key)) {
+                    if (!affinity(cache).isPrimaryOrBackup(node, key)) {
                         lastKey = key;
 
                         return key;
@@ -559,7 +560,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
                 }
 
                 case PRIMARY: {
-                    if (cache.affinity().isPrimary(node, key)) {
+                    if (affinity(cache).isPrimary(node, key)) {
                         lastKey = key;
 
                         return key;
@@ -569,7 +570,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
                 }
 
                 case BACKUP: {
-                    if (cache.affinity().isBackup(node, key)) {
+                    if (affinity(cache).isBackup(node, key)) {
                         lastKey = key;
 
                         return key;

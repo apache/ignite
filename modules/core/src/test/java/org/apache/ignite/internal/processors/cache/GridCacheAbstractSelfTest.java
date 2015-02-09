@@ -114,10 +114,9 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                             // Preloading may happen as nodes leave, so we need to wait.
                             new GridAbsPredicateX() {
                                 @Override public boolean applyx() throws IgniteCheckedException {
-                                    //<Object, Object> to support remove(key)
-                                    GridCache<Object, Object> cache = grid(fi).cache(null);
+                                    jcache(fi).removeAll();
 
-                                    cache.removeAll();
+                                    GridCache<Object, Object> cache = internalCache(fi);
 
                                     // Fix for tests where mapping was removed at primary node
                                     // but was not removed at others.

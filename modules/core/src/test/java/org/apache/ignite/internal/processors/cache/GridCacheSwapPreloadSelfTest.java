@@ -122,7 +122,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
 
             startGrid(1);
 
-            int size = grid(1).cache(null).size();
+            int size = grid(1).jcache(null).localSize();
 
             info("New node cache size: " + size);
 

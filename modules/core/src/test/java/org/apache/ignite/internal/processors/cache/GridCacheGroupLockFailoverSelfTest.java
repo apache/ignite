@@ -23,6 +23,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -269,7 +270,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
             for (Ignite g : runningWorkers) {
                 info(">>>>> " + g.jcache(CACHE_NAME).localSize());
 
-                primaryCacheSize += g.cache(CACHE_NAME).primarySize();
+                primaryCacheSize += ((IgniteKernal)g).internalCache(CACHE_NAME).primarySize();
             }
 
             assertTrue(TEST_MAP_SIZE <= primaryCacheSize);

@@ -431,12 +431,13 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testGetAndPutIfAbsentAsyncAvgTime() throws Exception {
-        GridCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = grid(0).jcache(null);
+        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
         Integer key = null;
 
         for (int i = 0; i < 1000; i++) {
-            if (cache.affinity().isPrimary(grid(0).localNode(), i)) {
+            if (affinity(cache).isPrimary(grid(0).localNode(), i)) {
                 key = i;
 
                 break;
@@ -445,7 +446,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assertEquals(0.0f, cache.metrics().getAveragePutTime());
 
-        IgniteInternalFuture<?> fut = cache.putIfAbsentAsync(key, key);
+        cacheAsync.getAndPutIfAbsent(key, key);
+
+        IgniteFuture<?> fut = cache.future();
 
         fut.get();
 
