@@ -316,6 +316,14 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         });
     }
 
+    /**
+     * @param local Enforce local.
+     * @return Local node cluster group.
+     */
+    private ClusterGroup projection(boolean local) {
+        return local || ctx.isLocal() || ctx.isReplicated() ? ctx.kernalContext().grid().forLocal() : null;
+    }
+
     /** {@inheritDoc} */
     @Override public QueryCursor<Entry<K,V>> query(Query qry) {
         A.notNull(qry, "qry");
@@ -326,13 +334,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             if (qry instanceof SqlQuery) {
                 SqlQuery p = (SqlQuery)qry;
 
-                if (ctx.isReplicated())
+                if (ctx.isReplicated() || ctx.isLocal())
                     return doLocalQuery(p);
 
                 return ctx.kernalContext().query().queryTwoStep(ctx.name(), p.getType(), p.getSql(), p.getArgs());
             }
 
-            return query(qry, null);
+            return query(qry, projection(false));
         }
         catch (Exception e) {
             if (e instanceof CacheException)
@@ -352,7 +360,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            if (ctx.isReplicated())
+            if (ctx.isReplicated() || ctx.isLocal())
                 return doLocalFieldsQuery(qry);
 
             return ctx.kernalContext().query().queryTwoStep(ctx.name(), qry.getSql(), qry.getArgs());
@@ -396,7 +404,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             if (qry instanceof SqlQuery)
                 return doLocalQuery((SqlQuery)qry);
 
-            return query(qry, ctx.kernalContext().grid().forLocal());
+            return query(qry, projection(true));
         }
         catch (Exception e) {
             if (e instanceof CacheException)
