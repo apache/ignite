@@ -92,14 +92,15 @@ final class TestBinaryClient {
             sock.getOutputStream().write(GridMemcachedMessage.IGNITE_HANDSHAKE_FLAG);
             sock.getOutputStream().write(req.rawBytes());
 
-            byte[] buf = new byte[1];
+            byte[] buf = new byte[2];
 
             // Wait for handshake response.
             int read = input.read(buf);
 
-            assert read == 1 : read;
+            assert read == 2 : read;
 
-            assert buf[0] == GridClientHandshakeResponse.OK.resultCode() :
+            assert buf[0] == GridMemcachedMessage.IGNITE_HANDSHAKE_RES_FLAG;
+            assert buf[1] == GridClientHandshakeResponse.OK.resultCode() :
                 "Client handshake failed [code=" + buf[0] + ']';
         }
         catch (IOException e) {
@@ -274,8 +275,6 @@ final class TestBinaryClient {
         ByteBuffer res = marsh.marshal(msg, 45);
 
         ByteBuffer slice = res.slice();
-
-        slice.order(ByteOrder.LITTLE_ENDIAN);
 
         slice.put((byte)0x90);
         slice.putInt(res.remaining() - 5);
