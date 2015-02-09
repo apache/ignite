@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.checkpoint.cache;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -82,18 +82,18 @@ public class CacheCheckpointSpiSecondCacheSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testSecondCachePutRemove() throws Exception {
-        GridCache<Integer, Integer> data = grid().cache(DATA_CACHE);
-        GridCache<Integer, String> cp = grid().cache(CP_CACHE);
+        IgniteCache<Integer, Integer> data = grid().jcache(DATA_CACHE);
+        IgniteCache<Integer, String> cp = grid().jcache(CP_CACHE);
 
-        assertTrue(data.putx(1, 1));
-        assertTrue(cp.putx(1, "1"));
+        data.put(1, 1);
+        cp.put(1, "1");
 
         Integer v = data.get(1);
 
         assertNotNull(v);
         assertEquals(Integer.valueOf(1), data.get(1));
 
-        assertTrue(data.removex(1));
+        data.remove(1);
 
         assertNull(data.get(1));
 

@@ -123,15 +123,15 @@ abstract class GridCacheAbstractLoadTest {
      * @param writeClos Write closure.
      * @param readClos ReadClosure.
      */
-    protected void loadTest(final CIX1<CacheProjection<Integer, Integer>> writeClos,
-        final CIX1<CacheProjection<Integer, Integer>> readClos) {
+    protected void loadTest(final CIX1<IgniteCache<Integer, Integer>> writeClos,
+        final CIX1<IgniteCache<Integer, Integer>> readClos) {
         info("Read threads: " + readThreads());
         info("Write threads: " + writeThreads());
         info("Test duration (ms): " + testDuration);
 
-        Ignite ignite = G.ignite();
+        final Ignite ignite = G.ignite();
 
-        final GridCache<Integer, Integer> cache = ignite.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite.jcache(null);
 
         assert cache != null;
 
@@ -142,7 +142,7 @@ abstract class GridCacheAbstractLoadTest {
 
                     while (!done.get()) {
                         if (tx) {
-                            try (IgniteTx tx = cache.txStart()) {
+                            try (IgniteTx tx = ignite.transactions().txStart()) {
                                 writeClos.apply(cache);
 
                                 tx.commit();
@@ -164,7 +164,7 @@ abstract class GridCacheAbstractLoadTest {
 
                     while(!done.get()) {
                         if (tx) {
-                            try (IgniteTx tx = cache.txStart()) {
+                            try (IgniteTx tx = ignite.transactions().txStart()) {
                                 readClos.apply(cache);
 
                                 tx.commit();

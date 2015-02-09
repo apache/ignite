@@ -153,9 +153,9 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testDefaultCache() throws Exception {
-        GridCache<String, String> cache = grid().cache(null);
+        IgniteCache<String, String> cache = grid().jcache(null);
 
-        cache.putx("key", "val");
+        cache.put("key", "val");
 
         GridMarshallerTestBean inBean = newTestBean(cache);
 
@@ -183,9 +183,9 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testNamedCache() throws Exception {
-        GridCache<String, String> cache = grid().cache(CACHE_NAME);
+        IgniteCache<String, String> cache = grid().jcache(CACHE_NAME);
 
-        cache.putx("key", "val");
+        cache.put("key", "val");
 
         GridMarshallerTestBean inBean = newTestBean(cache);
 
@@ -702,7 +702,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
                 }
             }, EVTS_CACHE);
 
-            grid().cache(null).put(1, 1);
+            grid().jcache(null).put(1, 1);
 
             GridMarshallerTestBean inBean = newTestBean(evts);
 
@@ -805,11 +805,11 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testAffinity() throws Exception {
-        GridCache<String, String> cache = grid().cache(CACHE_NAME);
+        IgniteCache<String, String> cache = grid().jcache(CACHE_NAME);
 
-        CacheAffinity<String> affinity = cache.affinity();
+        CacheAffinity<String> affinity = affinity(cache);
 
-        cache.putx("tst", "test");
+        cache.put("tst", "test");
 
         GridMarshallerTestBean inBean = newTestBean(affinity);
 

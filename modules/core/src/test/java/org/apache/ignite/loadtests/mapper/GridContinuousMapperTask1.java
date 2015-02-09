@@ -88,7 +88,7 @@ public class GridContinuousMapperTask1 extends ComputeTaskAdapter<Integer, Integ
 
                     X.println(">>> Received job for ID: " + jobId);
 
-                    return g.cache("replicated").peek(jobId);
+                    return g.jcache("replicated").peek(jobId);
                 }
             }, n);
         }
