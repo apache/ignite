@@ -3122,8 +3122,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             @SuppressWarnings("unchecked")
             @Override public boolean applyx() throws IgniteCheckedException {
                 try {
-                    if (c.get(key) != null)
+                    Integer val = c.get(key);
+
+                    if (val != null) {
+                        info("Value is in cache [key=" + key + ", val=" + val + ']');
+
                         return false;
+                    }
 
                     // Get "cache" field from GridCacheProxyImpl.
                     GridCacheAdapter c0 = GridTestUtils.getFieldValue(c, "cache");
@@ -3687,11 +3692,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertFalse(cache.iterator().hasNext());
 
-        final int SIZE = 20000;
-
         Map<String, Integer> entries = new HashMap<>();
 
-        for (int i = 0; i < SIZE; ++i) {
+        for (int i = 0; i < 20000; ++i) {
             cache.put(Integer.toString(i), i);
 
             entries.put(Integer.toString(i), i);
