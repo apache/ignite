@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.transactions.*;
@@ -67,7 +66,6 @@ import java.nio.charset.*;
 import java.security.*;
 import java.security.cert.*;
 import java.sql.*;
-import java.sql.Timestamp;
 import java.text.*;
 import java.util.*;
 import java.util.Date;
@@ -283,9 +281,6 @@ public abstract class IgniteUtils {
     /** MAC OS invalid argument socket error message. */
     public static final String MAC_INVALID_ARG_MSG = "On MAC OS you may have too many file descriptors open " +
         "(simple restart usually solves the issue)";
-
-    /** Portable classes. */
-    private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
 
     /** Ignite Logging Directory. */
     public static final String IGNITE_LOG_DIR = System.getenv(IgniteSystemProperties.IGNITE_LOG_DIR);
@@ -519,31 +514,6 @@ public abstract class IgniteUtils {
                 throw new IgniteException(e);
             }
         }
-
-        PORTABLE_CLS.add(Byte.class);
-        PORTABLE_CLS.add(Short.class);
-        PORTABLE_CLS.add(Integer.class);
-        PORTABLE_CLS.add(Long.class);
-        PORTABLE_CLS.add(Float.class);
-        PORTABLE_CLS.add(Double.class);
-        PORTABLE_CLS.add(Character.class);
-        PORTABLE_CLS.add(Boolean.class);
-        PORTABLE_CLS.add(String.class);
-        PORTABLE_CLS.add(UUID.class);
-        PORTABLE_CLS.add(Date.class);
-        PORTABLE_CLS.add(Timestamp.class);
-        PORTABLE_CLS.add(byte[].class);
-        PORTABLE_CLS.add(short[].class);
-        PORTABLE_CLS.add(int[].class);
-        PORTABLE_CLS.add(long[].class);
-        PORTABLE_CLS.add(float[].class);
-        PORTABLE_CLS.add(double[].class);
-        PORTABLE_CLS.add(char[].class);
-        PORTABLE_CLS.add(boolean[].class);
-        PORTABLE_CLS.add(String[].class);
-        PORTABLE_CLS.add(UUID[].class);
-        PORTABLE_CLS.add(Date[].class);
-        PORTABLE_CLS.add(Timestamp[].class);
 
         exceptionConverters = Collections.unmodifiableMap(exceptionConverters());
     }
@@ -7232,19 +7202,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Gets portable enabled flag from the given node for the given cache name.
-     *
-     * @param n Node.
-     * @param cacheName Cache name.
-     * @return Portable enabled flag.
-     */
-    @Nullable public static Boolean portableEnabled(ClusterNode n, @Nullable String cacheName) {
-        GridCacheAttributes attrs = cacheAttributes(n, cacheName);
-
-        return attrs == null ? false : attrs.portableEnabled();
-    }
-
-    /**
      * Gets view on all cache names started on the node.
      *
      * @param n Node to get cache names for.
@@ -8794,36 +8751,6 @@ public abstract class IgniteUtils {
         }
 
         return youngest;
-    }
-
-    /**
-     * Tells whether provided type is portable.
-     *
-     * @param cls Class to check.
-     * @return Whether type is portable.
-     */
-    public static boolean isPortableType(Class<?> cls) {
-        assert cls != null;
-
-        return PortableObject.class.isAssignableFrom(cls) ||
-            PORTABLE_CLS.contains(cls) ||
-            cls.isEnum() ||
-            (cls.isArray() && cls.getComponentType().isEnum());
-    }
-    /**
-     * Tells whether provided type is portable or a collection.
-     *
-     * @param cls Class to check.
-     * @return Whether type is portable or a collection.
-     */
-    public static boolean isPortableOrCollectionType(Class<?> cls) {
-        assert cls != null;
-
-        return isPortableType(cls) ||
-            cls == Object[].class ||
-            Collection.class.isAssignableFrom(cls) ||
-            Map.class.isAssignableFrom(cls) ||
-            Map.Entry.class.isAssignableFrom(cls);
     }
 
     /**
