@@ -105,6 +105,11 @@ public class IgniteNode implements BenchmarkServer {
                     cc.setEvictionPolicy(new CacheLruEvictionPolicy(50000));
             }
 
+            cc.setReadThrough(args.isStoreEnabled());
+
+            cc.setWriteThrough(args.isStoreEnabled());
+
+            cc.setWriteBehindEnabled(args.isWriteBehind());
         }
 
         TransactionConfiguration tc = c.getTransactionConfiguration();
