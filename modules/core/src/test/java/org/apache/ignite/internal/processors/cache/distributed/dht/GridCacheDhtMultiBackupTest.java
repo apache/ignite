@@ -55,14 +55,14 @@ public class GridCacheDhtMultiBackupTest extends GridCommonAbstractTest {
                     @Override public void applyx() throws IgniteCheckedException {
                         X.println("Checking whether cache is empty.");
 
-                        GridCache<SampleKey, SampleValue> cache = g.cache("partitioned");
+                        IgniteCache<SampleKey, SampleValue> cache = g.jcache("partitioned");
 
                         assert cache.isEmpty();
                     }
                 }
             );
 
-            GridCache<SampleKey, SampleValue> cache = g.cache("partitioned");
+            IgniteCache<SampleKey, SampleValue> cache = g.jcache("partitioned");
 
             int cnt = 0;
 

@@ -110,7 +110,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         }
 
         for (int i = 0; i < GRID_CNT; i++) {
-            IgniteTx tx = grid(i).cache(null).tx();
+            IgniteTx tx = grid(i).transactions().tx();
 
             if (tx != null)
                 tx.close();
@@ -121,8 +121,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @return Near cache.
      */
-    private GridCache<Integer, String> near(Ignite g) {
-        return g.cache(null);
+    private IgniteCache<Integer, String> near(Ignite g) {
+        return g.jcache(null);
     }
 
     /**
@@ -151,8 +151,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         ClusterNode primary = t.get1();
         ClusterNode other = t.get2();
 
-        GridCache<Integer, String> near0 = near(grid(primary.id()));
-        GridCache<Integer, String> near1 = near(grid(other.id()));
+        IgniteCache<Integer, String> near0 = near(grid(primary.id()));
+        IgniteCache<Integer, String> near1 = near(grid(other.id()));
 
         assert near0 != near1;
 
@@ -178,12 +178,12 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         assert e0.readers().contains(other.id());
         assert e1 == null || e1.readers().isEmpty();
 
-        assert !near0.clearLocally(key);
+        assert !internalCache(near0).clearLocally(key);
 
-        assertEquals(1, near0.size());
+        assertEquals(1, near0.localSize());
         assertEquals(1, dht0.size());
 
-        assertEquals(1, near1.size());
+        assertEquals(1, near1.localSize());
         assertEquals(0, dht1.size());
     }
 
@@ -196,8 +196,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         ClusterNode primary = t.get1();
         ClusterNode other = t.get2();
 
-        GridCache<Integer, String> near0 = near(grid(primary.id()));
-        GridCache<Integer, String> near1 = near(grid(other.id()));
+        IgniteCache<Integer, String> near0 = near(grid(primary.id()));
+        IgniteCache<Integer, String> near1 = near(grid(other.id()));
 
         assert near0 != near1;
 
@@ -223,7 +223,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         assert e0.readers().contains(other.id());
         assert e1 == null || e1.readers().isEmpty();
 
-        assert near0.removex(key);
+        assert near0.remove(key);
 
         assertEquals(0, near0.size());
         assertEquals(0, dht0.size());
@@ -242,8 +242,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         ClusterNode primary = t.get1();
         ClusterNode other = t.get2();
 
-        GridCache<Integer, String> near0 = near(grid(primary.id()));
-        GridCache<Integer, String> near1 = near(grid(other.id()));
+        IgniteCache<Integer, String> near0 = near(grid(primary.id()));
+        IgniteCache<Integer, String> near1 = near(grid(other.id()));
 
         assert near0 != near1;
 
@@ -291,7 +291,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @return For the given key pair {primary node, some other node}.
      */
     private IgniteBiTuple<ClusterNode, ClusterNode> getNodes(Integer key) {
-        CacheAffinity<Integer> aff = grid(0).<Integer, Object>cache(null).affinity();
+        CacheAffinity<Integer> aff = grid(0).affinity(null);
 
         int part = aff.partition(key);
 

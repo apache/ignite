@@ -119,6 +119,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @param cache Cache.
+     */
+    protected <K, V> GridCacheAdapter<K, V> internalCache(IgniteCache<K, V> cache) {
+        return ((IgniteKernal)cache.unwrap(Ignite.class)).internalCache(cache.getName());
+    }
+
+    /**
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache() {

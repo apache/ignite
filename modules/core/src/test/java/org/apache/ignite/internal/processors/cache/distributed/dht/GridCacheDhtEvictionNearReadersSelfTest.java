@@ -168,7 +168,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      * @return Affinity.
      */
     private CacheConsistentHashAffinityFunction affinity(int idx) {
-        return (CacheConsistentHashAffinityFunction)grid(idx).cache(null).configuration().getAffinity();
+        return (CacheConsistentHashAffinityFunction)grid(idx).jcache(null).configuration().getAffinity();
     }
 
     /**
@@ -279,7 +279,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
 
         // Evict on primary node.
         // It will trigger dht eviction and eviction on backup node.
-        grid(primary).cache(null).evict(key);
+        grid(primary).jcache(null).evict(key);
 
         futOther.get(3000);
         futBackup.get(3000);
