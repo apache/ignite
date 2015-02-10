@@ -24,13 +24,13 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.util.*;
@@ -282,7 +282,7 @@ class GridDeploymentCommunication {
      * @param topic Response topic.
      * @param res Response.
      */
-    private void sendResponse(UUID nodeId, Object topic, GridTcpCommunicationMessageAdapter res) {
+    private void sendResponse(UUID nodeId, Object topic, MessageAdapter res) {
         ClusterNode node = ctx.discovery().node(nodeId);
 
         if (node != null) {
@@ -314,7 +314,7 @@ class GridDeploymentCommunication {
     void sendUndeployRequest(String rsrcName, Collection<ClusterNode> rmtNodes) throws IgniteCheckedException {
         assert !rmtNodes.contains(ctx.discovery().localNode());
 
-        GridTcpCommunicationMessageAdapter req = new GridDeploymentRequest(null, null, rsrcName, true);
+        MessageAdapter req = new GridDeploymentRequest(null, null, rsrcName, true);
 
         if (!rmtNodes.isEmpty()) {
             ctx.io().send(

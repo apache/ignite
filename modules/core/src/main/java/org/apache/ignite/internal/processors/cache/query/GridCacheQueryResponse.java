@@ -21,10 +21,10 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.query.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -203,7 +203,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridCacheQueryResponse _clone = new GridCacheQueryResponse();
 
         clone0(_clone);
@@ -212,7 +212,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridCacheQueryResponse _clone = (GridCacheQueryResponse)_msg;
@@ -231,96 +231,54 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (dataBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(dataBytes.size()))
-                            return false;
+                if (!writer.writeCollection("dataBytes", dataBytes, byte[].class))
+                    return false;
 
-                        commState.it = dataBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putByteArray(errBytes))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                if (!commState.putBoolean(fields))
+                if (!writer.writeBoolean("fields", fields))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 6:
-                if (!commState.putBoolean(finished))
+                if (!writer.writeBoolean("finished", finished))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 7:
-                if (metaDataBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(metaDataBytes.size()))
-                            return false;
-
-                        commState.it = metaDataBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
-
-            case 8:
-                if (!commState.putLong(reqId))
+                if (!writer.writeCollection("metaDataBytes", metaDataBytes, byte[].class))
                     return false;
 
-                commState.idx++;
+                state++;
+
+            case 8:
+                if (!writer.writeLong("reqId", reqId))
+                    return false;
+
+                state++;
 
         }
 
@@ -330,103 +288,59 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                dataBytes = reader.readCollection("dataBytes", byte[].class);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (dataBytes == null)
-                        dataBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        dataBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 4:
-                byte[] errBytes0 = commState.getByteArray();
+                errBytes = reader.readByteArray("errBytes");
 
-                if (errBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                errBytes = errBytes0;
-
-                commState.idx++;
+                state++;
 
             case 5:
-                if (buf.remaining() < 1)
+                fields = reader.readBoolean("fields");
+
+                if (!reader.isLastRead())
                     return false;
 
-                fields = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 6:
-                if (buf.remaining() < 1)
+                finished = reader.readBoolean("finished");
+
+                if (!reader.isLastRead())
                     return false;
 
-                finished = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 7:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                metaDataBytes = reader.readCollection("metaDataBytes", byte[].class);
 
-                    commState.readSize = commState.getInt();
-                }
-
-                if (commState.readSize >= 0) {
-                    if (metaDataBytes == null)
-                        metaDataBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        metaDataBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
-
-            case 8:
-                if (buf.remaining() < 8)
+                if (!reader.isLastRead())
                     return false;
 
-                reqId = commState.getLong();
+                state++;
 
-                commState.idx++;
+            case 8:
+                reqId = reader.readLong("reqId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
 
         }
 
@@ -435,7 +349,7 @@ public class GridCacheQueryResponse<K, V> extends GridCacheMessage<K, V> impleme
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 58;
+        return 59;
     }
 
     /** {@inheritDoc} */

@@ -29,7 +29,6 @@ import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.services.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.streamer.*;
@@ -482,9 +481,6 @@ public class IgniteConfiguration {
     /** Client access configuration. */
     private ClientConnectionConfiguration clientCfg;
 
-    /** Portable configuration. */
-    private PortableConfiguration portableCfg;
-
     /** Warmup closure. Will be invoked before actual grid start. */
     private IgniteInClosure<IgniteConfiguration> warmupClos;
 
@@ -572,7 +568,6 @@ public class IgniteConfiguration {
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
         p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         pluginCfgs = cfg.getPluginConfigurations();
-        portableCfg = cfg.getPortableConfiguration();
         qryCfg = cfg.getQueryConfiguration();
         restAccessibleFolders = cfg.getRestAccessibleFolders();
         restIdleTimeout = cfg.getRestIdleTimeout();
@@ -2773,20 +2768,6 @@ public class IgniteConfiguration {
      */
     public void setClientConnectionConfiguration(ClientConnectionConfiguration clientCfg) {
         this.clientCfg = clientCfg;
-    }
-
-    /**
-     * @return Portable configuration.
-     */
-    public PortableConfiguration getPortableConfiguration() {
-        return portableCfg;
-    }
-
-    /**
-     * @param portableCfg Portable configuration.
-     */
-    public void setPortableConfiguration(PortableConfiguration portableCfg) {
-        this.portableCfg = portableCfg;
     }
 
     /**

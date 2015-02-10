@@ -33,7 +33,6 @@ import org.jetbrains.annotations.*;
 import javax.net.ssl.*;
 import java.io.*;
 import java.net.*;
-import java.nio.*;
 import java.nio.channels.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -43,6 +42,7 @@ import java.util.logging.*;
 import static org.apache.ignite.client.GridClientCacheFlag.*;
 import static org.apache.ignite.client.impl.connection.GridClientConnectionCloseReason.*;
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
 
 /**
  * This class performs request to grid over tcp protocol. Serialization is performed with marshaller
@@ -194,9 +194,9 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             else if (marsh instanceof GridClientJdkMarshaller)
                 req.marshallerId(GridClientJdkMarshaller.ID);
 
-            GridClientHandshakeRequestWrapper wrapper = new GridClientHandshakeRequestWrapper(req);
+            ses.addMeta(MARSHALLER.ordinal(), marsh);
 
-            ses.send(wrapper);
+            ses.send(req);
 
             handshakeFut.get();
 
@@ -392,7 +392,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             else if (now - lastPingSndTime > pingInterval && lastPingRcvTime != Long.MAX_VALUE) {
                 lastPingRcvTime = Long.MAX_VALUE;
 
-                ses.send(new GridClientPingPacketWrapper());
+                ses.send(GridClientPingPacket.PING_MESSAGE);
 
                 lastPingSndTime = now;
             }
@@ -415,22 +415,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
             assert old == null;
 
-            GridClientMessageWrapper wrapper;
-
-            try {
-                wrapper = messageWrapper(msg);
-            }
-            catch (IOException e) {
-                log.log(Level.SEVERE, "Failed to marshal message: " + msg, e);
-
-                removePending(reqId);
-
-                fut.onDone(e);
-
-                return fut;
-            }
-
-            GridNioFuture<?> sndFut = ses.send(wrapper);
+            GridNioFuture<?> sndFut = ses.send(msg);
 
             lastMsgSndTime = U.currentTimeMillis();
 
@@ -473,59 +458,41 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      * Handles incoming response message. If this connection is closed this method would signal empty event
      * if there is no more pending requests.
      *
-     * @param req Incoming response data.
+     * @param res Incoming response data.
      */
     @SuppressWarnings({"unchecked", "TooBroadScope"})
-    void handleResponse(GridClientMessageWrapper req) {
+    void handleResponse(GridClientMessage res) throws IOException {
         lastMsgRcvTime = U.currentTimeMillis();
 
-        TcpClientFuture fut = pendingReqs.get(req.requestId());
+        TcpClientFuture fut = pendingReqs.get(res.requestId());
 
         if (fut == null) {
             log.warning("Response for an unknown request is received, ignoring. " +
-                "[req=" + req + ", ses=" + ses + ']');
+                "[res=" + res + ", ses=" + ses + ']');
 
             return;
         }
 
         if (fut.forward()) {
-            GridRouterResponse msg = new GridRouterResponse(
-                req.messageArray(),
-                req.requestId(),
-                clientId,
-                req.destinationId());
+            removePending(res.requestId());
 
-            removePending(msg.requestId());
-
-            fut.onDone(msg);
+            fut.onDone(res);
         }
         else {
-            GridClientMessage msg;
+            GridClientMessage res0 = res;
 
-            if (keepPortablesMode != null)
-                keepPortablesMode.set(fut.keepPortables());
+            if (res instanceof GridRouterResponse) {
+                res0 = marsh.unmarshal(((GridRouterResponse)res).body());
 
-            try {
-                msg = marsh.unmarshal(req.messageArray());
-            }
-            catch (IOException e) {
-                fut.onDone(new GridClientException("Failed to unmarshal message.", e));
-
-                return;
+                res0.requestId(res.requestId());
+                res0.clientId(res.clientId());
+                res0.destinationId(res.destinationId());
             }
 
-            finally {
-                if (keepPortablesMode != null)
-                    keepPortablesMode.set(true);
-            }
-            msg.requestId(req.requestId());
-            msg.clientId(req.clientId());
-            msg.destinationId(req.destinationId());
-
-            if (msg instanceof GridClientResponse)
-                handleClientResponse(fut, (GridClientResponse)msg);
+            if (res0 instanceof GridClientResponse)
+                handleClientResponse(fut, (GridClientResponse)res0);
             else
-                log.warning("Unsupported response type received: " + msg);
+                log.warning("Unsupported response type received: " + res0);
         }
     }
 
@@ -559,22 +526,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
                     req.requestId(resp.requestId());
 
-                    GridClientMessageWrapper wrapper;
-
-                    try {
-                        wrapper = messageWrapper(req);
-                    }
-                    catch (IOException e) {
-                        log.log(Level.SEVERE, "Failed to marshal message: " + req, e);
-
-                        removePending(resp.requestId());
-
-                        fut.onDone(e);
-
-                        return;
-                    }
-
-                    ses.send(wrapper);
+                    ses.send(req);
 
                     return;
                 }
@@ -588,22 +540,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
                     src.sessionToken(sesTok);
 
-                    GridClientMessageWrapper wrapper;
-
-                    try {
-                        wrapper = messageWrapper(src);
-                    }
-                    catch (IOException e) {
-                        log.log(Level.SEVERE, "Failed to marshal message: " + src, e);
-
-                        removePending(resp.requestId());
-
-                        fut.onDone(e);
-
-                        return;
-                    }
-
-                    ses.send(wrapper);
+                    ses.send(src);
 
                     return;
                 }
@@ -621,27 +558,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             fut.onDone(new GridClientException(resp.errorMessage()));
         else
             fut.onDone(resp.result());
-    }
-
-    /**
-     * @param msg Client message.
-     * @return Message wrapper for direct marshalling.
-     * @throws IOException If failed to marshal message.
-     */
-    private GridClientMessageWrapper messageWrapper(GridClientMessage msg) throws IOException {
-        GridClientMessageWrapper wrapper = new GridClientMessageWrapper();
-
-        wrapper.requestId(msg.requestId());
-        wrapper.clientId(clientId);
-        wrapper.destinationId(msg.destinationId());
-
-        ByteBuffer data = (msg instanceof GridRouterRequest) ? ByteBuffer.wrap(((GridRouterRequest)msg).body()) :
-            marsh.marshal(msg, 0);
-
-        wrapper.message(data);
-        wrapper.messageSize(data.remaining() + 40);
-
-        return wrapper;
     }
 
     /**

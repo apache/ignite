@@ -54,7 +54,6 @@ public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extend
         cfg.setSwapEnabled(true);
         cfg.setEvictSynchronized(false);
         cfg.setEvictNearSynchronized(false);
-        cfg.setPortableEnabled(portableEnabled());
 
         return cfg;
     }
@@ -71,7 +70,6 @@ public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extend
         cfg.setMemoryMode(OFFHEAP_VALUES);
         cfg.setOffHeapMaxMemory(100 * 1024 * 1024);
         cfg.setQueryIndexEnabled(false);
-        cfg.setPortableEnabled(portableEnabled());
 
         return cfg;
     }
@@ -88,7 +86,6 @@ public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extend
         cfg.setMemoryMode(OFFHEAP_TIERED);
         cfg.setOffHeapMaxMemory(100 * 1024 * 1024);
         cfg.setQueryIndexEnabled(false);
-        cfg.setPortableEnabled(portableEnabled());
 
         return cfg;
     }

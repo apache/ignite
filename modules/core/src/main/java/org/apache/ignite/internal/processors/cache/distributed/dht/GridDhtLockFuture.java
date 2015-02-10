@@ -1136,7 +1136,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                     evictReaders(cctx, res.nearEvicted(), node.id(), res.messageId(), nearMapping);
                 }
 
-                Set<Integer> invalidParts = res.invalidPartitions();
+                Collection<Integer> invalidParts = res.invalidPartitions();
 
                 // Removing mappings for invalid partitions.
                 if (!F.isEmpty(invalidParts)) {
