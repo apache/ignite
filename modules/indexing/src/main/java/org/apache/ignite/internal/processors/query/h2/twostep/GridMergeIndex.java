@@ -95,7 +95,7 @@ public abstract class GridMergeIndex extends BaseIndex {
         if (page.response().isLast()) {
             int srcs0 = srcs.decrementAndGet();
 
-            assert srcs0 >= 0;
+            assert srcs0 >= 0 : srcs0;
 
             if (srcs0 == 0)
                 addPage0(END); // We've fetched all.

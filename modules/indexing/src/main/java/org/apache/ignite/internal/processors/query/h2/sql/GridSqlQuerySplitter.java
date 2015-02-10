@@ -72,8 +72,10 @@ public class GridSqlQuerySplitter {
         List<GridSqlElement> mapExps = new ArrayList<>(srcQry.allExpressions());
         GridSqlElement[] rdcExps = new GridSqlElement[srcQry.select().size()];
 
+        Set<String> colNames = new HashSet<>();
+
         for (int i = 0, len = mapExps.size(); i < len; i++) // Remember len because mapExps list can grow.
-            splitSelectExpression(mapExps, rdcExps, i);
+            splitSelectExpression(mapExps, rdcExps, colNames, i);
 
         // Fill select expressions.
         mapQry.clearSelect();
@@ -200,9 +202,11 @@ public class GridSqlQuerySplitter {
     /**
      * @param mapSelect Selects for map query.
      * @param rdcSelect Selects for reduce query.
+     * @param colNames Set of unique top level column names.
      * @param idx Index.
      */
-    private static void splitSelectExpression(List<GridSqlElement> mapSelect, GridSqlElement[] rdcSelect, int idx) {
+    private static void splitSelectExpression(List<GridSqlElement> mapSelect, GridSqlElement[] rdcSelect,
+        Set<String> colNames, int idx) {
         GridSqlElement el = mapSelect.get(idx);
 
         GridSqlAlias alias = null;
@@ -288,19 +292,27 @@ public class GridSqlQuerySplitter {
             rdcSelect[idx] = rdcAgg;
         }
         else {
-            if (alias == null) { // Generate alias if none.
-                GridSqlElement expr = mapSelect.get(idx);
+            String mapColAlias = columnName(idx);
+            String rdcColAlias;
 
-                String aliasName = expr instanceof GridSqlColumn ? ((GridSqlColumn)expr).columnName() :
-                    columnName(idx);
+            if (alias == null) { // Wrap map column with generated alias if none.
+                rdcColAlias = el instanceof GridSqlColumn ? ((GridSqlColumn)el).columnName() : mapColAlias;
 
-                alias = alias(aliasName, expr);
+                alias = alias(mapColAlias, el); // `el` is known not to be alias.
 
                 mapSelect.set(idx, alias);
             }
+            else // Set initial alias for reduce column.
+                rdcColAlias = alias.alias();
 
-            if (idx < rdcSelect.length)
-                rdcSelect[idx] = column(alias.alias());
+            if (idx < rdcSelect.length) { // SELECT __C0 AS orginal_alias
+                GridSqlElement rdcEl = column(mapColAlias);
+
+                if (colNames.add(rdcColAlias))
+                    rdcEl = alias(rdcColAlias, rdcEl);
+
+                rdcSelect[idx] = rdcEl;
+            }
         }
     }
 

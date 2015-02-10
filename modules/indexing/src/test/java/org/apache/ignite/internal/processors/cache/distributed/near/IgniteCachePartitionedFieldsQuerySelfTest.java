@@ -47,8 +47,8 @@ public class IgniteCachePartitionedFieldsQuerySelfTest extends IgniteCacheAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cache(@Nullable String name, @Nullable String spiName) {
-        CacheConfiguration cc = super.cache(name, spiName);
+    @Override protected CacheConfiguration cache(@Nullable String name, boolean primitives) {
+        CacheConfiguration cc = super.cache(name, primitives);
 
         cc.setDistributionMode(distributionMode());
 

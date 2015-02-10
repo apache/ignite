@@ -29,11 +29,14 @@ import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
@@ -69,7 +72,8 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         cfg.setMarshaller(new OptimizedMarshaller(false));
 
         if (hasCache)
-            cfg.setCacheConfiguration(cache(null, null), cache(CACHE, null), cache(EMPTY_CACHE, null));
+            cfg.setCacheConfiguration(cache(null, true), cache(CACHE, true), cache(EMPTY_CACHE, true),
+                cache(CACHE_NO_PRIMITIVES, false), cache(CACHE_COMPLEX_KEYS, false));
         else
             cfg.setCacheConfiguration();
 
@@ -80,10 +84,10 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
     /**
      * @param name Cache name.
-     * @param spiName Indexing SPI name.
+     * @param primitives Index primitives.
      * @return Cache.
      */
-    protected CacheConfiguration cache(@Nullable String name, @Nullable String spiName) {
+    protected CacheConfiguration cache(@Nullable String name, boolean primitives) {
         CacheConfiguration cache = defaultCacheConfiguration();
 
         cache.setName(name);
@@ -94,8 +98,8 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
         CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
 
-        qcfg.setIndexPrimitiveKey(true);
-        qcfg.setIndexPrimitiveValue(true);
+        qcfg.setIndexPrimitiveKey(primitives);
+        qcfg.setIndexPrimitiveValue(primitives);
         qcfg.setIndexFixedTyping(true);
 
         cache.setQueryConfiguration(qcfg);
@@ -414,20 +418,20 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     }
 
     /** @throws Exception If failed. */
-    public void _testNoPrimitives() throws Exception { // TODO
-        IgniteCache<Object, Object> cache = grid(0).jcache(CACHE_NO_PRIMITIVES);
+    public void testNoPrimitives() throws Exception {
+        final IgniteCache<Object, Object> cache = grid(0).jcache(CACHE_NO_PRIMITIVES);
 
         cache.put("key", "val");
 
-        QueryCursor<List<?>> qry = cache.queryFields(sql("select * from String"));
-
-        assert qry.getAll().isEmpty();
-
-        cache.removeAll();
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                return cache.queryFields(sql("select * from String"));
+            }
+        }, CacheException.class, null);
     }
 
     /** @throws Exception If failed. */
-    public void _testComplexKeys() throws Exception { // TODO
+    public void testComplexKeys() throws Exception {
         IgniteCache<Object, Object> cache = grid(0).jcache(CACHE_COMPLEX_KEYS);
 
         UUID id = UUID.randomUUID();
