@@ -18,7 +18,6 @@
 package org.apache.ignite.marshaller;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
@@ -166,14 +165,14 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         assert inBean.getObjectField() != null;
         assert outBean.getObjectField() != null;
 
-        assert inBean.getObjectField().getClass().equals(GridCacheProxyImpl.class);
-        assert outBean.getObjectField().getClass().equals(GridCacheProxyImpl.class);
+        assert inBean.getObjectField().getClass().equals(IgniteCacheProxy.class);
+        assert outBean.getObjectField().getClass().equals(IgniteCacheProxy.class);
 
         assert inBean != outBean;
 
-        GridCache<String, String> cache0 = (GridCache<String, String>)outBean.getObjectField();
+        IgniteCache<String, String> cache0 = (IgniteCache<String, String>)outBean.getObjectField();
 
-        assertNull(cache0.name());
+        assertNull(cache0.getName());
         assertEquals("val", cache0.get("key"));
 
         outBean.checkNullResources();
@@ -196,14 +195,14 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         assert inBean.getObjectField() != null;
         assert outBean.getObjectField() != null;
 
-        assert inBean.getObjectField().getClass().equals(GridCacheProxyImpl.class);
-        assert outBean.getObjectField().getClass().equals(GridCacheProxyImpl.class);
+        assert inBean.getObjectField().getClass().equals(IgniteCacheProxy.class);
+        assert outBean.getObjectField().getClass().equals(IgniteCacheProxy.class);
 
         assert inBean != outBean;
 
-        GridCache<String, String> cache0 = (GridCache<String, String>)outBean.getObjectField();
+        IgniteCache<String, String> cache0 = (IgniteCache<String, String>)outBean.getObjectField();
 
-        assertEquals(CACHE_NAME, cache0.name());
+        assertEquals(CACHE_NAME, cache0.getName());
         assertEquals("val", cache0.get("key"));
 
         outBean.checkNullResources();
@@ -820,8 +819,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         assert inBean.getObjectField() != null;
         assert outBean.getObjectField() != null;
 
-        assert inBean.getObjectField().getClass().equals(GridCacheAffinityProxy.class);
-        assert outBean.getObjectField().getClass().equals(GridCacheAffinityProxy.class);
+        assert inBean.getObjectField().getClass().equals(GridCacheAffinityImpl.class);
+        assert outBean.getObjectField().getClass().equals(GridCacheAffinityImpl.class);
 
         assert inBean != outBean;
         assert inBean.equals(outBean);
