@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.rest.handlers.task;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -26,7 +26,7 @@ import java.nio.*;
 /**
  * Task result response.
  */
-public class GridTaskResultResponse extends GridTcpCommunicationMessageAdapter {
+public class GridTaskResultResponse extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -118,7 +118,7 @@ public class GridTaskResultResponse extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridTaskResultResponse _clone = new GridTaskResultResponse();
 
         clone0(_clone);
@@ -127,7 +127,7 @@ public class GridTaskResultResponse extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridTaskResultResponse _clone = (GridTaskResultResponse)_msg;
 
         _clone.res = res;
@@ -140,39 +140,39 @@ public class GridTaskResultResponse extends GridTcpCommunicationMessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putString(err))
+                if (!writer.writeString("err", err))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putBoolean(finished))
+                if (!writer.writeBoolean("finished", finished))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putBoolean(found))
+                if (!writer.writeBoolean("found", found))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                if (!commState.putByteArray(resBytes))
+                if (!writer.writeByteArray("resBytes", resBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -182,44 +182,40 @@ public class GridTaskResultResponse extends GridTcpCommunicationMessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                String err0 = commState.getString();
+                err = reader.readString("err");
 
-                if (err0 == STR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                err = err0;
-
-                commState.idx++;
+                state++;
 
             case 1:
-                if (buf.remaining() < 1)
+                finished = reader.readBoolean("finished");
+
+                if (!reader.isLastRead())
                     return false;
 
-                finished = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 2:
-                if (buf.remaining() < 1)
+                found = reader.readBoolean("found");
+
+                if (!reader.isLastRead())
                     return false;
 
-                found = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 3:
-                byte[] resBytes0 = commState.getByteArray();
+                resBytes = reader.readByteArray("resBytes");
 
-                if (resBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                resBytes = resBytes0;
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -228,6 +224,6 @@ public class GridTaskResultResponse extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 74;
+        return 77;
     }
 }

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.collision.jobstealing;
 
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -26,7 +26,7 @@ import java.nio.*;
 /**
  * Job stealing request.
  */
-public class JobStealingRequest extends GridTcpCommunicationMessageAdapter {
+public class JobStealingRequest extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,7 +56,7 @@ public class JobStealingRequest extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         JobStealingRequest _clone = new JobStealingRequest();
 
         clone0(_clone);
@@ -65,7 +65,7 @@ public class JobStealingRequest extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         JobStealingRequest _clone = (JobStealingRequest)_msg;
 
         _clone.delta = delta;
@@ -74,21 +74,21 @@ public class JobStealingRequest extends GridTcpCommunicationMessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putInt(delta))
+                if (!writer.writeInt("delta", delta))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -98,16 +98,16 @@ public class JobStealingRequest extends GridTcpCommunicationMessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (buf.remaining() < 4)
+                delta = reader.readInt("delta");
+
+                if (!reader.isLastRead())
                     return false;
 
-                delta = commState.getInt();
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -116,7 +116,7 @@ public class JobStealingRequest extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 78;
+        return 82;
     }
 
     /** {@inheritDoc} */

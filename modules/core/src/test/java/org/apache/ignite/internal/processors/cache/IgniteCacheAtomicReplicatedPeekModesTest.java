@@ -15,17 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.direct;
+package org.apache.ignite.internal.processors.cache;
+
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Message producer. Each component have to register it's own message producer.
+ *
  */
-public interface GridTcpCommunicationMessageProducer {
-    /**
-     * Create message.
-     *
-     * @param type Message type.
-     * @return Communication message.
-     */
-    public GridTcpCommunicationMessageAdapter create(byte type);
+public class IgniteCacheAtomicReplicatedPeekModesTest extends IgniteCacheAtomicPeekModesTest {
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return REPLICATED;
+    }
 }

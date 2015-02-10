@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.datastructures.*;
 import org.apache.ignite.transactions.*;
 
 import java.util.*;
@@ -91,7 +90,7 @@ public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsA
 
             fail();
         }
-        catch (DataStructureRemovedException e) {
+        catch (IllegalStateException e) {
             info("Caught expected exception: " + e.getMessage());
         }
     }

@@ -18,31 +18,24 @@
 package org.apache.ignite.plugin.extensions.communication;
 
 import org.apache.ignite.plugin.*;
-
-import java.nio.*;
-import java.util.*;
+import org.jetbrains.annotations.*;
 
 /**
- * Allows to patch message before sending or after reading.
+ * Factory for communication messages.
+ * <p>
+ * A plugin can provide his own message factory as an extension
+ * if it uses any custom messages (all message must extend
+ * {@link MessageAdapter} class).
  */
-public interface MessageCallback extends Extension {
+public interface MessageFactory extends Extension {
     /**
-     * Writes delta for provided node and message type.
+     * Creates new message instance of provided type.
+     * <p>
+     * This method should return {@code null} if provided message type
+     * is unknown to this factory.
      *
-     * @param nodeId Node ID.
-     * @param msg Message type.
-     * @param buf Buffer to write to.
-     * @return Whether delta was fully written.
+     * @param type Message type.
+     * @return Message instance.
      */
-    public boolean onSend(UUID nodeId, Object msg, ByteBuffer buf);
-
-    /**
-     * Reads delta for provided node and message type.
-     *
-     * @param nodeId Node ID.
-     * @param msgCls Message type.
-     * @param buf Buffer to read from.
-     * @return Whether delta was fully read.
-     */
-    public boolean onReceive(UUID nodeId, Class<?> msgCls, ByteBuffer buf);
+    @Nullable public MessageAdapter create(byte type);
 }

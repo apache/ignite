@@ -15,15 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.direct;
+package org.apache.ignite.internal.processors.cache;
+
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  *
  */
-public interface GridTcpMessageFactory {
-    /**
-     * @param type Message type.
-     * @return Message instance.
-     */
-    public GridTcpCommunicationMessageAdapter create(byte type);
+public class IgniteCacheTxReplicatedPeekModesTest extends IgniteCacheTxPeekModesTest {
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return REPLICATED;
+    }
 }

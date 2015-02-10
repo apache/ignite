@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.datastructures.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -291,11 +290,11 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     /**
      * Check removed status.
      *
-     * @throws DataStructureRemovedException If removed.
+     * @throws IllegalStateException If removed.
      */
-    private void checkRemoved() throws DataStructureRemovedException {
+    private void checkRemoved() throws IllegalStateException {
         if (rmvd)
-            throw new DataStructureRemovedException("Atomic reference was removed from cache: " + name);
+            throw new IllegalStateException("Atomic reference was removed from cache: " + name);
     }
 
     /** {@inheritDoc} */
