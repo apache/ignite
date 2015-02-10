@@ -411,7 +411,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
                 return null;
             }
-        }, IgniteTxRollbackCheckedException.class, null);
+        }, IgniteTxRollbackException.class, null);
 
         checkValue(key, putBefore);
     }
@@ -499,7 +499,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
                 return null;
             }
-        }, IgniteTxRollbackCheckedException.class, null);
+        }, IgniteTxRollbackException.class, null);
 
         for (Integer key : m.keySet())
             checkValue(key, putBefore);
@@ -533,7 +533,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
                 return null;
             }
-        }, IgniteTxRollbackCheckedException.class, null);
+        }, IgniteTxRollbackException.class, null);
 
         checkValue(key, putBefore);
     }

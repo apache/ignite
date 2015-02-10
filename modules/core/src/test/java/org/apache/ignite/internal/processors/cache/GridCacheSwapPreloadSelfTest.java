@@ -118,7 +118,8 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < ENTRY_CNT; i++)
                 assertNull(cache.peek(i));
 
-            assert cache.isEmpty();
+            assert cache.localSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP, CachePeekMode.NEAR,
+                CachePeekMode.ONHEAP) == 0;
 
             startGrid(1);
 

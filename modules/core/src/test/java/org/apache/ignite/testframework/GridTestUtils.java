@@ -36,6 +36,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.config.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.net.ssl.*;
 import java.io.*;
 import java.lang.annotation.*;
@@ -126,9 +127,13 @@ public final class GridTestUtils {
         }
         catch (Throwable e) {
             if (cls != e.getClass()) {
-                U.error(log, "Unexpected exception.", e);
+                if (e.getClass() == CacheException.class && e.getCause() != null && e.getCause().getClass() == cls)
+                    e = e.getCause();
+                else {
+                    U.error(log, "Unexpected exception.", e);
 
-                fail("Exception class is not as expected [expected=" + cls + ", actual=" + e.getClass() + ']', e);
+                    fail("Exception class is not as expected [expected=" + cls + ", actual=" + e.getClass() + ']', e);
+                }
             }
 
             if (msg != null && (e.getMessage() == null || !e.getMessage().startsWith(msg))) {

@@ -89,13 +89,13 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        assert grid(0).transactions().tx() == null;
+        assert jcache().unwrap(Ignite.class).transactions().tx() == null;
         assert jcache().localSize() == 0;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        IgniteTx tx = grid(0).transactions().tx();
+        IgniteTx tx = jcache().unwrap(Ignite.class).transactions().tx();
 
         if (tx != null) {
             tx.close();
@@ -184,8 +184,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
             }
         }
 
-        assert grid(0).transactions().tx() == null;
-        assertEquals("Cache is not empty", 0, jcache().size());
+        assert jcache().unwrap(Ignite.class).transactions().tx() == null;
+        assertEquals("Cache is not empty", 0, jcache().localSize());
 
         resetStore();
     }
