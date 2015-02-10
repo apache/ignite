@@ -394,14 +394,14 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Authentication manager.
      */
-    public GridSecurityManager security();
+    public GridSecurityProcessor security();
 
     /**
      * Gets secure session manager.
      *
      * @return Secure session manager.
      */
-    public GridSecureSessionManager secureSession();
+    public GridSecureSessionProcessor secureSession();
 
     /**
      * Gets load balancing manager.

@@ -33,7 +33,7 @@ public class GridSecurityImpl implements GridSecurity, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Security manager. */
-    private GridSecurityManager secMgr;
+    private GridSecurityProcessor secProc;
 
     /** Context. */
     private GridKernalContext ctx;
@@ -49,14 +49,14 @@ public class GridSecurityImpl implements GridSecurity, Externalizable {
      * @param ctx Context.
      */
     public GridSecurityImpl(GridKernalContext ctx) {
-        this.secMgr = ctx.security();
+        this.secProc = ctx.security();
         this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
     @Override public Collection<GridSecuritySubject> authenticatedSubjects() throws IgniteException {
         try {
-            return secMgr.authenticatedSubjects();
+            return secProc.authenticatedSubjects();
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -66,7 +66,7 @@ public class GridSecurityImpl implements GridSecurity, Externalizable {
     /** {@inheritDoc} */
     @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws IgniteException {
         try {
-            return secMgr.authenticatedSubject(subjId);
+            return secProc.authenticatedSubject(subjId);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

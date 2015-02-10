@@ -31,13 +31,13 @@ import java.net.*;
 import java.util.*;
 
 /**
- * No-op implementation for {@link GridSecurityManager}.
+ * No-op implementation for {@link GridSecurityProcessor}.
  */
-public class GridOsSecurityManager extends GridNoopManagerAdapter implements GridSecurityManager {
+public class GridOsSecurityProcessor extends GridNoopManagerAdapter implements GridSecurityProcessor {
     /**
      * @param ctx Kernal context.
      */
-    public GridOsSecurityManager(GridKernalContext ctx) {
+    public GridOsSecurityProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
@@ -93,5 +93,10 @@ public class GridOsSecurityManager extends GridNoopManagerAdapter implements Gri
     /** {@inheritDoc} */
     @Override public void onSessionExpired(UUID subjId) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean enabled() {
+        return false;
     }
 }

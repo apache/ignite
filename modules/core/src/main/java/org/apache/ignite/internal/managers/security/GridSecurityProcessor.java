@@ -19,7 +19,7 @@ package org.apache.ignite.internal.managers.security;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.managers.*;
+import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.authentication.*;
 import org.jetbrains.annotations.*;
@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * This interface defines a grid authentication manager.
  */
-public interface GridSecurityManager extends GridManager {
+public interface GridSecurityProcessor extends GridProcessor {
     /**
      * Authenticates grid node with it's attributes via underlying {@link org.apache.ignite.spi.authentication.AuthenticationSpi}s.
      *
@@ -90,4 +90,10 @@ public interface GridSecurityManager extends GridManager {
      * @param subjId Subject ID.
      */
     public void onSessionExpired(UUID subjId);
+
+    /**
+     * @return Returns {@code true} if at least one SPI does not have a {@code NO-OP}
+     *      implementation, {@code false} otherwise.
+     */
+    public boolean enabled();
 }

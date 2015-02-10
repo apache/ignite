@@ -20,6 +20,7 @@ package org.apache.ignite.internal.managers;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
@@ -28,7 +29,7 @@ import java.util.*;
 /**
  * No-op {@link GridManager} adapter.
  */
-public class GridNoopManagerAdapter implements GridManager {
+public class GridNoopManagerAdapter implements GridProcessor {
     /**
      * @param ctx Kernal context.
      */
@@ -37,13 +38,8 @@ public class GridNoopManagerAdapter implements GridManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void addSpiAttributes(Map<String, Object> attrs) throws IgniteCheckedException {
+    @Override public void addAttributes(Map<String, Object> attrs) throws IgniteCheckedException {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean enabled() {
-        return false;
     }
 
     /** {@inheritDoc} */

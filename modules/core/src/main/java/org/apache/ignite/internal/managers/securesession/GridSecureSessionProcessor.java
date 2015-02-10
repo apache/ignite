@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.managers.securesession;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.security.*;
+import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * This interface defines a grid secure session manager.
  */
-public interface GridSecureSessionManager extends GridManager {
+public interface GridSecureSessionProcessor extends GridProcessor {
     /**
      * @param subjType Subject type.
      * @param subjId Subject ID.
@@ -51,4 +51,10 @@ public interface GridSecureSessionManager extends GridManager {
      */
     public byte[] updateSession(GridSecuritySubjectType subjType, UUID subjId, GridSecurityContext subjCtx,
         @Nullable Object params) throws IgniteCheckedException;
+
+    /**
+     * @return Returns {@code true} if at least one SPI does not have a {@code NO-OP}
+     *      implementation, {@code false} otherwise.
+     */
+    public boolean enabled();
 }

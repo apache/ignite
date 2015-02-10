@@ -127,11 +127,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridSecurityManager authMgr;
+    private GridSecurityProcessor authProc;
 
     /** */
     @GridToStringExclude
-    private GridSecureSessionManager sesMgr;
+    private GridSecureSessionProcessor sesMgr;
 
     /** */
     @GridToStringExclude
@@ -416,10 +416,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             failoverMgr = (GridFailoverManager)comp;
         else if (comp instanceof GridCollisionManager)
             colMgr = (GridCollisionManager)comp;
-        else if (comp instanceof GridSecurityManager)
-            authMgr = (GridSecurityManager)comp;
-        else if (comp instanceof GridSecureSessionManager)
-            sesMgr = (GridSecureSessionManager)comp;
+        else if (comp instanceof GridSecurityProcessor)
+            authProc = (GridSecurityProcessor)comp;
+        else if (comp instanceof GridSecureSessionProcessor)
+            sesMgr = (GridSecureSessionProcessor)comp;
         else if (comp instanceof GridLoadBalancerManager)
             loadMgr = (GridLoadBalancerManager)comp;
         else if (comp instanceof GridSwapSpaceManager)
@@ -652,12 +652,12 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecurityManager security() {
-        return authMgr;
+    @Override public GridSecurityProcessor security() {
+        return authProc;
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecureSessionManager secureSession() {
+    @Override public GridSecureSessionProcessor secureSession() {
         return sesMgr;
     }
 
