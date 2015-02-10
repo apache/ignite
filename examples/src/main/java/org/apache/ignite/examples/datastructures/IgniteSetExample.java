@@ -149,7 +149,7 @@ public class IgniteSetExample {
         try {
             set.contains("1");
         }
-        catch (IgniteException expected) {
+        catch (IllegalStateException expected) {
             System.out.println("Expected exception - " + expected.getMessage());
         }
     }

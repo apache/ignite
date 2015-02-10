@@ -31,6 +31,11 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.portables.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.io.*;
@@ -38,10 +43,6 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
@@ -4422,7 +4423,7 @@ public abstract class IgniteUtils {
             long most = in.readLong();
             long least = in.readLong();
 
-            return GridUuidCache.onGridUuidRead(new UUID(most, least));
+            return IgniteUuidCache.onIgniteUuidRead(new UUID(most, least));
         }
 
         return null;
@@ -4462,7 +4463,7 @@ public abstract class IgniteUtils {
             long most = in.readLong();
             long least = in.readLong();
 
-            UUID globalId = GridUuidCache.onGridUuidRead(new UUID(most, least));
+            UUID globalId = IgniteUuidCache.onIgniteUuidRead(new UUID(most, least));
 
             long locId = in.readLong();
 
@@ -4476,10 +4477,26 @@ public abstract class IgniteUtils {
      * Converts GridUuid to bytes.
      *
      * @param uuid GridUuid to convert.
+     * @return Bytes.
+     */
+    public static byte[] igniteUuidToBytes(IgniteUuid uuid) {
+        assert uuid != null;
+
+        byte[] out = new byte[24];
+
+        igniteUuidToBytes(uuid, out, 0);
+
+        return out;
+    }
+
+    /**
+     * Converts GridUuid to bytes.
+     *
+     * @param uuid GridUuid to convert.
      * @param out Output array to write to.
      * @param off Offset from which to write.
      */
-    public static void gridUuidToBytes(IgniteUuid uuid, byte[] out, int off) {
+    public static void igniteUuidToBytes(IgniteUuid uuid, byte[] out, int off) {
         assert uuid != null;
 
         U.longToBytes(uuid.globalId().getMostSignificantBits(), out, off);
@@ -4494,12 +4511,12 @@ public abstract class IgniteUtils {
      * @param off Offset from which start reading.
      * @return GridUuid instance.
      */
-    public static IgniteUuid bytesToGridUuid(byte[] in, int off) {
+    public static IgniteUuid bytesToIgniteUuid(byte[] in, int off) {
         long most = U.bytesToLong(in, off);
         long least = U.bytesToLong(in, off + 8);
         long locId = U.bytesToLong(in, off + 16);
 
-        return new IgniteUuid(GridUuidCache.onGridUuidRead(new UUID(most, least)), locId);
+        return new IgniteUuid(IgniteUuidCache.onIgniteUuidRead(new UUID(most, least)), locId);
     }
 
     /**
@@ -9218,5 +9235,36 @@ public abstract class IgniteUtils {
             sb.append(Integer.toString((md5Byte & 0xff) + 0x100, 16).substring(1));
 
         return sb.toString();
+    }
+
+    /**
+     * Fully writes communication message to provided stream.
+     *
+     * @param msg Message.
+     * @param out Stream to write to.
+     * @param buf Byte buffer that will be passed to {@link MessageAdapter#writeTo(ByteBuffer)} method.
+     * @return Number of written bytes.
+     * @throws IOException In case of error.
+     */
+    public static int writeMessageFully(MessageAdapter msg, OutputStream out, ByteBuffer buf) throws IOException {
+        assert msg != null;
+        assert out != null;
+        assert buf != null;
+        assert buf.hasArray();
+
+        boolean finished = false;
+        int cnt = 0;
+
+        while (!finished) {
+            finished = msg.writeTo(buf);
+
+            out.write(buf.array(), 0, buf.position());
+
+            cnt += buf.position();
+
+            buf.clear();
+        }
+
+        return cnt;
     }
 }

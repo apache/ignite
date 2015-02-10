@@ -15,18 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.plugin.extensions.communication;
 
-import java.lang.annotation.*;
+import org.apache.ignite.plugin.*;
 
 /**
- * Assigns version to a field.
+ * Provides a custom format for communication messages.
+ * <p>
+ * A plugin can provide his own message factory as an extension
+ * to replace default format of communication messages.
+ * <p>
+ * Note that only one custom formatter is allowed. If two
+ * plugins provide different formatters, exception will
+ * be thrown on node startup.
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-public @interface GridDirectVersion {
+public interface MessageFormatter extends Extension {
     /**
-     * @return Version index (must be above zero).
+     * Creates new message writer instance.
+     *
+     * @return Message writer.
      */
-    int value();
+    public MessageWriter writer();
+
+    /**
+     * Creates new message reader instance.
+     *
+     * @return Message reader.
+     */
+    public MessageReader reader();
 }

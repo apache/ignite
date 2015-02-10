@@ -22,9 +22,9 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -115,7 +115,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridNearTxFinishResponse _clone = new GridNearTxFinishResponse();
 
         clone0(_clone);
@@ -124,7 +124,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridNearTxFinishResponse _clone = (GridNearTxFinishResponse)_msg;
@@ -138,36 +138,36 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 5:
-                if (!commState.putByteArray(errBytes))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 6:
-                if (!commState.putGridUuid(miniId))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 7:
-                if (!commState.putLong(nearThreadId))
+                if (!writer.writeLong("nearThreadId", nearThreadId))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -177,39 +177,35 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 5:
-                byte[] errBytes0 = commState.getByteArray();
+                errBytes = reader.readByteArray("errBytes");
 
-                if (errBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                errBytes = errBytes0;
-
-                commState.idx++;
+                state++;
 
             case 6:
-                IgniteUuid miniId0 = commState.getGridUuid();
+                miniId = reader.readIgniteUuid("miniId");
 
-                if (miniId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                miniId = miniId0;
-
-                commState.idx++;
+                state++;
 
             case 7:
-                if (buf.remaining() < 8)
+                nearThreadId = reader.readLong("nearThreadId");
+
+                if (!reader.isLastRead())
                     return false;
 
-                nearThreadId = commState.getLong();
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -218,7 +214,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 53;
+        return 54;
     }
 
     /** {@inheritDoc} */

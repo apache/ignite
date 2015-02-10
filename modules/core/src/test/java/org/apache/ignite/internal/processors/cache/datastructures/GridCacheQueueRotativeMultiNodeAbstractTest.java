@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.datastructures.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -177,7 +176,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
 
                 return null;
             }
-        }, DataStructureRemovedException.class, null);
+        }, IllegalStateException.class, null);
 
         info("Queue was removed: " + queue);
 

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.datastructures.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -388,11 +387,11 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     /**
      * Check removed status.
      *
-     * @throws DataStructureRemovedException If removed.
+     * @throws IllegalStateException If removed.
      */
-    private void checkRemoved() throws DataStructureRemovedException {
+    private void checkRemoved() throws IllegalStateException {
         if (rmvd)
-            throw new DataStructureRemovedException("Sequence was removed from cache: " + name);
+            throw new IllegalStateException("Sequence was removed from cache: " + name);
     }
 
     /** {@inheritDoc} */

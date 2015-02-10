@@ -15,37 +15,45 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.plugin.extensions.discovery;
-
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.plugin.*;
+package org.apache.ignite.internal.util;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
- * Plugin extension that allows to listen messages from discovery.
  *
- * TODO 9447: redesign.
  */
-public interface DiscoveryCallback extends Extension {
-    /**
-     * Handles node start.
-     *
-     * @param remoteNodes Remote grid nodes.
-     */
-    public void onStart(Collection<ClusterNode> remoteNodes);
+public final class IgniteUuidCache {
+    /** Maximum cache size. */
+    private static final int MAX = 1024;
+
+    /** Cache. */
+    private static final ConcurrentMap<UUID, UUID> cache =
+        new GridBoundedConcurrentLinkedHashMap<>(MAX, 1024, 0.75f, 64);
 
     /**
-     * Handles node joined event.
+     * Gets cached UUID to preserve memory.
      *
-     * @param node Joined node.
+     * @param id Read UUID.
+     * @return Cached UUID equivalent to the read one.
      */
-    public void beforeNodeJoined(ClusterNode node);
+    public static UUID onIgniteUuidRead(UUID id) {
+        UUID cached = cache.get(id);
+
+        if (cached == null) {
+            UUID old = cache.putIfAbsent(id, cached = id);
+
+            if (old != null)
+                cached = old;
+        }
+
+        return cached;
+    }
 
     /**
-     * Handles node left event.
-     *
-     * @param node Left node.
+     * Ensure singleton.
      */
-    public void onNodeLeft(ClusterNode node);
+    private IgniteUuidCache() {
+        // No-op.
+    }
 }

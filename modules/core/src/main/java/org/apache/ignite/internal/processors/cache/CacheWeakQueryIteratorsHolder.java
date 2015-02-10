@@ -126,7 +126,8 @@ public class CacheWeakQueryIteratorsHolder<V> {
         /** Weak reference. */
         private final WeakReference<WeakQueryFutureIterator<T>> weakRef;
 
-        CacheIteratorConverter<T, V> convert;
+        /** */
+        private final CacheIteratorConverter<T, V> convert;
 
         /** Init flag. */
         private boolean init;
@@ -139,6 +140,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
 
         /**
          * @param fut GridCacheQueryFuture to iterate.
+         * @param convert Converter.
          */
         WeakQueryFutureIterator(CacheQueryFuture<V> fut, CacheIteratorConverter<T, V> convert) {
             this.fut = fut;

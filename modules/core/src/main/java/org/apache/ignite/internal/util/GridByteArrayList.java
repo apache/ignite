@@ -20,6 +20,7 @@ package org.apache.ignite.internal.util;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -28,7 +29,7 @@ import java.util.*;
 /**
  * Re-sizable array implementation of the byte list (eliminating auto-boxing of primitive byte type).
  */
-public class GridByteArrayList implements Externalizable {
+public class GridByteArrayList extends MessageAdapter implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -403,6 +404,84 @@ public class GridByteArrayList implements Externalizable {
         data = new byte[size];
 
         in.readFully(data, 0, size);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf) {
+        writer.setBuffer(buf);
+
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
+                return false;
+
+            typeWritten = true;
+        }
+
+        switch (state) {
+            case 0:
+                if (!writer.writeByteArray("data", data))
+                    return false;
+
+                state++;
+
+            case 1:
+                if (!writer.writeInt("size", size))
+                    return false;
+
+                state++;
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf) {
+        reader.setBuffer(buf);
+
+        switch (state) {
+            case 0:
+                data = reader.readByteArray("data");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 1:
+                size = reader.readInt("size");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 84;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("CloneDoesntCallSuperClone")
+    @Override public MessageAdapter clone() {
+        GridByteArrayList _clone = new GridByteArrayList();
+
+        clone0(_clone);
+
+        return _clone;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void clone0(MessageAdapter _msg) {
+        GridByteArrayList _clone = (GridByteArrayList)_msg;
+
+        _clone.data = data;
+        _clone.size = size;
     }
 
     /** {@inheritDoc} */

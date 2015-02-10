@@ -21,18 +21,18 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.direct.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -60,6 +60,12 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
     /** */
     private final ConcurrentMap<String, Map> cache = new ConcurrentHashMap<>();
+
+    /** */
+    private MessageFormatter formatter;
+
+    /** */
+    private MessageFactory factory;
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> remoteNodes() {
@@ -490,16 +496,6 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeDelta(UUID nodeId, Object msg, ByteBuffer buf) {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<GridSecuritySubject> authenticatedSubjects() {
         return Collections.emptyList();
     }
@@ -516,12 +512,28 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
-    @Override public GridTcpMessageFactory messageFactory() {
-        return new GridTcpMessageFactory() {
-            @Override public GridTcpCommunicationMessageAdapter create(byte type) {
-                return GridTcpCommunicationMessageFactory.create(type);
-            }
-        };
+    @Override public MessageFormatter messageFormatter() {
+        if (formatter == null) {
+            formatter = new MessageFormatter() {
+                @Override public MessageWriter writer() {
+                    return new DirectMessageWriter();
+                }
+
+                @Override public MessageReader reader() {
+                    return new DirectMessageReader(messageFactory());
+                }
+            };
+        }
+
+        return formatter;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MessageFactory messageFactory() {
+        if (factory == null)
+            factory = new GridIoMessageFactory(messageFormatter(), null);
+
+        return factory;
     }
 
     /**

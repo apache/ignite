@@ -26,7 +26,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  *
  */
-public class IgniteCacheAtomicPeekTest extends IgniteCachePeekAbstractTest {
+public class IgniteCacheAtomicPeekModesTest extends IgniteCachePeekModesAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 4;

@@ -434,7 +434,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         info(">>> First task executed successfully, running batch.");
 
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 10; i++)
             futs.add(compute.executeAsync(taskName, taskArg));
 
         // Stop client.
