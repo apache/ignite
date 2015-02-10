@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -26,12 +27,24 @@ import java.util.*;
  * Test affinity mapper.
  */
 public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        startGrid();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+    }
+
     /**
      *
      */
     public void testMethodAffinityMapper() {
         CacheAffinityKeyMapper mapper =
             new GridCacheDefaultAffinityKeyMapper();
+
+        GridTestUtils.setFieldValue(mapper, "ignite", grid());
 
         List<CacheAffinityKey<Integer>> keys = new ArrayList<>();
 
@@ -57,6 +70,8 @@ public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
         CacheAffinityKeyMapper mapper =
             new GridCacheDefaultAffinityKeyMapper();
 
+        GridTestUtils.setFieldValue(mapper, "ignite", grid());
+
         List<FieldAffinityKey<Integer>> keys = new ArrayList<>();
 
         for (int i = 1; i <= 10; i++)
@@ -80,6 +95,8 @@ public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
     public void testFieldAffinityMapperWithWrongClass() {
         CacheAffinityKeyMapper mapper =
             new GridCacheDefaultAffinityKeyMapper();
+
+        GridTestUtils.setFieldValue(mapper, "ignite", grid());
 
         FieldNoAffinityKey key = new FieldNoAffinityKey();
         Object mapped = mapper.affinityKey(key);

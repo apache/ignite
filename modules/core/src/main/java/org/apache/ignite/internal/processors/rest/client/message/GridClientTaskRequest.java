@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import org.apache.ignite.internal.util.portable.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.portables.*;
 
 import java.io.*;
 
@@ -99,32 +97,6 @@ public class GridClientTaskRequest extends GridClientAbstractMessage {
     @Override public int hashCode() {
         return (taskName == null ? 0 : taskName.hashCode()) +
             31 * (arg == null ? 0 : arg.hashCode());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writePortable(PortableWriter writer) throws PortableException {
-        super.writePortable(writer);
-
-        PortableRawWriterEx raw = (PortableRawWriterEx)writer.rawWriter();
-
-        raw.writeString(taskName);
-        raw.writeBoolean(keepPortables);
-
-        if (keepPortables)
-            raw.writeObjectDetached(arg);
-        else
-            raw.writeObject(arg);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readPortable(PortableReader reader) throws PortableException {
-        super.readPortable(reader);
-
-        PortableRawReaderEx raw = (PortableRawReaderEx)reader.rawReader();
-
-        taskName = raw.readString();
-        keepPortables = raw.readBoolean();
-        arg = keepPortables ? raw.readObjectDetached() : raw.readObject();
     }
 
     /** {@inheritDoc} */

@@ -197,13 +197,6 @@ public interface Ignite extends AutoCloseable {
     public GridSecurity security();
 
     /**
-     * Gets an instance of {@code GridPortables} interface. Available in enterprise edition only.
-     *
-     * @return Instance of {@code GridPortables} interface.
-     */
-    public IgnitePortables portables();
-
-    /**
      * Gets the cache instance for the given name, if one does not
      * exist {@link IllegalArgumentException} will be thrown.
      * Note that in case named cache instance is used as GGFS data or meta cache, {@link IllegalStateException}

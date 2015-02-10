@@ -34,7 +34,6 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
@@ -2515,7 +2514,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         map0.put(key, val);
                     }
                 }
-                catch (PortableException e) {
+                catch (IgniteException e) {
                     return new GridFinishedFuture<>(cctx.kernalContext(), e);
                 }
             }
@@ -2532,7 +2531,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         invokeMap0.put(key, e.getValue());
                     }
                 }
-                catch (PortableException e) {
+                catch (IgniteException e) {
                     return new GridFinishedFuture<>(cctx.kernalContext(), e);
                 }
             }
@@ -2736,7 +2735,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 else
                     keys0 = null;
             }
-            catch (PortableException e) {
+            catch (IgniteException e) {
                 return new GridFinishedFuture<>(cctx.kernalContext(), e);
             }
         }
