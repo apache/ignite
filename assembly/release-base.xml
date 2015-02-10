@@ -57,6 +57,7 @@
                 <exclude>**/*hadoop*.bat</exclude>
                 <exclude>igniterouter.bat</exclude>
                 <exclude>**/target-classpath.bat</exclude>
+                <exclude>ignitevisorcmd.bat</exclude>
             </excludes>
         </fileSet>
 
@@ -72,6 +73,7 @@
                 <exclude>igniterouter.sh</exclude>
                 <exclude>**/target-classpath.sh</exclude>
                 <exclude>**/service.sh</exclude>
+                <exclude>ignitevisorcmd.sh</exclude>
             </excludes>
         </fileSet>
 

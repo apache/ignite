@@ -94,9 +94,6 @@
         <module>modules/extdata/uri</module>
         <module>modules/clients</module>
         <module>examples</module>
-        <module>modules/scalar</module>
-        <module>modules/visor-console</module>
-        <module>modules/visor-plugins</module>
         <module>modules/jdk8-backport</module>
         <module>modules/tools</module>
         <module>modules/spring</module>
@@ -257,6 +254,23 @@
                             <jvmArg>-Xmx1024m</jvmArg>
                         </jvmArgs>
                     </configuration>
+                    <executions>
+                        <execution>
+                            <id>scala-compile-first</id>
+                            <phase>process-resources</phase>
+                            <goals>
+                                <goal>add-source</goal>
+                                <goal>compile</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>scala-test-compile</id>
+                            <phase>process-test-resources</phase>
+                            <goals>
+                                <goal>testCompile</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -425,22 +439,6 @@
                     </execution>
 
                     <execution>
-                        <id>dependencies-visor-console</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>${basedir}/assembly/dependencies-visor-console.xml</descriptor>
-                            </descriptors>
-                            <outputDirectory>${basedir}/bin</outputDirectory>
-                            <finalName>include</finalName>
-                            <appendAssemblyId>false</appendAssemblyId>
-                        </configuration>
-                    </execution>
-
-                    <execution>
                         <id>dependencies-schema-load</id>
                         <phase>prepare-package</phase>
                         <goals>
@@ -450,7 +448,7 @@
                             <descriptors>
                                 <descriptor>assembly/dependencies-schema-load.xml</descriptor>
                             </descriptors>
-                            <outputDirectory>${basedir}/bin</outputDirectory>
+                            <outputDirectory>target/release-package/bin</outputDirectory>
                             <finalName>include</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
@@ -636,18 +634,6 @@
                                     <filesets>
                                         <fileset>
                                             <directory>libs</directory>
-                                        </fileset>
-
-                                        <fileset>
-                                            <directory>bin/include/visor-common</directory>
-                                        </fileset>
-
-                                        <fileset>
-                                            <directory>bin/include/visorcmd</directory>
-                                        </fileset>
-
-                                        <fileset>
-                                            <directory>bin/include/visorui</directory>
                                         </fileset>
 
                                         <fileset>
@@ -1413,6 +1399,66 @@
             <modules>
                 <module>modules/yardstick</module>
             </modules>
+        </profile>
+
+        <profile>
+            <id>scala</id>
+
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+
+            <modules>
+                <module>modules/scalar</module>
+                <module>modules/visor-console</module>
+                <module>modules/visor-plugins</module>
+            </modules>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>2.4</version>
+                        <inherited>false</inherited>
+                        <executions>
+                            <execution>
+                                <id>dependencies-visor-console</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/dependencies-visor-console.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package/bin</outputDirectory>
+                                    <finalName>include</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>scala-scripts</id>
+                                <phase>prepare-package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly/release-scala.xml</descriptor>
+                                    </descriptors>
+                                    <outputDirectory>target/release-package</outputDirectory>
+                                    <finalName>bin</finalName>
+                                    <appendAssemblyId>false</appendAssemblyId>
+                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>
