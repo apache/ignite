@@ -160,7 +160,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < size; i++) {
             info("Putting value 2 [i=" + i + ']');
 
-            assertEquals(i, prj0.putIfAbsent(i, i * i));
+            assertEquals(i, prj0.getAndPutIfAbsent(i, i * i));
 
             info("Finished putting value 2 [i=" + i + ']');
         }
