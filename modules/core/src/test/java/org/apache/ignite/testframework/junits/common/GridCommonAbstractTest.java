@@ -447,6 +447,19 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @param iterable Iterator
+     * @return Set
+     */
+    protected <K, V> Set<Cache.Entry<K, V>> entrySet(Iterable<Cache.Entry<K, V>> iterable){
+        Set<Cache.Entry<K, V>> set = new TreeSet<>();
+
+        for (Cache.Entry<K, V> entry : iterable)
+            set.add(entry);
+
+        return set;
+    }
+
+    /**
      * @param cache Cache.
      * @param cnt Keys count.
      * @return Collection of keys for which given cache is primary.

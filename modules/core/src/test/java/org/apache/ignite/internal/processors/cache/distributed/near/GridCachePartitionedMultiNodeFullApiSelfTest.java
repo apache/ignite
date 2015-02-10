@@ -61,13 +61,6 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     }
 
     /**
-     * TODO fix and uncomment
-     */
-    @Override public void testPartitionEntrySetRemove() throws Exception {
-        assert false : "ignite-96";
-    }
-
-    /**
      * @throws Exception If failed.
      */
     public void testPutAllRemoveAll() throws Exception {
@@ -372,11 +365,11 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         info("All affinity nodes: " + affinityNodes());
 
-        GridCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
-        info("Cache affinity nodes: " + cache.affinity().mapKeyToPrimaryAndBackups(key));
+        info("Cache affinity nodes: " + affinity(cache).mapKeyToPrimaryAndBackups(key));
 
-        CacheAffinity<Object> aff = cache.affinity();
+        CacheAffinity<Object> aff = affinity(cache);
 
         Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
 
@@ -408,19 +401,19 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         assertNotNull(backup);
         assertNotNull(other);
 
-        assertTrue(cache.affinity().isPrimary(primary, key));
-        assertFalse(cache.affinity().isBackup(primary, key));
-        assertTrue(cache.affinity().isPrimaryOrBackup(primary, key));
+        assertTrue(affinity(cache).isPrimary(primary, key));
+        assertFalse(affinity(cache).isBackup(primary, key));
+        assertTrue(affinity(cache).isPrimaryOrBackup(primary, key));
 
-        assertFalse(cache.affinity().isPrimary(backup, key));
-        assertTrue(cache.affinity().isBackup(backup, key));
-        assertTrue(cache.affinity().isPrimaryOrBackup(backup, key));
+        assertFalse(affinity(cache).isPrimary(backup, key));
+        assertTrue(affinity(cache).isBackup(backup, key));
+        assertTrue(affinity(cache).isPrimaryOrBackup(backup, key));
 
-        assertFalse(cache.affinity().isPrimary(other, key));
+        assertFalse(affinity(cache).isPrimary(other, key));
 
         if (cacheMode() == PARTITIONED) {
-            assertFalse(cache.affinity().isBackup(other, key));
-            assertFalse(cache.affinity().isPrimaryOrBackup(other, key));
+            assertFalse(affinity(cache).isBackup(other, key));
+            assertFalse(affinity(cache).isPrimaryOrBackup(other, key));
         }
     }
 }
