@@ -2722,13 +2722,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testPeekMode() throws Exception {
         String key = "testPeekMode";
 
-        GridCache<String, Integer> cache = primaryIgnite(key).cache(null);
+        GridCache<String, Integer> cache = ((IgniteKernal)primaryIgnite(key)).cache(null);
 
         cache.put(key, 1);
-
-        Cache.Entry<String, Integer> entry = cache.entry(key);
-
-        // assert entry.primary();
 
         assert cache.peek(key, F.asList(TX)) == null;
         assert cache.peek(key, F.asList(SWAP)) == null;
