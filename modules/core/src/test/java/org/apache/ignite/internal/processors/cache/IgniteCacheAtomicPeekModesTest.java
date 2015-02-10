@@ -15,43 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.twostep.messages;
+package org.apache.ignite.internal.processors.cache;
 
-import java.io.*;
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Error message.
+ *
  */
-public class GridQueryFailResponse implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    private long qryReqId;
-
-    /** */
-    private Throwable err;
-
-    /**
-     * @param qryReqId Query request ID.
-     * @param err Error.
-     */
-    public GridQueryFailResponse(long qryReqId, Throwable err) {
-        this.qryReqId = qryReqId;
-        this.err = err;
+public class IgniteCacheAtomicPeekModesTest extends IgniteCachePeekModesAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 4;
     }
 
-    /**
-     * @return Query request ID.
-     */
-    public long queryRequestId() {
-        return qryReqId;
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return PARTITIONED;
     }
 
-    /**
-     * @return Error.
-     */
-    public Throwable error() {
-        return err;
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
+        return PRIMARY;
     }
 }

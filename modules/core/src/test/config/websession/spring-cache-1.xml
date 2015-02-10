@@ -27,8 +27,6 @@
 
         <property name="localHost" value="127.0.0.1"/>
 
-        <property name="restEnabled" value="false"/>
-
         <property name="cacheConfiguration">
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">

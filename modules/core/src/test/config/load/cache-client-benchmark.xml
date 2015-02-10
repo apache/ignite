@@ -60,8 +60,6 @@
             </list>
         </property>
 
-        <property name="restEnabled" value="false"/>
-
         <property name="includeEventTypes">
             <list>
                 <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_FAILED"/>

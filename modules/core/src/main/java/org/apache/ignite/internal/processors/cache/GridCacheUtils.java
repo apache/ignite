@@ -48,10 +48,10 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
-import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
+import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
 /**
  * Cache utility methods.
@@ -1179,7 +1179,7 @@ public class GridCacheUtils {
             try {
                 return cmd.call();
             }
-            catch (IgniteCheckedException | IgniteException e) {
+            catch (IgniteCheckedException | IgniteException | IllegalStateException e) {
                 throw e;
             }
             catch (Exception e) {
