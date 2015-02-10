@@ -381,9 +381,6 @@ public class IgniteConfiguration {
     /** Property names to include into node attributes. */
     private String[] includeProps;
 
-    /** License custom URL. */
-    private String licUrl;
-
     /** Frequency of metrics log print out. */
     @SuppressWarnings("RedundantFieldInitialization")
     private long metricsLogFreq = DFLT_METRICS_LOG_FREQ;
@@ -473,7 +470,6 @@ public class IgniteConfiguration {
         hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
-        licUrl = cfg.getLicenseUrl();
         lifecycleBeans = cfg.getLifecycleBeans();
         lifeCycleEmailNtf = cfg.isLifeCycleEmailNotification();
         locHost = cfg.getLocalHost();
@@ -532,16 +528,6 @@ public class IgniteConfiguration {
      */
     public boolean isLifeCycleEmailNotification() {
         return lifeCycleEmailNtf;
-    }
-
-    /**
-     * Gets custom license file URL to be used instead of default license file location.
-     *
-     * @return Custom license file URL or {@code null} to use the default
-     *      {@code $IGNITE_HOME}-related location.
-     */
-    public String getLicenseUrl() {
-        return licUrl;
     }
 
     /**
@@ -683,15 +669,6 @@ public class IgniteConfiguration {
      */
     public String getSmtpFromEmail() {
         return smtpFromEmail;
-    }
-
-    /**
-     * Sets license URL different from the default location of the license file.
-     *
-     * @param licUrl License URl to set.
-     */
-    public void setLicenseUrl(String licUrl) {
-        this.licUrl = licUrl;
     }
 
     /**
@@ -2038,8 +2015,8 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets system-wide local address or host for all GridGain components to bind to. If provided it will
-     * override all default local bind settings within GridGain or any of its SPIs.
+     * Sets system-wide local address or host for all Ignite components to bind to. If provided it will
+     * override all default local bind settings within Ignite or any of its SPIs.
      *
      * @param locHost Local IP address or host to bind to.
      */
