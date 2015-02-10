@@ -168,11 +168,6 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public IgnitePortables portables() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public <K, V> GridCache<K, V> cache(@Nullable String name) {
         return null;
     }

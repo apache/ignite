@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
 
 import javax.cache.expiry.*;
 import java.util.*;
@@ -68,6 +68,7 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
         return PARTITIONED_ONLY;
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(null).removeAll();
@@ -111,7 +112,6 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
 
         for (String key : keys)
             assertEquals((Integer)i++, nearCache.localPeek(key, CachePeekMode.ONHEAP));
-
     }
 
     /** {@inheritDoc} */
@@ -142,15 +142,13 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
 
         assertTrue(cache.localSize() == 0);
 
-        // Force reload on primary node.
-        for (int i = 0; i < gridCount(); i++) {
-            if (ignite(i).affinity(null).isPrimary(ignite(i).cluster().localNode(), key))
-                load(jcache(i), key, true);
-        }
-
-        // Will do near get request.
         load(cache, key, true);
 
-        assertEquals((Integer)1, cache.localPeek(key, CachePeekMode.ONHEAP));
+        CacheAffinity<String> aff = ignite(0).affinity(null);
+
+        for (int i = 0; i < gridCount(); i++) {
+            if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key))
+                assertEquals((Integer)1, peek(jcache(i), key));
+        }
     }
 }

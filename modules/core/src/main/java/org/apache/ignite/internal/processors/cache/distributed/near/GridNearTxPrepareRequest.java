@@ -21,10 +21,10 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -58,11 +58,9 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     private Collection<UUID> lastBackups;
 
     /** Subject ID. */
-    @GridDirectVersion(1)
     private UUID subjId;
 
     /** Task name hash. */
-    @GridDirectVersion(2)
     private int taskNameHash;
 
     /**
@@ -219,7 +217,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridNearTxPrepareRequest _clone = new GridNearTxPrepareRequest();
 
         clone0(_clone);
@@ -228,13 +226,14 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridNearTxPrepareRequest _clone = (GridNearTxPrepareRequest)_msg;
 
         _clone.futId = futId;
         _clone.miniId = miniId;
+        _clone.near = near;
         _clone.topVer = topVer;
         _clone.last = last;
         _clone.lastBackups = lastBackups;
@@ -245,87 +244,66 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 22:
-                if (!commState.putGridUuid(futId))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 23:
-                if (!commState.putBoolean(last))
+                if (!writer.writeBoolean("last", last))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 24:
-                if (lastBackups != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(lastBackups.size()))
-                            return false;
+                if (!writer.writeCollection("lastBackups", lastBackups, UUID.class))
+                    return false;
 
-                        commState.it = lastBackups.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putUuid((UUID)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 25:
-                if (!commState.putGridUuid(miniId))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 26:
-                if (!commState.putBoolean(near))
+                if (!writer.writeBoolean("near", near))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 27:
-                if (!commState.putLong(topVer))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 28:
-                if (!commState.putUuid(subjId))
+                if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 29:
-                if (!commState.putInt(taskNameHash))
+                if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -335,102 +313,75 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 22:
-                IgniteUuid futId0 = commState.getGridUuid();
+                futId = reader.readIgniteUuid("futId");
 
-                if (futId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                futId = futId0;
-
-                commState.idx++;
+                state++;
 
             case 23:
-                if (buf.remaining() < 1)
+                last = reader.readBoolean("last");
+
+                if (!reader.isLastRead())
                     return false;
 
-                last = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 24:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                lastBackups = reader.readCollection("lastBackups", UUID.class);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (lastBackups == null)
-                        lastBackups = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        UUID _val = commState.getUuid();
-
-                        if (_val == UUID_NOT_READ)
-                            return false;
-
-                        lastBackups.add((UUID)_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 25:
-                IgniteUuid miniId0 = commState.getGridUuid();
+                miniId = reader.readIgniteUuid("miniId");
 
-                if (miniId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                miniId = miniId0;
-
-                commState.idx++;
+                state++;
 
             case 26:
-                if (buf.remaining() < 1)
+                near = reader.readBoolean("near");
+
+                if (!reader.isLastRead())
                     return false;
 
-                near = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 27:
-                if (buf.remaining() < 8)
+                subjId = reader.readUuid("subjId");
+
+                if (!reader.isLastRead())
                     return false;
 
-                topVer = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 28:
-                UUID subjId0 = commState.getUuid();
+                taskNameHash = reader.readInt("taskNameHash");
 
-                if (subjId0 == UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                subjId = subjId0;
-
-                commState.idx++;
+                state++;
 
             case 29:
-                if (buf.remaining() < 4)
+                topVer = reader.readLong("topVer");
+
+                if (!reader.isLastRead())
                     return false;
 
-                taskNameHash = commState.getInt();
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -439,7 +390,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 54;
+        return 55;
     }
 
     /** {@inheritDoc} */

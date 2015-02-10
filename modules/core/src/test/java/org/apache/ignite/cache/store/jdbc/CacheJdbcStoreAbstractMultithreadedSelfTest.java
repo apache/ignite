@@ -36,7 +36,6 @@ import org.springframework.context.support.*;
 import org.springframework.core.io.*;
 
 import javax.cache.configuration.*;
-import java.io.*;
 import java.net.*;
 import java.sql.*;
 import java.util.*;
@@ -51,6 +50,9 @@ import static org.apache.ignite.testframework.GridTestUtils.*;
  */
 public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends CacheAbstractJdbcStore>
     extends GridCommonAbstractTest {
+    /** Default config with mapping. */
+    private static final String DFLT_MAPPING_CONFIG = "modules/core/src/test/config/store/jdbc/Ignite.xml";
+
     /** Database connection URL. */
     protected static final String DFLT_CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
 
@@ -120,19 +122,22 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
         cc.setSwapEnabled(false);
         cc.setWriteBehindEnabled(false);
 
-        UrlResource metaUrl;
+        URL cfgUrl;
 
         try {
-            metaUrl = new UrlResource(new File("modules/core/src/test/config/store/jdbc/Ignite.xml").toURI().toURL());
+            cfgUrl = new URL(DFLT_MAPPING_CONFIG);
         }
-        catch (MalformedURLException e) {
-            throw new IgniteCheckedException("Failed to resolve metadata path [err=" + e.getMessage() + ']', e);
+        catch (MalformedURLException ignore) {
+            cfgUrl = U.resolveIgniteUrl(DFLT_MAPPING_CONFIG);
         }
+
+        if (cfgUrl == null)
+            throw new Exception("Failed to resolve metadata path: " + DFLT_MAPPING_CONFIG);
 
         try {
             GenericApplicationContext springCtx = new GenericApplicationContext();
 
-            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(metaUrl);
+            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(cfgUrl));
 
             springCtx.refresh();
 
@@ -144,10 +149,10 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
             if (X.hasCause(e, ClassNotFoundException.class))
                 throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
                     "(make sure all classes used in Spring configuration are present at CLASSPATH) " +
-                    "[springUrl=" + metaUrl + ']', e);
+                    "[springUrl=" + cfgUrl + ']', e);
             else
                 throw new IgniteCheckedException("Failed to instantiate Spring XML application context [springUrl=" +
-                    metaUrl + ", err=" + e.getMessage() + ']', e);
+                    cfgUrl + ", err=" + e.getMessage() + ']', e);
         }
 
         cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
@@ -167,7 +172,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
         IgniteInternalFuture<?> fut1 = runMultiThreadedAsync(new Callable<Object>() {
             private final Random rnd = new Random();
 
-            @Override public Object call() throws Exception {
+            @Nullable @Override public Object call() throws Exception {
                 for (int i = 0; i < TX_CNT; i++) {
                     IgniteCache<Object, Object> cache = jcache();
 
@@ -186,7 +191,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
         IgniteInternalFuture<?> fut2 = runMultiThreadedAsync(new Callable<Object>() {
             private final Random rnd = new Random();
 
-            @Override public Object call() throws Exception {
+            @Nullable @Override public Object call() throws Exception {
                 for (int i = 0; i < TX_CNT; i++) {
                     IgniteCache<Object, Object> cache = jcache();
 
@@ -245,7 +250,7 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
         runMultiThreaded(new Callable<Object>() {
             private final Random rnd = new Random();
 
-            @Override public Object call() throws Exception {
+            @Nullable @Override public Object call() throws Exception {
                 for (int i = 0; i < TX_CNT; i++) {
                     IgniteCache<PersonKey, Person> cache = jcache();
 

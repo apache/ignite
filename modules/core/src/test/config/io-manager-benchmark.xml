@@ -47,7 +47,6 @@
 
         <!-- Various optimisations. -->
         <property name="peerClassLoadingEnabled" value="false"/>
-        <property name="restEnabled" value="false"/>
         <property name="cacheSanityCheckEnabled" value="false"/>
 
         <property name="includeEventTypes">

@@ -95,7 +95,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
             UUID.randomUUID(),
             ctx.kernalContext().config().getMarshaller(),
             log,
-            ctx.kernalContext().config().getSystemExecutorService(),
+            ctx.kernalContext().getSystemExecutorService(),
             ctx.kernalContext().gridName());
 
         comm.setListener(new MessageListener());

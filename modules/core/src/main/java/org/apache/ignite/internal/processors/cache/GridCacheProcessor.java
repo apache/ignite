@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.cache.local.atomic.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
+import org.apache.ignite.internal.processors.cache.serialization.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -450,10 +451,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cc.getAtomicityMode() == ATOMIC)
             assertParameter(cc.getTransactionManagerLookupClassName() == null,
                 "transaction manager can not be used with ATOMIC cache");
-
-        if (cc.isPortableEnabled() && !ctx.isEnterprise())
-            throw new IgniteCheckedException("Portable mode for cache is supported only in Enterprise edition " +
-                "(set 'portableEnabled' property to 'false') [cacheName=" + cc.getName() + ']');
     }
 
     /**
@@ -634,6 +631,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
             GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
+            IgniteCacheSerializationManager serMgr = ctx.createComponent(IgniteCacheSerializationManager.class);
 
             GridCacheStoreManager storeMgr = new GridCacheStoreManager(ctx, sesHolders, cfgStore, cfg);
 
@@ -656,6 +654,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 dataStructuresMgr,
                 ttlMgr,
                 drMgr,
+                serMgr,
                 jta);
 
             GridCacheAdapter cache = null;
@@ -773,6 +772,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 evictMgr = new GridCacheEvictionManager();
                 evtMgr = new GridCacheEventManager();
                 drMgr = ctx.createComponent(GridCacheDrManager.class);
+                serMgr = ctx.createComponent(IgniteCacheSerializationManager.class);
 
                 cacheCtx = new GridCacheContext(
                     ctx,
@@ -793,6 +793,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     dataStructuresMgr,
                     ttlMgr,
                     drMgr,
+                    serMgr,
                     jta);
 
                 GridDhtCacheAdapter dht = null;
@@ -1174,9 +1175,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "queryIndexEnabled",
                             "Query index enabled", locAttr.queryIndexEnabled(), rmtAttr.queryIndexEnabled(), true);
-
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "portableEnabled",
-                            "Portables enabled", locAttr.portableEnabled(), rmtAttr.portableEnabled(), true);
 
                         if (locAttr.cacheMode() == PARTITIONED) {
                             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictSynchronized",

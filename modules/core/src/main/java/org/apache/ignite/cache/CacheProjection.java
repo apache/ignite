@@ -28,6 +28,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.sql.*;
 import java.util.*;
 import java.util.Date;
@@ -289,7 +290,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * so keys and values will be returned from cache API methods without changes. Therefore,
      * signature of the projection can contain only following types:
      * <ul>
-     *     <li>{@link org.apache.ignite.portables.PortableObject} for portable classes</li>
+     *     <li>{@link org.gridgain.grid.portables.PortableObject} for portable classes</li>
      *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
      *     <li>Arrays of primitives (byte[], int[], ...)</li>
      *     <li>{@link String} and array of {@link String}s</li>
@@ -476,8 +477,16 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @param key Key.
      * @param peekModes Peek modes.
      * @return Value.
+     * @throws IgniteCheckedException If failed.
      */
     @Nullable public V localPeek(K key, CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
+     * @param peekModes Peek modes.
+     * @return Entries iterable.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Iterable<Cache.Entry<K, V>> localEntries(CachePeekMode[] peekModes) throws IgniteCheckedException;
 
     /**
      * Peeks at cached value using optional set of peek modes. This method will sequentially
@@ -1408,6 +1417,11 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
     public void clear() throws IgniteCheckedException;
 
     /**
+     * @return Clear future.
+     */
+    public IgniteInternalFuture<?> clearAsync();
+
+    /**
      * Clears cache on all nodes that store it's data. That is, caches are cleared on remote
      * nodes and local node, as opposed to {@link CacheProjection#clearLocally()} method which only
      * clears local node's cache.
@@ -1669,6 +1683,11 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
     public void removeAll() throws IgniteCheckedException;
 
     /**
+     * @return Remove future.
+     */
+    public IgniteInternalFuture<?> removeAllAsync();
+
+    /**
      * Asynchronously removes mappings from cache for entries for which the optionally passed in filters do
      * pass. If passed in filters are {@code null}, then all entries in cache will be enrolled
      * into transaction.
@@ -1872,6 +1891,26 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @return Size of cache on this node.
      */
     public int size();
+
+    /**
+     * @param peekModes Peek modes.
+     * @return Local cache size.
+     * @throws IgniteCheckedException If failed.
+     */
+    public int localSize(CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
+     * @param peekModes Peek modes.
+     * @return Global cache size.
+     * @throws IgniteCheckedException If failed.
+     */
+    public int size(CachePeekMode[] peekModes) throws IgniteCheckedException;
+
+    /**
+     * @param peekModes Peek modes.
+     * @return Future.
+     */
+    public IgniteInternalFuture<Integer> sizeAsync(CachePeekMode[] peekModes);
 
     /**
      * Gets the number of all entries cached across all nodes.

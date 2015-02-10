@@ -18,9 +18,8 @@
 package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -86,7 +85,7 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridGgfsBlocksMessage _clone = new GridGgfsBlocksMessage();
 
         clone0(_clone);
@@ -95,7 +94,7 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridGgfsBlocksMessage _clone = (GridGgfsBlocksMessage)_msg;
@@ -108,68 +107,36 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (blocks != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(blocks.size()))
-                            return false;
+                if (!writer.writeMap("blocks", blocks, GridGgfsBlockKey.class, byte[].class))
+                    return false;
 
-                        commState.it = blocks.entrySet().iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        Map.Entry<GridGgfsBlockKey, byte[]> e = (Map.Entry<GridGgfsBlockKey, byte[]>)commState.cur;
-
-                        if (!commState.keyDone) {
-                            if (!commState.putMessage(e.getKey()))
-                                return false;
-
-                            commState.keyDone = true;
-                        }
-
-                        if (!commState.putByteArray(e.getValue()))
-                            return false;
-
-                        commState.keyDone = false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putGridUuid(fileId))
+                if (!writer.writeIgniteUuid("fileId", fileId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putLong(id))
+                if (!writer.writeLong("id", id))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -179,71 +146,35 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                blocks = reader.readMap("blocks", GridGgfsBlockKey.class, byte[].class, false);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (blocks == null)
-                        blocks = U.newHashMap(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        if (!commState.keyDone) {
-                            Object _val = commState.getMessage();
-
-                            if (_val == MSG_NOT_READ)
-                                return false;
-
-                            commState.cur = _val;
-                            commState.keyDone = true;
-                        }
-
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        blocks.put((GridGgfsBlockKey)commState.cur, _val);
-
-                        commState.keyDone = false;
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-                commState.cur = null;
-
-                commState.idx++;
+                state++;
 
             case 1:
-                IgniteUuid fileId0 = commState.getGridUuid();
+                fileId = reader.readIgniteUuid("fileId");
 
-                if (fileId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                fileId = fileId0;
-
-                commState.idx++;
+                state++;
 
             case 2:
-                if (buf.remaining() < 8)
+                id = reader.readLong("id");
+
+                if (!reader.isLastRead())
                     return false;
 
-                id = commState.getLong();
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -252,6 +183,6 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 67;
+        return 66;
     }
 }

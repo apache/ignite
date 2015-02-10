@@ -332,15 +332,9 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
 
         Collection<ClusterNode> nodes = meta.metaCacheNodes();
 
-        boolean first = true;
-
         for (ClusterNode node : nodes) {
-            GridGgfsCommunicationMessage msg0 = first ? msg : (GridGgfsCommunicationMessage)msg.clone();
-
-            first = false;
-
             try {
-                ggfsCtx.send(node, topic, msg0, GridIoPolicy.SYSTEM_POOL);
+                ggfsCtx.send(node, topic, msg, GridIoPolicy.SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
                 U.warn(log, "Failed to send GGFS delete message to node [nodeId=" + node.id() +

@@ -252,7 +252,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         cfg.setAtomicityMode(atomicityMode());
         cfg.setWriteSynchronizationMode(writeSynchronization());
         cfg.setDistributionMode(distributionMode());
-        cfg.setPortableEnabled(portableEnabled());
 
         if (cacheMode() == PARTITIONED)
             cfg.setBackups(1);
@@ -342,13 +341,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Whether portable mode is enabled.
-     */
-    protected boolean portableEnabled() {
-        return false;
-    }
-
-    /**
      * @return {@code True} for partitioned caches.
      */
     protected final boolean partitionedMode() {
@@ -378,6 +370,13 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"unchecked"})
     @Override protected IgniteCache<String, Integer> jcache() {
         return jcache(0);
+    }
+
+    /**
+     * @return Transactions instance.
+     */
+    protected IgniteTransactions transactions() {
+        return grid(0).transactions();
     }
 
     /**
@@ -431,7 +430,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Nullable protected <K, V> V peek(IgniteCache<K, V> cache, K key) throws Exception {
-        return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.SWAP) : cache.localPeek(key, CachePeekMode.ONHEAP);
+        return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.SWAP) : cache.localPeek(key,
+            CachePeekMode.ONHEAP);
     }
 
     /**

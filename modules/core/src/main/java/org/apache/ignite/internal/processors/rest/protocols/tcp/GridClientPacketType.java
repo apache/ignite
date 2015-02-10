@@ -27,6 +27,9 @@ public enum GridClientPacketType {
     /** Ignite handshake. */
     IGNITE_HANDSHAKE,
 
+    /** Ignite handshake response. */
+    IGNITE_HANDSHAKE_RES,
+
     /** Ignite message. */
     IGNITE
 }

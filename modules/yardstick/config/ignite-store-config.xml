@@ -24,6 +24,18 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans  http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+    <!--
+        Store data source.
+    -->
+    <bean id="storeDataSource" class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore">
+        <property name="dataSource">
+            <bean class="org.h2.jdbcx.JdbcConnectionPool" factory-method="create">
+                <constructor-arg value="jdbc:h2:tcp://localhost/store-benchmark/h2-benchmark"/>
+                <constructor-arg value="sa"/>
+                <constructor-arg value=""/>
+            </bean>
+        </property>
+    </bean>
 
     <bean id="sampleTypeMetadata" class="org.apache.ignite.cache.CacheTypeMetadata">
         <property name="databaseTable" value="SAMPLE"/>
@@ -45,7 +57,7 @@
                     <property name="databaseName" value="VALUE"/>
                     <property name="databaseType" value="4"/>
                     <property name="javaName" value="id"/>
-                    <property name="javaType" value="java.lang.Integer"/>
+                    <property name="javaType" value="int"/>
                 </bean>
             </list>
         </property>
@@ -93,25 +105,9 @@
 
                     <property name="cacheStoreFactory">
                         <bean class="javax.cache.configuration.FactoryBuilder$SingletonFactory">
-                            <constructor-arg>
-                                <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore">
-                                    <property name="dataSource">
-                                        <bean class="org.h2.jdbcx.JdbcConnectionPool" factory-method="create">
-                                            <constructor-arg value="jdbc:h2:tcp://localhost/store-benchmark/h2-benchmark"/>
-                                            <constructor-arg value="sa"/>
-                                            <constructor-arg value=""/>
-                                        </bean>
-                                    </property>
-                                </bean>
-                            </constructor-arg>
+                            <constructor-arg ref="storeDataSource"/>
                         </bean>
                     </property>
-
-                    <property name="readThrough" value="false"/>
-
-                    <property name="writeThrough" value="false"/>
-
-                    <property name="writeBehindEnabled" value="false"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
@@ -133,30 +129,12 @@
 
                     <property name="cacheStoreFactory">
                         <bean class="javax.cache.configuration.FactoryBuilder$SingletonFactory">
-                            <constructor-arg>
-                                <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore">
-                                    <property name="dataSource">
-                                        <bean class="org.h2.jdbcx.JdbcConnectionPool" factory-method="create">
-                                            <constructor-arg value="jdbc:h2:tcp://localhost/store-benchmark/h2-benchmark"/>
-                                            <constructor-arg value="sa"/>
-                                            <constructor-arg value=""/>
-                                        </bean>
-                                    </property>
-                                </bean>
-                            </constructor-arg>
+                            <constructor-arg ref="storeDataSource"/>
                         </bean>
                     </property>
-
-                    <property name="readThrough" value="false"/>
-
-                    <property name="writeThrough" value="false"/>
-
-                    <property name="writeBehindEnabled" value="false"/>
                 </bean>
             </list>
         </property>
-
-        <property name="restEnabled" value="false"/>
 
         <property name="includeEventTypes">
             <list/>

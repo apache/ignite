@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 
 import javax.cache.*;
-import java.util.*;
 
 /**
  * Tests for cache iterators.

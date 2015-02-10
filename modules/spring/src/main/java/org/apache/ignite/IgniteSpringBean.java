@@ -242,13 +242,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public IgnitePortables portables() {
-        assert g != null;
-
-        return g.portables();
-    }
-
-    /** {@inheritDoc} */
     @Override public String name() {
         assert g != null;
 

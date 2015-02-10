@@ -105,7 +105,6 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
 
         cfg.setGridName(gridName);
         cfg.setGridLogger(new Log4JLogger());
-        cfg.setRestEnabled(false);
 
         return cfg;
     }

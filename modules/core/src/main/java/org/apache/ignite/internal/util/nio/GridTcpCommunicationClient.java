@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -46,14 +46,13 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
     private final double bufSizeRatio;
 
     /** */
-    private final GridNioMessageWriter msgWriter;
+    private final ByteBuffer writeBuf;
 
     /** */
-    private final ByteBuffer writeBuf;
+    private final MessageFormatter formatter;
 
     /**
      * @param metricsLsnr Metrics listener.
-     * @param msgWriter Message writer.
      * @param addr Address.
      * @param locHost Local address.
      * @param connTimeout Connect timeout.
@@ -63,11 +62,11 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
      * @param bufSize Buffer size (or {@code 0} to disable buffer).
      * @param minBufferedMsgCnt Minimum buffered message count.
      * @param bufSizeRatio Communication buffer size ratio.
+     * @param formatter Message formatter.
      * @throws IgniteCheckedException If failed.
      */
     public GridTcpCommunicationClient(
         GridNioMetricsListener metricsLsnr,
-        GridNioMessageWriter msgWriter,
         InetSocketAddress addr,
         InetAddress locHost,
         long connTimeout,
@@ -76,12 +75,12 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
         int sockSndBuf,
         int bufSize,
         int minBufferedMsgCnt,
-        double bufSizeRatio
+        double bufSizeRatio,
+        MessageFormatter formatter
     ) throws IgniteCheckedException {
         super(metricsLsnr);
 
         assert metricsLsnr != null;
-        assert msgWriter != null;
         assert addr != null;
         assert locHost != null;
         assert connTimeout >= 0;
@@ -92,9 +91,9 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
         A.ensure(bufSizeRatio > 0 && bufSizeRatio < 1,
             "Value of bufSizeRatio property must be between 0 and 1 (exclusive).");
 
-        this.msgWriter = msgWriter;
         this.minBufferedMsgCnt = minBufferedMsgCnt;
         this.bufSizeRatio = bufSizeRatio;
+        this.formatter = formatter;
 
         writeBuf = ByteBuffer.allocate(8 << 10);
 
@@ -190,7 +189,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean sendMessage(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg)
+    @Override public boolean sendMessage(@Nullable UUID nodeId, MessageAdapter msg)
         throws IgniteCheckedException {
         if (closed())
             throw new IgniteCheckedException("Client was closed: " + this);
@@ -198,7 +197,9 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
         assert writeBuf.hasArray();
 
         try {
-            int cnt = msgWriter.writeFully(nodeId, msg, out, writeBuf);
+            msg.setWriter(formatter.writer());
+
+            int cnt = U.writeMessageFully(msg, out, writeBuf);
 
             metricsLsnr.onBytesSent(cnt);
         }
