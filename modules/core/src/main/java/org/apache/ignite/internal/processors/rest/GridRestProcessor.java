@@ -327,8 +327,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Applies {@link ClientMessageInterceptor}
-     * from {@link ClientConnectionConfiguration#getClientMessageInterceptor()}
+     * Applies {@link ConnectorMessageInterceptor}
+     * from {@link ConnectorConfiguration#getMessageInterceptor()} ()}
      * to all user parameters in the request.
      *
      * @param req Client request.
@@ -374,8 +374,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Applies {@link ClientMessageInterceptor} from
-     * {@link ClientConnectionConfiguration#getClientMessageInterceptor()}
+     * Applies {@link ConnectorMessageInterceptor} from
+     * {@link ConnectorConfiguration#getMessageInterceptor()}
      * to all user objects in the response.
      *
      * @param res Response.

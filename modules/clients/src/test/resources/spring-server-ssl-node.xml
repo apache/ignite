@@ -67,12 +67,12 @@
         <property name="connectorConfiguration">
             <bean class="org.apache.ignite.configuration.ConnectorConfiguration">
                 <!-- Configure TCP+SSL rest protocol. -->
-                <property name="restTcpSslEnabled" value="true"/>
+                <property name="sslEnabled" value="true"/>
 
                 <!-- Sets flag indicating whether or not SSL client authentication is required. -->
-                <property name="restTcpSslClientAuth" value="true"/>
+                <property name="sslClientAuth" value="true"/>
 
-                <property name="restTcpSslContextFactory">
+                <property name="sslContextFactory">
                     <bean class="org.apache.ignite.internal.client.ssl.GridSslBasicContextFactory">
                         <property name="keyStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/server.jks"/>
                         <property name="keyStorePassword" value="123456"/>
@@ -81,7 +81,7 @@
                     </bean>
                 </property>
 
-                <property name="restTcpPort" value="10443"/>
+                <property name="port" value="10443"/>
             </bean>
         </property>
 

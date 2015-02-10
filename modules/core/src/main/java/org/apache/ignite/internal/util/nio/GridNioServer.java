@@ -513,7 +513,7 @@ public class GridNioServer<T> {
 
     /**
      * Gets configurable idle timeout for this session. If not set, default value is
-     * {@link org.apache.ignite.configuration.ConnectorConfiguration#DFLT_IDLE_TIMEOUT}.
+     * {@link ConnectorConfiguration#DFLT_IDLE_TIMEOUT}.
      *
      * @return Idle timeout in milliseconds.
      */

@@ -97,7 +97,7 @@
         <property name="connectorConfiguration">
             <bean class="org.apache.ignite.configuration.ConnectorConfiguration">
                 <!-- Configure TCP rest protocol. -->
-                <property name="restTcpPort" value="10080"/>
+                <property name="port" value="10080"/>
             </bean>
         </property>
 
