@@ -1488,10 +1488,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
         ConnectorConfiguration clientCfg = cfg.getConnectorConfiguration();
 
-        if (clientCfg != null) {
-            restExecSvcMBean = clientCfg.getExecutorService() != null ?
-                registerExecutorMBean(clientCfg.getExecutorService(), "GridRestExecutor") : null;
-        }
+        if (clientCfg != null)
+            restExecSvcMBean = registerExecutorMBean(restExecSvc, "GridRestExecutor");
     }
 
     /**
