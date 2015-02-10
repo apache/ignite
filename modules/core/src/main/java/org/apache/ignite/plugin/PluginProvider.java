@@ -49,7 +49,7 @@ public interface PluginProvider<C extends PluginConfiguration> {
      * @param cls Ignite component class.
      * @return Ignite component or {@code null} if component is not supported.
      */
-    @Nullable public <T> T createComponent(Class<T> cls);
+    @Nullable public <T> T createComponent(PluginContext ctx, Class<T> cls);
 
     /**
      * Register extensions.
