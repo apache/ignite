@@ -54,6 +54,7 @@ public class HibernateL2CacheExampleNodeStartup {
 
         cfg.setGridName("hibernate-grid");
         cfg.setLocalHost("127.0.0.1");
+        cfg.setConnectorConfiguration(null);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
