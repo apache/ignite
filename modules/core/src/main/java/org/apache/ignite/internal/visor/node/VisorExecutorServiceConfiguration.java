@@ -54,10 +54,10 @@ public class VisorExecutorServiceConfiguration implements Serializable {
 
         cfg.p2pExecutorService(c.getPeerClassLoadingThreadPoolSize());
 
-        ClientConnectionConfiguration cc = c.getClientConnectionConfiguration();
+        ConnectorConfiguration cc = c.getConnectorConfiguration();
 
         if (cc != null)
-            cfg.restExecutorService(cc.getRestThreadPoolSize());
+            cfg.restExecutorService(cc.getThreadPoolSize());
 
         return cfg;
     }

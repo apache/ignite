@@ -61,13 +61,13 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
     @SuppressWarnings({"OverriddenMethodCallDuringObjectConstruction"})
     protected GridRestProtocolAdapter(GridKernalContext ctx) {
         assert ctx != null;
-        assert ctx.config().getClientConnectionConfiguration() != null;
+        assert ctx.config().getConnectorConfiguration() != null;
 
         this.ctx = ctx;
 
         log = ctx.log(getClass());
 
-        secretKey = ctx.config().getClientConnectionConfiguration().getRestSecretKey();
+        secretKey = ctx.config().getConnectorConfiguration().getSecretKey();
     }
 
     /**
@@ -144,8 +144,8 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
     /**
      * @return Client configuration.
      */
-    protected ClientConnectionConfiguration config() {
-        return ctx.config().getClientConnectionConfiguration();
+    protected ConnectorConfiguration config() {
+        return ctx.config().getConnectorConfiguration();
     }
 
     /** {@inheritDoc} */

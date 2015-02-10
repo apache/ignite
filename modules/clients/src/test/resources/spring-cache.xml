@@ -47,11 +47,6 @@
         <!-- Set to local host address just for examples. -->
         <property name="localHost" value="127.0.0.1"/>
 
-        <!-- Client configuration. -->
-        <property name="clientConnectionConfiguration">
-            <bean class="org.apache.ignite.configuration.ClientConnectionConfiguration"/>
-        </property>
-
         <property name="cacheConfiguration">
             <!--
                 Specify list of cache configurations here. Any property from

@@ -71,6 +71,8 @@ public class GridDataLoaderPerformanceTest extends GridCommonAbstractTest {
 
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
+        cfg.setConnectorConfiguration(null);
+
         cfg.setPeerClassLoadingEnabled(true);
 
         if (useCache) {

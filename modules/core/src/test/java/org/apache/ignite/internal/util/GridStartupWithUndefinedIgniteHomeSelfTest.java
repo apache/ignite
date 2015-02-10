@@ -90,6 +90,7 @@ public class GridStartupWithUndefinedIgniteHomeSelfTest extends TestCase {
             // Default console logger is used
             cfg.setGridLogger(log);
             cfg.setDiscoverySpi(disc);
+            cfg.setConnectorConfiguration(null);
 
             try (Ignite g = G.start(cfg)) {
                 assert g != null;

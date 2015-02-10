@@ -41,6 +41,7 @@ public class TcpDiscoverySnapshotHistoryTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(new TcpDiscoverySpi());
         cfg.setCacheConfiguration();
         cfg.setLocalHost("127.0.0.1");
+        cfg.setConnectorConfiguration(null);
 
         return cfg;
     }

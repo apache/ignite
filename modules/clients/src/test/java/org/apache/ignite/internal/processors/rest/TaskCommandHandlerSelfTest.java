@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.rest;
 
 import org.apache.ignite.*;
-import org.apache.ignite.client.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.processors.rest.handlers.*;
 import org.apache.ignite.internal.processors.rest.handlers.task.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -37,7 +37,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.client.GridClientProtocol.*;
+import static org.apache.ignite.internal.client.GridClientProtocol.*;
 
 /**
  * Test for {@code GridTaskCommandHandler}
@@ -91,13 +91,13 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         cfg.setLocalHost(HOST);
 
-        assert cfg.getClientConnectionConfiguration() == null;
+        assert cfg.getConnectorConfiguration() == null;
 
-        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
+        ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
-        clientCfg.setRestTcpPort(BINARY_PORT);
+        clientCfg.setPort(BINARY_PORT);
 
-        cfg.setClientConnectionConfiguration(clientCfg);
+        cfg.setConnectorConfiguration(clientCfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
