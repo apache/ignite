@@ -1000,7 +1000,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             fail("Exception should be thrown");
         }
-        catch (IgniteException ignored) {
+        catch (CacheException ignored) {
             // Expected exception.
         }
 

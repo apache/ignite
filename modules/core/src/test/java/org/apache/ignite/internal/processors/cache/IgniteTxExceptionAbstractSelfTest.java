@@ -403,7 +403,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 return null;
             }
-        }, IgniteTxHeuristicCheckedException.class, null);
+        }, IgniteTxHeuristicException.class, null);
 
         checkEmpty(key);
     }
@@ -491,7 +491,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 return null;
             }
-        }, IgniteTxHeuristicCheckedException.class, null);
+        }, IgniteTxHeuristicException.class, null);
 
         for (Integer key : m.keySet())
             checkEmpty(key);
@@ -525,7 +525,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 return null;
             }
-        }, IgniteTxHeuristicCheckedException.class, null);
+        }, IgniteTxHeuristicException.class, null);
 
         checkEmpty(key);
     }
