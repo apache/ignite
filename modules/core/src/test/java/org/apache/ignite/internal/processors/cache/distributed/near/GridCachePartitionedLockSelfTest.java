@@ -17,18 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.testframework.*;
 import org.apache.log4j.*;
-
-import javax.cache.*;
-import java.util.*;
-import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 
@@ -55,32 +48,5 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
     /** {@inheritDoc} */
     @Override protected boolean isPartitioned() {
         return true;
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    public void testLockAtomicCache() throws Exception {
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        cfg.setGridName(getTestGridName(0));
-        cfg.setClientConnectionConfiguration(null);
-        cfg.setCacheConfiguration(new CacheConfiguration());
-
-        final Ignite g0 = G.start(cfg);
-
-        final IgniteCache<Object, Object> cache = g0.jcache(null);
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return cache.lock(1).tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
-            }
-        }, CacheException.class, "Locks are not supported");
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return cache.lockAll(Collections.singleton(1)).tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
-            }
-        }, CacheException.class, "Locks are not supported");
     }
 }

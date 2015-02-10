@@ -45,6 +45,16 @@ public class GridTcpRestParser implements GridNioParser {
     /** JDK marshaller. */
     private final Marshaller jdkMarshaller = new JdkMarshaller();
 
+    /** Router client flag. */
+    private final boolean routerClient;
+
+    /**
+     * @param routerClient Router client flag.
+     */
+    public GridTcpRestParser(boolean routerClient) {
+        this.routerClient = routerClient;
+    }
+
     /** {@inheritDoc} */
     @Nullable @Override public GridClientMessage decode(GridNioSession ses, ByteBuffer buf) throws IOException,
         IgniteCheckedException {
@@ -81,6 +91,13 @@ public class GridTcpRestParser implements GridNioParser {
 
                     break;
 
+                case IGNITE_HANDSHAKE_RES_FLAG:
+                    buf.get();
+
+                    state.packetType(GridClientPacketType.IGNITE_HANDSHAKE_RES);
+
+                    break;
+
                 default:
                     throw new IOException("Failed to parse incoming packet (invalid packet start) [ses=" + ses +
                         ", b=" + Integer.toHexString(hdr & 0xFF) + ']');
@@ -97,6 +114,12 @@ public class GridTcpRestParser implements GridNioParser {
 
             case IGNITE_HANDSHAKE:
                 res = parseHandshake(buf, state);
+
+                break;
+
+            case IGNITE_HANDSHAKE_RES:
+                if (buf.hasRemaining())
+                    res = new GridClientHandshakeResponse(buf.get());
 
                 break;
 
@@ -121,12 +144,41 @@ public class GridTcpRestParser implements GridNioParser {
 
         if (msg instanceof GridMemcachedMessage)
             return encodeMemcache((GridMemcachedMessage)msg);
-        else if (msg == GridClientPingPacket.PING_MESSAGE)
+        else if (msg instanceof GridClientPingPacket)
             return ByteBuffer.wrap(GridClientPingPacket.PING_PACKET);
+        else if (msg instanceof GridClientHandshakeRequest) {
+            byte[] bytes = ((GridClientHandshakeRequest)msg).rawBytes();
+
+            ByteBuffer buf = ByteBuffer.allocate(bytes.length + 1);
+
+            buf.put(IGNITE_HANDSHAKE_FLAG);
+            buf.put(bytes);
+
+            buf.flip();
+
+            return buf;
+        }
         else if (msg instanceof GridClientHandshakeResponse)
             return ByteBuffer.wrap(new byte[] {
+                IGNITE_HANDSHAKE_RES_FLAG,
                 ((GridClientHandshakeResponse)msg).resultCode()
             });
+        else if (msg instanceof GridRouterRequest) {
+            byte[] body = ((GridRouterRequest)msg).body();
+
+            ByteBuffer buf = ByteBuffer.allocate(45 + body.length);
+
+            buf.put(IGNITE_REQ_FLAG);
+            buf.putInt(40 + body.length);
+            buf.putLong(msg.requestId());
+            buf.put(U.uuidToBytes(msg.clientId()));
+            buf.put(U.uuidToBytes(msg.destinationId()));
+            buf.put(body);
+
+            buf.flip();
+
+            return buf;
+        }
         else {
             GridClientMarshaller marsh = marshaller(ses);
 
@@ -429,13 +481,24 @@ public class GridTcpRestParser implements GridNioParser {
      * @throws IgniteCheckedException If no marshaller was defined for the session.
      */
     protected GridClientMessage parseClientMessage(GridNioSession ses, ParserState state) throws IOException, IgniteCheckedException {
-        GridClientMarshaller marsh = marshaller(ses);
+        GridClientMessage msg;
 
-        GridClientMessage msg = marsh.unmarshal(state.buffer().toByteArray());
+        if (routerClient) {
+            msg = new GridRouterResponse(
+                state.buffer().toByteArray(),
+                state.header().reqId(),
+                state.header().clientId(),
+                state.header().destinationId());
+        }
+        else {
+            GridClientMarshaller marsh = marshaller(ses);
 
-        msg.requestId(state.header().reqId());
-        msg.clientId(state.header().clientId());
-        msg.destinationId(state.header().destinationId());
+            msg = marsh.unmarshal(state.buffer().toByteArray());
+
+            msg.requestId(state.header().reqId());
+            msg.clientId(state.header().clientId());
+            msg.destinationId(state.header().destinationId());
+        }
 
         return msg;
     }

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.rest.client.message;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.portables.*;
 
 import java.io.*;
 
@@ -58,24 +57,6 @@ public class GridClientAuthenticationRequest extends GridClientAbstractMessage {
         super.readExternal(in);
 
         cred = in.readObject();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writePortable(PortableWriter writer) throws PortableException {
-        super.writePortable(writer);
-
-        PortableRawWriter raw = writer.rawWriter();
-
-        raw.writeObject(cred);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readPortable(PortableReader reader) throws PortableException {
-        super.readPortable(reader);
-
-        PortableRawReader raw = reader.rawReader();
-
-        cred = raw.readObject();
     }
 
     /** {@inheritDoc} */

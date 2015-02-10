@@ -1678,9 +1678,6 @@ public class IgnitionEx {
             // REST configuration.
             myCfg.setClientConnectionConfiguration(clientCfg);
 
-            // Portable configuration.
-            myCfg.setPortableConfiguration(cfg.getPortableConfiguration());
-
             // Hadoop configuration.
             myCfg.setHadoopConfiguration(cfg.getHadoopConfiguration());
 

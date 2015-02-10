@@ -273,14 +273,28 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         U.join(exchWorker, log);
 
-        exchFuts = null;
-
         ResendTimeoutObject resendTimeoutObj = pendingResend.getAndSet(null);
 
         if (resendTimeoutObj != null)
             cctx.time().removeTimeoutObject(resendTimeoutObj);
     }
 
+    /** {@inheritDoc} */
+    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
+    @Override protected void stop0(boolean cancel) {
+        super.stop0(cancel);
+
+        // Do not allow any activity in exchange manager after stop.
+        busyLock.writeLock().lock();
+
+        exchFuts = null;
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param exchId Exchange ID.
+     * @return Topology.
+     */
     public GridDhtPartitionTopology<K, V> clientTopology(int cacheId, GridDhtPartitionExchangeId exchId) {
         GridClientPartitionTopology<K, V> top = clientTops.get(cacheId);
 

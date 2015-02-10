@@ -22,14 +22,13 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import java.io.*;
-import java.nio.*;
 import java.util.*;
 
 /**
@@ -349,26 +348,6 @@ public interface IgniteSpiContext {
     @Nullable public IgniteSpiNodeValidationResult validateNode(ClusterNode node);
 
     /**
-     * Writes delta for provided node and message type.
-     *
-     * @param nodeId Node ID.
-     * @param msg Message.
-     * @param buf Buffer to write to.
-     * @return Whether delta was fully written.
-     */
-    public boolean writeDelta(UUID nodeId, Object msg, ByteBuffer buf);
-
-    /**
-     * Reads delta for provided node and message type.
-     *
-     * @param nodeId Node ID.
-     * @param msgCls Message type.
-     * @param buf Buffer to read from.
-     * @return Whether delta was fully read.
-     */
-    public boolean readDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf);
-
-    /**
      * Gets collection of authenticated subjects together with their permissions.
      *
      * @return Collection of authenticated subjects.
@@ -398,7 +377,16 @@ public interface IgniteSpiContext {
         @Nullable ClassLoader ldr) throws IgniteException;
 
     /**
+     * Gets message formatter.
+     *
+     * @return Message formatter.
+     */
+    public MessageFormatter messageFormatter();
+
+    /**
+     * Gets message factory.
+     *
      * @return Message factory.
      */
-    public GridTcpMessageFactory messageFactory();
+    public MessageFactory messageFactory();
 }

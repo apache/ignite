@@ -1132,13 +1132,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (msg.data() != null && (nodes.size() > 1 || !ctx.localNodeId().equals(F.first(nodes).id())))
             msg.dataBytes(marsh.marshal(msg.data()));
 
-        boolean first = true;
-
         for (ClusterNode node : nodes) {
-            msg = first ? msg : (GridContinuousMessage)msg.clone();
-
-            first = false;
-
             int cnt = 0;
 
             while (cnt <= retryCnt) {

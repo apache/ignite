@@ -34,7 +34,6 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.extensions.discovery.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.spi.*;
@@ -266,11 +265,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         c.updateAlives(node);
                 }
 
-                if (type == EVT_NODE_JOINED) {
-                    for (DiscoveryCallback listener : ctx.plugins().extensions(DiscoveryCallback.class))
-                        listener.beforeNodeJoined(node);
-                }
-
                 // Put topology snapshot into discovery history.
                 // There is no race possible between history maintenance and concurrent discovery
                 // event notifications, since SPI notifies manager about all events from this listener.
@@ -368,11 +362,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         locNode = getSpi().getLocalNode();
 
         topVer.setIfGreater(locNode.order());
-
-        for (DiscoveryCallback listener : ctx.plugins().extensions(DiscoveryCallback.class)) {
-            listener.onStart(discoCache().remoteNodes());
-            listener.onStart(discoCache().daemonNodes());
-        }
 
         // Start discovery worker.
         new IgniteThread(discoWrk).start();
@@ -1416,9 +1405,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     if (hasRslvrs)
                         segChkWrk.scheduleSegmentCheck();
 
-                    for (DiscoveryCallback listener : ctx.plugins().extensions(DiscoveryCallback.class))
-                        listener.onNodeLeft(node);
-
                     if (!isDaemon) {
                         if (!isLocDaemon) {
                             if (log.isInfoEnabled())
@@ -1439,9 +1425,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     // Check only if resolvers were configured.
                     if (hasRslvrs)
                         segChkWrk.scheduleSegmentCheck();
-
-                    for (DiscoveryCallback listener : ctx.plugins().extensions(DiscoveryCallback.class))
-                        listener.onNodeLeft(node);
 
                     if (!isDaemon) {
                         if (!isLocDaemon) {

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.*;
+
 /**
  * Fictive ping packet.
  */
@@ -28,7 +30,7 @@ public class GridClientPingPacket extends GridClientAbstractMessage {
     public static final GridClientMessage PING_MESSAGE = new GridClientPingPacket();
 
     /** Ping packet. */
-    public static final byte[] PING_PACKET = new byte[] {(byte)0x90, 0x00, 0x00, 0x00, 0x00};
+    public static final byte[] PING_PACKET = new byte[] {IGNITE_REQ_FLAG, 0x00, 0x00, 0x00, 0x00};
 
     /** {@inheritDoc} */
     @Override public String toString() {
