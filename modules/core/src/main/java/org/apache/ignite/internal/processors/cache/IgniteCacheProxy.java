@@ -1083,4 +1083,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @Override public CacheConfiguration configuration() {
         return getConfiguration(CacheConfiguration.class);
     }
+
+    @Override public boolean isLocked(K key) {
+        return isLocalLocked(key, false);
+    }
+
+    @Override public boolean isLockedByThread(K key) {
+        return isLocalLocked(key, true);
+    }
 }
