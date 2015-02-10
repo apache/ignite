@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -130,7 +130,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridCacheEvictionResponse _clone = new GridCacheEvictionResponse();
 
         clone0(_clone);
@@ -139,7 +139,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridCacheEvictionResponse _clone = (GridCacheEvictionResponse)_msg;
@@ -153,57 +153,36 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (!commState.putBoolean(err))
+                if (!writer.writeBoolean("err", err))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putLong(futId))
+                if (!writer.writeLong("futId", futId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                if (rejectedKeyBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(rejectedKeyBytes.size()))
-                            return false;
+                if (!writer.writeCollection("rejectedKeyBytes", rejectedKeyBytes, byte[].class))
+                    return false;
 
-                        commState.it = rejectedKeyBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -213,56 +192,35 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (buf.remaining() < 1)
+                err = reader.readBoolean("err");
+
+                if (!reader.isLastRead())
                     return false;
 
-                err = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 4:
-                if (buf.remaining() < 8)
+                futId = reader.readLong("futId");
+
+                if (!reader.isLastRead())
                     return false;
 
-                futId = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 5:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                rejectedKeyBytes = reader.readCollection("rejectedKeyBytes", byte[].class);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (rejectedKeyBytes == null)
-                        rejectedKeyBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        rejectedKeyBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -271,7 +229,7 @@ public class GridCacheEvictionResponse<K, V> extends GridCacheMessage<K, V> {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 17;
+        return 15;
     }
 
     /** {@inheritDoc} */

@@ -106,7 +106,7 @@ public abstract class GridClientByteUtils {
      * @return Encoded into byte array {@link UUID}.
      */
     public static byte[] uuidToBytes(UUID uuid) {
-        byte[] bytes = new byte[(Long.SIZE >> 3)* 2];
+        byte[] bytes = new byte[(Long.SIZE >> 3) * 2];
 
         uuidToBytes(uuid, bytes, 0);
 
@@ -122,7 +122,6 @@ public abstract class GridClientByteUtils {
      * @return Number of bytes overwritten in {@code bytes} array.
      */
     public static int uuidToBytes(UUID uuid, byte[] bytes, int off) {
-
         ByteBuffer buf = ByteBuffer.wrap(bytes, off, 16);
 
         buf.order(ByteOrder.BIG_ENDIAN);

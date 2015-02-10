@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.managers.deployment;
 
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  * Grid deployment response containing requested resource bytes.
  */
-public class GridDeploymentResponse extends GridTcpCommunicationMessageAdapter {
+public class GridDeploymentResponse extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -107,7 +107,7 @@ public class GridDeploymentResponse extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDeploymentResponse _clone = new GridDeploymentResponse();
 
         clone0(_clone);
@@ -116,44 +116,44 @@ public class GridDeploymentResponse extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridDeploymentResponse _clone = (GridDeploymentResponse)_msg;
 
         _clone.success = success;
         _clone.errMsg = errMsg;
-        _clone.byteSrc = byteSrc;
+        _clone.byteSrc = byteSrc != null ? (GridByteArrayList)byteSrc.clone() : null;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putByteArrayList(byteSrc))
+                if (!writer.writeMessage("byteSrc", byteSrc))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putString(errMsg))
+                if (!writer.writeString("errMsg", errMsg))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putBoolean(success))
+                if (!writer.writeBoolean("success", success))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -163,36 +163,32 @@ public class GridDeploymentResponse extends GridTcpCommunicationMessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                GridByteArrayList byteSrc0 = commState.getByteArrayList();
+                byteSrc = reader.readMessage("byteSrc");
 
-                if (byteSrc0 == BYTE_ARR_LIST_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                byteSrc = byteSrc0;
-
-                commState.idx++;
+                state++;
 
             case 1:
-                String errMsg0 = commState.getString();
+                errMsg = reader.readString("errMsg");
 
-                if (errMsg0 == STR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                errMsg = errMsg0;
-
-                commState.idx++;
+                state++;
 
             case 2:
-                if (buf.remaining() < 1)
+                success = reader.readBoolean("success");
+
+                if (!reader.isLastRead())
                     return false;
 
-                success = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
         }
 

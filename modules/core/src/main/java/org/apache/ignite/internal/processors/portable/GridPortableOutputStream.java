@@ -159,13 +159,6 @@ public interface GridPortableOutputStream extends GridPortableStream, AutoClosea
     public void write(long addr, int cnt);
 
     /**
-     * Ensure capacity.
-     *
-     * @param cnt Required byte count.
-     */
-    public void ensureCapacity(int cnt);
-
-    /**
      * Close the stream releasing resources.
      */
     @Override public void close();

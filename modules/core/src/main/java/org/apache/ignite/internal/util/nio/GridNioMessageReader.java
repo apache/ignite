@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -33,10 +33,10 @@ public interface GridNioMessageReader {
      * @param buf Buffer.
      * @return Whether message was fully read.
      */
-    public boolean read(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf);
+    public boolean read(@Nullable UUID nodeId, MessageAdapter msg, ByteBuffer buf);
 
     /**
      * @return Optional message factory.
      */
-    @Nullable public GridTcpMessageFactory messageFactory();
+    @Nullable public MessageFactory messageFactory();
 }

@@ -60,7 +60,7 @@ class GridRouterClientImpl implements GridClient {
 
         this.cliCfg = cliCfg;
 
-        clientImpl = new GridClientImpl(id, cliCfg);
+        clientImpl = new GridClientImpl(id, cliCfg, true);
 
         if (cliCfg.getProtocol() != GridClientProtocol.TCP)
             throw new AssertionError("Unknown protocol: " + cliCfg.getProtocol());
@@ -136,7 +136,7 @@ class GridRouterClientImpl implements GridClient {
 
         if (mgr == null) {
             GridClientConnectionManager old = connMgrMap.putIfAbsent(marshId, mgr =
-                clientImpl.newConnectionManager(marshId));
+                clientImpl.newConnectionManager(marshId, true));
 
             if (old != null)
                 mgr = old;

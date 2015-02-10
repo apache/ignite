@@ -771,8 +771,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 provider.start(ctx.plugins().pluginContextForProvider(provider), attrs);
             }
 
-            ctx.createMessageFactory();
-
             if (ctx.isEnterprise()) {
                 security = new GridSecurityImpl(ctx);
             }

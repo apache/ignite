@@ -18,13 +18,15 @@
 package org.apache.ignite.internal.processors.clock;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
+import java.nio.*;
 
 /**
  * Version for time delta snapshot.
  */
-public class GridClockDeltaVersion implements Comparable<GridClockDeltaVersion>, Externalizable {
+public class GridClockDeltaVersion extends MessageAdapter implements Comparable<GridClockDeltaVersion>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -108,6 +110,84 @@ public class GridClockDeltaVersion implements Comparable<GridClockDeltaVersion>,
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         ver = in.readLong();
         topVer = in.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf) {
+        writer.setBuffer(buf);
+
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
+                return false;
+
+            typeWritten = true;
+        }
+
+        switch (state) {
+            case 0:
+                if (!writer.writeLong("topVer", topVer))
+                    return false;
+
+                state++;
+
+            case 1:
+                if (!writer.writeLong("ver", ver))
+                    return false;
+
+                state++;
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf) {
+        reader.setBuffer(buf);
+
+        switch (state) {
+            case 0:
+                topVer = reader.readLong("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 1:
+                ver = reader.readLong("ver");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 83;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("CloneDoesntCallSuperClone")
+    @Override public MessageAdapter clone() {
+        GridClockDeltaVersion _clone = new GridClockDeltaVersion();
+
+        clone0(_clone);
+
+        return _clone;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void clone0(MessageAdapter _msg) {
+        GridClockDeltaVersion _clone = (GridClockDeltaVersion)_msg;
+
+        _clone.ver = ver;
+        _clone.topVer = topVer;
     }
 
     /** {@inheritDoc} */

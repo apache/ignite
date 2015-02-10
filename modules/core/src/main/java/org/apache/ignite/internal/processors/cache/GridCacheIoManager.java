@@ -358,23 +358,12 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             log.debug("Sending cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
 
         int cnt = 0;
-        boolean first = true;
 
         while (cnt <= retryCnt) {
             try {
                 cnt++;
 
-                GridCacheMessage<K, V> msg0;
-
-                if (first) {
-                    msg0 = msg;
-
-                    first = false;
-                }
-                else
-                    msg0 = (GridCacheMessage<K, V>)msg.clone();
-
-                cctx.gridIO().send(node, TOPIC_CACHE, msg0, plc);
+                cctx.gridIO().send(node, TOPIC_CACHE, msg, plc);
 
                 return;
             }
@@ -426,7 +415,6 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         final Collection<UUID> leftIds = new GridLeanSet<>();
 
         int cnt = 0;
-        boolean first = true;
 
         while (cnt < retryCnt) {
             try {
@@ -436,17 +424,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                     }
                 });
 
-                GridCacheMessage<K, V> msg0;
-
-                if (first) {
-                    msg0 = msg;
-
-                    first = false;
-                }
-                else
-                    msg0 = (GridCacheMessage<K, V>)msg.clone();
-
-                cctx.gridIO().send(nodesView, TOPIC_CACHE, msg0, SYSTEM_POOL);
+                cctx.gridIO().send(nodesView, TOPIC_CACHE, msg, SYSTEM_POOL);
 
                 boolean added = false;
 
