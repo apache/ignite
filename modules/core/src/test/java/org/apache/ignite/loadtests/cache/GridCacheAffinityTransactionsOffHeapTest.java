@@ -59,21 +59,22 @@ public class GridCacheAffinityTransactionsOffHeapTest {
         startNodes();
 
         for (int i = 0; i < KEY_CNT; i++) {
-            GridCache<Object, Integer> c = cache(i);
+            IgniteCache<Object, Integer> c = cache(i);
 
-            c.putx((long)i, 0);
-            c.putx(new UserKey(i, 0), 0);
-            c.putx(new UserKey(i, 1), 0);
-            c.putx(new UserKey(i, 2), 0);
+            c.put((long) i, 0);
+            c.put(new UserKey(i, 0), 0);
+            c.put(new UserKey(i, 1), 0);
+            c.put(new UserKey(i, 2), 0);
         }
 
         assert cache(5).get(5L) != null;
 
         long key = 5;
 
-        GridCache<Object, Integer> c = cache(key);
+        IgniteCache<Object, Integer> c = cache(key);
+        Ignite ignite = ignite(key);
 
-        try (IgniteTx tx = c.txStartAffinity(key, PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+        try (IgniteTx tx = ignite.transactions().txStartAffinity(c.getName(), key, PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
             Integer val = c.get(key);
             Integer userVal1 = c.get(new UserKey(key, 0));
             Integer userVal2 = c.get(new UserKey(key, 1));
@@ -90,10 +91,10 @@ public class GridCacheAffinityTransactionsOffHeapTest {
 
             int newVal = val + 1;
 
-            c.putx(key, newVal);
-            c.putx(new UserKey(key, 0), newVal);
-            c.putx(new UserKey(key, 1), newVal);
-            c.putx(new UserKey(key, 2), newVal);
+            c.put(key, newVal);
+            c.put(new UserKey(key, 0), newVal);
+            c.put(new UserKey(key, 1), newVal);
+            c.put(new UserKey(key, 2), newVal);
 
             tx.commit();
         }
@@ -153,10 +154,21 @@ public class GridCacheAffinityTransactionsOffHeapTest {
      * @param key Key.
      * @return Cache.
      */
-    private static GridCache<Object, Integer> cache(long key) {
-        UUID id = Ignition.ignite("grid-0").cache(null).affinity().mapKeyToNode(key).id();
+    private static IgniteCache<Object, Integer> cache(long key) {
+        UUID id = Ignition.ignite("grid-0").affinity(null).mapKeyToNode(key).id();
 
-        return Ignition.ignite(id).cache(null);
+        return Ignition.ignite(id).jcache(null);
+    }
+
+
+    /**
+     * @param key Key.
+     * @return Cache.
+     */
+    private static Ignite ignite(long key) {
+        UUID id = Ignition.ignite("grid-0").affinity(null).mapKeyToNode(key).id();
+
+        return Ignition.ignite(id);
     }
 
     /**

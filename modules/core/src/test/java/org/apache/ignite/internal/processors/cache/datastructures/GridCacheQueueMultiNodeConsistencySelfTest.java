@@ -150,7 +150,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends IgniteCollection
 
         if (forceRepartition)
             for (int i = 0; i < GRID_CNT; i++)
-                grid(i).cache(null).forceRepartition();
+                cache(i).forceRepartition();
 
         Ignite newIgnite = startGrid(GRID_CNT + 1);
 

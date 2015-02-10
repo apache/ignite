@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -247,7 +248,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
 
                     Ignite ignite = grid(g);
 
-                    GridCache<Object, Object> cache = ignite.cache(null);
+                    IgniteCache<Object, Object> cache = ignite.jcache(null);
 
                     int k = rnd.nextInt(range);
 
@@ -273,7 +274,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
             Long firstVal = null;
 
             for (int g = 0; g < gridCount(); g++) {
-                Long val = (Long)grid(g).cache(null).peek(i);
+                Long val = (Long)grid(g).jcache(null).peek(i);
 
                 if (firstVal == null && val != null)
                     firstVal = val;
@@ -300,7 +301,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
      * @param g Grid to check.
      */
     private void checkKeySet(Ignite g) {
-        GridCache<Object, Object> cache = g.cache(null);
+        GridCache<Object, Object> cache = ((IgniteKernal)g).internalCache(null);
 
         Set<Object> keys = cache.keySet();
 

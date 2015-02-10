@@ -145,7 +145,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
             try {
                 IgniteKernal grid = (IgniteKernal)grid(idx);
 
-                GridCache<Integer, Integer> cache = grid.cache(null);
+                IgniteCache<Integer, Integer> cache = grid.jcache(null);
 
                 List<Integer> keys = new ArrayList<>();
 
@@ -156,8 +156,8 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
 
                 Collections.sort(keys);
 
-                try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    Map<Integer, Integer> map = cache.getAll(keys);
+                try (IgniteTx tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    Map<Integer, Integer> map = cache.getAll(new LinkedHashSet<Integer>(keys));
 
                     for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
                         assertNotNull("Null value received from cache [key=" + entry.getKey() + "]", entry.getValue());
@@ -183,9 +183,9 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
             for (int i = 0; i < GRID_CNT; i++) {
                 IgniteEx grid = grid(i);
 
-                GridCache<Integer, Integer> cache = grid.cache(null);
+                IgniteCache<Integer, Integer> cache = grid.jcache(null);
 
-                if (cache.affinity().isPrimaryOrBackup(grid.localNode(), k)) {
+                if (grid.affinity(null).isPrimaryOrBackup(grid.localNode(), k)) {
                     if (val == null) {
                         val = cache.peek(k);
 
@@ -193,7 +193,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
                     }
                     else
                         assertEquals("Failed to find value in cache [primary=" +
-                            cache.affinity().isPrimary(grid.localNode(), k) + ']',
+                            grid.affinity(null).isPrimary(grid.localNode(), k) + ']',
                             val, cache.peek(k));
                 }
             }

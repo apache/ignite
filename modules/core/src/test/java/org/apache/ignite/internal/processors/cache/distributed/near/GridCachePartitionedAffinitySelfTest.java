@@ -99,7 +99,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
      * @return Affinity.
      */
     static CacheAffinity<Object> affinity(Ignite ignite) {
-        return ignite.cache(null).affinity();
+        return ignite.affinity(null);
     }
 
     /**
@@ -393,7 +393,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
         Ignite mg = grid(0);
 
-        GridCache<Integer, String> mc = mg.cache(null);
+        IgniteCache<Integer, String> mc = mg.jcache(null);
 
         int keyCnt = 10;
 
@@ -410,7 +410,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
             info("Before putting key [key=" + i + ", grid=" + mg.name() + ']');
 
-            mc.putx(i, Integer.toString(i));
+            mc.put(i, Integer.toString(i));
 
             if (failFlag.get())
                 fail("testAffinityWithPut failed.");

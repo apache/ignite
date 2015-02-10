@@ -297,8 +297,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         startGrids();
 
         try {
-            GridCache<Object, Object> prj0 = grid(0).cache(null);
-            GridCache<Object, Object> prj1 = grid(1).cache(null);
+            IgniteCache<Object, Object> prj0 = grid(0).jcache(null);
+            IgniteCache<Object, Object> prj1 = grid(1).jcache(null);
 
             Map<Integer, Integer> putMap = new HashMap<>();
 
@@ -333,9 +333,9 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         startGrids();
 
         try {
-            GridCache<Object, Object> prj0 = grid(0).cache(null);
-            GridCache<Object, Object> prj1 = grid(1).cache(null);
-            GridCache<Object, Object> prj2 = grid(2).cache(null);
+            IgniteCache<Object, Object> prj0 = grid(0).jcache(null);
+            IgniteCache<Object, Object> prj1 = grid(1).jcache(null);
+            IgniteCache<Object, Object> prj2 = grid(2).jcache(null);
 
             Map<Integer, Integer> putMap = new HashMap<>();
 

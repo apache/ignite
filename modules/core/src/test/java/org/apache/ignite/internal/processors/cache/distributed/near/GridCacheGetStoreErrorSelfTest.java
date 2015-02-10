@@ -29,6 +29,7 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
+import javax.cache.integration.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -122,11 +123,11 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         try {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    grid(0).cache(null).get(nearKey());
+                    grid(0).jcache(null).get(nearKey());
 
                     return null;
                 }
-            }, IgniteCheckedException.class, null);
+            }, CacheLoaderException.class, null);
         }
         finally {
             stopAllGrids();

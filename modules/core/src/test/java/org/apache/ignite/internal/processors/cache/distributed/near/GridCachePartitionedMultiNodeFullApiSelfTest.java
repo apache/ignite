@@ -61,13 +61,6 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     }
 
     /**
-     * TODO fix and uncomment
-     */
-    @Override public void testPartitionEntrySetRemove() throws Exception {
-        assert false : "ignite-96";
-    }
-
-    /**
      * @throws Exception If failed.
      */
     public void testPutAllRemoveAll() throws Exception {
@@ -108,8 +101,8 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < size; i++)
             putMap.put(i, i);
 
-        GridCache<Object, Object> prj0 = grid(0).cache(null);
-        GridCache<Object, Object> prj1 = grid(1).cache(null);
+        IgniteCache<Object, Object> prj0 = grid(0).jcache(null);
+        IgniteCache<Object, Object> prj1 = grid(1).jcache(null);
 
         prj0.putAll(putMap);
 
@@ -142,12 +135,12 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         int size = 10;
 
-        GridCache<Object, Object> prj0 = grid(0).cache(null);
+        IgniteCache<Object, Object> prj0 = grid(0).jcache(null);
 
         for (int i = 0; i < size; i++) {
             info("Putting value [i=" + i + ']');
 
-            assertNull(prj0.put(i, i));
+            prj0.put(i, i);
 
             info("Finished putting value [i=" + i + ']');
         }
@@ -155,11 +148,11 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < gridCount(); i++) {
             assertEquals(0, context(i).tm().idMapSize());
 
-            GridCache<Object, Object> cache = grid(i).cache(null);
+            IgniteCache<Object, Object> cache = grid(i).jcache(null);
             ClusterNode node = grid(i).localNode();
 
             for (int k = 0; k < size; k++) {
-                if (cache.affinity().isPrimaryOrBackup(node, k))
+                if (affinity(cache).isPrimaryOrBackup(node, k))
                     assertEquals("Check failed for node: " + node.id(), k, cache.peek(k));
             }
         }
@@ -372,11 +365,11 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         info("All affinity nodes: " + affinityNodes());
 
-        GridCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
-        info("Cache affinity nodes: " + cache.affinity().mapKeyToPrimaryAndBackups(key));
+        info("Cache affinity nodes: " + affinity(cache).mapKeyToPrimaryAndBackups(key));
 
-        CacheAffinity<Object> aff = cache.affinity();
+        CacheAffinity<Object> aff = affinity(cache);
 
         Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
 
@@ -408,19 +401,19 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         assertNotNull(backup);
         assertNotNull(other);
 
-        assertTrue(cache.affinity().isPrimary(primary, key));
-        assertFalse(cache.affinity().isBackup(primary, key));
-        assertTrue(cache.affinity().isPrimaryOrBackup(primary, key));
+        assertTrue(affinity(cache).isPrimary(primary, key));
+        assertFalse(affinity(cache).isBackup(primary, key));
+        assertTrue(affinity(cache).isPrimaryOrBackup(primary, key));
 
-        assertFalse(cache.affinity().isPrimary(backup, key));
-        assertTrue(cache.affinity().isBackup(backup, key));
-        assertTrue(cache.affinity().isPrimaryOrBackup(backup, key));
+        assertFalse(affinity(cache).isPrimary(backup, key));
+        assertTrue(affinity(cache).isBackup(backup, key));
+        assertTrue(affinity(cache).isPrimaryOrBackup(backup, key));
 
-        assertFalse(cache.affinity().isPrimary(other, key));
+        assertFalse(affinity(cache).isPrimary(other, key));
 
         if (cacheMode() == PARTITIONED) {
-            assertFalse(cache.affinity().isBackup(other, key));
-            assertFalse(cache.affinity().isPrimaryOrBackup(other, key));
+            assertFalse(affinity(cache).isBackup(other, key));
+            assertFalse(affinity(cache).isPrimaryOrBackup(other, key));
         }
     }
 }

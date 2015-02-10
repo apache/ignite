@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -75,7 +75,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRehash() throws Exception {
-        GridCache<Integer, String> c = grid().cache(null);
+        IgniteCache<Integer, String> c = grid().jcache(null);
 
         int cnt = 100 * 1024;
 
@@ -93,7 +93,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
 
         int idx = 0;
 
-        for (Cache.Entry<Integer, String> e : c.entrySet()) {
+        for (Cache.Entry<Integer, String> e : c) {
             assertNotNull(e.getValue());
 
             idx++;
@@ -106,7 +106,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRehashRandom() throws Exception {
-        GridCache<Integer, String> c = grid().cache(null);
+        IgniteCache<Integer, String> c = grid().jcache(null);
 
         int cnt = 100 * 1024;
 
@@ -132,7 +132,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
 
         int idx = 0;
 
-        for (Cache.Entry<Integer, String> e : c.entrySet()) {
+        for (Cache.Entry<Integer, String> e : c) {
             assertNotNull(e.getValue());
 
             idx++;
@@ -154,15 +154,13 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
         multithreaded(new Callable<Object>() {
             @SuppressWarnings("UnusedAssignment")
             @Override public Object call() throws Exception {
-                GridCache<Integer, String> c = grid().cache(null);
+                IgniteCache<Integer, String> c = grid().jcache(null);
 
                 int tid = tidGen.getAndIncrement();
 
                 int start = 2 * 1024 * tid;
 
-                Iterator<String> it1 = null;
-                Iterator<Cache.Entry<Integer, String>> it2 = null;
-                Iterator<Integer> it3 = null;
+                Iterator<Cache.Entry<Integer, String>> it = null;
 
                 boolean created = false;
 
@@ -170,14 +168,8 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
                     int key = i % cnt;
 
                     if (!created && i >= start + tid * 100) {
-                        if (it1 == null)
-                            it1 = c.values().iterator();
-
-                        if (it2 == null)
-                            it2 = c.entrySet().iterator();
-
-                        if (it3 == null)
-                            it3 = c.keySet().iterator();
+                        if (it == null)
+                            it = c.iterator();
 
                         created = true;
                     }
@@ -188,19 +180,11 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
                 }
 
                 // Go through iterators.
-                while(it1.hasNext())
-                    it1.next();
-
-                while(it2.hasNext())
-                    it2.next();
-
-                while(it3.hasNext())
-                    it3.next();
+                while(it.hasNext())
+                    it.next();
 
                 // Make sure that hard references are gone.
-                it1 = null;
-                it2 = null;
-                it3 = null;
+                it = null;
 
                 for (int i = start; i < start + cnt; i++) {
                     int key = i % cnt;
@@ -212,7 +196,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
 
                 int idx = 0;
 
-                for (Cache.Entry<Integer, String> e : c.entrySet()) {
+                for (Cache.Entry<Integer, String> e : c) {
                     assertNotNull(e.getValue());
 
                     idx++;
@@ -250,15 +234,15 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
         multithreaded(new Callable<Object>() {
             @SuppressWarnings("UnusedAssignment")
             @Override public Object call() throws Exception {
-                GridCache<Integer, String> c = grid().cache(null);
+                IgniteCache<Integer, String> c = grid().jcache(null);
 
                 int tid = tidGen.getAndIncrement();
 
                 int start = 2 * 1024 * tid;
 
-                Iterator<String> it1 = null;
+                Iterator<Cache.Entry<Integer, String>> it1 = null;
                 Iterator<Cache.Entry<Integer, String>> it2 = null;
-                Iterator<Integer> it3 = null;
+                Iterator<Cache.Entry<Integer, String>> it3 = null;
 
                 boolean forgot = false;
 
@@ -267,13 +251,13 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
 
                     if (!forgot && i >= start + tid * 100) {
                         if (it1 == null)
-                            it1 = c.values().iterator();
+                            it1 = c.iterator();
 
                         if (it2 == null)
-                            it2 = c.entrySet().iterator();
+                            it2 = c.iterator();
 
                         if (it3 == null)
-                            it3 = c.keySet().iterator();
+                            it3 = c.iterator();
                     }
 
                     c.put(key, Integer.toString(key));
@@ -307,7 +291,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
 
                 int idx = 0;
 
-                for (Cache.Entry<Integer, String> e : c.entrySet()) {
+                for (Cache.Entry<Integer, String> e : c) {
                     assertNotNull(e.getValue());
 
                     idx++;
@@ -337,30 +321,23 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("ResultOfObjectAllocationIgnored")
     public void testEmptyWeakIterator() throws Exception {
-        final GridCache<Integer, String> c = grid().cache(null);
+        final IgniteCache<Integer, String> c = grid().jcache(null);
 
         for (int i = 0; i < 100; i++) {
             multithreaded(new Callable<Object>() {
                 @SuppressWarnings("UnusedAssignment")
                 @Override public Object call() throws Exception {
-                    Iterator<String> it1 = c.values().iterator();
-                    Iterator<Cache.Entry<Integer, String>> it2 = c.entrySet().iterator();
-                    Iterator<Integer> it3 = c.keySet().iterator();
+                    Iterator<Cache.Entry<Integer, String>> it = c.iterator();
 
                     for (int i = 0; i < 1000; i++) {
                         c.put(i, String.valueOf(i));
 
-                        if (i == 0) {
-                            it1.hasNext();
-                            it2.hasNext();
-                            it3.hasNext();
-                        }
+                        if (i == 0)
+                            it.hasNext();
                     }
 
                     // Make sure that hard references are gone.
-                    it1 = null;
-                    it2 = null;
-                    it3 = null;
+                    it = null;
 
                     System.gc();
 

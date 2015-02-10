@@ -113,10 +113,10 @@ public abstract class GridCacheGroupLockPartitionedAbstractSelfTest extends Grid
 
         final UUID affinityKey = primaryKeyForCache(grid(0));
 
-        final GridCache<UUID, String> cache = grid(0).cache(null);
+        final IgniteCache<UUID, String> cache = grid(0).jcache(null);
 
-        try (IgniteTx tx = cache.txStartPartition(cache.affinity().partition(affinityKey), PESSIMISTIC, REPEATABLE_READ,
-            0, 2)) {
+        try (IgniteTx tx = grid(0).transactions().txStartPartition(null, affinity(cache).partition(affinityKey),
+            PESSIMISTIC, REPEATABLE_READ, 0, 2)) {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     UUID key1;
@@ -124,7 +124,7 @@ public abstract class GridCacheGroupLockPartitionedAbstractSelfTest extends Grid
                     do {
                         key1 = UUID.randomUUID();
                     }
-                    while (cache.affinity().partition(key1) == cache.affinity().partition(affinityKey));
+                    while (affinity(cache).partition(key1) == affinity(cache).partition(affinityKey));
 
                     // Key with affinity key different from enlisted on tx start should raise exception.
                     cache.put(key1, "val1");

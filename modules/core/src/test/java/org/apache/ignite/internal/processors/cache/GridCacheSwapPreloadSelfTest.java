@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -96,16 +97,21 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
         try {
             startGrid(0);
 
-            GridCache<Integer, Integer> cache = grid(0).cache(null);
+            IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
+
+            Set<Integer> keys = new HashSet<>();
 
             // Populate.
-            for (int i = 0; i < ENTRY_CNT; i++)
+            for (int i = 0; i < ENTRY_CNT; i++) {
+                keys.add(i);
+
                 cache.put(i, i);
+            }
 
             info("Put finished.");
 
             // Evict all.
-            cache.evictAll();
+            cache.localEvict(keys);
 
             info("Evict finished.");
 
@@ -116,7 +122,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
 
             startGrid(1);
 
-            int size = grid(1).cache(null).size();
+            int size = grid(1).jcache(null).localSize();
 
             info("New node cache size: " + size);
 
@@ -189,7 +195,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
 
             done.set(true);
 
-            int size = grid(1).cache(null).size();
+            int size = grid(1).jcache(null).localSize();
 
             info("New node cache size: " + size);
 

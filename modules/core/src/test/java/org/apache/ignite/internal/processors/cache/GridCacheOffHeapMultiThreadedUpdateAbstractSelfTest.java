@@ -110,7 +110,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
         }, THREADS, "transform");
 
         for (int i = 0; i < gridCount(); i++) {
-            Integer val = (Integer)grid(i).cache(null).get(key);
+            Integer val = (Integer)grid(i).jcache(null).get(key);
 
             assertEquals("Unexpected value for grid " + i, (Integer)(ITERATIONS_PER_THREAD * THREADS), val);
         }
@@ -133,7 +133,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
      * @throws Exception If failed.
      */
     private void testPut(final Integer key) throws Exception {
-        final GridCache<Integer, Integer> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         cache.put(key, 0);
 
@@ -146,7 +146,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    Integer val = cache.put(key, i);
+                    Integer val = cache.getAndPut(key, i);
 
                     assertNotNull(val);
                 }
@@ -156,7 +156,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
         }, THREADS, "put");
 
         for (int i = 0; i < gridCount(); i++) {
-            Integer val = (Integer)grid(i).cache(null).get(key);
+            Integer val = (Integer)grid(i).jcache(null).get(key);
 
             assertNotNull("Unexpected value for grid " + i, val);
         }
@@ -179,7 +179,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
      * @throws Exception If failed.
      */
     private void testPutxIfAbsent(final Integer key) throws Exception {
-        final GridCache<Integer, Integer> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         cache.put(key, 0);
 
@@ -192,7 +192,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    assertFalse(cache.putxIfAbsent(key, 100));
+                    assertFalse(cache.putIfAbsent(key, 100));
                 }
 
                 return null;
@@ -200,53 +200,9 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
         }, THREADS, "putxIfAbsent");
 
         for (int i = 0; i < gridCount(); i++) {
-            Integer val = (Integer)grid(i).cache(null).get(key);
+            Integer val = (Integer)grid(i).jcache(null).get(key);
 
             assertEquals("Unexpected value for grid " + i, (Integer)0, val);
-        }
-
-        assertFalse(failed);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutWithFilter() throws Exception {
-        testPutWithFilter(keyForNode(0));
-
-        if (gridCount() > 1)
-            testPutWithFilter(keyForNode(1));
-    }
-
-    /**
-     * @param key Key.
-     * @throws Exception If failed.
-     */
-    private void testPutWithFilter(final Integer key) throws Exception {
-        final GridCache<Integer, Integer> cache = grid(0).cache(null);
-
-        cache.put(key, 0);
-
-        final int THREADS = 5;
-        final int ITERATIONS_PER_THREAD = iterations();
-
-        GridTestUtils.runMultiThreaded(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                for (int i = 0; i < ITERATIONS_PER_THREAD && !failed; i++) {
-                    if (i % 500 == 0)
-                        log.info("Iteration " + i);
-
-                    assertTrue(cache.putx(key, i, new TestFilter()));
-                }
-
-                return null;
-            }
-        }, THREADS, "putWithFilter");
-
-        for (int i = 0; i < gridCount(); i++) {
-            Integer val = (Integer)grid(i).cache(null).get(key);
-
-            assertNotNull("Unexpected value for grid " + i, val);
         }
 
         assertFalse(failed);
@@ -267,7 +223,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
      * @throws Exception If failed.
      */
     private void testPutGet(final Integer key) throws Exception {
-        final GridCache<Integer, Integer> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         cache.put(key, 0);
 
@@ -280,7 +236,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
                     if (i % 1000 == 0)
                         log.info("Put iteration " + i);
 
-                    assertTrue(cache.putx(key, i));
+                    cache.put(key, i);
                 }
 
                 return null;
@@ -316,7 +272,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
         getFut.get();
 
         for (int i = 0; i < gridCount(); i++) {
-            Integer val = (Integer)grid(i).cache(null).get(key);
+            Integer val = (Integer)grid(i).jcache(null).get(key);
 
             assertNotNull("Unexpected value for grid " + i, val);
         }
@@ -329,10 +285,8 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     protected Integer keyForNode(int idx) {
         Integer key0 = null;
 
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
-
         for (int i = 0; i < 10_000; i++) {
-            if (cache.affinity().isPrimary(grid(idx).localNode(), i)) {
+            if (grid(0).affinity(null).isPrimary(grid(idx).localNode(), i)) {
                 key0 = i;
 
                 break;

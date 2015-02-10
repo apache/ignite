@@ -108,7 +108,7 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
             }
         }, EventType.EVT_CACHE_ENTRY_EVICTED);
 
-        GridCache<String, String> c = g.cache(null);
+        IgniteCache<String, String> c = g.jcache(null);
 
         c.put("1", "val1");
 

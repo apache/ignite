@@ -171,9 +171,9 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      */
     private void checkPolicyConsistency() throws Exception {
         try {
-            Ignite ignite = startGrid(1);
+            final Ignite ignite = startGrid(1);
 
-            final GridCache<Integer, Integer> cache = ignite.cache(null);
+            final IgniteCache<Integer, Integer> cache = ignite.jcache(null);
 
             long start = System.currentTimeMillis();
 
@@ -187,10 +187,10 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
 
                             int j = rnd.nextInt(keyCnt);
 
-                            try (IgniteTx tx = cache.txStart()) {
+                            try (IgniteTx tx = ignite.transactions().txStart()) {
                                 // Put or remove?
                                 if (rnd.nextBoolean())
-                                    cache.putx(j, j);
+                                    cache.put(j, j);
                                 else
                                     cache.remove(j);
 
@@ -215,7 +215,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
                 ", internalQueueSize" + queue.size() + ", duration=" + (System.currentTimeMillis() - start) + ']');
 
             for (Cache.Entry<Integer, Integer> e : queue) {
-                Integer rmv = cache.remove(e.getKey());
+                Integer rmv = cache.getAndRemove(e.getKey());
 
                 if (rmv == null)
                     fail("Eviction policy contains key that is not present in cache: " + e);

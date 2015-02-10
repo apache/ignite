@@ -18,7 +18,6 @@
 package org.apache.ignite.client;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.client.balancer.*;
 import org.apache.ignite.client.impl.*;
 import org.apache.ignite.client.ssl.*;
@@ -26,7 +25,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -46,7 +44,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
  *
@@ -281,7 +278,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
         final String key = "k0";
 
         Collection<UUID> affNodesIds = F.viewReadOnly(
-            grid(0).cache(data.cacheName()).affinity().mapKeyToPrimaryAndBackups(key),
+            affinity(grid(0).jcache(data.cacheName())).mapKeyToPrimaryAndBackups(key),
             F.node2id());
 
         final GridClientData dataFirst = data.pinNodes(F.first(client.compute().nodes()));
@@ -467,11 +464,11 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
 
             ClusterNode node = ignite.cluster().mapKeyToNode(PARTITIONED_CACHE_NAME, key);
 
-            if (!puts.get(key).get2().equals(gridMap.get(node.id()).cache(PARTITIONED_CACHE_NAME).peek(key))) {
+            if (!puts.get(key).get2().equals(gridMap.get(node.id()).jcache(PARTITIONED_CACHE_NAME).peek(key))) {
                 // printAffinityState(gridMap.values());
 
                 failNotEquals("Node don't have value for key [nodeId=" + node.id() + ", key=" + key + "]",
-                    puts.get(key).get2(), gridMap.get(node.id()).cache(PARTITIONED_CACHE_NAME).peek(key));
+                    puts.get(key).get2(), gridMap.get(node.id()).jcache(PARTITIONED_CACHE_NAME).peek(key));
             }
 
             // Assert that client has properly determined affinity node.
@@ -492,26 +489,11 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
 
             // Check that no other nodes see this key.
             for (UUID id : F.view(gridMap.keySet(), F.notEqualTo(node.id())))
-                assertNull("Got value in near cache.", gridMap.get(id).cache(PARTITIONED_CACHE_NAME).peek(key));
+                assertNull("Got value in near cache.", gridMap.get(id).jcache(PARTITIONED_CACHE_NAME).peek(key));
         }
 
         for (Ignite g : gridMap.values())
-            g.cache(PARTITIONED_CACHE_NAME).clear();
-    }
-
-    /**
-     * @param grids Collection for Grids to print affinity info.
-     */
-    private void printAffinityState(Iterable<Ignite> grids) {
-        for (Ignite g : grids) {
-            GridAffinityAssignmentCache affCache = getFieldValue(
-                ((IgniteKernal)g).internalCache(PARTITIONED_CACHE_NAME).context().affinity(),
-                "aff");
-
-            CacheAffinityFunction aff = getFieldValue(affCache, "aff");
-
-            info("Affinity [nodeId=" + g.cluster().localNode().id() + ", affinity=" + aff + "]");
-        }
+            g.jcache(PARTITIONED_CACHE_NAME).clear();
     }
 
     /** {@inheritDoc} */

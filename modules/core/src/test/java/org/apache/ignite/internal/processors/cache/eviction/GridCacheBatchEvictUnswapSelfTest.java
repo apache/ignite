@@ -119,7 +119,7 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
 
         final AtomicInteger evictedKeysCnt = new AtomicInteger();
 
-        final GridCache<Object, Object> cache = g.cache(null);
+        final IgniteCache<Object, Object> cache = g.jcache(null);
 
         cache.loadCache(null, 0);
 
@@ -135,7 +135,8 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
                     keys.add(i);
 
                     if (keys.size() == batchSize) {
-                        cache.evictAll(keys);
+                        for (Long key : keys)
+                            cache.evict(key);
 
                         evictedKeysCnt.addAndGet(batchSize);
 
@@ -163,7 +164,8 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
                         keys.add(i);
 
                         if (keys.size() == batchSize) {
-                            cache.promoteAll(keys);
+                            for (Long key : keys)
+                                cache.promote(key);
 
                             unswappedKeys.addAndGet(batchSize);
 
@@ -176,7 +178,7 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
                         }
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     e.printStackTrace();
                 }
             }

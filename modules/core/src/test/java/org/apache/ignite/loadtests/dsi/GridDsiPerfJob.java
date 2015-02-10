@@ -225,7 +225,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      *
      */
     private void doWork() {
-        GridCache cache = ignite.cache(cacheName);
+        IgniteCache cache = ignite.jcache(cacheName);
 
         assert cache != null;
 
@@ -259,7 +259,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
             ses = new GridDsiSession(terminalId);
 
         try {
-            try (IgniteTx tx = cache.txStart()) {
+            try (IgniteTx tx = ignite.transactions().txStart()) {
                 GridDsiRequest req = new GridDsiRequest(getId());
 
                 req.setMessageId(getId());
@@ -338,6 +338,6 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      */
     @SuppressWarnings("ConstantConditions")
     private <T> Object get(Object key) throws IgniteCheckedException {
-        return ignite.cache(cacheName).get(key);
+        return ignite.jcache(cacheName).get(key);
     }
 }

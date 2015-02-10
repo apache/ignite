@@ -110,9 +110,9 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         assert G.allGrids().size() == GRID_CNT;
 
         for (int i = 0; i < KEY_CNT; i++) {
-            grid(0).cache(null).put(i, i);
+            grid(0).jcache(null).put(i, i);
 
-            grid(0).cache(NON_DFLT_CACHE_NAME).put(i, i);
+            grid(0).jcache(NON_DFLT_CACHE_NAME).put(i, i);
         }
     }
 
@@ -305,7 +305,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
             if (log.isDebugEnabled())
                 log.debug("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            CacheAffinity<Object> aff = ignite.cache(null).affinity();
+            CacheAffinity<Object> aff = ignite.affinity(null);
 
             return F.eqNodes(ignite.cluster().localNode(), aff.mapKeyToNode(affKey));
         }
@@ -361,7 +361,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
             if (log.isDebugEnabled())
                 log.debug("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            CacheAffinity<Object> aff = ignite.cache(null).affinity();
+            CacheAffinity<Object> aff = ignite.affinity(null);
 
             return F.eqNodes(ignite.cluster().localNode(), aff.mapKeyToNode(affKey));
         }
@@ -421,7 +421,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
             if (log.isDebugEnabled())
                 log.debug("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            CacheAffinity<Object> aff = ignite.cache(cacheName).affinity();
+            CacheAffinity<Object> aff = ignite.affinity(cacheName);
 
             return F.eqNodes(ignite.cluster().localNode(), aff.mapKeyToNode(affKey));
         }
@@ -485,7 +485,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
             if (log.isDebugEnabled())
                 log.debug("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            CacheAffinity<Object> aff = ignite.cache(cacheName()).affinity();
+            CacheAffinity<Object> aff = ignite.affinity(cacheName());
 
             return F.eqNodes(ignite.cluster().localNode(), aff.mapKeyToNode(affKey));
         }
@@ -533,7 +533,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
             if (log.isDebugEnabled())
                 log.debug("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            CacheAffinity<Object> aff = ignite.cache(null).affinity();
+            CacheAffinity<Object> aff = ignite.affinity(null);
 
             return F.eqNodes(ignite.cluster().localNode(), aff.mapKeyToNode(affKey));
         }
@@ -572,7 +572,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Integer arg) {
             return F.asList(new ComputeJobAdapter() {
                 @Override public Object execute() {
-                    CacheAffinity<Object> aff = ignite.cache(null).affinity();
+                    CacheAffinity<Object> aff = ignite.affinity(null);
 
                     ClusterNode primary = aff.mapKeyToNode(affKey);
 

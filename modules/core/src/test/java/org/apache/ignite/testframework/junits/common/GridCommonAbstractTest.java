@@ -25,6 +25,7 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -92,6 +93,36 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected <K, V> GridCache<K, V> cache() {
         return grid().cachex();
+    }
+
+    /**
+     * @param idx Grid index.
+     * @return Cache.
+     */
+    protected <K, V> GridCache<K, V> internalCache(int idx) {
+        return ((IgniteKernal)grid(idx)).cache(null);
+    }
+
+    /**
+     * @param idx Grid index.
+     * @return Cache.
+     */
+    protected <K, V> GridCache<K, V> internalCache(int idx, String cacheName) {
+        return ((IgniteKernal)grid(idx)).cache(null);
+    }
+
+    /**
+     * @return Cache.
+     */
+    protected <K, V> GridCache<K, V> internalCache() {
+        return ((IgniteKernal)grid()).cache(null);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    protected <K, V> GridCache<K, V> internalCache(IgniteCache<K, V> cache) {
+        return ((IgniteKernal)cache.unwrap(Ignite.class)).cache(cache.getName());
     }
 
     /**
@@ -423,6 +454,19 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @param iterable Iterator
+     * @return Set
+     */
+    protected <K, V> Set<Cache.Entry<K, V>> entrySet(Iterable<Cache.Entry<K, V>> iterable){
+        Set<Cache.Entry<K, V>> set = new TreeSet<>();
+
+        for (Cache.Entry<K, V> entry : iterable)
+            set.add(entry);
+
+        return set;
+    }
+
+    /**
      * @param cache Cache.
      * @param cnt Keys count.
      * @return Collection of keys for which given cache is primary.
@@ -497,7 +541,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> primaryCache(Object key, @Nullable String cacheName) {
-        ClusterNode node = grid(0).cache(cacheName).affinity().mapKeyToNode(key);
+        ClusterNode node = internalCache(0, cacheName).affinity().mapKeyToNode(key);
 
         assertNotNull(node);
 

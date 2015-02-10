@@ -142,7 +142,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         final String initVal = "initialValue";
 
         for (Integer key : keys) {
-            grid(originatingNode()).cache(null).put(key, initVal);
+            grid(originatingNode()).jcache(null).put(key, initVal);
 
             map.put(key, String.valueOf(key));
         }
@@ -175,11 +175,11 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
         GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                GridCache<Integer, String> cache = originatingNodeGrid.cache(null);
+                IgniteCache<Integer, String> cache = originatingNodeGrid.jcache(null);
 
                 assertNotNull(cache);
 
-                IgniteTx tx = cache.txStart();
+                IgniteTx tx = originatingNodeGrid.transactions().txStart();
 
                 try {
                     cache.putAll(map);
@@ -251,7 +251,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
                     private Ignite ignite;
 
                     @Override public Void call() throws Exception {
-                        GridCache<Integer, String> cache = ignite.cache(null);
+                        IgniteCache<Integer, String> cache = ignite.jcache(null);
 
                         assertNotNull(cache);
 
@@ -266,7 +266,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
         for (Map.Entry<Integer, String> e : map.entrySet()) {
             for (Ignite g : G.allGrids())
-                assertEquals(fullFailure ? initVal : e.getValue(), g.cache(null).get(e.getKey()));
+                assertEquals(fullFailure ? initVal : e.getValue(), g.jcache(null).get(e.getKey()));
         }
     }
 
@@ -277,7 +277,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
      * @throws Exception If failed.
      */
     private void checkPrimaryNodeCrash(final boolean commmit) throws Exception {
-        Collection<Integer> keys = new ArrayList<>(20);
+        Set<Integer> keys = new HashSet<>();
 
         for (int i = 0; i < 20; i++)
             keys.add(i);
@@ -298,21 +298,21 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         final String initVal = "initialValue";
 
         for (Integer key : keys) {
-            grid(originatingNode()).cache(null).put(key, initVal);
+            grid(originatingNode()).jcache(null).put(key, initVal);
 
             map.put(key, String.valueOf(key));
         }
 
         Map<Integer, Collection<ClusterNode>> nodeMap = new HashMap<>();
 
-        GridCache<Integer, String> cache = grid(0).cache(null);
+        IgniteCache<Integer, String> cache = grid(0).jcache(null);
 
         info("Failing node ID: " + grid(1).localNode().id());
 
         for (Integer key : keys) {
             Collection<ClusterNode> nodes = new ArrayList<>();
 
-            nodes.addAll(cache.affinity().mapKeyToPrimaryAndBackups(key));
+            nodes.addAll(affinity(cache).mapKeyToPrimaryAndBackups(key));
 
             nodes.remove(primaryNode);
 
@@ -324,7 +324,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
         assertNotNull(cache);
 
-        try (IgniteTx tx = cache.txStart()) {
+        try (IgniteTx tx = grid(0).transactions().txStart()) {
             cache.getAll(keys);
 
             // Should not send any messages.
@@ -382,7 +382,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
                     private Ignite ignite;
 
                     @Override public Void call() throws Exception {
-                        GridCache<Integer, String> cache = ignite.cache(null);
+                        IgniteCache<Integer, String> cache = ignite.jcache(null);
 
                         assertNotNull(cache);
 
@@ -397,7 +397,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
         for (Map.Entry<Integer, String> e : map.entrySet()) {
             for (Ignite g : G.allGrids())
-                assertEquals(!commmit ? initVal : e.getValue(), g.cache(null).get(e.getKey()));
+                assertEquals(!commmit ? initVal : e.getValue(), g.jcache(null).get(e.getKey()));
         }
     }
 

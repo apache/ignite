@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
@@ -130,12 +131,12 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
         try {
             startGrids(2);
 
-            GridCache<Object, Object> cache = grid(0).cache(null);
+            IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
             cache.put("key", valCls.newInstance());
 
             for (int i = 0; i < 2; i++)
-                assertNotNull("For grid: " + i, grid(i).cache(null).peek("key"));
+                assertNotNull("For grid: " + i, grid(i).jcache(null).peek("key"));
 
             for (MessageCountingCommunicationSpi spi : commSpis.values()) {
                 assertTrue(spi.deploymentMessageCount() > 0);
@@ -149,7 +150,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
                 cache.put(key, valCls.newInstance());
 
                 for (int k = 0; k < 2; k++)
-                    assertNotNull(grid(k).cache(null).peek(key));
+                    assertNotNull(grid(k).jcache(null).peek(key));
             }
 
             for (MessageCountingCommunicationSpi spi : commSpis.values())

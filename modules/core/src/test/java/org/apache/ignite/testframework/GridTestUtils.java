@@ -848,6 +848,14 @@ public final class GridTestUtils {
 
     /**
      * @param cache Cache.
+     * @return Cache context.
+     */
+    public static <K, V> GridCacheContext<K, V> cacheContext(IgniteCache<K, V> cache) {
+        return ((IgniteKernal)cache.unwrap(Ignite.class)).<K, V>internalCache().context();
+    }
+
+    /**
+     * @param cache Cache.
      * @return Near cache.
      */
     public static <K, V> GridNearCacheAdapter<K, V> near(GridCache<K, V> cache) {

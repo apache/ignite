@@ -75,7 +75,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
 
         Collection<Integer> allKeys = new ArrayList<>(100);
 
-        GridCache<Integer, String> cache = g1.cache(null);
+        IgniteCache<Integer, String> cache = g1.jcache(null);
 
         for (int i = 0; i < 100; i++) {
             cache.put(i, "val");
@@ -84,7 +84,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
 
         Ignite g2 = startGrid("g2");
 
-        Map<ClusterNode, Collection<Object>> keysMap = g1.cache(null).affinity().mapKeysToNodes(allKeys);
+        Map<ClusterNode, Collection<Object>> keysMap = g1.affinity(null).mapKeysToNodes(allKeys);
         Collection<Object> g2Keys = keysMap.get(g2.cluster().localNode());
 
         assertNotNull(g2Keys);
@@ -115,7 +115,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
             CacheEvent cacheEvt = ((CacheEvent)evt);
 
             assertEquals(EVT_CACHE_PRELOAD_OBJECT_UNLOADED, cacheEvt.type());
-            assertEquals(g.cache(null).name(), cacheEvt.cacheName());
+            assertEquals(g.jcache(null).getName(), cacheEvt.cacheName());
             assertEquals(g.cluster().localNode().id(), cacheEvt.node().id());
             assertEquals(g.cluster().localNode().id(), cacheEvt.eventNode().id());
             assertTrue("Unexpected key: " + cacheEvt.key(), keys.contains(cacheEvt.key()));
@@ -144,7 +144,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
                     }
                 }));
 
-            assertEquals(g.cache(null).name(), unloadEvt.cacheName());
+            assertEquals(g.jcache(null).getName(), unloadEvt.cacheName());
             assertEquals(g.cluster().localNode().id(), unloadEvt.node().id());
         }
     }
