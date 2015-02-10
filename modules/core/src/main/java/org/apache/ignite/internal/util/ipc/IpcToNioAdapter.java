@@ -54,23 +54,23 @@ public class IpcToNioAdapter<T> {
     private final GridNioMetricsListener metricsLsnr;
 
     /** */
-    private final MessageWriterFactory writerFactory;
+    private final MessageFormatter formatter;
 
     /**
      * @param metricsLsnr Metrics listener.
      * @param log Log.
      * @param endp Endpoint.
      * @param lsnr Listener.
-     * @param writerFactory Message writer factory.
+     * @param formatter Message formatter.
      * @param filters Filters.
      */
     public IpcToNioAdapter(GridNioMetricsListener metricsLsnr, IgniteLogger log, IpcEndpoint endp,
-        GridNioServerListener<T> lsnr, MessageWriterFactory writerFactory, GridNioFilter... filters) {
+        GridNioServerListener<T> lsnr, MessageFormatter formatter, GridNioFilter... filters) {
         assert metricsLsnr != null;
 
         this.metricsLsnr = metricsLsnr;
         this.endp = endp;
-        this.writerFactory = writerFactory;
+        this.formatter = formatter;
 
         chain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
         ses = new GridNioSessionImpl(chain, null, null, true);
@@ -152,7 +152,7 @@ public class IpcToNioAdapter<T> {
         assert writeBuf.hasArray();
 
         try {
-            msg.setWriter(writerFactory.writer());
+            msg.setWriter(formatter.writer());
 
             int cnt = U.writeMessageFully(msg, endp.outputStream(), writeBuf);
 

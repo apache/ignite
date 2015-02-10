@@ -713,7 +713,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
             return null;
         }
 
-        @Override public MessageWriterFactory messageWriterFactory() {
+        @Override public MessageFormatter messageFormatter() {
             return null;
         }
 

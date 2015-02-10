@@ -20,16 +20,20 @@ package org.apache.ignite.plugin.extensions.communication;
 import org.apache.ignite.plugin.*;
 
 /**
- * Factory for message writers.
- * <p>
- * A plugin can provide his own message writer factory as
- * an extension to define a custom binary format.
+ * TODO
  */
-public interface MessageWriterFactory extends Extension {
+public interface MessageFormatter extends Extension {
     /**
      * Creates new message writer instance.
      *
      * @return Message writer.
      */
     public MessageWriter writer();
+
+    /**
+     * Creates new message reader instance.
+     *
+     * @return Message reader.
+     */
+    public MessageReader reader();
 }

@@ -505,21 +505,21 @@ public class GridSpiTestContext implements IgniteSpiContext {
         return null;
     }
 
-    @Override public MessageWriterFactory messageWriterFactory() {
-        return new MessageWriterFactory() {
+    @Override public MessageFormatter messageFormatter() {
+        return new MessageFormatter() {
             @Override public MessageWriter writer() {
                 return new DirectMessageWriter();
+            }
+
+            @Override public MessageReader reader() {
+                throw new UnsupportedOperationException();
             }
         };
     }
 
     /** {@inheritDoc} */
     @Override public MessageFactory messageFactory() {
-        return new GridIoMessageFactory(new MessageReaderFactory() {
-            @Override public MessageReader reader() {
-                return new DirectMessageReader(null);
-            }
-        }, null);
+        return new GridIoMessageFactory(messageFormatter(), null);
     }
 
     /**

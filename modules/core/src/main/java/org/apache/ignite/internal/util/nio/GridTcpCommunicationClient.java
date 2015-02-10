@@ -49,7 +49,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
     private final ByteBuffer writeBuf;
 
     /** */
-    private final MessageWriterFactory writerFactory;
+    private final MessageFormatter formatter;
 
     /**
      * @param metricsLsnr Metrics listener.
@@ -62,7 +62,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
      * @param bufSize Buffer size (or {@code 0} to disable buffer).
      * @param minBufferedMsgCnt Minimum buffered message count.
      * @param bufSizeRatio Communication buffer size ratio.
-     * @param writerFactory Message writer factory.
+     * @param formatter Message formatter.
      * @throws IgniteCheckedException If failed.
      */
     public GridTcpCommunicationClient(
@@ -76,7 +76,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
         int bufSize,
         int minBufferedMsgCnt,
         double bufSizeRatio,
-        MessageWriterFactory writerFactory
+        MessageFormatter formatter
     ) throws IgniteCheckedException {
         super(metricsLsnr);
 
@@ -93,7 +93,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
 
         this.minBufferedMsgCnt = minBufferedMsgCnt;
         this.bufSizeRatio = bufSizeRatio;
-        this.writerFactory = writerFactory;
+        this.formatter = formatter;
 
         writeBuf = ByteBuffer.allocate(8 << 10);
 
@@ -197,7 +197,7 @@ public class GridTcpCommunicationClient extends GridAbstractCommunicationClient 
         assert writeBuf.hasArray();
 
         try {
-            msg.setWriter(writerFactory.writer());
+            msg.setWriter(formatter.writer());
 
             int cnt = U.writeMessageFully(msg, out, writeBuf);
 

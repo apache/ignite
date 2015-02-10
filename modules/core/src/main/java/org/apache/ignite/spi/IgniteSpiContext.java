@@ -377,13 +377,15 @@ public interface IgniteSpiContext {
         @Nullable ClassLoader ldr) throws IgniteException;
 
     /**
-     * Gets message writer factory.
+     * Gets message formatter.
      *
-     * @return Message writer factory.
+     * @return Message formatter.
      */
-    public MessageWriterFactory messageWriterFactory();
+    public MessageFormatter messageFormatter();
 
     /**
+     * Gets message factory.
+     *
      * @return Message factory.
      */
     public MessageFactory messageFactory();

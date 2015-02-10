@@ -39,18 +39,18 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
     private final ByteBuffer writeBuf;
 
     /** */
-    private final MessageWriterFactory writerFactory;
+    private final MessageFormatter formatter;
 
     /**
      * @param metricsLsnr Metrics listener.
      * @param port Shared memory IPC server port.
      * @param connTimeout Connection timeout.
      * @param log Logger.
-     * @param writerFactory Message writer factory.
+     * @param formatter Message formatter.
      * @throws IgniteCheckedException If failed.
      */
     public GridShmemCommunicationClient(GridNioMetricsListener metricsLsnr, int port, long connTimeout,
-        IgniteLogger log, MessageWriterFactory writerFactory) throws IgniteCheckedException {
+        IgniteLogger log, MessageFormatter formatter) throws IgniteCheckedException {
         super(metricsLsnr);
 
         assert metricsLsnr != null;
@@ -63,7 +63,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
 
         writeBuf.order(ByteOrder.nativeOrder());
 
-        this.writerFactory = writerFactory;
+        this.formatter = formatter;
     }
 
     /** {@inheritDoc} */
@@ -116,7 +116,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
         assert writeBuf.hasArray();
 
         try {
-            msg.setWriter(writerFactory.writer());
+            msg.setWriter(formatter.writer());
 
             int cnt = U.writeMessageFully(msg, shmem.outputStream(), writeBuf);
 

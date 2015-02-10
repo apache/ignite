@@ -1470,6 +1470,41 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         // If configured TCP port is busy, find first available in range.
         for (int port = locPort; port < locPort + locPortRange; port++) {
             try {
+                MessageFactory messageFactory = new MessageFactory() {
+                    private MessageFactory impl;
+
+                    @Nullable @Override public MessageAdapter create(byte type) {
+                        if (impl == null)
+                            impl = getSpiContext().messageFactory();
+
+                        assert impl != null;
+
+                        return impl.create(type);
+                    }
+                };
+
+                MessageFormatter messageFormatter = new MessageFormatter() {
+                    private MessageFormatter impl;
+
+                    @Override public MessageWriter writer() {
+                        if (impl == null)
+                            impl = getSpiContext().messageFormatter();
+
+                        assert impl != null;
+
+                        return impl.writer();
+                    }
+
+                    @Override public MessageReader reader() {
+                        if (impl == null)
+                            impl = getSpiContext().messageFormatter();
+
+                        assert impl != null;
+
+                        return impl.reader();
+                    }
+                };
+
                 GridNioServer<MessageAdapter> srvr =
                     GridNioServer.<MessageAdapter>builder()
                         .address(locHost)
@@ -1487,9 +1522,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         .directMode(true)
                         .metricsListener(metricsLsnr)
                         .writeTimeout(sockWriteTimeout)
-                        .filters(new GridNioCodecFilter(new GridDirectParser(this), log, true),
+                        .filters(new GridNioCodecFilter(new GridDirectParser(messageFactory), log, true),
                             new GridConnectionBytesVerifyFilter(log))
-                        .spi(this)
+                        .messageFormatter(messageFormatter)
                         .build();
 
                 boundTcpPort = port;
@@ -1852,7 +1887,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
             try {
                 client = new GridShmemCommunicationClient(metricsLsnr, port, connTimeout, log,
-                    getSpiContext().messageWriterFactory());
+                    getSpiContext().messageFormatter());
             }
             catch (IgniteCheckedException e) {
                 // Reconnect for the second time, if connection is not established.
@@ -2421,8 +2456,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     log,
                     endpoint,
                     srvLsnr,
-                    getSpiContext().messageWriterFactory(),
-                    new GridNioCodecFilter(new GridDirectParser(TcpCommunicationSpi.this), log, true),
+                    getSpiContext().messageFormatter(),
+                    new GridNioCodecFilter(new GridDirectParser(getSpiContext().messageFactory()), log, true),
                     new GridConnectionBytesVerifyFilter(log)
                 );
 

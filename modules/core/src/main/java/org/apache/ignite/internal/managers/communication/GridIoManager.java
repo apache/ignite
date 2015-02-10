@@ -135,7 +135,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private MessageFactory msgFactory;
 
     /** */
-    private MessageWriterFactory writerFactory;
+    private MessageFormatter formatter;
 
     /**
      * @param ctx Grid kernal context.
@@ -163,10 +163,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      * @return Message writer factory.
      */
-    public MessageWriterFactory messageWriterFactory() {
-        assert writerFactory != null;
+    public MessageFormatter formatter() {
+        assert formatter != null;
 
-        return writerFactory;
+        return formatter;
     }
 
     /**
@@ -208,33 +208,28 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         });
 
-        MessageWriterFactory[] writerExt = ctx.plugins().extensions(MessageWriterFactory.class);
+        MessageFormatter[] formatterExt = ctx.plugins().extensions(MessageFormatter.class);
 
-        if (writerExt != null && writerExt.length > 0)
-            writerFactory = writerExt[0];
+        if (formatterExt != null && formatterExt.length > 0) {
+            if (formatterExt.length > 1)
+                throw new IgniteCheckedException("More than one MessageFormatter extension is defined. Check your " +
+                    "plugins configuration and make sure that only one of them provides custom message format.");
+
+            formatter = formatterExt[0];
+        }
         else {
-            writerFactory = new MessageWriterFactory() {
+            formatter = new MessageFormatter() {
                 @Override public MessageWriter writer() {
                     return new DirectMessageWriter();
                 }
-            };
-        }
 
-        MessageReaderFactory readerFactory;
-
-        MessageReaderFactory[] readerExt = ctx.plugins().extensions(MessageReaderFactory.class);
-
-        if (readerExt != null && readerExt.length > 0)
-            readerFactory = readerExt[0];
-        else {
-            readerFactory = new MessageReaderFactory() {
                 @Override public MessageReader reader() {
                     return new DirectMessageReader(msgFactory);
                 }
             };
         }
 
-        msgFactory = new GridIoMessageFactory(readerFactory, ctx.plugins().extensions(MessageFactory.class));
+        msgFactory = new GridIoMessageFactory(formatter, ctx.plugins().extensions(MessageFactory.class));
 
         if (log.isDebugEnabled())
             log.debug(startInfo());

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.*;
 import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -33,23 +32,19 @@ public class GridDirectParser implements GridNioParser {
     private static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** */
-    private IgniteSpiAdapter spi;
-
-    /** */
-    private MessageFactory msgFactory;
+    private final MessageFactory msgFactory;
 
     /**
-     * @param spi Spi.
+     * @param msgFactory Message factory.
      */
-    public GridDirectParser(IgniteSpiAdapter spi) {
-        this.spi = spi;
+    public GridDirectParser(MessageFactory msgFactory) {
+        assert msgFactory != null;
+
+        this.msgFactory = msgFactory;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
-        if (msgFactory == null)
-            msgFactory = spi.getSpiContext().messageFactory();
-
         MessageAdapter msg = ses.removeMeta(MSG_META_KEY);
 
         if (msg == null && buf.hasRemaining())
