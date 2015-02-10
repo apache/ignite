@@ -17,8 +17,6 @@
 
 package org.apache.ignite.visor.commands.config
 
-import java.lang.System._
-
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.internal.util.IgniteUtils
@@ -28,6 +26,8 @@ import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
+
+import java.lang.System._
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
