@@ -1365,7 +1365,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         addAttributes(attrs, cfg.getEventStorageSpi());
         addAttributes(attrs, cfg.getCheckpointSpi());
         addAttributes(attrs, cfg.getLoadBalancingSpi());
-        addAttributes(attrs, cfg.getAuthenticationSpi());
         addAttributes(attrs, cfg.getSecureSessionSpi());
         addAttributes(attrs, cfg.getDeploymentSpi());
 
