@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.communication;
 
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.nio.*;
 import java.util.*;
@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Test message for communication SPI tests.
  */
-public class GridTestMessage extends GridTcpCommunicationMessageAdapter {
+public class GridTestMessage extends MessageAdapter {
     /** */
     public static final byte DIRECT_TYPE = (byte)200;
 
@@ -95,7 +95,7 @@ public class GridTestMessage extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridTestMessage msg = new GridTestMessage();
 
         clone0(msg);
@@ -104,7 +104,7 @@ public class GridTestMessage extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridTestMessage _clone = (GridTestMessage)_msg;
 
         _clone.srcNodeId = srcNodeId;
@@ -116,39 +116,39 @@ public class GridTestMessage extends GridTcpCommunicationMessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putUuid(srcNodeId))
+                if (!writer.writeUuid(null, srcNodeId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putLong(msgId))
+                if (!writer.writeLong(null, msgId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putLong(resId))
+                if (!writer.writeLong(null, resId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                if (!commState.putByteArray(payload))
+                if (!writer.writeByteArray(null, payload))
                     return false;
 
-                commState.idx++;
+                state++;
         }
 
         return true;
@@ -157,40 +157,40 @@ public class GridTestMessage extends GridTcpCommunicationMessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                srcNodeId = commState.getUuid();
+                srcNodeId = reader.readUuid(null);
 
-                if (srcNodeId == UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (buf.remaining() < 8)
+                msgId = reader.readLong(null);
+
+                if (!reader.isLastRead())
                     return false;
 
-                msgId = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 2:
-                if (buf.remaining() < 8)
+                resId = reader.readLong(null);
+
+                if (!reader.isLastRead())
                     return false;
 
-                resId = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 3:
-                payload = commState.getByteArray();
+                payload = reader.readByteArray(null);
 
-                if (payload == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                commState.idx++;
+                state++;
         }
 
         return true;

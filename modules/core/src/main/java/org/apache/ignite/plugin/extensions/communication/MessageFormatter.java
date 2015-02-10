@@ -15,15 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.direct;
+package org.apache.ignite.plugin.extensions.communication;
+
+import org.apache.ignite.plugin.*;
 
 /**
- *
+ * Provides a custom format for communication messages.
+ * <p>
+ * A plugin can provide his own message factory as an extension
+ * to replace default format of communication messages.
+ * <p>
+ * Note that only one custom formatter is allowed. If two
+ * plugins provide different formatters, exception will
+ * be thrown on node startup.
  */
-public interface GridTcpMessageFactory {
+public interface MessageFormatter extends Extension {
     /**
-     * @param type Message type.
-     * @return Message instance.
+     * Creates new message writer instance.
+     *
+     * @return Message writer.
      */
-    public GridTcpCommunicationMessageAdapter create(byte type);
+    public MessageWriter writer();
+
+    /**
+     * Creates new message reader instance.
+     *
+     * @return Message reader.
+     */
+    public MessageReader reader();
 }

@@ -15,17 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.direct;
+package org.apache.ignite.plugin.extensions.communication;
+
+import org.apache.ignite.plugin.*;
+import org.jetbrains.annotations.*;
 
 /**
- * Message producer. Each component have to register it's own message producer.
+ * Factory for communication messages.
+ * <p>
+ * A plugin can provide his own message factory as an extension
+ * if it uses any custom messages (all message must extend
+ * {@link MessageAdapter} class).
  */
-public interface GridTcpCommunicationMessageProducer {
+public interface MessageFactory extends Extension {
     /**
-     * Create message.
+     * Creates new message instance of provided type.
+     * <p>
+     * This method should return {@code null} if provided message type
+     * is unknown to this factory.
      *
      * @param type Message type.
-     * @return Communication message.
+     * @return Message instance.
      */
-    public GridTcpCommunicationMessageAdapter create(byte type);
+    @Nullable public MessageAdapter create(byte type);
 }

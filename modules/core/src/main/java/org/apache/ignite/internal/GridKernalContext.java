@@ -59,7 +59,6 @@ import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.product.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.plugin.*;
 
@@ -501,17 +500,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Created component.
      */
     public <T> T createComponent(Class<T> cls);
-
-    /**
-     * @return Message factory.
-     */
-    public GridTcpMessageFactory messageFactory();
-
-    /**
-     * @param producer Message producer.
-     * @return Message type code.
-     */
-    public byte registerMessageProducer(GridTcpCommunicationMessageProducer producer);
 
     /**
      * @return Thread pool implementation to be used in grid to process job execution
