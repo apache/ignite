@@ -29,6 +29,7 @@ import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -195,13 +196,11 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @param cache Cache.
      * @return Projection.
      */
-    protected CacheProjection createProjectionForFilter(GridCache cache) {
-        return cache.projection(new IgnitePredicate<CacheEntry<Key, Person>>() {
-            @Override public boolean apply(CacheEntry<Key, Person> e) {
+    protected CacheProjection createProjectionForFilter(final GridCache cache) {
+        return cache.projection(new IgnitePredicate<Cache.Entry<Key, Person>>() {
+            @Override public boolean apply(Cache.Entry<Key, Person> e) {
                 Key key = e.getKey();
-                Person val = e.peek();
-
-                assertNotNull(e.version());
+                Person val = e.getValue();
 
                 assertEquals(key.id, (Integer)val.salary);
 
