@@ -101,8 +101,8 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < size; i++)
             putMap.put(i, i);
 
-        GridCache<Object, Object> prj0 = grid(0).cache(null);
-        GridCache<Object, Object> prj1 = grid(1).cache(null);
+        IgniteCache<Object, Object> prj0 = grid(0).jcache(null);
+        IgniteCache<Object, Object> prj1 = grid(1).jcache(null);
 
         prj0.putAll(putMap);
 
@@ -135,12 +135,12 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
         int size = 10;
 
-        GridCache<Object, Object> prj0 = grid(0).cache(null);
+        IgniteCache<Object, Object> prj0 = grid(0).jcache(null);
 
         for (int i = 0; i < size; i++) {
             info("Putting value [i=" + i + ']');
 
-            assertNull(prj0.put(i, i));
+            prj0.put(i, i);
 
             info("Finished putting value [i=" + i + ']');
         }
@@ -148,11 +148,11 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < gridCount(); i++) {
             assertEquals(0, context(i).tm().idMapSize());
 
-            GridCache<Object, Object> cache = grid(i).cache(null);
+            IgniteCache<Object, Object> cache = grid(i).jcache(null);
             ClusterNode node = grid(i).localNode();
 
             for (int k = 0; k < size; k++) {
-                if (cache.affinity().isPrimaryOrBackup(node, k))
+                if (affinity(cache).isPrimaryOrBackup(node, k))
                     assertEquals("Check failed for node: " + node.id(), k, cache.peek(k));
             }
         }

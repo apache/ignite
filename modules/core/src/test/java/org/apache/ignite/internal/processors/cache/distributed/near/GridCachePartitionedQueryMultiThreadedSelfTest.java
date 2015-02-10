@@ -101,7 +101,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
 
         // Clean up all caches.
         for (int i = 0; i < GRID_CNT; i++)
-            grid(i).cache(null).removeAll();
+            grid(i).jcache(null).removeAll();
     }
 
     /** {@inheritDoc} */
