@@ -1,7 +1,8 @@
+#!/bin/sh
 #
 # Initialize openssl & CA.
 #
-# Instruction: http://fusesource.com/docs/framework/2.1/security/i305191.html
+# Instruction: https://access.redhat.com/documentation/en-US/Red_Hat_JBoss_Fuse/6.0/html/Web_Services_Security_Guide/files/i305191.html
 #
 
 # Path to CA certificate.
