@@ -21,9 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -65,7 +65,6 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
     /** Evicted reader key bytes. */
     @GridDirectCollection(byte[].class)
-    @GridDirectVersion(1)
     private Collection<byte[]> nearEvictedBytes;
 
     /**
@@ -180,7 +179,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDhtAtomicUpdateResponse _clone = new GridDhtAtomicUpdateResponse();
 
         clone0(_clone);
@@ -189,12 +188,12 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridDhtAtomicUpdateResponse _clone = (GridDhtAtomicUpdateResponse)_msg;
 
-        _clone.futVer = futVer;
+        _clone.futVer = futVer != null ? (GridCacheVersion)futVer.clone() : null;
         _clone.failedKeys = failedKeys;
         _clone.failedKeysBytes = failedKeysBytes;
         _clone.err = err;
@@ -206,63 +205,42 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (!commState.putByteArray(errBytes))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putByteArray(failedKeysBytes))
+                if (!writer.writeByteArray("failedKeysBytes", failedKeysBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                if (!commState.putCacheVersion(futVer))
+                if (!writer.writeMessage("futVer", futVer))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 6:
-                if (nearEvictedBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(nearEvictedBytes.size()))
-                            return false;
+                if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, byte[].class))
+                    return false;
 
-                        commState.it = nearEvictedBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -272,70 +250,43 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                byte[] errBytes0 = commState.getByteArray();
+                errBytes = reader.readByteArray("errBytes");
 
-                if (errBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                errBytes = errBytes0;
-
-                commState.idx++;
+                state++;
 
             case 4:
-                byte[] failedKeysBytes0 = commState.getByteArray();
+                failedKeysBytes = reader.readByteArray("failedKeysBytes");
 
-                if (failedKeysBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                failedKeysBytes = failedKeysBytes0;
-
-                commState.idx++;
+                state++;
 
             case 5:
-                GridCacheVersion futVer0 = commState.getCacheVersion();
+                futVer = reader.readMessage("futVer");
 
-                if (futVer0 == CACHE_VER_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                futVer = futVer0;
-
-                commState.idx++;
+                state++;
 
             case 6:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                nearEvictedBytes = reader.readCollection("nearEvictedBytes", byte[].class);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (nearEvictedBytes == null)
-                        nearEvictedBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        nearEvictedBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -344,7 +295,7 @@ public class GridDhtAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> im
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 38;
+        return 39;
     }
 
     /** {@inheritDoc} */

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.nio;
 
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -34,7 +34,7 @@ public interface GridNioMessageWriter {
      * @param buf Buffer.
      * @return Whether message was fully written.
      */
-    public boolean write(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf);
+    public boolean write(@Nullable UUID nodeId, MessageAdapter msg, ByteBuffer buf);
 
     /**
      * @param nodeId Node ID.
@@ -44,6 +44,6 @@ public interface GridNioMessageWriter {
      * @return Number of bytes written.
      * @throws IOException In case of error.
      */
-    public int writeFully(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, OutputStream out,
+    public int writeFully(@Nullable UUID nodeId, MessageAdapter msg, OutputStream out,
         ByteBuffer buf) throws IOException;
 }

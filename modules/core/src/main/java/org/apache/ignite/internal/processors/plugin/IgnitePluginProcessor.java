@@ -64,14 +64,14 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
                         throw new IgniteException("Provider class is null.");
 
                     try {
-                        Constructor<? extends  PluginProvider> ctr =
+                        Constructor<? extends PluginProvider> ctr =
                             pluginCfg.providerClass().getConstructor(PluginContext.class);
 
                         provider = ctr.newInstance(pluginCtx);
                     }
                     catch (NoSuchMethodException ignore) {
                         try {
-                            Constructor<? extends  PluginProvider> ctr =
+                            Constructor<? extends PluginProvider> ctr =
                                 pluginCfg.providerClass().getConstructor(pluginCfg.getClass());
 
                             provider = ctr.newInstance(pluginCfg);

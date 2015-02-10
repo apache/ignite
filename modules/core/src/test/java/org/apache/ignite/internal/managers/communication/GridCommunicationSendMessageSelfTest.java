@@ -19,7 +19,8 @@ package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -49,11 +50,11 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     private int bufSize;
 
     static {
-        GridTcpCommunicationMessageFactory.registerCustom(new GridTcpCommunicationMessageProducer() {
-            @Override public GridTcpCommunicationMessageAdapter create(byte type) {
+        GridIoMessageFactory.registerCustom(DIRECT_TYPE, new CO<MessageAdapter>() {
+            @Override public MessageAdapter apply() {
                 return new TestMessage();
             }
-        }, DIRECT_TYPE);
+        });
     }
 
     /** {@inheritDoc} */
@@ -141,23 +142,23 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
     }
 
     /** */
-    private static class TestMessage extends GridTcpCommunicationMessageAdapter {
+    private static class TestMessage extends MessageAdapter {
         /** {@inheritDoc} */
         @SuppressWarnings("CloneDoesntCallSuperClone")
-        @Override public GridTcpCommunicationMessageAdapter clone() {
-            throw new UnsupportedOperationException();
+        @Override public MessageAdapter clone() {
+            return this;
         }
 
         /** {@inheritDoc} */
-        @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+        @Override protected void clone0(MessageAdapter _msg) {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf) {
-            commState.setBuffer(buf);
+            writer.setBuffer(buf);
 
-            return commState.putByte(directType());
+            return writer.writeByte(null, directType());
         }
 
         /** {@inheritDoc} */
