@@ -32,7 +32,7 @@ import static org.apache.ignite.internal.client.util.GridClientUtils.*;
 /**
  * A {@link GridClient} router implementation.
  */
-class GridRouterClientImpl implements GridClient {
+public class GridRouterClientImpl implements GridClient {
     /** Decorated client implementation. */
     private final GridClientImpl clientImpl;
 
