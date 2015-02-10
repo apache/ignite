@@ -61,6 +61,12 @@ public class GridSpiTestContext implements IgniteSpiContext {
     /** */
     private final ConcurrentMap<String, Map> cache = new ConcurrentHashMap<>();
 
+    /** */
+    private MessageFormatter formatter;
+
+    /** */
+    private MessageFactory factory;
+
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> remoteNodes() {
         return rmtNodes;
@@ -505,21 +511,29 @@ public class GridSpiTestContext implements IgniteSpiContext {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public MessageFormatter messageFormatter() {
-        return new MessageFormatter() {
-            @Override public MessageWriter writer() {
-                return new DirectMessageWriter();
-            }
+        if (formatter == null) {
+            formatter = new MessageFormatter() {
+                @Override public MessageWriter writer() {
+                    return new DirectMessageWriter();
+                }
 
-            @Override public MessageReader reader() {
-                throw new UnsupportedOperationException();
-            }
-        };
+                @Override public MessageReader reader() {
+                    return new DirectMessageReader(messageFactory());
+                }
+            };
+        }
+
+        return formatter;
     }
 
     /** {@inheritDoc} */
     @Override public MessageFactory messageFactory() {
-        return new GridIoMessageFactory(messageFormatter(), null);
+        if (factory == null)
+            factory = new GridIoMessageFactory(messageFormatter(), null);
+
+        return factory;
     }
 
     /**
