@@ -64,8 +64,6 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
 
         c.setDiscoverySpi(disco);
 
-        c.setRestEnabled(false);
-
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(cacheMode());

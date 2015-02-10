@@ -24,6 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Test context.
@@ -37,6 +38,12 @@ public class GridTestKernalContext extends GridKernalContextImpl {
             new IgniteKernal(null),
             new IgniteConfiguration(),
             new GridKernalGatewayImpl(null),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
             null,
             false);
 
@@ -81,5 +88,24 @@ public class GridTestKernalContext extends GridKernalContextImpl {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridTestKernalContext.class, this, super.toString());
+    }
+
+    /**
+     * Sets system executor service.
+     *
+     * @param sysExecSvc Executor service
+     */
+    public void setSystemExecutorService(ExecutorService sysExecSvc) {
+        this.sysExecSvc = sysExecSvc;
+    }
+
+
+    /**
+     * Sets executor service.
+     *
+     * @param execSvc Executor service
+     */
+    public void setExecutorService(ExecutorService execSvc){
+        this.execSvc = execSvc;
     }
 }

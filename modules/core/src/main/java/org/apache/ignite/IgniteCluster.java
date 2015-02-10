@@ -98,7 +98,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *      topology history. Currently only {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}
      *      supports topology history.
      */
-    @Nullable public Collection<ClusterNode> topology(long topVer) throws UnsupportedOperationException;
+    public Collection<ClusterNode> topology(long topVer) throws UnsupportedOperationException;
 
     /**
      * This method provides ability to detect which cache keys are mapped to which nodes
@@ -144,7 +144,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *      is not present in the grid.
      * @throws IgniteException If failed to map key.
      */
-    @Nullable public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws IgniteException;
+    public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws IgniteException;
 
     /**
      * Starts one or more nodes on remote host(s).
@@ -174,11 +174,8 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @throws IgniteException In case of error.
      */
     @IgniteAsyncSupported
-    public Collection<GridTuple3<String, Boolean, String>> startNodes(File file,
-        boolean restart,
-        int timeout,
-        int maxConn)
-        throws IgniteException;
+    public Collection<GridTuple3<String, Boolean, String>> startNodes(File file, boolean restart, int timeout,
+        int maxConn) throws IgniteException;
 
     /**
      * Starts one or more nodes on remote host(s).
@@ -280,11 +277,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      */
     @IgniteAsyncSupported
     public Collection<GridTuple3<String, Boolean, String>> startNodes(Collection<Map<String, Object>> hosts,
-        @Nullable Map<String, Object> dflts,
-        boolean restart,
-        int timeout,
-        int maxConn)
-        throws IgniteException;
+        @Nullable Map<String, Object> dflts, boolean restart, int timeout, int maxConn) throws IgniteException;
 
     /**
      * Stops nodes satisfying optional set of predicates.

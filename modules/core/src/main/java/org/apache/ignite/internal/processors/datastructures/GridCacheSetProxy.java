@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.datastructures.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
@@ -512,7 +511,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
      */
     private void enterBusy() {
         if (!busyLock.enterBusy())
-            throw new DataStructureRemovedException("Set has been removed from cache: " + delegate);
+            throw new IllegalStateException("Set has been removed from cache: " + delegate);
     }
 
     /**

@@ -86,7 +86,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @return Random entry, or {@code null} if cache is empty.
      */
-    @Nullable public Entry<K, V> randomEntry();
+    public Entry<K, V> randomEntry();
 
     public IgniteCache<K, V> withExpiryPolicy(ExpiryPolicy plc);
 
@@ -155,13 +155,14 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
-     * @return Previously contained value regardless of whether put happened or not.
+     * @return Previously contained value regardless of whether put happened or not ({@code null} if there was no
+     *      previous value).
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws CacheException If put operation failed.
      * @throws org.apache.ignite.internal.processors.cache.CacheFlagException If projection flags validation failed.
      */
     @IgniteAsyncSupported
-    @Nullable public V getAndPutIfAbsent(K key, V val) throws CacheException;
+    public V getAndPutIfAbsent(K key, V val) throws CacheException;
 
     /**
      * Creates a {@link Lock} instance associated with passed key.
@@ -216,8 +217,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException;
 
-    public Map<K, V> localPartition(int part) throws CacheException;
-
     /**
      * Attempts to evict all entries associated with keys. Note,
      * that entry will be evicted only if it's not used (not
@@ -246,10 +245,10 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * you can use {@link org.apache.ignite.cache.GridCache#peek(Object, Collection)} method.
      *
      * @param key Entry key.
-     * @return Peeked value.
+     * @return Peeked value, or {@code null} if not found.
      * @throws NullPointerException If key is {@code null}.
      */
-    @Nullable public V localPeek(K key, CachePeekMode... peekModes);
+    public V localPeek(K key, CachePeekMode... peekModes);
 
     /**
      * This method unswaps cache entries by given keys, if any, from swap storage

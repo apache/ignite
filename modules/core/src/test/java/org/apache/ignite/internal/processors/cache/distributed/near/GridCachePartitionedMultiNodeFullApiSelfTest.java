@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
@@ -25,11 +26,11 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 
-import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CachePeekMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
@@ -60,6 +61,13 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
     }
 
     /**
+     * TODO fix and uncomment
+     */
+    @Override public void testPartitionEntrySetRemove() throws Exception {
+        assert false : "ignite-96";
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testPutAllRemoveAll() throws Exception {
@@ -73,16 +81,16 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
         for (int i = 0; i < size; i++)
             putMap.put(i, i * i);
 
-        GridCache<Object, Object> prj0 = grid(0).cache(null);
-        GridCache<Object, Object> prj1 = grid(1).cache(null);
+        IgniteCache<Object, Object> c0 = grid(0).jcache(null);
+        IgniteCache<Object, Object> c1 = grid(1).jcache(null);
 
-        prj0.putAll(putMap);
+        c0.putAll(putMap);
 
-        prj1.removeAll(putMap.keySet());
+        c1.removeAll(putMap.keySet());
 
         for (int i = 0; i < size; i++) {
-            assertNull(prj0.get(i));
-            assertNull(prj1.get(i));
+            assertNull(c0.get(i));
+            assertNull(c1.get(i));
         }
     }
 
@@ -227,21 +235,19 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             Integer nearPeekVal = nearEnabled ? 1 : null;
 
-            GridCache<String, Integer> c = cache(i);
+            IgniteCache<String, Integer> c = jcache(i);
 
-            Cache.Entry<String, Integer> e = c.entry("key");
+            if (c.unwrap(Ignite.class).affinity(null).isBackup(grid(i).localNode(), "key")) {
+                assertNull(c.localPeek("key", NEAR));
 
-            if (c.affinity().isBackup(grid(i).localNode(), "key")) {
-                assertNull(c.peek("key", F.asList(NEAR_ONLY)));
-
-                assertEquals((Integer)1, c.peek("key", F.asList(PARTITIONED_ONLY)));
+                assertEquals((Integer)1, c.localPeek("key", BACKUP));
             }
-            else if (!c.affinity().isPrimaryOrBackup(grid(i).localNode(), "key")) {
-                assertEquals((Integer)1, e.getValue());
+            else if (!c.unwrap(Ignite.class).affinity(null).isPrimaryOrBackup(grid(i).localNode(), "key")) {
+                assertEquals(nearPeekVal, c.localPeek("key", NEAR));
 
-                assertEquals(nearPeekVal, c.peek("key", Arrays.asList(NEAR_ONLY)));
+                assertNull(c.localPeek("key", PRIMARY, BACKUP));
 
-                assert c.peek("key", Arrays.asList(PARTITIONED_ONLY)) == null;
+                assertEquals((Integer)1, jcache(i).get("key"));
             }
         }
     }

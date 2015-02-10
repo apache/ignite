@@ -5884,7 +5884,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /**
      *
      */
-    protected static abstract class UpdateTimeStatClosure<T> implements CI1<IgniteInternalFuture<T>> {
+    protected abstract static class UpdateTimeStatClosure<T> implements CI1<IgniteInternalFuture<T>> {
         /** */
         protected final CacheMetricsImpl metrics;
 
@@ -5917,13 +5917,16 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         /**
          * Updates statistics.
          */
-        abstract protected void updateTimeStat();
+        protected abstract void updateTimeStat();
     }
 
     /**
      *
      */
     protected static class UpdateGetTimeStatClosure<T> extends UpdateTimeStatClosure<T> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          * @param metrics Metrics.
          * @param start   Start time.
@@ -5942,6 +5945,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      *
      */
     protected static class UpdateRemoveTimeStatClosure<T> extends UpdateTimeStatClosure<T> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          * @param metrics Metrics.
          * @param start   Start time.
@@ -5960,6 +5966,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      *
      */
     protected static class UpdatePutTimeStatClosure<T> extends UpdateTimeStatClosure {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          * @param metrics Metrics.
          * @param start   Start time.
@@ -5978,6 +5987,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      *
      */
     protected static class UpdatePutAndGetTimeStatClosure<T> extends UpdateTimeStatClosure {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          * @param metrics Metrics.
          * @param start   Start time.

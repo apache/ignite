@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.datastructures.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.datastructures.*;
@@ -342,7 +341,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
 
             fail("Exception expected.");
         }
-        catch (DataStructureRemovedException e) {
+        catch (IllegalStateException e) {
             info("Caught expected exception: " + e);
         }
     }

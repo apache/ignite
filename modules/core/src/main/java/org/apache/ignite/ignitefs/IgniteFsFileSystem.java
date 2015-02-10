@@ -70,7 +70,7 @@ public interface IgniteFsFileSystem {
      * @return File information for specified path or {@code null} if such path does not exist.
      * @throws IgniteException In case of error.
      */
-    @Nullable public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws IgniteException;
+    public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws IgniteException;
 
     /**
      * Renames/moves a file.
@@ -197,7 +197,7 @@ public interface IgniteFsFileSystem {
      * @return File information for specified path or {@code null} if such path does not exist.
      * @throws IgniteException In case of error.
      */
-    @Nullable public IgniteFsFile info(IgniteFsPath path) throws IgniteException;
+    public IgniteFsFile info(IgniteFsPath path) throws IgniteException;
 
     /**
      * Gets used space in bytes.

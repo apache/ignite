@@ -71,7 +71,7 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setRestEnabled(true);
+        cfg.setClientConnectionConfiguration(new ClientConnectionConfiguration());
 
         return cfg;
     }

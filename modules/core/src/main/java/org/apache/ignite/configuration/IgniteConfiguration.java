@@ -50,7 +50,6 @@ import javax.management.*;
 import java.lang.management.*;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
@@ -132,10 +131,10 @@ public class IgniteConfiguration {
     public static final int DFLT_TIME_SERVER_PORT_RANGE = 100;
 
     /** Default core size of public thread pool. */
-    public static final int DFLT_PUBLIC_CORE_THREAD_CNT = Math.max(8, Runtime.getRuntime().availableProcessors()) * 2;
+    public static final int AVAILABLE_PROC_CNT = Runtime.getRuntime().availableProcessors();
 
-    /** Default max size of public thread pool. */
-    public static final int DFLT_PUBLIC_MAX_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
+    /** Default core size of public thread pool. */
+    public static final int DFLT_PUBLIC_THREAD_CNT = Math.max(8, AVAILABLE_PROC_CNT) * 2;
 
     /** Default keep alive time for public thread pool. */
     public static final long DFLT_PUBLIC_KEEP_ALIVE_TIME = 0;
@@ -144,10 +143,10 @@ public class IgniteConfiguration {
     public static final int DFLT_PUBLIC_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
 
     /** Default size of system thread pool. */
-    public static final int DFLT_SYSTEM_CORE_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
+    public static final int DFLT_SYSTEM_CORE_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default max size of system thread pool. */
-    public static final int DFLT_SYSTEM_MAX_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
+    public static final int DFLT_SYSTEM_MAX_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default keep alive time for system thread pool. */
     public static final long DFLT_SYSTEM_KEEP_ALIVE_TIME = 0;
@@ -160,12 +159,6 @@ public class IgniteConfiguration {
 
     /** Default size of management thread pool. */
     public static final int DFLT_MGMT_THREAD_CNT = 4;
-
-    /** Default size of REST thread pool. */
-    public static final int DFLT_REST_CORE_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
-
-    /** Default max size of REST thread pool. */
-    public static final int DFLT_REST_MAX_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
 
     /** Default keep alive time for REST thread pool. */
     public static final long DFLT_REST_KEEP_ALIVE_TIME = 0;
@@ -221,44 +214,23 @@ public class IgniteConfiguration {
     /** Logger. */
     private IgniteLogger log;
 
-    /** Executor service. */
-    private ExecutorService execSvc;
+    /** Public pool size. */
+    private int pubPoolSize = DFLT_PUBLIC_THREAD_CNT;
 
-    /** Executor service. */
-    private ExecutorService sysSvc;
+    /** System pool size. */
+    private int sysPoolSize = DFLT_SYSTEM_CORE_THREAD_CNT;
 
-    /** Management executor service. */
-    private ExecutorService mgmtSvc;
+    /** Management pool size. */
+    private int mgmtPoolSize = DFLT_MGMT_THREAD_CNT;
 
-    /** GGFS executor service. */
-    private ExecutorService ggfsSvc;
-
-    /** REST requests executor service. */
-    private ExecutorService restExecSvc;
-
-    /** Peer class loading executor service shutdown flag. */
-    private boolean p2pSvcShutdown = true;
-
-    /** Executor service shutdown flag. */
-    private boolean execSvcShutdown = true;
-
-    /** System executor service shutdown flag. */
-    private boolean sysSvcShutdown = true;
-
-    /** Management executor service shutdown flag. */
-    private boolean mgmtSvcShutdown = true;
-
-    /** GGFS executor service shutdown flag. */
-    private boolean ggfsSvcShutdown = true;
-
-    /** REST executor service shutdown flag. */
-    private boolean restSvcShutdown = true;
+    /** GGFS pool size. */
+    private int ggfsPoolSize = AVAILABLE_PROC_CNT;
 
     /** Lifecycle email notification. */
     private boolean lifeCycleEmailNtf = true;
 
-    /** Executor service. */
-    private ExecutorService p2pSvc;
+    /** P2P pool size. */
+    private int p2pPoolSize = DFLT_P2P_THREAD_CNT;
 
     /** Ignite installation folder. */
     private String ggHome;
@@ -283,9 +255,6 @@ public class IgniteConfiguration {
 
     /** Jetty XML configuration path. */
     private String jettyPath;
-
-    /** {@code REST} flag. */
-    private boolean restEnabled = true;
 
     /** Whether or not peer class loading is enabled. */
     private boolean p2pEnabled = DFLT_P2P_ENABLED;
@@ -572,14 +541,12 @@ public class IgniteConfiguration {
         clockSyncSamples = cfg.getClockSyncSamples();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
-        execSvc = cfg.getExecutorService();
-        execSvcShutdown = cfg.getExecutorServiceShutdown();
+        pubPoolSize = cfg.getPublicThreadPoolSize();
         ggHome = cfg.getIgniteHome();
         ggWork = cfg.getWorkDirectory();
         gridName = cfg.getGridName();
         ggfsCfg = cfg.getGgfsConfiguration();
-        ggfsSvc = cfg.getGgfsExecutorService();
-        ggfsSvcShutdown = cfg.getGgfsExecutorServiceShutdown();
+        ggfsPoolSize = cfg.getGgfsThreadPoolSize();
         hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
@@ -597,20 +564,17 @@ public class IgniteConfiguration {
         metricsExpTime = cfg.getMetricsExpireTime();
         metricsLogFreq = cfg.getMetricsLogFrequency();
         metricsUpdateFreq = cfg.getMetricsUpdateFrequency();
-        mgmtSvc = cfg.getManagementExecutorService();
-        mgmtSvcShutdown = cfg.getManagementExecutorServiceShutdown();
+        mgmtPoolSize = cfg.getManagementThreadPoolSize();
         netTimeout = cfg.getNetworkTimeout();
         nodeId = cfg.getNodeId();
         p2pEnabled = cfg.isPeerClassLoadingEnabled();
         p2pLocClsPathExcl = cfg.getPeerClassLoadingLocalClassPathExclude();
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
-        p2pSvc = cfg.getPeerClassLoadingExecutorService();
-        p2pSvcShutdown = cfg.getPeerClassLoadingExecutorServiceShutdown();
+        p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         pluginCfgs = cfg.getPluginConfigurations();
         portableCfg = cfg.getPortableConfiguration();
         qryCfg = cfg.getQueryConfiguration();
         restAccessibleFolders = cfg.getRestAccessibleFolders();
-        restEnabled = cfg.isRestEnabled();
         restIdleTimeout = cfg.getRestIdleTimeout();
         restPortRange = cfg.getRestPortRange();
         restSecretKey = cfg.getRestSecretKey();
@@ -625,8 +589,6 @@ public class IgniteConfiguration {
         restTcpSslCtxFactory = cfg.getRestTcpSslContextFactory();
         restTcpSslEnabled = cfg.isRestTcpSslEnabled();
         restTcpSslClientAuth = cfg.isRestTcpSslClientAuth();
-        restExecSvc = cfg.getRestExecutorService();
-        restSvcShutdown = cfg.getRestExecutorServiceShutdown();
         securityCred = cfg.getSecurityCredentialsProvider();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
@@ -642,8 +604,7 @@ public class IgniteConfiguration {
         smtpSsl = cfg.isSmtpSsl();
         smtpStartTls = cfg.isSmtpStartTls();
         streamerCfg = cfg.getStreamerConfiguration();
-        sysSvc = cfg.getSystemExecutorService();
-        sysSvcShutdown = cfg.getSystemExecutorServiceShutdown();
+        sysPoolSize = cfg.getSystemThreadPoolSize();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
         txCfg = cfg.getTransactionConfiguration();
@@ -1090,257 +1051,116 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Should return an instance of fully configured thread pool to be used in grid.
+     * Should return a thread pool size to be used in grid.
      * This executor service will be in charge of processing {@link org.apache.ignite.compute.ComputeJob GridJobs}
      * and user messages sent to node.
      * <p>
-     * If not provided, new executor service will be created using the following configuration:
-     * <ul>
-     *     <li>Core pool size - {@link #DFLT_PUBLIC_CORE_THREAD_CNT}</li>
-     *     <li>Max pool size - {@link #DFLT_PUBLIC_MAX_THREAD_CNT}</li>
-     *     <li>Queue capacity - {@link #DFLT_PUBLIC_THREADPOOL_QUEUE_CAP}</li>
-     * </ul>
+     * If not provided, executor service will have size {@link #DFLT_PUBLIC_THREAD_CNT}.
      *
-     * @return Thread pool implementation to be used in grid to process job execution
+     * @return Thread pool size to be used in grid to process job execution
      *      requests and user messages sent to the node.
      */
-    public ExecutorService getExecutorService() {
-        return execSvc;
+    public int getPublicThreadPoolSize() {
+        return pubPoolSize;
     }
 
     /**
-     * Executor service that is in charge of processing internal system messages.
+     * Size of thread pool that is in charge of processing internal system messages.
      * <p>
-     * If not provided, new executor service will be created using the following configuration:
-     * <ul>
-     *     <li>Core pool size - {@link #DFLT_SYSTEM_CORE_THREAD_CNT}</li>
-     *     <li>Max pool size - {@link #DFLT_SYSTEM_MAX_THREAD_CNT}</li>
-     *     <li>Queue capacity - {@link #DFLT_SYSTEM_THREADPOOL_QUEUE_CAP}</li>
-     * </ul>
+     * If not provided, executor service will have size {@link #DFLT_SYSTEM_CORE_THREAD_CNT}.
      *
-     * @return Thread pool implementation to be used in grid for internal system messages.
+     * @return Thread pool size to be used in grid for internal system messages.
      */
-    public ExecutorService getSystemExecutorService() {
-        return sysSvc;
+    public int getSystemThreadPoolSize() {
+        return sysPoolSize;
     }
 
     /**
-     * Executor service that is in charge of processing internal and Visor
+     * Size of thread pool that is in charge of processing internal and Visor
      * {@link org.apache.ignite.compute.ComputeJob GridJobs}.
      * <p>
-     * If not provided, new executor service will be created using the following configuration:
-     * <ul>
-     *     <li>Core pool size - {@link #DFLT_MGMT_THREAD_CNT}</li>
-     *     <li>Max pool size - {@link #DFLT_MGMT_THREAD_CNT}</li>
-     *     <li>Queue capacity - unbounded</li>
-     * </ul>
+     * If not provided, executor service will have size {@link #DFLT_MGMT_THREAD_CNT}
      *
-     * @return Thread pool implementation to be used in grid for internal and Visor
+     * @return Thread pool size to be used in grid for internal and Visor
      *      jobs processing.
      */
-    public ExecutorService getManagementExecutorService() {
-        return mgmtSvc;
+    public int getManagementThreadPoolSize() {
+        return mgmtPoolSize;
     }
 
     /**
-     * Should return an instance of fully configured executor service which
-     * is in charge of peer class loading requests/responses. If you don't use
+     * Size of thread pool which  is in charge of peer class loading requests/responses. If you don't use
      * peer class loading and use GAR deployment only we would recommend to decrease
      * the value of total threads to {@code 1}.
      * <p>
-     * If not provided, new executor service will be created using the following configuration:
-     * <ul>
-     *     <li>Core pool size - {@link #DFLT_P2P_THREAD_CNT}</li>
-     *     <li>Max pool size - {@link #DFLT_P2P_THREAD_CNT}</li>
-     *     <li>Queue capacity - unbounded</li>
-     * </ul>
+     * If not provided, executor service will have size {@link #DFLT_P2P_THREAD_CNT}.
      *
-     * @return Thread pool implementation to be used for peer class loading
+     * @return Thread pool size to be used for peer class loading
      *      requests handling.
      */
-    public ExecutorService getPeerClassLoadingExecutorService() {
-        return p2pSvc;
+    public int getPeerClassLoadingThreadPoolSize() {
+        return p2pPoolSize;
     }
 
     /**
-     * Executor service that is in charge of processing outgoing GGFS messages. Note that this
-     * executor must have limited task queue to avoid OutOfMemory errors when incoming data stream
-     * is faster than network bandwidth.
+     * Size of thread pool that is in charge of processing outgoing GGFS messages.
      * <p>
-     * If not provided, new executor service will be created using the following configuration:
-     * <ul>
-     *     <li>Core pool size - number of processors available in system</li>
-     *     <li>Max pool size - number of processors available in system</li>
-     * </ul>
+     * If not provided, executor service will have size equals number of processors available in system.
      *
-     * @return Thread pool implementation to be used for GGFS outgoing message sending.
+     * @return Thread pool size to be used for GGFS outgoing message sending.
      */
-    public ExecutorService getGgfsExecutorService() {
-        return ggfsSvc;
+    public int getGgfsThreadPoolSize() {
+        return ggfsPoolSize;
     }
 
     /**
-     * Shutdown flag for executor service.
-     * <p>
-     * If not provided, default value {@code true} will be used which will shutdown
-     * executor service when Ignite stops regardless of whether it was started before
-     * Ignite or by Ignition.
+     * Sets thread pool size to use within grid.
      *
-     * @return Executor service shutdown flag.
+     * @param poolSize Thread pool size to use within grid.
+     * @see IgniteConfiguration#getPublicThreadPoolSize()
      */
-    public boolean getExecutorServiceShutdown() {
-        return execSvcShutdown;
+    public void setPublicThreadPoolSize(int poolSize) {
+        this.pubPoolSize = poolSize;
     }
 
     /**
-     * Shutdown flag for system executor service.
-     * <p>
-     * If not provided, default value {@code true} will be used which will shutdown
-     * executor service when Ignite stops regardless of whether it was started before
-     * Ignite or by Ignition.
+     * Sets system thread pool size to use within grid.
      *
-     * @return System executor service shutdown flag.
+     * @param poolSize Thread pool size to use within grid.
+     * @see IgniteConfiguration#getSystemThreadPoolSize()
      */
-    public boolean getSystemExecutorServiceShutdown() {
-        return sysSvcShutdown;
+    public void setSystemThreadPoolSize(int poolSize) {
+        this.sysPoolSize = poolSize;
     }
 
     /**
-     * Shutdown flag for management executor service.
-     * <p>
-     * If not provided, default value {@code true} will be used which will shutdown
-     * executor service when Ignite stops regardless of whether it was started before
-     * Ignite or by Ignition.
+     * Sets management thread pool size to use within grid.
      *
-     * @return Management executor service shutdown flag.
+     * @param poolSize Thread pool size to use within grid.
+     * @see IgniteConfiguration#getManagementThreadPoolSize()
      */
-    public boolean getManagementExecutorServiceShutdown() {
-        return mgmtSvcShutdown;
+    public void setManagementThreadPoolSize(int poolSize) {
+        this.mgmtPoolSize = poolSize;
     }
 
     /**
-     * Should return flag of peer class loading executor service shutdown when the grid stops.
-     * <p>
-     * If not provided, default value {@code true} will be used which means
-     * that when grid will be stopped it will shut down peer class loading executor service.
+     * Sets thread pool size to use for peer class loading.
      *
-     * @return Peer class loading executor service shutdown flag.
+     * @param poolSize Thread pool size to use within grid.
+     * @see IgniteConfiguration#getPeerClassLoadingThreadPoolSize()
      */
-    public boolean getPeerClassLoadingExecutorServiceShutdown() {
-        return p2pSvcShutdown;
+    public void setPeerClassLoadingThreadPoolSize(int poolSize) {
+        this.p2pPoolSize = poolSize;
     }
 
     /**
-     * Shutdown flag for GGFS executor service.
-     * <p>
-     * If not provided, default value {@code true} will be used which will shutdown
-     * executor service when Ignite stops regardless whether it was started before Ignition
-     * or by Ignition.
+     * Set thread pool size that will be used to process outgoing GGFS messages.
      *
-     * @return GGFS executor service shutdown flag.
+     * @param poolSize Executor service to use for outgoing GGFS messages.
+     * @see IgniteConfiguration#getGgfsThreadPoolSize()
      */
-    public boolean getGgfsExecutorServiceShutdown() {
-        return ggfsSvcShutdown;
-    }
-
-    /**
-     * Sets thread pool to use within grid.
-     *
-     * @param execSvc Thread pool to use within grid.
-     * @see IgniteConfiguration#getExecutorService()
-     */
-    public void setExecutorService(ExecutorService execSvc) {
-        this.execSvc = execSvc;
-    }
-
-    /**
-     * Sets executor service shutdown flag.
-     *
-     * @param execSvcShutdown Executor service shutdown flag.
-     * @see IgniteConfiguration#getExecutorServiceShutdown()
-     */
-    public void setExecutorServiceShutdown(boolean execSvcShutdown) {
-        this.execSvcShutdown = execSvcShutdown;
-    }
-
-    /**
-     * Sets system thread pool to use within grid.
-     *
-     * @param sysSvc Thread pool to use within grid.
-     * @see IgniteConfiguration#getSystemExecutorService()
-     */
-    public void setSystemExecutorService(ExecutorService sysSvc) {
-        this.sysSvc = sysSvc;
-    }
-
-    /**
-     * Sets system executor service shutdown flag.
-     *
-     * @param sysSvcShutdown System executor service shutdown flag.
-     * @see IgniteConfiguration#getSystemExecutorServiceShutdown()
-     */
-    public void setSystemExecutorServiceShutdown(boolean sysSvcShutdown) {
-        this.sysSvcShutdown = sysSvcShutdown;
-    }
-
-    /**
-     * Sets management thread pool to use within grid.
-     *
-     * @param mgmtSvc Thread pool to use within grid.
-     * @see IgniteConfiguration#getManagementExecutorService()
-     */
-    public void setManagementExecutorService(ExecutorService mgmtSvc) {
-        this.mgmtSvc = mgmtSvc;
-    }
-
-    /**
-     * Sets management executor service shutdown flag.
-     *
-     * @param mgmtSvcShutdown Management executor service shutdown flag.
-     * @see IgniteConfiguration#getManagementExecutorServiceShutdown()
-     */
-    public void setManagementExecutorServiceShutdown(boolean mgmtSvcShutdown) {
-        this.mgmtSvcShutdown = mgmtSvcShutdown;
-    }
-
-    /**
-     * Sets thread pool to use for peer class loading.
-     *
-     * @param p2pSvc Thread pool to use within grid.
-     * @see IgniteConfiguration#getPeerClassLoadingExecutorService()
-     */
-    public void setPeerClassLoadingExecutorService(ExecutorService p2pSvc) {
-        this.p2pSvc = p2pSvc;
-    }
-
-    /**
-     * Sets peer class loading executor service shutdown flag.
-     *
-     * @param p2pSvcShutdown Peer class loading executor service shutdown flag.
-     * @see IgniteConfiguration#getPeerClassLoadingExecutorServiceShutdown()
-     */
-    public void setPeerClassLoadingExecutorServiceShutdown(boolean p2pSvcShutdown) {
-        this.p2pSvcShutdown = p2pSvcShutdown;
-    }
-
-    /**
-     * Set executor service that will be used to process outgoing GGFS messages.
-     *
-     * @param ggfsSvc Executor service to use for outgoing GGFS messages.
-     * @see IgniteConfiguration#getGgfsExecutorService()
-     */
-    public void setGgfsExecutorService(ExecutorService ggfsSvc) {
-        this.ggfsSvc = ggfsSvc;
-    }
-
-    /**
-     * Sets GGFS executor service shutdown flag.
-     *
-     * @param ggfsSvcShutdown GGFS executor service shutdown flag.
-     * @see IgniteConfiguration#getGgfsExecutorService()
-     */
-    public void setGgfsExecutorServiceShutdown(boolean ggfsSvcShutdown) {
-        this.ggfsSvcShutdown = ggfsSvcShutdown;
+    public void setGgfsThreadPoolSize(int poolSize) {
+        this.ggfsPoolSize = poolSize;
     }
 
     /**
@@ -1955,7 +1775,7 @@ public class IgniteConfiguration {
      * on arrive to mapped node. This approach suits well for large amount of small
      * jobs (which is a wide-spread use case). User still can control the number
      * of concurrent jobs by setting maximum thread pool size defined by
-     * GridConfiguration.getExecutorService() configuration property.
+     * GridConfiguration.getPublicThreadPoolSize() configuration property.
      *
      * @return Grid collision SPI implementation or {@code null} to use default implementation.
      */
@@ -2344,31 +2164,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets flag indicating whether external {@code REST} access is enabled or not.
-     *
-     * @param restEnabled Flag indicating whether external {@code REST} access is enabled or not.
-     * @deprecated Use {@link ClientConnectionConfiguration}.
-     */
-    @Deprecated
-    public void setRestEnabled(boolean restEnabled) {
-        this.restEnabled = restEnabled;
-    }
-
-    /**
-     * Gets flag indicating whether external {@code REST} access is enabled or not. By default,
-     * external {@code REST} access is turned on.
-     *
-     * @return Flag indicating whether external {@code REST} access is enabled or not.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_HOST
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_PORT
-     * @deprecated Use {@link ClientConnectionConfiguration}.
-     */
-    @Deprecated
-    public boolean isRestEnabled() {
-        return restEnabled;
-    }
-
-    /**
      * Gets host for TCP binary protocol server. This can be either an
      * IP address or a domain name.
      * <p>
@@ -2717,66 +2512,6 @@ public class IgniteConfiguration {
     @Deprecated
     public void setRestAccessibleFolders(String... restAccessibleFolders) {
         this.restAccessibleFolders = restAccessibleFolders;
-    }
-
-    /**
-     * Should return an instance of fully configured thread pool to be used for
-     * processing of client messages (REST requests).
-     * <p>
-     * If not provided, new executor service will be created using the following
-     * configuration:
-     * <ul>
-     *     <li>Core pool size - {@link #DFLT_REST_CORE_THREAD_CNT}</li>
-     *     <li>Max pool size - {@link #DFLT_REST_MAX_THREAD_CNT}</li>
-     *     <li>Queue capacity - {@link #DFLT_REST_THREADPOOL_QUEUE_CAP}</li>
-     * </ul>
-     *
-     * @return Thread pool implementation to be used for processing of client
-     *      messages.
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestExecutorService()}.
-     */
-    @Deprecated
-    public ExecutorService getRestExecutorService() {
-        return restExecSvc;
-    }
-
-    /**
-     * Sets thread pool to use for processing of client messages (REST requests).
-     *
-     * @param restExecSvc Thread pool to use for processing of client messages.
-     * @see IgniteConfiguration#getRestExecutorService()
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestExecutorService(ExecutorService)}.
-     */
-    @Deprecated
-    public void setRestExecutorService(ExecutorService restExecSvc) {
-        this.restExecSvc = restExecSvc;
-    }
-
-    /**
-     * Sets REST executor service shutdown flag.
-     *
-     * @param restSvcShutdown REST executor service shutdown flag.
-     * @see IgniteConfiguration#getRestExecutorService()
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestExecutorServiceShutdown(boolean)}.
-     */
-    @Deprecated
-    public void setRestExecutorServiceShutdown(boolean restSvcShutdown) {
-        this.restSvcShutdown = restSvcShutdown;
-    }
-
-    /**
-     * Shutdown flag for REST executor service.
-     * <p>
-     * If not provided, default value {@code true} will be used which will shutdown
-     * executor service when Ignite stops regardless whether it was started before Ignite
-     * or by Ignite.
-     *
-     * @return REST executor service shutdown flag.
-     * @deprecated Use {@link ClientConnectionConfiguration#isRestExecutorServiceShutdown()}.
-     */
-    @Deprecated
-    public boolean getRestExecutorServiceShutdown() {
-        return restSvcShutdown;
     }
 
     /**

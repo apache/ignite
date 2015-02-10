@@ -1181,7 +1181,7 @@ public class GridCacheUtils {
             try {
                 return cmd.call();
             }
-            catch (IgniteCheckedException | IgniteException e) {
+            catch (IgniteCheckedException | IgniteException | IllegalStateException e) {
                 throw e;
             }
             catch (Exception e) {

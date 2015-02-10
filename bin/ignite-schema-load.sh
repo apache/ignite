@@ -50,7 +50,7 @@ setIgniteHome
 #
 . "${SCRIPTS_HOME}"/include/setenv.sh
 . "${SCRIPTS_HOME}"/include/target-classpath.sh # Will be removed in release.
-CP="${IGNITE_LIBS}"
+CP="${JAVA_HOME}/jre/lib/jfxrt.jar${SEP}${IGNITE_LIBS}${SEP}${IGNITE_HOME}/bin/include/schema-load/*"
 
 # Mac OS specific support to display correct name in the dock.
 osname=`uname`

@@ -201,7 +201,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        ggfsSvc = ggfsCtx.kernalContext().config().getGgfsExecutorService();
+        ggfsSvc = ggfsCtx.kernalContext().getGgfsExecutorService();
 
         trashPurgeTimeout = ggfsCtx.configuration().getTrashPurgeTimeout();
 

@@ -90,7 +90,7 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
         startGrids(nodesCnt);
 
         try {
-            IgniteCache<Object, Object> cache = grid(0).jcache(null);
+            IgniteCache<Object, Object> cache = jcache(0);
 
             Collection<UUID> members = new HashSet<>();
 

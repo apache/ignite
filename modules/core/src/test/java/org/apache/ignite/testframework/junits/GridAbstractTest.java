@@ -1108,8 +1108,6 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setCheckpointSpi(cpSpi);
 
-        cfg.setRestEnabled(false);
-
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
