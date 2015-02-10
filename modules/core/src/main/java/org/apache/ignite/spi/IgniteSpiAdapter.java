@@ -28,8 +28,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.authentication.*;
-import org.apache.ignite.spi.securesession.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.jetbrains.annotations.*;
 
@@ -135,13 +133,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
         this.spiCtx = spiCtx;
 
-        // Always run consistency check for security SPIs.
-        final boolean secSpi = AuthenticationSpi.class.isAssignableFrom(getClass()) ||
-            SecureSessionSpi.class.isAssignableFrom(getClass());
-
-        final boolean check = secSpi || !Boolean.getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK);
-
-        if (check) {
+        if (!Boolean.getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
             spiCtx.addLocalEventListener(paramsLsnr = new GridLocalEventListener() {
                 @Override public void onEvent(Event evt) {
                     assert evt instanceof DiscoveryEvent : "Invalid event [expected=" + EVT_NODE_JOINED +
@@ -151,7 +143,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
                     if (node != null)
                         try {
-                            checkConfigurationConsistency(spiCtx, node, false, !secSpi);
+                            checkConfigurationConsistency(spiCtx, node, false);
                             checkConfigurationConsistency0(spiCtx, node, false);
                         }
                         catch (IgniteSpiException e) {
@@ -164,7 +156,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
             final Collection<ClusterNode> remotes = F.concat(false, spiCtx.remoteNodes(), spiCtx.remoteDaemonNodes());
 
             for (ClusterNode node : remotes) {
-                checkConfigurationConsistency(spiCtx, node, true, !secSpi);
+                checkConfigurationConsistency(spiCtx, node, true);
                 checkConfigurationConsistency0(spiCtx, node, true);
             }
         }
@@ -280,27 +272,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         return "Using parameter [" + name + '=' + val + ']';
     }
 
-    /**
-     * @param msg Error message.
-     * @param locVal Local node value.
-     * @return Error text.
-     */
-    private static String format(String msg, Object locVal) {
-        return msg + U.nl() +
-            ">>> => Local node:  " + locVal + U.nl();
-    }
 
-    /**
-     * @param msg Error message.
-     * @param locVal Local node value.
-     * @param rmtVal Remote node value.
-     * @return Error text.
-     */
-    private static String format(String msg, Object locVal, Object rmtVal) {
-        return msg + U.nl() +
-            ">>> => Local node:  " + locVal + U.nl() +
-            ">>> => Remote node: " + rmtVal + U.nl();
-    }
 
     /**
      * Registers SPI MBean. Note that SPI can only register one MBean.
@@ -354,14 +326,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
     }
 
-    /**
-     * @return {@code true} if this check is optional.
-     */
-    private boolean checkOptional() {
-        IgniteSpiConsistencyChecked ann = U.getAnnotation(getClass(), IgniteSpiConsistencyChecked.class);
 
-        return ann != null && ann.optional();
-    }
 
     /**
      * @return {@code true} if this check is optional.
@@ -370,13 +335,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         IgniteSpiConsistencyChecked ann = U.getAnnotation(getClass(), IgniteSpiConsistencyChecked.class);
 
         return ann != null && ann.checkDaemon();
-    }
-
-    /**
-     * @return {@code true} if this check is enabled.
-     */
-    private boolean checkEnabled() {
-        return U.getAnnotation(getClass(), IgniteSpiConsistencyChecked.class) != null;
     }
 
     /**
@@ -401,7 +359,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      * @throws IgniteSpiException If check fatally failed.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private void checkConfigurationConsistency(IgniteSpiContext spiCtx, ClusterNode node, boolean starting, boolean tip)
+    private void checkConfigurationConsistency(IgniteSpiContext spiCtx, ClusterNode node, boolean starting)
         throws IgniteSpiException {
         assert spiCtx != null;
         assert node != null;
@@ -411,101 +369,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
                 log.debug("Skipping configuration consistency check for daemon node: " + node);
 
             return;
-        }
-
-        /*
-         * Optional SPI means that we should not print warning if SPIs are different but
-         * still need to compare attributes if SPIs are the same.
-         */
-        boolean optional = checkOptional();
-        boolean enabled = checkEnabled();
-
-        if (!enabled)
-            return;
-
-        String clsAttr = createSpiAttributeName(IgniteNodeAttributes.ATTR_SPI_CLASS);
-
-        String name = getName();
-
-        SB sb = new SB();
-
-        /*
-         * If there are any attributes do compare class and version
-         * (do not print warning for the optional SPIs).
-         */
-
-        /* Check SPI class and version. */
-        String locCls = spiCtx.localNode().attribute(clsAttr);
-        String rmtCls = node.attribute(clsAttr);
-
-        assert locCls != null : "Local SPI class name attribute not found: " + clsAttr;
-
-        boolean isSpiConsistent = false;
-
-        String tipStr = tip ? " (fix configuration or set " +
-            "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property)" : "";
-
-        if (rmtCls == null) {
-            if (!optional && starting)
-                throw new IgniteSpiException("Remote SPI with the same name is not configured" + tipStr + " [name=" + name +
-                    ", loc=" + locCls + ']');
-
-            sb.a(format(">>> Remote SPI with the same name is not configured: " + name, locCls));
-        }
-        else if (!locCls.equals(rmtCls)) {
-            if (!optional && starting)
-                throw new IgniteSpiException("Remote SPI with the same name is of different type" + tipStr + " [name=" + name +
-                    ", loc=" + locCls + ", rmt=" + rmtCls + ']');
-
-            sb.a(format(">>> Remote SPI with the same name is of different type: " + name, locCls, rmtCls));
-        }
-        else
-            isSpiConsistent = true;
-
-        if (optional && !isSpiConsistent)
-            return;
-
-        // It makes no sense to compare inconsistent SPIs attributes.
-        if (isSpiConsistent) {
-            List<String> attrs = getConsistentAttributeNames();
-
-            // Process all SPI specific attributes.
-            for (String attr : attrs) {
-                // Ignore class and version attributes processed above.
-                if (!attr.equals(clsAttr)) {
-                    // This check is considered as optional if no attributes
-                    Object rmtVal = node.attribute(attr);
-                    Object locVal = spiCtx.localNode().attribute(attr);
-
-                    if (locVal == null && rmtVal == null)
-                        continue;
-
-                    if (locVal == null || rmtVal == null || !locVal.equals(rmtVal))
-                        sb.a(format(">>> Remote node has different " + getName() + " SPI attribute " +
-                            attr, locVal, rmtVal));
-                }
-            }
-        }
-
-        if (sb.length() > 0) {
-            String msg;
-
-            if (starting)
-                msg = U.nl() + U.nl() +
-                    ">>> +--------------------------------------------------------------------+" + U.nl() +
-                    ">>> + Courtesy notice that starting node has inconsistent configuration. +" + U.nl() +
-                    ">>> + Ignore this message if you are sure that this is done on purpose.  +" + U.nl() +
-                    ">>> +--------------------------------------------------------------------+" + U.nl() +
-                    ">>> Remote Node ID: " + node.id().toString().toUpperCase() + U.nl() + sb;
-            else
-                msg = U.nl() + U.nl() +
-                    ">>> +-------------------------------------------------------------------+" + U.nl() +
-                    ">>> + Courtesy notice that joining node has inconsistent configuration. +" + U.nl() +
-                    ">>> + Ignore this message if you are sure that this is done on purpose. +" + U.nl() +
-                    ">>> +-------------------------------------------------------------------+" + U.nl() +
-                    ">>> Remote Node ID: " + node.id().toString().toUpperCase() + U.nl() + sb;
-
-            U.courtesy(log, msg);
         }
     }
 

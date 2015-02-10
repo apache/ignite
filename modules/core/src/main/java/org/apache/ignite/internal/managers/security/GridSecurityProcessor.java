@@ -31,7 +31,7 @@ import java.util.*;
  */
 public interface GridSecurityProcessor extends GridProcessor {
     /**
-     * Authenticates grid node with it's attributes via underlying {@link org.apache.ignite.spi.authentication.AuthenticationSpi}s.
+     * Authenticates grid node with it's attributes via underlying AuthenticationSpi.
      *
      * @param node Node id to authenticate.
      * @param cred Security credentials.
@@ -48,7 +48,7 @@ public interface GridSecurityProcessor extends GridProcessor {
     public boolean isGlobalNodeAuthentication();
 
     /**
-     * Authenticates subject via underlying {@link org.apache.ignite.spi.authentication.AuthenticationSpi}s.
+     * Authenticates subject via underlying AuthenticationSpi.
      *
      * @param ctx Authentication context.
      * @return {@code True} if succeeded, {@code false} otherwise.

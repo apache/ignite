@@ -34,8 +34,6 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.authentication.*;
-import org.apache.ignite.spi.authentication.noop.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.checkpoint.noop.*;
 import org.apache.ignite.spi.collision.*;
@@ -1449,7 +1447,6 @@ public class IgnitionEx {
             DiscoverySpi discoSpi = cfg.getDiscoverySpi();
             EventStorageSpi evtSpi = cfg.getEventStorageSpi();
             CollisionSpi colSpi = cfg.getCollisionSpi();
-            AuthenticationSpi authSpi = cfg.getAuthenticationSpi();
             SecureSessionSpi sesSpi = cfg.getSecureSessionSpi();
             DeploymentSpi deploySpi = cfg.getDeploymentSpi();
             CheckpointSpi[] cpSpi = cfg.getCheckpointSpi();
@@ -1612,9 +1609,6 @@ public class IgnitionEx {
             if (colSpi == null)
                 colSpi = new NoopCollisionSpi();
 
-            if (authSpi == null)
-                authSpi = new NoopAuthenticationSpi();
-
             if (sesSpi == null)
                 sesSpi = new NoopSecureSessionSpi();
 
@@ -1655,7 +1649,6 @@ public class IgnitionEx {
             myCfg.setDiscoverySpi(discoSpi);
             myCfg.setCheckpointSpi(cpSpi);
             myCfg.setEventStorageSpi(evtSpi);
-            myCfg.setAuthenticationSpi(authSpi);
             myCfg.setSecureSessionSpi(sesSpi);
             myCfg.setDeploymentSpi(deploySpi);
             myCfg.setFailoverSpi(failSpi);
@@ -1829,7 +1822,6 @@ public class IgnitionEx {
                 ensureMultiInstanceSupport(evtSpi);
                 ensureMultiInstanceSupport(colSpi);
                 ensureMultiInstanceSupport(failSpi);
-                ensureMultiInstanceSupport(authSpi);
                 ensureMultiInstanceSupport(sesSpi);
                 ensureMultiInstanceSupport(loadBalancingSpi);
                 ensureMultiInstanceSupport(swapspaceSpi);

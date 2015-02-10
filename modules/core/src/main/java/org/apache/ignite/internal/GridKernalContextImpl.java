@@ -131,7 +131,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridSecureSessionProcessor sesMgr;
+    private GridSecureSessionProcessor secProc;
 
     /** */
     @GridToStringExclude
@@ -419,7 +419,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridSecurityProcessor)
             authProc = (GridSecurityProcessor)comp;
         else if (comp instanceof GridSecureSessionProcessor)
-            sesMgr = (GridSecureSessionProcessor)comp;
+            secProc = (GridSecureSessionProcessor)comp;
         else if (comp instanceof GridLoadBalancerManager)
             loadMgr = (GridLoadBalancerManager)comp;
         else if (comp instanceof GridSwapSpaceManager)
@@ -658,7 +658,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public GridSecureSessionProcessor secureSession() {
-        return sesMgr;
+        return secProc;
     }
 
     /** {@inheritDoc} */

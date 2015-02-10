@@ -77,8 +77,6 @@ import org.apache.ignite.mxbean.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.authentication.*;
-import org.apache.ignite.spi.authentication.noop.*;
 import org.apache.ignite.spi.securesession.noop.*;
 import org.jetbrains.annotations.*;
 
@@ -384,13 +382,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         assert cfg != null;
 
         return Arrays.toString(cfg.getLoadBalancingSpi());
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getAuthenticationSpiFormatted() {
-        assert cfg != null;
-
-        return cfg.getAuthenticationSpi().toString();
     }
 
     /** {@inheritDoc} */
@@ -1135,7 +1126,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         A.notNull(cfg.getDeploymentSpi(), "cfg.getDeploymentSpi()");
         A.notNull(cfg.getDiscoverySpi(), "cfg.getDiscoverySpi()");
         A.notNull(cfg.getEventStorageSpi(), "cfg.getEventStorageSpi()");
-        A.notNull(cfg.getAuthenticationSpi(), "cfg.getAuthenticationSpi()");
         A.notNull(cfg.getSecureSessionSpi(), "cfg.getSecureSessionSpi()");
         A.notNull(cfg.getCollisionSpi(), "cfg.getCollisionSpi()");
         A.notNull(cfg.getFailoverSpi(), "cfg.getFailoverSpi()");
@@ -1220,9 +1210,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
         if (cfg.getSecureSessionSpi() != null && !(cfg.getSecureSessionSpi() instanceof NoopSecureSessionSpi))
             msgs.add("Secure session SPI.");
-
-        if (cfg.getAuthenticationSpi() != null && !(cfg.getAuthenticationSpi() instanceof NoopAuthenticationSpi))
-            msgs.add("Authentication SPI.");
 
         if (!F.isEmpty(msgs)) {
             U.quietAndInfo(log, "The following features are not supported in open source edition, " +
@@ -1369,30 +1356,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         if (cfg.getClientConnectionConfiguration() != null)
             add(attrs, ATTR_REST_PORT_RANGE, cfg.getClientConnectionConfiguration().getRestPortRange());
 
-        try {
-            AuthenticationSpi authSpi = cfg.getAuthenticationSpi();
-
-            boolean securityEnabled = authSpi != null && !U.hasAnnotation(authSpi.getClass(), IgniteSpiNoop.class);
-
-            GridSecurityCredentialsProvider provider = cfg.getSecurityCredentialsProvider();
-
-            if (provider != null) {
-                GridSecurityCredentials cred = provider.credentials();
-
-                if (cred != null)
-                    add(attrs, ATTR_SECURITY_CREDENTIALS, cred);
-                else if (securityEnabled)
-                    throw new IgniteCheckedException("Failed to start node (authentication SPI is configured, " +
-                        "by security credentials provider returned null).");
-            }
-            else if (securityEnabled)
-                throw new IgniteCheckedException("Failed to start node (authentication SPI is configured, " +
-                    "but security credentials provider is not set. Fix the configuration and restart the node).");
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteCheckedException("Failed to create node security credentials", e);
-        }
-
         // Stick in SPI versions and classes attributes.
         addAttributes(attrs, cfg.getCollisionSpi());
         addAttributes(attrs, cfg.getSwapSpaceSpi());
@@ -1405,6 +1368,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         addAttributes(attrs, cfg.getAuthenticationSpi());
         addAttributes(attrs, cfg.getSecureSessionSpi());
         addAttributes(attrs, cfg.getDeploymentSpi());
+
+
 
         // Set user attributes for this node.
         if (cfg.getUserAttributes() != null) {
@@ -2282,7 +2247,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             log.debug("Grid event storage SPI  : " + cfg.getEventStorageSpi());
             log.debug("Grid failover SPI       : " + Arrays.toString(cfg.getFailoverSpi()));
             log.debug("Grid load balancing SPI : " + Arrays.toString(cfg.getLoadBalancingSpi()));
-            log.debug("Grid authentication SPI : " + cfg.getAuthenticationSpi());
             log.debug("Grid secure session SPI : " + cfg.getSecureSessionSpi());
             log.debug("Grid swap space SPI     : " + cfg.getSwapSpaceSpi());
         }

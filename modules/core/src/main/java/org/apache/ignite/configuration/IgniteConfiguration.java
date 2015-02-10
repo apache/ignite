@@ -28,7 +28,6 @@ import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.services.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
-import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.plugin.security.*;
@@ -320,9 +319,6 @@ public class IgniteConfiguration {
     /** Collision SPI. */
     private CollisionSpi colSpi;
 
-    /** Authentication SPI. */
-    private AuthenticationSpi authSpi;
-
     /** Secure session SPI. */
     private SecureSessionSpi sesSpi;
 
@@ -514,7 +510,6 @@ public class IgniteConfiguration {
         cpSpi = cfg.getCheckpointSpi();
         colSpi = cfg.getCollisionSpi();
         failSpi = cfg.getFailoverSpi();
-        authSpi = cfg.getAuthenticationSpi();
         sesSpi = cfg.getSecureSessionSpi();
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         swapSpaceSpi = cfg.getSwapSpaceSpi();
@@ -1786,27 +1781,6 @@ public class IgniteConfiguration {
      */
     public void setCollisionSpi(CollisionSpi colSpi) {
         this.colSpi = colSpi;
-    }
-
-    /**
-     * Should return fully configured authentication SPI implementation. If not provided,
-     * {@link org.apache.ignite.spi.authentication.noop.NoopAuthenticationSpi} will be used.
-     *
-     * @return Grid authentication SPI implementation or {@code null} to use default implementation.
-     */
-    public AuthenticationSpi getAuthenticationSpi() {
-        return authSpi;
-    }
-
-    /**
-     * Sets fully configured instance of {@link org.apache.ignite.spi.authentication.AuthenticationSpi}.
-     *
-     * @param authSpi Fully configured instance of {@link org.apache.ignite.spi.authentication.AuthenticationSpi} or
-     * {@code null} if no SPI provided.
-     * @see IgniteConfiguration#getAuthenticationSpi()
-     */
-    public void setAuthenticationSpi(AuthenticationSpi authSpi) {
-        this.authSpi = authSpi;
     }
 
     /**
