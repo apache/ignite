@@ -322,6 +322,23 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
     }
 
     /**
+     * Gets number of swap entries for given partitions.
+     *
+     * @param spaceName Space name.
+     * @param parts Partitions.
+     * @return Number of swap entries for given partitions.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long swapKeys(@Nullable String spaceName, Set<Integer> parts) throws IgniteCheckedException {
+        try {
+            return getSpi().count(spaceName, parts);
+        }
+        catch (IgniteSpiException e) {
+            throw new IgniteCheckedException("Failed to get swap keys count for space: " + spaceName, e);
+        }
+    }
+
+    /**
      * @param spaceName Space name.
      * @throws IgniteCheckedException If failed.
      */

@@ -21,13 +21,13 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.task.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
@@ -141,7 +141,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             do {
                 topVer = ctx.affinity().affinityTopologyVersion();
 
-                // Send job to all nodes.
+                // Send job to all data nodes.
                 Collection<ClusterNode> nodes = ctx.grid().forDataNodes(name()).nodes();
 
                 if (!nodes.isEmpty()) {
@@ -155,12 +155,61 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             if (log.isDebugEnabled())
                 log.debug("All remote nodes left while cache remove [cacheName=" + name() + "]");
         }
-        catch (ComputeTaskTimeoutCheckedException e) {
-            U.warn(log, "Timed out waiting for remote nodes to finish cache remove (consider increasing " +
-                "'networkTimeout' configuration property) [cacheName=" + name() + "]");
+    }
 
-            throw e;
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> removeAllAsync() {
+        GridFutureAdapter<Void> opFut = new GridFutureAdapter<>(ctx.kernalContext());
+
+        long topVer = ctx.affinity().affinityTopologyVersion();
+
+        removeAllAsync(opFut, topVer);
+
+        return opFut;
+    }
+
+    /**
+     * @param opFut Future.
+     * @param topVer Topology version.
+     */
+    private void removeAllAsync(final GridFutureAdapter<Void> opFut, final long topVer) {
+        Collection<ClusterNode> nodes = ctx.grid().forDataNodes(name()).nodes();
+
+        if (!nodes.isEmpty()) {
+            IgniteInternalFuture<?> rmvFut = ctx.closures().callAsyncNoFailover(BROADCAST,
+                    new GlobalRemoveAllCallable<>(name(), topVer), nodes, true);
+
+            rmvFut.listenAsync(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> fut) {
+                    try {
+                        fut.get();
+
+                        long topVer0 = ctx.affinity().affinityTopologyVersion();
+
+                        if (topVer0 == topVer)
+                            opFut.onDone();
+                        else
+                            removeAllAsync(opFut, topVer0);
+                    }
+                    catch (ClusterGroupEmptyCheckedException ignore) {
+                        if (log.isDebugEnabled())
+                            log.debug("All remote nodes left while cache remove [cacheName=" + name() + "]");
+
+                        opFut.onDone();
+                    }
+                    catch (IgniteCheckedException e) {
+                        opFut.onDone(e);
+                    }
+                    catch (Error e) {
+                        opFut.onDone(e);
+
+                        throw e;
+                    }
+                }
+            });
         }
+        else
+            opFut.onDone();
     }
 
     /** {@inheritDoc} */
@@ -235,6 +284,16 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
                             }
                         }
                     }
+
+                    Iterator<Cache.Entry<K, V>> it = dht.context().swap().offheapIterator(true, false, topVer);
+
+                    while (it.hasNext())
+                        dataLdr.removeData(it.next().getKey());
+
+                    it = dht.context().swap().swapIterator(true, false, topVer);
+
+                    while (it.hasNext())
+                        dataLdr.removeData(it.next().getKey());
                 }
             }
             finally {

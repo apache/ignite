@@ -25,7 +25,6 @@ import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jetbrains.annotations.*;
 
@@ -312,12 +311,6 @@ public class CacheConfiguration extends MutableConfiguration {
     /** */
     private CacheInterceptor<?, ?> interceptor;
 
-    /** */
-    private boolean portableEnabled;
-
-    /** */
-    private boolean keepPortableInStore = true;
-
     /** Query configuration. */
     private CacheQueryConfiguration qryCfg;
 
@@ -379,7 +372,6 @@ public class CacheConfiguration extends MutableConfiguration {
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
         isWriteThrough = cc.isWriteThrough();
-        keepPortableInStore = cc.isKeepPortableInStore();
         listenerConfigurations = cc.listenerConfigurations;
         loadPrevVal = cc.isLoadPreviousValue();
         offHeapMaxMem = cc.getOffHeapMaxMemory();
@@ -389,7 +381,6 @@ public class CacheConfiguration extends MutableConfiguration {
         name = cc.getName();
         nearStartSize = cc.getNearStartSize();
         nearEvictPlc = cc.getNearEvictionPolicy();
-        portableEnabled = cc.isPortableEnabled();
         preloadMode = cc.getPreloadMode();
         preloadBatchSize = cc.getPreloadBatchSize();
         preloadDelay = cc.getPreloadPartitionedDelay();
@@ -1601,61 +1592,6 @@ public class CacheConfiguration extends MutableConfiguration {
      */
     public <K, V> void setInterceptor(CacheInterceptor<K, V> interceptor) {
         this.interceptor = interceptor;
-    }
-
-    /**
-     * Flag indicating whether Ignite should store portable keys and values
-     * as instances of {@link PortableObject}.
-     *
-     * @return Portable enabled flag.
-     */
-    public boolean isPortableEnabled() {
-        return portableEnabled;
-    }
-
-    /**
-     * Gets portable enabled flag value.
-     *
-     * @param portableEnabled Portable enabled flag value.
-     */
-    public void setPortableEnabled(boolean portableEnabled) {
-        this.portableEnabled = portableEnabled;
-    }
-
-    /**
-     * Flag indicating that {@link CacheStore} implementation
-     * is working with portable objects instead of Java objects
-     * if portable mode for this cache is enabled ({@link #isPortableEnabled()}
-     * flag is {@code true}). Default value of this flag is {@code true},
-     * because this is recommended behavior from performance standpoint.
-     * <p>
-     * If set to {@code false}, Ignite will deserialize keys and
-     * values stored in portable format before they are passed
-     * to cache store.
-     * <p>
-     * Note that setting this flag to {@code false} can simplify
-     * store implementation in some cases, but it can cause performance
-     * degradation due to additional serializations and deserializations
-     * of portable objects. You will also need to have key and value
-     * classes on all nodes since portables will be deserialized when
-     * store is called.
-     * <p>
-     * This flag is ignored if portable mode is disabled for this
-     * cache ({@link #isPortableEnabled()} flag is {@code false}).
-     *
-     * @return Keep portables in store flag.
-     */
-    public boolean isKeepPortableInStore() {
-        return keepPortableInStore;
-    }
-
-    /**
-     * Sets keep portables in store flag.
-     *
-     * @param keepPortableInStore Keep portables in store flag.
-     */
-    public void setKeepPortableInStore(boolean keepPortableInStore) {
-        this.keepPortableInStore = keepPortableInStore;
     }
 
     /**

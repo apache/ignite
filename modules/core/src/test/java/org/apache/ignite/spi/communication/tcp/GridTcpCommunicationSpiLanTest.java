@@ -20,9 +20,9 @@ package org.apache.ignite.spi.communication.tcp;
 import mx4j.tools.adaptor.http.*;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
@@ -79,7 +79,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
      * Accumulating listener.
      */
     @SuppressWarnings({"deprecation"})
-    private class MessageListener implements CommunicationListener<GridTcpCommunicationMessageAdapter> {
+    private class MessageListener implements CommunicationListener<MessageAdapter> {
         /** Node id of local node. */
         private final UUID locNodeId;
 
@@ -100,7 +100,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, GridTcpCommunicationMessageAdapter msg, IgniteRunnable msgC) {
+        @Override public void onMessage(UUID nodeId, MessageAdapter msg, IgniteRunnable msgC) {
             msgC.run();
 
             if (msg instanceof GridTestMessage) {

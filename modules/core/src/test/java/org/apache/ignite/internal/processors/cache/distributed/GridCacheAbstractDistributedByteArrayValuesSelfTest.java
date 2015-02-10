@@ -69,13 +69,6 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     protected abstract boolean peerClassLoading();
 
     /**
-     * @return Whether portable mode is enabled.
-     */
-    protected boolean portableEnabled() {
-        return false;
-    }
-
-    /**
      * @return How many grids to start.
      */
     protected int gridCount() {
@@ -89,7 +82,6 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
         CacheConfiguration cfg = cacheConfiguration0();
 
         cfg.setName(CACHE_REGULAR);
-        cfg.setPortableEnabled(portableEnabled());
 
         return cfg;
     }
@@ -106,7 +98,6 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
         CacheConfiguration cfg = offheapCacheConfiguration0();
 
         cfg.setName(CACHE_OFFHEAP);
-        cfg.setPortableEnabled(portableEnabled());
 
         return cfg;
     }
@@ -118,7 +109,6 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
         CacheConfiguration cfg = offheapTieredCacheConfiguration0();
 
         cfg.setName(CACHE_OFFHEAP_TIERED);
-        cfg.setPortableEnabled(portableEnabled());
 
         return cfg;
     }

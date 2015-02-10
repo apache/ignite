@@ -22,7 +22,6 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -69,14 +68,6 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
         cfg.setCacheConfiguration(cacheConfiguration(ATOMIC_CACHE_NAME, ATOMIC),
             cacheConfiguration(TRANSACTIONAL_CACHE_NAME, TRANSACTIONAL));
 
-        if (portableEnabled()) {
-            PortableConfiguration pCfg = new PortableConfiguration();
-
-            pCfg.setClassNames(Arrays.asList(Key.class.getName(), Person.class.getName()));
-
-            cfg.setPortableConfiguration(pCfg);
-        }
-
         return cfg;
     }
 
@@ -102,17 +93,10 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
 
         ccfg.setAtomicWriteOrderMode(PRIMARY);
 
-        ccfg.setPortableEnabled(portableEnabled());
-
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return ccfg;
     }
-
-    /**
-     * @return Portable enabled flag.
-     */
-    protected abstract boolean portableEnabled();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

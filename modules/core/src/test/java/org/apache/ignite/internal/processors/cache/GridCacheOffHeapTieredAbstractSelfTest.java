@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 import org.junit.*;
@@ -59,18 +58,8 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        if (portableEnabled()) {
-            PortableConfiguration pCfg = new PortableConfiguration();
-
-            pCfg.setClassNames(Arrays.asList(TestValue.class.getName()));
-
-            cfg.setPortableConfiguration(pCfg);
-        }
-
-        return cfg;
+    protected boolean portableEnabled() {
+        return false;
     }
 
     /** {@inheritDoc} */

@@ -45,7 +45,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
@@ -81,6 +80,12 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** clearLocally() split threshold. */
     public static final int CLEAR_ALL_SPLIT_THRESHOLD = 10000;
+
+    /** Distribution modes to include into global size calculation. */
+    private static final Set<CacheDistributionMode> SIZE_NODES = EnumSet.of(
+        CacheDistributionMode.NEAR_PARTITIONED,
+        CacheDistributionMode.PARTITIONED_ONLY,
+        CacheDistributionMode.NEAR_ONLY);
 
     /** Deserialization stash. */
     private static final ThreadLocal<IgniteBiTuple<String, String>> stash = new ThreadLocal<IgniteBiTuple<String,
@@ -458,10 +463,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         Class<? super K1> keyType,
         Class<? super V1> valType
     ) {
-        if (PortableObject.class.isAssignableFrom(keyType) || PortableObject.class.isAssignableFrom(valType))
-            throw new IllegalStateException("Failed to create cache projection for portable objects. " +
-                "Use keepPortable() method instead.");
-
         if (ctx.deploymentEnabled()) {
             try {
                 ctx.deploy().registerClasses(keyType, valType);
@@ -655,102 +656,70 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
+    @Override public Iterable<Cache.Entry<K, V>> localEntries(CachePeekMode[] peekModes) throws IgniteCheckedException {
+        assert peekModes != null;
+
+        ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
+
+        PeekModes modes = parsePeekModes(peekModes);
+
+        List<Iterator<Cache.Entry<K, V>>> its = new ArrayList<>();
+
+        if (ctx.isLocal()) {
+            modes.primary = true;
+            modes.backup = true;
+
+            if (modes.heap)
+                its.add(iterator(map.entries0().iterator(), !ctx.keepPortable()));
+        }
+        else if (modes.heap) {
+            if (modes.near && ctx.isNear())
+                its.add(ctx.near().nearEntriesIterator());
+
+            if (modes.primary || modes.backup) {
+                GridDhtCacheAdapter<K, V> cache = ctx.isNear() ? ctx.near().dht() : ctx.dht();
+
+                its.add(cache.localEntriesIterator(modes.primary, modes.backup));
+            }
+        }
+
+        // Swap and offheap are disabled for near cache.
+        if (modes.primary || modes.backup) {
+            long topVer = ctx.affinity().affinityTopologyVersion();
+
+            GridCacheSwapManager<K, V> swapMgr = ctx.isNear() ? ctx.near().dht().context().swap() : ctx.swap();
+
+            if (modes.swap)
+                its.add(swapMgr.swapIterator(modes.primary, modes.backup, topVer));
+
+            if (modes.offheap)
+                its.add(swapMgr.offheapIterator(modes.primary, modes.backup, topVer));
+        }
+
+        final Iterator<Cache.Entry<K, V>> it = F.flatIterators(its);
+
+        return new Iterable<Cache.Entry<K, V>>() {
+            @Override public Iterator<Cache.Entry<K, V>> iterator() {
+                return it;
+            }
+
+            public String toString() {
+                return "CacheLocalEntries []";
+            }
+        };
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Nullable @Override public V localPeek(K key, CachePeekMode[] peekModes) throws IgniteCheckedException {
         A.notNull(key, "key");
-
-        assert peekModes != null;
 
         if (keyCheck)
             validateCacheKey(key);
 
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
-        boolean near = false;
-        boolean primary = false;
-        boolean backup = false;
-
-        boolean heap = false;
-        boolean offheap = false;
-        boolean swap = false;
-
-        if (peekModes.length == 0) {
-            near = true;
-            primary = true;
-            backup = true;
-
-            heap = true;
-            offheap = true;
-            swap = true;
-        }
-        else {
-            for (int i = 0; i < peekModes.length; i++) {
-                CachePeekMode peekMode = peekModes[i];
-
-                A.notNull(peekMode, "peekMode");
-
-                switch (peekMode) {
-                    case ALL:
-                        near = true;
-                        primary = true;
-                        backup = true;
-
-                        heap = true;
-                        offheap = true;
-                        swap = true;
-
-                        break;
-
-                    case BACKUP:
-                        backup = true;
-
-                        break;
-
-                    case PRIMARY:
-                        primary = true;
-
-                        break;
-
-                    case NEAR:
-                        near = true;
-
-                        break;
-
-                    case ONHEAP:
-                        heap = true;
-
-                        break;
-
-                    case OFFHEAP:
-                        offheap = true;
-
-                        break;
-
-                    case SWAP:
-                        swap = true;
-
-                        break;
-
-                    default:
-                        assert false : peekMode;
-                }
-            }
-        }
-
-        if (!(heap || offheap || swap)) {
-            heap = true;
-            offheap = true;
-            swap = true;
-        }
-
-        if (!(primary || backup || near)) {
-            primary = true;
-            backup = true;
-            near = true;
-        }
-
-        assert heap || offheap || swap;
-        assert primary || backup || near;
+        PeekModes modes = parsePeekModes(peekModes);
 
         try {
             if (ctx.portableEnabled())
@@ -765,11 +734,11 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                 boolean nearKey;
 
-                if (!(near && primary && backup)) {
+                if (!(modes.near && modes.primary && modes.backup)) {
                     boolean keyPrimary = ctx.affinity().primary(ctx.localNode(), part, topVer);
 
                     if (keyPrimary) {
-                        if (!primary)
+                        if (!modes.primary)
                             return null;
 
                         nearKey = false;
@@ -778,20 +747,20 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                         boolean keyBackup = ctx.affinity().belongs(ctx.localNode(), part, topVer);
 
                         if (keyBackup) {
-                            if (!backup)
+                            if (!modes.backup)
                                 return null;
 
                             nearKey = false;
                         }
                         else {
-                            if (!near)
+                            if (!modes.near)
                                 return null;
 
                             nearKey = true;
 
                             // Swap and offheap are disabled for near cache.
-                            offheap = false;
-                            swap = false;
+                            modes.offheap = false;
+                            modes.swap = false;
                         }
                     }
                 }
@@ -800,36 +769,36 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                     if (nearKey) {
                         // Swap and offheap are disabled for near cache.
-                        offheap = false;
-                        swap = false;
+                        modes.offheap = false;
+                        modes.swap = false;
                     }
                 }
 
                 if (nearKey && !ctx.isNear())
                     return null;
 
-                if (heap) {
+                if (modes.heap) {
                     GridCacheEntryEx<K, V> e = nearKey ? peekEx(key) :
                         (ctx.isNear() ? ctx.near().dht().peekEx(key) : peekEx(key));
 
                     if (e != null) {
-                        val = e.peek(heap, offheap, swap, topVer);
+                        val = e.peek(modes.heap, modes.offheap, modes.swap, topVer);
 
-                        offheap = false;
-                        swap = false;
+                        modes.offheap = false;
+                        modes.swap = false;
                     }
                 }
 
-                if (offheap || swap) {
+                if (modes.offheap || modes.swap) {
                     GridCacheSwapManager<K, V> swapMgr = ctx.isNear() ? ctx.near().dht().context().swap() : ctx.swap();
 
-                    GridCacheSwapEntry<V> swapEntry = swapMgr.read(key, offheap, swap);
+                    GridCacheSwapEntry<V> swapEntry = swapMgr.read(key, modes.offheap, modes.swap);
 
                     val = swapEntry != null ? swapEntry.value() : null;
                 }
             }
             else
-                val = localCachePeek0(key, heap, offheap, swap);
+                val = localCachePeek0(key, modes.heap, modes.offheap, modes.swap);
 
             if (ctx.portableEnabled())
                 val = (V)ctx.unwrapPortableIfNeeded(val, ctx.keepPortable());
@@ -1527,6 +1496,32 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> clearAsync() {
+        Collection<ClusterNode> nodes = ctx.grid().forCacheNodes(name()).nodes();
+
+        if (!nodes.isEmpty()) {
+            IgniteInternalFuture<Object> fut =
+                    ctx.closures().callAsyncNoFailover(BROADCAST, new GlobalClearAllCallable(name()), nodes, true);
+
+            return fut.chain(new CX1<IgniteInternalFuture<Object>, Object>() {
+                @Override public Object applyx(IgniteInternalFuture<Object> fut) throws IgniteCheckedException {
+                    try {
+                        return fut.get();
+                    }
+                    catch (ClusterGroupEmptyCheckedException ignore) {
+                        if (log.isDebugEnabled())
+                            log.debug("All remote nodes left while cache clearLocally [cacheName=" + name() + "]");
+
+                        return null;
+                    }
+                }
+            });
+        }
+        else
+            return new GridFinishedFuture<>(ctx.kernalContext());
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean compact(K key) throws IgniteCheckedException {
         return compact(key, (IgnitePredicate<Cache.Entry<K, V>>[])null);
     }
@@ -1557,7 +1552,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             try {
                 key = (K)ctx.marshalToPortable(key);
             }
-            catch (PortableException e) {
+            catch (IgniteException e) {
                 throw new IgniteException(e);
             }
         }
@@ -3568,7 +3563,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     try {
                         key0 = (K)ctx.marshalToPortable(key);
                     }
-                    catch (PortableException e) {
+                    catch (IgniteException e) {
                         return new GridFinishedFuture<>(ctx.kernalContext(), e);
                     }
                 }
@@ -3851,7 +3846,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             ctx.store().loadCache(new CIX3<K, V, GridCacheVersion>() {
                 @Override public void applyx(K key, V val, @Nullable GridCacheVersion ver)
-                    throws PortableException {
+                    throws IgniteException {
                     assert ver == null;
 
                     loadEntry(key, val, ver0, p, topVer, replicate, ttl);
@@ -4063,6 +4058,99 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         GridCacheMapEntry<K, V> e = map.randomEntry();
 
         return e == null || e.obsolete() ? null : e.wrap();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size(CachePeekMode[] peekModes) throws IgniteCheckedException {
+        if (isLocal())
+            return localSize(peekModes);
+
+        return sizeAsync(peekModes).get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Integer> sizeAsync(CachePeekMode[] peekModes) {
+        assert peekModes != null;
+
+        PeekModes modes = parsePeekModes(peekModes);
+
+        ClusterGroup grp;
+
+        if (modes.near)
+            grp = ctx.grid().forCacheNodes(name(), SIZE_NODES);
+        else
+            grp = ctx.grid().forDataNodes(name());
+
+        Collection<ClusterNode> nodes = grp.nodes();
+
+        if (nodes.isEmpty())
+            return new GridFinishedFuture<>(ctx.kernalContext(), 0);
+
+        IgniteInternalFuture<Collection<Integer>> fut =
+            ctx.closures().broadcastNoFailover(new SizeCallable(ctx.name(), peekModes), null, nodes);
+
+        return fut.chain(new CX1<IgniteInternalFuture<Collection<Integer>>, Integer>() {
+            @Override public Integer applyx(IgniteInternalFuture<Collection<Integer>> fut)
+            throws IgniteCheckedException {
+                Collection<Integer> res = fut.get();
+
+                int totalSize = 0;
+
+                for (Integer size : res)
+                    totalSize += size;
+
+                return totalSize;
+            }
+        });
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    @Override public int localSize(CachePeekMode[] peekModes) throws IgniteCheckedException {
+        PeekModes modes = parsePeekModes(peekModes);
+
+        int size = 0;
+
+        if (ctx.isLocal()) {
+            modes.primary = true;
+            modes.backup = true;
+
+            if (modes.heap)
+                size += size();
+        }
+        else {
+            if (modes.heap) {
+                if (modes.near)
+                    size += nearSize();
+
+                GridCacheAdapter cache = ctx.isNear() ? ctx.near().dht() : ctx.cache();
+
+                if (!(modes.primary && modes.backup)) {
+                    if (modes.primary)
+                        size += cache.primarySize();
+
+                    if (modes.backup)
+                        size += (cache.size() - cache.primarySize());
+                }
+                else
+                    size += cache.size();
+            }
+        }
+
+        // Swap and offheap are disabled for near cache.
+        if (modes.primary || modes.backup) {
+            long topVer = ctx.affinity().affinityTopologyVersion();
+
+            GridCacheSwapManager<K, V> swapMgr = ctx.isNear() ? ctx.near().dht().context().swap() : ctx.swap();
+
+            if (modes.swap)
+                size += swapMgr.swapEntriesCount(modes.primary, modes.backup, topVer);
+
+            if (modes.offheap)
+                size += swapMgr.offheapEntriesCount(modes.primary, modes.backup, topVer);
+        }
+
+        return size;
     }
 
     /** {@inheritDoc} */
@@ -4782,14 +4870,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (keyCheck)
             validateCacheKey(key);
 
-        if (ctx.portableEnabled()) {
-            try {
-                key = (K)ctx.marshalToPortable(key);
-            }
-            catch (PortableException e) {
-                throw new IgniteException(e);
-            }
-        }
+        if (ctx.portableEnabled())
+            key = (K)ctx.marshalToPortable(key);
 
         GridCacheEntryEx<K, V> e = peekEx(key);
 
@@ -5250,6 +5332,232 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /**
+     * @param it Internal entry iterator.
+     * @param deserializePortable Deserialize portable flag.
+     * @return Public API iterator.
+     */
+    protected Iterator<Cache.Entry<K, V>> iterator(final Iterator<GridCacheEntryEx<K, V>> it,
+        final boolean deserializePortable) {
+        return new Iterator<Cache.Entry<K, V>>() {
+            {
+                advance();
+            }
+
+            /** */
+            private Cache.Entry<K, V> next;
+
+            @Override public boolean hasNext() {
+                return next != null;
+            }
+
+            @Override public Cache.Entry<K, V> next() {
+                if (next == null)
+                    throw new NoSuchElementException();
+
+                Cache.Entry<K, V> e = next;
+
+                advance();
+
+                return e;
+            }
+
+            @Override public void remove() {
+                throw new UnsupportedOperationException();
+            }
+
+            /**
+             * Switch to next entry.
+             */
+            private void advance() {
+                next = null;
+
+                while (it.hasNext()) {
+                    GridCacheEntryEx<K, V> entry = it.next();
+
+                    try {
+                        next = toCacheEntry(entry, deserializePortable);
+
+                        if (next == null)
+                            continue;
+
+                        break;
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw U.convertToCacheException(e);
+                    }
+                    catch (GridCacheEntryRemovedException ignore) {
+                        // No-op.
+                    }
+                }
+            }
+        };
+    }
+
+    /**
+     * @param entry Internal entry.
+     * @param deserializePortable Deserialize portable flag.
+     * @return Public API entry.
+     * @throws IgniteCheckedException If failed.
+     * @throws GridCacheEntryRemovedException If entry removed.
+     */
+    @Nullable private Cache.Entry<K, V> toCacheEntry(GridCacheEntryEx<K, V> entry,
+        boolean deserializePortable)
+        throws IgniteCheckedException, GridCacheEntryRemovedException
+    {
+        try {
+            V val = entry.innerGet(
+                null,
+                false,
+                false,
+                false,
+                true,
+                false,
+                false,
+                false,
+                null,
+                null,
+                null,
+                null,
+                null);
+
+            if (val == null)
+                return null;
+
+            K key = entry.key();
+
+            if (deserializePortable && ctx.portableEnabled()) {
+                key = (K)ctx.unwrapPortableIfNeeded(key, true);
+                val = (V)ctx.unwrapPortableIfNeeded(val, true);
+            }
+
+            return new CacheEntryImpl<>(key, val);
+        }
+        catch (GridCacheFilterFailedException ignore) {
+            assert false;
+
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class PeekModes {
+        /** */
+        boolean near;
+
+        /** */
+        boolean primary;
+
+        /** */
+        boolean backup;
+
+        /** */
+        boolean heap;
+
+        /** */
+        boolean offheap;
+
+        /** */
+        boolean swap;
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(PeekModes.class, this);
+        }
+    }
+
+    /**
+     * @param peekModes Cache peek modes array.
+     * @return Peek modes flags.
+     */
+    private static PeekModes parsePeekModes(CachePeekMode[] peekModes) {
+        assert peekModes != null;
+
+        PeekModes modes = new PeekModes();
+
+        if (peekModes.length == 0) {
+            modes.near = true;
+            modes.primary = true;
+            modes.backup = true;
+
+            modes.heap = true;
+            modes.offheap = true;
+            modes.swap = true;
+        }
+        else {
+            for (int i = 0; i < peekModes.length; i++) {
+                CachePeekMode peekMode = peekModes[i];
+
+                A.notNull(peekMode, "peekMode");
+
+                switch (peekMode) {
+                    case ALL:
+                        modes.near = true;
+                        modes.primary = true;
+                        modes.backup = true;
+
+                        modes.heap = true;
+                        modes.offheap = true;
+                        modes.swap = true;
+
+                        break;
+
+                    case BACKUP:
+                        modes.backup = true;
+
+                        break;
+
+                    case PRIMARY:
+                        modes.primary = true;
+
+                        break;
+
+                    case NEAR:
+                        modes.near = true;
+
+                        break;
+
+                    case ONHEAP:
+                        modes.heap = true;
+
+                        break;
+
+                    case OFFHEAP:
+                        modes.offheap = true;
+
+                        break;
+
+                    case SWAP:
+                        modes.swap = true;
+
+                        break;
+
+                    default:
+                        assert false : peekMode;
+                }
+            }
+        }
+
+        if (!(modes.heap || modes.offheap || modes.swap)) {
+            modes.heap = true;
+            modes.offheap = true;
+            modes.swap = true;
+        }
+
+        if (!(modes.primary || modes.backup || modes.near)) {
+            modes.primary = true;
+            modes.backup = true;
+            modes.near = true;
+        }
+
+        assert modes.heap || modes.offheap || modes.swap;
+        assert modes.primary || modes.backup || modes.near;
+
+        return modes;
+    }
+
+    /**
      * @param plc Explicitly specified expiry policy for cache operation.
      * @return Expiry policy wrapper.
      */
@@ -5443,7 +5751,79 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /**
-     * Internal callable which performs {@link org.apache.ignite.cache.CacheProjection#size()} or {@link org.apache.ignite.cache.CacheProjection#primarySize()}
+     * Internal callable for global size calculation.
+     */
+    @GridInternal
+    private static class SizeCallable extends IgniteClosureX<Object, Integer> implements Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Cache name. */
+        private String cacheName;
+
+        /** Peek modes. */
+        private CachePeekMode[] peekModes;
+
+        /** Injected grid instance. */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public SizeCallable() {
+            // No-op.
+        }
+
+        /**
+         * @param cacheName Cache name.
+         * @param peekModes Cache peek modes.
+         */
+        private SizeCallable(String cacheName, CachePeekMode[] peekModes) {
+            this.cacheName = cacheName;
+            this.peekModes = peekModes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer applyx(Object o) throws IgniteCheckedException {
+            GridCache<Object, Object> cache = ((IgniteEx)ignite).cachex(cacheName);
+
+            assert cache != null : cacheName;
+
+            return cache.localSize(peekModes);
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("ForLoopReplaceableByForEach")
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeString(out, cacheName);
+
+            out.writeInt(peekModes.length);
+
+            for (int i = 0; i < peekModes.length; i++)
+                U.writeEnum(out, peekModes[i]);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            cacheName = U.readString(in);
+
+            int len = in.readInt();
+
+            peekModes = new CachePeekMode[len];
+
+            for (int i = 0; i < len; i++)
+                peekModes[i] = CachePeekMode.fromOrdinal(in.readByte());
+        }
+
+        /** {@inheritDoc} */
+        public String toString() {
+            return S.toString(SizeCallable.class, this);
+        }
+    }
+
+    /**
+     * Internal callable which performs {@link CacheProjection#size()} or {@link CacheProjection#primarySize()}
      * operation on a cache with the given name.
      */
     @GridInternal

@@ -244,18 +244,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
      * @return NIO send future.
      */
     private GridNioFuture<?> sendResponse(GridNioSession ses, GridMemcachedMessage res) {
-        try {
-            GridMemcachedMessageWrapper wrapper = new GridMemcachedMessageWrapper(res, jdkMarshaller);
-
-            return ses.send(wrapper);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to marshal response: " + res, e);
-
-            ses.close();
-
-            return new GridNioFinishedFuture<>(e);
-        }
+        return ses.send(res);
     }
 
     /**

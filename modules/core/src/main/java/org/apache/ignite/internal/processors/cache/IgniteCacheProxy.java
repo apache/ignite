@@ -248,8 +248,17 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.localEntries(peekModes);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -298,14 +307,16 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public int size(CachePeekMode... peekModes) throws CacheException {
-        // TODO IGNITE-1.
-        if (peekModes.length != 0)
-            throw new UnsupportedOperationException();
-
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return ctx.cache().globalSize();
+            if (isAsync()) {
+                setFuture(delegate.sizeAsync(peekModes));
+
+                return 0;
+            }
+            else
+                return delegate.size(peekModes);
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);
@@ -317,11 +328,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public int localSize(CachePeekMode... peekModes) {
-        // TODO IGNITE-1.
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.size();
+            return delegate.localSize(peekModes);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
         }
         finally {
             gate.leave(prev);
@@ -715,7 +728,10 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            delegate.removeAll();
+            if (isAsync())
+                setFuture(delegate.removeAllAsync());
+            else
+                delegate.removeAll();
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);
@@ -727,11 +743,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        // TODO IGNITE-1.
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            delegate.clear();
+            if (isAsync())
+                setFuture(delegate.clearAsync());
+            else
+                delegate.clear();
         }
         catch (IgniteCheckedException e) {
             throw cacheException(e);

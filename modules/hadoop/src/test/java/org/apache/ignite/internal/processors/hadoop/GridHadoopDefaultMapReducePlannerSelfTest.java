@@ -1221,5 +1221,10 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         @Override public <R> IgniteFuture<R> future() {
             return null;
         }
+
+        /** {@inheritDoc} */
+        @Override public ClusterGroup forCacheNodes(@Nullable String cacheName, Set<CacheDistributionMode> distributionModes) {
+            return null;
+        }
     }
 }

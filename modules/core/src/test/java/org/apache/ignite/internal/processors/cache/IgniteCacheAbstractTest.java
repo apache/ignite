@@ -121,7 +121,6 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
 
         cfg.setWriteSynchronizationMode(writeSynchronization());
         cfg.setDistributionMode(distributionMode());
-        cfg.setPortableEnabled(portableEnabled());
 
         cfg.setCacheLoaderFactory(loaderFactory());
 
@@ -196,13 +195,6 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
      */
     protected CacheWriteSynchronizationMode writeSynchronization() {
         return FULL_SYNC;
-    }
-
-    /**
-     * @return Whether portable mode is enabled.
-     */
-    protected boolean portableEnabled() {
-        return false;
     }
 
     /**

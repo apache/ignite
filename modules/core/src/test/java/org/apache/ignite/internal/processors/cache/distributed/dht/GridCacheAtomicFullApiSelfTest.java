@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.testframework.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -68,6 +69,23 @@ public class GridCacheAtomicFullApiSelfTest extends GridCachePartitionedFullApiS
         ccfg.setAtomicWriteOrderMode(atomicWriteOrderMode());
 
         return ccfg;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLock() throws Exception {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                return jcache().lock("1").tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+            }
+        }, CacheException.class, "Locks are not supported");
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                return jcache().lockAll(Collections.singleton("1")).tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+            }
+        }, CacheException.class, "Locks are not supported");
     }
 
     /**
