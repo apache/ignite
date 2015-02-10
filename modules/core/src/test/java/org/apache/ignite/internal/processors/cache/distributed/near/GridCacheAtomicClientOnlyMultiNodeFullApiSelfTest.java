@@ -72,6 +72,16 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
+    @Override public void testReaderTtlNoTx() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testReaderTtlTx() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void testSize() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 

@@ -3016,8 +3016,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
-    // TODO: IGNITE-209: Enable when fixed.
-    public void _testTtlTx() throws Exception {
+    public void testTtlTx() throws Exception {
         if (txEnabled())
             checkTtl(true, false);
     }
@@ -3025,8 +3024,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
-    // TODO: IGNITE-209: Enable when fixed.
-    public void _testTtlNoTx() throws Exception {
+    public void testTtlNoTx() throws Exception {
         checkTtl(false, false);
     }
 
@@ -3068,7 +3066,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             IgniteTx tx = transactions().txStart();
 
             try {
-                grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
+                jcache().withExpiryPolicy(expiry).put(key, 1);
             }
             finally {
                 tx.rollback();
@@ -3082,11 +3080,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         IgniteTx tx = inTx ? transactions().txStart() : null;
 
         try {
-            grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
+            jcache().withExpiryPolicy(expiry).put(key, 1);
+
+            if (tx != null)
+                tx.commit();
         }
         finally {
             if (tx != null)
-                tx.commit();
+                tx.close();
         }
 
         long[] expireTimes = new long[gridCount()];
@@ -3109,11 +3110,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         tx = inTx ? transactions().txStart() : null;
 
         try {
-            grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 2);
+            jcache().withExpiryPolicy(expiry).put(key, 2);
+
+            if (tx != null)
+                tx.commit();
         }
         finally {
             if (tx != null)
-                tx.commit();
+                tx.close();
         }
 
         for (int i = 0; i < gridCount(); i++) {
@@ -3134,11 +3138,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         tx = inTx ? transactions().txStart() : null;
 
         try {
-            grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 3);
+            jcache().withExpiryPolicy(expiry).put(key, 3);
+
+            if (tx != null)
+                tx.commit();
         }
         finally {
             if (tx != null)
-                tx.commit();
+                tx.close();
         }
 
         for (int i = 0; i < gridCount(); i++) {
@@ -3161,11 +3168,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         tx = inTx ? transactions().txStart() : null;
 
         try {
-            c.put(key, 4);
+            jcache().put(key, 4);
+
+            if (tx != null)
+                tx.commit();
         }
         finally {
             if (tx != null)
-                tx.commit();
+                tx.close();
         }
 
         log.info("Put 4 done");
@@ -3225,10 +3235,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         try {
             entry.set(10);
+
+            if (tx != null)
+                tx.commit();
         }
         finally {
             if (tx != null)
-                tx.commit();
+                tx.close();
         }
 
         U.sleep(2000);
