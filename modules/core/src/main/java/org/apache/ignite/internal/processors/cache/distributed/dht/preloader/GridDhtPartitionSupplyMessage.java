@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -46,12 +46,12 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
 
     /** Partitions that have been fully sent. */
     @GridDirectCollection(int.class)
-    private Set<Integer> last;
+    private Collection<Integer> last;
 
     /** Partitions which were not found. */
     @GridToStringInclude
     @GridDirectCollection(int.class)
-    private Set<Integer> missed;
+    private Collection<Integer> missed;
 
     /** Entries. */
     @GridDirectTransient
@@ -130,7 +130,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
     /**
      * @return Flag to indicate last message for partition.
      */
-    Set<Integer> last() {
+    Collection<Integer> last() {
         return last == null ? Collections.<Integer>emptySet() : last;
     }
 
@@ -166,7 +166,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
     /**
      * @return Missed partitions.
      */
-    Set<Integer> missed() {
+    Collection<Integer> missed() {
         return missed == null ? Collections.<Integer>emptySet() : missed;
     }
 
@@ -274,7 +274,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDhtPartitionSupplyMessage _clone = new GridDhtPartitionSupplyMessage();
 
         clone0(_clone);
@@ -283,7 +283,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridDhtPartitionSupplyMessage _clone = (GridDhtPartitionSupplyMessage)_msg;
@@ -302,96 +302,54 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (!commState.putBoolean(ack))
+                if (!writer.writeBoolean("ack", ack))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putByteArray(infoBytes))
+                if (!writer.writeByteArray("infoBytes", infoBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                if (last != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(last.size()))
-                            return false;
+                if (!writer.writeCollection("last", last, int.class))
+                    return false;
 
-                        commState.it = last.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putInt((int)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 6:
-                if (missed != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(missed.size()))
-                            return false;
+                if (!writer.writeCollection("missed", missed, int.class))
+                    return false;
 
-                        commState.it = missed.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putInt((int)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 7:
-                if (!commState.putLong(updateSeq))
+                if (!writer.writeLong("updateSeq", updateSeq))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 8:
-                if (!commState.putInt(workerId))
+                if (!writer.writeInt("workerId", workerId))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -401,103 +359,59 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (buf.remaining() < 1)
+                ack = reader.readBoolean("ack");
+
+                if (!reader.isLastRead())
                     return false;
 
-                ack = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 4:
-                byte[] infoBytes0 = commState.getByteArray();
+                infoBytes = reader.readByteArray("infoBytes");
 
-                if (infoBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                infoBytes = infoBytes0;
-
-                commState.idx++;
+                state++;
 
             case 5:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                last = reader.readCollection("last", int.class);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (last == null)
-                        last = new HashSet<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        if (buf.remaining() < 4)
-                            return false;
-
-                        int _val = commState.getInt();
-
-                        last.add((Integer)_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 6:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                missed = reader.readCollection("missed", int.class);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (missed == null)
-                        missed = new HashSet<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        if (buf.remaining() < 4)
-                            return false;
-
-                        int _val = commState.getInt();
-
-                        missed.add((Integer)_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 7:
-                if (buf.remaining() < 8)
+                updateSeq = reader.readLong("updateSeq");
+
+                if (!reader.isLastRead())
                     return false;
 
-                updateSeq = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 8:
-                if (buf.remaining() < 4)
+                workerId = reader.readInt("workerId");
+
+                if (!reader.isLastRead())
                     return false;
 
-                workerId = commState.getInt();
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -506,7 +420,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 44;
+        return 45;
     }
 
     /** {@inheritDoc} */

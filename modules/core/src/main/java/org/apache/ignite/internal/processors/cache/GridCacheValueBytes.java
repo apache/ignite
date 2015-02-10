@@ -18,12 +18,18 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
+
+import java.nio.*;
 
 /**
  * Wrapped value bytes of cache entry.
  */
-public class GridCacheValueBytes {
+public class GridCacheValueBytes extends MessageAdapter {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Null instance. */
     private static final GridCacheValueBytes NULL = new GridCacheValueBytes();
 
@@ -111,6 +117,84 @@ public class GridCacheValueBytes {
      */
     public boolean isNull() {
         return bytes == null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf) {
+        writer.setBuffer(buf);
+
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
+                return false;
+
+            typeWritten = true;
+        }
+
+        switch (state) {
+            case 0:
+                if (!writer.writeByteArray("bytes", bytes))
+                    return false;
+
+                state++;
+
+            case 1:
+                if (!writer.writeBoolean("plain", plain))
+                    return false;
+
+                state++;
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf) {
+        reader.setBuffer(buf);
+
+        switch (state) {
+            case 0:
+                bytes = reader.readByteArray("bytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 1:
+                plain = reader.readBoolean("plain");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 88;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("CloneDoesntCallSuperClone")
+    @Override public MessageAdapter clone() {
+        GridCacheValueBytes _clone = new GridCacheValueBytes();
+
+        clone0(_clone);
+
+        return _clone;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void clone0(MessageAdapter _msg) {
+        GridCacheValueBytes _clone = (GridCacheValueBytes)_msg;
+
+        _clone.bytes = bytes;
+        _clone.plain = plain;
     }
 
     /** {@inheritDoc} */

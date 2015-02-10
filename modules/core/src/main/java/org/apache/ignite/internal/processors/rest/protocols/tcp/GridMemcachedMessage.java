@@ -51,6 +51,9 @@ public class GridMemcachedMessage implements GridClientMessage {
     /** Client handshake flag. */
     public static final byte IGNITE_HANDSHAKE_FLAG = (byte)0x91;
 
+    /** Client handshake flag. */
+    public static final byte IGNITE_HANDSHAKE_RES_FLAG = (byte)0x92;
+
     /** Success status. */
     public static final int SUCCESS = 0x0000;
 

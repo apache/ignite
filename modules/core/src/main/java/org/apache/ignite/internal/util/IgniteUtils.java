@@ -30,6 +30,10 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.io.*;
@@ -37,10 +41,6 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
@@ -65,7 +65,6 @@ import java.nio.charset.*;
 import java.security.*;
 import java.security.cert.*;
 import java.sql.*;
-import java.sql.Timestamp;
 import java.text.*;
 import java.util.*;
 import java.util.Date;
@@ -281,9 +280,6 @@ public abstract class IgniteUtils {
     /** MAC OS invalid argument socket error message. */
     public static final String MAC_INVALID_ARG_MSG = "On MAC OS you may have too many file descriptors open " +
         "(simple restart usually solves the issue)";
-
-    /** Portable classes. */
-    private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
 
     /** Ignite Logging Directory. */
     public static final String IGNITE_LOG_DIR = System.getenv(IgniteSystemProperties.IGNITE_LOG_DIR);
@@ -517,31 +513,6 @@ public abstract class IgniteUtils {
                 throw new IgniteException(e);
             }
         }
-
-        PORTABLE_CLS.add(Byte.class);
-        PORTABLE_CLS.add(Short.class);
-        PORTABLE_CLS.add(Integer.class);
-        PORTABLE_CLS.add(Long.class);
-        PORTABLE_CLS.add(Float.class);
-        PORTABLE_CLS.add(Double.class);
-        PORTABLE_CLS.add(Character.class);
-        PORTABLE_CLS.add(Boolean.class);
-        PORTABLE_CLS.add(String.class);
-        PORTABLE_CLS.add(UUID.class);
-        PORTABLE_CLS.add(Date.class);
-        PORTABLE_CLS.add(Timestamp.class);
-        PORTABLE_CLS.add(byte[].class);
-        PORTABLE_CLS.add(short[].class);
-        PORTABLE_CLS.add(int[].class);
-        PORTABLE_CLS.add(long[].class);
-        PORTABLE_CLS.add(float[].class);
-        PORTABLE_CLS.add(double[].class);
-        PORTABLE_CLS.add(char[].class);
-        PORTABLE_CLS.add(boolean[].class);
-        PORTABLE_CLS.add(String[].class);
-        PORTABLE_CLS.add(UUID[].class);
-        PORTABLE_CLS.add(Date[].class);
-        PORTABLE_CLS.add(Timestamp[].class);
 
         exceptionConverters = Collections.unmodifiableMap(exceptionConverters());
     }
@@ -4396,7 +4367,7 @@ public abstract class IgniteUtils {
             long most = in.readLong();
             long least = in.readLong();
 
-            return GridUuidCache.onGridUuidRead(new UUID(most, least));
+            return IgniteUuidCache.onIgniteUuidRead(new UUID(most, least));
         }
 
         return null;
@@ -4436,7 +4407,7 @@ public abstract class IgniteUtils {
             long most = in.readLong();
             long least = in.readLong();
 
-            UUID globalId = GridUuidCache.onGridUuidRead(new UUID(most, least));
+            UUID globalId = IgniteUuidCache.onIgniteUuidRead(new UUID(most, least));
 
             long locId = in.readLong();
 
@@ -4450,10 +4421,26 @@ public abstract class IgniteUtils {
      * Converts GridUuid to bytes.
      *
      * @param uuid GridUuid to convert.
+     * @return Bytes.
+     */
+    public static byte[] igniteUuidToBytes(IgniteUuid uuid) {
+        assert uuid != null;
+
+        byte[] out = new byte[24];
+
+        igniteUuidToBytes(uuid, out, 0);
+
+        return out;
+    }
+
+    /**
+     * Converts GridUuid to bytes.
+     *
+     * @param uuid GridUuid to convert.
      * @param out Output array to write to.
      * @param off Offset from which to write.
      */
-    public static void gridUuidToBytes(IgniteUuid uuid, byte[] out, int off) {
+    public static void igniteUuidToBytes(IgniteUuid uuid, byte[] out, int off) {
         assert uuid != null;
 
         U.longToBytes(uuid.globalId().getMostSignificantBits(), out, off);
@@ -4468,12 +4455,12 @@ public abstract class IgniteUtils {
      * @param off Offset from which start reading.
      * @return GridUuid instance.
      */
-    public static IgniteUuid bytesToGridUuid(byte[] in, int off) {
+    public static IgniteUuid bytesToIgniteUuid(byte[] in, int off) {
         long most = U.bytesToLong(in, off);
         long least = U.bytesToLong(in, off + 8);
         long locId = U.bytesToLong(in, off + 16);
 
-        return new IgniteUuid(GridUuidCache.onGridUuidRead(new UUID(most, least)), locId);
+        return new IgniteUuid(IgniteUuidCache.onIgniteUuidRead(new UUID(most, least)), locId);
     }
 
     /**
@@ -7189,19 +7176,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Gets portable enabled flag from the given node for the given cache name.
-     *
-     * @param n Node.
-     * @param cacheName Cache name.
-     * @return Portable enabled flag.
-     */
-    @Nullable public static Boolean portableEnabled(ClusterNode n, @Nullable String cacheName) {
-        GridCacheAttributes attrs = cacheAttributes(n, cacheName);
-
-        return attrs == null ? false : attrs.portableEnabled();
-    }
-
-    /**
      * Gets view on all cache names started on the node.
      *
      * @param n Node to get cache names for.
@@ -8754,36 +8728,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Tells whether provided type is portable.
-     *
-     * @param cls Class to check.
-     * @return Whether type is portable.
-     */
-    public static boolean isPortableType(Class<?> cls) {
-        assert cls != null;
-
-        return PortableObject.class.isAssignableFrom(cls) ||
-            PORTABLE_CLS.contains(cls) ||
-            cls.isEnum() ||
-            (cls.isArray() && cls.getComponentType().isEnum());
-    }
-    /**
-     * Tells whether provided type is portable or a collection.
-     *
-     * @param cls Class to check.
-     * @return Whether type is portable or a collection.
-     */
-    public static boolean isPortableOrCollectionType(Class<?> cls) {
-        assert cls != null;
-
-        return isPortableType(cls) ||
-            cls == Object[].class ||
-            Collection.class.isAssignableFrom(cls) ||
-            Map.class.isAssignableFrom(cls) ||
-            Map.Entry.class.isAssignableFrom(cls);
-    }
-
-    /**
      * @param arr Array.
      * @param off Offset.
      * @param uid UUID.
@@ -9192,5 +9136,36 @@ public abstract class IgniteUtils {
             sb.append(Integer.toString((md5Byte & 0xff) + 0x100, 16).substring(1));
 
         return sb.toString();
+    }
+
+    /**
+     * Fully writes communication message to provided stream.
+     *
+     * @param msg Message.
+     * @param out Stream to write to.
+     * @param buf Byte buffer that will be passed to {@link MessageAdapter#writeTo(ByteBuffer)} method.
+     * @return Number of written bytes.
+     * @throws IOException In case of error.
+     */
+    public static int writeMessageFully(MessageAdapter msg, OutputStream out, ByteBuffer buf) throws IOException {
+        assert msg != null;
+        assert out != null;
+        assert buf != null;
+        assert buf.hasArray();
+
+        boolean finished = false;
+        int cnt = 0;
+
+        while (!finished) {
+            finished = msg.writeTo(buf);
+
+            out.write(buf.array(), 0, buf.position());
+
+            cnt += buf.position();
+
+            buf.clear();
+        }
+
+        return cnt;
     }
 }
