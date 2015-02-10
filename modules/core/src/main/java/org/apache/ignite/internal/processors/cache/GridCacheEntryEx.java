@@ -141,6 +141,13 @@ public interface GridCacheEntryEx<K, V> {
     public Cache.Entry<K, V> wrap();
 
     /**
+     * Wraps entry to an entry with lazy value get.
+     *
+     * @return Entry.
+     */
+    public Cache.Entry<K, V> wrapLazyValue();
+
+    /**
      * Wraps this map entry into cache entry for filter evaluation inside entry lock.
      *
      * @return Wrapped entry.

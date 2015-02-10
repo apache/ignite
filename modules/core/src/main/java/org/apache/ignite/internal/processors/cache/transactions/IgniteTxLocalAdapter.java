@@ -295,7 +295,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             // We should look at tx entry previous value. If this is a user peek then previous
             // value is the same as value. If this is a filter evaluation peek then previous value holds
             // value visible to filter while value contains value enlisted for write.
-            if (!F.isEmpty(filter) && !F.isAll(e.cached().wrap(), filter))
+            if (!F.isEmpty(filter) && !F.isAll(e.cached().wrapLazyValue(), filter))
                 return e.hasPreviousValue() ? F.t(CU.<V>failed(failFast, e.previousValue())) : null;
 
             return e.hasPreviousValue() ? F.t(e.previousValue()) : null;

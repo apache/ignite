@@ -49,7 +49,7 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
      */
     public GridCacheKeySet(GridCacheContext<K, V> ctx, Collection<? extends Cache.Entry<K, V>> c,
         IgnitePredicate<Cache.Entry<K, V>>[] filter) {
-        map = new HashMap<>(c.size(), 1.0f);
+        map = new HashMap<>();
 
         assert ctx != null;
 

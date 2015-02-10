@@ -1855,7 +1855,9 @@ public class GridCacheConcurrentMap<K, V> {
             GridCacheEntryEx<K, V> e = ctx.cache().peekEx(k);
 
             try {
-                return e != null && !e.obsolete() && (!e.deleted() || e.lockedByThread()) && F.isAll(e.wrap(), filter);
+                return e != null && !e.obsolete() &&
+                    (!e.deleted() || e.lockedByThread()) &&
+                    F.isAll(e.wrapLazyValue(), filter);
             }
             catch (GridCacheEntryRemovedException ignore) {
                 return false;
@@ -2012,7 +2014,7 @@ public class GridCacheConcurrentMap<K, V> {
             CacheFlag[] oldFlags = ctx.forceFlags(forcedFlags);
 
             try {
-                return it.next().wrap();
+                return it.next().wrapLazyValue();
             }
             finally {
                 ctx.projectionPerCall(oldPrj);

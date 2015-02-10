@@ -342,6 +342,11 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         assert false; return null;
     }
 
+    /** @inheritDoc */
+    @Override public Cache.Entry<K, V> wrapLazyValue() {
+        assert false; return null;
+    }
+
     /** {@inheritDoc} */
     @Override public CacheVersionedEntryImpl<K, V> wrapVersioned() {
         assert false; return null;

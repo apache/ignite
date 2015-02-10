@@ -796,7 +796,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                         try {
                             entry = cctx.near().entryExx(key, topVer);
 
-                            if (!cctx.isAll(entry.wrap(), filter)) {
+                            if (!cctx.isAll(entry.wrapLazyValue(), filter)) {
                                 if (log.isDebugEnabled())
                                     log.debug("Entry being locked did not pass filter (will not lock): " + entry);
 

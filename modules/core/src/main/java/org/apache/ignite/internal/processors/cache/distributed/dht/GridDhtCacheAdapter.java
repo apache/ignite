@@ -1050,7 +1050,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     if (next.isInternal() || !next.visitable(CU.<K, V>empty()))
                         continue;
 
-                    entry = next.wrap();
+                    entry = next.wrapLazyValue();
 
                     return;
                 }

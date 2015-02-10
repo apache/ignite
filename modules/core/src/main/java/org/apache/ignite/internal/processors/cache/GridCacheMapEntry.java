@@ -3718,6 +3718,11 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public Cache.Entry<K, V> wrapLazyValue() {
+        return new IteratorEntry(key);
+    }
+
         /** {@inheritDoc} */
     @Override public Cache.Entry<K, V> wrapFilterLocked() throws IgniteCheckedException {
         return new CacheEntryImpl<>(key, rawGetOrUnmarshal(true));
@@ -3904,7 +3909,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      */
     public boolean visitable(IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         try {
-            if (obsoleteOrDeleted() || (filter != CU.<K, V>empty() && !cctx.isAll(wrap(), filter)))
+            if (obsoleteOrDeleted() || (filter != CU.<K, V>empty() &&
+                !cctx.isAll(wrapLazyValue(), filter)))
                 return false;
         }
         catch (IgniteCheckedException e) {
@@ -4321,5 +4327,56 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     /** {@inheritDoc} */
     @Override public synchronized String toString() {
         return S.toString(GridCacheMapEntry.class, this);
+    }
+
+    /**
+     *
+     */
+    private class IteratorEntry implements Cache.Entry<K, V> {
+        /** */
+        private final K key;
+
+        /**
+         * @param key Key.
+         */
+        private IteratorEntry(K key) {
+            this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public K getKey() {
+            return key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public V getValue() {
+            for (;;) {
+                GridCacheEntryEx<K, V> e = cctx.cache().peekEx(key);
+
+                if (e == null)
+                    return null;
+
+                try {
+                    return e.peek(GridCachePeekMode.GLOBAL, CU.<K, V>empty());
+                }
+                catch (GridCacheEntryRemovedException ignored) {
+                    // No-op.
+                }
+            }
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public <T> T unwrap(Class<T> cls) {
+            if (!cls.equals(getClass()))
+                throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
+
+            return (T)this;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "IteratorEntry [key=" + key + ']';
+        }
     }
 }

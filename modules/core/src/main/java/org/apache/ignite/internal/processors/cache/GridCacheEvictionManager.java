@@ -1317,7 +1317,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         if (log.isDebugEnabled())
             log.debug("Notifying eviction policy with entry: " + e);
 
-        if (filter == null || filter.evictAllowed(e.wrap()))
+        if (filter == null || filter.evictAllowed(e.wrapLazyValue()))
             plc.onEntryAccessed(e.obsoleteOrDeleted(), e.wrapEviction());
     }
 

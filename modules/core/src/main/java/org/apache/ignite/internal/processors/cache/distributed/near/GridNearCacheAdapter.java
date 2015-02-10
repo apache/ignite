@@ -390,7 +390,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
                                 p.entries(),
                                 new C1<GridDhtCacheEntry<K, V>, Cache.Entry<K, V>>() {
                                     @Override public Cache.Entry<K, V> apply(GridDhtCacheEntry<K, V> e) {
-                                        return e.wrap();
+                                        return e.wrapLazyValue();
                                     }
                                 },
                                 new P1<GridDhtCacheEntry<K, V>>() {
