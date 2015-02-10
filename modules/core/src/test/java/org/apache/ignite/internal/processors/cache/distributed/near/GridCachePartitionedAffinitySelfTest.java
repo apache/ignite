@@ -196,7 +196,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         for (Map.Entry<Object, Integer> entry : data.entrySet()) {
             int part = aff.partition(entry.getKey());
             Collection<ClusterNode> affNodes = aff.nodes(part, nodes, 1);
-            UUID act = F.<ClusterNode>first(affNodes).id();
+            UUID act = F.first(affNodes).id();
             UUID exp = nodes.get(entry.getValue()).id();
 
             if (!exp.equals(act)) {
@@ -485,7 +485,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
                                     ignite.name() + ']');
                             }
 
-                            Collection<? extends ClusterNode> affNodes = nodes(affinity(ignite), e.<Object>key());
+                            Collection<? extends ClusterNode> affNodes = nodes(affinity(ignite), e.key());
 
                             if (!affNodes.contains(ignite.cluster().localNode())) {
                                 failFlag.set(true);

@@ -249,7 +249,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             IgniteCache<Integer, Object> cache3 = g3.jcache(null);
 
-            Object v3 = cache3.peek(1);
+            Object v3 = cache3.localPeek(1, CachePeekMode.ONHEAP);
 
             assert v3 != null;
 

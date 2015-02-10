@@ -160,7 +160,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
 
         // Expect caches with the given name to be clear on all nodes.
         for (int i = 0; i < GRID_CNT - 1; i++)
-            assert grid(i).jcache(CACHE_NAME).isEmpty();
+            assert grid(i).jcache(CACHE_NAME).localSize() == 0;
 
         // ... but cache with another name should remain untouched.
         assert grid(GRID_CNT - 1).jcache(CACHE_NAME_OTHER).localSize() == KEY_CNT_OTHER;

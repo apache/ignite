@@ -37,7 +37,6 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
 /**
  * Tests for internal DHT entry.
@@ -144,8 +143,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
      * @return Atomic long value.
      */
     private Object peekGlobal(ClusterNode node) {
-        return grid(node).jcache(null).peek(
-            new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME));
+        return grid(node).jcache(null).localPeek(new GridCacheInternalKeyImpl(ATOMIC_LONG_NAME), CachePeekMode.ONHEAP);
     }
 
     /**

@@ -173,7 +173,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
 
             if (primary || backup)
                 assertEquals("Invalid cache value [nodeId=" + node.id() + ", primary=" + primary +
-                    ", backup=" + backup + ", key=" + key + ']', val, cache.peek(key));
+                    ", backup=" + backup + ", key=" + key + ']', val, cache.localPeek(key, CachePeekMode.ONHEAP));
         }
     }
 

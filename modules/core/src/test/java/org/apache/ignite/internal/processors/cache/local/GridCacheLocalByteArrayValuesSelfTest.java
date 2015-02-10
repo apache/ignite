@@ -178,7 +178,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      */
     @SuppressWarnings("TooBroadScope")
     public void testSwap() throws Exception {
-        assert cache.configuration().isSwapEnabled();
+        assert cache.getConfiguration(CacheConfiguration.class).isSwapEnabled();
 
         byte[] val1 = wrap(1);
         Object val2 = 2;
@@ -189,11 +189,11 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
         assert Arrays.equals(val1, (byte[])cache.get(KEY_1));
         assert F.eq(val2, cache.get(KEY_2));
 
-        cache.evict(KEY_1);
-        cache.evict(KEY_2);
+        cache.localEvict(Collections.singleton(KEY_1));
+        cache.localEvict(Collections.singleton(KEY_2));
 
-        assert cache.peek(KEY_1) == null;
-        assert cache.peek(KEY_2) == null;
+        assert cache.localPeek(KEY_1, CachePeekMode.ONHEAP) == null;
+        assert cache.localPeek(KEY_2, CachePeekMode.ONHEAP) == null;
     }
 
     /**

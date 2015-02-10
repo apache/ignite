@@ -163,7 +163,7 @@ public class GridSwapEvictAllBenchmark {
 
             if (keys.size() == batchSize) {
                 for (Long key : keys)
-                    cache.evict(key);
+                    cache.localEvict(Collections.<Object>singleton(key));
 
                 evictedKeysCnt.addAndGet(batchSize);
 
@@ -218,7 +218,7 @@ public class GridSwapEvictAllBenchmark {
 
             if (keys.size() == batchSize) {
                 for (Long key : keys)
-                    cache.promote(key);
+                    cache.localPromote(Collections.singleton(key));
 
                 unswappedKeys.addAndGet(batchSize);
 

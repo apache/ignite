@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -204,14 +203,14 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             stopGrid(GRID_NAME);
 
             for (int i = 0; i < 10; i++) {
-                if (g1.jcache(null).isEmpty() && g2.jcache(null).isEmpty())
+                if (g1.jcache(null).localSize() == 0 && g2.jcache(null).localSize() == 0)
                     break;
 
                 U.sleep(500);
             }
 
-            assert g1.jcache(null).isEmpty();
-            assert g2.jcache(null).isEmpty();
+            assert g1.jcache(null).localSize() == 0;
+            assert g2.jcache(null).localSize() == 0;
 
             startGrid(3);
         }

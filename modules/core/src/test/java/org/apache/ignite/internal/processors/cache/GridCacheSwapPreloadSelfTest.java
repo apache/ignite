@@ -116,7 +116,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
             info("Evict finished.");
 
             for (int i = 0; i < ENTRY_CNT; i++)
-                assertNull(cache.peek(i));
+                assertNull(cache.localPeek(i, CachePeekMode.ONHEAP));
 
             assert cache.localSize(CachePeekMode.PRIMARY, CachePeekMode.BACKUP, CachePeekMode.NEAR,
                 CachePeekMode.ONHEAP) == 0;

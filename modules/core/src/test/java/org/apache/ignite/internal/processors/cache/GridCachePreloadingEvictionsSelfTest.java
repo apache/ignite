@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
@@ -34,6 +33,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -127,7 +127,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                             Cache.Entry<Integer, Object> entry = randomEntry(ignite1);
 
                             if (entry != null)
-                                ignite1.jcache(null).evict(entry.getKey());
+                                ignite1.jcache(null).localEvict(Collections.<Object>singleton(entry.getKey()));
                             else
                                 info("Entry is null.");
                         }
@@ -167,7 +167,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                 Cache.Entry<Integer, Object> entry = randomEntry(ignite1);
 
                 if (entry != null)
-                    cache1.evict(entry.getKey());
+                    cache1.localEvict(Collections.singleton(entry.getKey()));
                 else
                     info("Entry is null.");
             }

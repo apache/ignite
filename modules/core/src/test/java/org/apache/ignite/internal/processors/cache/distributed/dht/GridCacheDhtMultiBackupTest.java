@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
@@ -57,7 +56,7 @@ public class GridCacheDhtMultiBackupTest extends GridCommonAbstractTest {
 
                         IgniteCache<SampleKey, SampleValue> cache = g.jcache("partitioned");
 
-                        assert cache.isEmpty();
+                        assert cache.localSize() == 0;
                     }
                 }
             );

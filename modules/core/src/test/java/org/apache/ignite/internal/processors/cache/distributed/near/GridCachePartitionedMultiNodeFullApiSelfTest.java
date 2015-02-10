@@ -153,7 +153,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
 
             for (int k = 0; k < size; k++) {
                 if (affinity(cache).isPrimaryOrBackup(node, k))
-                    assertEquals("Check failed for node: " + node.id(), k, cache.peek(k));
+                    assertEquals("Check failed for node: " + node.id(), k, cache.localPeek(k, ONHEAP));
             }
         }
 

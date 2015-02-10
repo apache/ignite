@@ -187,7 +187,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         cacheMode = null;
         depMode = SHARED;
 
-        assert startGrid(1).jcache("myCache").configuration().getCacheMode() == CacheConfiguration.DFLT_CACHE_MODE;
+        assert startGrid(1).jcache("myCache").getConfiguration(CacheConfiguration.class).getCacheMode() == CacheConfiguration.DFLT_CACHE_MODE;
     }
 
     /**

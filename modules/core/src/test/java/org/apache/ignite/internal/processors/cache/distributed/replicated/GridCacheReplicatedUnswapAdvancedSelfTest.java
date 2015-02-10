@@ -31,6 +31,7 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
+import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
@@ -133,11 +134,11 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
             assert v2.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader");
 
             // To swap storage.
-            cache2.evict(key);
+            cache2.localEvict(Collections.<Object>singleton(key));
 
-            cache2.promote(key);
+            cache2.localPromote(Collections.singleton(key));
 
-            v2 = cache2.peek(key);
+            v2 = cache2.localPeek(key, CachePeekMode.ONHEAP);
 
             log.info("Unswapped entry value: " + v2);
 

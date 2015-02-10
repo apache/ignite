@@ -136,7 +136,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
             cache.put("key", valCls.newInstance());
 
             for (int i = 0; i < 2; i++)
-                assertNotNull("For grid: " + i, grid(i).jcache(null).peek("key"));
+                assertNotNull("For grid: " + i, grid(i).jcache(null).localPeek("key", CachePeekMode.ONHEAP));
 
             for (MessageCountingCommunicationSpi spi : commSpis.values()) {
                 assertTrue(spi.deploymentMessageCount() > 0);
@@ -150,7 +150,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
                 cache.put(key, valCls.newInstance());
 
                 for (int k = 0; k < 2; k++)
-                    assertNotNull(grid(k).jcache(null).peek(key));
+                    assertNotNull(grid(k).jcache(null).localPeek(key, CachePeekMode.ONHEAP));
             }
 
             for (MessageCountingCommunicationSpi spi : commSpis.values())

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.cluster.*;
@@ -166,14 +167,14 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             // Populate near cache.
             for (int i = 0; i < 10; i++) {
                 assertEquals(i, nearOnly.get(i));
-                assertEquals(i, nearOnly.peek(i));
+                assertEquals(i, nearOnly.localPeek(i, CachePeekMode.ONHEAP));
             }
 
             // Stop the only dht node.
             stopGrid(1);
 
             for (int i = 0; i < 10; i++) {
-                assertNull(nearOnly.peek(i));
+                assertNull(nearOnly.localPeek(i, CachePeekMode.ONHEAP));
 
                 final int key = i;
 

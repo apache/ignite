@@ -95,7 +95,7 @@ public class GridCacheValueConsistencyAtomicSelfTest extends GridCacheValueConsi
                 IgniteCache<Integer, Integer> cache = grid(idx).jcache(null);
 
                 for (int i = 0; i < keyCnt; i++) {
-                    Integer val = cache.peek(i);
+                    Integer val = cache.localPeek(i, CachePeekMode.ONHEAP);
 
                     if (val != null) {
                         assertEquals("Invalid value for key: " + i, (Integer)r, val);

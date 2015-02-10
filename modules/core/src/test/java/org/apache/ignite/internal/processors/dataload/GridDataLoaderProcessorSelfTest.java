@@ -645,7 +645,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 9; i++)
                 ldr.addData(i, i);
 
-            assertTrue(c.isEmpty());
+            assertTrue(c.localSize() == 0);
 
             multithreaded(new Callable<Void>() {
                 @Override
@@ -697,7 +697,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 9; i++)
                 ldr.addData(i, i);
 
-            assertTrue(c.isEmpty());
+            assertTrue(c.localSize() == 0);
 
             ldr.tryFlush();
 
@@ -735,7 +735,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             IgniteCache<Integer, Integer> c = g.jcache(null);
 
-            assertTrue(c.isEmpty());
+            assertTrue(c.localSize() == 0);
 
             IgniteDataLoader<Integer, Integer> ldr = g.dataLoader(null);
 
@@ -745,11 +745,11 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 9; i++)
                 ldr.addData(i, i);
 
-            assertTrue(c.isEmpty());
+            assertTrue(c.localSize() == 0);
 
             assertFalse(latch.await(1000, MILLISECONDS));
 
-            assertTrue(c.isEmpty());
+            assertTrue(c.localSize() == 0);
 
             assertTrue(latch.await(3000, MILLISECONDS));
 

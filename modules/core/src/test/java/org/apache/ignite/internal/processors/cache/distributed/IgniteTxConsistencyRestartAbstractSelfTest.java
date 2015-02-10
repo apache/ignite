@@ -187,14 +187,14 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
 
                 if (grid.affinity(null).isPrimaryOrBackup(grid.localNode(), k)) {
                     if (val == null) {
-                        val = cache.peek(k);
+                        val = cache.localPeek(k, CachePeekMode.ONHEAP);
 
                         assertNotNull("Failed to peek value for key: " + k, val);
                     }
                     else
                         assertEquals("Failed to find value in cache [primary=" +
                             grid.affinity(null).isPrimary(grid.localNode(), k) + ']',
-                            val, cache.peek(k));
+                            val, cache.localPeek(k, CachePeekMode.ONHEAP));
                 }
             }
         }

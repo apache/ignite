@@ -90,7 +90,7 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
             // TODO: getting of removed key will produce inner write and 4 inner read operations.
             //g.cache(null).remove(0);
 
-            assert g.jcache(null).isEmpty();
+            assert g.jcache(null).localSize() == 0;
 
             g.jcache(null).mxBean().clear();
         }

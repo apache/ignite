@@ -654,7 +654,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
                 for (int ii = 0; ii < GRID_CNT; ii++)
                     assertEquals(null, grid(ii).jcache(null).get(Integer.toString(i)));
 
-            assertEquals(-GRID_CNT * RETRIES, grid(0).jcache(null).peek(RMVD_CNTR_KEY));
+            assertEquals(-GRID_CNT * RETRIES, grid(0).jcache(null).localPeek(RMVD_CNTR_KEY, CachePeekMode.ONHEAP));
         }
         finally {
             stopAllGrids();
@@ -701,7 +701,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
 
             assertTrue(entries.isEmpty());
 
-            assertEquals(-GRID_CNT * RETRIES, grid(0).jcache(null).peek(RMVD_CNTR_KEY));
+            assertEquals(-GRID_CNT * RETRIES, grid(0).jcache(null).localPeek(RMVD_CNTR_KEY, CachePeekMode.ONHEAP));
         }
         finally {
             stopAllGrids();
@@ -799,7 +799,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
                     assertEquals("Got invalid value from cache [gridIdx=" + ii + ", key=" + i + ']',
                         null, grid(ii).jcache(null).get(Integer.toString(i)));
 
-            assertEquals(-GRID_CNT * RETRIES, grid(0).jcache(null).peek(RMVD_CNTR_KEY));
+            assertEquals(-GRID_CNT * RETRIES, grid(0).jcache(null).localPeek(RMVD_CNTR_KEY, CachePeekMode.ONHEAP));
         }
         finally {
             stopAllGrids();
@@ -811,7 +811,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      */
     private void printCounter() throws IgniteCheckedException {
         info("***");
-        info("*** Peeked counter: " + grid(0).jcache(null).peek(CNTR_KEY));
+        info("*** Peeked counter: " + grid(0).jcache(null).localPeek(CNTR_KEY, CachePeekMode.ONHEAP));
         info("*** Got counter: " + grid(0).jcache(null).get(CNTR_KEY));
         info("***");
     }

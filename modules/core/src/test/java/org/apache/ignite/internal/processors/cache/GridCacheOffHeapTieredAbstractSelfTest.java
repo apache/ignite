@@ -572,19 +572,19 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
             assertEquals("Unexpected offheap size for grid: " + i, 0, internalCache(i).offHeapAllocatedSize());
         }
 
-        assertNull(c.peek(key));
+        assertNull(c.localPeek(key, CachePeekMode.ONHEAP));
 
         c.put(key, key);
 
-        assertNull(c.peek(key));
+        assertNull(c.localPeek(key, CachePeekMode.ONHEAP));
 
         assertEquals(key, c.get(key));
 
-        assertNull(c.peek(key));
+        assertNull(c.localPeek(key, CachePeekMode.ONHEAP));
 
         assertTrue(c.remove(key));
 
-        assertNull(c.peek(key));
+        assertNull(c.localPeek(key, CachePeekMode.ONHEAP));
 
         for (int i = 0; i < gridCount(); i++) {
             assertEquals("Unexpected entries for grid: " + i, 0, internalCache(i).offHeapEntriesCount());

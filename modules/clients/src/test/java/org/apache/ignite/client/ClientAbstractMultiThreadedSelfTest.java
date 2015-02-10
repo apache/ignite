@@ -18,6 +18,7 @@
 package org.apache.ignite.client;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.client.balancer.*;
 import org.apache.ignite.client.impl.*;
 import org.apache.ignite.client.ssl.*;
@@ -464,11 +465,11 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
 
             ClusterNode node = ignite.cluster().mapKeyToNode(PARTITIONED_CACHE_NAME, key);
 
-            if (!puts.get(key).get2().equals(gridMap.get(node.id()).jcache(PARTITIONED_CACHE_NAME).peek(key))) {
+            if (!puts.get(key).get2().equals(gridMap.get(node.id()).jcache(PARTITIONED_CACHE_NAME).localPeek(key, CachePeekMode.ONHEAP))) {
                 // printAffinityState(gridMap.values());
 
                 failNotEquals("Node don't have value for key [nodeId=" + node.id() + ", key=" + key + "]",
-                    puts.get(key).get2(), gridMap.get(node.id()).jcache(PARTITIONED_CACHE_NAME).peek(key));
+                    puts.get(key).get2(), gridMap.get(node.id()).jcache(PARTITIONED_CACHE_NAME).localPeek(key, CachePeekMode.ONHEAP));
             }
 
             // Assert that client has properly determined affinity node.
@@ -489,7 +490,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
 
             // Check that no other nodes see this key.
             for (UUID id : F.view(gridMap.keySet(), F.notEqualTo(node.id())))
-                assertNull("Got value in near cache.", gridMap.get(id).jcache(PARTITIONED_CACHE_NAME).peek(key));
+                assertNull("Got value in near cache.", gridMap.get(id).jcache(PARTITIONED_CACHE_NAME).localPeek(key, CachePeekMode.ONHEAP));
         }
 
         for (Ignite g : gridMap.values())

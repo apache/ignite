@@ -315,7 +315,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     private void printFailureDetails(IgniteCache<Integer, String> c, int key, int attempt) {
         error("*** Failure details ***");
         error("Key: " + key);
-        error("Partition: " + c.configuration().getAffinity().partition(key));
+        error("Partition: " + c.getConfiguration(CacheConfiguration.class).getAffinity().partition(key));
         error("Attempt: " + attempt);
         error("Node: " + c.unwrap(Ignite.class).cluster().localNode().id());
     }

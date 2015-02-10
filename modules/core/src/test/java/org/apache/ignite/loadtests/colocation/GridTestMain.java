@@ -86,7 +86,7 @@ public class GridTestMain {
             comp.affinityRun("partitioned", GridTestKey.affinityKey(key), new IgniteRunnable() {
                 // This code will execute on remote nodes by collocating keys with cached data.
                 @Override public void run() {
-                    Long val = cache.peek(new GridTestKey(key));
+                    Long val = cache.localPeek(new GridTestKey(key), CachePeekMode.ONHEAP);
 
                     if (val == null || val != key)
                         throw new RuntimeException("Invalid value found [key=" + key + ", val=" + val + ']');
@@ -141,7 +141,7 @@ public class GridTestMain {
 
             exe.submit(new Runnable() {
                 @Override public void run() {
-                    Long val = cache.peek(new GridTestKey(key));
+                    Long val = cache.localPeek(new GridTestKey(key), CachePeekMode.ONHEAP);
 
                     if (val == null || val != key)
                         throw new RuntimeException("Invalid value found [key=" + key + ", val=" + val + ']');

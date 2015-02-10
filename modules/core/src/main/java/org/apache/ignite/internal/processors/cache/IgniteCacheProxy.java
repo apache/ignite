@@ -1080,33 +1080,4 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     @Override public String toString() {
         return S.toString(IgniteCacheProxy.class, this);
     }
-
-    // To be inline
-    @Override public V peek(K key) {
-        return localPeek(key, CachePeekMode.ONHEAP);
-    }
-
-    public boolean isEmpty() {
-        return localSize() == 0;
-    }
-
-    @Override public void evict(K key) {
-        localEvict(Collections.<K>singleton(key));
-    }
-
-    @Override public void promote(K key) {
-        localPromote(Collections.singleton(key));
-    }
-
-    @Override public CacheConfiguration configuration() {
-        return getConfiguration(CacheConfiguration.class);
-    }
-
-    @Override public boolean isLocked(K key) {
-        return isLocalLocked(key, false);
-    }
-
-    @Override public boolean isLockedByThread(K key) {
-        return isLocalLocked(key, true);
-    }
 }

@@ -81,7 +81,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            g.jcache(null).configuration().setStatisticsEnabled(true);
+            g.jcache(null).getConfiguration(CacheConfiguration.class).setStatisticsEnabled(true);
         }
     }
 

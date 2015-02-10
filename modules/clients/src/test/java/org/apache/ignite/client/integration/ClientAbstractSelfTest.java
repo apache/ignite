@@ -762,7 +762,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         assertTrue(namedData.put("k", "v"));
 
-        grid().jcache(CACHE_NAME).evict("k");
+        grid().jcache(CACHE_NAME).localEvict(Collections.<Object>singleton("k"));
 
         assertNull(namedData.flagsOn(GridClientCacheFlag.SKIP_SWAP, GridClientCacheFlag.SKIP_STORE).get("k"));
         assertEquals("v", namedData.flagsOn(GridClientCacheFlag.SKIP_STORE).get("k"));

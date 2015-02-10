@@ -21,8 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.cluster.*;
-import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -890,7 +888,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     private void printFailureDetails(IgniteCache<Integer, String> c, int key, int attempt) {
         error("*** Failure details ***");
         error("Key: " + key);
-        error("Partition: " + c.configuration().getAffinity().partition(key));
+        error("Partition: " + c.getConfiguration(CacheConfiguration.class).getAffinity().partition(key));
         error("Attempt: " + attempt);
         error("Node: " + c.unwrap(Ignite.class).cluster().localNode().id());
     }

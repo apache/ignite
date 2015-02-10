@@ -199,7 +199,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         for (Map.Entry<UUID, Person> entry : entries) {
             assertEquals(entry.getKey(), entry.getValue().id());
 
-            assert F.<Person>asList(persons).contains(entry.getValue());
+            assert F.asList(persons).contains(entry.getValue());
         }
     }
 

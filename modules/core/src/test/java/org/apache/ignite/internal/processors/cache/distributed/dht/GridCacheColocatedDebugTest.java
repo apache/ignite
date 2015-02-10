@@ -399,8 +399,8 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             assert !lock.tryLock();
 
-            assert g0.jcache(null).isLocked(key);
-            assert !g0.jcache(null).isLockedByThread(key) : "Key can not be locked by current thread.";
+            assert g0.jcache(null).isLocalLocked(key, false);
+            assert !g0.jcache(null).isLocalLocked(key, true) : "Key can not be locked by current thread.";
 
             unlockLatch.countDown();
             unlockFut.get();

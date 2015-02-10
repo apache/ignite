@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.eviction;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.eviction.lru.*;
@@ -223,7 +222,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
                     info("Entry removed: " + rmv);
             }
 
-            if (!cache.isEmpty()) {
+            if (!(cache.localSize() == 0)) {
                 boolean zombies = false;
 
                 for (Cache.Entry<Integer, Integer> e : cache) {

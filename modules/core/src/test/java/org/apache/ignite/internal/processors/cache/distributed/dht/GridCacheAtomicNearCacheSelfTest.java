@@ -616,7 +616,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
             checkEntry(grid(i), nearKey, 1, i == 0, expReaders);
         }
 
-        cache0.evict(nearKey); // Remove near entry on grid0.
+        cache0.localEvict(Collections.singleton(nearKey));
 
         for (int i = 0; i < GRID_CNT; i++) {
             UUID[] expReaders = aff.isPrimary(grid(i).localNode(), nearKey) ? new UUID[]{id0} : new UUID[]{};

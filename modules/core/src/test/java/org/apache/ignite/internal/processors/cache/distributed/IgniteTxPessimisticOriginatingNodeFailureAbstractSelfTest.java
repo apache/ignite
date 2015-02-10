@@ -256,7 +256,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
                         assertNotNull(cache);
 
                         assertEquals("Failed to check entry value on node: " + checkNodeId,
-                            fullFailure ? initVal : val, cache.peek(key));
+                            fullFailure ? initVal : val, cache.localPeek(key, CachePeekMode.ONHEAP));
 
                         return null;
                     }
@@ -387,7 +387,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
                         assertNotNull(cache);
 
                         assertEquals("Failed to check entry value on node: " + checkNodeId,
-                            !commmit ? initVal : val, cache.peek(key));
+                            !commmit ? initVal : val, cache.localPeek(key, CachePeekMode.ONHEAP));
 
                         return null;
                     }

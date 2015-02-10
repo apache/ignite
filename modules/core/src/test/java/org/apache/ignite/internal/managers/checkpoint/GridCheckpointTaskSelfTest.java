@@ -104,8 +104,8 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        assert grid(1).jcache(CACHE_NAME).isEmpty() : grid(1).jcache(CACHE_NAME);
-        assert grid(2).jcache(CACHE_NAME).isEmpty() : grid(2).jcache(CACHE_NAME);
+        assert grid(1).jcache(CACHE_NAME).localSize() == 0 : grid(1).jcache(CACHE_NAME);
+        assert grid(2).jcache(CACHE_NAME).localSize() == 0 : grid(2).jcache(CACHE_NAME);
 
         stopAllGrids();
     }

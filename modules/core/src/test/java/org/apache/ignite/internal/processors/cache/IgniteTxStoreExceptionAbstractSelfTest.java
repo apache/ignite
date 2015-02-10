@@ -23,7 +23,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
@@ -548,10 +547,10 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     private Integer keyForNode(ClusterNode node, int type) {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-        if (cache.configuration().getCacheMode() == LOCAL)
+        if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() == LOCAL)
             return ++lastKey;
 
-        if (cache.configuration().getCacheMode() == REPLICATED && type == NOT_PRIMARY_AND_BACKUP)
+        if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() == REPLICATED && type == NOT_PRIMARY_AND_BACKUP)
             return ++lastKey;
 
         for (int key = lastKey + 1; key < (lastKey + 10_000); key++) {

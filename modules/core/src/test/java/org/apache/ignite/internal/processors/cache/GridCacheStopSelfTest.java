@@ -134,8 +134,8 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
             assertNotNull(cache);
 
-            assertEquals(atomic ? ATOMIC : TRANSACTIONAL, cache.configuration().getAtomicityMode());
-            assertEquals(replicated ? REPLICATED : PARTITIONED, cache.configuration().getCacheMode());
+            assertEquals(atomic ? ATOMIC : TRANSACTIONAL, cache.getConfiguration(CacheConfiguration.class).getAtomicityMode());
+            assertEquals(replicated ? REPLICATED : PARTITIONED, cache.getConfiguration(CacheConfiguration.class).getCacheMode());
 
             Collection<IgniteInternalFuture<?>> putFuts = new ArrayList<>();
 

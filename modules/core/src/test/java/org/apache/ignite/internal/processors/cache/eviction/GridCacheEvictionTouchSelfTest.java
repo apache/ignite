@@ -177,7 +177,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
             assertEquals(100, ((CacheFifoEvictionPolicy)plc).queue().size());
 
             for (int i = 0; i < 100; i++)
-                cache.evict(i);
+                cache.localEvict(Collections.singleton(i));
 
             assertEquals(0, ((CacheFifoEvictionPolicy)plc).queue().size());
             assertEquals(0, cache.size());
@@ -209,7 +209,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
             assertEquals(100, ((CacheFifoEvictionPolicy)plc).queue().size());
 
             for (Integer key : keys)
-                cache.evict(key);
+                cache.localEvict(Collections.singleton(key));
 
             assertEquals(0, ((CacheFifoEvictionPolicy)plc).queue().size());
             assertEquals(0, cache.size());

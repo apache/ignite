@@ -197,7 +197,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
                 IgniteCache<Integer, String> c = g.jcache(null);
 
                 for (int i = 0; i < keyCnt; i++)
-                    assertNull(c.peek(i));
+                    assertNull(c.localPeek(i, CachePeekMode.ONHEAP));
             }
 
             Collection<Integer> keys = new LinkedList<>();
@@ -221,7 +221,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
                     IgniteCache<Integer, String> c = gg.jcache(null);
 
                     for (int i = 0; i < keyCnt; i++)
-                        assertNull(c.peek(i));
+                        assertNull(c.localPeek(i, CachePeekMode.ONHEAP));
                 }
             }
 

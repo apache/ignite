@@ -308,7 +308,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
                                 IgniteCache<String, Integer> c = pri.jcache(null);
 
-                                Integer oldCntr = c.peek(CNTR_KEY);
+                                Integer oldCntr = c.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 
                                 GridCacheEntryEx<String, Integer> dhtNear = near(pri).peekEx(CNTR_KEY);
 
@@ -405,7 +405,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
                                     IgniteCache<String, Integer> c = near.jcache(null);
 
-                                    Integer oldCntr = c.peek(CNTR_KEY);
+                                    Integer oldCntr = c.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 
                                     try (IgniteTx tx = near.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                                         if (DEBUG)
@@ -490,7 +490,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
             IgniteCache<String, Integer> cache = grid(i).jcache(null);
 
-            int cntr = nearThreads > 0 && nears.contains(g) ? cache.get(CNTR_KEY) : cache.peek(CNTR_KEY);
+            int cntr = nearThreads > 0 && nears.contains(g) ? cache.get(CNTR_KEY) : cache.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 
             X.println("*** Cache counter [grid=" + g.name() + ", cntr=" + cntr + ']');
 
@@ -578,7 +578,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
             IgniteCache<String, Integer> cache = grid(i).jcache(null);
 
-            int cntr = cache.peek(CNTR_KEY);
+            int cntr = cache.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 
             info("*** Cache counter [grid=" + g.name() + ", cntr=" + cntr + ']');
 
@@ -642,7 +642,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
                     IgniteCache<String, Integer> c = near.jcache(null);
 
-                    Integer oldCntr = c.peek(CNTR_KEY);
+                    Integer oldCntr = c.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 
                     try (IgniteTx tx = near.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         if (DEBUG)
@@ -711,7 +711,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
                     IgniteCache<String, Integer> c = pri.jcache(null);
 
-                    Integer oldCntr = c.peek(CNTR_KEY);
+                    Integer oldCntr = c.localPeek(CNTR_KEY, CachePeekMode.ONHEAP);
 
                     GridCacheEntryEx<String, Integer> dhtNear = near(pri).peekEx(CNTR_KEY);
 

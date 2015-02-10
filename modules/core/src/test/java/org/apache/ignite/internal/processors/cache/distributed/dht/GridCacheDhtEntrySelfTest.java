@@ -91,7 +91,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
             assert near(grid(i)).size() == 0 : "Near cache size is not zero for grid: " + i;
             assert dht(grid(i)).size() == 0 : "DHT cache size is not zero for grid: " + i;
 
-            assert near(grid(i)).isEmpty() : "Near cache is not empty for grid: " + i;
+            assert near(grid(i)).localSize() == 0 : "Near cache is not empty for grid: " + i;
             assert dht(grid(i)).isEmpty() : "DHT cache is not empty for grid: " + i;
         }
     }
@@ -105,7 +105,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
             assertEquals("Near cache size is not zero for grid: " + i, 0, near(grid(i)).size());
             assertEquals("DHT cache size is not zero for grid: " + i, 0, dht(grid(i)).size());
 
-            assert near(grid(i)).isEmpty() : "Near cache is not empty for grid: " + i;
+            assert near(grid(i)).localSize() == 0 : "Near cache is not empty for grid: " + i;
             assert dht(grid(i)).isEmpty() : "DHT cache is not empty for grid: " + i;
         }
 

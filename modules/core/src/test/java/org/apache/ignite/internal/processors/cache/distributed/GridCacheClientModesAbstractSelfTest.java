@@ -107,11 +107,11 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         for (int key = 0; key < 10; key++) {
             for (int i = 1; i < gridCount(); i++) {
                 if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key))
-                    assertEquals(key, grid(i).jcache(null).peek(key));
+                    assertEquals(key, grid(i).jcache(null).localPeek(key, CachePeekMode.ONHEAP));
             }
 
             if (nearEnabled())
-                assertEquals(key, nearOnly.peek(key));
+                assertEquals(key, nearOnly.localPeek(key, CachePeekMode.ONHEAP));
 
             assertNull(nearOnly.localPeek(key, CachePeekMode.PRIMARY, CachePeekMode.BACKUP));
         }
@@ -133,14 +133,14 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         for (int key = 0; key < 10; key++) {
             // At start near only cache does not have any values.
             if (nearEnabled())
-                assertNull(nearOnly.peek(key));
+                assertNull(nearOnly.localPeek(key, CachePeekMode.ONHEAP));
 
             // Get should succeed.
             assertEquals(key, nearOnly.get(key));
 
             // Now value should be cached.
             if (nearEnabled())
-                assertEquals(key, nearOnly.peek(key));
+                assertEquals(key, nearOnly.localPeek(key, CachePeekMode.ONHEAP));
         }
     }
 

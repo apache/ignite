@@ -97,7 +97,7 @@ public class CacheCheckpointSpiSecondCacheSelfTest extends GridCommonAbstractTes
 
         assertNull(data.get(1));
 
-        assertTrue(data.isEmpty());
+        assertTrue(data.localSize() == 0);
 
         assertEquals(1, cp.size());
         assertEquals("1", cp.get(1));

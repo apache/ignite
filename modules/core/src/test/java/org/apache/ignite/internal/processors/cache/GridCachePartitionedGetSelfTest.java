@@ -147,9 +147,9 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
 
                 assert !await();
 
-                c.evict(KEY);
+                c.localEvict(Collections.singleton(KEY));
 
-                assert c.peek(KEY) == null;
+                assert c.localPeek(KEY, CachePeekMode.ONHEAP) == null;
 
                 val = c.get(KEY);
 

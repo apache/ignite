@@ -293,12 +293,12 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         long end = System.currentTimeMillis() + timeout;
 
         while (end - System.currentTimeMillis() >= 0) {
-            if (cache.isEmpty())
+            if (cache.localSize() == 0)
                 return true;
 
             Thread.sleep(500);
         }
 
-        return cache.isEmpty();
+        return cache.localSize() == 0;
     }
 }

@@ -395,7 +395,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
         cache.put(key, key); // Create entry in near cache, it is invalidated if INVALIDATE flag is set.
 
-        assertNotNull(cache.peek(key));
+        assertNotNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 
         GridClientData d = client.data(PARTITIONED_CACHE_NAME);
 
@@ -405,9 +405,9 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
             cache = g.jcache(PARTITIONED_CACHE_NAME);
 
             if (affinity(cache).isPrimaryOrBackup(g.cluster().localNode(), key))
-                assertEquals("zzz", cache.peek(key));
+                assertEquals("zzz", cache.localPeek(key, CachePeekMode.ONHEAP));
             else
-                assertNull(cache.peek(key));
+                assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
         }
     }
 
@@ -597,7 +597,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
             partitioned.put(key, "val" + key);
 
             for (Map.Entry<UUID, Ignite> entry : gridsByLocNode.entrySet()) {
-                Object val = entry.getValue().jcache(PARTITIONED_CACHE_NAME).peek(key);
+                Object val = entry.getValue().jcache(PARTITIONED_CACHE_NAME).localPeek(key, CachePeekMode.ONHEAP);
 
                 if (primaryNodeId.equals(entry.getKey()))
                     assertEquals("val" + key, val);
@@ -619,7 +619,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
             partitioned.pinNodes(node).put(pinnedKey, "val" + pinnedKey);
 
             for (Map.Entry<UUID, Ignite> entry : gridsByLocNode.entrySet()) {
-                Object val = entry.getValue().jcache(PARTITIONED_CACHE_NAME).peek(pinnedKey);
+                Object val = entry.getValue().jcache(PARTITIONED_CACHE_NAME).localPeek(pinnedKey, CachePeekMode.ONHEAP);
 
                 if (primaryNodeId.equals(entry.getKey()) || pinnedNodeId.equals(entry.getKey()))
                     assertEquals("val" + pinnedKey, val);

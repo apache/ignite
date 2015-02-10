@@ -149,9 +149,9 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
         assertEquals("val3", reader.jcache(null).get(key3));
 
         if (nearEnabled()) {
-            assertEquals("val1", reader.jcache(null).peek(key1));
-            assertEquals("val2", reader.jcache(null).peek(key2));
-            assertEquals("val3", reader.jcache(null).peek(key3));
+            assertEquals("val1", reader.jcache(null).localPeek(key1, CachePeekMode.ONHEAP));
+            assertEquals("val2", reader.jcache(null).localPeek(key2, CachePeekMode.ONHEAP));
+            assertEquals("val3", reader.jcache(null).localPeek(key3, CachePeekMode.ONHEAP));
         }
 
         try (IgniteTx tx = grid(0).transactions()
@@ -166,9 +166,9 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
         }
 
         if (nearEnabled()) {
-            assertEquals("val01", reader.jcache(null).peek(key1));
-            assertEquals("val02", reader.jcache(null).peek(key2));
-            assertEquals("val03", reader.jcache(null).peek(key3));
+            assertEquals("val01", reader.jcache(null).localPeek(key1, CachePeekMode.ONHEAP));
+            assertEquals("val02", reader.jcache(null).localPeek(key2, CachePeekMode.ONHEAP));
+            assertEquals("val03", reader.jcache(null).localPeek(key3, CachePeekMode.ONHEAP));
         }
     }
 }

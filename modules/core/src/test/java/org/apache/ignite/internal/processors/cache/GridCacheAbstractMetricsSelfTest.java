@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -80,7 +81,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
             g.jcache(null).removeAll();
 
-            assert g.jcache(null).isEmpty();
+            assert g.jcache(null).localSize() == 0;
 
             g.jcache(null).mxBean().clear();
 
@@ -95,7 +96,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            g.jcache(null).configuration().setStatisticsEnabled(true);
+            g.jcache(null).getConfiguration(CacheConfiguration.class).setStatisticsEnabled(true);
         }
     }
 
@@ -584,7 +585,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < keyCnt; i++) {
             assertNull("Value is not null for key: " + i, cache.get(i));
 
-            if (cache.configuration().getCacheMode() == CacheMode.REPLICATED ||
+            if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.REPLICATED ||
                 affinity(cache).isPrimary(grid(0).localNode(), i))
                 expReads++;
             else
@@ -668,12 +669,12 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testManualEvictions() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
-        if (cache.configuration().getCacheMode() == CacheMode.PARTITIONED)
+        if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.PARTITIONED)
             return;
 
         cache.put(1, 1);
 
-        cache.evict(1);
+        cache.localEvict(Collections.singleton(1));
 
         assertEquals(0L, cache.metrics().getCacheRemovals());
         assertEquals(1L, cache.metrics().getCacheEvictions());
@@ -683,7 +684,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testTxEvictions() throws Exception {
-        if (grid(0).jcache(null).configuration().getAtomicityMode() != CacheAtomicityMode.ATOMIC)
+        if (grid(0).jcache(null).getConfiguration(CacheConfiguration.class).getAtomicityMode() != CacheAtomicityMode.ATOMIC)
             checkTtl(true);
     }
 
@@ -691,7 +692,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testNonTxEvictions() throws Exception {
-        if (grid(0).jcache(null).configuration().getAtomicityMode() == CacheAtomicityMode.ATOMIC)
+        if (grid(0).jcache(null).getConfiguration(CacheConfiguration.class).getAtomicityMode() == CacheAtomicityMode.ATOMIC)
             checkTtl(false);
     }
 

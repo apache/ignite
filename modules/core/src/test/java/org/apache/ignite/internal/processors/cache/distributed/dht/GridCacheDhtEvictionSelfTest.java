@@ -162,7 +162,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
      * @return Affinity.
      */
     private CacheConsistentHashAffinityFunction affinity(int idx) {
-        return (CacheConsistentHashAffinityFunction)grid(idx).jcache(null).configuration().getAffinity();
+        return (CacheConsistentHashAffinityFunction)grid(idx).jcache(null).getConfiguration(CacheConfiguration.class).getAffinity();
     }
 
     /**
@@ -251,7 +251,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
         // Evict on primary node.
         // It should trigger dht eviction and eviction on backup node.
-        grid(primary).jcache(null).evict(key);
+        grid(primary).jcache(null).localEvict(Collections.<Object>singleton(key));
 
         // Give 5 seconds for eviction event to occur on backup and primary node.
         futBackup.get(3000);
@@ -327,7 +327,7 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         // Evict on primary node.
         // Eviction of the last key should trigger queue processing.
         for (Integer key : keys)
-            primaryIgnite.jcache(null).evict(key);
+            primaryIgnite.jcache(null).localEvict(Collections.<Object>singleton(key));
 
         // Give 5 seconds for eviction events to occur on backup and primary node.
         futBackup.get(3000);

@@ -216,7 +216,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
                         assertNotNull(cache);
 
-                        assertEquals(partial ? initVal : val, cache.peek(key));
+                        assertEquals(partial ? initVal : val, cache.localPeek(key, CachePeekMode.ONHEAP));
 
                         return null;
                     }

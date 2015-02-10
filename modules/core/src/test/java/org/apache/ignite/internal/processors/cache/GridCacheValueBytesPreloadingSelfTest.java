@@ -131,10 +131,10 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
 
         if (memMode == ONHEAP_TIERED) {
             for (int i = 0; i < keyCnt; i++)
-                grid(0).jcache(null).evict(String.valueOf(i));
+                grid(0).jcache(null).localEvict(Collections.<Object>singleton(String.valueOf(i)));
 
             for (int i = 0; i < keyCnt; i++)
-                grid(0).jcache(null).promote(String.valueOf(i));
+                grid(0).jcache(null).localPromote(Collections.singleton(String.valueOf(i)));
         }
 
         startGrid(2);

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -88,7 +87,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             grid(i).jcache(null).removeAll();
 
-            assert grid(i).jcache(null).isEmpty();
+            assert grid(i).jcache(null).localSize() == 0;
         }
     }
 

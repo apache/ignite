@@ -58,16 +58,6 @@ import java.util.concurrent.locks.*;
  * @param <V> Cache value type.
  */
 public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncSupport {
-    /// To be inline!!!
-    public V peek(K key);
-    public boolean isEmpty();
-    public void evict(K key);
-    public void promote(K key);
-    CacheConfiguration configuration();
-    boolean isLocked(K key);
-    boolean isLockedByThread(K key);
-    //public void clear(K key);
-
     /** {@inheritDoc} */
     public @Override IgniteCache<K, V> withAsync();
 

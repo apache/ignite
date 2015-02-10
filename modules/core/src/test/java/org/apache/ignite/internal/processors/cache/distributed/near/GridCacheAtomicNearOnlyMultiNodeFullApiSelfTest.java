@@ -132,7 +132,7 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
         Thread.sleep(ttl + 100);
 
         // Expired entry should not be swapped.
-        cache.localEvict(Collections.<String>singleton(key));
+        cache.localEvict(Collections.singleton(key));
 
         assertNull(cache.localPeek(key, CachePeekMode.ONHEAP));
 

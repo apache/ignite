@@ -271,7 +271,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      */
     public void testSwap() throws Exception {
         for (IgniteCache<Integer, Object> cache : caches)
-            assert cache.configuration().isSwapEnabled();
+            assert cache.getConfiguration(CacheConfiguration.class).isSwapEnabled();
 
         byte[] val1 = wrap(1);
 
@@ -295,11 +295,11 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
 
         assert Arrays.equals(val1, (byte[])primaryCache.get(SWAP_TEST_KEY));
 
-        primaryCache.evict(SWAP_TEST_KEY);
+        primaryCache.localEvict(Collections.singleton(SWAP_TEST_KEY));
 
-        assert primaryCache.peek(SWAP_TEST_KEY) == null;
+        assert primaryCache.localPeek(SWAP_TEST_KEY, CachePeekMode.ONHEAP) == null;
 
-        primaryCache.promote(SWAP_TEST_KEY);
+        primaryCache.localPromote(Collections.singleton(SWAP_TEST_KEY));
 
         assert Arrays.equals(val1, (byte[])primaryCache.localPeek(SWAP_TEST_KEY, CachePeekMode.ONHEAP));
     }

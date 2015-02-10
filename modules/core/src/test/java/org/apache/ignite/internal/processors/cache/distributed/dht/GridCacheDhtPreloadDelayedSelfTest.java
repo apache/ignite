@@ -116,10 +116,10 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         IgniteCache<String, Integer> c2 = g2.jcache(null);
 
         for (int i = 0; i < cnt; i++)
-            assertNull(c1.peek(Integer.toString(i)));
+            assertNull(c1.localPeek(Integer.toString(i), CachePeekMode.ONHEAP));
 
         for (int i = 0; i < cnt; i++)
-            assertNull(c2.peek(Integer.toString(i)));
+            assertNull(c2.localPeek(Integer.toString(i), CachePeekMode.ONHEAP));
 
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
@@ -193,10 +193,10 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         IgniteCache<String, Integer> c2 = g2.jcache(null);
 
         for (int i = 0; i < cnt; i++)
-            assertNull(c1.peek(Integer.toString(i)));
+            assertNull(c1.localPeek(Integer.toString(i), CachePeekMode.ONHEAP));
 
         for (int i = 0; i < cnt; i++)
-            assertNull(c2.peek(Integer.toString(i)));
+            assertNull(c2.localPeek(Integer.toString(i), CachePeekMode.ONHEAP));
 
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
@@ -399,7 +399,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
             String key = Integer.toString(i);
 
             if (affinity(c).isPrimaryOrBackup(g.cluster().localNode(), key))
-                assertEquals(Integer.valueOf(i), c.peek(key));
+                assertEquals(Integer.valueOf(i), c.localPeek(key, CachePeekMode.ONHEAP));
         }
     }
 

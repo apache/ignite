@@ -274,7 +274,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
             Long firstVal = null;
 
             for (int g = 0; g < gridCount(); g++) {
-                Long val = (Long)grid(g).jcache(null).peek(i);
+                Long val = (Long)grid(g).jcache(null).localPeek(i, CachePeekMode.ONHEAP);
 
                 if (firstVal == null && val != null)
                     firstVal = val;
