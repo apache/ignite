@@ -21,8 +21,6 @@ import org.apache.ignite.internal.client.balancer.*;
 import org.apache.ignite.internal.client.marshaller.*;
 import org.apache.ignite.internal.client.marshaller.optimized.*;
 import org.apache.ignite.internal.client.ssl.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.security.*;

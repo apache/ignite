@@ -103,7 +103,7 @@ public class ConnectorConfiguration {
     private int portRange = DFLT_PORT_RANGE;
 
     /** REST requests thread pool size. */
-    private int execSvcPoolSize = DFLT_REST_CORE_THREAD_CNT;
+    private int threadPoolSize = DFLT_REST_CORE_THREAD_CNT;
 
     /** Client message interceptor. */
     private ConnectorMessageInterceptor msgInterceptor;
@@ -125,7 +125,7 @@ public class ConnectorConfiguration {
         assert cfg != null;
 
         msgInterceptor = cfg.getMessageInterceptor();
-        execSvcPoolSize = cfg.getRestThreadPoolSize();
+        threadPoolSize = cfg.getThreadPoolSize();
         idleTimeout = cfg.getIdleTimeout();
         jettyPath = cfg.getJettyPath();
         portRange = cfg.getPortRange();
@@ -478,7 +478,7 @@ public class ConnectorConfiguration {
      * Sets thread pool size to use for processing of client messages (REST requests).
      *
      * @param threadPoolSize Thread pool size to use for processing of client messages.
-     * @see #getRestThreadPoolSize()
+     * @see #getThreadPoolSize()
      */
     public void setThreadPoolSize(int threadPoolSize) {
         this.threadPoolSize = threadPoolSize;

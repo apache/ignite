@@ -82,7 +82,6 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.configuration.ConnectorConfiguration.*;
 import static org.apache.ignite.configuration.IgniteConfiguration.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
@@ -1515,8 +1514,8 @@ public class IgnitionEx {
                     "rest-" + cfg.getGridName(),
                     clientCfg.getThreadPoolSize(),
                     clientCfg.getThreadPoolSize(),
-                    DFLT_REST_KEEP_ALIVE_TIME,
-                    new LinkedBlockingQueue<Runnable>(DFLT_REST_THREADPOOL_QUEUE_CAP)
+                    ConnectorConfiguration.DFLT_KEEP_ALIVE_TIME,
+                    new LinkedBlockingQueue<Runnable>(ConnectorConfiguration.DFLT_THREADPOOL_QUEUE_CAP)
                 );
             }
 
