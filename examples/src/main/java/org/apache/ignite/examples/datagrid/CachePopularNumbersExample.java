@@ -121,20 +121,8 @@ public class CachePopularNumbersExample {
                     List<List<?>> results = new ArrayList<>(cache.queryFields(
                         sql("select _key, _val from Long order by _val desc limit ?").setArgs(cnt)).getAll());
 
-                    Collections.sort(results, new Comparator<List<?>>() {
-                        @Override public int compare(List<?> r1, List<?> r2) {
-                            long cnt1 = (Long)r1.get(1);
-                            long cnt2 = (Long)r2.get(1);
-
-                            return cnt1 < cnt2 ? 1 : cnt1 > cnt2 ? -1 : 0;
-                        }
-                    });
-
-                    for (int i = 0; i < cnt && i < results.size(); i++) {
-                        List<?> res = results.get(i);
-
+                    for (List<?> res : results)
                         System.out.println(res.get(0) + "=" + res.get(1));
-                    }
 
                     System.out.println("----------------");
                 }
