@@ -35,7 +35,7 @@ import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Advanced promote test for replicated cache.
@@ -92,8 +92,8 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
 
             final CountDownLatch putLatch = new CountDownLatch(1);
 
-            g2.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            g2.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     assert evt.type() == EVT_CACHE_OBJECT_PUT;
 
                     putLatch.countDown();

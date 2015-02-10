@@ -25,9 +25,9 @@ import org.apache.ignite.lang.*;
  * Defines {@code alias} for <tt>GridPredicate&lt;GridEvent&gt;</tt> by extending
  * {@link org.apache.ignite.lang.IgnitePredicate}. Since Java doesn't provide type aliases (like Scala, for example) we resort
  * to these types of measures. This is intended to provide for more concise code without sacrificing
- * readability. For more information see {@link org.apache.ignite.lang.IgnitePredicate} and {@link org.apache.ignite.events.IgniteEvent}.
+ * readability. For more information see {@link org.apache.ignite.lang.IgnitePredicate} and {@link org.apache.ignite.events.Event}.
  * @see org.apache.ignite.lang.IgnitePredicate
- * @see org.apache.ignite.events.IgniteEvent
+ * @see org.apache.ignite.events.Event
  * @see GridFunc
  */
-public interface PE extends IgnitePredicate<IgniteEvent> { /* No-op. */ }
+public interface PE extends IgnitePredicate<Event> { /* No-op. */ }

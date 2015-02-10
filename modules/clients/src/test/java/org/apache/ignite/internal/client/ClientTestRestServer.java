@@ -267,6 +267,12 @@ public class ClientTestRestServer {
         /** */
         private final GridClientMarshaller marsh = new GridClientOptimizedMarshaller();
 
+        /**
+         */
+        public TestParser() {
+            super(false);
+        }
+
         /** {@inheritDoc} */
         @Override protected GridClientMarshaller marshaller(GridNioSession ses) {
             return marsh;

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.fs;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -134,9 +134,9 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < NODES_CNT; i++) {
-            grid(i).cachex(META_CACHE_NAME).clearAll();
+            grid(i).cachex(META_CACHE_NAME).clear();
 
-            grid(i).cachex(DATA_CACHE_NAME).clearAll();
+            grid(i).cachex(DATA_CACHE_NAME).clear();
         }
     }
 

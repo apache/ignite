@@ -18,7 +18,7 @@
 package org.apache.ignite.scalar.lang
 
 import org.apache.ignite.internal.util.lang.GridPeerDeployAwareAdapter
-import org.apache.ignite.lang.IgniteOutClosure
+import org.apache.ignite.lang.{IgniteCallable, IgniteOutClosure}
 
 import java.util.concurrent.Callable
 
@@ -26,7 +26,7 @@ import java.util.concurrent.Callable
  * Peer deploy aware adapter for Java's `GridOutClosure`.
  */
 class ScalarOutClosure[R](private val f: () => R) extends GridPeerDeployAwareAdapter
-    with IgniteOutClosure[R] with Callable[R] {
+    with IgniteOutClosure[R] with IgniteCallable[R] {
     assert(f != null)
 
     peerDeployLike(f)

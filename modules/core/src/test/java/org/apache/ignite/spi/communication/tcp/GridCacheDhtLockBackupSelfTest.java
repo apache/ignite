@@ -22,11 +22,11 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -53,7 +53,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
     private CommunicationSpi commSpi;
 
     /** Marshaller used in test. */
-    private IgniteMarshaller marsh = new IgniteJdkMarshaller();
+    private Marshaller marsh = new JdkMarshaller();
 
     /**
      *
@@ -259,7 +259,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
          * @param obj Message being  sent.
          * @param srcNodeId Sender node id.
          */
-        private void checkAwaitMessageType(GridTcpCommunicationMessageAdapter obj, UUID srcNodeId) {
+        private void checkAwaitMessageType(MessageAdapter obj, UUID srcNodeId) {
             try {
                 GridIoMessage plainMsg = (GridIoMessage)obj;
 
@@ -277,7 +277,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void notifyListener(UUID sndId, GridTcpCommunicationMessageAdapter msg,
+        @Override protected void notifyListener(UUID sndId, MessageAdapter msg,
             IgniteRunnable msgC) {
             checkAwaitMessageType(msg, sndId);
 

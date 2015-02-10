@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.testframework.junits;
@@ -14,7 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.marshaller.IgniteMarshaller;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.internal.product.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.plugin.security.*;
@@ -38,7 +46,7 @@ public class IgniteMock implements Ignite {
     private final UUID nodeId;
 
     /** */
-    private IgniteMarshaller marshaller;
+    private Marshaller marshaller;
 
     /** */
     private final MBeanServer jmx;
@@ -57,7 +65,7 @@ public class IgniteMock implements Ignite {
      * @param home Ignite home.
      */
     public IgniteMock(
-        String name, String locHost, UUID nodeId, IgniteMarshaller marshaller, MBeanServer jmx, String home) {
+        String name, String locHost, UUID nodeId, Marshaller marshaller, MBeanServer jmx, String home) {
         this.locHost = locHost;
         this.nodeId = nodeId;
         this.marshaller = marshaller;
@@ -83,7 +91,7 @@ public class IgniteMock implements Ignite {
         cfg.setMarshaller(marshaller);
         cfg.setNodeId(nodeId);
         cfg.setMBeanServer(jmx);
-        cfg.setGridGainHome(home);
+        cfg.setIgniteHome(home);
         cfg.setLocalHost(locHost);
 
         return cfg;
@@ -100,7 +108,7 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCompute compute(ClusterGroup prj) {
+    @Override public IgniteCompute compute(ClusterGroup grp) {
         return null;
     }
 
@@ -120,17 +128,17 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteEvents events(ClusterGroup prj) {
+    @Override public IgniteEvents events(ClusterGroup grp) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteManaged managed() {
+    @Override public IgniteServices services() {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteManaged managed(ClusterGroup prj) {
+    @Override public IgniteServices services(ClusterGroup grp) {
         return null;
     }
 
@@ -140,7 +148,7 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService executorService(ClusterGroup prj) {
+    @Override public ExecutorService executorService(ClusterGroup grp) {
         return null;
     }
 
@@ -156,11 +164,6 @@ public class IgniteMock implements Ignite {
 
     /** {@inheritDoc} */
     @Override public GridSecurity security() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgnitePortables portables() {
         return null;
     }
 
@@ -216,6 +219,56 @@ public class IgniteMock implements Ignite {
 
     /** {@inheritDoc} */
     @Override public void close() {}
+
+    @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteAtomicReference<T> atomicReference(String name,
+        @Nullable T initVal,
+        boolean create)
+    {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
+        @Nullable T initVal,
+        @Nullable S initStamp,
+        boolean create)
+    {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteCountDownLatch countDownLatch(String name,
+        int cnt,
+        boolean autoDel,
+        boolean create)
+    {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteQueue<T> queue(String name,
+        int cap,
+        CollectionConfiguration cfg)
+    {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteSet<T> set(String name,
+        CollectionConfiguration cfg)
+    {
+        return null;
+    }
 
     /** {@inheritDoc} */
     @Override public <K> CacheAffinity<K> affinity(String cacheName) {

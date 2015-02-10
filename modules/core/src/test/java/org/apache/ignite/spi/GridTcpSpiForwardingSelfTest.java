@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -98,7 +99,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(spi);
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi() {
             @Override protected GridCommunicationClient createTcpClient(ClusterNode node) throws IgniteCheckedException {
@@ -123,7 +124,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
             new InetSocketAddress("127.0.0.1", commLocPort), F.asList(new InetSocketAddress("127.0.0.1", commExtPort))
         );
 
-        cfg.setAddressResolver(new IgniteAddressResolver() {
+        cfg.setAddressResolver(new AddressResolver() {
             @Override public Collection<InetSocketAddress> getExternalAddresses(InetSocketAddress addr) {
                 return mp.get(addr);
             }
@@ -151,7 +152,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
             assertEquals(2, grid(0).nodes().size());
             assertEquals(2, grid(1).nodes().size());
 
-            Collection<Integer> t = g1.compute().broadcast(new Callable<Integer>() {
+            Collection<Integer> t = g1.compute().broadcast(new IgniteCallable<Integer>() {
                 @Override public Integer call() throws Exception {
                     return 13;
                 }

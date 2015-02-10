@@ -20,7 +20,7 @@ package org.apache.ignite.internal.client;
 import java.util.*;
 
 /**
- * GridGain Java client API.
+ * Ignite Java client API.
  * <p>
  * Contains functionality to get projections for accessing remote
  * data and compute functionality, as well as provide listeners on topology changes.
@@ -40,7 +40,7 @@ import java.util.*;
  * <li>{@link #compute()}</li>
  * </ul>
  * <h1 class="header">Affinity Awareness</h1>
- * One of the unique properties of the GridGain remote clients is that they are
+ * One of the unique properties of the Ignite remote clients is that they are
  * affinity aware. In other words, both compute and data APIs will optionally
  * contact exactly the node where the data is cached based on some affinity key.
  * This allows for collocation of computations and data and avoids extra network

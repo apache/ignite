@@ -21,9 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.nio.*;
 import java.util.*;
@@ -32,6 +32,9 @@ import java.util.*;
  *
  */
 public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Entries keys. */
     @GridToStringInclude
     @GridDirectTransient
@@ -180,12 +183,12 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 82;
+        return 20;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("CloneDoesntCallSuperClone")
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridCacheTtlUpdateRequest _clone = new GridCacheTtlUpdateRequest();
 
         clone0(_clone);
@@ -195,138 +198,54 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (keysBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(keysBytes.size()))
-                            return false;
+                if (!writer.writeCollection("keysBytes", keysBytes, byte[].class))
+                    return false;
 
-                        commState.it = keysBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 4:
-                if (nearKeysBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(nearKeysBytes.size()))
-                            return false;
+                if (!writer.writeCollection("nearKeysBytes", nearKeysBytes, byte[].class))
+                    return false;
 
-                        commState.it = nearKeysBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 5:
-                if (nearVers != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(nearVers.size()))
-                            return false;
+                if (!writer.writeCollection("nearVers", nearVers, GridCacheVersion.class))
+                    return false;
 
-                        commState.it = nearVers.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putCacheVersion((GridCacheVersion)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 6:
-                if (!commState.putLong(topVer))
+                if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 7:
-                if (!commState.putLong(ttl))
+                if (!writer.writeLong("ttl", ttl))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 8:
-                if (vers != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(vers.size()))
-                            return false;
+                if (!writer.writeCollection("vers", vers, GridCacheVersion.class))
+                    return false;
 
-                        commState.it = vers.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putCacheVersion((GridCacheVersion)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -335,143 +254,59 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                keysBytes = reader.readCollection("keysBytes", byte[].class);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (keysBytes == null)
-                        keysBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        keysBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 4:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                nearKeysBytes = reader.readCollection("nearKeysBytes", byte[].class);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (nearKeysBytes == null)
-                        nearKeysBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        nearKeysBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 5:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                nearVers = reader.readCollection("nearVers", GridCacheVersion.class);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (nearVers == null)
-                        nearVers = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridCacheVersion _val = commState.getCacheVersion();
-
-                        if (_val == CACHE_VER_NOT_READ)
-                            return false;
-
-                        nearVers.add((GridCacheVersion)_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 6:
-                if (buf.remaining() < 8)
+                topVer = reader.readLong("topVer");
+
+                if (!reader.isLastRead())
                     return false;
 
-                topVer = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 7:
-                if (buf.remaining() < 8)
+                ttl = reader.readLong("ttl");
+
+                if (!reader.isLastRead())
                     return false;
 
-                ttl = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 8:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                vers = reader.readCollection("vers", GridCacheVersion.class);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (vers == null)
-                        vers = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridCacheVersion _val = commState.getCacheVersion();
-
-                        if (_val == CACHE_VER_NOT_READ)
-                            return false;
-
-                        vers.add((GridCacheVersion)_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -479,7 +314,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridCacheTtlUpdateRequest _clone = (GridCacheTtlUpdateRequest)_msg;

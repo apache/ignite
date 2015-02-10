@@ -25,7 +25,7 @@ import org.apache.ignite.resources.*;
  */
 public class GridTestJob extends ComputeJobAdapter {
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** */

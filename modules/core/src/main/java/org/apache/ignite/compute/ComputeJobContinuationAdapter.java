@@ -79,7 +79,7 @@ public abstract class ComputeJobContinuationAdapter extends ComputeJobAdapter im
     private static final long serialVersionUID = 0L;
 
     /** Job context. */
-    @IgniteJobContextResource
+    @JobContextResource
     private transient ComputeJobContext jobCtx;
 
     /**
@@ -91,7 +91,7 @@ public abstract class ComputeJobContinuationAdapter extends ComputeJobAdapter im
 
     /**
      * Creates job with one arguments. This constructor exists for better
-     * backward compatibility with internal GridGain 2.x code.
+     * backward compatibility with internal Ignite 2.x code.
      *
      * @param arg Job argument.
      */

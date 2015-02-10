@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.visor.ggfs;
 
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;

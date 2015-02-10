@@ -175,7 +175,7 @@ public class GridJettyRestHandler extends AbstractHandler {
         if (log.isDebugEnabled())
             log.debug("Handling request [target=" + target + ", req=" + req + ", srvReq=" + srvReq + ']');
 
-        if (target.startsWith("/gridgain")) {
+        if (target.startsWith("/ignite")) {
             processRequest(target, srvReq, res);
 
             req.setHandled(true);
@@ -309,14 +309,29 @@ public class GridJettyRestHandler extends AbstractHandler {
      *
      * @param cmd Command.
      * @param params Parameters.
+     * @param req Servlet request.
      * @return REST request.
      * @throws IgniteCheckedException If creation failed.
      */
-    @Nullable private GridRestRequest createRequest(GridRestCommand cmd, Map<String, Object> params,
+    @Nullable private GridRestRequest createRequest(GridRestCommand cmd,
+        Map<String, Object> params,
         ServletRequest req) throws IgniteCheckedException {
         GridRestRequest restReq;
 
         switch (cmd) {
+            case ATOMIC_DECREMENT:
+            case ATOMIC_INCREMENT: {
+                DataStructuresRequest restReq0 = new DataStructuresRequest();
+
+                restReq0.key(params.get("key"));
+                restReq0.initial(longValue("init", params, null));
+                restReq0.delta(longValue("delta", params, null));
+
+                restReq = restReq0;
+
+                break;
+            }
+
             case CACHE_GET:
             case CACHE_GET_ALL:
             case CACHE_PUT:
@@ -327,13 +342,11 @@ public class GridJettyRestHandler extends AbstractHandler {
             case CACHE_CAS:
             case CACHE_METRICS:
             case CACHE_REPLACE:
-            case CACHE_DECREMENT:
-            case CACHE_INCREMENT:
             case CACHE_APPEND:
             case CACHE_PREPEND: {
                 GridRestCacheRequest restReq0 = new GridRestCacheRequest();
 
-                restReq0.cacheName((String) params.get("cacheName"));
+                restReq0.cacheName((String)params.get("cacheName"));
                 restReq0.key(params.get("key"));
                 restReq0.value(params.get("val"));
                 restReq0.value2(params.get("val2"));
@@ -345,8 +358,6 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                 restReq0.cacheFlags(intValue("cacheFlags", params, 0));
                 restReq0.ttl(longValue("exp", params, null));
-                restReq0.initial(longValue("init", params, null));
-                restReq0.delta(longValue("delta", params, null));
 
                 if (cmd == CACHE_GET_ALL || cmd == CACHE_PUT_ALL || cmd == CACHE_REMOVE_ALL) {
                     List<Object> keys = values("k", params);
@@ -433,9 +444,9 @@ public class GridJettyRestHandler extends AbstractHandler {
 
         restReq.command(cmd);
 
-        if (params.containsKey("gridgain.login") || params.containsKey("gridgain.password")) {
+        if (params.containsKey("ignite.login") || params.containsKey("ignite.password")) {
             GridSecurityCredentials cred = new GridSecurityCredentials(
-                (String)params.get("gridgain.login"), (String)params.get("gridgain.password"));
+                (String)params.get("ignite.login"), (String)params.get("ignite.password"));
 
             restReq.credentials(cred);
         }

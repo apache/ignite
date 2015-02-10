@@ -39,7 +39,7 @@ public class GridGcTimeoutTest {
      */
     @SuppressWarnings("InfiniteLoopStatement")
     public static void main(String[] args) throws IgniteCheckedException {
-        Ignite g = G.start(U.resolveGridGainUrl(CFG_PATH));
+        Ignite g = G.start(U.resolveIgniteUrl(CFG_PATH));
 
         IgniteDataLoader<Long, String> ldr = g.dataLoader(null);
 

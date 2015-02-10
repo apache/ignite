@@ -30,6 +30,8 @@ import org.apache.ignite.marshaller.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import java.util.*;
+
 /**
  * Manages offheap memory caches.
  */
@@ -39,7 +41,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
         new ConcurrentHashMap8<>();
 
     /** */
-    private final IgniteMarshaller marsh;
+    private final Marshaller marsh;
 
     /**
      * @param ctx Kernal context.
@@ -297,6 +299,19 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
         return m == null ? -1 : m.size();
+    }
+
+    /**
+     * Gets number of elements in the given space.
+     *
+     * @param spaceName Space name. Optional.
+     * @param parts Partitions.
+     * @return Number of elements or {@code -1} if no space with the given name has been found.
+     */
+    public long entriesCount(@Nullable String spaceName, Set<Integer> parts) {
+        GridOffHeapPartitionedMap m = offheap(spaceName);
+
+        return m == null ? -1 : m.size(parts);
     }
 
     /**

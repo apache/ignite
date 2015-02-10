@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * {@link IgniteEvents} implementation.
  */
-public class IgniteEventsImpl extends IgniteAsyncSupportAdapter<IgniteEvents> implements IgniteEvents, Externalizable {
+public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implements IgniteEvents, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -66,7 +66,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter<IgniteEvents> im
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends IgniteEvent> List<T> remoteQuery(IgnitePredicate<T> p, long timeout,
+    @Override public <T extends Event> List<T> remoteQuery(IgnitePredicate<T> p, long timeout,
         @Nullable int... types) {
         A.notNull(p, "p");
 
@@ -84,13 +84,13 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter<IgniteEvents> im
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends IgniteEvent> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
+    @Override public <T extends Event> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
         @Nullable IgnitePredicate<T> rmtFilter, @Nullable int... types) {
         return remoteListen(1, 0, true, locLsnr, rmtFilter, types);
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends IgniteEvent> UUID remoteListen(int bufSize, long interval,
+    @Override public <T extends Event> UUID remoteListen(int bufSize, long interval,
         boolean autoUnsubscribe, @Nullable IgniteBiPredicate<UUID, T> locLsnr, @Nullable IgnitePredicate<T> rmtFilter,
         @Nullable int... types) {
         A.ensure(bufSize > 0, "bufSize > 0");
@@ -100,8 +100,8 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter<IgniteEvents> im
 
         try {
             return saveOrGet(ctx.continuous().startRoutine(
-                new GridEventConsumeHandler((IgniteBiPredicate<UUID, IgniteEvent>)locLsnr,
-                    (IgnitePredicate<IgniteEvent>)rmtFilter, types), bufSize, interval, autoUnsubscribe, prj.predicate()));
+                new GridEventConsumeHandler((IgniteBiPredicate<UUID, Event>)locLsnr,
+                    (IgnitePredicate<Event>)rmtFilter, types), bufSize, interval, autoUnsubscribe, prj.predicate()));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -129,7 +129,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter<IgniteEvents> im
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends IgniteEvent> T waitForLocal(@Nullable IgnitePredicate<T> filter,
+    @Override public <T extends Event> T waitForLocal(@Nullable IgnitePredicate<T> filter,
         @Nullable int... types) {
         guard();
 
@@ -145,7 +145,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter<IgniteEvents> im
     }
 
     /** {@inheritDoc} */
-    @Override public <T extends IgniteEvent> Collection<T> localQuery(IgnitePredicate<T> p, @Nullable int... types) {
+    @Override public <T extends Event> Collection<T> localQuery(IgnitePredicate<T> p, @Nullable int... types) {
         A.notNull(p, "p");
 
         guard();
@@ -159,12 +159,12 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter<IgniteEvents> im
     }
 
     /** {@inheritDoc} */
-    @Override public void recordLocal(IgniteEvent evt) {
+    @Override public void recordLocal(Event evt) {
         A.notNull(evt, "evt");
 
         if (evt.type() <= 1000)
             throw new IllegalArgumentException("All types in range from 1 to 1000 are reserved for " +
-                "internal GridGain events [evtType=" + evt.type() + ", evt=" + evt + ']');
+                "internal Ignite events [evtType=" + evt.type() + ", evt=" + evt + ']');
 
         guard();
 
@@ -177,7 +177,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter<IgniteEvents> im
     }
 
     /** {@inheritDoc} */
-    @Override public void localListen(IgnitePredicate<? extends IgniteEvent> lsnr, int[] types) {
+    @Override public void localListen(IgnitePredicate<? extends Event> lsnr, int[] types) {
         A.notNull(lsnr, "lsnr");
         A.notEmpty(types, "types");
 
@@ -192,7 +192,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter<IgniteEvents> im
     }
 
     /** {@inheritDoc} */
-    @Override public boolean stopLocalListen(IgnitePredicate<? extends IgniteEvent> lsnr, @Nullable int... types) {
+    @Override public boolean stopLocalListen(IgnitePredicate<? extends Event> lsnr, @Nullable int... types) {
         A.notNull(lsnr, "lsnr");
 
         guard();
@@ -265,7 +265,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter<IgniteEvents> im
      * @param types Event types.
      * @return Compound predicate.
      */
-    private static <T extends IgniteEvent> IgnitePredicate<T> compoundPredicate(final IgnitePredicate<T> p,
+    private static <T extends Event> IgnitePredicate<T> compoundPredicate(final IgnitePredicate<T> p,
         @Nullable final int... types) {
 
         return F.isEmpty(types) ? p :

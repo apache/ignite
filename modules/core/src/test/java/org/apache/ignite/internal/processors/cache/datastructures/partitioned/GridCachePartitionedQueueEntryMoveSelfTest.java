@@ -20,32 +20,25 @@ package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Cache queue test with changing topology.
  */
-public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
+public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollectionAbstractTest {
     /** Queue capacity. */
     private static final int QUEUE_CAP = 5;
 
@@ -59,23 +52,33 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
     private UUID nodeId;
 
     /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return GRID_CNT;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheMode collectionCacheMode() {
+        return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
+        return TRANSACTIONAL;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected TestCollectionConfiguration collectionConfiguration() {
+        TestCollectionConfiguration colCfg = super.collectionConfiguration();
+
+        colCfg.setBackups(BACKUP_CNT);
+
+        return colCfg;
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
-
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setBackups(BACKUP_CNT);
-        cacheCfg.setPreloadMode(SYNC);
-
-        cfg.setCacheConfiguration(cacheCfg);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(spi);
 
         if (nodeId != null) {
             cfg.setNodeId(nodeId);
@@ -104,8 +107,9 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
                 @Override public Void call() throws IgniteCheckedException {
                     Ignite ignite = grid(0);
 
-                    CacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, QUEUE_CAP,
-                        true, true);
+                    IgniteQueue<Integer> queue = ignite.queue(queueName,
+                        QUEUE_CAP,
+                        config(true));
 
                     for (int i = 0; i < QUEUE_CAP * 2; i++) {
                         if (i == QUEUE_CAP) {
@@ -144,8 +148,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
                 @Override public Void call() throws IgniteCheckedException {
                     Ignite ignite = grid(GRID_CNT);
 
-                    CacheQueue<Integer> queue = ignite.cache(null).dataStructures().
-                        queue(queueName, Integer.MAX_VALUE, true, true);
+                    IgniteQueue<Integer> queue = ignite.queue(queueName, Integer.MAX_VALUE, config(true));
 
                     int cnt = 0;
 
@@ -192,8 +195,8 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
      * @throws Exception If failed.
      */
     private void startAdditionalNodes(int cnt, String queueName) throws Exception {
-        CacheAffinityFunction aff = cache(0).configuration().getAffinity();
-        CacheAffinityKeyMapper mapper = cache(0).configuration().getAffinityMapper();
+        CacheAffinityFunction aff = jcache(0).getConfiguration(CacheConfiguration.class).getAffinity();
+        CacheAffinityKeyMapper mapper = jcache(0).getConfiguration(CacheConfiguration.class).getAffinityMapper();
 
         assertNotNull(aff);
         assertNotNull(mapper);
@@ -202,7 +205,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
 
         Collection<ClusterNode> nodes = grid(0).nodes();
 
-        Collection<ClusterNode> aff0 = cache(0).affinity().mapKeyToPrimaryAndBackups(queueName);
+        Collection<ClusterNode> aff0 = ignite(0).affinity(null).mapKeyToPrimaryAndBackups(queueName);
         Collection<ClusterNode> aff1 = nodes(aff, part, nodes);
 
         assertEquals(new ArrayList<>(aff0), new ArrayList<>(aff1));
@@ -234,7 +237,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
             startGrid(i++);
         }
 
-        aff2 = cache(0).affinity().mapKeyToPrimaryAndBackups(queueName);
+        aff2 = ignite(0).affinity(null).mapKeyToPrimaryAndBackups(queueName);
 
         assertFalse("Unexpected affinity [aff1=" + aff1 + ", aff2=" + aff2 + ']', F.containsAny(aff1, aff2));
     }

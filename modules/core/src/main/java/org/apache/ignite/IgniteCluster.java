@@ -98,7 +98,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *      topology history. Currently only {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}
      *      supports topology history.
      */
-    @Nullable public Collection<ClusterNode> topology(long topVer) throws UnsupportedOperationException;
+    public Collection<ClusterNode> topology(long topVer) throws UnsupportedOperationException;
 
     /**
      * This method provides ability to detect which cache keys are mapped to which nodes
@@ -144,7 +144,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *      is not present in the grid.
      * @throws IgniteException If failed to map key.
      */
-    @Nullable public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws IgniteException;
+    public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws IgniteException;
 
     /**
      * Starts one or more nodes on remote host(s).
@@ -174,11 +174,8 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @throws IgniteException In case of error.
      */
     @IgniteAsyncSupported
-    public Collection<GridTuple3<String, Boolean, String>> startNodes(File file,
-        boolean restart,
-        int timeout,
-        int maxConn)
-        throws IgniteException;
+    public Collection<GridTuple3<String, Boolean, String>> startNodes(File file, boolean restart, int timeout,
+        int maxConn) throws IgniteException;
 
     /**
      * Starts one or more nodes on remote host(s).
@@ -232,23 +229,23 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *             </td>
      *         </tr>
      *         <tr>
-     *             <td><b>ggHome</b></td>
+     *             <td><b>igniteHome</b></td>
      *             <td>String</td>
      *             <td>
-     *                 Path to GridGain installation folder. If not defined, IGNITE_HOME
+     *                 Path to Ignite installation folder. If not defined, IGNITE_HOME
      *                 environment variable must be set on remote hosts.
      *             </td>
      *         </tr>
      *         <tr>
      *             <td><b>cfg</b></td>
      *             <td>String</td>
-     *             <td>Path to configuration file (relative to {@code ggHome}).</td>
+     *             <td>Path to configuration file (relative to {@code igniteHome}).</td>
      *         </tr>
      *         <tr>
      *             <td><b>script</b></td>
      *             <td>String</td>
      *             <td>
-     *                 Custom startup script file name and path (relative to {@code ggHome}).
+     *                 Custom startup script file name and path (relative to {@code igniteHome}).
      *                 You can also specify a space-separated list of parameters in the same
      *                 string (for example: {@code "bin/my-custom-script.sh -v"}).
      *             </td>
@@ -280,17 +277,13 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      */
     @IgniteAsyncSupported
     public Collection<GridTuple3<String, Boolean, String>> startNodes(Collection<Map<String, Object>> hosts,
-        @Nullable Map<String, Object> dflts,
-        boolean restart,
-        int timeout,
-        int maxConn)
-        throws IgniteException;
+        @Nullable Map<String, Object> dflts, boolean restart, int timeout, int maxConn) throws IgniteException;
 
     /**
      * Stops nodes satisfying optional set of predicates.
      * <p>
-     * <b>NOTE:</b> {@code System.exit(GridGain.KILL_EXIT_CODE)} will be executed on each
-     * stopping node. If you have other applications running in the same JVM along with GridGain,
+     * <b>NOTE:</b> {@code System.exit(Ignition.KILL_EXIT_CODE)} will be executed on each
+     * stopping node. If you have other applications running in the same JVM along with Ignition,
      * those applications will be stopped as well.
      *
      * @throws IgniteException In case of error.
@@ -300,8 +293,8 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     /**
      * Stops nodes defined by provided IDs.
      * <p>
-     * <b>NOTE:</b> {@code System.exit(GridGain.KILL_EXIT_CODE)} will be executed on each
-     * stopping node. If you have other applications running in the same JVM along with GridGain,
+     * <b>NOTE:</b> {@code System.exit(Ignition.KILL_EXIT_CODE)} will be executed on each
+     * stopping node. If you have other applications running in the same JVM along with Ignition,
      * those applications will be stopped as well.
      *
      * @param ids IDs defining nodes to stop.
@@ -312,7 +305,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     /**
      * Restarts nodes satisfying optional set of predicates.
      * <p>
-     * <b>NOTE:</b> this command only works for grid nodes started with GridGain
+     * <b>NOTE:</b> this command only works for grid nodes started with Ignition
      * {@code ignite.sh} or {@code ignite.bat} scripts.
      *
      * @throws IgniteException In case of error.
@@ -322,7 +315,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     /**
      * Restarts nodes defined by provided IDs.
      * <p>
-     * <b>NOTE:</b> this command only works for grid nodes started with GridGain
+     * <b>NOTE:</b> this command only works for grid nodes started with Ignition
      * {@code ignite.sh} or {@code ignite.bat} scripts.
      *
      * @param ids IDs defining nodes to restart.

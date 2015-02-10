@@ -41,7 +41,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  *
@@ -137,8 +137,8 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                 1);
 
             ignite1.events().localListen(
-                new IgnitePredicate<IgniteEvent>() {
-                    @Override public boolean apply(IgniteEvent evt) {
+                new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
                         startLatch.countDown();
 
                         return true;

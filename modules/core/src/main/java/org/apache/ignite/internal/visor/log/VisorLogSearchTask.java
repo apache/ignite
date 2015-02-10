@@ -210,7 +210,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
 
         /** {@inheritDoc} */
         @Override protected  Collection<VisorLogSearchResult> run(VisorLogSearchArg arg) {
-            URL url = U.resolveGridGainUrl(arg.folder);
+            URL url = U.resolveIgniteUrl(arg.folder);
 
             if (url == null)
                 throw U.convertException(new GridInternalException(new FileNotFoundException("Log folder not found: " + arg.folder)));

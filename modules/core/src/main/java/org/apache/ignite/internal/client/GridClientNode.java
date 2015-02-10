@@ -57,35 +57,11 @@ public interface GridClientNode {
     public List<String> tcpHostNames();
 
     /**
-     * Gets list of REST HTTP server addresses of remote node.
-     *
-     * @return REST HTTP server addresses.
-     */
-    @Deprecated
-    public List<String> jettyAddresses();
-
-    /**
-     * Gets list of REST HTTP server host names of remote node.
-     *
-     * @return REST HTTP server host names.
-     */
-    @Deprecated
-    public List<String> jettyHostNames();
-
-    /**
      * Gets client TCP port of remote node.
      *
      * @return Remote tcp port.
      */
     public int tcpPort();
-
-    /**
-     * Gets client HTTP port of remote node.
-     *
-     * @return Remote http port.
-     */
-    @Deprecated
-    public int httpPort();
 
     /**
      * Gets all attributes of remote node. Note that all system and

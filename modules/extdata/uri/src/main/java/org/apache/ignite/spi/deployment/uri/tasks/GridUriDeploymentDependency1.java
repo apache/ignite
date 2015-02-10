@@ -29,7 +29,7 @@ import java.util.*;
  */
 public class GridUriDeploymentDependency1 {
     /** */
-    public static final String RESOURCE = "org/gridgain/grid/spi/deployment/uri/tasks/test1.properties";
+    public static final String RESOURCE = "org/apache/ignite/grid/spi/deployment/uri/tasks/test1.properties";
 
     /**
      * @return Value of the property {@code test1.txt} loaded from the {@code test1.properties} file.

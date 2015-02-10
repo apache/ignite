@@ -60,7 +60,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+        c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -101,8 +101,11 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        if (GRID_CNT > 0)
+            grid(0).cache(null).removeAll();
+
         for (int i = 0; i < GRID_CNT; i++) {
-            grid(i).cache(null).removeAll();
+            grid(0).cache(null).clearLocally();
 
             assert grid(i).cache(null).isEmpty();
         }

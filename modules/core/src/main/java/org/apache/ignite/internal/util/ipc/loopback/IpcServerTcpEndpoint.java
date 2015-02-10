@@ -46,7 +46,7 @@ public class IpcServerTcpEndpoint implements IpcServerEndpoint {
     private boolean mgmt;
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** {@inheritDoc} */

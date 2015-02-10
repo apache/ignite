@@ -18,45 +18,16 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.datastructures.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 
 /**
  * Basic tests for atomic stamped.
  */
-public abstract class GridCacheAtomicStampedApiSelfAbstractTest extends GridCommonAbstractTest {
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /**
-     * Constructs a test.
-     */
-    protected GridCacheAtomicStampedApiSelfAbstractTest() {
-        super(true /* start grid. */);
-    }
-
+public abstract class GridCacheAtomicStampedApiSelfAbstractTest extends IgniteAtomicsAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+    @Override protected int gridCount() {
+        return 1;
     }
 
     /**
@@ -71,10 +42,8 @@ public abstract class GridCacheAtomicStampedApiSelfAbstractTest extends GridComm
         String initVal = "1";
         String initStamp = "2";
 
-        CacheAtomicStamped<String, String> atomic1 = grid().cache(null).dataStructures()
-            .atomicStamped(atomicName1, initVal, initStamp, true);
-        CacheAtomicStamped<String, String> atomic2 = grid().cache(null).dataStructures()
-            .atomicStamped(atomicName1, null, null, true);
+        IgniteAtomicStamped<String, String> atomic1 = grid(0).atomicStamped(atomicName1, initVal, initStamp, true);
+        IgniteAtomicStamped<String, String> atomic2 = grid(0).atomicStamped(atomicName1, null, null, true);
 
         assertNotNull(atomic1);
         assertNotNull(atomic2);
@@ -84,14 +53,17 @@ public abstract class GridCacheAtomicStampedApiSelfAbstractTest extends GridComm
         assert initVal.equals(atomic2.value());
         assert initStamp.equals(atomic2.stamp());
 
-        assert grid().cache(null).dataStructures().removeAtomicStamped(atomicName1);
-        assert !grid().cache(null).dataStructures().removeAtomicStamped(atomicName1);
+        atomic1.close();
+        atomic2.close();
+
+        assertNull(grid(0).atomicStamped(atomicName1, null, null, false));
 
         try {
             atomic1.get();
+
             fail();
         }
-        catch (IgniteCheckedException e) {
+        catch (IllegalStateException e) {
             info("Caught expected exception: " + e.getMessage());
         }
     }
@@ -107,8 +79,7 @@ public abstract class GridCacheAtomicStampedApiSelfAbstractTest extends GridComm
         String initVal = "qwerty";
         String initStamp = "asdfgh";
 
-        CacheAtomicStamped<String, String> atomic = grid().cache(null).dataStructures()
-            .atomicStamped(atomicName, initVal, initStamp, true);
+        IgniteAtomicStamped<String, String> atomic = grid(0).atomicStamped(atomicName, initVal, initStamp, true);
 
         assertEquals(initVal, atomic.value());
         assertEquals(initStamp, atomic.stamp());
@@ -132,8 +103,7 @@ public abstract class GridCacheAtomicStampedApiSelfAbstractTest extends GridComm
         String initVal = "qwerty";
         String initStamp = "asdfgh";
 
-        CacheAtomicStamped<String, String> atomic = grid().cache(null).dataStructures()
-            .atomicStamped(atomicName, initVal, initStamp, true);
+        IgniteAtomicStamped<String, String> atomic = grid(0).atomicStamped(atomicName, initVal, initStamp, true);
 
         assertEquals(initVal, atomic.value());
         assertEquals(initStamp, atomic.stamp());

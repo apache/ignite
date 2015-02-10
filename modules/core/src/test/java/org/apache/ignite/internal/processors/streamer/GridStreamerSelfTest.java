@@ -43,7 +43,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
 
 /**
  * Basic streamer test.
@@ -81,7 +81,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
         if (p2pEnabled)
             cfg.setDeploymentMode(SHARED);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }
@@ -115,7 +115,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
             @IgniteInstanceResource
             private Ignite g;
 
-            @IgniteLoggerResource
+            @LoggerResource
             private IgniteLogger log;
 
             @Override public String name() {

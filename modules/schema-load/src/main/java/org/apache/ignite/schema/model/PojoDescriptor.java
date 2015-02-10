@@ -109,12 +109,14 @@ public class PojoDescriptor {
 
         fields = FXCollections.observableList(flds);
 
-        boolean hasKeys = !keyFields().isEmpty();
+        boolean isTbl = parent != null;
+
+        boolean hasKeys = !isTbl || !keyFields().isEmpty();
 
         useProp = new SimpleBooleanProperty(hasKeys);
 
-        if (parent != null)
-            parent.indeterminate().set(true);
+        if (isTbl && !hasKeys && !parent.indeterminateProp.get())
+            parent.indeterminateProp.set(true);
 
         useProp.addListener(new ChangeListener<Boolean>() {
             @Override public void changed(ObservableValue<? extends Boolean> val, Boolean oldVal, Boolean newVal) {

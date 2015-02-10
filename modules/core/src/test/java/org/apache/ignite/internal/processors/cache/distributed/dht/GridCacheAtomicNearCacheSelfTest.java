@@ -39,7 +39,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
 /**
  * Tests near cache with various atomic cache configuration.
@@ -265,7 +265,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, Integer> cache0 = ignite0.jcache(null);
 
-        CacheAffinity<Object> aff = cache(0).affinity();
+        CacheAffinity<Object> aff = ignite0.affinity(null);
 
         UUID id0 = ignite0.cluster().localNode().id();
 

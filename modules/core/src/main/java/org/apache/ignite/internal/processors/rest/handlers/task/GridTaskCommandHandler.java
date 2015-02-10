@@ -34,7 +34,6 @@ import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
@@ -46,7 +45,7 @@ import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridClosureCallMode.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
@@ -263,7 +262,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                                         res.setResponse(taskRestRes);
                                         fut.onDone(res);
                                     }
-                                    catch (PortableException e) {
+                                    catch (IgniteException e) {
                                         fut.onDone(new IgniteCheckedException("Failed to marshal task result: " +
                                             desc.result(), e));
                                     }
@@ -431,11 +430,11 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
         };
 
         GridLocalEventListener discoLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof IgniteDiscoveryEvent &&
+            @Override public void onEvent(Event evt) {
+                assert evt instanceof DiscoveryEvent &&
                     (evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT) : "Unexpected event: " + evt;
 
-                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                 if (resHolderId.equals(discoEvt.eventNode().id())) {
                     lock.lock();

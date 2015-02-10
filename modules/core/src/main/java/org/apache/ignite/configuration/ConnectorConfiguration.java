@@ -22,7 +22,6 @@ import org.apache.ignite.internal.client.ssl.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
-import java.util.concurrent.*;
 
 /**
  * REST access configuration.
@@ -44,10 +43,10 @@ public class ConnectorConfiguration {
     public static final int DFLT_PORT_RANGE = 100;
 
     /** Default size of REST thread pool. */
-    public static final int DFLT_CORE_THREAD_CNT = IgniteConfiguration.DFLT_PUBLIC_CORE_THREAD_CNT;
+    public static final int DFLT_REST_CORE_THREAD_CNT = IgniteConfiguration.DFLT_PUBLIC_THREAD_CNT;
 
     /** Default max size of REST thread pool. */
-    public static final int DFLT_MAX_THREAD_CNT = IgniteConfiguration.DFLT_PUBLIC_CORE_THREAD_CNT;
+    public static final int DFLT_REST_MAX_THREAD_CNT = IgniteConfiguration.DFLT_PUBLIC_THREAD_CNT;
 
     /** Default keep alive time for REST thread pool. */
     public static final long DFLT_KEEP_ALIVE_TIME = 0;
@@ -103,11 +102,8 @@ public class ConnectorConfiguration {
     /** Port range */
     private int portRange = DFLT_PORT_RANGE;
 
-    /** REST requests executor service. */
-    private ExecutorService execSvc;
-
-    /** REST executor service shutdown flag. */
-    private boolean execSvcShutdown = true;
+    /** REST requests thread pool size. */
+    private int execSvcPoolSize = DFLT_REST_CORE_THREAD_CNT;
 
     /** Client message interceptor. */
     private ConnectorMessageInterceptor msgInterceptor;
@@ -129,8 +125,7 @@ public class ConnectorConfiguration {
         assert cfg != null;
 
         msgInterceptor = cfg.getMessageInterceptor();
-        execSvc = cfg.getExecutorService();
-        execSvcShutdown = cfg.isExecutorServiceShutdown();
+        execSvcPoolSize = cfg.getRestThreadPoolSize();
         idleTimeout = cfg.getIdleTimeout();
         jettyPath = cfg.getJettyPath();
         portRange = cfg.getPortRange();
@@ -151,7 +146,7 @@ public class ConnectorConfiguration {
     /**
      * Sets path, either absolute or relative to {@code IGNITE_HOME}, to {@code JETTY}
      * XML configuration file. {@code JETTY} is used to support REST over HTTP protocol for
-     * accessing GridGain APIs remotely.
+     * accessing Ignite APIs remotely.
      *
      * @param jettyPath Path to {@code JETTY} XML configuration file.
      */
@@ -162,7 +157,7 @@ public class ConnectorConfiguration {
     /**
      * Gets path, either absolute or relative to {@code IGNITE_HOME}, to {@code Jetty}
      * XML configuration file. {@code Jetty} is used to support REST over HTTP protocol for
-     * accessing GridGain APIs remotely.
+     * accessing Ignite APIs remotely.
      * <p>
      * If not provided, Jetty instance with default configuration will be started picking
      * {@link IgniteSystemProperties#IGNITE_JETTY_HOST} and {@link IgniteSystemProperties#IGNITE_JETTY_PORT}
@@ -469,53 +464,24 @@ public class ConnectorConfiguration {
     }
 
     /**
-     * Should return an instance of fully configured thread pool to be used for
+     * Should return a thread pool size to be used for
      * processing of client messages (REST requests).
-     * <p>
-     * If not provided, new executor service will be created using the following
-     * configuration:
-     * <ul>
-     *     <li>Core pool size - {@link #DFLT_CORE_THREAD_CNT}</li>
-     *     <li>Max pool size - {@link #DFLT_MAX_THREAD_CNT}</li>
-     *     <li>Queue capacity - {@link #DFLT_THREADPOOL_QUEUE_CAP}</li>
-     * </ul>
      *
-     * @return Thread pool implementation to be used for processing of client
+     * @return Thread pool size to be used for processing of client
      *      messages.
      */
-    public ExecutorService getExecutorService() {
-        return execSvc;
+    public int getThreadPoolSize() {
+        return threadPoolSize;
     }
 
     /**
-     * Sets thread pool to use for processing of client messages (REST requests).
+     * Sets thread pool size to use for processing of client messages (REST requests).
      *
-     * @param execSvc Thread pool to use for processing of client messages.
+     * @param threadPoolSize Thread pool size to use for processing of client messages.
+     * @see #getRestThreadPoolSize()
      */
-    public void setExecutorService(ExecutorService execSvc) {
-        this.execSvc = execSvc;
-    }
-
-    /**
-     * Sets REST executor service shutdown flag.
-     *
-     * @param execSvcShutdown REST executor service shutdown flag.
-     */
-    public void setExecutorServiceShutdown(boolean execSvcShutdown) {
-        this.execSvcShutdown = execSvcShutdown;
-    }
-
-    /**
-     * Shutdown flag for REST executor service.
-     * <p>
-     * If not provided, default value {@code true} will be used which will shutdown
-     * executor service when GridGain stops regardless whether it was started before GridGain
-     * or by GridGain.
-     *
-     * @return REST executor service shutdown flag.
-     */
-    public boolean isExecutorServiceShutdown() {
-        return execSvcShutdown;
+    public void setThreadPoolSize(int threadPoolSize) {
+        this.threadPoolSize = threadPoolSize;
     }
 
     /**

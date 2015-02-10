@@ -39,6 +39,12 @@ class GridTcpRouterNioParser extends GridTcpRestParser {
     /** Number of sent messages. */
     private volatile long sndCnt;
 
+    /**
+     */
+    public GridTcpRouterNioParser() {
+        super(false);
+    }
+
     /** {@inheritDoc} */
     @Override protected GridClientMessage parseClientMessage(GridNioSession ses, ParserState state) {
         rcvCnt++;

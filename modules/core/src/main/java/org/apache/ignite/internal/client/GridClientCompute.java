@@ -47,7 +47,7 @@ import java.util.*;
  * Compute client also allows fetching contents of remote log files (including backwards mode) via any of
  * the provided {@code log(...)} methods.
  * <h1 class="header">Affinity Awareness</h1>
- * One of the unique properties of the GridGain remote clients is that they are
+ * One of the unique properties of the Ignite remote clients is that they are
  * affinity aware. In other words, both compute and data APIs will optionally
  * contact exactly the node where the data is cached based on some affinity key.
  * This allows for collocation of computations and data and avoids extra network
@@ -411,6 +411,63 @@ public interface GridClientCompute {
      * @return Future.
      */
     public GridClientFuture<List<GridClientNode>> refreshTopologyAsync(boolean includeAttrs, boolean includeMetrics);
+
+    /**
+     * Gets contents of default log file ({@code IGNITE_HOME/work/log/gridgain.log}).
+     * Note that backward reading (with negative line indexes) supported for only 8-bit character encodings.
+     *
+     * @param lineFrom Index of line from which log is get, inclusive. Negative values mean line numbers
+     *      from the end of the file.
+     * @param lineTo Index of line to which log is get, inclusive. Negative values mean line numbers
+     *      from the end of the file.
+     * @return Log contents.
+     * @throws GridClientException In case of error.
+     * @throws GridServerUnreachableException If none of the servers can be reached.
+     * @throws GridClientClosedException If client was closed manually.
+     */
+    public List<String> log(int lineFrom, int lineTo) throws GridClientException;
+
+    /**
+     * Asynchronously gets contents of default log file
+     * ({@code IGNITE_HOME/work/log/gridgain.log}).
+     * Note that backward reading (with negative line indexes) supported for only 8-bit character encodings.
+     *
+     * @param lineFrom Index of line from which log is get, inclusive. Negative values mean line numbers
+     *      from the end of the file.
+     * @param lineTo Index of line to which log is get, inclusive. Negative values mean line numbers
+     *      from the end of the file.
+     * @return Future for this operation.
+     */
+    public GridClientFuture<List<String>> logAsync(int lineFrom, int lineTo);
+
+    /**
+     * Gets contents of custom log file, i.e. log file in a non-default location.
+     * Note that backward reading (with negative line indexes) supported for only 8-bit character encodings.
+     *
+     * @param path Log file path. Can be absolute or relative to IGNITE_HOME.
+     * @param lineFrom Index of line from which log is get, inclusive. Negative values mean line numbers
+     *      from the end of the file.
+     * @param lineTo Index of line to which log is get, inclusive. Negative values mean line numbers
+     *      from the end of the file.
+     * @return Log contents.
+     * @throws GridClientException In case of error.
+     * @throws GridServerUnreachableException If none of the servers can be reached.
+     * @throws GridClientClosedException If client was closed manually.
+     */
+    public List<String> log(String path, int lineFrom, int lineTo) throws GridClientException;
+
+    /**
+     * Asynchronously gets contents of custom log file.
+     * Note that backward reading (with negative line indexes) supported for only 8-bit character encodings.
+     *
+     * @param path Log file path. Can be absolute or relative to IGNITE_HOME.
+     * @param lineFrom Index of line from which log is get, inclusive. Negative values mean line numbers
+     *      from the end of the file.
+     * @param lineTo Index of line to which log is get, inclusive. Negative values mean line numbers
+     *      from the end of the file.
+     * @return Future.
+     */
+    public GridClientFuture<List<String>> logAsync(String path, int lineFrom, int lineTo);
 
     /**
      * Sets keep portables flag for the next task execution in the current thread.

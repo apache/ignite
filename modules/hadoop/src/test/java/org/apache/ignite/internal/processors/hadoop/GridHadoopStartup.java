@@ -41,12 +41,12 @@ public class GridHadoopStartup {
 
         cfg.set("fs.defaultFS", "ggfs://ggfs@localhost");
 
-        cfg.set("fs.ggfs.impl", org.apache.ignite.fs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
-        cfg.set("fs.AbstractFileSystem.ggfs.impl", org.apache.ignite.fs.hadoop.v2.GridGgfsHadoopFileSystem.class.getName());
+        cfg.set("fs.ggfs.impl", org.apache.ignite.ignitefs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
+        cfg.set("fs.AbstractFileSystem.ggfs.impl", org.apache.ignite.ignitefs.hadoop.v2.GridGgfsHadoopFileSystem.class.getName());
 
         cfg.set("dfs.client.block.write.replace-datanode-on-failure.policy", "NEVER");
 
-        cfg.set("mapreduce.framework.name", "gridgain");
+        cfg.set("mapreduce.framework.name", "ignite");
         cfg.set("mapreduce.jobtracker.address", "localhost:11211");
 
         return cfg;

@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests discovery event topology snapshots.
@@ -91,13 +91,13 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             final ConcurrentMap<Integer, Collection<ClusterNode>> evts = new ConcurrentHashMap<>();
 
-            g0.events().localListen(new IgnitePredicate<IgniteEvent>() {
+            g0.events().localListen(new IgnitePredicate<Event>() {
                 private AtomicInteger cnt = new AtomicInteger();
 
-                @Override public boolean apply(IgniteEvent evt) {
+                @Override public boolean apply(Event evt) {
                     assert evt.type() == EVT_NODE_JOINED;
 
-                    evts.put(cnt.getAndIncrement(), ((IgniteDiscoveryEvent) evt).topologyNodes());
+                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent) evt).topologyNodes());
 
                     return true;
                 }
@@ -154,13 +154,13 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             final ConcurrentMap<Integer, Collection<ClusterNode>> evts = new ConcurrentHashMap<>();
 
-            g0.events().localListen(new IgnitePredicate<IgniteEvent>() {
+            g0.events().localListen(new IgnitePredicate<Event>() {
                 private AtomicInteger cnt = new AtomicInteger();
 
-                @Override public boolean apply(IgniteEvent evt) {
+                @Override public boolean apply(Event evt) {
                     assert evt.type() == EVT_NODE_LEFT;
 
-                    evts.put(cnt.getAndIncrement(), ((IgniteDiscoveryEvent) evt).topologyNodes());
+                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent) evt).topologyNodes());
 
                     return true;
                 }
@@ -217,13 +217,13 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             final ConcurrentMap<Integer, Collection<ClusterNode>> evts = new ConcurrentHashMap<>();
 
-            g0.events().localListen(new IgnitePredicate<IgniteEvent>() {
+            g0.events().localListen(new IgnitePredicate<Event>() {
                 private AtomicInteger cnt = new AtomicInteger();
 
-                @Override public boolean apply(IgniteEvent evt) {
+                @Override public boolean apply(Event evt) {
                     assert evt.type() == EVT_NODE_JOINED || evt.type() == EVT_NODE_LEFT;
 
-                    evts.put(cnt.getAndIncrement(), ((IgniteDiscoveryEvent) evt).topologyNodes());
+                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent) evt).topologyNodes());
 
                     return true;
                 }
@@ -332,16 +332,16 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             final ConcurrentMap<Integer, Collection<ClusterNode>> evts = new ConcurrentHashMap<>();
 
-            g0.events().localListen(new IgnitePredicate<IgniteEvent>() {
+            g0.events().localListen(new IgnitePredicate<Event>() {
                 private AtomicInteger cnt = new AtomicInteger();
 
-                @Override public boolean apply(IgniteEvent evt) {
+                @Override public boolean apply(Event evt) {
                     assert evt.type() == EVT_NODE_JOINED;
 
-                    X.println(">>>>>>> Joined " + F.viewReadOnly(((IgniteDiscoveryEvent) evt).topologyNodes(),
+                    X.println(">>>>>>> Joined " + F.viewReadOnly(((DiscoveryEvent) evt).topologyNodes(),
                         NODE_2ID));
 
-                    evts.put(cnt.getAndIncrement(), ((IgniteDiscoveryEvent) evt).topologyNodes());
+                    evts.put(cnt.getAndIncrement(), ((DiscoveryEvent) evt).topologyNodes());
 
                     return true;
                 }
@@ -387,9 +387,9 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 3; i++) {
                 Ignite g = grid(i);
 
-                g.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                    @Override public boolean apply(IgniteEvent evt) {
-                        IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent) evt;
+                g.events().localListen(new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
+                        DiscoveryEvent discoEvt = (DiscoveryEvent) evt;
 
                         if (discoEvt.topologyNodes().size() != 3)
                             err.compareAndSet(null, new IgniteCheckedException("Invalid discovery event [evt=" + discoEvt +
@@ -397,14 +397,14 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
                         return true;
                     }
-                }, IgniteEventType.EVT_NODE_JOINED);
+                }, EventType.EVT_NODE_JOINED);
             }
 
             daemon = true;
 
             IgniteKernal daemon = (IgniteKernal)startGrid(3);
 
-            IgniteDiscoveryEvent join = daemon.context().discovery().localJoinEvent();
+            DiscoveryEvent join = daemon.context().discovery().localJoinEvent();
 
             assertEquals(3, join.topologyNodes().size());
 

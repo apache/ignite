@@ -186,7 +186,7 @@ public final class GridVmNodesStarter {
     @SuppressWarnings("unchecked")
     private static Iterable<IgniteConfiguration> getConfigurations(String springCfgPath)
         throws IgniteCheckedException {
-        File path = GridTestUtils.resolveGridGainPath(springCfgPath);
+        File path = GridTestUtils.resolveIgnitePath(springCfgPath);
 
         if (path == null)
             throw new IgniteCheckedException("Spring XML configuration file path is invalid: " + new File(springCfgPath) +

@@ -34,7 +34,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.logging.*;
 
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
 /**
  * Client implementation.
@@ -103,12 +103,13 @@ public class GridClientImpl implements GridClient {
      *
      * @param id Client identifier.
      * @param cfg0 Client configuration.
-     * @throws org.apache.ignite.internal.client.GridClientException If client configuration is incorrect.
+     * @param routerClient Router client flag.
+     * @throws GridClientException If client configuration is incorrect.
      * @throws GridServerUnreachableException If none of the servers specified in configuration can
      *      be reached.
      */
     @SuppressWarnings("CallToThreadStartDuringObjectConstruction")
-    public GridClientImpl(UUID id, GridClientConfiguration cfg0) throws GridClientException {
+    public GridClientImpl(UUID id, GridClientConfiguration cfg0, boolean routerClient) throws GridClientException {
         this.id = id;
 
         cfg = new GridClientConfiguration(cfg0);
@@ -158,7 +159,7 @@ public class GridClientImpl implements GridClient {
                 throw new GridClientException("Servers addresses and routers addresses cannot both be provided " +
                     "for client (please fix configuration and restart): " + this);
 
-            connMgr = createConnectionManager(id, sslCtx, cfg, routers, top, null);
+            connMgr = createConnectionManager(id, sslCtx, cfg, routers, top, null, routerClient);
 
             try {
                 // Init connection manager, it should cause topology update.
@@ -385,8 +386,9 @@ public class GridClientImpl implements GridClient {
      * @return New connection manager based on current client settings.
      * @throws GridClientException If failed to start connection server.
      */
-    public GridClientConnectionManager newConnectionManager(@Nullable Byte marshId) throws GridClientException {
-        return createConnectionManager(id, sslCtx, cfg, routers, top, marshId);
+    public GridClientConnectionManager newConnectionManager(@Nullable Byte marshId, boolean routerClient)
+        throws GridClientException {
+        return createConnectionManager(id, sslCtx, cfg, routers, top, marshId, routerClient);
     }
 
     /**
@@ -399,7 +401,7 @@ public class GridClientImpl implements GridClient {
      */
     private GridClientConnectionManager createConnectionManager(UUID clientId, SSLContext sslCtx,
         GridClientConfiguration cfg, Collection<InetSocketAddress> routers, GridClientTopology top,
-        @Nullable Byte marshId)
+        @Nullable Byte marshId, boolean routerClient)
         throws GridClientException {
         GridClientConnectionManager mgr;
 
@@ -409,10 +411,11 @@ public class GridClientImpl implements GridClient {
             Constructor<?> cons = cls.getConstructor(UUID.class, SSLContext.class, GridClientConfiguration.class,
                 Collection.class, GridClientTopology.class, Byte.class);
 
-            mgr = (GridClientConnectionManager)cons.newInstance(clientId, sslCtx, cfg, routers, top, marshId);
+            mgr = (GridClientConnectionManager)cons.newInstance(clientId, sslCtx, cfg, routers, top, marshId,
+                routerClient);
         }
         catch (ClassNotFoundException ignored) {
-            mgr = new GridClientConnectionManagerOsImpl(clientId, sslCtx, cfg, routers, top, marshId);
+            mgr = new GridClientConnectionManagerOsImpl(clientId, sslCtx, cfg, routers, top, marshId, routerClient);
         }
         catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
             throw new GridClientException("Failed to create client connection manager.", e);

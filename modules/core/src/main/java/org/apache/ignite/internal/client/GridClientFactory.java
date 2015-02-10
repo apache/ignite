@@ -54,7 +54,7 @@ public class GridClientFactory {
         try {
             UUID clientId = UUID.randomUUID();
 
-            GridClientImpl client = new GridClientImpl(clientId, cfg);
+            GridClientImpl client = new GridClientImpl(clientId, cfg, false);
 
             GridClientImpl old = openClients.putIfAbsent(clientId, client);
 

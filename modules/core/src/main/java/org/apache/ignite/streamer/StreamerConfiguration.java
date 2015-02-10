@@ -248,20 +248,20 @@ public class StreamerConfiguration {
     }
 
     /**
-     * Flag indicating whether streamer executor service should be shut down on GridGain stop. If this flag
+     * Flag indicating whether streamer executor service should be shut down on Ignite stop. If this flag
      * is {@code true}, executor service will be shut down regardless of whether executor was specified externally
-     * or it was created by GridGain.
+     * or it was created by Ignite.
      *
-     * @return {@code True} if executor service should be shut down on GridGain stop.
+     * @return {@code True} if executor service should be shut down on Ignite stop.
      */
     public boolean isExecutorServiceShutdown() {
         return execSvcShutdown;
     }
 
     /**
-     * Sets flag indicating whether executor service should be shut down on GridGain stop.
+     * Sets flag indicating whether executor service should be shut down on Ignite stop.
      *
-     * @param execSvcShutdown {@code True} if executor service should be shut down on GridGain stop.
+     * @param execSvcShutdown {@code True} if executor service should be shut down on Ignite stop.
      * @see #isExecutorServiceShutdown()
      */
     public void setExecutorServiceShutdown(boolean execSvcShutdown) {

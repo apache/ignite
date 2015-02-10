@@ -20,7 +20,6 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.lifecycle.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
@@ -45,7 +44,7 @@ public class GridFactoryVmShutdownTest {
     public static void main(String[] args) throws Exception {
         final ConcurrentMap<String, IgniteState> states = new ConcurrentHashMap<>();
 
-        G.addListener(new IgniteListener() {
+        G.addListener(new IgnitionListener() {
             @Override public void onStateChange(@Nullable String name, IgniteState state) {
                 if (state == STARTED) {
                     IgniteState state0 = states.put(maskNull(name), STARTED);

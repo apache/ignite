@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
@@ -26,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.portables.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -34,6 +34,8 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Affinity cached function.
@@ -121,7 +123,8 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version to calculate affinity cache for.
      * @param discoEvt Discovery event that caused this topology version change.
      */
-    public List<List<ClusterNode>> calculate(long topVer, IgniteDiscoveryEvent discoEvt) {
+    @SuppressWarnings("IfMayBeConditional")
+    public List<List<ClusterNode>> calculate(long topVer, DiscoveryEvent discoEvt) {
         if (log.isDebugEnabled())
             log.debug("Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
                 ", discoEvt=" + discoEvt + ']');
@@ -142,8 +145,23 @@ public class GridAffinityAssignmentCache {
 
         List<List<ClusterNode>> prevAssignment = prev == null ? null : prev.assignment();
 
-        List<List<ClusterNode>> assignment = aff.assignPartitions(
-            new GridCacheAffinityFunctionContextImpl(sorted, prevAssignment, discoEvt, topVer, backups));
+        List<List<ClusterNode>> assignment;
+
+        if (prevAssignment != null && discoEvt != null) {
+            CacheDistributionMode distroMode = U.distributionMode(discoEvt.eventNode(), ctx.name());
+
+            if (distroMode == null || // no cache on node.
+                distroMode == CLIENT_ONLY || distroMode == NEAR_ONLY)
+                assignment = prevAssignment;
+            else
+                assignment = aff.assignPartitions(new GridCacheAffinityFunctionContextImpl(sorted, prevAssignment,
+                    discoEvt, topVer, backups));
+        }
+        else
+            assignment = aff.assignPartitions(new GridCacheAffinityFunctionContextImpl(sorted, prevAssignment, discoEvt,
+                topVer, backups));
+
+        assert assignment != null;
 
         GridAffinityAssignment updated = new GridAffinityAssignment(topVer, assignment);
 
@@ -258,7 +276,7 @@ public class GridAffinityAssignmentCache {
             try {
                 key = ctx.marshalToPortable(key);
             }
-            catch (PortableException e) {
+            catch (IgniteException e) {
                 U.error(log, "Failed to marshal key to portable: " + key, e);
             }
         }

@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -50,11 +49,9 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
     private long topVer;
 
     /** Subject ID. */
-    @GridDirectVersion(1)
     private UUID subjId;
 
     /** Task name hash. */
-    @GridDirectVersion(2)
     private int taskNameHash;
 
     /**
@@ -162,7 +159,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridNearTxFinishRequest _clone = new GridNearTxFinishRequest();
 
         clone0(_clone);
@@ -171,7 +168,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridNearTxFinishRequest _clone = (GridNearTxFinishRequest)_msg;
@@ -187,54 +184,55 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 21:
-                if (!commState.putBoolean(explicitLock))
+                if (!writer.writeBoolean("explicitLock", explicitLock))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 22:
-                if (!commState.putGridUuid(miniId))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 23:
-                if (!commState.putLong(topVer))
+                if (!writer.writeBoolean("storeEnabled", storeEnabled))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 24:
-                if (!commState.putUuid(subjId))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 25:
-                if (!commState.putInt(taskNameHash))
+                if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 26:
-                if (!commState.putBoolean(storeEnabled))
+                if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                commState.idx++;
+                state++;
+
         }
 
         return true;
@@ -243,63 +241,60 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 21:
-                if (buf.remaining() < 1)
+                explicitLock = reader.readBoolean("explicitLock");
+
+                if (!reader.isLastRead())
                     return false;
 
-                explicitLock = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 22:
-                IgniteUuid miniId0 = commState.getGridUuid();
+                miniId = reader.readIgniteUuid("miniId");
 
-                if (miniId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                miniId = miniId0;
-
-                commState.idx++;
+                state++;
 
             case 23:
-                if (buf.remaining() < 8)
+                storeEnabled = reader.readBoolean("storeEnabled");
+
+                if (!reader.isLastRead())
                     return false;
 
-                topVer = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 24:
-                UUID subjId0 = commState.getUuid();
+                subjId = reader.readUuid("subjId");
 
-                if (subjId0 == UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                subjId = subjId0;
-
-                commState.idx++;
+                state++;
 
             case 25:
-                if (buf.remaining() < 4)
+                taskNameHash = reader.readInt("taskNameHash");
+
+                if (!reader.isLastRead())
                     return false;
 
-                taskNameHash = commState.getInt();
-
-                commState.idx++;
+                state++;
 
             case 26:
-                if (buf.remaining() < 1)
+                topVer = reader.readLong("topVer");
+
+                if (!reader.isLastRead())
                     return false;
 
-                storeEnabled = commState.getBoolean();
+                state++;
 
-                commState.idx++;
         }
 
         return true;
@@ -307,7 +302,7 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 52;
+        return 53;
     }
 
     /** {@inheritDoc} */

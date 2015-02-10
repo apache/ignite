@@ -329,8 +329,18 @@ public class GridUnsafeMap<K> implements GridOffHeapMap<K> {
     }
 
     /** {@inheritDoc} */
-    @Override public long size() {
+    @Override public long totalSize() {
         return totalCnt.sum();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long size() {
+        long size = 0;
+
+        for (int i = 0; i < segs.length; i++)
+            size += segs[i].count();
+
+        return size;
     }
 
     /** {@inheritDoc} */

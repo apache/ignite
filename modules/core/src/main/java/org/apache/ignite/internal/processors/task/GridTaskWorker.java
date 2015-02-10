@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.compute.*;
@@ -42,7 +42,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
@@ -84,7 +84,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     private final IgniteLogger log;
 
     /** */
-    private final IgniteMarshaller marsh;
+    private final Marshaller marsh;
 
     /** */
     private final GridTaskSessionImpl ses;
@@ -401,7 +401,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             // Load balancer.
             ComputeLoadBalancer balancer = ctx.loadBalancing().getLoadBalancer(ses, shuffledNodes);
 
-            continuous = ctx.resource().isAnnotationPresent(dep, task, IgniteTaskContinuousMapperResource.class);
+            continuous = ctx.resource().isAnnotationPresent(dep, task, TaskContinuousMapperResource.class);
 
             if (log.isDebugEnabled())
                 log.debug("Injected task resources [continuous=" + continuous + ']');
@@ -1230,7 +1230,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      */
     private void recordTaskEvent(int evtType, String msg) {
         if (!internal && ctx.event().isRecordable(evtType)) {
-            IgniteEvent evt = new IgniteTaskEvent(
+            Event evt = new TaskEvent(
                 ctx.discovery().localNode(),
                 msg,
                 evtType,
@@ -1252,7 +1252,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      */
     private void recordJobEvent(int evtType, IgniteUuid jobId, ClusterNode evtNode, String msg) {
         if (ctx.event().isRecordable(evtType)) {
-            IgniteJobEvent evt = new IgniteJobEvent();
+            JobEvent evt = new JobEvent();
 
             evt.message(msg);
             evt.node(ctx.discovery().localNode());

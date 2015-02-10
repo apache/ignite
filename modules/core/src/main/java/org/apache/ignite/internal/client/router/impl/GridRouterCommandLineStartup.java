@@ -118,7 +118,7 @@ public class GridRouterCommandLineStartup {
 
         String cfgPath = args[0];
 
-        URL cfgUrl = U.resolveGridGainUrl(cfgPath);
+        URL cfgUrl = U.resolveIgniteUrl(cfgPath);
 
         if (cfgUrl == null) {
             X.error("Spring XML file not found (is IGNITE_HOME set?): " + cfgPath);

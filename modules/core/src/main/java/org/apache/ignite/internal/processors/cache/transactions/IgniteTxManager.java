@@ -44,7 +44,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.*;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.*;
@@ -124,11 +124,11 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     @Override protected void onKernalStart0() {
         cctx.gridEvents().addLocalEventListener(
             new GridLocalEventListener() {
-                @Override public void onEvent(IgniteEvent evt) {
-                    assert evt instanceof IgniteDiscoveryEvent;
+                @Override public void onEvent(Event evt) {
+                    assert evt instanceof DiscoveryEvent;
                     assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
-                    IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                    DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                     cctx.time().addTimeoutObject(new NodeFailureTimeoutObject(discoEvt.eventNode().id()));
 
@@ -1197,8 +1197,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
             }
 
             // 3.1 Call dataStructures manager.
-            for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
-                cacheCtx.dataStructures().onTxCommitted(tx);
+            cctx.kernalContext().dataStructures().onTxCommitted(tx);
 
             // 3.2 Add to pessimistic commit buffer if needed.
             addPessimisticRecovery(tx);

@@ -51,20 +51,20 @@ public class GridifyDefaultRangeTask extends ComputeTaskAdapter<GridifyRangeArgu
     private Ignite ignite;
 
     /** Grid task session. */
-    @IgniteTaskSessionResource
+    @TaskSessionResource
     private ComputeTaskSession ses;
 
     /** Grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Load balancer. */
-    @IgniteLoadBalancerResource
+    @LoadBalancerResource
     private ComputeLoadBalancer balancer;
 
     /** */
     @SuppressWarnings({"UnusedDeclaration"})
-    @IgniteTaskContinuousMapperResource
+    @TaskContinuousMapperResource
     private ComputeTaskContinuousMapper mapper;
 
     /** */

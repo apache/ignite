@@ -26,7 +26,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 import static org.apache.ignite.internal.client.util.GridClientUtils.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
 /**
  * Compute projection implementation.

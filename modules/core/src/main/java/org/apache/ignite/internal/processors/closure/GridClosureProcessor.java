@@ -69,9 +69,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     public GridClosureProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        sysPool = ctx.config().getSystemExecutorService();
-        pubPool = ctx.config().getExecutorService();
-        ggfsPool = ctx.config().getGgfsExecutorService();
+        sysPool = ctx.getSystemExecutorService();
+        pubPool = ctx.getExecutorService();
+        ggfsPool = ctx.getGgfsExecutorService();
     }
 
     /** {@inheritDoc} */
@@ -1073,7 +1073,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             if (ctx.localNodeId().equals(node.id())) {
                 if (hadLocNode) {
-                    IgniteMarshaller marsh = ctx.config().getMarshaller();
+                    Marshaller marsh = ctx.config().getMarshaller();
 
                     job = marsh.unmarshal(marsh.marshal(job), null);
                 }
@@ -1114,7 +1114,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /** */
@@ -1148,7 +1148,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /** */
@@ -1179,7 +1179,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private static final long serialVersionUID = 0L;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /** */
@@ -1241,7 +1241,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private Runnable job;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /**
@@ -1281,7 +1281,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private Callable<R> job;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /**
@@ -1330,7 +1330,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private final Collection<? extends Callable<R>> jobs;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /**
@@ -1370,7 +1370,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private IgniteBiTuple<GridClosureCallMode, Callable<R>> t;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /**
@@ -1411,7 +1411,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private T arg;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /**
@@ -1455,7 +1455,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private Collection<? extends T> args;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /**
@@ -1511,7 +1511,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private IgniteReducer<R1, R2> rdc;
 
         /** */
-        @IgniteLoadBalancerResource
+        @LoadBalancerResource
         private ComputeLoadBalancer lb;
 
         /**
@@ -1675,6 +1675,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      *
      */
     private static class C1MLA<T, R> extends C1<T, R> implements ComputeJobMasterLeaveAware {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          *
          */
@@ -1760,6 +1763,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      *
      */
     private static class C2MLA<R> extends C2<R> implements ComputeJobMasterLeaveAware{
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          *
          */
@@ -1861,6 +1867,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      *
      */
     private static class C3MLA<R> extends C3<R> implements ComputeJobMasterLeaveAware{
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          *
          */
@@ -1943,6 +1952,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      *
      */
     private static class C4MLA extends C4 implements ComputeJobMasterLeaveAware{
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          *
          */
@@ -2039,6 +2051,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      *
      */
     private static class C5MLA extends C5 implements ComputeJobMasterLeaveAware{
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /**
          *
          */

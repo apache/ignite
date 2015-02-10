@@ -50,9 +50,9 @@ public class ClientPropertiesConfigurationSelfTest extends GridCommonAbstractTes
      */
     static {
         GRID_CLIENT_SPRING_CONFIG =
-            U.resolveGridGainUrl("/modules/clients/config/grid-client-spring-config.xml");
+            U.resolveIgniteUrl("/modules/clients/config/grid-client-spring-config.xml");
 
-        GRID_CLIENT_CONFIG = U.resolveGridGainUrl("/modules/clients/config/grid-client-config.properties");
+        GRID_CLIENT_CONFIG = U.resolveIgniteUrl("/modules/clients/config/grid-client-config.properties");
     }
 
     /**

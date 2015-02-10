@@ -109,6 +109,9 @@ import javax.cache.event.*;
  */
 // TODO: make class.
 public final class QueryContinuousPredicate<K, V> extends QueryPredicate<K, V> implements AutoCloseable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Default buffer size. Size of {@code 1} means that all entries
      * will be sent to master node immediately (buffering is disabled).

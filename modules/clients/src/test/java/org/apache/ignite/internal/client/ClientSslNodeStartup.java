@@ -50,7 +50,7 @@ public class ClientSslNodeStartup {
      * @throws IgniteCheckedException In case of any exception.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        System.setProperty("CLIENTS_MODULE_PATH", U.resolveGridGainPath("modules/clients").getAbsolutePath());
+        System.setProperty("CLIENTS_MODULE_PATH", U.resolveIgnitePath("modules/clients").getAbsolutePath());
 
         try (Ignite g = G.start("modules/clients/src/test/resources/spring-server-ssl-node.xml")) {
             U.sleep(Long.MAX_VALUE);

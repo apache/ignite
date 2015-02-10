@@ -160,7 +160,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
     private static class GridCancelCollisionSpi extends IgniteSpiAdapter
         implements CollisionSpi {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */

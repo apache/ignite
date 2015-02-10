@@ -38,10 +38,10 @@ public class GridGgfsNodeStartup {
             JOptionPane.showMessageDialog(
                 null,
                 new JComponent[] {
-                    new JLabel("GridGain started."),
-                    new JLabel("Press OK to stop GridGain.")
+                    new JLabel("Ignite started."),
+                    new JLabel("Press OK to stop Ignite.")
                 },
-                "GridGain",
+                "Ignite",
                 JOptionPane.INFORMATION_MESSAGE
             );
         }

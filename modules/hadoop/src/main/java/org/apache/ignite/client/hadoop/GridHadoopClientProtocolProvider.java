@@ -54,7 +54,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
 
             if (F.eq(addr, "local"))
                 throw new IOException("Local execution mode is not supported, please point " +
-                    MRConfig.MASTER_ADDRESS + " to real GridGain node.");
+                    MRConfig.MASTER_ADDRESS + " to real Ignite node.");
 
             return createProtocol(addr, conf);
         }
@@ -123,7 +123,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
                     catch (GridClientException e) {
                         fut0.onDone(e);
 
-                        throw new IOException("Failed to establish connection with GridGain node: " + addr, e);
+                        throw new IOException("Failed to establish connection with Ignite node: " + addr, e);
                     }
                 }
             }
@@ -131,7 +131,7 @@ public class GridHadoopClientProtocolProvider extends ClientProtocolProvider {
                 return fut.get();
         }
         catch (IgniteCheckedException e) {
-            throw new IOException("Failed to establish connection with GridGain node: " + addr, e);
+            throw new IOException("Failed to establish connection with Ignite node: " + addr, e);
         }
     }
 }

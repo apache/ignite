@@ -37,7 +37,6 @@ import java.net.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.prefs.*;
 
 import static javafx.embed.swing.SwingFXUtils.*;
 import static org.apache.ignite.schema.ui.Controls.*;
@@ -47,45 +46,66 @@ import static org.apache.ignite.schema.ui.Controls.*;
  */
 @SuppressWarnings("UnnecessaryFullyQualifiedName")
 public class SchemaLoadApp extends Application {
-    /** Rdbms names. */
-    private static final String[] RDBMS_NAMES = {
-        "H2 Database",
-        "DB2",
-        "Oracle",
-        "MySQL",
-        "Microsoft SQL Server",
-        "PostgreSQL",
-        "Custom server..."};
+    /** Presets for database settings. */
+    private static class Preset {
+        /** Name in preferences. */
+        private String pref;
 
-    /** Jdbc drivers. */
-    private static final String[] JDBC_JAR = {
-        "h2.jar",
-        "db2jcc4.jar",
-        "ojdbc6.jar",
-        "mysql-connector-java-5-bin.jar",
-        "sqljdbc41.jar",
-        "postgresql-9.3.jdbc4.jar",
-        "jdbc.jar"};
+        /** RDBMS name to show on screen. */
+        private String name;
 
-    /** Jdbc drivers. */
-    private static final String[] JDBC_DRIVERS = {
-        "org.h2.Driver",
-        "com.ibm.db2.jcc.DB2Driver",
-        "oracle.jdbc.OracleDriver",
-        "com.mysql.jdbc.Driver",
-        "com.microsoft.sqlserver.jdbc.SQLServerDriver",
-        "org.postgresql.Driver",
-        "org.custom.Driver"};
+        /** Path to JDBC driver jar. */
+        private String jar;
 
-    /** Jdbc urls. */
-    private static final String[] JDBC_URLS = {
-        "jdbc:h2:[database]",
-        "jdbc:db2://[host]:[port]/[database]",
-        "jdbc:oracle:thin:@[host]:[port]:[database]",
-        "jdbc:mysql://[host]:[port]/[database]",
-        "jdbc:sqlserver://[host]:[port][;databaseName=database]",
-        "jdbc:postgresql://[host]:[port]/[database]",
-        "jdbc:custom"};
+        /** JDBC driver class name. */
+        private String drv;
+
+        /** JDBC URL. */
+        private String url;
+
+        /** User name. */
+        private String user;
+
+        /**
+         * Preset constructor.
+         *
+         * @param pref Name in preferences.
+         * @param name RDBMS name to show on screen.
+         * @param jar Path to JDBC driver jar..
+         * @param drv JDBC driver class name.
+         * @param url JDBC URL.
+         * @param user User name.
+         */
+        Preset(String pref, String name, String jar, String drv, String url, String user) {
+            this.pref = pref;
+            this.name = name;
+            this.jar = jar;
+            this.drv = drv;
+            this.url = url;
+            this.user = user;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return name;
+        }
+    }
+
+    /** Default presets for popular databases. */
+    private final Preset[] presets = {
+        new Preset("h2", "H2 Database", "h2.jar", "org.h2.Driver", "jdbc:h2:[database]", "sa"),
+        new Preset("db2", "DB2", "db2jcc4.jar", "com.ibm.db2.jcc.DB2Driver", "jdbc:db2://[host]:[port]/[database]",
+            "db2admin"),
+        new Preset("oracle", "Oracle", "ojdbc6.jar", "oracle.jdbc.OracleDriver",
+            "jdbc:oracle:thin:@[host]:[port]:[database]", "system"),
+        new Preset("mysql", "MySQL", "mysql-connector-java-5-bin.jar", "com.mysql.jdbc.Driver",
+            "jdbc:mysql://[host]:[port]/[database]", "root"),
+        new Preset("mssql", "Microsoft SQL Server", "sqljdbc41.jar", "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+            "jdbc:sqlserver://[host]:[port][;databaseName=database]", "sa"),
+        new Preset("posgresql", "PostgreSQL", "postgresql-9.3.jdbc4.jar", "org.postgresql.Driver",
+            "jdbc:postgresql://[host]:[port]/[database]", "sa"),
+        new Preset("custom", "Custom server...", "custom-jdbc.jar", "org.custom.Driver", "jdbc:custom", "sa")
+    };
 
     /** */
     private Stage owner;
@@ -115,7 +135,7 @@ public class SchemaLoadApp extends Application {
     private Button nextBtn;
 
     /** */
-    private ComboBox<String> rdbmsCb;
+    private ComboBox<Preset> rdbmsCb;
 
     /** */
     private TextField jdbcDrvJarTf;
@@ -189,7 +209,13 @@ public class SchemaLoadApp extends Application {
     /** */
     private final Map<String, Driver> drivers = new HashMap<>();
 
-    /** */
+    /** Application preferences. */
+    private final Properties prefs = new Properties();
+
+    /** File path for storing on local file system. */
+    private final File prefsFile = new File(System.getProperty("user.home"), ".ignite-schema-load");
+
+    /** Empty POJO fields model. */
     private static final ObservableList<PojoField> NO_FIELDS = FXCollections.emptyObservableList();
 
     /** */
@@ -621,8 +647,22 @@ public class SchemaLoadApp extends Application {
 
         connPnl.wrap();
 
-        rdbmsCb = connPnl.addLabeled("DB Server preset:",
-            comboBox("Select database server to get predefined settings", RDBMS_NAMES), 2);
+        GridPaneEx presetPnl = paneEx(0, 0, 0, 0);
+        presetPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
+        presetPnl.addColumn();
+
+        rdbmsCb = presetPnl.add(comboBox("Select database server to get predefined settings", presets));
+
+        presetPnl.add(button("Save preset", "Save current settings in preferences", new EventHandler<ActionEvent>() {
+            @Override public void handle(ActionEvent evt) {
+                Preset preset = rdbmsCb.getSelectionModel().getSelectedItem();
+
+                savePreset(preset);
+            }
+        }));
+
+        connPnl.add(label("DB Preset:"));
+        connPnl.add(presetPnl, 2);
 
         jdbcDrvJarTf = connPnl.addLabeled("Driver JAR:", textField("Path to driver jar"));
 
@@ -658,13 +698,12 @@ public class SchemaLoadApp extends Application {
 
         jdbcUrlTf = connPnl.addLabeled("JDBC URL:", textField("JDBC URL of the database connection string"), 2);
 
-        rdbmsCb.getSelectionModel().selectedIndexProperty().addListener(new ChangeListener<Number>() {
-            @Override public void changed(ObservableValue<? extends Number> observable, Number oldIdx, Number newIdx) {
-                int idx = newIdx.intValue();
-
-                jdbcDrvJarTf.setText(JDBC_JAR[idx]);
-                jdbcDrvClsTf.setText(JDBC_DRIVERS[idx]);
-                jdbcUrlTf.setText(JDBC_URLS[idx]);
+        rdbmsCb.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Preset>() {
+            @Override public void changed(ObservableValue<? extends Preset> val, Preset oldVal, Preset newVal) {
+                jdbcDrvJarTf.setText(newVal.jar);
+                jdbcDrvClsTf.setText(newVal.drv);
+                jdbcUrlTf.setText(newVal.url);
+                userTf.setText(newVal.user);
             }
         });
 
@@ -763,6 +802,8 @@ public class SchemaLoadApp extends Application {
         TableColumn<PojoField, Boolean> useFldCol = customColumn("Use", "use",
             "Check to use this field for XML and POJO generation\n" +
             "Note that NOT NULL columns cannot be unchecked", PojoFieldUseCell.cellFactory());
+        useFldCol.setMinWidth(50);
+        useFldCol.setMaxWidth(50);
 
         TableColumn<PojoField, Boolean> keyCol = booleanColumn("Key", "key",
             "Check to include this field into key object");
@@ -1078,9 +1119,107 @@ public class SchemaLoadApp extends Application {
         return res;
     }
 
+    /**
+     * Gets string property.
+     *
+     * @param key Property key.
+     * @param dflt Default value.
+     */
+    private String getStringProp(String key, String dflt) {
+        String val = prefs.getProperty(key);
+
+        if (val != null)
+            return val;
+
+        return dflt;
+    }
+
+    /**
+     * Sets string property.
+     *
+     * @param key Property key.
+     * @param val Value to set.
+     */
+    private void setStringProp(String key, String val) {
+        prefs.put(key, val);
+    }
+
+    /**
+     * Gets int property.
+     *
+     * @param key Property key.
+     * @param dflt Default value.
+     */
+    private int getIntProp(String key, int dflt) {
+        String val = prefs.getProperty(key);
+
+        if (val != null)
+            try {
+                return Integer.parseInt(val);
+            }
+            catch (NumberFormatException e) {
+                return dflt;
+            }
+
+        return dflt;
+    }
+
+    /**
+     * Sets int property.
+     *
+     * @param key Property key.
+     * @param val Value to set.
+     */
+    private void setIntProp(String key, int val) {
+        prefs.put(key, String.valueOf(val));
+    }
+
+    /**
+     * Gets boolean property.
+     *
+     * @param key Property key.
+     * @param dflt Default value.
+     */
+    private boolean getBoolProp(String key, boolean dflt) {
+        String val = prefs.getProperty(key);
+
+        if (val != null)
+            return Boolean.parseBoolean(val);
+
+        return dflt;
+    }
+
+    /**
+     * Sets boolean property.
+     *
+     * @param key Property key.
+     * @param val Value to set.
+     */
+    private void setBoolProp(String key, boolean val) {
+        prefs.put(key, String.valueOf(val));
+    }
+
     /** {@inheritDoc} */
     @Override public void start(Stage primaryStage) {
         owner = primaryStage;
+
+        if (prefsFile.exists())
+            try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(prefsFile))) {
+                prefs.load(in);
+            }
+            catch (IOException ignore) {
+                // No-op.
+            }
+
+        // Restore presets.
+        for (Preset preset : presets) {
+            String key = "presets." + preset.pref + ".";
+
+            preset.jar = getStringProp(key + "jar", preset.jar);
+            preset.drv = getStringProp(key + "drv", preset.drv);
+            preset.url = getStringProp(key + "url", preset.url);
+            preset.user = getStringProp(key + "user", preset.user);
+        }
 
         primaryStage.setTitle("Apache Ignite Auto Schema Load Utility");
 
@@ -1109,14 +1248,12 @@ public class SchemaLoadApp extends Application {
 
         prev();
 
-        Preferences userPrefs = Preferences.userNodeForPackage(getClass());
-
         // Restore window pos and size.
-        if (userPrefs.get("window.x", null) != null) {
-            double x = userPrefs.getDouble("window.x", 100);
-            double y = userPrefs.getDouble("window.y", 100);
-            double w = userPrefs.getDouble("window.width", 650);
-            double h = userPrefs.getDouble("window.height", 650);
+        if (prefs.getProperty("window.x") != null) {
+            int x = getIntProp("window.x", 100);
+            int y = getIntProp("window.y", 100);
+            int w = getIntProp("window.width", 650);
+            int h = getIntProp("window.height", 650);
 
             // Ensure that window fit any available screen.
             if (!Screen.getScreensForRectangle(x, y, w, h).isEmpty()) {
@@ -1136,55 +1273,90 @@ public class SchemaLoadApp extends Application {
         String userHome = System.getProperty("user.home").replace('\\', '/');
 
         // Restore connection pane settings.
-        rdbmsCb.getSelectionModel().select(userPrefs.getInt("jdbc.db.preset", 0));
-        jdbcDrvJarTf.setText(userPrefs.get("jdbc.driver.jar", "h2.jar"));
-        jdbcDrvClsTf.setText(userPrefs.get("jdbc.driver.class", "org.h2.Driver"));
-        jdbcUrlTf.setText(userPrefs.get("jdbc.url", "jdbc:h2:" + userHome + "/ignite-schema-load/db"));
-        userTf.setText(userPrefs.get("jdbc.user", "sa"));
+        rdbmsCb.getSelectionModel().select(getIntProp("jdbc.db.preset", 0));
+        jdbcDrvJarTf.setText(getStringProp("jdbc.driver.jar", "h2.jar"));
+        jdbcDrvClsTf.setText(getStringProp("jdbc.driver.class", "org.h2.Driver"));
+        jdbcUrlTf.setText(getStringProp("jdbc.url", "jdbc:h2:" + userHome + "/ignite-schema-load/db"));
+        userTf.setText(getStringProp("jdbc.user", "sa"));
 
         // Restore generation pane settings.
-        outFolderTf.setText(userPrefs.get("out.folder", userHome + "/ignite-schema-load/out"));
+        outFolderTf.setText(getStringProp("out.folder", userHome + "/ignite-schema-load/out"));
 
-        pkgTf.setText(userPrefs.get("pojo.package", "org.apache.ignite"));
-        pojoIncludeKeysCh.setSelected(userPrefs.getBoolean("pojo.include", true));
-        pojoConstructorCh.setSelected(userPrefs.getBoolean("pojo.constructor", false));
+        pkgTf.setText(getStringProp("pojo.package", "org.apache.ignite"));
+        pojoIncludeKeysCh.setSelected(getBoolProp("pojo.include", true));
+        pojoConstructorCh.setSelected(getBoolProp("pojo.constructor", false));
 
-        xmlSingleFileCh.setSelected(userPrefs.getBoolean("xml.single", true));
+        xmlSingleFileCh.setSelected(getBoolProp("xml.single", true));
 
-        regexTf.setText(userPrefs.get("naming.pattern", "(\\w+)"));
-        replaceTf.setText(userPrefs.get("naming.replace", "$1_SomeText"));
+        regexTf.setText(getStringProp("naming.pattern", "(\\w+)"));
+        replaceTf.setText(getStringProp("naming.replace", "$1_SomeText"));
 
         primaryStage.show();
     }
 
+    /**
+     * Save preset.
+     *
+     * @param preset Preset to save.
+     */
+    private void savePreset(Preset preset) {
+        String key = "presets." + preset.pref + ".";
+
+        preset.jar = jdbcDrvJarTf.getText();
+        setStringProp(key + "jar", preset.jar);
+
+        preset.drv = jdbcDrvClsTf.getText();
+        setStringProp(key + "drv", preset.drv);
+
+        preset.url = jdbcUrlTf.getText();
+        setStringProp(key + "url", preset.url);
+
+        preset.user = userTf.getText();
+        setStringProp(key + "user", preset.user);
+
+        savePreferences();
+    }
+
+    /**
+     * Save user preferences.
+     */
+    private void savePreferences() {
+        try (FileOutputStream out = new FileOutputStream(prefsFile)) {
+            prefs.store(out, "Apache Ignite Schema Load Utility");
+        }
+        catch (IOException e) {
+            MessageBox.errorDialog(owner, "Failed to save preferences!", e);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void stop() throws Exception {
-        Preferences userPrefs = Preferences.userNodeForPackage(getClass());
-
         // Save window pos and size.
-        userPrefs.putDouble("window.x", owner.getX());
-        userPrefs.putDouble("window.y", owner.getY());
-        userPrefs.putDouble("window.width", owner.getWidth());
-        userPrefs.putDouble("window.height", owner.getHeight());
+        setIntProp("window.x", (int)owner.getX());
+        setIntProp("window.y", (int)owner.getY());
+        setIntProp("window.width", (int)owner.getWidth());
+        setIntProp("window.height", (int)owner.getHeight());
 
         // Save connection pane settings.
-        userPrefs.putInt("jdbc.db.preset", rdbmsCb.getSelectionModel().getSelectedIndex());
-        userPrefs.put("jdbc.driver.jar", jdbcDrvJarTf.getText());
-        userPrefs.put("jdbc.driver.class", jdbcDrvClsTf.getText());
-        userPrefs.put("jdbc.url", jdbcUrlTf.getText());
-        userPrefs.put("jdbc.user", userTf.getText());
+        setIntProp("jdbc.db.preset", rdbmsCb.getSelectionModel().getSelectedIndex());
+        setStringProp("jdbc.driver.jar", jdbcDrvJarTf.getText());
+        setStringProp("jdbc.driver.class", jdbcDrvClsTf.getText());
+        setStringProp("jdbc.url", jdbcUrlTf.getText());
+        setStringProp("jdbc.user", userTf.getText());
 
         // Save generation pane settings.
-        userPrefs.put("out.folder", outFolderTf.getText());
+        setStringProp("out.folder", outFolderTf.getText());
 
-        userPrefs.put("pojo.package", pkgTf.getText());
-        userPrefs.putBoolean("pojo.include", pojoIncludeKeysCh.isSelected());
-        userPrefs.putBoolean("pojo.constructor", pojoConstructorCh.isSelected());
+        setStringProp("pojo.package", pkgTf.getText());
+        setBoolProp("pojo.include", pojoIncludeKeysCh.isSelected());
+        setBoolProp("pojo.constructor", pojoConstructorCh.isSelected());
 
-        userPrefs.putBoolean("xml.single", xmlSingleFileCh.isSelected());
+        setBoolProp("xml.single", xmlSingleFileCh.isSelected());
 
-        userPrefs.put("naming.pattern", regexTf.getText());
-        userPrefs.put("naming.replace", replaceTf.getText());
+        setStringProp("naming.pattern", regexTf.getText());
+        setStringProp("naming.replace", replaceTf.getText());
+
+        savePreferences();
     }
 
     /**

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cluster.*;
@@ -67,7 +66,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+        c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -166,8 +165,8 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
         // This condition should be "true", otherwise the test doesn't make sense.
         assert KEY_CNT >= EVICT_CACHE_SIZE;
 
-        GridDhtCacheAdapter<String, Integer> dht0 = dht(cache(0));
-        GridDhtCacheAdapter<String, Integer> dht1 = dht(cache(1));
+        GridDhtCacheAdapter<String, Integer> dht0 = dht(jcache(0));
+        GridDhtCacheAdapter<String, Integer> dht1 = dht(jcache(1));
 
         CacheAffinity<String> aff = dht0.affinity();
 
@@ -210,7 +209,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
         assertEquals(EVICT_CACHE_SIZE, dht0.size());
         assertEquals(EVICT_CACHE_SIZE, dht1.size());
 
-        assertEquals(0, near(cache(0)).nearSize());
-        assertEquals(0, near(cache(1)).nearSize());
+        assertEquals(0, near(jcache(0)).nearSize());
+        assertEquals(0, near(jcache(1)).nearSize());
     }
 }

@@ -22,7 +22,7 @@ import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.client.impl.*;
 import org.apache.ignite.internal.client.util.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.nio.ssl.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -40,8 +40,8 @@ import java.util.concurrent.*;
 import java.util.logging.*;
 
 import static java.util.logging.Level.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
 import static org.apache.ignite.internal.client.impl.connection.GridClientConnectionCloseReason.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
 /**
  * Cached connections manager.
@@ -95,44 +95,6 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
     /** Marshaller ID. */
     private final Byte marshId;
 
-    /** Message writer. */
-    @SuppressWarnings("FieldCanBeLocal")
-    private final GridNioMessageWriter msgWriter = new GridNioMessageWriter() {
-        @Override public boolean write(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
-            assert msg != null;
-            assert buf != null;
-
-            msg.messageWriter(this, nodeId);
-
-            return msg.writeTo(buf);
-        }
-
-        @Override public int writeFully(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, OutputStream out,
-            ByteBuffer buf) throws IOException {
-            assert msg != null;
-            assert out != null;
-            assert buf != null;
-            assert buf.hasArray();
-
-            msg.messageWriter(this, nodeId);
-
-            boolean finished = false;
-            int cnt = 0;
-
-            while (!finished) {
-                finished = msg.writeTo(buf);
-
-                out.write(buf.array(), 0, buf.position());
-
-                cnt += buf.position();
-
-                buf.clear();
-            }
-
-            return cnt;
-        }
-    };
-
     /**
      * @param clientId Client ID.
      * @param sslCtx SSL context to enable secured connection or {@code null} to use unsecured one.
@@ -148,7 +110,8 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
         GridClientConfiguration cfg,
         Collection<InetSocketAddress> routers,
         GridClientTopology top,
-        @Nullable Byte marshId)
+        @Nullable Byte marshId,
+        boolean routerClient)
         throws GridClientException {
         assert clientId != null : "clientId != null";
         assert cfg != null : "cfg != null";
@@ -176,32 +139,16 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
 
         if (cfg.getProtocol() == GridClientProtocol.TCP) {
             try {
-                IgniteLogger gridLog = new IgniteJavaLogger(false);
+                IgniteLogger gridLog = new JavaLogger(false);
 
                 GridNioFilter[] filters;
 
-                GridNioMessageReader msgReader = new GridNioMessageReader() {
-                    @Override public boolean read(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg,
-                        ByteBuffer buf) {
-                        assert msg != null;
-                        assert buf != null;
-
-                        msg.messageReader(this, nodeId);
-
-                        return msg.readFrom(buf);
-                    }
-
-                    @Nullable @Override public GridTcpMessageFactory messageFactory() {
-                        return null;
-                    }
-                };
-
-                GridNioFilter codecFilter = new GridNioCodecFilter(new NioParser(msgReader), gridLog, true);
+                GridNioFilter codecFilter = new GridNioCodecFilter(new GridTcpRestParser(routerClient), gridLog, false);
 
                 if (sslCtx != null) {
                     GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, gridLog);
 
-                    sslFilter.directMode(true);
+                    sslFilter.directMode(false);
                     sslFilter.clientMode(true);
 
                     filters = new GridNioFilter[]{codecFilter, sslFilter};
@@ -219,12 +166,11 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
                     .byteOrder(ByteOrder.nativeOrder())
                     .tcpNoDelay(cfg.isTcpNoDelay())
                     .directBuffer(true)
-                    .directMode(true)
+                    .directMode(false)
                     .socketReceiveBufferSize(0)
                     .socketSendBufferSize(0)
                     .idleTimeout(Long.MAX_VALUE)
-                    .gridName("gridClient")
-                    .messageWriter(msgWriter)
+                    .gridName(routerClient ? "routerClient" : "gridClient")
                     .daemon(cfg.isDaemon())
                     .build();
 
@@ -648,21 +594,15 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
 
                 assert conn != null;
 
-                if (msg instanceof GridClientMessageWrapper) {
-                    GridClientMessageWrapper req = (GridClientMessageWrapper)msg;
-
-                    if (req.messageSize() != 0) {
-                        assert req.message() != null;
-
-                        conn.handleResponse(req);
-                    }
-                    else
-                        conn.handlePingResponse();
-                }
-                else {
-                    assert msg instanceof GridClientPingPacket : msg;
-
+                if (msg instanceof GridClientPingPacket)
                     conn.handlePingResponse();
+                else {
+                    try {
+                        conn.handleResponse((GridClientMessage)msg);
+                    }
+                    catch (IOException e) {
+                        log.log(Level.SEVERE, "Failed to parse response.", e);
+                    }
                 }
             }
         }
@@ -699,65 +639,6 @@ abstract class GridClientConnectionManagerAdapter implements GridClientConnectio
                 log.fine("Closing NIO session because of idle timeout.");
 
             ses.close();
-        }
-    }
-
-    /**
-     *
-     */
-    private static class NioParser implements GridNioParser {
-        /** Message metadata key. */
-        private static final int MSG_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
-
-        /** Message reader. */
-        private final GridNioMessageReader msgReader;
-
-        /**
-         * @param msgReader Message reader.
-         */
-        NioParser(GridNioMessageReader msgReader) {
-            this.msgReader = msgReader;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Object decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
-            GridClientFutureAdapter<?> handshakeFut = ses.meta(GridClientNioTcpConnection.SES_META_HANDSHAKE);
-
-            if (handshakeFut != null) {
-                byte code = buf.get();
-
-                return new GridClientHandshakeResponse(code);
-            }
-
-            GridTcpCommunicationMessageAdapter msg = ses.removeMeta(MSG_META_KEY);
-
-            if (msg == null && buf.hasRemaining()) {
-                byte type = buf.get();
-
-                if (type == GridClientMessageWrapper.REQ_HEADER)
-                    msg = new GridClientMessageWrapper();
-                else
-                    throw new IOException("Invalid message type: " + type);
-            }
-
-            boolean finished = false;
-
-            if (buf.hasRemaining())
-                finished = msgReader.read(null, msg, buf);
-
-            if (finished)
-                return msg;
-            else {
-                ses.addMeta(MSG_META_KEY, msg);
-
-                return null;
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException {
-            // No encoding needed for direct messages.
-            throw new UnsupportedEncodingException();
         }
     }
 }

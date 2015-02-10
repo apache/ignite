@@ -18,95 +18,16 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.datastructures.*;
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.mockito.*;
 
-import javax.cache.configuration.*;
-import javax.cache.integration.*;
 import java.util.*;
-import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Basic tests for atomic reference.
  */
-public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCommonAbstractTest {
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
-    private AtomicBoolean storeCalled = new AtomicBoolean();
-
-    /**
-     * Constructs a test.
-     */
-    protected GridCacheAtomicReferenceApiSelfAbstractTest() {
-        super(true /* start grid. */);
-    }
-
+public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends IgniteAtomicsAbstractTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        MockitoAnnotations.initMocks(this);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
-
-        return cfg;
-    }
-
-    /**
-     * @return Cache configuration for the test.
-     */
-    @SuppressWarnings("unchecked")
-    protected CacheConfiguration getCacheConfiguration() {
-        CacheConfiguration ccfg = defaultCacheConfiguration();
-
-        ccfg.setAtomicityMode(TRANSACTIONAL);
-        ccfg.setDistributionMode(NEAR_PARTITIONED);
-
-        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new CacheStoreAdapter() {
-            @Override public Object load(Object key) throws CacheLoaderException {
-                storeCalled.set(true);
-
-                return null;
-            }
-
-            @Override public void write(javax.cache.Cache.Entry entry) throws CacheWriterException {
-                storeCalled.set(true);
-            }
-
-            @Override public void delete(Object key) throws CacheWriterException {
-                storeCalled.set(true);
-            }
-        }));
-
-        ccfg.setReadThrough(true);
-        ccfg.setWriteThrough(true);
-        ccfg.setLoadPreviousValue(true);
-
-        return ccfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+    @Override protected int gridCount() {
+        return 1;
     }
 
     /**
@@ -122,24 +43,27 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
         String atomicName2 = UUID.randomUUID().toString();
 
         String initVal = "1";
-        CacheAtomicReference<String> atomic1 = grid().cache(null).dataStructures()
-            .atomicReference(atomicName1, initVal, true);
-        CacheAtomicReference<String> atomic2 = grid().cache(null).dataStructures()
-            .atomicReference(atomicName2, null, true);
+        IgniteAtomicReference<String> atomic1 = grid(0).atomicReference(atomicName1, initVal, true);
+        IgniteAtomicReference<String> atomic2 = grid(0).atomicReference(atomicName2, null, true);
 
         assertNotNull(atomic1);
         assertNotNull(atomic2);
 
-        assert grid().cache(null).dataStructures().removeAtomicReference(atomicName1);
-        assert grid().cache(null).dataStructures().removeAtomicReference(atomicName2);
-        assert !grid().cache(null).dataStructures().removeAtomicReference(atomicName1);
-        assert !grid().cache(null).dataStructures().removeAtomicReference(atomicName2);
+        atomic1.close();
+        atomic2.close();
+
+        atomic1.close();
+        atomic2.close();
+
+        assertNull(grid(0).atomicReference(atomicName1, null, false));
+        assertNull(grid(0).atomicReference(atomicName2, null, false));
 
         try {
             atomic1.get();
+
             fail();
         }
-        catch (IgniteCheckedException e) {
+        catch (IllegalStateException e) {
             info("Caught expected exception: " + e.getMessage());
         }
     }
@@ -154,8 +78,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
 
         String initVal = "qwerty";
 
-        CacheAtomicReference<String> atomic = grid().cache(null).dataStructures()
-            .atomicReference(atomicName, initVal, true);
+        IgniteAtomicReference<String> atomic = grid(0).atomicReference(atomicName, initVal, true);
 
         assertEquals(initVal, atomic.get());
 
@@ -174,8 +97,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
 
         String initVal = "qwerty";
 
-        CacheAtomicReference<String> atomic = grid().cache(null).dataStructures()
-            .atomicReference(atomicName, initVal, true);
+        IgniteAtomicReference<String> atomic = grid(0).atomicReference(atomicName, initVal, true);
 
         assertEquals(initVal, atomic.get());
 
@@ -186,27 +108,5 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
         atomic.compareAndSet(initVal, null);
 
         assertEquals(null, atomic.get());
-    }
-
-    /**
-     * Tests that non-persistent atomic reference doesn't ever
-     * hit the store.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    public void testNonPersistentMode() throws IgniteCheckedException {
-        String atomicName = UUID.randomUUID().toString();
-
-        GridCache<Object, Object> cache = grid().cache(null);
-
-        assertNotNull(cache);
-
-        CacheAtomicReference<Boolean> atomic = cache.dataStructures().atomicReference(atomicName, false, true);
-
-        atomic.set(true);
-
-        cache.dataStructures().removeAtomicReference(atomicName);
-
-        assertFalse(storeCalled.get());
     }
 }

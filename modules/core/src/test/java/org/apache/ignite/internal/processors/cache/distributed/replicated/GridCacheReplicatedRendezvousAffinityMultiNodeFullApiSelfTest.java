@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
+import org.apache.ignite.configuration.*;
 
 /**
  * Multi-node tests for replicated cache with {@link org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction}.

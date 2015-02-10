@@ -17,14 +17,14 @@
 
 package org.apache.ignite.loadtests.communication;
 //
-//import org.gridgain.grid.*;
+//import org.apache.ignite.*;
 //import org.apache.ignite.lang.*;
 //import org.apache.ignite.lang.utils.*;
-//import org.gridgain.grid.spi.*;
-//import org.gridgain.grid.spi.communication.*;
-//import org.gridgain.grid.spi.communication.tcp.*;
-//import org.gridgain.grid.typedef.*;
-//import org.gridgain.grid.typedef.internal.*;
+//import org.apache.ignite.spi.*;
+//import org.apache.ignite.spi.communication.*;
+//import org.apache.ignite.spi.communication.tcp.*;
+//import org.apache.ignite.typedef.*;
+//import org.apache.ignite.typedef.internal.*;
 //import org.apache.ignite.testframework.*;
 //import org.apache.ignite.testframework.junits.*;
 //import org.apache.ignite.testframework.junits.spi.*;

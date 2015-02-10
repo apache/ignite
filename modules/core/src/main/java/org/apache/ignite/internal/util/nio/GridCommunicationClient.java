@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -97,7 +97,7 @@ public interface GridCommunicationClient {
      * @throws IgniteCheckedException If failed.
      * @return {@code True} if should try to resend message.
      */
-    boolean sendMessage(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg) throws IgniteCheckedException;
+    boolean sendMessage(@Nullable UUID nodeId, MessageAdapter msg) throws IgniteCheckedException;
 
     /**
      * @param timeout Timeout.

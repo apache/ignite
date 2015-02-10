@@ -15,16 +15,16 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
-    GridGain Spring configuration file to startup grid cache.
+    Ignite Spring configuration file to startup grid cache.
 
-    When starting a standalone GridGain node, you need to execute the following command:
+    When starting a standalone Ignite node, you need to execute the following command:
     {IGNITE_HOME}/bin/ignite.{bat|sh} examples/config/example-cache.xml
 
-    When starting GridGain from Java IDE, pass path to this file into GridGain:
-    GridGain.start("examples/config/example-cache.xml");
+    When starting Ignite from Java IDE, pass path to this file into Ignition:
+    Ignition.start("examples/config/example-cache.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -62,7 +62,7 @@
                 <!--
                     Partitioned cache example configuration (Transactional mode).
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="partitioned"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -111,7 +111,7 @@
                 <!--
                     Replicated cache example configuration.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="replicated"/>
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
@@ -136,7 +136,7 @@
                 <!--
                     Local cache example configuration.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <!-- Cache name is 'local'. -->
                     <property name="name" value="local"/>
 
@@ -154,9 +154,9 @@
         -->
         <!--
         <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.s3.GridTcpDiscoveryS3IpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinder">
                         <property name="awsCredentials">
                             <bean class="com.amazonaws.auth.BasicAWSCredentials">
                                 <constructor-arg value="YOUR_ACCESS_KEY_ID" />
@@ -179,9 +179,9 @@
         -->
         <!--
         <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs.GridTcpDiscoverySharedFsIpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder">
                         <property name="path" value="work/disco/tcp"/>
                     </bean>
                 </property>
@@ -229,11 +229,11 @@
         </property>
 
         <property name="portableConfiguration">
-            <bean class="org.apache.ignite.portables.PortableConfiguration">
+            <bean class="org.gridgain.grid.portables.PortableConfiguration">
                 <property name="typeConfigurations">
                     <list>
-                        <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.apache.ignite.internal.client.ClientTestPortable"/>
+                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
+                            <property name="className" value="org.gridgain.client.ClientTestPortable"/>
                         </bean>
                     </list>
                 </property>

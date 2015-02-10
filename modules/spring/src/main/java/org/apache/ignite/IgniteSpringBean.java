@@ -50,7 +50,7 @@ import java.util.concurrent.*;
  * <pre name="code" class="xml">
  * &lt;bean id="mySpringBean" class="org.apache.ignite.GridSpringBean"&gt;
  *     &lt;property name="configuration"&gt;
- *         &lt;bean id="grid.cfg" class="org.gridgain.grid.GridConfiguration"&gt;
+ *         &lt;bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *             &lt;property name="gridName" value="mySpringGrid"/&gt;
  *         &lt;/bean&gt;
  *     &lt;/property&gt;
@@ -158,10 +158,10 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteManaged managed() {
+    @Override public IgniteServices services() {
         assert g != null;
 
-        return g.managed();
+        return g.services();
     }
 
     /** {@inheritDoc} */
@@ -193,10 +193,10 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCompute compute(ClusterGroup prj) {
+    @Override public IgniteCompute compute(ClusterGroup grp) {
         assert g != null;
 
-        return g.compute(prj);
+        return g.compute(grp);
     }
 
     /** {@inheritDoc} */
@@ -207,24 +207,24 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteEvents events(ClusterGroup prj) {
+    @Override public IgniteEvents events(ClusterGroup grp) {
         assert g != null;
 
-        return g.events(prj);
+        return g.events(grp);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteManaged managed(ClusterGroup prj) {
+    @Override public IgniteServices services(ClusterGroup grp) {
         assert g != null;
 
-        return g.managed(prj);
+        return g.services(grp);
     }
 
     /** {@inheritDoc} */
-    @Override public ExecutorService executorService(ClusterGroup prj) {
+    @Override public ExecutorService executorService(ClusterGroup grp) {
         assert g != null;
 
-        return g.executorService(prj);
+        return g.executorService(grp);
     }
 
     /** {@inheritDoc} */
@@ -239,13 +239,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         assert g != null;
 
         return g.security();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgnitePortables portables() {
-        assert g != null;
-
-        return g.portables();
     }
 
     /** {@inheritDoc} */
@@ -314,6 +307,71 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
         g.close();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create) {
+        assert g != null;
+
+        return g.atomicSequence(name, initVal, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) {
+        assert g != null;
+
+        return g.atomicLong(name, initVal, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteAtomicReference<T> atomicReference(String name,
+        @Nullable T initVal,
+        boolean create)
+    {
+        assert g != null;
+
+        return g.atomicReference(name, initVal, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
+        @Nullable T initVal,
+        @Nullable S initStamp,
+        boolean create)
+    {
+        assert g != null;
+
+        return g.atomicStamped(name, initVal, initStamp, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteCountDownLatch countDownLatch(String name,
+        int cnt,
+        boolean autoDel,
+        boolean create)
+    {
+        assert g != null;
+
+        return g.countDownLatch(name, cnt, autoDel, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteQueue<T> queue(String name,
+        int cap,
+        CollectionConfiguration cfg)
+    {
+        assert g != null;
+
+        return g.queue(name, cap, cfg);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteSet<T> set(String name,
+        CollectionConfiguration cfg)
+    {
+        assert g != null;
+
+        return g.set(name, cfg);
     }
 
     /** {@inheritDoc} */

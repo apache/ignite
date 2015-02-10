@@ -21,7 +21,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * This class is a workaround for a versatile problems with passing arguments to the GridGain Windows batch launcher
+ * This class is a workaround for a versatile problems with passing arguments to the Ignite Windows batch launcher
  * scripts. It transforms command line options passed to the *.bat launcher scripts into a reformatted, adapted for
  * Windows batch usage variables.
  * <p>
@@ -195,7 +195,7 @@ public class CommandLineTransformer {
                 String jvmOpt = arg.substring(JVM_OPTION_PREFIX.length());
 
                 if (!checkJVMOptionIsSupported(jvmOpt))
-                    throw new RuntimeException(JVM_OPTION_PREFIX + " JVM parameters for GridGain batch scripts " +
+                    throw new RuntimeException(JVM_OPTION_PREFIX + " JVM parameters for Ignite batch scripts " +
                         "with double quotes are not supported. " +
                         "Use JVM_OPTS environment variable to pass any custom JVM option.");
 

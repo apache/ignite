@@ -52,7 +52,7 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
     }};
 
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private transient IgniteLogger log;
 
     /** */
@@ -102,7 +102,7 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
         if (path == null)
             throw new IllegalArgumentException("Unsupported node type: " + type);
 
-        URL url = U.resolveGridGainUrl(path);
+        URL url = U.resolveIgniteUrl(path);
 
         BeanFactory ctx = new FileSystemXmlApplicationContext(url.toString());
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
@@ -56,7 +57,6 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
         ccfg.setOffHeapMaxMemory(1024 * 1024);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
-        ccfg.setPortableEnabled(portableEnabled());
 
         return ccfg;
     }

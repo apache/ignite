@@ -22,7 +22,7 @@ import java.util
 
 import org.apache.ignite.compute.ComputeJobContext
 import org.apache.ignite.lang.{IgniteClosure, IgniteFuture}
-import org.apache.ignite.resources.IgniteJobContextResource
+import org.apache.ignite.resources.JobContextResource
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 import org.jetbrains.annotations.Nullable
@@ -84,7 +84,7 @@ class FibonacciClosure (
     @transient private var fut1, fut2: IgniteFuture[BigInteger] = null
 
     // Auto-inject job context.
-    @IgniteJobContextResource
+    @JobContextResource
     private val jobCtx: ComputeJobContext = null
 
     @Nullable override def apply(num: Long): BigInteger = {

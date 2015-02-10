@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 
 /**
  * Descriptor of an input stream opened to the secondary file system.

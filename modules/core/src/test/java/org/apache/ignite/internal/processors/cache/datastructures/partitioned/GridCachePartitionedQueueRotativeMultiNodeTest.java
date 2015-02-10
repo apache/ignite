@@ -18,32 +18,22 @@
 package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Queue multi node tests.
  */
 public class GridCachePartitionedQueueRotativeMultiNodeTest extends GridCacheQueueRotativeMultiNodeAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected CacheMode collectionCacheMode() {
+        return PARTITIONED;
+    }
 
-        // Default cache configuration.
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
-
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setBackups(1);
-        cacheCfg.setDistributionMode(PARTITIONED_ONLY);
-        cacheCfg.setQueryIndexEnabled(false);
-
-        cfg.setCacheConfiguration(cacheCfg);
-
-        return cfg;
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
+        return TRANSACTIONAL;
     }
 }

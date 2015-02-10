@@ -18,60 +18,29 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.marshaller.optimized.*;
 
 import java.util.*;
 
 /**
  * AtomicReference and AtomicStamped multi node tests.
  */
-public abstract class GridCacheAtomicReferenceMultiNodeAbstractTest extends GridCommonAbstractTest {
+public abstract class GridCacheAtomicReferenceMultiNodeAbstractTest extends IgniteAtomicsAbstractTest {
     /** */
     protected static final int GRID_CNT = 4;
 
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /**
-     * Constructs test.
-     */
-    protected GridCacheAtomicReferenceMultiNodeAbstractTest() {
-        super(/* don't start grid */ false);
-    }
-
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        for (int i = 0; i < GRID_CNT; i++)
-            startGrid(i);
-
-        assert G.allGrids().size() == GRID_CNT;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
+    @Override protected int gridCount() {
+        return GRID_CNT;
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }
@@ -90,14 +59,14 @@ public abstract class GridCacheAtomicReferenceMultiNodeAbstractTest extends Grid
         final String newVal = UUID.randomUUID().toString();
 
         // Initialize atomicReference in cache.
-        CacheAtomicReference<String> ref = grid(0).cache(null).dataStructures().atomicReference(refName, val, true);
+        IgniteAtomicReference<String> ref = grid(0).atomicReference(refName, val, true);
 
         final Ignite ignite = grid(0);
 
         // Execute task on all grid nodes.
         ignite.compute().call(new IgniteCallable<Object>() {
             @Override public String call() throws IgniteCheckedException {
-                CacheAtomicReference<String> ref = ignite.cache(null).dataStructures().atomicReference(refName, val, true);
+                IgniteAtomicReference<String> ref = ignite.atomicReference(refName, val, true);
 
                 assertEquals(val, ref.get());
 
@@ -110,7 +79,7 @@ public abstract class GridCacheAtomicReferenceMultiNodeAbstractTest extends Grid
         // Execute task on all grid nodes.
         ignite.compute().call(new IgniteCallable<String>() {
             @Override public String call() throws IgniteCheckedException {
-                CacheAtomicReference<String> ref = ignite.cache(null).dataStructures().atomicReference(refName, val, true);
+                IgniteAtomicReference<String> ref = ignite.atomicReference(refName, val, true);
 
                 assertEquals(val, ref.get());
 
@@ -123,7 +92,7 @@ public abstract class GridCacheAtomicReferenceMultiNodeAbstractTest extends Grid
         // Execute task on all grid nodes.
         ignite.compute().call(new IgniteCallable<String>() {
             @Override public String call() throws IgniteCheckedException {
-                CacheAtomicReference<String> ref = ignite.cache(null).dataStructures().atomicReference(refName, val, true);
+                IgniteAtomicReference<String> ref = ignite.atomicReference(refName, val, true);
 
                 assertEquals(newVal, ref.get());
 
@@ -150,16 +119,14 @@ public abstract class GridCacheAtomicReferenceMultiNodeAbstractTest extends Grid
         final String newStamp = UUID.randomUUID().toString();
 
         // Initialize atomicStamped in cache.
-        CacheAtomicStamped<String, String> stamped = grid(0).cache(null).dataStructures()
-            .atomicStamped(stampedName, val, stamp, true);
+        IgniteAtomicStamped<String, String> stamped = grid(0).atomicStamped(stampedName, val, stamp, true);
 
         final Ignite ignite = grid(0);
 
         // Execute task on all grid nodes.
         ignite.compute().call(new IgniteCallable<String>() {
             @Override public String call() throws IgniteCheckedException {
-                CacheAtomicStamped<String, String> stamped = ignite.cache(null).dataStructures()
-                    .atomicStamped(stampedName, val, stamp, true);
+                IgniteAtomicStamped<String, String> stamped = ignite.atomicStamped(stampedName, val, stamp, true);
 
                 assertEquals(val, stamped.value());
                 assertEquals(stamp, stamped.stamp());
@@ -173,8 +140,7 @@ public abstract class GridCacheAtomicReferenceMultiNodeAbstractTest extends Grid
         // Execute task on all grid nodes.
         ignite.compute().call(new IgniteCallable<String>() {
             @Override public String call() throws IgniteCheckedException {
-                CacheAtomicStamped<String, String> stamped = ignite.cache(null).dataStructures()
-                    .atomicStamped(stampedName, val, stamp, true);
+                IgniteAtomicStamped<String, String> stamped = ignite.atomicStamped(stampedName, val, stamp, true);
 
                 assertEquals(val, stamped.value());
                 assertEquals(stamp, stamped.stamp());
@@ -188,8 +154,7 @@ public abstract class GridCacheAtomicReferenceMultiNodeAbstractTest extends Grid
         // Execute task on all grid nodes.
         ignite.compute().call(new IgniteCallable<String>() {
             @Override public String call() throws IgniteCheckedException {
-                CacheAtomicStamped<String, String> stamped = ignite.cache(null).dataStructures()
-                    .atomicStamped(stampedName, val, stamp, true);
+                IgniteAtomicStamped<String, String> stamped = ignite.atomicStamped(stampedName, val, stamp, true);
 
                 assertEquals(newVal, stamped.value());
                 assertEquals(newStamp, stamped.stamp());

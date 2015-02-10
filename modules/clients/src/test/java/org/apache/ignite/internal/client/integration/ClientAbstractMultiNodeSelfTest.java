@@ -31,9 +31,9 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -163,31 +163,9 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         c.setCacheConfiguration(cacheConfiguration(null), cacheConfiguration(PARTITIONED_CACHE_NAME),
             cacheConfiguration(REPLICATED_CACHE_NAME), cacheConfiguration(REPLICATED_ASYNC_CACHE_NAME));
 
-        ThreadPoolExecutor exec = new ThreadPoolExecutor(
-            40,
-            40,
-            0,
-            MILLISECONDS,
-            new LinkedBlockingQueue<Runnable>());
+        c.setPublicThreadPoolSize(40);
 
-        exec.prestartAllCoreThreads();
-
-        c.setExecutorService(exec);
-
-        c.setExecutorServiceShutdown(true);
-
-        ThreadPoolExecutor sysExec = new ThreadPoolExecutor(
-            40,
-            40,
-            0,
-            MILLISECONDS,
-            new LinkedBlockingQueue<Runnable>());
-
-        sysExec.prestartAllCoreThreads();
-
-        c.setSystemExecutorService(sysExec);
-
-        c.setSystemExecutorServiceShutdown(true);
+        c.setSystemThreadPoolSize(40);
 
         return c;
     }
@@ -755,7 +733,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     @SuppressWarnings("unchecked")
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
             throws IgniteSpiException {
             checkSyncFlags((GridIoMessage)msg);
 

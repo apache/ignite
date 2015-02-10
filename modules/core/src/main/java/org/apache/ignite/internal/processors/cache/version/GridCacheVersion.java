@@ -20,15 +20,18 @@ package org.apache.ignite.internal.processors.cache.version;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.nio.*;
 import java.util.*;
 
 /**
  * Grid unique version.
  */
-public class GridCacheVersion implements Comparable<GridCacheVersion>, Externalizable, IgniteOptimizedMarshallable {
+public class GridCacheVersion extends MessageAdapter implements Comparable<GridCacheVersion>, Externalizable,
+    OptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -247,6 +250,114 @@ public class GridCacheVersion implements Comparable<GridCacheVersion>, Externali
         }
         else
             return topologyVersion() < other.topologyVersion() ? -1 : 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf) {
+        writer.setBuffer(buf);
+
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
+                return false;
+
+            typeWritten = true;
+        }
+
+        switch (state) {
+            case 0:
+                if (!writer.writeLong("globalTime", globalTime))
+                    return false;
+
+                state++;
+
+            case 1:
+                if (!writer.writeInt("nodeOrderDrId", nodeOrderDrId))
+                    return false;
+
+                state++;
+
+            case 2:
+                if (!writer.writeLong("order", order))
+                    return false;
+
+                state++;
+
+            case 3:
+                if (!writer.writeInt("topVer", topVer))
+                    return false;
+
+                state++;
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf) {
+        reader.setBuffer(buf);
+
+        switch (state) {
+            case 0:
+                globalTime = reader.readLong("globalTime");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 1:
+                nodeOrderDrId = reader.readInt("nodeOrderDrId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 2:
+                order = reader.readLong("order");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 3:
+                topVer = reader.readInt("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 86;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("CloneDoesntCallSuperClone")
+    @Override public MessageAdapter clone() {
+        GridCacheVersion _clone = new GridCacheVersion();
+
+        clone0(_clone);
+
+        return _clone;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void clone0(MessageAdapter _msg) {
+        GridCacheVersion _clone = (GridCacheVersion)_msg;
+
+        _clone.topVer = topVer;
+        _clone.nodeOrderDrId = nodeOrderDrId;
+        _clone.globalTime = globalTime;
+        _clone.order = order;
     }
 
     /** {@inheritDoc} */

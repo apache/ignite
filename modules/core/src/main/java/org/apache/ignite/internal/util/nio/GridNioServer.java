@@ -21,13 +21,13 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.nio.ssl.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -67,11 +67,8 @@ public class GridNioServer<T> {
     /** Buffer metadata key. */
     private static final int BUF_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** SSL sysmtem data buffer metadata key. */
+    /** SSL system data buffer metadata key. */
     private static final int BUF_SSL_SYSTEM_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
-
-    /** Node ID meta key (set only if versions are different). */
-    public static final int DIFF_VER_NODE_ID_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Accept worker thread. */
     @GridToStringExclude
@@ -134,14 +131,15 @@ public class GridNioServer<T> {
     /** Metrics listener. */
     private final GridNioMetricsListener metricsLsnr;
 
-    /** Message writer. */
-    private final GridNioMessageWriter msgWriter;
-
     /** Sessions. */
     private final GridConcurrentHashSet<GridSelectorNioSessionImpl> sessions = new GridConcurrentHashSet<>();
 
     /** */
     private GridNioSslFilter sslFilter;
+
+    /** */
+    @GridToStringExclude
+    private MessageFormatter formatter;
 
     /** Static initializer ensures single-threaded execution of workaround. */
     static {
@@ -170,7 +168,7 @@ public class GridNioServer<T> {
      * @param directMode Whether direct mode is used.
      * @param daemon Daemon flag to create threads.
      * @param metricsLsnr Metrics listener.
-     * @param msgWriter Message writer.
+     * @param formatter Message formatter.
      * @param filters Filters for this server.
      * @throws IgniteCheckedException If failed.
      */
@@ -190,7 +188,7 @@ public class GridNioServer<T> {
         boolean directMode,
         boolean daemon,
         GridNioMetricsListener metricsLsnr,
-        GridNioMessageWriter msgWriter,
+        MessageFormatter formatter,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
         A.notNull(addr, "addr");
@@ -255,7 +253,7 @@ public class GridNioServer<T> {
 
         this.directMode = directMode;
         this.metricsLsnr = metricsLsnr;
-        this.msgWriter = msgWriter;
+        this.formatter = formatter;
     }
 
     /**
@@ -348,7 +346,7 @@ public class GridNioServer<T> {
      * @param msg Message.
      * @return Future for operation.
      */
-    GridNioFuture<?> send(GridNioSession ses, GridTcpCommunicationMessageAdapter msg) {
+    GridNioFuture<?> send(GridNioSession ses, MessageAdapter msg) {
         assert ses instanceof GridSelectorNioSessionImpl;
 
         GridSelectorNioSessionImpl impl = (GridSelectorNioSessionImpl)ses;
@@ -387,7 +385,7 @@ public class GridNioServer<T> {
      * @param msg Message.
      * @return Future.
      */
-    public GridNioFuture<?> sendSystem(GridNioSession ses, GridTcpCommunicationMessageAdapter msg) {
+    public GridNioFuture<?> sendSystem(GridNioSession ses, MessageAdapter msg) {
         return sendSystem(ses, msg, null);
     }
 
@@ -400,7 +398,7 @@ public class GridNioServer<T> {
      * @return Future.
      */
     public GridNioFuture<?> sendSystem(GridNioSession ses,
-        GridTcpCommunicationMessageAdapter msg,
+        MessageAdapter msg,
         @Nullable IgniteInClosure<? super GridNioFuture<?>> lsnr) {
         assert ses instanceof GridSelectorNioSessionImpl;
 
@@ -863,7 +861,6 @@ public class GridNioServer<T> {
 
                 ByteBuffer buf = ses.writeBuffer();
                 NioOperationFuture<?> req = ses.removeMeta(NIO_OPERATION.ordinal());
-                UUID nodeId = ses.meta(DIFF_VER_NODE_ID_META_KEY);
 
                 List<NioOperationFuture<?>> doneFuts = null;
 
@@ -878,16 +875,15 @@ public class GridNioServer<T> {
                         }
                     }
 
-                    GridTcpCommunicationMessageAdapter msg;
+                    MessageAdapter msg;
                     boolean finished = false;
 
                     if (req != null) {
                         msg = req.directMessage();
 
                         assert msg != null;
-                        assert msgWriter != null;
 
-                        finished = msgWriter.write(nodeId, msg, buf);
+                        finished = msg.writeTo(buf);
                     }
 
                     // Fill up as many messages as possible to write buffer.
@@ -905,9 +901,8 @@ public class GridNioServer<T> {
                         msg = req.directMessage();
 
                         assert msg != null;
-                        assert msgWriter != null;
 
-                        finished = msgWriter.write(nodeId, msg, buf);
+                        finished = msg.writeTo(buf);
                     }
 
                     buf.flip();
@@ -1003,7 +998,6 @@ public class GridNioServer<T> {
             GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
             ByteBuffer buf = ses.writeBuffer();
             NioOperationFuture<?> req = ses.removeMeta(NIO_OPERATION.ordinal());
-            UUID nodeId = ses.meta(DIFF_VER_NODE_ID_META_KEY);
 
             List<NioOperationFuture<?>> doneFuts = null;
 
@@ -1018,16 +1012,17 @@ public class GridNioServer<T> {
                     }
                 }
 
-                GridTcpCommunicationMessageAdapter msg;
+                MessageAdapter msg;
                 boolean finished = false;
 
                 if (req != null) {
                     msg = req.directMessage();
 
                     assert msg != null;
-                    assert msgWriter != null;
 
-                    finished = msgWriter.write(nodeId, msg, buf);
+                    msg.setWriter(formatter.writer());
+
+                    finished = msg.writeTo(buf);
                 }
 
                 // Fill up as many messages as possible to write buffer.
@@ -1045,9 +1040,10 @@ public class GridNioServer<T> {
                     msg = req.directMessage();
 
                     assert msg != null;
-                    assert msgWriter != null;
 
-                    finished = msgWriter.write(nodeId, msg, buf);
+                    msg.setWriter(formatter.writer());
+
+                    finished = msg.writeTo(buf);
                 }
 
                 buf.flip();
@@ -1759,7 +1755,7 @@ public class GridNioServer<T> {
         private ByteBuffer msg;
 
         /** Direct message. */
-        private GridTcpCommunicationMessageAdapter commMsg;
+        private MessageAdapter commMsg;
 
         /** */
         private boolean accepted;
@@ -1835,7 +1831,7 @@ public class GridNioServer<T> {
          * @param commMsg Direct message.
          */
         NioOperationFuture(GridSelectorNioSessionImpl ses, NioOperation op,
-            GridTcpCommunicationMessageAdapter commMsg) {
+            MessageAdapter commMsg) {
             assert ses != null;
             assert op != null;
             assert op != NioOperation.REGISTER;
@@ -1863,7 +1859,7 @@ public class GridNioServer<T> {
         /**
          * @return Direct message.
          */
-        private GridTcpCommunicationMessageAdapter directMessage() {
+        private MessageAdapter directMessage() {
             return commMsg;
         }
 
@@ -1974,7 +1970,7 @@ public class GridNioServer<T> {
                     return null;
                 }
                 else
-                    return send(ses, (GridTcpCommunicationMessageAdapter)msg);
+                    return send(ses, (MessageAdapter)msg);
             }
             else
                 return send(ses, (ByteBuffer)msg);
@@ -2061,9 +2057,6 @@ public class GridNioServer<T> {
         /** Metrics listener. */
         private GridNioMetricsListener metricsLsnr;
 
-        /** Message writer. */
-        private GridNioMessageWriter msgWriter;
-
         /** NIO filters. */
         private GridNioFilter[] filters;
 
@@ -2075,6 +2068,9 @@ public class GridNioServer<T> {
 
         /** Daemon flag. */
         private boolean daemon;
+
+        /** Message formatter. */
+        private MessageFormatter formatter;
 
         /**
          * Finishes building the instance.
@@ -2099,7 +2095,7 @@ public class GridNioServer<T> {
                 directMode,
                 daemon,
                 metricsLsnr,
-                msgWriter,
+                formatter,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
             );
 
@@ -2254,16 +2250,6 @@ public class GridNioServer<T> {
         }
 
         /**
-         * @param msgWriter Message writer.
-         * @return This for chaining.
-         */
-        public Builder<T> messageWriter(GridNioMessageWriter msgWriter) {
-            this.msgWriter = msgWriter;
-
-            return this;
-        }
-
-        /**
          * @param filters NIO filters.
          * @return This for chaining.
          */
@@ -2299,6 +2285,16 @@ public class GridNioServer<T> {
          */
         public Builder<T> daemon(boolean daemon) {
             this.daemon = daemon;
+
+            return this;
+        }
+
+        /**
+         * @param formatter Message formatter.
+         * @return This for chaining.
+         */
+        public Builder<T> messageFormatter(MessageFormatter formatter) {
+            this.formatter = formatter;
 
             return this;
         }

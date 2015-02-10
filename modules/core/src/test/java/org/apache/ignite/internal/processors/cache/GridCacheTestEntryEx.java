@@ -823,4 +823,10 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     @Override public long startVersion() {
         return 0;
     }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public V peek(boolean heap, boolean offheap, boolean swap, long topVer)
+        throws GridCacheEntryRemovedException, IgniteCheckedException {
+        return null;
+    }
 }

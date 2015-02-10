@@ -64,7 +64,7 @@ public class MessagingPingPongListenActorExample {
 
             // Set up remote player.
             ignite.message(nodeB).remoteListen(null, new MessagingListenActor<String>() {
-                @Override public void receive(UUID nodeId, String rcvMsg) throws IgniteCheckedException {
+                @Override public void receive(UUID nodeId, String rcvMsg) {
                     System.out.println(rcvMsg);
 
                     if ("PING".equals(rcvMsg))
@@ -80,7 +80,7 @@ public class MessagingPingPongListenActorExample {
 
             // Set up local player.
             ignite.message().localListen(null, new MessagingListenActor<String>() {
-                @Override protected void receive(UUID nodeId, String rcvMsg) throws IgniteCheckedException {
+                @Override protected void receive(UUID nodeId, String rcvMsg) throws IgniteException {
                     System.out.println(rcvMsg);
 
                     if (cnt.getCount() == 1)

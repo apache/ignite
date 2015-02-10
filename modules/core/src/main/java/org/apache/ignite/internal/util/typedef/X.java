@@ -186,25 +186,6 @@ public final class X {
     }
 
     /**
-     * Gets either system property or environment variable with given name.
-     *
-     * @param name Name of the system property or environment variable.
-     * @param dflt Default value.
-     * @return Value of the system property or environment variable.
-     *         Returns the default value if neither can be found for given name.
-     * @deprecated This method will be removed in the next major release.
-     *             Use {@link org.apache.ignite.IgniteSystemProperties#getString(String)} instead.
-     */
-    @Deprecated
-    @Nullable public static String getSystemOrEnv(String name, String dflt) {
-        assert name != null;
-
-        String v = getSystemOrEnv(name);
-
-        return F.isEmpty(v) ? dflt : v;
-    }
-
-    /**
      * Creates string presentation of given time {@code span} in hh:mm:ss:msec {@code HMSM} format.
      *
      * @param span Time span.
@@ -867,18 +848,18 @@ public final class X {
     }
 
     /**
-     * Tries to resolve GridGain installation home folder.
+     * Tries to resolve Ignite installation home folder.
      *
      * @return Installation home folder.
-     * @throws IgniteCheckedException If GridGain home folder was not set.
+     * @throws IgniteCheckedException If Ignite home folder was not set.
      */
-    public static String resolveGridGainHome() throws IgniteCheckedException {
+    public static String resolveIgniteHome() throws IgniteCheckedException {
         String var = IgniteSystemProperties.getString(IGNITE_HOME);
 
         if (var != null)
             return var;
         else
-            throw new IgniteCheckedException("Failed to resolve GridGain home folder " +
+            throw new IgniteCheckedException("Failed to resolve Ignite home folder " +
                 "(please set 'IGNITE_HOME' environment or system variable)");
     }
 

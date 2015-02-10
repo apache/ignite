@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import com.google.common.collect.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -70,23 +72,40 @@ public class GridCacheAtomicFullApiSelfTest extends GridCachePartitionedFullApiS
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testLock() throws Exception {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                return jcache().lock("1").tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+            }
+        }, CacheException.class, "Locks are not supported");
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                return jcache().lockAll(Collections.singleton("1")).tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
+            }
+        }, CacheException.class, "Locks are not supported");
+    }
+
+    /**
      * @throws Exception In case of error.
      */
     @Override public void testGetAll() throws Exception {
-        cache().put("key1", 1);
-        cache().put("key2", 2);
+        jcache().put("key1", 1);
+        jcache().put("key2", 2);
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                cache().getAll(null).isEmpty();
+                jcache().getAll(null).isEmpty();
 
                 return null;
             }
         }, NullPointerException.class, null);
 
-        assert cache().getAll(Collections.<String>emptyList()).isEmpty();
+        assert jcache().getAll(Collections.<String>emptySet()).isEmpty();
 
-        Map<String, Integer> map1 = cache().getAll(F.asList("key1", "key2", "key9999"));
+        Map<String, Integer> map1 = jcache().getAll(ImmutableSet.of("key1", "key2", "key9999"));
 
         info("Retrieved map1: " + map1);
 
@@ -96,7 +115,7 @@ public class GridCacheAtomicFullApiSelfTest extends GridCachePartitionedFullApiS
         assertEquals(2, (int)map1.get("key2"));
         assertNull(map1.get("key9999"));
 
-        Map<String, Integer> map2 = cache().getAll(F.asList("key1", "key2", "key9999"));
+        Map<String, Integer> map2 = jcache().getAll(ImmutableSet.of("key1", "key2", "key9999"));
 
         info("Retrieved map2: " + map2);
 

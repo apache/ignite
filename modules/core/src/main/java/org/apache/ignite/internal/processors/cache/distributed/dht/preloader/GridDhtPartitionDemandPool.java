@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
@@ -242,7 +242,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      * @param type Type.
      * @param discoEvt Discovery event.
      */
-    private void preloadEvent(int type, IgniteDiscoveryEvent discoEvt) {
+    private void preloadEvent(int type, DiscoveryEvent discoEvt) {
         preloadEvent(-1, type, discoEvt);
     }
 
@@ -251,7 +251,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      * @param type Type.
      * @param discoEvt Discovery event.
      */
-    private void preloadEvent(int part, int type, IgniteDiscoveryEvent discoEvt) {
+    private void preloadEvent(int part, int type, DiscoveryEvent discoEvt) {
         assert discoEvt != null;
 
         cctx.events().addPreloadEvent(part, type, discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());

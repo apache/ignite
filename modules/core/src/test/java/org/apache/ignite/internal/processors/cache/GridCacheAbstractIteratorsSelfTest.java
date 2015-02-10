@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 
-import java.util.*;
+import javax.cache.*;
 
 /**
  * Tests for cache iterators.
@@ -37,7 +35,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
         super.beforeTest();
 
         for (int i = 0; i < entryCount(); i++)
-            cache().put(KEY_PREFIX + i, i);
+            jcache().put(KEY_PREFIX + i, i);
     }
 
     /**
@@ -51,14 +49,14 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
     public void testCacheIterator() throws Exception {
         int cnt = 0;
 
-        for (CacheEntry<String, Integer> entry : cache()) {
+        for (Cache.Entry<String, Integer> entry : jcache()) {
             assert entry != null;
             assert entry.getKey() != null;
             assert entry.getKey().contains(KEY_PREFIX);
             assert entry.getValue() != null;
             assert entry.getValue() >= 0 && entry.getValue() < entryCount();
-            assert entry.get() != null;
-            assert entry.get() >= 0 && entry.get() < entryCount();
+            assert entry.getValue() != null;
+            assert entry.getValue() >= 0 && entry.getValue() < entryCount();
 
             cnt++;
         }
@@ -69,42 +67,21 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
     /**
      * @throws Exception If failed.
      */
-    public void testCacheProjectionIterator() throws Exception {
-        int cnt = 0;
-
-        for (CacheEntry<String, Integer> entry : cache().projection(lt50)) {
-            assert entry != null;
-            assert entry.getKey() != null;
-            assert entry.getKey().contains(KEY_PREFIX);
-            assert entry.getValue() != null;
-            assert entry.getValue() >= 0 && entry.getValue() < 50;
-            assert entry.get() != null;
-            assert entry.get() >= 0 && entry.get() < 50;
-
-            cnt++;
-        }
-
-        assert cnt == 50;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testCacheIteratorMultithreaded() throws Exception {
         for (int i = 0; i < gridCount(); i++)
-            cache(i).removeAll();
+            jcache(i).removeAll();
 
         final IgniteInternalFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
-            @Override public void applyx() throws IgniteCheckedException {
+            @Override public void applyx() {
                 for (int i = 0; i < entryCount(); i++)
-                    cache().put(KEY_PREFIX + i, i);
+                    jcache().put(KEY_PREFIX + i, i);
             }
         }, 1, "put-thread");
 
         GridTestUtils.runMultiThreaded(new CA() {
             @Override public void apply() {
                 while (!putFut.isDone()) {
-                    for (CacheEntry<String, Integer> entry : cache()) {
+                    for (Cache.Entry<String, Integer> entry : jcache()) {
                         assert entry != null;
                         assert entry.getKey() != null;
                         assert entry.getKey().contains(KEY_PREFIX);
@@ -118,21 +95,18 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
      * @throws Exception If failed.
      */
     public void testEntrySetIterator() throws Exception {
-        Set<CacheEntry<String, Integer>> entries = cache().entrySet();
-
-        assert entries != null;
-        assert entries.size() == entryCount();
+        assert jcache().localSize() == entryCount();
 
         int cnt = 0;
 
-        for (CacheEntry<String, Integer> entry : entries) {
+        for (Cache.Entry<String, Integer> entry : jcache()) {
             assert entry != null;
             assert entry.getKey() != null;
             assert entry.getKey().contains(KEY_PREFIX);
             assert entry.getValue() != null;
             assert entry.getValue() >= 0 && entry.getValue() < entryCount();
-            assert entry.get() != null;
-            assert entry.get() >= 0 && entry.get() < entryCount();
+            assert entry.getValue() != null;
+            assert entry.getValue() >= 0 && entry.getValue() < entryCount();
 
             cnt++;
         }
@@ -143,47 +117,21 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
     /**
      * @throws Exception If failed.
      */
-    public void testEntrySetIteratorFiltered() throws Exception {
-        Set<CacheEntry<String, Integer>> entries = cache().projection(lt50).entrySet();
-
-        assert entries != null;
-        assert entries.size() == 50;
-
-        int cnt = 0;
-
-        for (CacheEntry<String, Integer> entry : entries) {
-            assert entry != null;
-            assert entry.getKey() != null;
-            assert entry.getKey().contains(KEY_PREFIX);
-            assert entry.getValue() != null;
-            assert entry.getValue() >= 0 && entry.getValue() < 50;
-            assert entry.get() != null;
-            assert entry.get() >= 0 && entry.get() < 50;
-
-            cnt++;
-        }
-
-        assert cnt == 50;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testEntrySetIteratorMultithreaded() throws Exception {
         for (int i = 0; i < gridCount(); i++)
-            cache(i).removeAll();
+            jcache(i).removeAll();
 
         final IgniteInternalFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
-            @Override public void applyx() throws IgniteCheckedException {
+            @Override public void applyx() {
                 for (int i = 0; i < entryCount(); i++)
-                    cache().put(KEY_PREFIX + i, i);
+                    jcache().put(KEY_PREFIX + i, i);
             }
         }, 1, "put-thread");
 
         GridTestUtils.runMultiThreaded(new CA() {
             @Override public void apply() {
                 while (!putFut.isDone()) {
-                    for (CacheEntry<String, Integer> entry : cache().entrySet()) {
+                    for (Cache.Entry<String, Integer> entry : jcache()) {
                         assert entry != null;
                         assert entry.getKey() != null;
                         assert entry.getKey().contains(KEY_PREFIX);
@@ -193,157 +141,4 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
         }, 3, "iterator-thread");
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testKeySetIterator() throws Exception {
-        Set<String> keys = cache().keySet();
-
-        assert keys != null;
-        assert keys.size() == entryCount();
-
-        List<Integer> values = new ArrayList<>(entryCount());
-
-        int cnt = 0;
-
-        for (String key : keys) {
-            assert key != null;
-            assert key.contains(KEY_PREFIX);
-
-            values.add(cache().get(key));
-
-            cnt++;
-        }
-
-        assert values.size() == entryCount();
-        assert cnt == entryCount();
-
-        Collections.sort(values);
-
-        for (int i = 0; i < values.size(); i++)
-            assert values.get(i) == i;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testKeySetIteratorFiltered() throws Exception {
-        Set<String> keys = cache().projection(lt50).keySet();
-
-        assert keys != null;
-        assert keys.size() == 50;
-
-        List<Integer> values = new ArrayList<>(50);
-
-        int cnt = 0;
-
-        for (String key : keys) {
-            assert key != null;
-            assert key.contains(KEY_PREFIX);
-
-            values.add(cache().get(key));
-
-            cnt++;
-        }
-
-        assert values.size() == 50;
-        assert cnt == 50;
-
-        Collections.sort(values);
-
-        for (int i = 0; i < values.size(); i++)
-            assert values.get(i) == i;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testKeySetIteratorMultithreaded() throws Exception {
-        for (int i = 0; i < gridCount(); i++)
-            cache(i).removeAll();
-
-        final IgniteInternalFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
-            @Override public void applyx() throws IgniteCheckedException {
-                for (int i = 0; i < entryCount(); i++)
-                    cache().put(KEY_PREFIX + i, i);
-            }
-        }, 1, "put-thread");
-
-        GridTestUtils.runMultiThreaded(new CA() {
-            @Override public void apply() {
-                while (!putFut.isDone()) {
-                    for (String key : cache().keySet()) {
-                        assert key != null;
-                        assert key.contains(KEY_PREFIX);
-                    }
-                }
-            }
-        }, 3, "iterator-thread");
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testValuesIterator() throws Exception {
-        Collection<Integer> values = cache().values();
-
-        assert values != null;
-        assert values.size() == entryCount();
-
-        int cnt = 0;
-
-        for (Integer value : values) {
-            assert value != null;
-            assert value >= 0 && value < entryCount();
-
-            cnt++;
-        }
-
-        assert cnt == entryCount();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testValuesIteratorFiltered() throws Exception {
-        Collection<Integer> values = cache().projection(lt50).values();
-
-        assert values != null;
-        assert values.size() == 50;
-
-        int cnt = 0;
-
-        for (Integer value : values) {
-            assert value != null;
-            assert value >= 0 && value < 50;
-
-            cnt++;
-        }
-
-        assert cnt == 50;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testValuesIteratorMultithreaded() throws Exception {
-        for (int i = 0; i < gridCount(); i++)
-            cache(i).removeAll();
-
-        final IgniteInternalFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
-            @Override public void applyx() throws IgniteCheckedException {
-                for (int i = 0; i < entryCount(); i++)
-                    cache().put(KEY_PREFIX + i, i);
-            }
-        }, 1, "put-thread");
-
-        GridTestUtils.runMultiThreaded(new CA() {
-            @Override public void apply() {
-                while (!putFut.isDone()) {
-                    for (Integer value : cache().values())
-                        assert value != null;
-                }
-            }
-        }, 3, "iterator-thread");
-    }
 }

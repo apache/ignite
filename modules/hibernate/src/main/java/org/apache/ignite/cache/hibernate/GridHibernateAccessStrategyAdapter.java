@@ -20,6 +20,7 @@ package org.apache.ignite.cache.hibernate;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.hibernate.cache.*;
 import org.hibernate.cache.spi.access.*;
@@ -299,7 +300,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
      */
     static void evictAll(CacheProjection<Object,Object> cache) throws CacheException {
         try {
-            cache.globalClearAll();
+            cache.clear();
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e);
@@ -309,7 +310,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
     /**
      * Callable invalidates given key.
      */
-    private static class ClearKeyCallable implements Callable<Void>, Externalizable {
+    private static class ClearKeyCallable implements IgniteCallable<Void>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -345,7 +346,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
 
             assert cache != null;
 
-            cache.clear(key);
+            cache.clearLocally(key);
 
             return null;
         }

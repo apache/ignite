@@ -105,9 +105,14 @@ public class IgniteNode implements BenchmarkServer {
                     cc.setEvictionPolicy(new CacheLruEvictionPolicy(50000));
             }
 
+            cc.setReadThrough(args.isStoreEnabled());
+
+            cc.setWriteThrough(args.isStoreEnabled());
+
+            cc.setWriteBehindEnabled(args.isWriteBehind());
         }
 
-        TransactionsConfiguration tc = c.getTransactionsConfiguration();
+        TransactionConfiguration tc = c.getTransactionConfiguration();
 
         tc.setDefaultTxConcurrency(args.txConcurrency());
         tc.setDefaultTxIsolation(args.txIsolation());
@@ -134,12 +139,12 @@ public class IgniteNode implements BenchmarkServer {
             url = new URL(springCfgPath);
         }
         catch (MalformedURLException e) {
-            url = IgniteUtils.resolveGridGainUrl(springCfgPath);
+            url = IgniteUtils.resolveIgniteUrl(springCfgPath);
 
             if (url == null)
                 throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
                     ". Note that this path should be either absolute or a relative local file system path, " +
-                    "relative to META-INF in classpath or valid URL to GRIDGAIN_HOME.", e);
+                    "relative to META-INF in classpath or valid URL to IGNITE_HOME.", e);
         }
 
         GenericApplicationContext springCtx;

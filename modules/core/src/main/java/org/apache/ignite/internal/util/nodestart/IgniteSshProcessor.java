@@ -30,5 +30,5 @@ public interface IgniteSshProcessor {
      * @param timeout Connection timeout.
      * @return {@link Callable} starting node using SSH.
      */
-    public GridNodeCallable nodeStartCallable(GridRemoteStartSpecification spec, int timeout);
+    public IgniteNodeCallable nodeStartCallable(IgniteRemoteStartSpecification spec, int timeout);
 }

@@ -23,9 +23,9 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;
@@ -102,7 +102,6 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     /** Key bytes. */
     @GridToStringInclude
     @GridDirectCollection(byte[].class)
-    @GridDirectVersion(1)
     private List<byte[]> nearKeyBytes;
 
     /** Values to update. */
@@ -113,11 +112,9 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     /** Value bytes. */
     @GridToStringInclude
     @GridDirectCollection(GridCacheValueBytes.class)
-    @GridDirectVersion(1)
     private List<GridCacheValueBytes> nearValBytes;
 
     /** Force transform backups flag. */
-    @GridDirectVersion(2)
     private boolean forceTransformBackups;
 
     /** Entry processors. */
@@ -126,7 +123,6 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
     /** Entry processors bytes. */
     @GridDirectCollection(byte[].class)
-    @GridDirectVersion(2)
     private List<byte[]> entryProcessorsBytes;
 
     /** Near entry processors. */
@@ -135,7 +131,6 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
     /** Near entry processors bytes. */
     @GridDirectCollection(byte[].class)
-    @GridDirectVersion(2)
     private List<byte[]> nearEntryProcessorsBytes;
 
     /** Optional arguments for entry processor. */
@@ -146,11 +141,9 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     private byte[][] invokeArgsBytes;
 
     /** Subject ID. */
-    @GridDirectVersion(3)
     private UUID subjId;
 
     /** Task name hash. */
-    @GridDirectVersion(4)
     private int taskNameHash;
 
     /**
@@ -689,7 +682,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDhtAtomicUpdateRequest _clone = new GridDhtAtomicUpdateRequest();
 
         clone0(_clone);
@@ -698,24 +691,24 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridDhtAtomicUpdateRequest _clone = (GridDhtAtomicUpdateRequest)_msg;
 
         _clone.nodeId = nodeId;
-        _clone.futVer = futVer;
-        _clone.writeVer = writeVer;
+        _clone.futVer = futVer != null ? (GridCacheVersion)futVer.clone() : null;
+        _clone.writeVer = writeVer != null ? (GridCacheVersion)writeVer.clone() : null;
         _clone.topVer = topVer;
         _clone.keys = keys;
         _clone.keyBytes = keyBytes;
         _clone.vals = vals;
         _clone.valBytes = valBytes;
         _clone.drVers = drVers;
-        _clone.ttls = ttls;
-        _clone.drExpireTimes = drExpireTimes;
-        _clone.nearTtls = nearTtls;
-        _clone.nearExpireTimes = nearExpireTimes;
+        _clone.ttls = ttls != null ? (GridLongList)ttls.clone() : null;
+        _clone.drExpireTimes = drExpireTimes != null ? (GridLongList)drExpireTimes.clone() : null;
+        _clone.nearTtls = nearTtls != null ? (GridLongList)nearTtls.clone() : null;
+        _clone.nearExpireTimes = nearExpireTimes != null ? (GridLongList)nearExpireTimes.clone() : null;
         _clone.syncMode = syncMode;
         _clone.nearKeys = nearKeys;
         _clone.nearKeyBytes = nearKeyBytes;
@@ -735,306 +728,138 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (!commState.putLongList(drExpireTimes))
+                if (!writer.writeMessage("drExpireTimes", drExpireTimes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (drVers != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(drVers.size()))
-                            return false;
+                if (!writer.writeCollection("drVers", drVers, GridCacheVersion.class))
+                    return false;
 
-                        commState.it = drVers.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putCacheVersion((GridCacheVersion)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 5:
-                if (!commState.putCacheVersion(futVer))
+                if (!writer.writeCollection("entryProcessorsBytes", entryProcessorsBytes, byte[].class))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 6:
-                if (invokeArgsBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(invokeArgsBytes.length))
-                            return false;
+                if (!writer.writeBoolean("forceTransformBackups", forceTransformBackups))
+                    return false;
 
-                        commState.it = arrayIterator(invokeArgsBytes);
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 7:
-                if (keyBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(keyBytes.size()))
-                            return false;
+                if (!writer.writeMessage("futVer", futVer))
+                    return false;
 
-                        commState.it = keyBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 8:
-                if (!commState.putLongList(nearExpireTimes))
+                if (!writer.writeObjectArray("invokeArgsBytes", invokeArgsBytes, byte[].class))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 9:
-                if (!commState.putLongList(nearTtls))
+                if (!writer.writeCollection("keyBytes", keyBytes, byte[].class))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 10:
-                if (!commState.putUuid(nodeId))
+                if (!writer.writeCollection("nearEntryProcessorsBytes", nearEntryProcessorsBytes, byte[].class))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 11:
-                if (!commState.putEnum(syncMode))
+                if (!writer.writeMessage("nearExpireTimes", nearExpireTimes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 12:
-                if (!commState.putLong(topVer))
+                if (!writer.writeCollection("nearKeyBytes", nearKeyBytes, byte[].class))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 13:
-                if (!commState.putLongList(ttls))
+                if (!writer.writeMessage("nearTtls", nearTtls))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 14:
-                if (valBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(valBytes.size()))
-                            return false;
+                if (!writer.writeCollection("nearValBytes", nearValBytes, GridCacheValueBytes.class))
+                    return false;
 
-                        commState.it = valBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putValueBytes((GridCacheValueBytes)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 15:
-                if (!commState.putCacheVersion(writeVer))
+                if (!writer.writeUuid("nodeId", nodeId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 16:
-                if (nearKeyBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(nearKeyBytes.size()))
-                            return false;
+                if (!writer.writeUuid("subjId", subjId))
+                    return false;
 
-                        commState.it = nearKeyBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 17:
-                if (nearValBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(nearValBytes.size()))
-                            return false;
+                if (!writer.writeEnum("syncMode", syncMode))
+                    return false;
 
-                        commState.it = nearValBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putValueBytes((GridCacheValueBytes)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 18:
-                if (entryProcessorsBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(entryProcessorsBytes.size()))
-                            return false;
+                if (!writer.writeInt("taskNameHash", taskNameHash))
+                    return false;
 
-                        commState.it = entryProcessorsBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 19:
-                if (!commState.putBoolean(forceTransformBackups))
+                if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 20:
-                if (nearEntryProcessorsBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(nearEntryProcessorsBytes.size()))
-                            return false;
+                if (!writer.writeMessage("ttls", ttls))
+                    return false;
 
-                        commState.it = nearEntryProcessorsBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 21:
-                if (!commState.putUuid(subjId))
+                if (!writer.writeCollection("valBytes", valBytes, GridCacheValueBytes.class))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 22:
-                if (!commState.putInt(taskNameHash))
+                if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -1044,357 +869,171 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                GridLongList drExpireTimes0 = commState.getLongList();
+                drExpireTimes = reader.readMessage("drExpireTimes");
 
-                if (drExpireTimes0 == LONG_LIST_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                drExpireTimes = drExpireTimes0;
-
-                commState.idx++;
+                state++;
 
             case 4:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                drVers = reader.readCollection("drVers", GridCacheVersion.class);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (drVers == null)
-                        drVers = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridCacheVersion _val = commState.getCacheVersion();
-
-                        if (_val == CACHE_VER_NOT_READ)
-                            return false;
-
-                        drVers.add((GridCacheVersion)_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 5:
-                GridCacheVersion futVer0 = commState.getCacheVersion();
+                entryProcessorsBytes = reader.readCollection("entryProcessorsBytes", byte[].class);
 
-                if (futVer0 == CACHE_VER_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                futVer = futVer0;
-
-                commState.idx++;
+                state++;
 
             case 6:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                forceTransformBackups = reader.readBoolean("forceTransformBackups");
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (invokeArgsBytes == null)
-                        invokeArgsBytes = new byte[commState.readSize][];
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        invokeArgsBytes[i] = (byte[])_val;
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 7:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                futVer = reader.readMessage("futVer");
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (keyBytes == null)
-                        keyBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        keyBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 8:
-                GridLongList nearExpireTimes0 = commState.getLongList();
+                invokeArgsBytes = reader.readObjectArray("invokeArgsBytes", byte[].class);
 
-                if (nearExpireTimes0 == LONG_LIST_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                nearExpireTimes = nearExpireTimes0;
-
-                commState.idx++;
+                state++;
 
             case 9:
-                GridLongList nearTtls0 = commState.getLongList();
+                keyBytes = reader.readCollection("keyBytes", byte[].class);
 
-                if (nearTtls0 == LONG_LIST_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                nearTtls = nearTtls0;
-
-                commState.idx++;
+                state++;
 
             case 10:
-                UUID nodeId0 = commState.getUuid();
+                nearEntryProcessorsBytes = reader.readCollection("nearEntryProcessorsBytes", byte[].class);
 
-                if (nodeId0 == UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                nodeId = nodeId0;
-
-                commState.idx++;
+                state++;
 
             case 11:
-                if (buf.remaining() < 1)
+                nearExpireTimes = reader.readMessage("nearExpireTimes");
+
+                if (!reader.isLastRead())
                     return false;
 
-                byte syncMode0 = commState.getByte();
-
-                syncMode = CacheWriteSynchronizationMode.fromOrdinal(syncMode0);
-
-                commState.idx++;
+                state++;
 
             case 12:
-                if (buf.remaining() < 8)
+                nearKeyBytes = reader.readCollection("nearKeyBytes", byte[].class);
+
+                if (!reader.isLastRead())
                     return false;
 
-                topVer = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 13:
-                GridLongList ttls0 = commState.getLongList();
+                nearTtls = reader.readMessage("nearTtls");
 
-                if (ttls0 == LONG_LIST_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                ttls = ttls0;
-
-                commState.idx++;
+                state++;
 
             case 14:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                nearValBytes = reader.readCollection("nearValBytes", GridCacheValueBytes.class);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (valBytes == null)
-                        valBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridCacheValueBytes _val = commState.getValueBytes();
-
-                        if (_val == VAL_BYTES_NOT_READ)
-                            return false;
-
-                        valBytes.add((GridCacheValueBytes)_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 15:
-                GridCacheVersion writeVer0 = commState.getCacheVersion();
+                nodeId = reader.readUuid("nodeId");
 
-                if (writeVer0 == CACHE_VER_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                writeVer = writeVer0;
-
-                commState.idx++;
+                state++;
 
             case 16:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                subjId = reader.readUuid("subjId");
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (nearKeyBytes == null)
-                        nearKeyBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        nearKeyBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 17:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                syncMode = reader.readEnum("syncMode", CacheWriteSynchronizationMode.class);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (nearValBytes == null)
-                        nearValBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridCacheValueBytes _val = commState.getValueBytes();
-
-                        if (_val == VAL_BYTES_NOT_READ)
-                            return false;
-
-                        nearValBytes.add((GridCacheValueBytes)_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 18:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                taskNameHash = reader.readInt("taskNameHash");
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (entryProcessorsBytes == null)
-                        entryProcessorsBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        entryProcessorsBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 19:
-                if (buf.remaining() < 1)
+                topVer = reader.readLong("topVer");
+
+                if (!reader.isLastRead())
                     return false;
 
-                forceTransformBackups = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 20:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                ttls = reader.readMessage("ttls");
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (nearEntryProcessorsBytes == null)
-                        nearEntryProcessorsBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        nearEntryProcessorsBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 21:
-                UUID subjId0 = commState.getUuid();
+                valBytes = reader.readCollection("valBytes", GridCacheValueBytes.class);
 
-                if (subjId0 == UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                subjId = subjId0;
-
-                commState.idx++;
+                state++;
 
             case 22:
-                if (buf.remaining() < 4)
+                writeVer = reader.readMessage("writeVer");
+
+                if (!reader.isLastRead())
                     return false;
 
-                taskNameHash = commState.getInt();
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -1403,7 +1042,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 37;
+        return 38;
     }
 
     /** {@inheritDoc} */

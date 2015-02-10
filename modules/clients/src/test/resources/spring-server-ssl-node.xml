@@ -15,16 +15,16 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
-    GridGain Spring configuration file to startup grid cache.
+    Ignite Spring configuration file to startup grid cache.
 
-    When starting a standalone GridGain node, you need to execute the following command:
+    When starting a standalone Ignite node, you need to execute the following command:
     {IGNITE_HOME}/bin/ignite.{bat|sh} path-to-this-file/example-cache.xml
 
-    When starting GridGain from Java IDE, pass path to this file into GridGain:
-    GridGain.start("path-to-this-file/example-benchmark.xml");
+    When starting Ignite from Java IDE, pass path to this file into Ignition:
+    Ignition.start("path-to-this-file/example-benchmark.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -94,7 +94,7 @@
                 <!--
                     Local cache example configuration.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <!-- Cache name is null. -->
                     <!--<property name="name"><null/></property>-->
 
@@ -107,7 +107,7 @@
                 <!--
                     Partitioned cache example configuration.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <!-- Cache name is 'partitioned'. -->
                     <property name="name" value="partitioned"/>
 
@@ -190,7 +190,7 @@
                 <!--
                     Replicated cache example configuration.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <!-- Cache name is 'replicated'. -->
                     <property name="name" value="replicated"/>
 
@@ -205,7 +205,7 @@
                 <!--
                     Replicated cache with in-memory store enabled.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <!-- Cache name is 'replicated.store'. -->
                     <property name="name" value="replicated.store"/>
 
@@ -228,7 +228,7 @@
             Use passcode authentication SPI.
         - ->
         <property name="authenticationSpi">
-            <bean class="org.gridgain.grid.spi.authentication.passcode.GridPasscodeAuthenticationSpi">
+            <bean class="org.apache.ignite.grid.spi.authentication.passcode.GridPasscodeAuthenticationSpi">
                 <property name="passcodes">
                     <map>
                         <entry key="REMOTE_NODE" value="s3cret"/>
@@ -279,7 +279,7 @@
             Logger to use.
         -->
         <property name="gridLogger">
-            <bean class="org.apache.ignite.logger.log4j.IgniteLog4jLogger">
+            <bean class="org.apache.ignite.logger.log4j.Log4JLogger">
                 <constructor-arg type="java.lang.String" value="modules/clients/src/test/resources/log4j.xml"/>
             </bean>
         </property>
@@ -288,44 +288,16 @@
             Explicitly set custom public and system thread pools to increase
             possible started nodes count in one VM.
         -->
-        <property name="executorService">
-            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
-                <constructor-arg value="SERVER"/>
-                <constructor-arg type="int" value="15"/>
-                <constructor-arg type="int" value="15"/>
-                <constructor-arg type="long">
-                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
-                </constructor-arg>
-                <constructor-arg type="java.util.concurrent.BlockingQueue">
-                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
-                </constructor-arg>
-            </bean>
-        </property>
+        <property name="publicThreadPoolSize" value="15"/>
 
-        <property name="executorServiceShutdown" value="true"/>
-
-        <property name="systemExecutorService">
-            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
-                <constructor-arg value="SYS-SERVER"/>
-                <constructor-arg type="int" value="15"/>
-                <constructor-arg type="int" value="15"/>
-                <constructor-arg type="long">
-                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
-                </constructor-arg>
-                <constructor-arg type="java.util.concurrent.BlockingQueue">
-                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
-                </constructor-arg>
-            </bean>
-        </property>
-
-        <property name="systemExecutorServiceShutdown" value="true"/>
+        <property name="systemThreadPoolSize" value="15"/>
 
         <property name="portableConfiguration">
-            <bean class="org.apache.ignite.portables.PortableConfiguration">
+            <bean class="org.gridgain.grid.portables.PortableConfiguration">
                 <property name="typeConfigurations">
                     <list>
-                        <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.apache.ignite.internal.client.ClientTestPortable"/>
+                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
+                            <property name="className" value="org.gridgain.client.ClientTestPortable"/>
                         </bean>
                     </list>
                 </property>

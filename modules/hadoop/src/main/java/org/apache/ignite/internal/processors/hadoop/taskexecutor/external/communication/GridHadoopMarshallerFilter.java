@@ -27,12 +27,12 @@ import org.apache.ignite.marshaller.*;
  */
 public class GridHadoopMarshallerFilter extends GridNioFilterAdapter {
     /** Marshaller. */
-    private IgniteMarshaller marshaller;
+    private Marshaller marshaller;
 
     /**
      * @param marshaller Marshaller to use.
      */
-    public GridHadoopMarshallerFilter(IgniteMarshaller marshaller) {
+    public GridHadoopMarshallerFilter(Marshaller marshaller) {
         super("GridHadoopMarshallerFilter");
 
         this.marshaller = marshaller;

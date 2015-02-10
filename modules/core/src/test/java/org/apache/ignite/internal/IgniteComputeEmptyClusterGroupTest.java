@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -52,7 +51,7 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -177,7 +176,7 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class FailRunnable implements Runnable {
+    private static class FailRunnable implements IgniteRunnable {
         /** {@inheritDoc} */
         @Override public void run() {
             fail();
@@ -187,7 +186,7 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class FailCallable implements Callable<Object> {
+    private static class FailCallable implements IgniteCallable<Object> {
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
             fail();

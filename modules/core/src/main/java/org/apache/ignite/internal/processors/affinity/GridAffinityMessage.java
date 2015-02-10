@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Object wrapper containing serialized byte array of original object and deployment information.
  */
-class GridAffinityMessage implements Externalizable, IgniteOptimizedMarshallable {
+class GridAffinityMessage implements Externalizable, OptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,7 +44,7 @@ class GridAffinityMessage implements Externalizable, IgniteOptimizedMarshallable
     private IgniteUuid clsLdrId;
 
     /** */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /** */
     private String srcClsName;
@@ -68,7 +68,7 @@ class GridAffinityMessage implements Externalizable, IgniteOptimizedMarshallable
         byte[] src,
         String srcClsName,
         IgniteUuid clsLdrId,
-        IgniteDeploymentMode depMode,
+        DeploymentMode depMode,
         String userVer,
         Map<UUID, IgniteUuid> ldrParties) {
         this.src = src;
@@ -103,7 +103,7 @@ class GridAffinityMessage implements Externalizable, IgniteOptimizedMarshallable
     /**
      * @return Deployment mode.
      */
-    public IgniteDeploymentMode deploymentMode() {
+    public DeploymentMode deploymentMode() {
         return depMode;
     }
 
@@ -149,7 +149,7 @@ class GridAffinityMessage implements Externalizable, IgniteOptimizedMarshallable
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         src = U.readByteArray(in);
 
-        depMode = IgniteDeploymentMode.fromOrdinal(in.readInt());
+        depMode = DeploymentMode.fromOrdinal(in.readInt());
 
         clsLdrId = U.readGridUuid(in);
         srcClsName = U.readString(in);

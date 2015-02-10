@@ -121,7 +121,7 @@ import java.util.*;
  * of which may hinder performance. In such cases it may make sense to disable task
  * result caching by attaching {@link ComputeTaskNoResultCache @GridComputeTaskNoResultCache} annotation to task class, and
  * processing all results as they come in {@link #result(ComputeJobResult, List)} method.
- * When GridGain sees this annotation it will disable tracking of job results and
+ * When Ignite sees this annotation it will disable tracking of job results and
  * list of all job results passed into {@link #result(ComputeJobResult, List)} or
  * {@link #reduce(List)} methods will always be empty. Note that list of
  * job siblings on {@link ComputeTaskSession} will also be empty to prevent number
@@ -132,11 +132,11 @@ import java.util.*;
  * ignite resources. Both, field and method based injection are supported.
  * The following ignite resources can be injected:
  * <ul>
- * <li>{@link org.apache.ignite.resources.IgniteTaskSessionResource}</li>
+ * <li>{@link org.apache.ignite.resources.TaskSessionResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteInstanceResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteLoggerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteSpringApplicationContextResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteSpringResource}</li>
+ * <li>{@link org.apache.ignite.resources.LoggerResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringApplicationContextResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  * <p>
@@ -152,7 +152,7 @@ import java.util.*;
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskAdapter&lt;String, String&gt; {
  *     // Inject load balancer.
- *     &#64;IgniteLoadBalancerResource
+ *     &#64;LoadBalancerResource
  *     ComputeLoadBalancer balancer;
  *
  *     // Map jobs to grid nodes.

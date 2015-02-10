@@ -33,7 +33,7 @@ import org.jetbrains.annotations.*;
  *     &lt;!-- Enable L2 cache. --&gt;
  *     &lt;property name="cache.use_second_level_cache"&gt;true&lt;/property&gt;
  *
- *     &lt;!-- Use GridGain as L2 cache provider. --&gt;
+ *     &lt;!-- Use Ignite as L2 cache provider. --&gt;
  *     &lt;property name="cache.region.factory_class"&gt;org.apache.ignite.cache.hibernate.GridHibernateRegionFactory&lt;/property&gt;
  *
  *     &lt;!-- Specify entity. --&gt;

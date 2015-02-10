@@ -45,16 +45,16 @@ import static java.util.Collections.*;
  * path.
  */
 public class GridHadoopPopularWordsTest {
-    /** GridGain home. */
-    private static final String IGNITE_HOME = U.getGridGainHome();
+    /** Ignite home. */
+    private static final String IGNITE_HOME = U.getIgniteHome();
 
     /** The path to the input directory. ALl files in that directory will be processed. */
     private static final Path BOOKS_LOCAL_DIR =
-        new Path("file:" + IGNITE_HOME, "modules/tests/java/org/gridgain/grid/hadoop/books");
+        new Path("file:" + IGNITE_HOME, "modules/tests/java/org/apache/ignite/grid/hadoop/books");
 
     /** The path to the output directory. THe result file will be written to this location. */
     private static final Path RESULT_LOCAL_DIR =
-        new Path("file:" + IGNITE_HOME, "modules/tests/java/org/gridgain/grid/hadoop/output");
+        new Path("file:" + IGNITE_HOME, "modules/tests/java/org/apache/ignite/grid/hadoop/output");
 
     /** Popular books source dir in DFS. */
     private static final Path BOOKS_DFS_DIR = new Path("tmp/word-count-example/in");
@@ -180,7 +180,7 @@ public class GridHadoopPopularWordsTest {
 
         // Use explicit configuration of distributed file system, if provided.
         if (DFS_CFG != null)
-            cfg.addResource(U.resolveGridGainUrl(DFS_CFG));
+            cfg.addResource(U.resolveIgniteUrl(DFS_CFG));
 
         jobCfg.setJobName("HadoopPopularWordExample");
         jobCfg.setJarByClass(GridHadoopPopularWordsTest.class);

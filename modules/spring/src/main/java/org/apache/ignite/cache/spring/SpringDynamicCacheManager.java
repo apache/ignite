@@ -34,22 +34,22 @@ import java.util.*;
  * Extension of {@link SpringCacheManager} that adds an option to
  * emulate dynamic cache creation for you Spring-based applications.
  * <p>
- * All the data will be actually cached in one GridGain cache. It's
+ * All the data will be actually cached in one Ignite cache. It's
  * name should be provided to this cache manager via
  * {@link #setDataCacheName(String)} configuration property.
  * <p>
  * Under the hood, this cache manager will create a cache projection
  * for each cache name provided in {@link Cacheable}, {@link CachePut},
  * etc. annotations. Note that you're still able to use caches configured in
- * GridGain configuration. Cache projection will be created only
+ * Ignite configuration. Cache projection will be created only
  * cache with provided name doesn't exist.
  * <h1 class="header">Configuration</h1>
  * {@link SpringDynamicCacheManager} inherits all configuration
  * properties from {@link SpringCacheManager} (see it's JavaDoc
- * for more information on how to enable GridGain-based caching in
+ * for more information on how to enable Ignite-based caching in
  * a Spring application).
  * <p>
- * Additionally you will need to set a GridGain cache name where the data for
+ * Additionally you will need to set a Ignite cache name where the data for
  * all dynamically created caches will be stored. By default its name
  * is {@code null}, which refers to default cache. Here is the example
  * of how to configure a named cache:

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.license;
 import org.jetbrains.annotations.*;
 
 /**
- * Different GridGain subsystems.
+ * Different Ignite subsystems.
  */
 public enum GridLicenseSubsystem {
     /** In-Memory HPC. */

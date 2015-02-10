@@ -37,7 +37,7 @@ public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
     private Ignite ignite;
 
     /** Auto-inject cache name. */
-    @IgniteCacheNameResource
+    @CacheNameResource
     private String cacheName;
 
     /** Dummy database. */

@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.*;
  * internal UUID.
  */
 public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<IgniteUuid>, Cloneable, Externalizable,
-    IgniteOptimizedMarshallable {
+    OptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 

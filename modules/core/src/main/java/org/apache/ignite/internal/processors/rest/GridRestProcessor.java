@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.processors.rest.handlers.*;
 import org.apache.ignite.internal.processors.rest.handlers.cache.*;
-import org.apache.ignite.internal.processors.rest.handlers.metadata.*;
+import org.apache.ignite.internal.processors.rest.handlers.datastructures.*;
 import org.apache.ignite.internal.processors.rest.handlers.task.*;
 import org.apache.ignite.internal.processors.rest.handlers.top.*;
 import org.apache.ignite.internal.processors.rest.handlers.version.*;
@@ -128,7 +128,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             fut.setWorker(w);
 
             try {
-                config().getExecutorService().execute(w);
+                ctx.getRestExecutorService().execute(w);
             }
             catch (RejectedExecutionException e) {
                 U.error(log, "Failed to execute worker due to execution rejection " +
@@ -252,7 +252,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new GridTaskCommandHandler(ctx));
             addHandler(new GridTopologyCommandHandler(ctx));
             addHandler(new GridVersionCommandHandler(ctx));
-            addHandler(new GridPortableMetadataHandler(ctx));
+            addHandler(new DataStructuresCommandHandler(ctx));
 
             // Start protocols.
             startTcpProtocol();
@@ -327,8 +327,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Applies {@link org.apache.ignite.configuration.ConnectorMessageInterceptor}
-     * from {@link org.apache.ignite.configuration.ConnectorConfiguration#getMessageInterceptor()}
+     * Applies {@link ClientMessageInterceptor}
+     * from {@link ClientConnectionConfiguration#getClientMessageInterceptor()}
      * to all user parameters in the request.
      *
      * @param req Client request.
@@ -374,8 +374,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Applies {@link org.apache.ignite.configuration.ConnectorMessageInterceptor} from
-     * {@link org.apache.ignite.configuration.ConnectorConfiguration#getMessageInterceptor()}
+     * Applies {@link ClientMessageInterceptor} from
+     * {@link ClientConnectionConfiguration#getClientMessageInterceptor()}
      * to all user objects in the response.
      *
      * @param res Response.
@@ -394,8 +394,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 case CACHE_REMOVE:
                 case CACHE_REMOVE_ALL:
                 case CACHE_REPLACE:
-                case CACHE_INCREMENT:
-                case CACHE_DECREMENT:
+                case ATOMIC_INCREMENT:
+                case ATOMIC_DECREMENT:
                 case CACHE_CAS:
                 case CACHE_APPEND:
                 case CACHE_PREPEND:
@@ -562,8 +562,6 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case CACHE_ADD:
             case CACHE_PUT_ALL:
             case CACHE_REPLACE:
-            case CACHE_INCREMENT:
-            case CACHE_DECREMENT:
             case CACHE_CAS:
             case CACHE_APPEND:
             case CACHE_PREPEND:
@@ -594,6 +592,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case QUIT:
             case GET_PORTABLE_METADATA:
             case PUT_PORTABLE_METADATA:
+            case ATOMIC_INCREMENT:
+            case ATOMIC_DECREMENT:
                 break;
 
             default:
@@ -622,7 +622,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             log.debug("Added REST command handler: " + hnd);
 
         for (GridRestCommand cmd : hnd.supportedCommands()) {
-            assert !handlers.containsKey(cmd);
+            assert !handlers.containsKey(cmd) : cmd;
 
             handlers.put(cmd, hnd);
         }
@@ -653,7 +653,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             startProtocol(proto);
         }
         catch (ClassNotFoundException ignored) {
-            U.quietAndWarn(log, "Failed to initialize HTTP REST protocol (consider adding gridgain-rest-http " +
+            U.quietAndWarn(log, "Failed to initialize HTTP REST protocol (consider adding ignite-rest-http " +
                 "module to classpath).");
         }
         catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {

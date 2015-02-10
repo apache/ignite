@@ -25,7 +25,7 @@ import java.util.*;
 
 /**
  * Represents {@ignitelink ...} tag. This tag can
- * be used as replacement of {@link ...} tag that references to the GridGain class that is not in classpath.
+ * be used as replacement of {@link ...} tag that references to the Ignite class that is not in classpath.
  * Class and its arguments should have fully qualified names.
  */
 public class IgniteLinkTaglet implements Taglet {
@@ -109,9 +109,9 @@ public class IgniteLinkTaglet implements Taglet {
     /**
      * Given the <code>Tag</code> representation of this custom tag, return its string representation.
      * <p>
-     * Input: org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi#setIndexCustomFunctionClasses(Class[])
+     * Input: org.apache.ignite.grid.spi.indexing.h2.GridH2IndexingSpi#setIndexCustomFunctionClasses(Class[])
      * <p>
-     * Output: <a href="../../../../../org/gridgain/grid/spi/indexing/h2/GridH2IndexingSpi.html#
+     * Output: <a href="../../../../../org/apache/ignite/grid/spi/indexing/h2/GridH2IndexingSpi.html#
      * setIndexCustomFunctionClasses(java.lang.Class...)">
      * <code>GridH2IndexingSpi.setIndexCustomFunctionClasses(java.lang.Class[])</code></a>
      *

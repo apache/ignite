@@ -55,7 +55,7 @@ public class IgniteLog4jDailyRollingFileAppender extends DailyRollingFileAppende
      *
      */
     private void init() {
-        IgniteLog4jLogger.addAppender(this);
+        Log4JLogger.addAppender(this);
     }
 
     /** {@inheritDoc} */

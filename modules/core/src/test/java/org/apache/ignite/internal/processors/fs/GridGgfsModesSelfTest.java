@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.fs;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -32,7 +32,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.fs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 
 /**
  * GGFS modes self test.
@@ -220,14 +220,14 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
 
         startUp();
 
-        checkMode("/gridgain/primary", PRIMARY);
-        checkMode("/gridgain/primary/", PRIMARY);
-        checkMode("/gridgain/primary/subfolder", PRIMARY);
-        checkMode("/gridgain/primary/folder/file.txt", PRIMARY);
-        checkMode("/gridgain/primaryx", DUAL_ASYNC);
-        checkMode("/gridgain/primaryx/", DUAL_ASYNC);
-        checkMode("/gridgain/primaryx/subfolder", DUAL_ASYNC);
-        checkMode("/gridgain/primaryx/folder/file.txt", DUAL_ASYNC);
+        checkMode("/ignite/primary", PRIMARY);
+        checkMode("/ignite/primary/", PRIMARY);
+        checkMode("/ignite/primary/subfolder", PRIMARY);
+        checkMode("/ignite/primary/folder/file.txt", PRIMARY);
+        checkMode("/ignite/primaryx", DUAL_ASYNC);
+        checkMode("/ignite/primaryx/", DUAL_ASYNC);
+        checkMode("/ignite/primaryx/subfolder", DUAL_ASYNC);
+        checkMode("/ignite/primaryx/folder/file.txt", DUAL_ASYNC);
     }
 
     /**
@@ -242,47 +242,47 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
 
         startUp();
 
-        checkMode("/gridgain/proxy", PROXY);
-        checkMode("/gridgain/proxy/", PROXY);
-        checkMode("/gridgain/proxy/subfolder", PROXY);
-        checkMode("/gridgain/proxy/folder/file.txt", PROXY);
-        checkMode("/gridgain/proxyx", PRIMARY);
-        checkMode("/gridgain/proxyx/", PRIMARY);
-        checkMode("/gridgain/proxyx/subfolder", PRIMARY);
-        checkMode("/gridgain/proxyx/folder/file.txt", PRIMARY);
+        checkMode("/ignite/proxy", PROXY);
+        checkMode("/ignite/proxy/", PROXY);
+        checkMode("/ignite/proxy/subfolder", PROXY);
+        checkMode("/ignite/proxy/folder/file.txt", PROXY);
+        checkMode("/ignite/proxyx", PRIMARY);
+        checkMode("/ignite/proxyx/", PRIMARY);
+        checkMode("/ignite/proxyx/subfolder", PRIMARY);
+        checkMode("/ignite/proxyx/folder/file.txt", PRIMARY);
 
-        checkMode("/userdir/gridgain/proxy", PRIMARY);
-        checkMode("/userdir/gridgain/proxy/", PRIMARY);
-        checkMode("/userdir/gridgain/proxy/subfolder", PRIMARY);
-        checkMode("/userdir/gridgain/proxy/folder/file.txt", PRIMARY);
+        checkMode("/userdir/ignite/proxy", PRIMARY);
+        checkMode("/userdir/ignite/proxy/", PRIMARY);
+        checkMode("/userdir/ignite/proxy/subfolder", PRIMARY);
+        checkMode("/userdir/ignite/proxy/folder/file.txt", PRIMARY);
 
-        checkMode("/gridgain/sync", DUAL_SYNC);
-        checkMode("/gridgain/sync/", DUAL_SYNC);
-        checkMode("/gridgain/sync/subfolder", DUAL_SYNC);
-        checkMode("/gridgain/sync/folder/file.txt", DUAL_SYNC);
-        checkMode("/gridgain/syncx", PRIMARY);
-        checkMode("/gridgain/syncx/", PRIMARY);
-        checkMode("/gridgain/syncx/subfolder", PRIMARY);
-        checkMode("/gridgain/syncx/folder/file.txt", PRIMARY);
+        checkMode("/ignite/sync", DUAL_SYNC);
+        checkMode("/ignite/sync/", DUAL_SYNC);
+        checkMode("/ignite/sync/subfolder", DUAL_SYNC);
+        checkMode("/ignite/sync/folder/file.txt", DUAL_SYNC);
+        checkMode("/ignite/syncx", PRIMARY);
+        checkMode("/ignite/syncx/", PRIMARY);
+        checkMode("/ignite/syncx/subfolder", PRIMARY);
+        checkMode("/ignite/syncx/folder/file.txt", PRIMARY);
 
-        checkMode("/userdir/gridgain/sync", PRIMARY);
-        checkMode("/userdir/gridgain/sync/", PRIMARY);
-        checkMode("/userdir/gridgain/sync/subfolder", PRIMARY);
-        checkMode("/userdir/gridgain/sync/folder/file.txt", PRIMARY);
+        checkMode("/userdir/ignite/sync", PRIMARY);
+        checkMode("/userdir/ignite/sync/", PRIMARY);
+        checkMode("/userdir/ignite/sync/subfolder", PRIMARY);
+        checkMode("/userdir/ignite/sync/folder/file.txt", PRIMARY);
 
-        checkMode("/gridgain/async", DUAL_ASYNC);
-        checkMode("/gridgain/async/", DUAL_ASYNC);
-        checkMode("/gridgain/async/subfolder", DUAL_ASYNC);
-        checkMode("/gridgain/async/folder/file.txt", DUAL_ASYNC);
-        checkMode("/gridgain/asyncx", PRIMARY);
-        checkMode("/gridgain/asyncx/", PRIMARY);
-        checkMode("/gridgain/asyncx/subfolder", PRIMARY);
-        checkMode("/gridgain/asyncx/folder/file.txt", PRIMARY);
+        checkMode("/ignite/async", DUAL_ASYNC);
+        checkMode("/ignite/async/", DUAL_ASYNC);
+        checkMode("/ignite/async/subfolder", DUAL_ASYNC);
+        checkMode("/ignite/async/folder/file.txt", DUAL_ASYNC);
+        checkMode("/ignite/asyncx", PRIMARY);
+        checkMode("/ignite/asyncx/", PRIMARY);
+        checkMode("/ignite/asyncx/subfolder", PRIMARY);
+        checkMode("/ignite/asyncx/folder/file.txt", PRIMARY);
 
-        checkMode("/userdir/gridgain/async", PRIMARY);
-        checkMode("/userdir/gridgain/async/", PRIMARY);
-        checkMode("/userdir/gridgain/async/subfolder", PRIMARY);
-        checkMode("/userdir/gridgain/async/folder/file.txt", PRIMARY);
+        checkMode("/userdir/ignite/async", PRIMARY);
+        checkMode("/userdir/ignite/async/", PRIMARY);
+        checkMode("/userdir/ignite/async/subfolder", PRIMARY);
+        checkMode("/userdir/ignite/async/folder/file.txt", PRIMARY);
     }
 
     /**
@@ -295,24 +295,24 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
     public void testDefaultsNoSecondaryUriNonPrimary() throws Exception {
         startUp();
 
-        checkMode("/gridgain/proxy", PRIMARY);
-        checkMode("/gridgain/proxy/", PRIMARY);
-        checkMode("/gridgain/proxy/subfolder", PRIMARY);
-        checkMode("/gridgain/proxy/folder/file.txt", PRIMARY);
+        checkMode("/ignite/proxy", PRIMARY);
+        checkMode("/ignite/proxy/", PRIMARY);
+        checkMode("/ignite/proxy/subfolder", PRIMARY);
+        checkMode("/ignite/proxy/folder/file.txt", PRIMARY);
 
-        checkMode("/gridgain/sync", PRIMARY);
-        checkMode("/gridgain/sync/", PRIMARY);
-        checkMode("/gridgain/sync/subfolder", PRIMARY);
-        checkMode("/gridgain/sync/folder/file.txt", PRIMARY);
+        checkMode("/ignite/sync", PRIMARY);
+        checkMode("/ignite/sync/", PRIMARY);
+        checkMode("/ignite/sync/subfolder", PRIMARY);
+        checkMode("/ignite/sync/folder/file.txt", PRIMARY);
 
-        checkMode("/gridgain/async", PRIMARY);
-        checkMode("/gridgain/async/", PRIMARY);
-        checkMode("/gridgain/async/subfolder", PRIMARY);
-        checkMode("/gridgain/async/folder/file.txt", PRIMARY);
+        checkMode("/ignite/async", PRIMARY);
+        checkMode("/ignite/async/", PRIMARY);
+        checkMode("/ignite/async/subfolder", PRIMARY);
+        checkMode("/ignite/async/folder/file.txt", PRIMARY);
     }
 
     /**
-     * Ensure that it is impossible to override mappings for /gridgain/* folders.
+     * Ensure that it is impossible to override mappings for /ignite/* folders.
      *
      * @throws Exception If failed.
      */
@@ -321,15 +321,15 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
 
         mode = DUAL_ASYNC;
 
-        pathModes(F.t("/gridgain/primary", PROXY), F.t("/gridgain/proxy", DUAL_SYNC),
-            F.t("/gridgain/sync", DUAL_ASYNC), F.t("/gridgain/async", PRIMARY));
+        pathModes(F.t("/ignite/primary", PROXY), F.t("/ignite/proxy", DUAL_SYNC),
+            F.t("/ignite/sync", DUAL_ASYNC), F.t("/ignite/async", PRIMARY));
 
         startUp();
 
-        checkMode("/gridgain/primary", PRIMARY);
-        checkMode("/gridgain/proxy", PROXY);
-        checkMode("/gridgain/sync", DUAL_SYNC);
-        checkMode("/gridgain/async", DUAL_ASYNC);
+        checkMode("/ignite/primary", PRIMARY);
+        checkMode("/ignite/proxy", PROXY);
+        checkMode("/ignite/sync", DUAL_SYNC);
+        checkMode("/ignite/async", DUAL_ASYNC);
     }
 
     /**
