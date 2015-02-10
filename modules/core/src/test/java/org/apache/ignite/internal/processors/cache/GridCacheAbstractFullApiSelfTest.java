@@ -2983,7 +2983,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
-        final GridCache<String, Integer> c = cache();
+        final IgniteCache<String, Integer> c = jcache();
 
         final String key = primaryKeysForCache(jcache(), 1).get(0);
 
@@ -3176,7 +3176,31 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         // Ensure that old TTL and expire time are not longer "visible".
         entry = internalCache.peekEx(key);
 
-        assert c.entry(key).getValue() == null;
+        assert c.get(key) == null;
+
+        assertEquals(0, entry.ttl());
+        assertEquals(0, entry.expireTime());
+
+        // Ensure that next update will not pick old expire time.
+
+        tx = inTx ? transactions().txStart() : null;
+
+        try {
+            jcache().put(key, 10);
+
+            if (tx != null)
+                tx.commit();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
+
+        U.sleep(2000);
+
+        entry = internalCache.peekEx(key);
+
+        assertEquals((Integer)10, c.get(key));
 
         assertEquals(0, entry.ttl());
         assertEquals(0, entry.expireTime());
