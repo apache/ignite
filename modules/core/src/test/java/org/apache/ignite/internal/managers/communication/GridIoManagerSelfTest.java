@@ -22,9 +22,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.jdk.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.*;
@@ -183,7 +183,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void send(ClusterNode node, GridTopic topic, GridTcpCommunicationMessageAdapter msg,
+        @Override public void send(ClusterNode node, GridTopic topic, MessageAdapter msg,
             GridIoPolicy plc) throws IgniteCheckedException {
             // No-op.
         }
@@ -218,15 +218,15 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class Message extends GridTcpCommunicationMessageAdapter implements Serializable {
+    private static class Message extends MessageAdapter implements Serializable {
         /** {@inheritDoc} */
         @SuppressWarnings("CloneDoesntCallSuperClone")
-        @Override public GridTcpCommunicationMessageAdapter clone() {
+        @Override public MessageAdapter clone() {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+        @Override protected void clone0(MessageAdapter _msg) {
             // No-op.
         }
 

@@ -37,7 +37,5 @@
             Specify grid instance name.
         -->
         <property name="gridName" value="grid_with_url_config"/>
-
-        <property name="restEnabled" value="false" />
     </bean>
 </beans>

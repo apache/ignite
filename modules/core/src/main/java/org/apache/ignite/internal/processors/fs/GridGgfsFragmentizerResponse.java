@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -56,7 +56,7 @@ public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridGgfsFragmentizerResponse _clone = new GridGgfsFragmentizerResponse();
 
         clone0(_clone);
@@ -65,7 +65,7 @@ public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridGgfsFragmentizerResponse _clone = (GridGgfsFragmentizerResponse)_msg;
@@ -76,24 +76,24 @@ public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putGridUuid(fileId))
+                if (!writer.writeIgniteUuid("fileId", fileId))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -103,21 +103,19 @@ public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                IgniteUuid fileId0 = commState.getGridUuid();
+                fileId = reader.readIgniteUuid("fileId");
 
-                if (fileId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                fileId = fileId0;
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -126,6 +124,6 @@ public class GridGgfsFragmentizerResponse extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 71;
+        return 70;
     }
 }

@@ -28,7 +28,6 @@ import org.apache.ignite.ignitefs.mapreduce.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.license.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -79,43 +78,6 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
         IgniteFsConfiguration[] cfgs = ctx.config().getGgfsConfiguration();
 
         assert cfgs != null && cfgs.length > 0;
-
-        // Register GGFS messages.
-        GridTcpCommunicationMessageFactory.registerCommon(new GridTcpCommunicationMessageProducer() {
-            @Override
-            public GridTcpCommunicationMessageAdapter create(byte type) {
-                switch (type) {
-                    case 65:
-                        return new GridGgfsAckMessage();
-
-                    case 66:
-                        return new GridGgfsBlockKey();
-
-                    case 67:
-                        return new GridGgfsBlocksMessage();
-
-                    case 68:
-                        return new GridGgfsDeleteMessage();
-
-                    case 69:
-                        return new GridGgfsFileAffinityRange();
-
-                    case 70:
-                        return new GridGgfsFragmentizerRequest();
-
-                    case 71:
-                        return new GridGgfsFragmentizerResponse();
-
-                    case 72:
-                        return new GridGgfsSyncMessage();
-
-                    default:
-                        assert false : "Invalid GGFS message type.";
-
-                        return null;
-                }
-            }
-        }, 65, 66, 67, 68, 69,70, 71, 72);
 
         // Register HDFS edition usage with license manager.
         GridLicenseUseRegistry.onUsage(HADOOP, getClass());

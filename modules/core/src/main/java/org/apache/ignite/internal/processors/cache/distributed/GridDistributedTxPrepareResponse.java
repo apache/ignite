@@ -21,9 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -151,7 +151,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors",
         "OverriddenMethodCallDuringObjectConstruction"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDistributedTxPrepareResponse _clone = new GridDistributedTxPrepareResponse();
 
         clone0(_clone);
@@ -160,7 +160,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridDistributedTxPrepareResponse _clone = (GridDistributedTxPrepareResponse)_msg;
@@ -174,30 +174,30 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 8:
-                if (!commState.putByteArray(candsBytes))
+                if (!writer.writeByteArray("candsBytes", candsBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 9:
-                if (!commState.putByteArray(errBytes))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -207,31 +207,27 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 8:
-                byte[] candsBytes0 = commState.getByteArray();
+                candsBytes = reader.readByteArray("candsBytes");
 
-                if (candsBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                candsBytes = candsBytes0;
-
-                commState.idx++;
+                state++;
 
             case 9:
-                byte[] errBytes0 = commState.getByteArray();
+                errBytes = reader.readByteArray("errBytes");
 
-                if (errBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                errBytes = errBytes0;
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -240,7 +236,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 27;
+        return 26;
     }
 
     /** {@inheritDoc} */

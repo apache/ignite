@@ -587,9 +587,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     try {
                         // Start task execution in another thread.
                         if (sys)
-                            ctx.config().getSystemExecutorService().execute(taskWorker);
+                            ctx.getSystemExecutorService().execute(taskWorker);
                         else
-                            ctx.config().getExecutorService().execute(taskWorker);
+                            ctx.getExecutorService().execute(taskWorker);
                     }
                     catch (RejectedExecutionException e) {
                         tasks.remove(sesId);

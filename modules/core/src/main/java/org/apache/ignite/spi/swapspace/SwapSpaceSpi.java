@@ -82,6 +82,17 @@ public interface SwapSpaceSpi extends IgniteSpi {
     public long count(@Nullable String spaceName) throws IgniteSpiException;
 
     /**
+     * Gets number of stored entries (keys) in data space with given name. If specified
+     * space does not exist this method returns {@code 0}.
+     *
+     * @param spaceName Space name to get number of entries for.
+     * @param parts Partitions.
+     * @return Number of stored entries in specified space.
+     * @throws org.apache.ignite.spi.IgniteSpiException In case of any errors.
+     */
+    public long count(@Nullable String spaceName, Set<Integer> parts) throws IgniteSpiException;
+
+    /**
      * Reads stored value as array of bytes by key from data space with given name.
      * If specified space does not exist this method returns {@code null}.
      *

@@ -63,9 +63,6 @@
         <!-- Set to local host address. -->
         <property name="localHost" value="127.0.0.1"/>
 
-        <!-- Enable rest protocol. -->
-        <property name="restEnabled" value="true"/>
-
         <!-- Client configuration. -->
         <property name="clientConnectionConfiguration">
             <bean class="org.apache.ignite.configuration.ClientConnectionConfiguration">
@@ -291,44 +288,16 @@
             Explicitly set custom public and system thread pools to increase
             possible started nodes count in one VM.
         -->
-        <property name="executorService">
-            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
-                <constructor-arg value="SERVER"/>
-                <constructor-arg type="int" value="15"/>
-                <constructor-arg type="int" value="15"/>
-                <constructor-arg type="long">
-                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
-                </constructor-arg>
-                <constructor-arg type="java.util.concurrent.BlockingQueue">
-                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
-                </constructor-arg>
-            </bean>
-        </property>
+        <property name="publicThreadPoolSize" value="15"/>
 
-        <property name="executorServiceShutdown" value="true"/>
-
-        <property name="systemExecutorService">
-            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
-                <constructor-arg value="SYS-SERVER"/>
-                <constructor-arg type="int" value="15"/>
-                <constructor-arg type="int" value="15"/>
-                <constructor-arg type="long">
-                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
-                </constructor-arg>
-                <constructor-arg type="java.util.concurrent.BlockingQueue">
-                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
-                </constructor-arg>
-            </bean>
-        </property>
-
-        <property name="systemExecutorServiceShutdown" value="true"/>
+        <property name="systemThreadPoolSize" value="15"/>
 
         <property name="portableConfiguration">
-            <bean class="org.apache.ignite.portables.PortableConfiguration">
+            <bean class="org.gridgain.grid.portables.PortableConfiguration">
                 <property name="typeConfigurations">
                     <list>
-                        <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.apache.ignite.client.ClientTestPortable"/>
+                        <bean class="org.gridgain.grid.portables.PortableTypeConfiguration">
+                            <property name="className" value="org.gridgain.client.ClientTestPortable"/>
                         </bean>
                     </list>
                 </property>

@@ -21,9 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -240,12 +240,12 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridDistributedBaseMessage _clone = (GridDistributedBaseMessage)_msg;
 
-        _clone.ver = ver;
+        _clone.ver = ver != null ? (GridCacheVersion)ver.clone() : null;
         _clone.candsByIdx = candsByIdx;
         _clone.candsByIdxBytes = candsByIdxBytes;
         _clone.candsByKey = candsByKey;
@@ -258,90 +258,48 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (!commState.putByteArray(candsByIdxBytes))
+                if (!writer.writeByteArray("candsByIdxBytes", candsByIdxBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putByteArray(candsByKeyBytes))
+                if (!writer.writeByteArray("candsByKeyBytes", candsByKeyBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                if (committedVers != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(committedVers.size()))
-                            return false;
-
-                        commState.it = committedVers.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putCacheVersion((GridCacheVersion)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
-
-            case 6:
-                if (rolledbackVers != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(rolledbackVers.size()))
-                            return false;
-
-                        commState.it = rolledbackVers.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putCacheVersion((GridCacheVersion)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
-
-            case 7:
-                if (!commState.putCacheVersion(ver))
+                if (!writer.writeCollection("committedVers", committedVers, GridCacheVersion.class))
                     return false;
 
-                commState.idx++;
+                state++;
+
+            case 6:
+                if (!writer.writeCollection("rolledbackVers", rolledbackVers, GridCacheVersion.class))
+                    return false;
+
+                state++;
+
+            case 7:
+                if (!writer.writeMessage("ver", ver))
+                    return false;
+
+                state++;
 
         }
 
@@ -351,99 +309,51 @@ public abstract class GridDistributedBaseMessage<K, V> extends GridCacheMessage<
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                byte[] candsByIdxBytes0 = commState.getByteArray();
+                candsByIdxBytes = reader.readByteArray("candsByIdxBytes");
 
-                if (candsByIdxBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                candsByIdxBytes = candsByIdxBytes0;
-
-                commState.idx++;
+                state++;
 
             case 4:
-                byte[] candsByKeyBytes0 = commState.getByteArray();
+                candsByKeyBytes = reader.readByteArray("candsByKeyBytes");
 
-                if (candsByKeyBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                candsByKeyBytes = candsByKeyBytes0;
-
-                commState.idx++;
+                state++;
 
             case 5:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                committedVers = reader.readCollection("committedVers", GridCacheVersion.class);
 
-                    commState.readSize = commState.getInt();
-                }
-
-                if (commState.readSize >= 0) {
-                    if (committedVers == null)
-                        committedVers = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridCacheVersion _val = commState.getCacheVersion();
-
-                        if (_val == CACHE_VER_NOT_READ)
-                            return false;
-
-                        committedVers.add((GridCacheVersion)_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
-
-            case 6:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
-                    commState.readSize = commState.getInt();
-                }
-
-                if (commState.readSize >= 0) {
-                    if (rolledbackVers == null)
-                        rolledbackVers = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridCacheVersion _val = commState.getCacheVersion();
-
-                        if (_val == CACHE_VER_NOT_READ)
-                            return false;
-
-                        rolledbackVers.add((GridCacheVersion)_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
-
-            case 7:
-                GridCacheVersion ver0 = commState.getCacheVersion();
-
-                if (ver0 == CACHE_VER_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                ver = ver0;
+                state++;
 
-                commState.idx++;
+            case 6:
+                rolledbackVers = reader.readCollection("rolledbackVers", GridCacheVersion.class);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
+            case 7:
+                ver = reader.readMessage("ver");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
 
         }
 

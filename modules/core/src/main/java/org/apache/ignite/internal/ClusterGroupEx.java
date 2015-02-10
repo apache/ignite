@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -32,4 +34,11 @@ public interface ClusterGroupEx extends ClusterGroup {
      * @return Internal projection.
      */
     public ClusterGroupEx forSubjectId(UUID subjId);
+
+    /**
+     * @param cacheName Cache name.
+     * @param distributionModes Cache distribution modes.
+     * @return Cluster group.
+     */
+    public ClusterGroup forCacheNodes(@Nullable String cacheName, Set<CacheDistributionMode> distributionModes);
 }
