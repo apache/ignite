@@ -69,8 +69,6 @@ object ScalarCacheAffinityExample1 {
                         @CacheAffinityKeyMapped
                         def affinityKey(): String = key
 
-                        // @CacheName
-                        // TODO: IGNITE-176 Use affinityCall instead
                         def cacheName(): String = NAME
 
                         @Nullable def call: String = {
