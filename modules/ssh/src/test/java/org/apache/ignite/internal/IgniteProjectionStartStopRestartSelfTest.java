@@ -49,10 +49,10 @@ import static org.apache.ignite.internal.util.nodestart.IgniteNodeStartUtils.*;
 @SuppressWarnings("ConstantConditions")
 public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final String SSH_UNAME = "vkulichenko";
+    private static final String SSH_UNAME = System.getenv("test.ssh.username");
 
     /** */
-    private static final String SSH_PWD = "8tQHsaM";
+    private static final String SSH_PWD = System.getenv("test.ssh.password");
 
     /** */
     private static final String SSH_KEY = System.getenv("ssh.key");
