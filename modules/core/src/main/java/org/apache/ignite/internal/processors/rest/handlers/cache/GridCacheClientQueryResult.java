@@ -17,15 +17,13 @@
 
 package org.apache.ignite.internal.processors.rest.handlers.cache;
 
-import org.apache.ignite.portables.*;
-
 import java.io.*;
 import java.util.*;
 
 /**
  * Client query result.
  */
-public class GridCacheClientQueryResult implements PortableMarshalAware, Serializable {
+public class GridCacheClientQueryResult implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -95,25 +93,5 @@ public class GridCacheClientQueryResult implements PortableMarshalAware, Seriali
      */
     public void nodeId(UUID nodeId) {
         this.nodeId = nodeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writePortable(PortableWriter writer) throws PortableException {
-        PortableRawWriter rawWriter = writer.rawWriter();
-
-        rawWriter.writeBoolean(last);
-        rawWriter.writeLong(qryId);
-        rawWriter.writeUuid(nodeId);
-        rawWriter.writeCollection(items);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readPortable(PortableReader reader) throws PortableException {
-        PortableRawReader rawReader = reader.rawReader();
-
-        last = rawReader.readBoolean();
-        qryId = rawReader.readLong();
-        nodeId = rawReader.readUuid();
-        items = rawReader.readCollection();
     }
 }

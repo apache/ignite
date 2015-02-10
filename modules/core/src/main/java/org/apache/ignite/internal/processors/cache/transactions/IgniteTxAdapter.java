@@ -1257,7 +1257,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @throws org.apache.ignite.IgniteCheckedException In case of eny exception.
      * @throws GridCacheEntryRemovedException If entry got removed.
      */
-    protected IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContextImpl<K, V>> conflictResolve(
+    protected IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>> conflictResolve(
         GridCacheOperation op, K key, V newVal, byte[] newValBytes, long newTtl, long newDrExpireTime,
         GridCacheVersion newVer, GridCacheEntryEx<K, V> old)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
@@ -1271,9 +1271,9 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         long newExpireTime = newDrExpireTime >= 0L ? newDrExpireTime : CU.toExpireTime(newTtl);
 
         GridCacheVersionedEntryEx<K, V> newEntry =
-            new GridCachePlainVersionedEntry<K, V>(key, newVal, newTtl, newExpireTime, newVer);
+            new GridCachePlainVersionedEntry<>(key, newVal, newTtl, newExpireTime, newVer);
 
-        GridCacheVersionConflictContextImpl<K, V> ctx = old.context().conflictResolve(oldEntry, newEntry, false);
+        GridCacheVersionConflictContext<K, V> ctx = old.context().conflictResolve(oldEntry, newEntry, false);
 
         if (ctx.isMerge()) {
             V resVal = ctx.mergeValue();

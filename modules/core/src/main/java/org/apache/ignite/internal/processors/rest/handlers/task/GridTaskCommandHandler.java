@@ -34,7 +34,6 @@ import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
@@ -263,7 +262,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                                         res.setResponse(taskRestRes);
                                         fut.onDone(res);
                                     }
-                                    catch (PortableException e) {
+                                    catch (IgniteException e) {
                                         fut.onDone(new IgniteCheckedException("Failed to marshal task result: " +
                                             desc.result(), e));
                                     }

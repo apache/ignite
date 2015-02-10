@@ -34,7 +34,6 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.indexing.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
@@ -293,10 +292,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             if (id == null) {
-                if (val instanceof PortableObject) {
-                    PortableObject portable = (PortableObject)val;
-
-                    int typeId = portable.typeId();
+                if (ctx.portable().isPortableObject(val)) {
+                    int typeId = ctx.portable().typeId(val);
 
                     String typeName = portableName(typeId);
 
@@ -328,13 +325,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         d.keyClass(keyCls);
                         d.valueClass(valCls);
 
-                        if (key instanceof PortableObject) {
-                            PortableObject portableKey = (PortableObject)key;
+                        if (ctx.portable().isPortableObject(key)) {
+                            int typeId = ctx.portable().typeId(key);
 
-                            String typeName = portableName(portableKey.typeId());
+                            String typeName = portableName(typeId);
 
                             if (typeName != null) {
-                                CacheTypeMetadata keyMeta = declaredType(space, portableKey.typeId());
+                                CacheTypeMetadata keyMeta = declaredType(space, typeId);
 
                                 if (keyMeta != null)
                                     processPortableMeta(true, keyMeta, d);
@@ -349,13 +346,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                 processClassMeta(true, d.keyCls, keyMeta, d);
                         }
 
-                        if (val instanceof PortableObject) {
-                            PortableObject portableVal = (PortableObject)val;
+                        if (ctx.portable().isPortableObject(val)) {
+                            int typeId = ctx.portable().typeId(val);
 
-                            String typeName = portableName(portableVal.typeId());
+                            String typeName = portableName(typeId);
 
                             if (typeName != null) {
-                                CacheTypeMetadata valMeta = declaredType(space, portableVal.typeId());
+                                CacheTypeMetadata valMeta = declaredType(space, typeId);
 
                                 d.name(typeName);
 
@@ -1020,7 +1017,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param d Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    static void processPortableMeta(boolean key, CacheTypeMetadata meta, TypeDescriptor d)
+    private void processPortableMeta(boolean key, CacheTypeMetadata meta, TypeDescriptor d)
         throws IgniteCheckedException {
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
             PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue());
@@ -1094,7 +1091,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param resType Result type.
      * @return Portable property.
      */
-    static PortableProperty buildPortableProperty(String pathStr, Class<?> resType) {
+    private PortableProperty buildPortableProperty(String pathStr, Class<?> resType) {
         String[] path = pathStr.split("\\.");
 
         PortableProperty res = null;
@@ -1338,7 +1335,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class PortableProperty extends Property {
+    private class PortableProperty extends Property {
         /** Property name. */
         private String propName;
 
@@ -1369,11 +1366,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (obj == null)
                 return null;
 
-            if (!(obj instanceof PortableObject))
+            if (!ctx.portable().isPortableObject(obj))
                 throw new IgniteCheckedException("Non-portable object received as a result of property extraction " +
                     "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
 
-            return ((PortableObject)obj).field(propName);
+            return ctx.portable().field(obj, propName);
         }
 
         /** {@inheritDoc} */

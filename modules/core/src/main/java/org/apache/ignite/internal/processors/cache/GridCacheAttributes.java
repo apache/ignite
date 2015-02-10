@@ -157,9 +157,6 @@ public class GridCacheAttributes implements Externalizable {
     /** Store load previous value flag. */
     private boolean loadPrevVal;
 
-    /** Portable enabled flag. */
-    private boolean portableEnabled;
-
     /**
      * @param cfg Cache configuration.
      * @param store Cache store.
@@ -176,7 +173,6 @@ public class GridCacheAttributes implements Externalizable {
         loadPrevVal = cfg.isLoadPreviousValue();
         name = cfg.getName();
         partDistro = GridCacheUtils.distributionMode(cfg);
-        portableEnabled = cfg.isPortableEnabled();
         preloadBatchSize = cfg.getPreloadBatchSize();
         preloadMode = cfg.getPreloadMode();
         qryIdxEnabled = cfg.isQueryIndexEnabled();
@@ -519,13 +515,6 @@ public class GridCacheAttributes implements Externalizable {
      */
     public String indexingSpiName() {
         return indexingSpiName;
-    }
-
-    /**
-     * @return Portable enabled flag.
-     */
-    public boolean portableEnabled() {
-        return portableEnabled;
     }
 
     /** {@inheritDoc} */

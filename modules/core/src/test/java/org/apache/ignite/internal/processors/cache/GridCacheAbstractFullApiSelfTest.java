@@ -2914,8 +2914,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception In case of error.
      */
-    // TODO: IGNITE-206: Enable when fixed.
-    public void _testEvictExpired() throws Exception {
+    public void testEvictExpired() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         String key = primaryKeysForCache(cache, 1).get(0);
@@ -2943,16 +2942,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertTrue(cache.localSize() == 0);
 
-        // Force reload on primary node.
-        for (int i = 0; i < gridCount(); i++) {
-            if (cache(i).entry(key).primary())
-                load(jcache(i), key, true);
-        }
-
-        // Will do near get request.
         load(cache, key, true);
 
-        assertEquals((Integer)1, peek(cache, key));
+        CacheAffinity<String> aff = ignite(0).affinity(null);
+
+        for (int i = 0; i < gridCount(); i++) {
+            if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key))
+                assertEquals((Integer)1, peek(jcache(i), key));
+        }
     }
 
     /**
@@ -3256,8 +3253,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception In case of error.
      */
-    // TODO: IGNITE-206: Enable when fixed.
-    public void _testLocalEvict() throws Exception {
+    public void testLocalEvict() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         List<String> keys = primaryKeysForCache(cache, 3);
@@ -3280,14 +3276,20 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assert cache.localPeek(key2, CachePeekMode.ONHEAP) == null;
         assert cache.localPeek(key3, CachePeekMode.ONHEAP) == 3;
 
-        if (cache.getConfiguration(CacheConfiguration.class).getDistributionMode() == CacheDistributionMode.NEAR_ONLY)
-            return;
-
         loadAll(cache, ImmutableSet.of(key1, key2), true);
 
-        assert cache.localPeek(key1, CachePeekMode.ONHEAP) == 1;
-        assert cache.localPeek(key2, CachePeekMode.ONHEAP) == 2;
-        assert cache.localPeek(key3, CachePeekMode.ONHEAP) == 3;
+        CacheAffinity<String> aff = ignite(0).affinity(null);
+
+        for (int i = 0; i < gridCount(); i++) {
+            if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key1))
+                assertEquals((Integer)1, peek(jcache(i), key1));
+
+            if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key2))
+                assertEquals((Integer)2, peek(jcache(i), key2));
+
+            if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key3))
+                assertEquals((Integer)3, peek(jcache(i), key3));
+        }
     }
 
     /**
