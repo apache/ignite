@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -31,7 +30,6 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -88,13 +86,13 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
 
         cfg.setLocalHost(HOST);
 
-        assert cfg.getClientConnectionConfiguration() == null;
+        assert cfg.getConnectorConfiguration() == null;
 
-        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
+        ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
-        clientCfg.setRestTcpPort(PORT);
+        clientCfg.setPort(PORT);
 
-        cfg.setClientConnectionConfiguration(clientCfg);
+        cfg.setConnectorConfiguration(clientCfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -546,50 +544,6 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         assertNull(node.getMetrics());
         assertNotNull(node.getTcpAddresses());
         assertEquals(grid().localNode().id(), node.getNodeId());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLog() throws Exception {
-        String path = "work/log/ignite.log." + System.currentTimeMillis();
-
-        File file = new File(U.getIgniteHome(), path);
-
-        assert !file.exists();
-
-        FileWriter writer = new FileWriter(file);
-
-        String sep = System.getProperty("line.separator");
-
-        writer.write("Line 1" + sep);
-        writer.write(sep);
-        writer.write("Line 2" + sep);
-        writer.write("Line 3" + sep);
-
-        writer.flush();
-        writer.close();
-
-        List<String> log = client.log(path, 0, 10);
-
-        assertNotNull(log);
-        assertEquals(4, log.size());
-
-        file.delete();
-
-        GridTestUtils.assertThrows(
-            log(),
-            new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
-                    client.log("wrong/path", 0, 10);
-
-                    return null;
-                }
-            },
-            IgniteCheckedException.class,
-            null
-        );
     }
 
     /**

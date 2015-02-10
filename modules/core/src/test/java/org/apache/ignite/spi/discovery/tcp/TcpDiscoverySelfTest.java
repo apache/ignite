@@ -109,6 +109,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             spi.setHeartbeatFrequency(40000);
         }
 
+        cfg.setConnectorConfiguration(null);
+
         if (nodeId != null)
             cfg.setNodeId(nodeId);
 
