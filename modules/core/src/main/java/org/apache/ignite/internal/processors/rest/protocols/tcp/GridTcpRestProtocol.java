@@ -27,7 +27,6 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.processors.rest.protocols.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.nio.ssl.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -52,63 +51,10 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     private GridNioServer<GridClientMessage> srv;
 
     /** JDK marshaller. */
-    private final IgniteMarshaller jdkMarshaller = new IgniteJdkMarshaller();
+    private final Marshaller jdkMarshaller = new JdkMarshaller();
 
     /** NIO server listener. */
     private GridTcpRestNioListener lsnr;
-
-    /** Message reader. */
-    private final GridNioMessageReader msgReader = new GridNioMessageReader() {
-        @Override public boolean read(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
-            assert msg != null;
-            assert buf != null;
-
-            msg.messageReader(this, nodeId);
-
-            return msg.readFrom(buf);
-        }
-
-        @Nullable @Override public GridTcpMessageFactory messageFactory() {
-            return null;
-        }
-    };
-
-    /** Message writer. */
-    private final GridNioMessageWriter msgWriter = new GridNioMessageWriter() {
-        @Override public boolean write(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, ByteBuffer buf) {
-            assert msg != null;
-            assert buf != null;
-
-            msg.messageWriter(this, nodeId);
-
-            return msg.writeTo(buf);
-        }
-
-        @Override public int writeFully(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg, OutputStream out,
-            ByteBuffer buf) throws IOException {
-            assert msg != null;
-            assert out != null;
-            assert buf != null;
-            assert buf.hasArray();
-
-            msg.messageWriter(this, nodeId);
-
-            boolean finished = false;
-            int cnt = 0;
-
-            while (!finished) {
-                finished = msg.writeTo(buf);
-
-                out.write(buf.array(), 0, buf.position());
-
-                cnt += buf.position();
-
-                buf.clear();
-            }
-
-            return cnt;
-        }
-    };
 
     /** @param ctx Context. */
     public GridTcpRestProtocol(GridKernalContext ctx) {
@@ -118,7 +64,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     /**
      * @return JDK marshaller.
      */
-    IgniteMarshaller jdkMarshaller() {
+    Marshaller jdkMarshaller() {
         return jdkMarshaller;
     }
 
@@ -160,7 +106,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
         lsnr = new GridTcpRestNioListener(log, this, hnd, ctx);
 
-        GridNioParser parser = new GridTcpRestDirectParser(this, msgReader);
+        GridNioParser parser = new GridTcpRestParser(false);
 
         try {
             host = resolveRestTcpHost(ctx.config());
@@ -261,14 +207,14 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridClientMessage> lsnr,
         GridNioParser parser, @Nullable SSLContext sslCtx, ClientConnectionConfiguration cfg) {
         try {
-            GridNioFilter codec = new GridNioCodecFilter(parser, log, true);
+            GridNioFilter codec = new GridNioCodecFilter(parser, log, false);
 
             GridNioFilter[] filters;
 
             if (sslCtx != null) {
                 GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, log);
 
-                sslFilter.directMode(true);
+                sslFilter.directMode(false);
 
                 boolean auth = cfg.isRestTcpSslClientAuth();
 
@@ -298,8 +244,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 .socketReceiveBufferSize(cfg.getRestTcpReceiveBufferSize())
                 .sendQueueLimit(cfg.getRestTcpSendQueueLimit())
                 .filters(filters)
-                .directMode(true)
-                .messageWriter(msgWriter)
+                .directMode(false)
                 .build();
 
             srv.idleTimeout(cfg.getRestIdleTimeout());
@@ -320,16 +265,16 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
     /** {@inheritDoc} */
     @Override protected String getAddressPropertyName() {
-        return GridNodeAttributes.ATTR_REST_TCP_ADDRS;
+        return IgniteNodeAttributes.ATTR_REST_TCP_ADDRS;
     }
 
     /** {@inheritDoc} */
     @Override protected String getHostNamePropertyName() {
-        return GridNodeAttributes.ATTR_REST_TCP_HOST_NAMES;
+        return IgniteNodeAttributes.ATTR_REST_TCP_HOST_NAMES;
     }
 
     /** {@inheritDoc} */
     @Override protected String getPortPropertyName() {
-        return GridNodeAttributes.ATTR_REST_TCP_PORT;
+        return IgniteNodeAttributes.ATTR_REST_TCP_PORT;
     }
 }

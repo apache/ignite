@@ -31,14 +31,14 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests for security subject ID in task events.
  */
 public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final Collection<IgniteTaskEvent> evts = new ArrayList<>();
+    private static final Collection<TaskEvent> evts = new ArrayList<>();
 
     /** */
     private static CountDownLatch latch;
@@ -53,7 +53,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setRestEnabled(true);
+        cfg.setClientConnectionConfiguration(new ClientConnectionConfiguration());
 
         return cfg;
     }
@@ -62,11 +62,11 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         Ignite g = startGrid();
 
-        g.events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
-                assert evt instanceof IgniteTaskEvent;
+        g.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                assert evt instanceof TaskEvent;
 
-                evts.add((IgniteTaskEvent)evt);
+                evts.add((TaskEvent)evt);
 
                 latch.countDown();
 
@@ -107,11 +107,11 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, evts.size());
 
-        Iterator<IgniteTaskEvent> it = evts.iterator();
+        Iterator<TaskEvent> it = evts.iterator();
 
         assert it.hasNext();
 
-        IgniteTaskEvent evt = it.next();
+        TaskEvent evt = it.next();
 
         assert evt != null;
 
@@ -162,11 +162,11 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assertEquals(2, evts.size());
 
-        Iterator<IgniteTaskEvent> it = evts.iterator();
+        Iterator<TaskEvent> it = evts.iterator();
 
         assert it.hasNext();
 
-        IgniteTaskEvent evt = it.next();
+        TaskEvent evt = it.next();
 
         assert evt != null;
 
@@ -208,11 +208,11 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, evts.size());
 
-        Iterator<IgniteTaskEvent> it = evts.iterator();
+        Iterator<TaskEvent> it = evts.iterator();
 
         assert it.hasNext();
 
-        IgniteTaskEvent evt = it.next();
+        TaskEvent evt = it.next();
 
         assert evt != null;
 
@@ -256,11 +256,11 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, evts.size());
 
-        Iterator<IgniteTaskEvent> it = evts.iterator();
+        Iterator<TaskEvent> it = evts.iterator();
 
         assert it.hasNext();
 
-        IgniteTaskEvent evt = it.next();
+        TaskEvent evt = it.next();
 
         assert evt != null;
 
@@ -300,11 +300,11 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, evts.size());
 
-        Iterator<IgniteTaskEvent> it = evts.iterator();
+        Iterator<TaskEvent> it = evts.iterator();
 
         assert it.hasNext();
 
-        IgniteTaskEvent evt = it.next();
+        TaskEvent evt = it.next();
 
         assert evt != null;
 

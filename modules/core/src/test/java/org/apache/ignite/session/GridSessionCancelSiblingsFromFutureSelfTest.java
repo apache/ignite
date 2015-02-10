@@ -73,14 +73,7 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
 
         c.setDiscoverySpi(discoSpi);
 
-        c.setExecutorService(
-            new ThreadPoolExecutor(
-                SPLIT_COUNT * EXEC_COUNT,
-                SPLIT_COUNT * EXEC_COUNT,
-                0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>()));
-
-        c.setExecutorServiceShutdown(true);
+        c.setPublicThreadPoolSize(SPLIT_COUNT * EXEC_COUNT);
 
         return c;
     }
@@ -189,11 +182,11 @@ public class GridSessionCancelSiblingsFromFutureSelfTest extends GridCommonAbstr
      */
     private static class GridTaskSessionTestTask extends ComputeTaskSplitAdapter<Serializable, String> {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** */

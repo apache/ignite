@@ -73,15 +73,15 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
                     /** */
-                    @IgniteTaskSessionResource
+                    @TaskSessionResource
                     private ComputeTaskSession taskSes;
 
                     /** */
-                    @IgniteJobContextResource
+                    @JobContextResource
                     private ComputeJobContext jobCtx;
 
                     /** */
-                    @IgniteLoggerResource
+                    @LoggerResource
                     private IgniteLogger log;
 
                     /** {@inheritDoc} */
@@ -116,7 +116,7 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
      */
     private static class GridSessionCollisionSpi extends FifoQueueCollisionSpi {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */

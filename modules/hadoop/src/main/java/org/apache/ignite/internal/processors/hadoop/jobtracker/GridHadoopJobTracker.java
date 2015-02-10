@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -45,8 +44,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.hadoop.GridHadoopJobPhase.*;
-import static org.apache.ignite.hadoop.GridHadoopTaskType.*;
+import static org.apache.ignite.internal.processors.hadoop.GridHadoopJobPhase.*;
+import static org.apache.ignite.internal.processors.hadoop.GridHadoopTaskType.*;
 import static org.apache.ignite.internal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
 
 /**
@@ -172,33 +171,33 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
 
         CacheContinuousQuery<GridHadoopJobId, GridHadoopJobMetadata> qry = jobMetaCache().queries().createContinuousQuery();
 
-        qry.callback(new IgniteBiPredicate<UUID,
-                            Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>>>() {
-            @Override public boolean apply(UUID nodeId,
-                final Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> evts) {
-                if (!busyLock.tryReadLock())
-                    return false;
+        qry.localCallback(
+            new IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<GridHadoopJobId, GridHadoopJobMetadata>>>() {
+                @Override public boolean apply(UUID nodeId,
+                    final Collection<CacheContinuousQueryEntry<GridHadoopJobId, GridHadoopJobMetadata>> evts) {
+                    if (!busyLock.tryReadLock())
+                        return false;
 
-                try {
-                    // Must process query callback in a separate thread to avoid deadlocks.
-                    evtProcSvc.submit(new EventHandler() {
-                        @Override protected void body() throws IgniteCheckedException {
-                            processJobMetadataUpdates(evts);
-                        }
-                    });
+                    try {
+                        // Must process query callback in a separate thread to avoid deadlocks.
+                        evtProcSvc.submit(new EventHandler() {
+                            @Override protected void body() throws IgniteCheckedException {
+                                processJobMetadataUpdates(evts);
+                            }
+                        });
 
-                    return true;
+                        return true;
+                    }
+                    finally {
+                        busyLock.readUnlock();
+                    }
                 }
-                finally {
-                    busyLock.readUnlock();
-                }
-            }
-        });
+            });
 
-        qry.execute();
+        qry.execute(ctx.kernalContext().grid().forLocal());
 
         ctx.kernalContext().event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(final IgniteEvent evt) {
+            @Override public void onEvent(final Event evt) {
                 if (!busyLock.tryReadLock())
                     return;
 
@@ -206,7 +205,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     // Must process discovery callback in a separate thread to avoid deadlock.
                     evtProcSvc.submit(new EventHandler() {
                         @Override protected void body() {
-                            processNodeLeft((IgniteDiscoveryEvent)evt);
+                            processNodeLeft((DiscoveryEvent)evt);
                         }
                     });
                 }
@@ -214,7 +213,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
                     busyLock.readUnlock();
                 }
             }
-        }, IgniteEventType.EVT_NODE_FAILED, IgniteEventType.EVT_NODE_LEFT);
+        }, EventType.EVT_NODE_FAILED, EventType.EVT_NODE_LEFT);
     }
 
     /** {@inheritDoc} */
@@ -551,7 +550,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param evt Discovery event.
      */
     @SuppressWarnings("ConstantConditions")
-    private void processNodeLeft(IgniteDiscoveryEvent evt) {
+    private void processNodeLeft(DiscoveryEvent evt) {
         if (log.isDebugEnabled())
             log.debug("Processing discovery event [locNodeId=" + ctx.localNodeId() + ", evt=" + evt + ']');
 
@@ -629,7 +628,8 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
      * @param updated Updated cache entries.
      * @throws IgniteCheckedException If failed.
      */
-    private void processJobMetadataUpdates(Iterable<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>> updated)
+    private void processJobMetadataUpdates(
+        Iterable<CacheContinuousQueryEntry<GridHadoopJobId, GridHadoopJobMetadata>> updated)
         throws IgniteCheckedException {
         UUID locNodeId = ctx.localNodeId();
 

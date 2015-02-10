@@ -97,11 +97,10 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void stopListenAsync(IgniteInClosure<? super IgniteFuture<V>>... lsnrs) {
-        for (IgniteInClosure<? super IgniteFuture<V>> lsnr : lsnrs) {
-            if (lsnr != null)
-                fut.stopListenAsync(new InternalFutureListener(lsnr));
-        }
+    @Override public void stopListenAsync(IgniteInClosure<? super IgniteFuture<V>> lsnr) {
+        A.notNull(lsnr, "lsnr");
+
+        fut.stopListenAsync(new InternalFutureListener(lsnr));
     }
 
     /** {@inheritDoc} */
@@ -176,6 +175,9 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
      *
      */
     private class InternalFutureListener implements IgniteInClosure<IgniteInternalFuture<V>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final IgniteInClosure<? super IgniteFuture<V>> lsnr;
 

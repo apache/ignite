@@ -36,7 +36,7 @@ public class GridDsiLifecycleBean implements LifecycleBean {
 
     /** */
     @SuppressWarnings("UnusedDeclaration")
-    @IgniteSpringApplicationContextResource
+    @SpringApplicationContextResource
     private ApplicationContext springCtx;
 
     /** {@inheritDoc} */
@@ -47,7 +47,7 @@ public class GridDsiLifecycleBean implements LifecycleBean {
                     break;
 
                 case AFTER_GRID_START:
-                    ignite.cache("PARTITIONED_CACHE").dataStructures().atomicSequence("ID", 0, true);
+                    ignite.atomicSequence("ID", 0, true);
 
                     break;
 

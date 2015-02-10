@@ -32,10 +32,10 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
@@ -416,15 +416,6 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     ) {
         A.notNull(keyType, "keyType", valType, "valType");
 
-        if (!keepPortable && (PortableObject.class.isAssignableFrom(keyType) ||
-            PortableObject.class.isAssignableFrom(valType)))
-            throw new IllegalStateException("Failed to create cache projection for portable objects. " +
-                "Use keepPortable() method instead.");
-
-        if (keepPortable && (!U.isPortableOrCollectionType(keyType) || !U.isPortableOrCollectionType(valType)))
-            throw new IllegalStateException("Failed to create typed cache projection. If keepPortable() was " +
-                "called, projection can work only with portable classes (see GridPortables JavaDoc for details).");
-
         if (cctx.deploymentEnabled()) {
             try {
                 cctx.deploy().registerClasses(keyType, valType);
@@ -582,6 +573,21 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     /** {@inheritDoc} */
     @Override public int size() {
         return keySet().size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int localSize(CachePeekMode[] peekModes) throws IgniteCheckedException {
+        return cache.localSize(peekModes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int size(CachePeekMode[] peekModes) throws IgniteCheckedException {
+        return cache.size(peekModes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<Integer> sizeAsync(CachePeekMode[] peekModes) {
+        return cache.sizeAsync(peekModes);
     }
 
     /** {@inheritDoc} */
@@ -923,6 +929,11 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public Set<K> keySet(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        return cache.keySet(filter);
+    }
+
+    /** {@inheritDoc} */
     @Override public Set<K> primaryKeySet() {
         return cache.primaryKeySet(entryFilter(true));
     }
@@ -1000,6 +1011,16 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public V localPeek(K key, CachePeekMode[] peekModes) throws IgniteCheckedException {
+        return cache.localPeek(key, peekModes);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Iterable<Cache.Entry<K, V>> localEntries(CachePeekMode[] peekModes) throws IgniteCheckedException {
+        return cache.localEntries(peekModes);
+    }
+
+    /** {@inheritDoc} */
     @Override public V peek(K key, @Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException {
         V val = cache.peek(key, modes);
 
@@ -1032,23 +1053,28 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void clearAll() {
-        cache.clearAll();
+    @Override public void clearLocally() {
+        cache.clearLocally();
     }
 
     /** {@inheritDoc} */
-    @Override public void globalClearAll() throws IgniteCheckedException {
-        cache.globalClearAll();
+    @Override public void clear() throws IgniteCheckedException {
+        cache.clear();
     }
 
     /** {@inheritDoc} */
-    @Override public void globalClearAll(long timeout) throws IgniteCheckedException {
-        cache.globalClearAll(timeout);
+    @Override public IgniteInternalFuture<?> clearAsync() {
+        return cache.clearAsync();
     }
 
     /** {@inheritDoc} */
-    @Override public boolean clear(K key) {
-        return cache.clear0(key, entryFilter(true));
+    @Override public void clear(long timeout) throws IgniteCheckedException {
+        cache.clear(timeout);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean clearLocally(K key) {
+        return cache.clearLocally0(key, entryFilter(true));
     }
 
     /** {@inheritDoc} */
@@ -1169,9 +1195,14 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
+    @Override public void removeAll()
         throws IgniteCheckedException {
-        cache.removeAll(and(filter, false));
+        removeAllAsync().get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> removeAllAsync() {
+        return removeAllAsync(new IgnitePredicate[0]);
     }
 
     /** {@inheritDoc} */

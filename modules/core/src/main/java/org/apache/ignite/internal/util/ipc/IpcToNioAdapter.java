@@ -18,8 +18,9 @@
 package org.apache.ignite.internal.util.ipc;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -53,24 +54,23 @@ public class IpcToNioAdapter<T> {
     private final GridNioMetricsListener metricsLsnr;
 
     /** */
-    private final GridNioMessageWriter msgWriter;
+    private final MessageFormatter formatter;
 
     /**
      * @param metricsLsnr Metrics listener.
      * @param log Log.
      * @param endp Endpoint.
-     * @param msgWriter Message writer.
      * @param lsnr Listener.
+     * @param formatter Message formatter.
      * @param filters Filters.
      */
     public IpcToNioAdapter(GridNioMetricsListener metricsLsnr, IgniteLogger log, IpcEndpoint endp,
-                           GridNioMessageWriter msgWriter, GridNioServerListener<T> lsnr, GridNioFilter... filters) {
+        GridNioServerListener<T> lsnr, MessageFormatter formatter, GridNioFilter... filters) {
         assert metricsLsnr != null;
-        assert msgWriter != null;
 
         this.metricsLsnr = metricsLsnr;
         this.endp = endp;
-        this.msgWriter = msgWriter;
+        this.formatter = formatter;
 
         chain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
         ses = new GridNioSessionImpl(chain, null, null, true);
@@ -148,14 +148,13 @@ public class IpcToNioAdapter<T> {
      * @param msg Buffer to send.
      * @return Send result.
      */
-    private GridNioFuture<?> send(GridTcpCommunicationMessageAdapter msg) {
+    private GridNioFuture<?> send(MessageAdapter msg) {
         assert writeBuf.hasArray();
 
         try {
-            // This method is called only on handshake,
-            // so we don't need to provide node ID for
-            // rolling updates support.
-            int cnt = msgWriter.writeFully(null, msg, endp.outputStream(), writeBuf);
+            msg.setWriter(formatter.writer());
+
+            int cnt = U.writeMessageFully(msg, endp.outputStream(), writeBuf);
 
             metricsLsnr.onBytesSent(cnt);
         }
@@ -196,7 +195,7 @@ public class IpcToNioAdapter<T> {
         @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) {
             assert ses == IpcToNioAdapter.this.ses;
 
-            return send((GridTcpCommunicationMessageAdapter)msg);
+            return send((MessageAdapter)msg);
         }
 
         /** {@inheritDoc} */

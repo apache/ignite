@@ -18,30 +18,22 @@
 package org.apache.ignite.internal.processors.cache.datastructures.replicated;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Queue multi node test.
  */
 public class GridCacheReplicatedQueueMultiNodeSelfTest extends GridCacheQueueMultiNodeAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected CacheMode collectionCacheMode() {
+        return REPLICATED;
+    }
 
-        // Default cache configuration.
-        CacheConfiguration cc = defaultCacheConfiguration();
-
-        cc.setCacheMode(REPLICATED);
-        cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setPreloadMode(SYNC);
-
-        c.setCacheConfiguration(cc);
-
-        return c;
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
+        return TRANSACTIONAL;
     }
 }

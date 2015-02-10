@@ -62,8 +62,6 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        ((ThreadPoolExecutor)cfg.getExecutorService()).prestartAllCoreThreads();
-
         return cfg;
     }
 

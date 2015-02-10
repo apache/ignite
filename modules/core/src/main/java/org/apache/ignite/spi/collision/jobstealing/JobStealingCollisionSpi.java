@@ -37,7 +37,7 @@ import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Collision SPI that supports job stealing from over-utilized nodes to
@@ -141,7 +141,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * Here is an example of how this SPI can be configured from Spring XML configuration:
  * <pre name="code" class="xml">
  * &lt;property name="collisionSpi"&gt;
- *     &lt;bean class="org.gridgain.grid.spi.collision.jobstealing.GridJobStealingCollisionSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.collision.jobstealing.GridJobStealingCollisionSpi"&gt;
  *         &lt;property name="activeJobsThreshold" value="100"/&gt;
  *         &lt;property name="waitJobsThreshold" value="0"/&gt;
  *         &lt;property name="messageExpireTime" value="1000"/&gt;
@@ -193,16 +193,16 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     public static final int DFLT_JOB_PRIORITY = 0;
 
     /** Communication topic. */
-    private static final String JOB_STEALING_COMM_TOPIC = "gridgain.collision.job.stealing.topic";
+    private static final String JOB_STEALING_COMM_TOPIC = "ignite.collision.job.stealing.topic";
 
     /** Job context attribute for storing thief node UUID (this attribute is used in job stealing failover SPI). */
-    public static final String THIEF_NODE_ATTR = "gridgain.collision.thief.node";
+    public static final String THIEF_NODE_ATTR = "ignite.collision.thief.node";
 
     /** Threshold of maximum jobs on waiting queue. */
-    public static final String WAIT_JOBS_THRESHOLD_NODE_ATTR = "gridgain.collision.wait.jobs.threshold";
+    public static final String WAIT_JOBS_THRESHOLD_NODE_ATTR = "ignite.collision.wait.jobs.threshold";
 
     /** Threshold of maximum jobs executing concurrently. */
-    public static final String ACTIVE_JOBS_THRESHOLD_NODE_ATTR = "gridgain.collision.active.jobs.threshold";
+    public static final String ACTIVE_JOBS_THRESHOLD_NODE_ATTR = "ignite.collision.active.jobs.threshold";
 
     /**
      * Name of job context attribute containing current stealing attempt count.
@@ -211,20 +211,20 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
      *
      * @see org.apache.ignite.compute.ComputeJobContext
      */
-    public static final String STEALING_ATTEMPT_COUNT_ATTR = "gridgain.stealing.attempt.count";
+    public static final String STEALING_ATTEMPT_COUNT_ATTR = "ignite.stealing.attempt.count";
 
     /** Maximum stealing attempts attribute name. */
-    public static final String MAX_STEALING_ATTEMPT_ATTR = "gridgain.stealing.max.attempts";
+    public static final String MAX_STEALING_ATTEMPT_ATTR = "ignite.stealing.max.attempts";
 
     /** Stealing request expiration time attribute name. */
-    public static final String MSG_EXPIRE_TIME_ATTR = "gridgain.stealing.msg.expire.time";
+    public static final String MSG_EXPIRE_TIME_ATTR = "ignite.stealing.msg.expire.time";
 
     /** Stealing priority attribute name. */
-    public static final String STEALING_PRIORITY_ATTR = "gridgain.stealing.priority";
+    public static final String STEALING_PRIORITY_ATTR = "ignite.stealing.priority";
 
     /** Grid logger. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Number of jobs that can be executed in parallel. */
@@ -446,10 +446,10 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
         spiCtx.addLocalEventListener(
             discoLsnr = new GridLocalEventListener() {
                 @SuppressWarnings("fallthrough")
-                @Override public void onEvent(IgniteEvent evt) {
-                    assert evt instanceof IgniteDiscoveryEvent;
+                @Override public void onEvent(Event evt) {
+                    assert evt instanceof DiscoveryEvent;
 
-                    IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                    DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                     UUID evtNodeId = discoEvt.eventNode().id();
 

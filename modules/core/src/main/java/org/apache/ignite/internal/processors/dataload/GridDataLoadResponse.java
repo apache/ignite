@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.dataload;
 
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.nio.*;
 
 /**
  *
  */
-public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
+public class GridDataLoadResponse extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -84,7 +84,7 @@ public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDataLoadResponse _clone = new GridDataLoadResponse();
 
         clone0(_clone);
@@ -93,7 +93,7 @@ public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridDataLoadResponse _clone = (GridDataLoadResponse)_msg;
 
         _clone.reqId = reqId;
@@ -104,33 +104,33 @@ public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putByteArray(errBytes))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putBoolean(forceLocDep))
+                if (!writer.writeBoolean("forceLocDep", forceLocDep))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putLong(reqId))
+                if (!writer.writeLong("reqId", reqId))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -140,34 +140,32 @@ public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                byte[] errBytes0 = commState.getByteArray();
+                errBytes = reader.readByteArray("errBytes");
 
-                if (errBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                errBytes = errBytes0;
-
-                commState.idx++;
+                state++;
 
             case 1:
-                if (buf.remaining() < 1)
+                forceLocDep = reader.readBoolean("forceLocDep");
+
+                if (!reader.isLastRead())
                     return false;
 
-                forceLocDep = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 2:
-                if (buf.remaining() < 8)
+                reqId = reader.readLong("reqId");
+
+                if (!reader.isLastRead())
                     return false;
 
-                reqId = commState.getLong();
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -176,6 +174,6 @@ public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 62;
+        return 63;
     }
 }

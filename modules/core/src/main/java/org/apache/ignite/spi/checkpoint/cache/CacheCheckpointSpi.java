@@ -29,7 +29,7 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * This class defines cache-based implementation for checkpoint SPI.
@@ -67,12 +67,12 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * <h2 class="header">Spring Example</h2>
  * {@link CacheCheckpointSpi} can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
+ * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *         &lt;!-- Cache configuration. --&gt;
  *         &lt;property name=&quot;cacheConfiguration&quot;&gt;
  *             &lt;list&gt;
- *                 &lt;bean class=&quot;org.gridgain.grid.cache.GridCacheConfiguration&quot;&gt;
+ *                 &lt;bean class=&quot;org.apache.ignite.cache.CacheConfiguration&quot;&gt;
  *                     &lt;property name=&quot;name&quot; value=&quot;CACHE_NAME&quot;/&gt;
  *                 &lt;/bean&gt;
  *             &lt;/list&gt;
@@ -80,7 +80,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  *
  *         &lt;!-- SPI configuration. --&gt;
  *         &lt;property name=&quot;checkpointSpi&quot;&gt;
- *             &lt;bean class=&quot;org.gridgain.grid.spi.checkpoint.cache.GridCacheCheckpointSpi&quot;&gt;
+ *             &lt;bean class=&quot;org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpi&quot;&gt;
  *                 &lt;property name=&quot;cacheName&quot; value=&quot;CACHE_NAME&quot;/&gt;
  *             &lt;/bean&gt;
  *         &lt;/property&gt;
@@ -99,7 +99,7 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
     public static final String DFLT_CACHE_NAME = "checkpoints";
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Cache name. */
@@ -149,11 +149,11 @@ public class CacheCheckpointSpi extends IgniteSpiAdapter implements CheckpointSp
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         getSpiContext().addLocalEventListener(evtLsnr = new GridLocalEventListener() {
             /** {@inheritDoc} */
-            @Override public void onEvent(IgniteEvent evt) {
+            @Override public void onEvent(Event evt) {
                 assert evt != null;
                 assert evt.type() == EVT_CACHE_OBJECT_REMOVED || evt.type() == EVT_CACHE_OBJECT_EXPIRED;
 
-                IgniteCacheEvent e = (IgniteCacheEvent)evt;
+                CacheEvent e = (CacheEvent)evt;
 
                 if (!F.eq(e.cacheName(), cacheName))
                     return;

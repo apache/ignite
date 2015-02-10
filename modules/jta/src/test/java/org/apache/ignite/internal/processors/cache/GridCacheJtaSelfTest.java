@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.jta.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.transactions.*;
 import org.objectweb.jotm.*;
 
@@ -105,39 +107,41 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
     public void testJta() throws Exception {
         UserTransaction jtaTx = jotm.getUserTransaction();
 
-        assert cache().tx() == null;
+        IgniteCache<String, Integer> cache = jcache();
+
+        assert ignite(0).transactions().tx() == null;
 
         jtaTx.begin();
 
         try {
-            assert cache().tx() == null;
+            assert ignite(0).transactions().tx() == null;
 
-            assert cache().put("key", 1) == null;
+            assert cache.getAndPut("key", 1) == null;
 
-            IgniteTx tx = cache().tx();
+            IgniteTx tx = ignite(0).transactions().tx();
 
             assert tx != null;
             assert tx.state() == ACTIVE;
 
             Integer one = 1;
 
-            assertEquals(one, cache().get("key"));
+            assertEquals(one, cache.get("key"));
 
-            tx = cache().tx();
+            tx = ignite(0).transactions().tx();
 
             assert tx != null;
             assert tx.state() == ACTIVE;
 
             jtaTx.commit();
 
-            assert cache().tx() == null;
+            assert ignite(0).transactions().tx() == null;
         }
         finally {
             if (jtaTx.getStatus() == Status.STATUS_ACTIVE)
                 jtaTx.rollback();
         }
 
-        assertEquals((Integer)1, cache().get("key"));
+        assertEquals((Integer)1, cache.get("key"));
     }
 
     /**
@@ -147,12 +151,13 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
     public void _testJtaTwoCaches() throws Exception { // TODO GG-9141
         UserTransaction jtaTx = jotm.getUserTransaction();
 
-        GridCache<String, Integer> cache1 = cache();
+        IgniteEx ignite = grid(0);
 
-        GridCache<String, Integer> cache2 = grid(0).cache("cache-2");
+        IgniteCache<String, Integer> cache1 = jcache();
 
-        assertNull(cache1.tx());
-        assertNull(cache2.tx());
+        IgniteCache<Object, Object> cache2 = ignite.jcache("cache-2");
+
+        assertNull(ignite.transactions().tx());
 
         jtaTx.begin();
 
@@ -163,13 +168,11 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
             assertEquals(1, (int)cache1.get("key"));
             assertEquals(1, (int)cache2.get("key"));
 
-            assertEquals(cache1.tx().state(), ACTIVE);
-            assertEquals(cache2.tx().state(), ACTIVE);
+            assertEquals(ignite.transactions().tx().state(), ACTIVE);
 
             jtaTx.commit();
 
-            assertNull(cache1.tx());
-            assertNull(cache2.tx());
+            assertNull(ignite.transactions().tx());
 
             assertEquals(1, (int)cache1.get("key"));
             assertEquals(1, (int)cache2.get("key"));

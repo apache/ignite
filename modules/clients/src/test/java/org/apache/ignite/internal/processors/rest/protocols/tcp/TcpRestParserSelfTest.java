@@ -56,7 +56,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
     public void testSimplePacketParsing() throws Exception {
         GridNioSession ses = new MockNioSession();
 
-        GridTcpRestParser parser = new GridTcpRestParser();
+        GridTcpRestParser parser = new GridTcpRestParser(false);
 
         byte hdr = MEMCACHE_REQ_FLAG;
 
@@ -91,7 +91,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
     public void testIncorrectPackets() throws Exception {
         final GridNioSession ses = new MockNioSession();
 
-        final GridTcpRestParser parser = new GridTcpRestParser();
+        final GridTcpRestParser parser = new GridTcpRestParser(false);
 
         final byte[] opaque = new byte[] {0x01, 0x02, 0x03, (byte)0xFF};
 
@@ -151,7 +151,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
 
         ses.addMeta(MARSHALLER.ordinal(), new GridClientOptimizedMarshaller());
 
-        GridTcpRestParser parser = new GridTcpRestParser();
+        GridTcpRestParser parser = new GridTcpRestParser(false);
 
         GridClientMessage msg = parser.decode(ses, raw);
 
@@ -180,7 +180,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
         ses1.addMeta(MARSHALLER.ordinal(), new GridClientOptimizedMarshaller());
         ses2.addMeta(MARSHALLER.ordinal(), new GridClientOptimizedMarshaller());
 
-        GridTcpRestParser parser = new GridTcpRestParser();
+        GridTcpRestParser parser = new GridTcpRestParser(false);
 
         GridClientCacheRequest req = new GridClientCacheRequest(CAS);
 
@@ -266,7 +266,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
 
             ses.addMeta(MARSHALLER.ordinal(), new GridClientOptimizedMarshaller());
 
-            GridTcpRestParser parser = new GridTcpRestParser();
+            GridTcpRestParser parser = new GridTcpRestParser(false);
 
             Collection<GridClientCacheRequest> lst = new ArrayList<>(5);
 
@@ -308,7 +308,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
 
             ses.addMeta(MARSHALLER.ordinal(), new GridClientOptimizedMarshaller());
 
-            GridTcpRestParser parser = new GridTcpRestParser();
+            GridTcpRestParser parser = new GridTcpRestParser(false);
 
             Collection<GridClientMessage> lst = new ArrayList<>(1);
 
@@ -357,7 +357,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Assembles GridGain client packet.
+     * Assembles Ignite client packet.
      *
      * @param msg Message to serialize.
      * @return Raw message bytes.
@@ -378,7 +378,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Assembles GridGain client handshake packet.
+     * Assembles Ignite client handshake packet.
      *
      * @return Raw message bytes.
      */

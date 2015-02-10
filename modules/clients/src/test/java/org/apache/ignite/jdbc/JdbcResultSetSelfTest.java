@@ -47,7 +47,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** URL. */
-    private static final String URL = "jdbc:gridgain://127.0.0.1/";
+    private static final String URL = "jdbc:ignite://127.0.0.1/";
 
     /** SQL query. */
     private static final String SQL =
@@ -76,7 +76,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setRestEnabled(true);
+        cfg.setClientConnectionConfiguration(new ClientConnectionConfiguration());
 
         return cfg;
     }
@@ -94,7 +94,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         cache.put(1, o);
         cache.put(2, new TestObject(2));
 
-        Class.forName("org.apache.ignite.jdbc.IgniteJdbcDriver");
+        Class.forName("org.apache.ignite.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */

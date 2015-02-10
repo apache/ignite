@@ -128,7 +128,7 @@ class GridAffinityUtils {
         private Ignite ignite;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */

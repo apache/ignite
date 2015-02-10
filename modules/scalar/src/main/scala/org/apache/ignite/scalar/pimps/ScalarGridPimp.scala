@@ -53,7 +53,7 @@ object ScalarGridPimp {
  * Scalar's pimp and replace the original call with a call on that pimp.
  *
  * Note that Scalar provide extensive library of implicit conversion between Java and
- * Scala GridGain counterparts in `ScalarConversions` object
+ * Scala Ignite counterparts in `ScalarConversions` object
  *
  * ==Suffix '$' In Names==
  * Symbol `$` is used in names when they conflict with the names in the base Java class

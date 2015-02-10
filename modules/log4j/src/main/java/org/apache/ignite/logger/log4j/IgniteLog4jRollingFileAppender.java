@@ -68,7 +68,7 @@ public class IgniteLog4jRollingFileAppender extends RollingFileAppender implemen
      * Initializes appender.
      */
     private void init() {
-        IgniteLog4jLogger.addAppender(this);
+        Log4JLogger.addAppender(this);
     }
 
     /** {@inheritDoc} */

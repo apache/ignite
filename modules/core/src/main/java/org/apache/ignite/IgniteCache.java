@@ -20,6 +20,7 @@ package org.apache.ignite;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
 import org.jetbrains.annotations.*;
@@ -45,20 +46,11 @@ import java.util.concurrent.locks.*;
  *  data based on the optionally passed in arguments.
  * </li>
  * <li>
- *     Method {@link #affinity()} provides {@link org.apache.ignite.cache.affinity.CacheAffinityFunction} service for information on
- *     data partitioning and mapping keys to grid nodes responsible for caching those keys.
- * </li>
- * <li>
- *     Method {@link #dataStructures()} provides {@link org.apache.ignite.cache.datastructures.CacheDataStructures} service for
- *     creating and working with distributed concurrent data structures, such as
- *     {@link IgniteAtomicLong}, {@link IgniteAtomicReference}, {@link org.apache.ignite.cache.datastructures.CacheQueue}, etc.
- * </li>
- * <li>
  *  Methods like {@code 'tx{Un}Synchronize(..)'} witch allow to get notifications for transaction state changes.
  *  This feature is very useful when integrating cache transactions with some other in-house transactions.
  * </li>
  * <li>Method {@link #metrics()} to provide metrics for the whole cache.</li>
- * <li>Method {@link #getConfiguration()} to provide cache configuration bean.</li>
+ * <li>Method {@link #getConfiguration(Class)}} to provide cache configuration bean.</li>
  * </ul>
  *
  * @param <K> Cache key type.
@@ -85,7 +77,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @return Random entry, or {@code null} if cache is empty.
      */
-    @Nullable public Entry<K, V> randomEntry();
+    public Entry<K, V> randomEntry();
 
     public IgniteCache<K, V> withExpiryPolicy(ExpiryPolicy plc);
 
@@ -154,13 +146,14 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
-     * @return Previously contained value regardless of whether put happened or not.
+     * @return Previously contained value regardless of whether put happened or not ({@code null} if there was no
+     *      previous value).
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws CacheException If put operation failed.
      * @throws org.apache.ignite.internal.processors.cache.CacheFlagException If projection flags validation failed.
      */
     @IgniteAsyncSupported
-    @Nullable public V getAndPutIfAbsent(K key, V val) throws CacheException;
+    public V getAndPutIfAbsent(K key, V val) throws CacheException;
 
     /**
      * Creates a {@link Lock} instance associated with passed key.
@@ -215,14 +208,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     public Iterable<Entry<K, V>> localEntries(CachePeekMode... peekModes) throws CacheException;
 
-    public Map<K, V> localPartition(int part) throws CacheException;
-
     /**
      * Attempts to evict all entries associated with keys. Note,
      * that entry will be evicted only if it's not used (not
      * participating in any locks or transactions).
      * <p>
-     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
      * <h2 class="header">Cache Flags</h2>
@@ -234,21 +225,21 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public void localEvict(Collection<? extends K> keys);
 
     /**
-     * Peeks at in-memory cached value using default {@link org.apache.ignite.cache.GridCachePeekMode#SMART}
+     * Peeks at in-memory cached value using default {@link GridCachePeekMode#SMART}
      * peek mode.
      * <p>
      * This method will not load value from any persistent store or from a remote node.
      * <h2 class="header">Transactions</h2>
      * This method does not participate in any transactions, however, it will
-     * peek at transactional value according to the {@link org.apache.ignite.cache.GridCachePeekMode#SMART} mode
+     * peek at transactional value according to the {@link GridCachePeekMode#SMART} mode
      * semantics. If you need to look at global cached value even from within transaction,
      * you can use {@link org.apache.ignite.cache.GridCache#peek(Object, Collection)} method.
      *
      * @param key Entry key.
-     * @return Peeked value.
+     * @return Peeked value, or {@code null} if not found.
      * @throws NullPointerException If key is {@code null}.
      */
-    @Nullable public V localPeek(K key, CachePeekMode... peekModes);
+    public V localPeek(K key, CachePeekMode... peekModes);
 
     /**
      * This method unswaps cache entries by given keys, if any, from swap storage
@@ -264,28 +255,6 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws org.apache.ignite.internal.processors.cache.CacheFlagException If flags validation failed.
      */
     public void localPromote(Set<? extends K> keys) throws CacheException;
-
-    /**
-     * Clears an entry from this cache and swap storage only if the entry
-     * is not currently locked, and is not participating in a transaction.
-     * <p>
-     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
-     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
-     * also be cleared from swap.
-     * <p>
-     * Note that this operation is local as it merely clears
-     * an entry from local cache. It does not remove entries from
-     * remote caches or from underlying persistent storage.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
-     *
-     * @param keys Keys to clear.
-     * @return {@code True} if entry was successfully cleared from cache, {@code false}
-     *      if entry was in use at the time of this method invocation and could not be
-     *      cleared.
-     */
-    public boolean clear(Collection<? extends K> keys);
 
     /**
      * Gets the number of all entries cached across all nodes.
@@ -324,7 +293,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * so keys and values will be returned from cache API methods without changes. Therefore,
      * signature of the projection can contain only following types:
      * <ul>
-     *     <li>{@link org.apache.ignite.portables.PortableObject} for portable classes</li>
+     *     <li>{@link org.gridgain.grid.portables.PortableObject} for portable classes</li>
      *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
      *     <li>Arrays of primitives (byte[], int[], ...)</li>
      *     <li>{@link String} and array of {@link String}s</li>
@@ -349,7 +318,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * </pre>
      * <p>
      * Note that this method makes sense only if cache is working in portable mode
-     * ({@link CacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
+     * ({@link org.apache.ignite.configuration.CacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
      * this method is no-op and will return current projection.
      *
      * @return Projection for portable objects.

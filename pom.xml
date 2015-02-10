@@ -115,6 +115,8 @@
         <module>modules/log4j</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
+        <module>modules/schema-load</module>
+        <module>modules/codegen</module>
     </modules>
 
     <dependencyManagement>
@@ -262,6 +264,79 @@
 
         <plugins>
             <plugin>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>2.8</version>
+                <inherited>false</inherited>
+                <configuration>
+                    <aggregate>true</aggregate>
+                    <mapping>
+                        <scala>JAVADOC_STYLE</scala>
+                    </mapping>
+                    <headerDefinitions>
+                        <headerDefinition>license/header-customisation.xml</headerDefinition>
+                    </headerDefinitions>
+                    <header>license/header.txt</header>
+                    <properties>
+                        <inceptionYear>2014</inceptionYear>
+                    </properties>
+                    <includes>
+                        <include>**/*.*</include>
+                    </includes>
+                    <excludes>
+                        <exclude>work/**</exclude>
+                        <exclude>**/*.txt</exclude>
+                        <exclude>**/*.jks</exclude>
+                        <exclude>**/*.pem</exclude>
+                        <exclude>**/*.m4</exclude>
+                        <exclude>**/*.pem</exclude>
+                        <exclude>**/*.in</exclude>
+                        <exclude>**/*.am</exclude>
+                        <exclude>**/*.ac</exclude>
+                        <exclude>**/*.sub</exclude>
+                        <exclude>**/*.csproj</exclude>
+                        <exclude>**/*.log</exclude>
+                        <exclude>**/*.sln</exclude>
+                        <exclude>**/*.h</exclude>
+                        <exclude>**/*.pfx</exclude>
+                        <exclude>**/*.dylib</exclude>
+                        <exclude>**/*.ini</exclude>
+                        <exclude>**/*.gar</exclude>
+                        <exclude>**/*.tst</exclude>
+                        <exclude>**/*.brokenxml</exclude>
+                        <exclude>**/*.empty</exclude>
+                        <exclude>**/*.incorrefs</exclude>
+                        <exclude>**/*.guess</exclude>
+                        <!--special excludes-->
+                        <exclude>**/com/romix/scala/**</exclude>
+                        <exclude>**/GridOffHeapSnapTreeMap.java</exclude>
+                        <exclude>**/internal/util/snaptree/SnapTreeMap.java</exclude>
+                        <exclude>**/internal/util/snaptree/CopyOnWriteManager.java</exclude>
+                        <exclude>**/internal/util/snaptree/Epoch.java</exclude>
+                        <exclude>**/internal/util/snaptree/EpochNode.java</exclude>
+                        <exclude>**/org/jetbrains/annotations/**</exclude>
+                        <exclude>**/org/pcollections/**</exclude>
+                        <exclude>**/org/jdk8/backport/**</exclude>
+                        <exclude>**/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
+                        <exclude>**/ipc/shmem/*.sh</exclude>
+                        <exclude>**/keystore/generate.sh</exclude>
+                        <exclude>**/pom-installed.xml</exclude>
+                        <exclude>**/optimized-classnames*.properties</exclude>
+                        <exclude>**/yardstick/**</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>check-license</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.1</version>
                 <configuration>
@@ -362,6 +437,23 @@
                         <configuration>
                             <descriptors>
                                 <descriptor>assembly/dependencies-visor-console.xml</descriptor>
+                            </descriptors>
+                            <outputDirectory>${basedir}/bin</outputDirectory>
+                            <finalName>include</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>dependencies-schema-load</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>assembly/dependencies-schema-load.xml</descriptor>
                             </descriptors>
                             <outputDirectory>${basedir}/bin</outputDirectory>
                             <finalName>include</finalName>
@@ -563,6 +655,10 @@
                                         <fileset>
                                             <directory>bin/include/visorui</directory>
                                         </fileset>
+
+                                        <fileset>
+                                            <directory>bin/include/schema-load</directory>
+                                        </fileset>
                                     </filesets>
                                 </configuration>
                             </execution>
@@ -634,11 +730,19 @@
                                         </group>
                                         <group>
                                             <title>Data Grid APIs</title>
-                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.cache.datastructures:org.apache.ignite.cache.cloner:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.ggfs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
+                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.cloner:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.ignitefs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
+                                        </group>
+                                        <group>
+                                            <title>Service Grid APIs</title>
+                                            <packages>org.apache.ignite.services</packages>
+                                        </group>
+                                        <group>
+                                            <title>Ignite File System</title>
+                                            <packages>org.apache.ignite.ignitefs</packages>
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.apache.ignite.fs:org.apache.ignite.fs.hadoop:org.apache.ignite.fs.hadoop.v1:org.apache.ignite.fs.hadoop.v2:org.apache.ignite.fs.mapreduce:org.apache.ignite.fs.mapreduce.records:org.apache.ignite.hadoop</packages>
+                                            <packages>org.apache.ignite.ignitefs.hadoop:org.apache.ignite.ignitefs.hadoop.v1:org.apache.ignite.ignitefs.hadoop.v2:org.apache.ignite.ignitefs.mapreduce:org.apache.ignite.ignitefs.mapreduce.records:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>
@@ -649,16 +753,8 @@
                                             <packages>org.apache.ignite.plugin.security</packages>
                                         </group>
                                         <group>
-                                            <title>Distributed Services APIs</title>
-                                            <packages>org.apache.ignite.managed</packages>
-                                        </group>
-                                        <group>
                                             <title>MXBeans classes</title>
                                             <packages>org.apache.ignite.mbean:org.apache.ignite.mxbean</packages>
-                                        </group>
-                                        <group>
-                                            <title>JDBC Driver</title>
-                                            <packages>org.apache.ignite.jdbc</packages>
                                         </group>
                                         <group>
                                             <title>SPI: CheckPoint</title>
@@ -706,7 +802,7 @@
                                         </group>
                                         <group>
                                             <title>Ignite plugin API</title>
-                                            <packages>org.apache.ignite.plugin:org.apache.ignite.plugin.extensions:org.apache.ignite.plugin.extensions.communication:org.apache.ignite.plugin.extensions.discovery:org.apache.ignite.visor.plugin</packages>
+                                            <packages>org.apache.ignite.plugin:org.apache.ignite.plugin.extensions:org.apache.ignite.plugin.extensions.communication:org.apache.ignite.visor.plugin</packages>
                                         </group>
                                         <group>
                                             <title>Logging</title>
@@ -824,7 +920,7 @@
                                         <link>http://hadoop.apache.org/docs/current/api/</link>
                                     </links>
                                     <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
-                                    <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.internal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.apache.ignite.portables:org.apache.ignite.yardstick</excludePackageNames>
+                                    <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.internal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.apache.ignite.portables:org.apache.ignite.yardstick:org.apache.ignite.schema.*:org.apache.ignite.codegen</excludePackageNames>
                                     <groups>
                                         <group>
                                             <title>Common Grid APIs</title>
@@ -844,11 +940,19 @@
                                         </group>
                                         <group>
                                             <title>Data Grid APIs</title>
-                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.cache.datastructures:org.apache.ignite.cache.cloner:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.ggfs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
+                                            <packages>org.apache.ignite.cache:org.apache.ignite.transactions:org.apache.ignite.datastructures:org.apache.ignite.cache.cloner:org.apache.ignite.cache.store:org.apache.ignite.cache.store.hibernate:org.apache.ignite.cache.store.jdbc:org.apache.ignite.cache.store.jdbc.dialect:org.apache.ignite.cache.query:org.apache.ignite.cache.query.annotations:org.apache.ignite.cache.affinity:org.apache.ignite.cache.affinity.consistenthash:org.apache.ignite.cache.affinity.rendezvous:org.apache.ignite.cache.affinity.fair:org.apache.ignite.cache.eviction:org.apache.ignite.cache.eviction.fifo:org.apache.ignite.cache.eviction.ignitefs:org.apache.ignite.cache.eviction.lru:org.apache.ignite.cache.eviction.random:org.apache.ignite.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.apache.ignite.dataload</packages>
+                                        </group>
+                                        <group>
+                                            <title>Service Grid APIs</title>
+                                            <packages>org.apache.ignite.services</packages>
+                                        </group>
+                                        <group>
+                                            <title>Ignite File System</title>
+                                            <packages>org.apache.ignite.ignitefs</packages>
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.apache.ignite.fs:org.apache.ignite.fs.hadoop:org.apache.ignite.fs.hadoop.v1:org.apache.ignite.fs.hadoop.v2:org.apache.ignite.fs.mapreduce:org.apache.ignite.fs.mapreduce.records:org.apache.ignite.hadoop</packages>
+                                            <packages>org.apache.ignite.ignitefs.hadoop:org.apache.ignite.ignitefs.hadoop.v1:org.apache.ignite.ignitefs.hadoop.v2:org.apache.ignite.ignitefs.mapreduce:org.apache.ignite.ignitefs.mapreduce.records:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>
@@ -857,14 +961,6 @@
                                         <group>
                                             <title>Security APIs</title>
                                             <packages>org.apache.ignite.plugin.security</packages>
-                                        </group>
-                                        <group>
-                                            <title>Distributed Services APIs</title>
-                                            <packages>org.apache.ignite.managed</packages>
-                                        </group>
-                                        <group>
-                                            <title>JDBC Driver</title>
-                                            <packages>org.apache.ignite.jdbc</packages>
                                         </group>
                                         <group>
                                             <title>MXBeans classes</title>
@@ -916,7 +1012,7 @@
                                         </group>
                                         <group>
                                             <title>Ignite plugin API</title>
-                                            <packages>org.apache.ignite.plugin:org.apache.ignite.plugin.extensions:org.apache.ignite.plugin.extensions.communication:org.apache.ignite.plugin.extensions.discovery:org.apache.ignite.visor.plugin</packages>
+                                            <packages>org.apache.ignite.plugin:org.apache.ignite.plugin.extensions:org.apache.ignite.plugin.extensions.communication:org.apache.ignite.visor.plugin</packages>
                                         </group>
                                         <group>
                                             <title>Logging</title>
@@ -938,14 +1034,10 @@
                                             <title>Spring Caching</title>
                                             <packages>org.apache.ignite.cache.spring</packages>
                                         </group>
-                                        <group>
-                                            <title>Interop</title>
-                                            <packages>org.apache.ignite.interop</packages>
-                                        </group>
                                     </groups>
                                     <header>
                                         <![CDATA[
-                                    GridGain - In-Memory Data Fabric
+                                    Apache Ignite - In-Memory Data Fabric
                                 ]]>
                                     </header>
                                     <bottom>
@@ -989,7 +1081,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <b>GridGain Fabric</b>
+                                                            <b>Apache Ignite Fabric</b>
                                                         </td>
                                                         <td>:&nbsp;&nbsp;
                                                             ver. <strong>${ignite.version}</strong>
@@ -1066,7 +1158,7 @@
                                         <![CDATA[
                                     Java Client
                                     <br>
-                                    GridGain ver. <b>${ignite.version}</b>
+                                    Apache Ignite ver. <b>${ignite.version}</b>
                                 ]]>
                                     </header>
                                     <bottom>
@@ -1074,7 +1166,7 @@
                                     <table width="100%" border="0">
                                         <tr>
                                             <td>
-                                                <nobr>GridGain&#153; - Java Client, ver. <strong>${ignite.version}</strong></nobr>
+                                                <nobr>Apache Ignite&#153; - Java Client, ver. <strong>${ignite.version}</strong></nobr>
                                                 <br>
                                                 <a target=_blank href="https://incubator.apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
                                             </td>
@@ -1157,6 +1249,48 @@
                                             <exclude name="allclasses-frame.html"/>
                                             <exclude name="**/class-use/*"/>
                                         </doctask>
+                                    </target>
+                                </configuration>
+                            </execution>
+
+                            <execution>
+                                <id>optimized-classnames-generation</id>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <phase>process-resources</phase>
+                                <configuration>
+                                    <target>
+                                        <java
+                                                classname="org.apache.ignite.tools.marshaller.optimized.OptimizedClassNamesGenerator"
+                                                fork="true"
+                                                failonerror="true"
+                                                maxmemory="1g">
+                                            <classpath>
+                                                <path location="${project.basedir}/modules/core/target/classes"/>
+                                                <path location="${project.basedir}/modules/aop/target/classes"/>
+                                                <path location="${project.basedir}/modules/aws/target/classes"/>
+                                                <path location="${project.basedir}/modules/email/target/classes"/>
+                                                <path location="${project.basedir}/modules/hadoop/target/classes"/>
+                                                <path location="${project.basedir}/modules/hibernate/target/classes"/>
+                                                <path location="${project.basedir}/modules/indexing/target/classes"/>
+                                                <path location="${project.basedir}/modules/jcl/target/classes"/>
+                                                <path location="${project.basedir}/modules/jta/target/classes"/>
+                                                <path location="${project.basedir}/modules/log4j/target/classes"/>
+                                                <path location="${project.basedir}/modules/rest-http/target/classes"/>
+                                                <path location="${project.basedir}/modules/schedule/target/classes"/>
+                                                <path location="${project.basedir}/modules/slf4j/target/classes"/>
+                                                <path location="${project.basedir}/modules/spring/target/classes"/>
+                                                <path location="${project.basedir}/modules/ssh/target/classes"/>
+                                                <path location="${project.basedir}/modules/urideploy/target/classes"/>
+                                                <path location="${project.basedir}/modules/web/target/classes"/>
+                                                <path location="${project.basedir}/modules/scalar/target/classes"/>
+                                                <path location="${project.basedir}/modules/visor-console/target/classes"/>
+                                                <path refid="maven.plugin.classpath"/>
+                                            </classpath>
+                                            <arg value="${project.basedir}/modules/core/target/classes"/>
+                                            <jvmarg value="-XX:MaxPermSize=1g"/>
+                                        </java>
                                     </target>
                                 </configuration>
                             </execution>

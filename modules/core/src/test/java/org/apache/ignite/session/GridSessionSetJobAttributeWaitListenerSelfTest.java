@@ -59,14 +59,7 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
 
         c.setDiscoverySpi(discoSpi);
 
-        c.setExecutorService(
-            new ThreadPoolExecutor(
-                SPLIT_COUNT * 2,
-                SPLIT_COUNT * 2,
-                0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>()));
-
-        c.setExecutorServiceShutdown(true);
+        c.setPublicThreadPoolSize(SPLIT_COUNT * 2);
 
         return c;
     }
@@ -119,11 +112,11 @@ public class GridSessionSetJobAttributeWaitListenerSelfTest extends GridCommonAb
     @ComputeTaskSessionFullSupport
     public static class GridTaskSessionTestTask extends ComputeTaskSplitAdapter<Serializable, Integer> {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */

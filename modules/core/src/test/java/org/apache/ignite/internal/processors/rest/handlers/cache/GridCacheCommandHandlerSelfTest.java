@@ -62,7 +62,11 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration();
 
         cfg.setLocalHost("localhost");
-        cfg.setRestEnabled(true);
+
+        ClientConnectionConfiguration clnCfg = new ClientConnectionConfiguration();
+        clnCfg.setRestTcpHost("localhost");
+
+        cfg.setClientConnectionConfiguration(clnCfg);
         cfg.setDiscoverySpi(disco);
         cfg.setCacheConfiguration(cacheCfg); // Add 'null' cache configuration.
 
@@ -192,13 +196,13 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         try {
             // Change cache state.
-            cache().putx(key, curVal);
+            jcache().put(key, curVal);
 
             // Validate behavior for initialized cache (has current value).
             assertTrue("Expects succeed.", (Boolean)hnd.handleAsync(req).get().getResponse());
         }
         finally {
-            res = (T)cache().remove(key);
+            res = (T)jcache().getAndRemove(key);
         }
 
         return res;

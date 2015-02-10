@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.datastructures.*;
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.datastructures.*;
+import org.apache.ignite.internal.processors.datastructures.*;
+import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.apache.ignite.transactions.*;
 
 import java.util.*;
 
@@ -77,6 +76,13 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
         cacheCfg.setBackups(1);
 
         cfg.setCacheConfiguration(cacheCfg);
+
+        AtomicConfiguration atomicCfg = new AtomicConfiguration();
+
+        atomicCfg.setCacheMode(PARTITIONED);
+        atomicCfg.setBackups(1);
+
+        cfg.setAtomicConfiguration(atomicCfg);
 
         return cfg;
     }
@@ -211,7 +217,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
             assert PARTITIONED == grid(i).cache(null).configuration().getCacheMode();
 
-            CacheAtomicLong atomic = grid(i).cache(null).dataStructures().atomicLong(name, 0, true);
+            IgniteAtomicLong atomic = grid(i).atomicLong(name, 0, true);
 
             long val = atomic.get();
 
@@ -285,9 +291,9 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
             assert PARTITIONED == grid(i).cache(null).configuration().getCacheMode();
 
         // Init cache data.
-        grid(0).cache(null).dataStructures().atomicLong(key, 0, true).getAndSet(INIT_GRID_NUM);
+        grid(0).atomicLong(key, 0, true).getAndSet(INIT_GRID_NUM);
 
-        assert INIT_GRID_NUM == grid(0).cache(null).dataStructures().atomicLong(key, 0, true).get();
+        assertEquals(INIT_GRID_NUM, grid(0).atomicLong(key, 0, true).get());
 
         stopGrid(0);
     }

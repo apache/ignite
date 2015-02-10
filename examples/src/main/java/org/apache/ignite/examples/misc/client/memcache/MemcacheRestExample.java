@@ -20,16 +20,15 @@ package org.apache.ignite.examples.misc.client.memcache;
 import net.spy.memcached.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.datastructures.*;
 
 import java.io.*;
 import java.net.*;
 import java.util.*;
 
 /**
- * This example shows how to use Memcache client for manipulating GridGain cache.
+ * This example shows how to use Memcache client for manipulating Ignite cache.
  * <p>
- * GridGain implements Memcache binary protocol and it is available if
+ * Ignite implements Memcache binary protocol and it is available if
  * REST is enabled on the node.
  * Remote nodes should always be started using {@link MemcacheRestExampleNodeStartup}.
  */
@@ -47,11 +46,11 @@ public class MemcacheRestExample {
     public static void main(String[] args) throws Exception {
         MemcachedClient client = null;
 
-        try (Ignite g = Ignition.start(MemcacheRestExampleNodeStartup.configuration())) {
+        try (Ignite ignite = Ignition.start(MemcacheRestExampleNodeStartup.configuration())) {
             System.out.println();
             System.out.println(">>> Memcache REST example started.");
 
-            GridCache<String, Object> cache = g.cache(null);
+            GridCache<String, Object> cache = ignite.cache(null);
 
             client = startMemcachedClient(host, port);
 
@@ -60,8 +59,8 @@ public class MemcacheRestExample {
                 System.out.println(">>> Successfully put string value using Memcache client.");
 
             // Check that string value is actually in cache using traditional
-            // GridGain API and Memcache binary protocol.
-            System.out.println(">>> Getting value for 'strKey' using GridGain cache API: " + cache.get("strKey"));
+            // Ignite API and Memcache binary protocol.
+            System.out.println(">>> Getting value for 'strKey' using Ignite cache API: " + cache.get("strKey"));
             System.out.println(">>> Getting value for 'strKey' using Memcache client: " + client.get("strKey"));
 
             // Remove string value from cache using Memcache binary protocol.
@@ -76,8 +75,8 @@ public class MemcacheRestExample {
                 System.out.println(">>> Successfully put integer value using Memcache client.");
 
             // Check that integer value is actually in cache using traditional
-            // GridGain API and Memcache binary protocol.
-            System.out.println(">>> Getting value for 'intKey' using GridGain cache API: " + cache.get("intKey"));
+            // Ignite API and Memcache binary protocol.
+            System.out.println(">>> Getting value for 'intKey' using Ignite cache API: " + cache.get("intKey"));
             System.out.println(">>> Getting value for 'intKey' using Memcache client: " + client.get("intKey"));
 
             // Remove string value from cache using Memcache binary protocol.
@@ -88,20 +87,20 @@ public class MemcacheRestExample {
             System.out.println(">>> Current cache size: " + cache.size() + " (expected: 0).");
 
             // Create atomic long.
-            CacheAtomicLong l = cache.dataStructures().atomicLong("atomicLong", 10, true);
+            IgniteAtomicLong l = ignite.atomicLong("atomicLong", 10, true);
 
             // Increment atomic long by 5 using Memcache client.
             if (client.incr("atomicLong", 5, 0) == 15)
                 System.out.println(">>> Successfully incremented atomic long by 5.");
 
-            // Increment atomic long using GridGain API and check that value is correct.
+            // Increment atomic long using Ignite API and check that value is correct.
             System.out.println(">>> New atomic long value: " + l.incrementAndGet() + " (expected: 16).");
 
             // Decrement atomic long by 3 using Memcache client.
             if (client.decr("atomicLong", 3, 0) == 13)
                 System.out.println(">>> Successfully decremented atomic long by 3.");
 
-            // Decrement atomic long using GridGain API and check that value is correct.
+            // Decrement atomic long using Ignite API and check that value is correct.
             System.out.println(">>> New atomic long value: " + l.decrementAndGet() + " (expected: 12).");
         }
         finally {
@@ -111,7 +110,7 @@ public class MemcacheRestExample {
     }
 
     /**
-     * Creates Memcache client that uses binary protocol and connects to GridGain.
+     * Creates Memcache client that uses binary protocol and connects to Ignite.
      *
      * @param host Hostname.
      * @param port Port number.

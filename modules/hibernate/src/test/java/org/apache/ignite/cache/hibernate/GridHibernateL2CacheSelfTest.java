@@ -45,8 +45,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.cache.hibernate.GridHibernateRegionFactory.*;
 import static org.hibernate.cfg.Environment.*;
 
-import org.apache.ignite.cache.hibernate.GridHibernateL2CacheSelfTest.Entity;
-
 /**
  *
  * Tests Hibernate L2 cache.
@@ -1919,6 +1917,6 @@ public class GridHibernateL2CacheSelfTest extends GridCommonAbstractTest {
         sesFactory2 = null;
 
         for (GridCache<?, ?> cache : grid(0).caches())
-            cache.globalClearAll();
+            cache.clear();
     }
 }

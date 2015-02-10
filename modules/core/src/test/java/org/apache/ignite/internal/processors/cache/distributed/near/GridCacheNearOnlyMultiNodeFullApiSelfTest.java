@@ -20,21 +20,28 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
 
+import javax.cache.expiry.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
@@ -94,9 +101,9 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         for (int i = 0; i < gridCount(); i++) {
             ClusterNode node = grid(i).localNode();
 
-            GridCacheAttributes[] nodeAttrs = node.attribute(GridNodeAttributes.ATTR_CACHE);
+            GridCacheAttributes[] nodeAttrs = node.attribute(IgniteNodeAttributes.ATTR_CACHE);
 
-            info("Cache attribtues for node [nodeId=" + node.id() + ", attrs=" +
+            info("Cache attributes for node [nodeId=" + node.id() + ", attrs=" +
                 Arrays.asList(nodeAttrs) + ']');
         }
 
@@ -117,25 +124,34 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     /**
      * @return A not near-only cache.
      */
-    protected GridCache<String, Integer> fullCache() {
-        return nearIdx == 0 ? cache(1) : cache(0);
+    protected IgniteCache<String, Integer> fullCache() {
+        return nearIdx == 0 ? jcache(1) : jcache(0);
     }
 
     /**
-     * Returns primary keys for node of the given cache,
-     * handling possible near-only argument by selecting a single real cache instead.
-     *
-     * {@inheritDoc}
+     * @return For the purpose of this test returns the near-only instance.
      */
-    @Override protected List<String> primaryKeysForCache(CacheProjection<String, Integer> cache, int cnt)
+    @Override protected IgniteCache<String, Integer> jcache() {
+        return jcache(nearIdx);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteTransactions transactions() {
+        return grid(nearIdx).transactions();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected List<String> primaryKeysForCache(IgniteCache<String, Integer> cache, int cnt)
         throws IgniteCheckedException {
-        return cache.equals(cache()) ?
-            super.primaryKeysForCache(fullCache(), cnt) : super.primaryKeysForCache(cache, cnt);
+        if (cache.equals(jcache()))
+            return super.primaryKeysForCache(fullCache(), cnt);
+
+        return super.primaryKeysForCache(cache, cnt);
     }
 
     /** {@inheritDoc} */
     @Override public void testSize() throws Exception {
-        GridCache<String, Integer> nearCache = cache();
+        IgniteCache<String, Integer> nearCache = jcache();
 
         int size = 10;
 
@@ -152,55 +168,18 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         checkSize(map.keySet());
 
-        assertEquals("Primary keys found in near-only cache [" +
-            "primaryEntries=" + nearCache.primaryEntrySet() + ", dht=" + dht(nearIdx).allEntries() + "]",
-            0, nearCache.primarySize());
+        assertEquals(10, nearCache.localSize());
 
         int fullCacheSize = 0;
 
         for (int i = 0; i < gridCount(); i++)
-            fullCacheSize += cache(i).primarySize();
+            fullCacheSize += jcache(i).localSize();
 
-        assertEquals("Invalid cache size", 10, fullCacheSize);
+        assertEquals("Invalid cache size", fullCacheSize, nearCache.size());
     }
 
     /** {@inheritDoc} */
-    @Override public void testReload() throws Exception {
-        // Not needed for near-only cache.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testReloadAsync() throws Exception {
-        // Not needed for near-only cache.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testReloadFiltered() throws Exception {
-        // Not needed for near-only cache.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testReloadAsyncFiltered() throws Exception {
-        // Not needed for near-only cache.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testReloadAll() throws Exception {
-        // Not needed for near-only cache.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testReloadAllAsync() throws Exception {
-        // Not needed for near-only cache.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testReloadAllFiltered() throws Exception {
-        // Not needed for near-only cache.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testReloadAllAsyncFiltered() throws Exception {
+    @Override public void testLoadAll() throws Exception {
         // Not needed for near-only cache.
     }
 
@@ -209,16 +188,196 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         // TODO fix this test for client mode.
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReaderTtlTx() throws Exception {
+        checkReaderTtl(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReaderTtlNoTx() throws Exception {
+        checkReaderTtl(false);
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    private void checkReaderTtl(boolean inTx) throws Exception {
+        int ttl = 1000;
+
+        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
+
+        final GridCache<String, Integer> c = cache();
+
+        final String key = primaryKeysForCache(jcache(), 1).get(0);
+
+        c.put(key, 1);
+
+        CacheEntry<String, Integer> entry = c.entry(key);
+
+        assert entry != null;
+
+        assertEquals(0, entry.timeToLive());
+        assertEquals(0, entry.expirationTime());
+
+        long startTime = System.currentTimeMillis();
+
+        int fullIdx = nearIdx == 0 ? 1 : 0;
+
+        // Now commit transaction and check that ttl and expire time have been saved.
+        IgniteTx tx = inTx ? grid(fullIdx).transactions().txStart() : null;
+
+        try {
+            jcache(fullIdx).withExpiryPolicy(expiry).put(key, 1);
+
+            if (tx != null)
+                tx.commit();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
+
+        long[] expireTimes = new long[gridCount()];
+
+        for (int i = 0; i < gridCount(); i++) {
+            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
+
+            if (curEntry.primary() || curEntry.backup() || i == nearIdx) {
+                assertEquals(ttl, curEntry.timeToLive());
+
+                assert curEntry.expirationTime() > startTime;
+
+                expireTimes[i] = curEntry.expirationTime();
+            }
+        }
+
+        // One more update from the same cache entry to ensure that expire time is shifted forward.
+        U.sleep(100);
+
+        tx = inTx ? grid(fullIdx).transactions().txStart() : null;
+
+        try {
+            jcache(fullIdx).withExpiryPolicy(expiry).put(key, 2);
+
+            if (tx != null)
+                tx.commit();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
+
+        for (int i = 0; i < gridCount(); i++) {
+            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
+
+            if (curEntry.primary() || curEntry.backup() || i == nearIdx) {
+                assertEquals(ttl, curEntry.timeToLive());
+
+                assert curEntry.expirationTime() > expireTimes[i];
+
+                expireTimes[i] = curEntry.expirationTime();
+            }
+        }
+
+        // And one more update to ensure that ttl is not changed and expire time is not shifted forward.
+        U.sleep(100);
+
+        tx = inTx ? grid(fullIdx).transactions().txStart() : null;
+
+        try {
+            jcache(fullIdx).put(key, 4);
+        }
+        finally {
+            if (tx != null)
+                tx.commit();
+        }
+
+        for (int i = 0; i < gridCount(); i++) {
+            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
+
+            if (curEntry.primary() || curEntry.backup() || i == nearIdx) {
+                assertEquals(ttl, curEntry.timeToLive());
+                assertEquals(expireTimes[i], curEntry.expirationTime());
+            }
+        }
+
+        // Avoid reloading from store.
+        map.remove(key);
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
+            @SuppressWarnings("unchecked")
+            @Override public boolean applyx() throws IgniteCheckedException {
+                try {
+                    Integer val = c.get(key);
+
+                    if (val != null) {
+                        info("Value is in cache [key=" + key + ", val=" + val + ']');
+
+                        return false;
+                    }
+
+                    // Get "cache" field from GridCacheProxyImpl.
+                    GridCacheAdapter c0 = GridTestUtils.getFieldValue(c, "cache");
+
+                    if (!c0.context().deferredDelete()) {
+                        GridCacheEntryEx e0 = c0.peekEx(key);
+
+                        return e0 == null || (e0.rawGet() == null && e0.valueBytes() == null);
+                    }
+                    else
+                        return true;
+                }
+                catch (GridCacheEntryRemovedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }, Math.min(ttl * 10, getTestTimeout())));
+
+        // Ensure that old TTL and expire time are not longer "visible".
+        entry = c.entry(key);
+
+        assert entry.get() == null;
+
+        assertEquals(0, entry.timeToLive());
+        assertEquals(0, entry.expirationTime());
+
+        // Ensure that next update will not pick old expire time.
+
+        tx = inTx ? c.txStart() : null;
+
+        try {
+            entry.set(10);
+        }
+        finally {
+            if (tx != null)
+                tx.commit();
+        }
+
+        U.sleep(2000);
+
+        entry = c.entry(key);
+
+        assertEquals((Integer)10, entry.get());
+
+        assertEquals(0, entry.timeToLive());
+        assertEquals(0, entry.expirationTime());
+    }
+
     /** {@inheritDoc} */
     @Override public void testClear() throws Exception {
-        GridCache<String, Integer> nearCache = cache();
-        GridCache<String, Integer> primary = fullCache();
+        IgniteCache<String, Integer> nearCache = jcache();
+        IgniteCache<String, Integer> primary = fullCache();
 
         Collection<String> keys = primaryKeysForCache(primary, 3);
 
         info("Keys: " + keys);
 
-        Map<String, Integer> vals = new HashMap<>(keys.size());
+        Map<String, Integer> vals = new HashMap<>();
 
         int i = 0;
 
@@ -231,132 +390,65 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         }
 
         for (String key : keys)
-            assertEquals(vals.get(key), nearCache.peek(key));
+            assertEquals(vals.get(key), nearCache.localPeek(key, CachePeekMode.ONHEAP));
 
-        nearCache.clearAll();
+        nearCache.clear();
 
         for (String key : keys)
-            assertNull(nearCache.peek(key));
+            assertNull(nearCache.localPeek(key, CachePeekMode.ONHEAP));
 
         for (Map.Entry<String, Integer> entry : vals.entrySet())
             nearCache.put(entry.getKey(), entry.getValue());
 
         for (String key : keys)
-            assertEquals(vals.get(key), nearCache.peek(key));
+            assertEquals(vals.get(key), nearCache.localPeek(key, CachePeekMode.ONHEAP));
 
         String first = F.first(keys);
 
-        assertTrue(nearCache.lock(first, 0L));
+        Lock lock = nearCache.lock(first);
 
-        nearCache.clearAll();
+        lock.lock();
 
-        assertEquals(vals.get(first), nearCache.peek(first));
-        assertEquals(vals.get(first), primary.peek(first));
+        try {
+            nearCache.clear();
 
-        nearCache.unlock(first);
-
-        nearCache.projection(gte100).clear(first);
-
-        assertEquals(vals.get(first), nearCache.peek(first));
-        assertEquals(vals.get(first), primary.peek(first));
-
-        nearCache.put(first, 101);
-
-        nearCache.projection(gte100).clear(first);
-
-        assertTrue(nearCache.isEmpty());
-        assertFalse(primary.isEmpty());
-
-        i = 0;
-
-        for (String key : keys) {
-            nearCache.put(key, i);
-
-            vals.put(key, i);
-
-            i++;
+            assertEquals(vals.get(first), nearCache.localPeek(first, CachePeekMode.ONHEAP));
+            assertEquals(vals.get(first), primary.localPeek(first, CachePeekMode.ONHEAP));
         }
-
-        nearCache.put(first, 101);
-        vals.put(first, 101);
-
-        nearCache.projection(gte100).clear(first);
-
-        for (String key : keys)
-            assertEquals(vals.get(key), primary.peek(key));
-
-        for (String key : keys) {
-            if (first.equals(key))
-                assertNull(nearCache.peek(key));
-            else
-                assertEquals(vals.get(key), nearCache.peek(key));
+        finally {
+            lock.unlock();
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void testClearKeys() throws Exception {
-        GridCache<String, Integer> nearCache = cache();
-        GridCache<String, Integer> primary = fullCache();
-
-        Collection<String> keys = primaryKeysForCache(primary, 3);
-
-        for (String key : keys)
-            assertNull(nearCache.get(key));
-
-        String lastKey = F.last(keys);
-
-        Collection<String> subKeys = new ArrayList<>(keys);
-
-        subKeys.remove(lastKey);
-
-        Map<String, Integer> vals = new HashMap<>(keys.size());
-
-        int i = 0;
-
-        for (String key : keys)
-            vals.put(key, i++);
-
-        nearCache.putAll(vals);
-
-        for (String subKey : subKeys)
-            nearCache.clear(subKey);
-
-        for (String key : subKeys) {
-            assertNull(nearCache.peek(key));
-            assertNotNull(primary.peek(key));
-        }
-
-        assertEquals(vals.get(lastKey), nearCache.peek(lastKey));
-
-        nearCache.clearAll();
-
-        vals.put(lastKey, 102);
-
-        nearCache.putAll(vals);
-
-        for (String key : keys)
-            nearCache.projection(gte100).clear(key);
-
-        assertNull(nearCache.peek(lastKey));
-
-        for (String key : subKeys)
-            assertEquals(vals.get(key), nearCache.peek(key));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testGlobalClearAll() throws Exception {
-        // Save entries only on their primary nodes. If we didn't do so, clearAll() will not remove all entries
+    /**
+     * @param async If {@code true} uses async method.
+     * @throws Exception If failed.
+     */
+    @Override protected void globalClearAll(boolean async) throws Exception {
+        // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
         // because some of them were blocked due to having readers.
         for (int i = 0; i < gridCount(); i++) {
-            if (i != nearIdx)
-                for (String key : primaryKeysForCache(cache(i), 3))
-                    cache(i).put(key, 1);
+            if (i != nearIdx) {
+                for (String key : primaryKeysForCache(jcache(i), 3, 100_000))
+                    jcache(i).put(key, 1);
+            }
         }
 
-        cache().globalClearAll();
+        if (async) {
+            IgniteCache<String, Integer> asyncCache = jcache(nearIdx).withAsync();
 
-        for (int i = 0; i < gridCount(); i++)
-            assertTrue(String.valueOf(cache(i).entrySet()), cache(i).isEmpty());
+            asyncCache.clear();
+
+            asyncCache.future().get();
+        }
+        else
+            jcache(nearIdx).clear();
+
+        for (int i = 0; i < gridCount(); i++) {
+            assertEquals("Unexpected size [node=" + ignite(i).name() + ", nearIdx=" + nearIdx + ']',
+                0,
+                jcache(i).localSize());
+        }
     }
 
     /** {@inheritDoc} */
@@ -366,8 +458,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             final CountDownLatch lockCnt = new CountDownLatch(1);
             final CountDownLatch unlockCnt = new CountDownLatch(1);
 
-            grid(0).events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            grid(0).events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     switch (evt.type()) {
                         case EVT_CACHE_OBJECT_LOCKED:
                             lockCnt.countDown();
@@ -383,41 +475,41 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
                 }
             }, EVT_CACHE_OBJECT_LOCKED, EVT_CACHE_OBJECT_UNLOCKED);
 
-            GridCache<String, Integer> nearCache = cache();
-            GridCache<String, Integer> cache = fullCache();
+            IgniteCache<String, Integer> nearCache = jcache();
+            IgniteCache<String, Integer> cache = fullCache();
 
             String key = primaryKeysForCache(cache, 1).get(0);
 
             nearCache.put(key, 1);
 
-            assert !nearCache.isLocked(key);
-            assert !cache.isLocked(key);
+            assert !nearCache.isLocalLocked(key, false);
+            assert !cache.isLocalLocked(key, false);
 
-            nearCache.lock(key, 0L);
+            Lock lock = nearCache.lock(key);
 
-            lockCnt.await();
+            lock.lock();
 
-            assert nearCache.isLocked(key);
-            assert cache.isLocked(key);
+            try {
+                lockCnt.await();
 
-            nearCache.unlock(key);
+                assert nearCache.isLocalLocked(key, false);
+                assert cache.isLocalLocked(key, false);
+            }
+            finally {
+                lock.unlock();
+            }
 
             unlockCnt.await();
 
             for (int i = 0; i < 100; i++) {
-                if (cache.isLocked(key))
+                if (cache.isLocalLocked(key, false))
                     Thread.sleep(10);
                 else
                     break;
             }
 
-            assert !nearCache.isLocked(key);
-            assert !cache.isLocked(key);
+            assert !nearCache.isLocalLocked(key, false);
+            assert !cache.isLocalLocked(key, false);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testPrimaryData() throws Exception {
-        // Not needed for near-only cache.
     }
 }

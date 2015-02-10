@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!DOCTYPE hibernate-configuration PUBLIC
         "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
@@ -39,6 +39,6 @@
         <property name="show_sql">false</property>
 
         <!-- Mappings. -->
-        <mapping resource="org/gridgain/examples/datagrid/store/hibernate/Person.hbm.xml"/>
+        <mapping resource="org/apache/ignite/examples/datagrid/store/hibernate/Person.hbm.xml"/>
     </session-factory>
 </hibernate-configuration>

@@ -25,8 +25,8 @@ import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorN
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 
 import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.events.IgniteEventType
-import org.apache.ignite.events.IgniteEventType._
+import org.apache.ignite.events.EventType
+import org.apache.ignite.events.EventType._
 import org.apache.ignite.visor.{VisorTag, visor}
 
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
@@ -46,14 +46,14 @@ import scala.language.{implicitConversions, reflectiveCalls}
  * | disco | Prints topology change log as seen from the oldest node.                      |
  * |       | Timeframe for querying events can be specified in arguments.                   |
  * |       |                                                                               |
- * |       | Note that this command depends on GridGain events.                            |
+ * |       | Note that this command depends on Ignite events.                            |
  * |       |                                                                               |
- * |       | GridGain events can be individually enabled and disabled and disabled events  |
+ * |       | Ignite events can be individually enabled and disabled and disabled events  |
  * |       | can affect the results produced by this command. Note also that configuration |
  * |       | of Event Storage SPI that is responsible for temporary storage of generated   |
  * |       | events on each node can also affect the functionality of this command.        |
  * |       |                                                                               |
- * |       | By default - all events are DISABLED and GridGain stores last 10,000 local     |
+ * |       | By default - all events are DISABLED and Ignite stores last 10,000 local     |
  * |       | events on each node. Both of these defaults can be changed in configuration.  |
  * +---------------------------------------------------------------------------------------+
  * }}}
@@ -249,14 +249,14 @@ object VisorDiscoveryCommand {
             "Prints topology change log as seen from the oldest node.",
             "Timeframe for querying events can be specified in arguments.",
             " ",
-            "Note that this command depends on GridGain events.",
+            "Note that this command depends on Ignite events.",
             " ",
-            "GridGain events can be individually enabled and disabled and disabled events",
+            "Ignite events can be individually enabled and disabled and disabled events",
             "can affect the results produced by this command. Note also that configuration",
             "of Event Storage SPI that is responsible for temporary storage of generated",
             "events on each node can also affect the functionality of this command.",
             " ",
-            "By default - all events are disabled and GridGain stores last 10,000 local",
+            "By default - all events are disabled and Ignite stores last 10,000 local",
             "events on each node. Both of these defaults can be changed in configuration."
         ),
         spec = List(

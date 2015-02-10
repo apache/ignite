@@ -60,7 +60,7 @@ object ScalarCacheProjectionPimp {
  * Scalar's pimp and replace the original call with a call on that pimp.
  *
  * Note that Scalar provide extensive library of implicit conversion between Java and
- * Scala GridGain counterparts in `ScalarConversions` object
+ * Scala Ignite counterparts in `ScalarConversions` object
  *
  * ==Suffix '$' In Names==
  * Symbol `$` is used in names when they conflict with the names in the base Java class
@@ -89,7 +89,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         toScalaSeq(value.iterator).iterator
 
     /**
-     * Unwraps sequence of functions to sequence of GridGain predicates.
+     * Unwraps sequence of functions to sequence of Ignite predicates.
      */
     private def unwrap(@Nullable p: Seq[EntryPred]): Seq[IgnitePredicate[CacheEntry[K, V]]] =
         if (p == null)

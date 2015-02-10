@@ -25,7 +25,6 @@ import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.portables.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
@@ -117,9 +116,6 @@ public class GridClientConfiguration {
     /** Daemon flag. */
     private boolean daemon;
 
-    /** Portable configuration. */
-    private PortableConfiguration portableCfg;
-
     /**
      * Creates default configuration.
      */
@@ -154,7 +150,6 @@ public class GridClientConfiguration {
         topRefreshFreq = cfg.getTopologyRefreshFrequency();
         daemon = cfg.isDaemon();
         marshaller = cfg.getMarshaller();
-        portableCfg = cfg.getPortableConfiguration();
 
         setDataConfigurations(cfg.getDataConfigurations());
     }
@@ -183,7 +178,7 @@ public class GridClientConfiguration {
     /**
      * Collection of {@code 'host:port'} pairs representing
      * remote grid servers used to establish initial connection to
-     * the grid. Once connection is established, GridGain will get
+     * the grid. Once connection is established, Ignite will get
      * a full view on grid topology and will be able to connect to
      * any available remote node.
      * <p>
@@ -611,7 +606,7 @@ public class GridClientConfiguration {
      * <p>
      * Options, that can be used out-of-the-box:
      * <ul>
-     *     <li>{@link GridClientOptimizedMarshaller} (default) - GridGain's optimized marshaller.</li>
+     *     <li>{@link GridClientOptimizedMarshaller} (default) - Ignite's optimized marshaller.</li>
      *     <li>{@code GridClientPortableMarshaller} - Marshaller that supports portable objects.</li>
      *     <li>{@link GridClientJdkMarshaller} - JDK marshaller (not recommended).</li>
      * </ul>
@@ -629,24 +624,6 @@ public class GridClientConfiguration {
      */
     public void setMarshaller(GridClientMarshaller marshaller) {
         this.marshaller = marshaller;
-    }
-
-    /**
-     * Gets portable configuration.
-     *
-     * @return Portable configuration.
-     */
-    public PortableConfiguration getPortableConfiguration() {
-        return portableCfg;
-    }
-
-    /**
-     * Sets portable configuration.
-     *
-     * @param portableCfg Portable configuration.
-     */
-    public void setPortableConfiguration(@Nullable PortableConfiguration portableCfg) {
-        this.portableCfg = portableCfg;
     }
 
     /**

@@ -223,7 +223,7 @@ class VisorConfigurationCommand {
             val cmnT = VisorTextTable()
 
             cmnT += ("Grid name", safe(cfg.basic().gridName(), "<default>"))
-            cmnT += ("GridGain home", safe(cfg.basic().ggHome(), DFLT))
+            cmnT += ("Ignite home", safe(cfg.basic().ggHome(), DFLT))
             cmnT += ("Localhost", safe(cfg.basic().localHost(), DFLT))
             cmnT += ("Node ID", safe(cfg.basic().nodeId(), DFLT))
             cmnT += ("Marshaller", cfg.basic().marshaller())
@@ -326,13 +326,9 @@ class VisorConfigurationCommand {
             val execCfg = cfg.executeService()
 
             execSvcT += ("Executor service", safe(execCfg.executeService(), DFLT))
-            execSvcT += ("Executor service shutdown", bool2Str(execCfg.executeServiceShutdown()))
             execSvcT += ("System executor service", safe(execCfg.systemExecutorService(), DFLT))
-            execSvcT += ("System executor service shutdown", bool2Str(execCfg.systemExecutorServiceShutdown()))
             execSvcT += ("Peer-to-Peer executor service", safe(execCfg.p2pExecutorService(), DFLT))
-            execSvcT += ("Peer-to-Peer executor service shutdown", bool2Str(execCfg.p2pExecutorServiceShutdown()))
             execSvcT += ("REST Executor Service", safe(execCfg.restExecutorService(), DFLT))
-            execSvcT += ("REST Executor Service Shutdown", bool2Str(execCfg.restExecutorServiceShutdown()))
 
             execSvcT.render()
 

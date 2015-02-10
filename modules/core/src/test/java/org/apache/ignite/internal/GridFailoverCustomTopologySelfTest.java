@@ -119,7 +119,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("PublicInnerClass")
     public static class JobTask extends ComputeTaskAdapter<String, String> {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
          /** */

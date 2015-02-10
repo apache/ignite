@@ -168,8 +168,8 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
     public void testListenAsyncNotify() throws Exception {
         GridTestKernalContext ctx = new GridTestKernalContext(log);
 
-        ctx.config().setExecutorService(Executors.newFixedThreadPool(1));
-        ctx.config().setSystemExecutorService(Executors.newFixedThreadPool(1));
+        ctx.setExecutorService(Executors.newFixedThreadPool(1));
+        ctx.setSystemExecutorService(Executors.newFixedThreadPool(1));
 
         ctx.add(new GridClosureProcessor(ctx));
 
@@ -243,8 +243,8 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
         final GridTestKernalContext ctx = new GridTestKernalContext(log);
 
-        ctx.config().setExecutorService(Executors.newFixedThreadPool(1));
-        ctx.config().setSystemExecutorService(Executors.newFixedThreadPool(1));
+        ctx.setExecutorService(Executors.newFixedThreadPool(1));
+        ctx.setSystemExecutorService(Executors.newFixedThreadPool(1));
 
         ctx.add(new GridClosureProcessor(ctx));
 

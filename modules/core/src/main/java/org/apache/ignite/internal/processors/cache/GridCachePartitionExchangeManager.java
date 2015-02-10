@@ -44,7 +44,7 @@ import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.*;
 
@@ -95,11 +95,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
-        @Override public void onEvent(IgniteEvent evt) {
+        @Override public void onEvent(Event evt) {
             if (!enterBusy())
                 return;
 
-            IgniteDiscoveryEvent e = (IgniteDiscoveryEvent)evt;
+            DiscoveryEvent e = (DiscoveryEvent)evt;
 
             try {
                 ClusterNode loc = cctx.localNode();
@@ -203,7 +203,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         GridDhtPartitionExchangeId exchId = exchangeId(loc.id(), startTopVer, EVT_NODE_JOINED);
 
         // Generate dummy discovery event for local node joining.
-        IgniteDiscoveryEvent discoEvt = cctx.discovery().localJoinEvent();
+        DiscoveryEvent discoEvt = cctx.discovery().localJoinEvent();
 
         assert discoEvt != null;
 
@@ -274,14 +274,28 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         U.join(exchWorker, log);
 
-        exchFuts = null;
-
         ResendTimeoutObject resendTimeoutObj = pendingResend.getAndSet(null);
 
         if (resendTimeoutObj != null)
             cctx.time().removeTimeoutObject(resendTimeoutObj);
     }
 
+    /** {@inheritDoc} */
+    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
+    @Override protected void stop0(boolean cancel) {
+        super.stop0(cancel);
+
+        // Do not allow any activity in exchange manager after stop.
+        busyLock.writeLock().lock();
+
+        exchFuts = null;
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param exchId Exchange ID.
+     * @return Topology.
+     */
     public GridDhtPartitionTopology<K, V> clientTopology(int cacheId, GridDhtPartitionExchangeId exchId) {
         GridClientPartitionTopology<K, V> top = clientTops.get(cacheId);
 
@@ -539,7 +553,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Exchange future.
      */
     GridDhtPartitionsExchangeFuture<K, V> exchangeFuture(GridDhtPartitionExchangeId exchId,
-        @Nullable IgniteDiscoveryEvent discoEvt) {
+        @Nullable DiscoveryEvent discoEvt) {
         GridDhtPartitionsExchangeFuture<K, V> fut;
 
         GridDhtPartitionsExchangeFuture<K, V> old = exchFuts.addx(
@@ -810,9 +824,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 changed |= cacheCtx.topology().afterExchange(exchFut.exchangeId());
 
                                 // Preload event notification.
-                                if (!cacheCtx.system() && cctx.gridEvents().isRecordable(EVT_CACHE_PRELOAD_STARTED)) {
+                                if (cacheCtx.events().isRecordable(EVT_CACHE_PRELOAD_STARTED)) {
                                     if (!cacheCtx.isReplicated() || !startEvtFired) {
-                                        IgniteDiscoveryEvent discoEvt = exchFut.discoveryEvent();
+                                        DiscoveryEvent discoEvt = exchFut.discoveryEvent();
 
                                         cacheCtx.events().addPreloadEvent(-1, EVT_CACHE_PRELOAD_STARTED,
                                             discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());

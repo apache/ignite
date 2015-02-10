@@ -35,6 +35,7 @@ import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -720,7 +721,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                             ctx.io().send(req.getKey(), req.getValue(), ctx.ioPolicy());
                         }
                         catch (IgniteCheckedException e) {
-                            log.error("Failed to send TTL update request.", e);
+                            U.error(log, "Failed to send TTL update request.", e);
                         }
                     }
                 }
@@ -885,10 +886,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override public List<GridCacheClearAllRunnable<K, V>> splitClearAll() {
+    @Override public List<GridCacheClearAllRunnable<K, V>> splitClearLocally() {
         CacheDistributionMode mode = configuration().getDistributionMode();
 
-        return (mode == PARTITIONED_ONLY || mode == NEAR_PARTITIONED) ? super.splitClearAll() :
+        return (mode == PARTITIONED_ONLY || mode == NEAR_PARTITIONED) ? super.splitClearLocally() :
             Collections.<GridCacheClearAllRunnable<K, V>>emptyList();
     }
 
@@ -907,6 +908,83 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to enqueue deleted entry [key=" + entry.key() + ", ver=" + ver + ']', e);
             }
+        }
+    }
+
+    /**
+     * @param primary If {@code true} includes primary entries.
+     * @param backup If {@code true} includes backup entries.
+     * @return Local entries iterator.
+     */
+    public Iterator<Cache.Entry<K, V>> localEntriesIterator(final boolean primary, final boolean backup) {
+        assert primary || backup;
+
+        if (primary && backup)
+            return iterator(map.entries0().iterator(), !ctx.keepPortable());
+        else {
+            final long topVer = ctx.affinity().affinityTopologyVersion();
+
+            final Iterator<GridDhtLocalPartition<K, V>> partIt = topology().currentLocalPartitions().iterator();
+
+            Iterator<GridCacheEntryEx<K, V>> it = new Iterator<GridCacheEntryEx<K, V>>() {
+                private GridCacheEntryEx<K, V> next;
+
+                private Iterator<GridDhtCacheEntry<K, V>> curIt;
+
+                {
+                    advance();
+                }
+
+                @Override public boolean hasNext() {
+                    return next != null;
+                }
+
+                @Override public GridCacheEntryEx<K, V> next() {
+                    if (next == null)
+                        throw new NoSuchElementException();
+
+                    GridCacheEntryEx<K, V> e = next;
+
+                    advance();
+
+                    return e;
+                }
+
+                @Override public void remove() {
+                    throw new UnsupportedOperationException();
+                }
+
+                private void advance() {
+                    next = null;
+
+                    do {
+                        if (curIt == null) {
+                            while (partIt.hasNext()) {
+                                GridDhtLocalPartition<K, V> part = partIt.next();
+
+                                if (primary == part.primary(topVer)) {
+                                    curIt = part.entries().iterator();
+
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (curIt != null) {
+                            if (curIt.hasNext()) {
+                                next = curIt.next();
+
+                                break;
+                            }
+                            else
+                                curIt = null;
+                        }
+                    }
+                    while (partIt.hasNext());
+                }
+            };
+
+            return iterator(it, !ctx.keepPortable());
         }
     }
 

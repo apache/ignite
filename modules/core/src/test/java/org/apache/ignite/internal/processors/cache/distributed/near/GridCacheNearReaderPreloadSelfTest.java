@@ -139,7 +139,6 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(spi);
         cfg.setCacheConfiguration(ccfg);
         cfg.setIncludeProperties();
-        cfg.setRestEnabled(false);
 
         return cfg;
     }
@@ -190,7 +189,7 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
      * @param expVal Expected value.
      * @throws Exception If failed.
      */
-    private void checkCache(CacheProjection<Integer, Integer> cache, int key, int expVal) throws Exception {
+    private void checkCache(GridCache<Integer, Integer> cache, int key, int expVal) throws Exception {
         CacheEntry<Integer, Integer> entry = cache.entry(key);
 
         assert F.eq(expVal, entry.getValue()) : "Unexpected cache value [key=" + key + ", expected=" + expVal +

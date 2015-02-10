@@ -37,7 +37,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * File-based swap space SPI implementation which holds keys in memory. This SPI is used by default.
@@ -83,10 +83,10 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * <h2 class="header">Spring Example</h2>
  * GridFileSwapSpaceSpi can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
- * &lt;bean id=&quot;grid.cfg&quot; class=&quot;org.gridgain.grid.GridConfiguration&quot; scope=&quot;singleton&quot;&gt;
+ * &lt;bean id=&quot;grid.cfg&quot; class=&quot;org.apache.ignite.configuration.IgniteConfiguration&quot; scope=&quot;singleton&quot;&gt;
  *     ...
  *     &lt;property name=&quot;swapSpaceSpi&quot;&gt;
- *         &lt;bean class=&quot;org.gridgain.grid.spi.swapspace.file.GridFileSwapSpaceSpi&quot;&gt;
+ *         &lt;bean class=&quot;org.apache.ignite.spi.swapspace.file.GridFileSwapSpaceSpi&quot;&gt;
  *             &lt;property name=&quot;baseDirectory&quot; value=&quot;/path/to/swap/folder&quot;/&gt;
  *         &lt;/bean&gt;
  *     &lt;/property&gt;
@@ -148,7 +148,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
     private int readStripesNum = -1;
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** {@inheritDoc} */
@@ -322,6 +322,16 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
             return 0;
 
         return space.count();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long count(@Nullable String spaceName, Set<Integer> parts) throws IgniteSpiException {
+        Space space = space(spaceName, false);
+
+        if (space == null)
+            return 0;
+
+        return space.count(parts);
     }
 
     /** {@inheritDoc} */
@@ -1526,6 +1536,23 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
          */
         public long count() {
             return cnt.get();
+        }
+
+        /**
+         * @param parts Partitions.
+         * @return Total count of keys for given partitions.
+         */
+        public long count(Set<Integer> parts) {
+            long cnt = 0;
+
+            for (Integer part : parts) {
+                ConcurrentMap<SwapKey, SwapValue> map = partition(part, false);
+
+                if (map != null)
+                    cnt += map.size();
+            }
+
+            return cnt;
         }
 
         /**

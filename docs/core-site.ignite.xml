@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
 <!--
   Licensed to the Apache Software Foundation (ASF) under one or more
   contributor license agreements.  See the NOTICE file distributed with
@@ -15,7 +16,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
     This template file contains settings needed to run Apache Hadoop jobs
@@ -47,15 +48,15 @@
     -->
     <property>
         <name>fs.ignitefs.impl</name>
-        <value>org.apache.ignite.fs.hadoop.v1.GridGgfsHadoopFileSystem</value>
+        <value>org.apache.ignite.ignitefs.hadoop.v1.GridGgfsHadoopFileSystem</value>
     </property>
 
     <!--
         Set Hadoop 2.* file system implementation class for IgniteFS.
     -->
     <property>
-        <name>fs.AbstractFileSystem.ignitefs.impl</name>
-        <value>org.apache.ignite.fs.hadoop.v2.GridGgfsHadoopFileSystem</value>
+        <name>fs.AbstractFileSystem.ggfs.impl</name>
+        <value>org.apache.ignite.ignitefs.hadoop.v2.GridGgfsHadoopFileSystem</value>
     </property>
 
     <!--

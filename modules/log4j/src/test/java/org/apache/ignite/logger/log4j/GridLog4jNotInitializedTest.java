@@ -28,7 +28,7 @@ import org.apache.ignite.testframework.junits.common.*;
 public class GridLog4jNotInitializedTest extends TestCase {
     /** */
     public void testLogInitialize() {
-        IgniteLogger log = new IgniteLog4jLogger().getLogger(GridLog4jNotInitializedTest.class);
+        IgniteLogger log = new Log4JLogger().getLogger(GridLog4jNotInitializedTest.class);
 
         if (log.isDebugEnabled())
             log.debug("This is 'debug' message.");

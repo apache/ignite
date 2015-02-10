@@ -51,7 +51,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
     private static final long serialVersionUID = 0L;
 
     /** Marshaller. */
-    private static final IgniteMarshaller MARSHALLER = new IgniteJdkMarshaller();
+    private static final Marshaller MARSHALLER = new JdkMarshaller();
 
     /** How long to store future (10 minutes). */
     private static final int RMV_DELAY = 10 * 60;
@@ -138,7 +138,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
     /**
      * Job for JDBC adapter.
      */
-    private static class JdbcDriverJob extends ComputeJobAdapter implements IgniteOptimizedMarshallable {
+    private static class JdbcDriverJob extends ComputeJobAdapter implements OptimizedMarshallable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -157,7 +157,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
         private Ignite ignite;
 
         /** Logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /**

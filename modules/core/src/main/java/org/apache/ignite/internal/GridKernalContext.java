@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.email.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
@@ -58,7 +59,6 @@ import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.product.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.plugin.*;
 
@@ -432,6 +432,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridClockSource timeSource();
 
     /**
+     * Gets data structures processor.
+     *
+     * @return Data structures processor.
+     */
+    public DataStructuresProcessor dataStructures();
+
+    /**
      * Sets segmented flag to {@code true} when node is stopped due to segmentation issues.
      */
     public void markSegmented();
@@ -469,8 +476,8 @@ public interface GridKernalContext extends Iterable<GridComponent> {
 
     /**
      * Gets user version for given class loader by checking
-     * {@code META-INF/gridgain.xml} file for {@code userVersion} attribute. If
-     * {@code gridgain.xml} file is not found, or user version is not specified there,
+     * {@code META-INF/ignite.xml} file for {@code userVersion} attribute. If
+     * {@code ignite.xml} file is not found, or user version is not specified there,
      * then default version (empty string) is returned.
      *
      * @param ldr Class loader.
@@ -495,13 +502,46 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public <T> T createComponent(Class<T> cls);
 
     /**
-     * @return Message factory.
+     * @return Thread pool implementation to be used in grid to process job execution
+     *      requests and user messages sent to the node.
      */
-    public GridTcpMessageFactory messageFactory();
+    public ExecutorService getExecutorService();
 
     /**
-     * @param producer Message producer.
-     * @return Message type code.
+     * Executor service that is in charge of processing internal system messages.
+     *
+     * @return Thread pool implementation to be used in grid for internal system messages.
      */
-    public byte registerMessageProducer(GridTcpCommunicationMessageProducer producer);
+    public ExecutorService getSystemExecutorService();
+
+    /**
+     * Executor service that is in charge of processing internal and Visor
+     * {@link org.apache.ignite.compute.ComputeJob GridJobs}.
+     *
+     * @return Thread pool implementation to be used in grid for internal and Visor
+     *      jobs processing.
+     */
+    public ExecutorService getManagementExecutorService();
+
+    /**
+     * @return Thread pool implementation to be used for peer class loading
+     *      requests handling.
+     */
+    public ExecutorService getPeerClassLoadingExecutorService();
+
+    /**
+     * Executor service that is in charge of processing outgoing GGFS messages.
+     *
+     * @return Thread pool implementation to be used for GGFS outgoing message sending.
+     */
+    public ExecutorService getGgfsExecutorService();
+
+    /**
+     * Should return an instance of fully configured thread pool to be used for
+     * processing of client messages (REST requests).
+     *
+     * @return Thread pool implementation to be used for processing of client
+     *      messages.
+     */
+    public ExecutorService getRestExecutorService();
 }

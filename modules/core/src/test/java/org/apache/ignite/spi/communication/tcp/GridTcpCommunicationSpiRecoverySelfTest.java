@@ -20,11 +20,13 @@ package org.apache.ignite.spi.communication.tcp;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.testframework.*;
@@ -43,7 +45,7 @@ import java.util.concurrent.atomic.*;
 @GridSpiTest(spi = TcpCommunicationSpi.class, group = "Communication SPI")
 public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi> extends GridSpiAbstractTest<T> {
     /** */
-    private static final Collection<GridTestResources> spiRsrcs = new ArrayList<>();
+    private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
 
     /** */
     protected static final List<TcpCommunicationSpi> spis = new ArrayList<>();
@@ -64,11 +66,11 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
      *
      */
     static {
-        GridTcpCommunicationMessageFactory.registerCustom(new GridTcpCommunicationMessageProducer() {
-            @Override public GridTcpCommunicationMessageAdapter create(byte type) {
+        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<MessageAdapter>() {
+            @Override public MessageAdapter apply() {
                 return new GridTestMessage();
             }
-        }, GridTestMessage.DIRECT_TYPE);
+        });
     }
 
     /**
@@ -80,7 +82,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
     /** */
     @SuppressWarnings({"deprecation"})
-    private class TestListener implements CommunicationListener<GridTcpCommunicationMessageAdapter> {
+    private class TestListener implements CommunicationListener<MessageAdapter> {
         /** */
         private boolean block;
 
@@ -94,7 +96,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
         private AtomicInteger rcvCnt = new AtomicInteger();
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, GridTcpCommunicationMessageAdapter msg, IgniteRunnable msgC) {
+        @Override public void onMessage(UUID nodeId, MessageAdapter msg, IgniteRunnable msgC) {
             // info("Test listener received message: " + msg);
 
             assertTrue("Unexpected message: " + msg, msg instanceof GridTestMessage);
@@ -633,7 +635,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
             GridTestUtils.setFieldValue(spi, "gridName", "grid-" + i);
 
-            GridTestResources rsrcs = new GridTestResources();
+            IgniteTestResources rsrcs = new IgniteTestResources();
 
             GridTestNode node = new GridTestNode(rsrcs.getNodeId());
 
@@ -703,7 +705,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
      * @throws Exception If failed.
      */
     private void stopSpis() throws Exception {
-        for (CommunicationSpi<GridTcpCommunicationMessageAdapter> spi : spis) {
+        for (CommunicationSpi<MessageAdapter> spi : spis) {
             spi.onContextDestroyed();
 
             spi.setListener(null);
@@ -711,7 +713,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
             spi.spiStop();
         }
 
-        for (GridTestResources rsrcs : spiRsrcs) {
+        for (IgniteTestResources rsrcs : spiRsrcs) {
             rsrcs.stopThreads();
         }
 

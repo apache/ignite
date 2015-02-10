@@ -15,10 +15,10 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
-    Command line (default) grid configuration.
+    Command line (default) ignite configuration.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -26,17 +26,17 @@
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
-    <description>Main Spring file for grid configuration.</description>
+    <description>Main Spring file for ignite configuration.</description>
 
     <!-- Example of bean definition with given configuration. -->
     <bean id="mySpringBean" class="org.apache.ignite.IgniteSpringBean">
         <property name="configuration">
-            <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-                <!-- Set to true to enable grid-aware class loading for examples, default is false. -->
+            <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+                <!-- Set to true to enable ignite-aware class loading for examples, default is false. -->
                 <property name="peerClassLoadingEnabled" value="true"/>
 
                 <property name="marshaller">
-                    <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
+                    <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
                         <!-- Set to false to allow non-serializable objects in examples, default is true. -->
                         <property name="requireSerializable" value="false"/>
                     </bean>
@@ -44,7 +44,7 @@
 
                 <!-- Enable task execution events for examples. -->
                 <property name="includeEventTypes">
-                    <util:constant static-field="org.apache.ignite.events.IgniteEventType.EVTS_TASK_EXECUTION"/>
+                    <util:constant static-field="org.apache.ignite.events.EventType.EVTS_TASK_EXECUTION"/>
                 </property>
 
                 <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->

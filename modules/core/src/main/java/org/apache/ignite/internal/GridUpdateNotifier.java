@@ -326,7 +326,7 @@ class GridUpdateNotifier {
                     }
                     catch (IOException e) {
                         if (log.isDebugEnabled())
-                            log.debug("Failed to connect to GridGain update server. " + e.getMessage());
+                            log.debug("Failed to connect to Ignite update server. " + e.getMessage());
                     }
 
                     if (dom != null)

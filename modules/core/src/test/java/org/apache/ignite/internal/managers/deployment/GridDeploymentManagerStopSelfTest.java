@@ -40,7 +40,7 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
 
         GridTestKernalContext ctx = newContext();
 
-        ctx.config().setMarshaller(new IgniteJdkMarshaller());
+        ctx.config().setMarshaller(new JdkMarshaller());
         ctx.config().setDeploymentSpi(spi);
 
         GridResourceProcessor resProc = new GridResourceProcessor(ctx);

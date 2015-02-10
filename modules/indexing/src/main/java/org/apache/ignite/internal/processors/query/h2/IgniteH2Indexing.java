@@ -130,14 +130,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private CacheLongKeyLIRS<GridH2KeyValueRowOffheap> rowCache = new CacheLongKeyLIRS<>(32 * 1024, 1, 128, 256);
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Node ID. */
     private UUID nodeId;
 
     /** */
-    private IgniteMarshaller marshaller;
+    private Marshaller marshaller;
 
     /** */
     private GridUnsafeMemory offheap;
@@ -225,7 +225,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     };
 
     /** */
-    private volatile IgniteQueryConfiguration cfg = new IgniteQueryConfiguration();
+    private volatile QueryConfiguration cfg = new QueryConfiguration();
 
     /** */
     private volatile GridKernalContext ctx;
@@ -586,7 +586,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * @return Configuration.
      */
-    public IgniteQueryConfiguration configuration() {
+    public QueryConfiguration configuration() {
         return cfg;
     }
 
@@ -1111,14 +1111,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             log.debug("Starting cache query index...");
 
         if (ctx == null) // This is allowed in some tests.
-            marshaller = new IgniteOptimizedMarshaller();
+            marshaller = new OptimizedMarshaller();
         else {
             this.ctx = ctx;
 
             nodeId = ctx.localNodeId();
             marshaller = ctx.config().getMarshaller();
 
-            IgniteQueryConfiguration cfg0 = ctx.config().getQueryConfiguration();
+            QueryConfiguration cfg0 = ctx.config().getQueryConfiguration();
 
             if (cfg0 != null)
                 cfg = cfg0;
@@ -1994,7 +1994,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (cctx.isNear())
                 cctx = cctx.near().dht().context();
 
-            GridCacheSwapEntry e = cctx.swap().read(key);
+            GridCacheSwapEntry e = cctx.swap().read(key, true, true);
 
             return e != null ? e.value() : null;
         }

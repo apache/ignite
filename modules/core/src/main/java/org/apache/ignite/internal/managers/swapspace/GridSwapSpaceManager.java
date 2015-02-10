@@ -32,14 +32,14 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  *
  */
 public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
     /** */
-    private IgniteMarshaller marsh;
+    private Marshaller marsh;
 
     /**
      * @param ctx Grid kernal context.
@@ -94,7 +94,7 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
                         }
                     }
 
-                    ctx.event().record(new IgniteSwapSpaceEvent(ctx.discovery().localNode(), msg, evtType, spaceName));
+                    ctx.event().record(new SwapSpaceEvent(ctx.discovery().localNode(), msg, evtType, spaceName));
                 }
 
                 // Always notify grid cache processor.
@@ -315,6 +315,23 @@ public class GridSwapSpaceManager extends GridManagerAdapter<SwapSpaceSpi> {
     public long swapKeys(@Nullable String spaceName) throws IgniteCheckedException {
         try {
             return getSpi().count(spaceName);
+        }
+        catch (IgniteSpiException e) {
+            throw new IgniteCheckedException("Failed to get swap keys count for space: " + spaceName, e);
+        }
+    }
+
+    /**
+     * Gets number of swap entries for given partitions.
+     *
+     * @param spaceName Space name.
+     * @param parts Partitions.
+     * @return Number of swap entries for given partitions.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long swapKeys(@Nullable String spaceName, Set<Integer> parts) throws IgniteCheckedException {
+        try {
+            return getSpi().count(spaceName, parts);
         }
         catch (IgniteSpiException e) {
             throw new IgniteCheckedException("Failed to get swap keys count for space: " + spaceName, e);

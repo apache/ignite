@@ -19,10 +19,11 @@ package org.apache.ignite.spi.communication;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.*;
 import org.apache.ignite.testframework.junits.spi.*;
@@ -31,7 +32,7 @@ import java.net.*;
 import java.util.*;
 import java.util.Map.*;
 
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 
 /**
  * Super class for all communication self tests.
@@ -43,13 +44,13 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
     private static long msgId = 1;
 
     /** */
-    private static final Collection<GridTestResources> spiRsrcs = new ArrayList<>();
+    private static final Collection<IgniteTestResources> spiRsrcs = new ArrayList<>();
 
     /** */
     private static final Map<UUID, Set<UUID>> msgDestMap = new HashMap<>();
 
     /** */
-    protected static final Map<UUID, CommunicationSpi<GridTcpCommunicationMessageAdapter>> spis = new HashMap<>();
+    protected static final Map<UUID, CommunicationSpi<MessageAdapter>> spis = new HashMap<>();
 
     /** */
     protected static final Collection<ClusterNode> nodes = new ArrayList<>();
@@ -61,16 +62,16 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
      *
      */
     static {
-        GridTcpCommunicationMessageFactory.registerCustom(new GridTcpCommunicationMessageProducer() {
-            @Override public GridTcpCommunicationMessageAdapter create(byte type) {
+        GridIoMessageFactory.registerCustom(GridTestMessage.DIRECT_TYPE, new CO<MessageAdapter>() {
+            @Override public MessageAdapter apply() {
                 return new GridTestMessage();
             }
-        }, GridTestMessage.DIRECT_TYPE);
+        });
     }
 
     /** */
     @SuppressWarnings({"deprecation"})
-    private class MessageListener implements CommunicationListener<GridTcpCommunicationMessageAdapter> {
+    private class MessageListener implements CommunicationListener<MessageAdapter> {
         /** */
         private final UUID locNodeId;
 
@@ -84,7 +85,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
         }
 
         /** {@inheritDoc} */
-        @Override public void onMessage(UUID nodeId, GridTcpCommunicationMessageAdapter msg, IgniteRunnable msgC) {
+        @Override public void onMessage(UUID nodeId, MessageAdapter msg, IgniteRunnable msgC) {
             info("Received message [locNodeId=" + locNodeId + ", nodeId=" + nodeId +
                 ", msg=" + msg + ']');
 
@@ -138,7 +139,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
         msgDestMap.clear();
 
-        for (Entry<UUID, CommunicationSpi<GridTcpCommunicationMessageAdapter>> entry : spis.entrySet()) {
+        for (Entry<UUID, CommunicationSpi<MessageAdapter>> entry : spis.entrySet()) {
             for (ClusterNode node : nodes) {
                 synchronized (mux) {
                     if (!msgDestMap.containsKey(entry.getKey()))
@@ -180,10 +181,10 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
         msgDestMap.clear();
 
         // Send message from each SPI to all SPI's, including itself.
-        for (Entry<UUID, CommunicationSpi<GridTcpCommunicationMessageAdapter>> entry : spis.entrySet()) {
+        for (Entry<UUID, CommunicationSpi<MessageAdapter>> entry : spis.entrySet()) {
             UUID sndId = entry.getKey();
 
-            CommunicationSpi<GridTcpCommunicationMessageAdapter> commSpi = entry.getValue();
+            CommunicationSpi<MessageAdapter> commSpi = entry.getValue();
 
             for (ClusterNode node : nodes) {
                 synchronized (mux) {
@@ -222,7 +223,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
      * @param idx Node index.
      * @return Spi.
      */
-    protected abstract CommunicationSpi<GridTcpCommunicationMessageAdapter> getSpi(int idx);
+    protected abstract CommunicationSpi<MessageAdapter> getSpi(int idx);
 
     /**
      * @return Spi count.
@@ -268,7 +269,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
      * @throws Exception If failed.
      */
     private void startSpis() throws Exception {
-        U.setWorkDirectory(null, U.getGridGainHome());
+        U.setWorkDirectory(null, U.getIgniteHome());
 
         spis.clear();
         nodes.clear();
@@ -277,11 +278,11 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
         Map<ClusterNode, GridSpiTestContext> ctxs = new HashMap<>();
 
         for (int i = 0; i < getSpiCount(); i++) {
-            CommunicationSpi<GridTcpCommunicationMessageAdapter> spi = getSpi(i);
+            CommunicationSpi<MessageAdapter> spi = getSpi(i);
 
             GridTestUtils.setFieldValue(spi, "gridName", "grid-" + i);
 
-            GridTestResources rsrcs = new GridTestResources();
+            IgniteTestResources rsrcs = new IgniteTestResources();
 
             GridTestNode node = new GridTestNode(rsrcs.getNodeId());
 
@@ -324,7 +325,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        for (CommunicationSpi<GridTcpCommunicationMessageAdapter> spi : spis.values()) {
+        for (CommunicationSpi<MessageAdapter> spi : spis.values()) {
             spi.onContextDestroyed();
 
             spi.setListener(null);
@@ -332,7 +333,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
             spi.spiStop();
         }
 
-        for (GridTestResources rsrcs : spiRsrcs)
+        for (IgniteTestResources rsrcs : spiRsrcs)
             rsrcs.stopThreads();
     }
 }

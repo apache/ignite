@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.shuffle.collections;
 
 import org.apache.ignite.*;
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.shuffle.streams.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
@@ -28,7 +28,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.hadoop.GridHadoopJobProperty.*;
+import static org.apache.ignite.internal.processors.hadoop.GridHadoopJobProperty.*;
 
 /**
  * Base class for all multimaps.

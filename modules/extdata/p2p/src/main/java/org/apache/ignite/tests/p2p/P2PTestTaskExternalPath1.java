@@ -31,7 +31,7 @@ import java.util.*;
  */
 public class P2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, Integer> {
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /**
@@ -90,11 +90,11 @@ public class P2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, Integer
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestJob extends ComputeJobAdapter {
         /** Task session. */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession ses;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */

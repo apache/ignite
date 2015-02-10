@@ -174,4 +174,11 @@ public interface GridPortableInputStream extends GridPortableStream {
      * @return Remaining data.
      */
     public int remaining();
+
+    /**
+     * Length of data inside array.
+     *
+     * @param len Length.
+     */
+    public void length(int len);
 }

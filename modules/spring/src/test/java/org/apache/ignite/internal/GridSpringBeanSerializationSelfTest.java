@@ -35,7 +35,7 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Marshaller. */
-    private static final IgniteMarshaller MARSHALLER = new IgniteOptimizedMarshaller();
+    private static final Marshaller MARSHALLER = new OptimizedMarshaller();
 
     /** Attribute key. */
     private static final String ATTR_KEY = "checkAttr";
@@ -65,8 +65,6 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
         cfg.setDiscoverySpi(disco);
 
         cfg.setUserAttributes(F.asMap(ATTR_KEY, true));
-
-        cfg.setRestEnabled(false);
 
         return cfg;
     }

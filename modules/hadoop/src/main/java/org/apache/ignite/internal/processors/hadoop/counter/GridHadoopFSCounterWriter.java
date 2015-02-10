@@ -21,7 +21,7 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
 import org.apache.ignite.*;
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.util.typedef.*;
 
 import java.io.*;
@@ -38,7 +38,7 @@ public class GridHadoopFSCounterWriter implements GridHadoopCounterWriter {
     private static final String DEFAULT_USER_NAME = "anonymous";
 
     /** */
-    public static final String COUNTER_WRITER_DIR_PROPERTY = "gridgain.counters.fswriter.directory";
+    public static final String COUNTER_WRITER_DIR_PROPERTY = "ignite.counters.fswriter.directory";
 
     /** */
     private static final String USER_MACRO = "${USER}";

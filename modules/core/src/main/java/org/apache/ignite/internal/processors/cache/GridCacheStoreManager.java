@@ -18,9 +18,10 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.store.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -182,9 +183,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             }
         }
 
-        boolean convertPortable = !cctx.config().isKeepPortableInStore();
+        boolean convertPortable = !cctx.keepPortableInStore();
 
-        if (cctx.config().isPortableEnabled())
+        if (cctx.portableEnabled())
             this.convertPortable = convertPortable;
         else if (convertPortable)
             U.warn(log, "CacheConfiguration.isKeepPortableInStore() configuration property will " +

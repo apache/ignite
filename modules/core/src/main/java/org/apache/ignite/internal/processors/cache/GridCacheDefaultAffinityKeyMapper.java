@@ -18,23 +18,23 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.resources.*;
 
 import java.lang.annotation.*;
 import java.lang.reflect.*;
 
 /**
- * Default key affinity mapper. If key class has annotation {@link org.apache.ignite.cache.affinity.CacheAffinityKeyMapped},
+ * Default key affinity mapper. If key class has annotation {@link CacheAffinityKeyMapped},
  * then the value of annotated method or field will be used to get affinity value instead
  * of the key itself. If there is no annotation, then the key is used as is.
  * <p>
- * Convenience affinity key adapter, {@link org.apache.ignite.cache.affinity.CacheAffinityKey} can be used in
+ * Convenience affinity key adapter, {@link CacheAffinityKey} can be used in
  * conjunction with this mapper to automatically provide custom affinity keys for cache keys.
  * <p>
  * If non-default affinity mapper is used, is should be provided via
@@ -43,6 +43,10 @@ import java.lang.reflect.*;
 public class GridCacheDefaultAffinityKeyMapper implements CacheAffinityKeyMapper {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Injected ignite instance. */
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** Reflection cache. */
     private GridReflectionCache reflectCache = new GridReflectionCache(
@@ -71,11 +75,11 @@ public class GridCacheDefaultAffinityKeyMapper implements CacheAffinityKeyMapper
     );
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private transient IgniteLogger log;
 
     /**
-     * If key class has annotation {@link org.apache.ignite.cache.affinity.CacheAffinityKeyMapped},
+     * If key class has annotation {@link CacheAffinityKeyMapped},
      * then the value of annotated method or field will be used to get affinity value instead
      * of the key itself. If there is no annotation, then the key is returned as is.
      *
@@ -85,23 +89,10 @@ public class GridCacheDefaultAffinityKeyMapper implements CacheAffinityKeyMapper
     @Override public Object affinityKey(Object key) {
         GridArgumentCheck.notNull(key, "key");
 
-        if (key instanceof PortableObject) {
-            PortableObject po = (PortableObject)key;
+        IgniteKernal kernal = (IgniteKernal)ignite;
 
-            try {
-                PortableMetadata meta = po.metaData();
-
-                if (meta != null) {
-                    String affKeyFieldName = meta.affinityKeyFieldName();
-
-                    if (affKeyFieldName != null)
-                        return po.field(affKeyFieldName);
-                }
-            }
-            catch (PortableException e) {
-                U.error(log, "Failed to get affinity field from portable object: " + key, e);
-            }
-        }
+        if (kernal.context().portable().isPortableObject(key))
+            return kernal.context().portable().affinityKey(key);
         else {
             try {
                 Object o = reflectCache.firstFieldValue(key);

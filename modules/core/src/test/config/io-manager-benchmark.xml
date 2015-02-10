@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <beans xmlns="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -34,7 +34,7 @@
         </property>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
+            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
                 <property name="requireSerializable" value="true"/>
 
                 <property name="classNames">
@@ -47,7 +47,6 @@
 
         <!-- Various optimisations. -->
         <property name="peerClassLoadingEnabled" value="false"/>
-        <property name="restEnabled" value="false"/>
         <property name="cacheSanityCheckEnabled" value="false"/>
 
         <property name="includeEventTypes">

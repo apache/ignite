@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -27,14 +25,10 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -42,18 +36,15 @@ import java.util.concurrent.atomic.*;
 /**
  * Queue multi node tests.
  */
-public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteCollectionAbstractTest {
     /** */
     private static final int GRID_CNT = 4;
-
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final int RETRIES = 20;
 
     /** */
-    protected static final int QUEUE_CAPACITY = 100000;
+    protected static final int QUEUE_CAPACITY = 100_000;
 
     /** */
     private static AtomicInteger cntr = new AtomicInteger();
@@ -62,13 +53,8 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     private static final int ITEMS_CNT = 50;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(GRID_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+    @Override protected int gridCount() {
+        return GRID_CNT;
     }
 
     /** {@inheritDoc} */
@@ -105,30 +91,11 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
+        cfg.setPublicThreadPoolSize(RETRIES * 2);
 
-        spi.setIpFinder(ipFinder);
+        cfg.setSystemThreadPoolSize(RETRIES * 2);
 
-        cfg.setDiscoverySpi(spi);
-        cfg.setRestEnabled(false);
-
-        cfg.setExecutorService(
-            new ThreadPoolExecutor(
-                RETRIES * 2,
-                RETRIES * 2,
-                0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>()));
-
-        cfg.setExecutorServiceShutdown(true);
-
-        cfg.setSystemExecutorService(
-            new ThreadPoolExecutor(
-                RETRIES * 2,
-                RETRIES * 2,
-                0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>()));
-
-        cfg.setSystemExecutorServiceShutdown(true);
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }
@@ -139,28 +106,13 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     public void testPut() throws Exception {
         String queueName = UUID.randomUUID().toString();
 
-        CacheQueue<Integer> queue = grid(0).cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
-            false, true);
+        IgniteQueue<Integer> queue = grid(0).queue(queueName, QUEUE_CAPACITY, config(false));
 
         assertTrue(queue.isEmpty());
 
         grid(0).compute().broadcast(new PutJob(queueName, RETRIES));
 
         assertEquals(GRID_CNT * RETRIES, queue.size());
-
-        for (int i = 0; i < GRID_CNT; i++) {
-            assertTrue(grid(i).cache(null).isEmpty());
-            assertEquals(0, grid(i).cache(null).size());
-            assertEquals(0, grid(i).cache(null).primarySize());
-            assertEquals(0, grid(i).cache(null).values().size());
-            assertEquals(0, grid(i).cache(null).primaryValues().size());
-            assertEquals(0, grid(i).cache(null).keySet().size());
-            assertEquals(0, grid(i).cache(null).primaryKeySet().size());
-            assertEquals(0, grid(i).cache(null).entrySet().size());
-            assertEquals(0, grid(i).cache(null).primaryEntrySet().size());
-            assertEquals(0, grid(i).cache(null).globalSize());
-            assertEquals(0, grid(i).cache(null).globalPrimarySize());
-        }
     }
 
     /**
@@ -172,7 +124,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
             info("Queue name: " + queueName);
 
-            grid(0).cache(null).dataStructures().queue(queueName, 5, true, true);
+            grid(0).queue(queueName, 5, config(true));
 
             final CountDownLatch latch = new CountDownLatch(1);
 
@@ -181,13 +133,11 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
             IgniteInternalFuture<Object> fut1 = GridTestUtils.runAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     info(">>> Executing put callable [node=" + g.cluster().localNode().id() +
-                        ", thread=" + Thread.currentThread().getName() + ", aff=" +
-                        F.nodeId8s(g.cache(null).affinity().mapKeyToPrimaryAndBackups(
-                            new GridCacheInternalKeyImpl(queueName))) + ']');
+                        ", thread=" + Thread.currentThread().getName() + ']');
 
-                    CacheQueue<Integer> q = g.cache(null).dataStructures().queue(queueName, 5, true, true);
+                    IgniteQueue<Integer> q = g.queue(queueName, 5, config(true));
 
-                    assert q.isEmpty();
+                    assertTrue(q.isEmpty());
 
                     for (int i = 0; i < ITEMS_CNT; i++) {
                         if (i == q.capacity()) {
@@ -214,11 +164,9 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
                 @Override public Object call() throws Exception {
                     try {
                         info(">>> Executing poll callable [node=" + g1.cluster().localNode().id() +
-                            ", thread=" + Thread.currentThread().getName() + ", aff=" +
-                            F.nodeId8s(g1.cache(null).affinity().mapKeyToPrimaryAndBackups(
-                                new GridCacheInternalKeyImpl(queueName))) + ']');
+                            ", thread=" + Thread.currentThread().getName() + ']');
 
-                        CacheQueue<Integer> q = g1.cache(null).dataStructures().queue(queueName, 5, true, true);
+                        IgniteQueue<Integer> q = g1.queue(queueName, 5, config(true));
 
                         int cnt = 0;
                         int nullCnt = 0;
@@ -257,7 +205,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
             fut1.get();
             fut2.get();
 
-            grid(0).cache(null).dataStructures().removeQueue(queueName);
+            grid(0).queue(queueName, 0, null).close();
         }
         finally {
             stopGrid(GRID_CNT + 1);
@@ -279,9 +227,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
             info("Queue name: " + queueName);
 
-            GridCache c = grid(0).cache(null);
-
-            CacheQueue<Integer> queue = c.dataStructures().queue(queueName, QUEUE_CAPACITY, false, true);
+            IgniteQueue<Integer> queue = grid(0).queue(queueName, QUEUE_CAPACITY, config(false));
 
             assertTrue(queue.isEmpty());
 
@@ -293,7 +239,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
             assertEquals(0, queue.size());
 
-            c.dataStructures().removeQueue(queueName);
+            queue.close();
         }
         catch (Throwable t) {
             error("Failure in test: " + t);
@@ -308,8 +254,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
         info("Queue name: " + queueName);
 
-        CacheQueue<String> queue = grid(0).cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
-            false, true);
+        IgniteQueue<String> queue = grid(0).queue(queueName, QUEUE_CAPACITY, config(false));
 
         assertTrue(queue.isEmpty());
 
@@ -317,11 +262,11 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
         queue.put(val);
 
-        grid(0).compute().call(new GetJob(queueName, RETRIES, val));
+        grid(0).compute().call(new GetJob(queueName, config(false), RETRIES, val));
 
         assertEquals(1, queue.size());
 
-        grid(0).cache(null).dataStructures().removeQueue(queueName);
+        queue.close();
     }
 
     /**
@@ -332,8 +277,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
         info("Queue name: " + queueName);
 
-        CacheQueue<Integer> queue = grid(0).cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
-            false, true);
+        IgniteQueue<Integer> queue = grid(0).queue(queueName, QUEUE_CAPACITY, config(false));
 
         assertTrue(queue.isEmpty());
 
@@ -341,7 +285,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
         assertEquals(0, queue.size());
 
-        grid(0).cache(null).dataStructures().removeQueue(queueName);
+        queue.close();
     }
 
     /**
@@ -373,9 +317,9 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
                 futs.add(GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        GridCache cache = grid(idx).cache(null);
+                        CollectionConfiguration colCfg = config(collocated);
 
-                        CacheQueue<Integer> queue = cache.dataStructures().queue(queueName, 0, collocated, true);
+                        IgniteQueue<Integer> queue = grid(idx).queue(queueName, 0, colCfg);
 
                         for (int i = 0; i < ITEMS_PER_THREAD; i++)
                             assertTrue(queue.add(i));
@@ -388,9 +332,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
             for (IgniteInternalFuture fut : futs)
                 fut.get();
 
-            GridCache cache = grid(0).cache(null);
-
-            CacheQueue<Integer> queue = cache.dataStructures().queue(queueName, 0, collocated, true);
+            IgniteQueue<Integer> queue = grid(0).queue(queueName, 0, null);
 
             assertEquals(THREADS_PER_NODE * ITEMS_PER_THREAD * GRID_CNT, queue.size());
 
@@ -405,7 +347,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
                 assertEquals(THREADS_PER_NODE * GRID_CNT, items[i]);
         }
         finally {
-            grid(0).cache(null).dataStructures().removeQueue(queueName);
+            grid(0).queue(queueName, 0, null).close();
         }
     }
 
@@ -444,9 +386,9 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
                 putFuts.add(GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        GridCache cache = grid(idx).cache(null);
+                        CollectionConfiguration colCfg = config(collocated);
 
-                        CacheQueue<Integer> queue = cache.dataStructures().queue(queueName, 0, collocated, true);
+                        IgniteQueue<Integer> queue = grid(idx).queue(queueName, 0, colCfg);
 
                         for (int i = 0; i < ITEMS_PER_THREAD; i++)
                             assertTrue(queue.add(i));
@@ -462,10 +404,9 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
                     pollFuts.add(GridTestUtils.runAsync(new Callable<Void>() {
                         @Override public Void call() throws Exception {
-                            GridCache cache = grid(idx).cache(null);
+                            CollectionConfiguration colCfg = config(collocated);
 
-                            CacheQueue<Integer> queue = cache.dataStructures().queue(queueName, 0,
-                                collocated, true);
+                            IgniteQueue<Integer> queue = grid(idx).queue(queueName, 0, colCfg);
 
                             while (!stopPoll.get()) {
                                 Integer val = queue.poll();
@@ -488,9 +429,9 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
             for (IgniteInternalFuture fut : pollFuts)
                 fut.get();
 
-            GridCache cache = grid(0).cache(null);
+            CollectionConfiguration colCfg = config(collocated);
 
-            CacheQueue<Integer> queue = cache.dataStructures().queue(queueName, 0, collocated, true);
+            IgniteQueue<Integer> queue = grid(0).queue(queueName, 0, colCfg);
 
             int[] resItems = new int[ITEMS_PER_THREAD];
 
@@ -510,7 +451,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
             assertTrue(queue.isEmpty());
         }
         finally {
-            grid(0).cache(null).dataStructures().removeQueue(queueName);
+            grid(0).queue(queueName, 0, null).close();
         }
     }
 
@@ -523,45 +464,42 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
         info("Queue name: " + queueName);
 
-        CacheQueue<Integer> queue = grid(0).cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY, false, true);
+        try (IgniteQueue<Integer> queue = grid(0).queue(queueName, QUEUE_CAPACITY, config(false))) {
+            assertTrue(queue.isEmpty());
 
-        assertTrue(queue.isEmpty());
+            grid(0).compute().call(new AddAllJob(queueName, RETRIES));
 
-        grid(0).compute().call(new AddAllJob(queueName, RETRIES));
+            assertEquals(GRID_CNT * RETRIES, queue.size());
 
-        assertEquals(GRID_CNT * RETRIES, queue.size());
+            Collection<ClusterNode> nodes = grid(0).nodes();
 
-        Collection<ClusterNode> nodes = grid(0).nodes();
+            for (ClusterNode node : nodes) {
+                Collection<Integer> queueElements = compute(grid(0).forNode(node)).call(new IgniteCallable<Collection<Integer>>() {
+                    @IgniteInstanceResource
+                    private Ignite grid;
 
-        for (ClusterNode node : nodes) {
-            Collection<Integer> queueElements = compute(grid(0).forNode(node)).call(new IgniteCallable<Collection<Integer>>() {
-                @IgniteInstanceResource
-                private Ignite grid;
+                    /** {@inheritDoc} */
+                    @Override public Collection<Integer> call() throws Exception {
+                        Collection<Integer> values = new ArrayList<>();
 
-                /** {@inheritDoc} */
-                @Override public Collection<Integer> call() throws Exception {
-                    Collection<Integer> values = new ArrayList<>();
+                        grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
 
-                    grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
+                        IgniteQueue<Integer> locQueue = grid.queue(queueName, 0, null);
 
-                    CacheQueue<Integer> locQueue = grid.cache(null).dataStructures().queue(queueName,
-                        QUEUE_CAPACITY, false, true);
+                        grid.log().info("Queue size " + locQueue.size());
 
-                    grid.log().info("Queue size " + locQueue.size());
+                        for (Integer element : locQueue)
+                            values.add(element);
 
-                    for (Integer element : locQueue)
-                        values.add(element);
+                        grid.log().info("Returning: " + values);
 
-                    grid.log().info("Returning: " + values);
+                        return values;
+                    }
+                });
 
-                    return values;
-                }
-            });
-
-            assertTrue(F.eqOrdered(queue, queueElements));
+                assertTrue(F.eqOrdered(queue, queueElements));
+            }
         }
-
-        grid(0).cache(null).dataStructures().removeQueue(queueName);
     }
 
     /**
@@ -571,7 +509,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        final CacheQueue<Integer> queue = grid(0).cache(null).dataStructures().queue(queueName, 0, false, true);
+        final IgniteQueue<Integer> queue = grid(0).queue(queueName, 0, config(false));
 
         assertNotNull(queue);
 
@@ -587,7 +525,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
                 assertEquals((Integer)10, size);
         }
         finally {
-            grid(0).cache(null).dataStructures().removeQueue(queueName);
+            queue.close();
         }
     }
 
@@ -595,7 +533,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
      * @param q Queue.
      * @param v Value.
      */
-    private static <T> void put(CacheQueue<T> q, T v) {
+    private static <T> void put(IgniteQueue<T> q, T v) {
         X.println("Putting value: " + v);
 
         q.put(v);
@@ -606,14 +544,14 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
     /**
      * Tests queue serialization.
      */
-    private static class QueueJob implements Callable<Integer>, Serializable {
+    private static class QueueJob implements IgniteCallable<Integer> {
         /** */
-        private CacheQueue<Integer> queue;
+        private IgniteQueue<Integer> queue;
 
         /**
          * @param queue Queue.
          */
-        private QueueJob(CacheQueue<Integer> queue) {
+        private QueueJob(IgniteQueue<Integer> queue) {
             this.queue = queue;
         }
 
@@ -655,8 +593,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            CacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
-                false, true);
+            IgniteQueue<Integer> queue = ignite.queue(queueName, 0, null);
 
             assertNotNull(queue);
 
@@ -702,8 +639,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            CacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
-                false, true);
+            IgniteQueue<Integer> queue = ignite.queue(queueName, 0, null);
 
             assertNotNull(queue);
 
@@ -741,13 +677,18 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
         /** */
         private final String expVal;
 
+        /** */
+        private final CollectionConfiguration colCfg;
+
         /**
          * @param queueName Queue name.
+         * @param colCfg Collection configuration.
          * @param retries  Number of operations.
          * @param expVal Expected value.
          */
-        GetJob(String queueName, int retries, String expVal) {
+        GetJob(String queueName, CollectionConfiguration colCfg, int retries, String expVal) {
             this.queueName = queueName;
+            this.colCfg = colCfg;
             this.retries = retries;
             this.expVal = expVal;
         }
@@ -758,8 +699,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            CacheQueue<String> queue = ignite.cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
-                false, true);
+            IgniteQueue<String> queue = ignite.queue(queueName, QUEUE_CAPACITY, colCfg);
 
             assertNotNull(queue);
 
@@ -810,8 +750,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + ']');
 
-            CacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
-                false, true);
+            IgniteQueue<Integer> queue = ignite.queue(queueName, 0, null);
 
             assertNotNull(queue);
 

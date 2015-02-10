@@ -145,7 +145,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass", "UnusedDeclaration"})
     public static class GridStopTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
@@ -180,7 +180,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     public static class GridStopTestJob extends ComputeJobAdapter {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */

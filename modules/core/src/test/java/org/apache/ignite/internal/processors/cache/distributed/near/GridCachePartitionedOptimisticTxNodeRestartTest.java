@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -35,7 +34,7 @@ public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAb
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
+        c.getTransactionConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 

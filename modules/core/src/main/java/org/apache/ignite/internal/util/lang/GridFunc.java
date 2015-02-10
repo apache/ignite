@@ -3091,6 +3091,65 @@ public class GridFunc {
     }
 
     /**
+     * Flattens iterable-of-iterators and returns iterator over the
+     * elements of the inner collections. This method doesn't create any
+     * new collections or copies any elements.
+     *
+     * @param c Input iterable of iterators.
+     * @return Iterator over the elements of given iterators.
+     */
+    public static <T> Iterator<T> flatIterators(@Nullable final Iterable<Iterator<T>> c) {
+        return isEmpty(c) ? GridFunc.<T>emptyIterator() : new GridIteratorAdapter<T>() {
+            /** */
+            private Iterator<? extends Iterator<T>> a = c.iterator();
+
+            /** */
+            private Iterator<T> b;
+
+            /** */
+            private boolean moved = true;
+
+            /** */
+            private boolean more;
+
+            @Override public boolean hasNextX() {
+                if (!moved)
+                    return more;
+
+                moved = false;
+
+                if (b != null && b.hasNext())
+                    return more = true;
+
+                while (a.hasNext()) {
+                    b = a.next();
+
+                    if (b.hasNext())
+                        return more = true;
+                }
+
+                return more = false;
+            }
+
+            @Override public T nextX() {
+                if (hasNext()) {
+                    moved = true;
+
+                    return b.next();
+                }
+
+                throw new NoSuchElementException();
+            }
+
+            @Override public void removeX() {
+                assert b != null;
+
+                b.remove();
+            }
+        };
+    }
+
+    /**
      * Flattens given set objects into a single collection. Unrolls {@link Collection},
      * {@link Iterable} and {@code Object[]} objects.
      *
@@ -4252,6 +4311,96 @@ public class GridFunc {
 
             /** */
             private Iterator<? extends T1> iter = c.iterator();
+
+            @Override public boolean hasNextX() {
+                if (isEmpty(p))
+                    return iter.hasNext();
+                else {
+                    if (!moved)
+                        return more;
+                    else {
+                        more = false;
+
+                        while (iter.hasNext()) {
+                            elem = iter.next();
+
+                            boolean isAll = true;
+
+                            for (IgnitePredicate<? super T1> r : p)
+                                if (r != null && !r.apply(elem)) {
+                                    isAll = false;
+
+                                    break;
+                                }
+
+                            if (isAll) {
+                                more = true;
+                                moved = false;
+
+                                return true;
+                            }
+                        }
+
+                        elem = null; // Give to GC.
+
+                        return false;
+                    }
+                }
+            }
+
+            @Nullable @Override public T2 nextX() {
+                if (isEmpty(p))
+                    return trans.apply(iter.next());
+                else {
+                    if (hasNext()) {
+                        moved = true;
+
+                        return trans.apply(elem);
+                    }
+                    else
+                        throw new NoSuchElementException();
+                }
+            }
+
+            @Override public void removeX() {
+                if (readOnly)
+                    throw new UnsupportedOperationException("Cannot modify read-only iterator.");
+
+                iter.remove();
+            }
+        };
+    }
+
+    /**
+     * @param c Input iterator.
+     * @param trans Transforming closure to convert from T1 to T2.
+     * @param readOnly If {@code true}, then resulting iterator will not allow modifications
+     *      to the underlying collection.
+     * @param p Optional filtering predicates.
+     * @return Iterator from given iterator and optional filtering predicate.
+     */
+    public static <T1, T2> Iterator<T2> iterator(final Iterator<? extends T1> c,
+        final IgniteClosure<? super T1, T2> trans,
+        final boolean readOnly,
+        @Nullable final IgnitePredicate<? super T1>... p)
+    {
+        A.notNull(c, "c", trans, "trans");
+
+        if (isAlwaysFalse(p))
+            return F.emptyIterator();
+
+        return new GridIteratorAdapter<T2>() {
+            /** */
+            private T1 elem;
+
+            /** */
+            private boolean moved = true;
+
+            /** */
+            private boolean more;
+
+            /** */
+            private Iterator<? extends T1> iter = c;
 
             @Override public boolean hasNextX() {
                 if (isEmpty(p))
@@ -7486,7 +7635,7 @@ public class GridFunc {
     /**
      * Compares two {@link org.apache.ignite.cluster.ClusterNode} instances for equality.
      * <p>
-     * Since introduction of {@link org.apache.ignite.cluster.ClusterNode} in GridGain 3.0 the semantic of equality between
+     * Since introduction of {@link org.apache.ignite.cluster.ClusterNode} in Apache Ignite 3.0 the semantic of equality between
      * grid nodes has changed. Since rich node wraps thin node instance and in the same time
      * implements {@link org.apache.ignite.cluster.ClusterNode} interface, the proper semantic of comparing two grid node is
      * to ignore their runtime types and compare only by their IDs. This method implements this logic.
@@ -8273,9 +8422,9 @@ public class GridFunc {
      * @param types Event types.
      * @return Event predicate.
      */
-    public static IgnitePredicate<IgniteEvent> eventType(@Nullable final int... types) {
-        return isEmpty(types) ? F.<IgniteEvent>alwaysFalse() : new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent e) {
+    public static IgnitePredicate<Event> eventType(@Nullable final int... types) {
+        return isEmpty(types) ? F.<Event>alwaysFalse() : new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event e) {
                 assert e != null;
 
                 assert types != null;
@@ -8298,13 +8447,13 @@ public class GridFunc {
      * @param ids Event ids.
      * @return Event predicate.
      */
-    public static IgnitePredicate<IgniteEvent> eventId(@Nullable final IgniteUuid... ids) {
-        return isEmpty(ids) ? F.<IgniteEvent>alwaysFalse() :
-            new IgnitePredicate<IgniteEvent>() {
+    public static IgnitePredicate<Event> eventId(@Nullable final IgniteUuid... ids) {
+        return isEmpty(ids) ? F.<Event>alwaysFalse() :
+            new IgnitePredicate<Event>() {
                 // Don't set peer deploy aware as UUID is loaded by
                 // system class loader.
 
-                @Override public boolean apply(IgniteEvent e) {
+                @Override public boolean apply(Event e) {
                     assert e != null;
 
                     return F.isAll(e.id(), in(ids));
@@ -8319,11 +8468,11 @@ public class GridFunc {
      * @param tstamp Timestamp.
      * @return Event predicate.
      */
-    public static IgnitePredicate<IgniteEvent> eventAfter(final long tstamp) {
+    public static IgnitePredicate<Event> eventAfter(final long tstamp) {
         A.ensure(tstamp > 0, "tstamp > 0");
 
-        return new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent e) {
+        return new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event e) {
                 assert e != null;
 
                 return e.timestamp() > tstamp;
@@ -8339,12 +8488,12 @@ public class GridFunc {
      * @param nodeIds Node ids.
      * @return Event predicate.
      */
-    public static IgnitePredicate<IgniteEvent> eventNodeId(@Nullable final UUID... nodeIds) {
-        return isEmpty(nodeIds) ? F.<IgniteEvent>alwaysFalse() : new IgnitePredicate<IgniteEvent>() {
+    public static IgnitePredicate<Event> eventNodeId(@Nullable final UUID... nodeIds) {
+        return isEmpty(nodeIds) ? F.<Event>alwaysFalse() : new IgnitePredicate<Event>() {
             // Don't set peer deploy aware as UUID is loaded by
             // system class loader.
 
-            @Override public boolean apply(IgniteEvent e) {
+            @Override public boolean apply(Event e) {
                 assert e != null;
 
                 return F.isAll(e.node().id(), in(nodeIds));
@@ -8362,11 +8511,11 @@ public class GridFunc {
      * @param p Node predicates.
      * @return Event predicate.
      */
-    public static IgnitePredicate<IgniteEvent> eventNode(@Nullable final String gridName,
+    public static IgnitePredicate<Event> eventNode(@Nullable final String gridName,
         @Nullable final IgnitePredicate<ClusterNode>... p) {
-        return isEmpty(p) || isAlwaysTrue(p) ? F.<IgniteEvent>alwaysTrue() : isAlwaysFalse(p) ? F.<IgniteEvent>alwaysFalse() :
-            new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent e) {
+        return isEmpty(p) || isAlwaysTrue(p) ? F.<Event>alwaysTrue() : isAlwaysFalse(p) ? F.<Event>alwaysFalse() :
+            new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event e) {
                     assert e != null;
 
                     try {
@@ -8389,9 +8538,9 @@ public class GridFunc {
      * @param nodes Nodes.
      * @return Event predicate.
      */
-    public static IgnitePredicate<IgniteEvent> eventNode(@Nullable final Collection<? extends ClusterNode> nodes) {
-        return isEmpty(nodes) ? F.<IgniteEvent>alwaysFalse() : new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent e) {
+    public static IgnitePredicate<Event> eventNode(@Nullable final Collection<? extends ClusterNode> nodes) {
+        return isEmpty(nodes) ? F.<Event>alwaysFalse() : new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event e) {
                 assert e != null;
 
                 return !forAll(nodes, not(nodeForNodeId(e.node().id())));

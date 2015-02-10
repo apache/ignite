@@ -70,7 +70,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheCfg);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }
@@ -325,7 +325,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                         m.put(i, val);
 
-                        cache.dataStructures().atomicLong("testLong" + i, 0, true).incrementAndGet();
+                        g.atomicLong("testLong" + i, 0, true).incrementAndGet();
                     }
 
                     cache.putAll(m);

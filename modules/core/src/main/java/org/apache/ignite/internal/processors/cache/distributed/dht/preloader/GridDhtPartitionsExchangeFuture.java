@@ -62,7 +62,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     private final boolean reassign;
 
     /** Discovery event. */
-    private volatile IgniteDiscoveryEvent discoEvt;
+    private volatile DiscoveryEvent discoEvt;
 
     /** */
     @GridToStringInclude
@@ -150,7 +150,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param discoEvt Discovery event.
      * @param exchId Exchange id.
      */
-    public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, boolean reassign, IgniteDiscoveryEvent discoEvt,
+    public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, boolean reassign, DiscoveryEvent discoEvt,
         GridDhtPartitionExchangeId exchId) {
         super(cctx.kernalContext());
         dummy = true;
@@ -174,7 +174,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param discoEvt Discovery event.
      * @param exchId Exchange id.
      */
-    public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, IgniteDiscoveryEvent discoEvt,
+    public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, DiscoveryEvent discoEvt,
         GridDhtPartitionExchangeId exchId) {
         super(cctx.kernalContext());
         dummy = false;
@@ -341,7 +341,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param exchId Exchange ID.
      * @param discoEvt Discovery event.
      */
-    public void onEvent(GridDhtPartitionExchangeId exchId, IgniteDiscoveryEvent discoEvt) {
+    public void onEvent(GridDhtPartitionExchangeId exchId, DiscoveryEvent discoEvt) {
         assert exchId.equals(this.exchId);
 
         this.discoEvt = discoEvt;
@@ -352,7 +352,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /**
      * @return Discovery event.
      */
-    public IgniteDiscoveryEvent discoveryEvent() {
+    public DiscoveryEvent discoveryEvent() {
         return discoEvt;
     }
 
@@ -655,7 +655,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                 cctx.kernalContext().timeout().removeTimeoutObject(timeoutObj);
 
             for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
-                if (exchId.event() == IgniteEventType.EVT_NODE_FAILED || exchId.event() == IgniteEventType.EVT_NODE_LEFT)
+                if (exchId.event() == EventType.EVT_NODE_FAILED || exchId.event() == EventType.EVT_NODE_LEFT)
                     cacheCtx.config().getAffinity().removeNode(exchId.nodeId());
             }
 

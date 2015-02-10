@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 
 import java.util.concurrent.*;
@@ -78,7 +80,7 @@ public abstract class GridCacheAbstractFlagsTest extends GridCacheAbstractSelfTe
                 @Override public Object call() throws Exception {
                     int idx = cntr.getAndIncrement() % gridCount();
 
-                    GridCache<String, Integer> c = cache(idx);
+                    IgniteCache<String, Integer> c = jcache(idx);
 
                     l.await();
 
@@ -88,7 +90,7 @@ public abstract class GridCacheAbstractFlagsTest extends GridCacheAbstractSelfTe
                 }
             }, gridCount() * 3);
 
-            cache(0).flagsOn(CacheFlag.SYNC_COMMIT).put(key, val);
+            ((IgniteCacheProxy)jcache(0)).flagOn(CacheFlag.SYNC_COMMIT).put(key, val);
 
             l.countDown();
 

@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.continuous;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -33,7 +33,7 @@ import static org.apache.ignite.internal.processors.continuous.GridContinuousMes
 /**
  * Continuous processor message.
  */
-public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
+public class GridContinuousMessage extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -132,7 +132,7 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridContinuousMessage _clone = new GridContinuousMessage();
 
         clone0(_clone);
@@ -141,52 +141,52 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter msg) {
-        GridContinuousMessage clone = (GridContinuousMessage)msg;
+    @Override protected void clone0(MessageAdapter _msg) {
+        GridContinuousMessage _clone = (GridContinuousMessage)_msg;
 
-        clone.type = type;
-        clone.routineId = routineId;
-        clone.futId = futId;
-        clone.data = data;
-        clone.dataBytes = dataBytes;
+        _clone.type = type;
+        _clone.routineId = routineId;
+        _clone.data = data;
+        _clone.dataBytes = dataBytes;
+        _clone.futId = futId;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putByteArray(dataBytes))
+                if (!writer.writeByteArray("dataBytes", dataBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putGridUuid(futId))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putUuid(routineId))
+                if (!writer.writeUuid("routineId", routineId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                if (!commState.putEnum(type))
+                if (!writer.writeEnum("type", type))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -196,48 +196,40 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                byte[] dataBytes0 = commState.getByteArray();
+                dataBytes = reader.readByteArray("dataBytes");
 
-                if (dataBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                dataBytes = dataBytes0;
-
-                commState.idx++;
+                state++;
 
             case 1:
-                IgniteUuid futId0 = commState.getGridUuid();
+                futId = reader.readIgniteUuid("futId");
 
-                if (futId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                futId = futId0;
-
-                commState.idx++;
+                state++;
 
             case 2:
-                UUID routineId0 = commState.getUuid();
+                routineId = reader.readUuid("routineId");
 
-                if (routineId0 == UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                routineId = routineId0;
-
-                commState.idx++;
+                state++;
 
             case 3:
-                if (buf.remaining() < 1)
+                type = reader.readEnum("type", GridContinuousMessageType.class);
+
+                if (!reader.isLastRead())
                     return false;
 
-                byte type0 = commState.getByte();
-
-                type = fromOrdinal(type0);
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -246,7 +238,7 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 60;
+        return 61;
     }
 
     /** {@inheritDoc} */

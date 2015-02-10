@@ -26,7 +26,7 @@ import org.apache.ignite.lang.utils.*;
 import org.apache.ignite.util.*;
 
 /**
- * Gridgain language test suite.
+ * Ignite language test suite.
  */
 public class IgniteLangSelfTestSuite extends TestSuite {
     /**

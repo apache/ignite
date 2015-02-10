@@ -23,8 +23,8 @@ import java.io.*;
 import java.util.*;
 
 /**
- * GridGain license descriptor. GridGain license is available for
- * information purposes and is checked automatically by GridGain software.
+ * Ignite license descriptor. Ignite license is available for
+ * information purposes and is checked automatically by Ignite software.
  * License descriptor can be obtains by calling {@link IgniteProduct#license()} method.
  * @see IgniteProduct#license()
  */

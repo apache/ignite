@@ -33,12 +33,12 @@ public class GridCacheLocalAtomicSetSelfTest extends GridCacheSetAbstractSelfTes
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
+    @Override protected CacheMode collectionCacheMode() {
         return LOCAL;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
+    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return ATOMIC;
     }
 }

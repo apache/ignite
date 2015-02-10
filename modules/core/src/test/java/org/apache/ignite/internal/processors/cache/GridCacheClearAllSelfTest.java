@@ -35,7 +35,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.*;
 
 /**
- * Test {@link org.apache.ignite.cache.GridCache#clearAll()} operations in multinode environment with nodes having caches with different names.
+ * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} operations in multinode environment with nodes having caches with different names.
  */
 public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
     /** Local cache. */
@@ -148,7 +148,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearAll()} on LOCAL cache with no split.
+     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on LOCAL cache with no split.
      *
      * @throws Exception If failed.
      */
@@ -157,7 +157,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearAll()} on LOCAL cache with split.
+     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on LOCAL cache with split.
      *
      * @throws Exception If failed.
      */
@@ -166,7 +166,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearAll()} on PARTITIONED cache with no split.
+     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on PARTITIONED cache with no split.
      *
      * @throws Exception If failed.
      */
@@ -175,7 +175,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearAll()} on PARTITIONED cache with split.
+     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on PARTITIONED cache with split.
      *
      * @throws Exception If failed.
      */
@@ -184,7 +184,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearAll()} on co-located cache with no split.
+     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on co-located cache with no split.
      *
      * @throws Exception If failed.
      */
@@ -193,7 +193,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearAll()} on co-located cache with split.
+     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on co-located cache with split.
      *
      * @throws Exception If failed.
      */
@@ -202,7 +202,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearAll()} on REPLICATED cache with no split.
+     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on REPLICATED cache with no split.
      *
      * @throws Exception If failed.
      */
@@ -211,7 +211,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link org.apache.ignite.cache.GridCache#clearAll()} on REPLICATED cache with split.
+     * Test {@link org.apache.ignite.cache.GridCache#clearLocally()} on REPLICATED cache with split.
      *
      * @throws Exception If failed.
      */
@@ -236,7 +236,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
 
                 fillCache(cache, keysCnt);
 
-                cache.clearAll();
+                cache.clear();
 
                 assert cache.isEmpty();
 
@@ -249,23 +249,23 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
                 // Ensure correct no-op clean of CLIENT_ONLY cache.
                 warmCache(cachesPartitioned[2], keysCnt);
                 assert cachesPartitioned[2].isEmpty();
-                cachesPartitioned[2].clearAll();
+                cachesPartitioned[2].clearLocally();
                 assert cachesPartitioned[2].isEmpty();
 
                 stopGrid(2); // Shutdown Grid in order to remove reader in NEAR_PARTITIONED cache.
 
-                // Ensure correct clear of NEA_ONLY cache.
+                // Ensure correct clearLocally of NEA_ONLY cache.
                 warmCache(cachesPartitioned[1], keysCnt);
                 assert !cachesPartitioned[1].isEmpty();
-                cachesPartitioned[1].clearAll();
+                cachesPartitioned[1].clearLocally();
                 assert cachesPartitioned[1].isEmpty();
                 fillCache(cachesPartitioned[1], keysCnt);
 
                 stopGrid(1); // Shutdown Grid in order to remove reader in NEAR_PARTITIONED cache.
 
-                // Ensure correct clear of NEAR_PARTITIONED cache.
+                // Ensure correct clearLocally of NEAR_PARTITIONED cache.
                 assert !cachesPartitioned[0].isEmpty();
-                cachesPartitioned[0].clearAll();
+                cachesPartitioned[0].clearLocally();
                 assert cachesPartitioned[0].isEmpty();
 
                 break;
@@ -280,7 +280,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
                 for (GridCache<Integer, Integer> cache : caches) {
                     assert !cache.isEmpty();
 
-                    cache.clearAll();
+                    cache.clearLocally();
 
                     assert cache.isEmpty();
                 }

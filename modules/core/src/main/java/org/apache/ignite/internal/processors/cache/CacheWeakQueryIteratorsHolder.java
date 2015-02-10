@@ -117,13 +117,17 @@ public class CacheWeakQueryIteratorsHolder<V> {
      * @param <T> Type for iterator.
      */
     public class WeakQueryFutureIterator<T> extends GridCloseableIteratorAdapter<T> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Query future. */
         private final CacheQueryFuture<V> fut;
 
         /** Weak reference. */
         private final WeakReference<WeakQueryFutureIterator<T>> weakRef;
 
-        CacheIteratorConverter<T, V> convert;
+        /** */
+        private final CacheIteratorConverter<T, V> convert;
 
         /** Init flag. */
         private boolean init;
@@ -136,6 +140,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
 
         /**
          * @param fut GridCacheQueryFuture to iterate.
+         * @param convert Converter.
          */
         WeakQueryFutureIterator(CacheQueryFuture<V> fut, CacheIteratorConverter<T, V> convert) {
             this.fut = fut;

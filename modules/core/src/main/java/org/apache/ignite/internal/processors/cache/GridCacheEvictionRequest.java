@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -141,7 +141,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridCacheEvictionRequest _clone = new GridCacheEvictionRequest();
 
         clone0(_clone);
@@ -150,7 +150,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridCacheEvictionRequest _clone = (GridCacheEvictionRequest)_msg;
@@ -164,36 +164,36 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (!commState.putByteArray(entriesBytes))
+                if (!writer.writeByteArray("entriesBytes", entriesBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putLong(futId))
+                if (!writer.writeLong("futId", futId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                if (!commState.putLong(topVer))
+                if (!writer.writeLong("topVer", topVer))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -203,37 +203,35 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                byte[] entriesBytes0 = commState.getByteArray();
+                entriesBytes = reader.readByteArray("entriesBytes");
 
-                if (entriesBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                entriesBytes = entriesBytes0;
-
-                commState.idx++;
+                state++;
 
             case 4:
-                if (buf.remaining() < 8)
+                futId = reader.readLong("futId");
+
+                if (!reader.isLastRead())
                     return false;
 
-                futId = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 5:
-                if (buf.remaining() < 8)
+                topVer = reader.readLong("topVer");
+
+                if (!reader.isLastRead())
                     return false;
 
-                topVer = commState.getLong();
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -242,7 +240,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 16;
+        return 14;
     }
 
     /** {@inheritDoc} */

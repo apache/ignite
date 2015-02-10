@@ -31,7 +31,7 @@ class ScalarCacheProjectionSpec extends FlatSpec {
     behavior of "Cache projection"
 
     it should "work properly via grid.cache(...).viewByType(...)" in scalar("examples/config/example-cache.xml") {
-        val cache = grid$.cache("local").viewByType(classOf[String], classOf[Int])
+        val cache = ignite$.cache("local").viewByType(classOf[String], classOf[Int])
 
         assert(cache.putx("1", 1))
         assert(cache.get("1") == 1)

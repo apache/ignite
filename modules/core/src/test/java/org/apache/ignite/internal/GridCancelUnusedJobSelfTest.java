@@ -69,14 +69,7 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(discoSpi);
 
-        c.setExecutorService(
-            new ThreadPoolExecutor(
-                SPLIT_COUNT,
-                SPLIT_COUNT,
-                0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>()));
-
-        c.setExecutorServiceShutdown(true);
+        c.setPublicThreadPoolSize(SPLIT_COUNT);
 
         return c;
     }
@@ -120,7 +113,7 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
      */
     private static class GridCancelTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
@@ -158,11 +151,11 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
      */
     private static class GridCancelTestJob extends ComputeJobAdapter {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession ses;
 
         /**

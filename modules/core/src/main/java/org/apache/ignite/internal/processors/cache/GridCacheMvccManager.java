@@ -40,7 +40,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.*;
 import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 
@@ -166,11 +166,11 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
     /** Discovery listener. */
     @GridToStringExclude private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
-        @Override public void onEvent(IgniteEvent evt) {
-            assert evt instanceof IgniteDiscoveryEvent;
+        @Override public void onEvent(Event evt) {
+            assert evt instanceof DiscoveryEvent;
             assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
-            IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+            DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
             if (log.isDebugEnabled())
                 log.debug("Processing node left [nodeId=" + discoEvt.eventNode().id() + "]");

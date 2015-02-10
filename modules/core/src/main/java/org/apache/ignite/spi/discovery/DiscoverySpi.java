@@ -31,12 +31,12 @@ import java.util.*;
  * with default configuration which allows all nodes in local network
  * (with enabled multicast) to discover each other.
  * <p>
- * Gridgain provides the following {@code GridDeploymentSpi} implementation:
+ * Ignite provides the following {@code GridDeploymentSpi} implementation:
  * <ul>
  * <li>{@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
- * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
+ * internal view on the subsystem and is used internally by Ignite kernal. In rare use cases when
  * access to a specific implementation of this SPI is required - an instance of this SPI can be obtained
  * via {@link org.apache.ignite.Ignite#configuration()} method to check its configuration properties or call other non-SPI
  * methods. Note again that calling methods from this interface on the obtained instance can lead
@@ -84,10 +84,10 @@ public interface DiscoverySpi extends IgniteSpi {
 
     /**
      * Sets a listener for discovery events. Refer to
-     * {@link org.apache.ignite.events.IgniteDiscoveryEvent} for a set of all possible
+     * {@link org.apache.ignite.events.DiscoveryEvent} for a set of all possible
      * discovery events.
      * <p>
-     * Note that as of GridGain 3.0.2 this method is called <b>before</b>
+     * Note that as of Ignite 3.0.2 this method is called <b>before</b>
      * method {@link #spiStart(String)} is called. This is done to
      * avoid potential window when SPI is started but the listener is
      * not registered yet.
@@ -97,7 +97,7 @@ public interface DiscoverySpi extends IgniteSpi {
     public void setListener(@Nullable DiscoverySpiListener lsnr);
 
     /**
-     * Sets a handler for initial data exchange between GridGain nodes.
+     * Sets a handler for initial data exchange between Ignite nodes.
      *
      * @param exchange Discovery data exchange handler.
      */
@@ -105,7 +105,7 @@ public interface DiscoverySpi extends IgniteSpi {
 
     /**
      * Sets discovery metrics provider. Use metrics provided by
-     * {@link DiscoveryMetricsProvider#getMetrics()} method to exchange
+     * {@link DiscoveryMetricsProvider#metrics()} method to exchange
      * dynamic metrics between nodes.
      *
      * @param metricsProvider Provider of metrics data.
@@ -117,7 +117,7 @@ public interface DiscoverySpi extends IgniteSpi {
      * {@link #spiStop()} with accounting that it is not a full stop,
      * but disconnect due to segmentation.
      *
-     * @throws org.apache.ignite.spi.IgniteSpiException If any error occurs.
+     * @throws IgniteSpiException If any error occurs.
      */
     public void disconnect() throws IgniteSpiException;
 

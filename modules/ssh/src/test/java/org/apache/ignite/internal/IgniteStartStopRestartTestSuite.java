@@ -30,9 +30,9 @@ public class IgniteStartStopRestartTestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Start Nodes Test Suite");
 
-        suite.addTestSuite(GridNodeStartUtilsSelfTest.class);
+        suite.addTestSuite(IgniteNodeStartUtilsSelfTest.class);
 
-        suite.addTestSuite(GridProjectionStartStopRestartSelfTest.class);
+        suite.addTestSuite(IgniteProjectionStartStopRestartSelfTest.class);
 
         return suite;
     }

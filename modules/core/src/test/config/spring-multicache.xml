@@ -15,16 +15,16 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
-    GridGain Spring configuration file to startup grid cache.
+    Ignite Spring configuration file to startup grid cache.
 
-    When starting a standalone GridGain node, you need to execute the following command:
+    When starting a standalone Ignite node, you need to execute the following command:
     {IGNITE_HOME}/bin/ignite.{bat|sh} path-to-this-file/example-cache.xml
 
-    When starting GridGain from Java IDE, pass path to this file into GridGain:
-    GridGain.start("path-to-this-file/example-benchmark.xml");
+    When starting Ignite from Java IDE, pass path to this file into Ignition:
+    Ignition.start("path-to-this-file/example-benchmark.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -59,7 +59,7 @@
                 Note that absolutely all configuration properties are optional.
             -->
             <list>
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="partitioned1"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -81,7 +81,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="partitioned2"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -103,7 +103,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="partitioned3"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -125,7 +125,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="partitioned4"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -147,7 +147,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="partitioned5"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -170,7 +170,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="partitioned6"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -192,7 +192,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="partitioned7"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -214,7 +214,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="partitioned8"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -277,53 +277,20 @@
             By default thread pool size is 100.
             All threads are pre-started and are available for use.
         -->
-        <property name="executorService">
-            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
-                <constructor-arg type="int" value="10"/>
-                <constructor-arg type="int" value="10"/>
-                <constructor-arg type="long">
-                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
-                </constructor-arg>
-                <constructor-arg type="java.util.concurrent.BlockingQueue">
-                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
-                </constructor-arg>
-            </bean>
-        </property>
+        <property name="publicThreadPoolSize" value="10"/>
 
         <!--
             Uncomment to provide custom configuration for System executor service.
             By default the thread pool size is 5 which should be good enough.
             Threads are not started unless used.
         -->
-        <property name="systemExecutorService">
-            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
-                <constructor-arg type="int" value="10"/>
-                <constructor-arg type="int" value="10"/>
-                <constructor-arg type="long">
-                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
-                </constructor-arg>
-                <constructor-arg type="java.util.concurrent.BlockingQueue">
-                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
-                </constructor-arg>
-            </bean>
-        </property>
+        <property name="systemThreadPoolSize" value="10"/>
 
         <!--
             Uncomment to provide custom configuration for P2P executor service.
             By default the thread pool size is 20 which should be good enough.
             Threads are not started unless used.
         -->
-        <property name="peerClassLoadingExecutorService">
-            <bean class="org.apache.ignite.thread.IgniteThreadPoolExecutor">
-                <constructor-arg type="int" value="2"/>
-                <constructor-arg type="int" value="2"/>
-                <constructor-arg type="long">
-                    <util:constant static-field="java.lang.Long.MAX_VALUE"/>
-                </constructor-arg>
-                <constructor-arg type="java.util.concurrent.BlockingQueue">
-                    <bean class="java.util.concurrent.LinkedBlockingQueue"/>
-                </constructor-arg>
-            </bean>
-        </property>
+        <property name="peerClassLoadingThreadPoolSize" value="2"/>
     </bean>
 </beans>

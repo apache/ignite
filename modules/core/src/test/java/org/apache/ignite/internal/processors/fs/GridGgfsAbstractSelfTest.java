@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.fs;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -41,7 +41,7 @@ import static org.apache.ignite.IgniteFs.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.fs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 
 /**
  * Test fo regular GGFs operations.
@@ -150,11 +150,11 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         for (int i = 0; i < chunk.length; i++)
             chunk[i] = (byte)i;
 
-        Ignite igniteSecondary = startGridWithGgfs("grid-secondary", "ggfs-secondary", PRIMARY, null, SECONDARY_REST_CFG);
+        Ignite igniteSecondary = startGridWithGgfs("ignite-secondary", "ignitefs-secondary", PRIMARY, null, SECONDARY_REST_CFG);
 
-        ggfsSecondary = (GridGgfsImpl) igniteSecondary.fileSystem("ggfs-secondary");
+        ggfsSecondary = (GridGgfsImpl) igniteSecondary.fileSystem("ignitefs-secondary");
 
-        Ignite ignite = startGridWithGgfs("grid", "ggfs", mode, ggfsSecondary, PRIMARY_REST_CFG);
+        Ignite ignite = startGridWithGgfs("ignite", "ggfs", mode, ggfsSecondary, PRIMARY_REST_CFG);
 
         ggfs = (GridGgfsImpl) ignite.fileSystem("ggfs");
     }
@@ -228,7 +228,6 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         cfg.setGgfsConfiguration(ggfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
-        cfg.setRestEnabled(false);
 
         return G.start(cfg);
     }

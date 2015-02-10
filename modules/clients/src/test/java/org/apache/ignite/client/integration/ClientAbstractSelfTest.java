@@ -130,8 +130,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         for (HashMapStore cacheStore : cacheStores.values())
             cacheStore.map.clear();
 
-        grid().cache(null).clearAll();
-        grid().cache(CACHE_NAME).clearAll();
+        grid().cache(null).clear();
+        grid().cache(CACHE_NAME).clear();
 
         INTERCEPTED_OBJECTS.clear();
     }
@@ -198,8 +198,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         clientCfg.setRestTcpPort(BINARY_PORT);
 
         clientCfg.setRestAccessibleFolders(
-            U.getGridGainHome() + "/work/log",
-            U.resolveGridGainPath("modules/core/src/test/resources/log").getAbsolutePath());
+            U.getIgniteHome() + "/work/log",
+            U.resolveIgnitePath("modules/core/src/test/resources/log").getAbsolutePath());
 
         if (useSsl()) {
             clientCfg.setRestTcpSslEnabled(true);
@@ -434,7 +434,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         info(">>> First task executed successfully, running batch.");
 
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 10; i++)
             futs.add(compute.executeAsync(taskName, taskArg));
 
         // Stop client.
@@ -1305,7 +1305,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         final GridClientCompute compute = client.compute();
 
         /* Usually this log file is created by log4j, but some times it doesn't exists. */
-        new File(U.getGridGainHome(), "work/log/gridgain.log").createNewFile();
+        new File(U.getIgniteHome(), "work/log/ignite.log").createNewFile();
 
         List<String> log = compute.log(6, 7);
         assertNotNull(log);
@@ -1317,9 +1317,9 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         assertNotNull(log);
         assertTrue(log.isEmpty());
 
-        String path = "work/log/gridgain.log." + System.currentTimeMillis();
+        String path = "work/log/ignite.log." + System.currentTimeMillis();
 
-        File file = new File(U.getGridGainHome(), path);
+        File file = new File(U.getIgniteHome(), path);
 
         assert !file.exists();
 
@@ -1400,7 +1400,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
             log(),
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    new File(U.getGridGainHome(), "work/security.log").createNewFile();
+                    new File(U.getIgniteHome(), "work/security.log").createNewFile();
 
                     compute.log("work/log/../security.log", -1, -1);
 

@@ -58,7 +58,7 @@ import java.util.*;
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskAdapter&lt;String,String&gt; {
  *    // Inject load balancer.
- *    &#64;IgniteLoadBalancerResource
+ *    &#64;LoadBalancerResource
  *    ComputeLoadBalancer balancer;
  *
  *    // Map jobs to grid nodes.
@@ -95,14 +95,14 @@ import java.util.*;
  * }
  * </pre>
  * <p>
- * GridGain comes with the following load balancing SPI implementations out of the box:
+ * Ignite comes with the following load balancing SPI implementations out of the box:
  * <ul>
  * <li>{@link org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi} - default</li>
  * <li>{@link org.apache.ignite.spi.loadbalancing.adaptive.AdaptiveLoadBalancingSpi}</li>
  * <li>{@link org.apache.ignite.spi.loadbalancing.weightedrandom.WeightedRandomLoadBalancingSpi}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
- * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
+ * internal view on the subsystem and is used internally by Ignite kernal. In rare use cases when
  * access to a specific implementation of this SPI is required - an instance of this SPI can be obtained
  * via {@link org.apache.ignite.Ignite#configuration()} method to check its configuration properties or call other non-SPI
  * methods. Note again that calling methods from this interface on the obtained instance can lead

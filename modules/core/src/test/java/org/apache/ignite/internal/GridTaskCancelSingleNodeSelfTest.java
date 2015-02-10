@@ -30,12 +30,10 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Test for task cancellation issue.
- * <p/>
- * http://www.gridgainsystems.com/jiveforums/thread.jspa?messageID=8034
  */
 public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
@@ -72,8 +70,8 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
         final AtomicInteger cancelled = new AtomicInteger();
         final AtomicInteger rejected = new AtomicInteger();
 
-        grid().events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        grid().events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 info("Received event: " + evt);
 
                 switch (evt.type()) {
@@ -152,7 +150,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) {
             return F.asSet(new ComputeJobAdapter() {
                 /** */
-                @IgniteLoggerResource
+                @LoggerResource
                 private IgniteLogger log;
 
                 /** */

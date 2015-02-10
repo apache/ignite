@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -79,7 +80,7 @@ public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
     /**
      * Checks whether all provided events are user-recordable.
      * <p>
-     * Note that this method supports only predefined GridGain events.
+     * Note that this method supports only predefined Ignite events.
      *
      * @param types Event types.
      * @return Whether all events are recordable.
@@ -132,4 +133,11 @@ public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
      * @return GGFS.
      */
     @Nullable public IgniteFs ggfsx(@Nullable String name);
+
+    /**
+     * Get Hadoop facade.
+     *
+     * @return Hadoop.
+     */
+    public GridHadoop hadoop();
 }

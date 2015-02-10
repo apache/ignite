@@ -17,17 +17,18 @@
 
 package org.apache.ignite.scalar.examples
 
+import java.util.concurrent.Callable
+
 import org.apache.ignite._
 import org.apache.ignite.cache.CacheName
 import org.apache.ignite.cache.affinity.CacheAffinityKeyMapped
+import org.apache.ignite.lang.IgniteCallable
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
 import org.jetbrains.annotations.Nullable
 
-import java.util.concurrent.Callable
-
 /**
- * Example of how to collocate computations and data in GridGain using
+ * Example of how to collocate computations and data in Ignite using
  * `CacheAffinityKeyMapped` annotation as opposed to direct API calls. This
  * example will first populate cache on some node where cache is available, and then
  * will send jobs to the nodes where keys reside and print out values for those
@@ -53,19 +54,19 @@ object ScalarCacheAffinityExample1 {
     def main(args: Array[String]) {
         scalar(CONFIG) {
             // Clean up caches on all nodes before run.
-            cache$(NAME).get.globalClearAll(0)
+            cache$(NAME).get.clear(0)
 
             var keys = Seq.empty[String]
 
             ('A' to 'Z').foreach(keys :+= _.toString)
 
-            populateCache(grid$, keys)
+            populateCache(ignite$, keys)
 
             var results = Map.empty[String, String]
 
             keys.foreach(key => {
-                val res = grid$.call$(
-                    new Callable[String] {
+                val res = ignite$.call$(
+                    new IgniteCallable[String] {
                         @CacheAffinityKeyMapped
                         def affinityKey(): String = key
 
@@ -78,7 +79,7 @@ object ScalarCacheAffinityExample1 {
                             val cache = cache$[String, String](NAME)
 
                             if (!cache.isDefined) {
-                                println(">>> Cache not found [nodeId=" + grid$.cluster().localNode.id +
+                                println(">>> Cache not found [nodeId=" + ignite$.cluster().localNode.id +
                                     ", cacheName=" + NAME + ']')
 
                                 "Error"
@@ -102,15 +103,15 @@ object ScalarCacheAffinityExample1 {
      * cache is not started on local node. In that case a job which populates
      * the cache will be sent to the node where cache is started.
      *
-     * @param g Grid.
+     * @param ignite Ignite.
      * @param keys Keys to populate.
      */
-    private def populateCache(g: Ignite, keys: Seq[String]) {
-        var prj = g.cluster().forCacheNodes(NAME)
+    private def populateCache(ignite: Ignite, keys: Seq[String]) {
+        var prj = ignite.cluster().forCacheNodes(NAME)
 
         // Give preference to local node.
-        if (prj.nodes().contains(g.cluster().localNode))
-            prj = g.cluster().forLocal()
+        if (prj.nodes().contains(ignite.cluster().localNode))
+            prj = ignite.cluster().forLocal()
 
         // Populate cache on some node (possibly this node) which has cache with given name started.
         prj.run$(() => {

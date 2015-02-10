@@ -29,14 +29,11 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
-import java.nio.*;
 import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
 import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
-import static org.apache.ignite.internal.processors.rest.client.message.GridClientHandshakeResponse.*;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
 
 /**
@@ -137,8 +134,8 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
         if (msg instanceof GridMemcachedMessage)
             memcachedLsnr.onMessage(ses, (GridMemcachedMessage)msg);
         else {
-            if (msg == GridClientPingPacket.PING_MESSAGE)
-                ses.send(new GridClientPingPacketWrapper());
+            if (msg instanceof GridClientPingPacket)
+                ses.send(msg);
             else if (msg instanceof GridClientHandshakeRequest) {
                 GridClientHandshakeRequest hs = (GridClientHandshakeRequest)msg;
 
@@ -168,7 +165,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                     else {
                         ses.addMeta(MARSHALLER.ordinal(), marsh);
 
-                        ses.send(new GridClientHandshakeResponseWrapper(CODE_OK));
+                        ses.send(GridClientHandshakeResponse.OK);
                     }
                 }
             }
@@ -205,27 +202,7 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
                                 res.errorMessage("Failed to process client request: " + e.getMessage());
                             }
 
-                            GridClientMessageWrapper wrapper = new GridClientMessageWrapper();
-
-                            wrapper.requestId(msg.requestId());
-                            wrapper.clientId(msg.clientId());
-
-                            try {
-                                ByteBuffer bytes = proto.marshaller(ses).marshal(res, 0);
-
-                                wrapper.message(bytes);
-
-                                wrapper.messageSize(bytes.remaining() + 40);
-                            }
-                            catch (IOException e) {
-                                U.error(log, "Failed to marshal response: " + res, e);
-
-                                ses.close();
-
-                                return;
-                            }
-
-                            ses.send(wrapper);
+                            ses.send(res);
                         }
                     });
                 else
@@ -312,20 +289,6 @@ public class GridTcpRestNioListener extends GridNioServerListenerAdapter<GridCli
             restTaskReq.portableMode(proto.portableMode(ses));
 
             restReq = restTaskReq;
-        }
-        else if (msg instanceof GridClientGetMetaDataRequest) {
-            GridClientGetMetaDataRequest req = (GridClientGetMetaDataRequest)msg;
-
-            restReq = new GridRestPortableGetMetaDataRequest(req);
-
-            restReq.command(GET_PORTABLE_METADATA);
-        }
-        else if (msg instanceof GridClientPutMetaDataRequest) {
-            GridClientPutMetaDataRequest req = (GridClientPutMetaDataRequest)msg;
-
-            restReq = new GridRestPortablePutMetaDataRequest(req);
-
-            restReq.command(PUT_PORTABLE_METADATA);
         }
         else if (msg instanceof GridClientTopologyRequest) {
             GridClientTopologyRequest req = (GridClientTopologyRequest) msg;

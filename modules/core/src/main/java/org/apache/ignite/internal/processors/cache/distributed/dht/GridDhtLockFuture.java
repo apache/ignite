@@ -41,7 +41,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 
 /**
@@ -1135,7 +1135,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                     evictReaders(cctx, res.nearEvicted(), node.id(), res.messageId(), nearMapping);
                 }
 
-                Set<Integer> invalidParts = res.invalidPartitions();
+                Collection<Integer> invalidParts = res.invalidPartitions();
 
                 // Removing mappings for invalid partitions.
                 if (!F.isEmpty(invalidParts)) {

@@ -46,18 +46,18 @@ public final class GridConfigurationFinder {
     }
 
     /**
-     * Lists paths to all GridGain configuration files located in IGNITE_HOME with their
+     * Lists paths to all Ignite configuration files located in IGNITE_HOME with their
      * last modification timestamps.
      *
      * @return Collection of configuration files and their last modification timestamps.
      * @throws IOException Thrown in case of any IO error.
      */
     public static List<GridTuple3<String, Long, File>> getConfigFiles() throws IOException {
-        return getConfigFiles(new File(U.getGridGainHome()));
+        return getConfigFiles(new File(U.getIgniteHome()));
     }
 
     /**
-     * Lists paths to all GridGain configuration files located in given directory with their
+     * Lists paths to all Ignite configuration files located in given directory with their
      * last modification timestamps.
      *
      * @param dir Directory.
@@ -83,7 +83,7 @@ public final class GridConfigurationFinder {
             }
         });
 
-        File dflt = new File(U.getGridGainHome() + File.separator + DFLT_CFG);
+        File dflt = new File(U.getIgniteHome() + File.separator + DFLT_CFG);
 
         if (dflt.exists())
             lst.addFirst(F.t(DFLT_CFG, dflt.lastModified(), dflt));
@@ -92,7 +92,7 @@ public final class GridConfigurationFinder {
     }
 
     /**
-     * Lists paths to all GridGain configuration files located in given directory with their
+     * Lists paths to all Ignite configuration files located in given directory with their
      * last modification timestamps.
      *
      * NOTE: default configuration path will be skipped.
@@ -122,7 +122,7 @@ public final class GridConfigurationFinder {
                         if (line.contains("http://www.springframework.org/schema/beans"))
                             springCfg = true;
 
-                        if (line.contains("class=\"org.gridgain.grid.GridConfiguration\""))
+                        if (line.contains("class=\"org.apache.ignite.configuration.IgniteConfiguration\""))
                             ggCfg = true;
 
                         if (springCfg && ggCfg)
@@ -130,7 +130,7 @@ public final class GridConfigurationFinder {
                     }
 
                     if (springCfg) {
-                        String path = file.getAbsolutePath().substring(U.getGridGainHome().length());
+                        String path = file.getAbsolutePath().substring(U.getIgniteHome().length());
 
                         if (path.startsWith(File.separator))
                             path = path.substring(File.separator.length());

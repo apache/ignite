@@ -17,8 +17,8 @@
 
 package org.apache.ignite.scalar.tests
 
-import org.apache.ignite.events.IgniteEvent
-import org.apache.ignite.events.IgniteEventType._
+import org.apache.ignite.events.Event
+import org.apache.ignite.events.EventType._
 import org.apache.ignite.lang.IgnitePredicate
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
@@ -54,11 +54,11 @@ class ScalarCacheSpec extends FlatSpec with ShouldMatchers {
      * so we can actually see what happens underneath locally and remotely.
      */
     def registerListener() {
-        val g = grid$
+        val g = ignite$
 
         g *< (() => {
-            val lsnr = new IgnitePredicate[IgniteEvent]() {
-                override def apply(e: IgniteEvent): Boolean = {
+            val lsnr = new IgnitePredicate[Event]() {
+                override def apply(e: Event): Boolean = {
                     println(e.shortDisplay)
 
                     true
