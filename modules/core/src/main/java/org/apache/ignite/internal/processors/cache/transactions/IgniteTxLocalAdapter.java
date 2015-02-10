@@ -737,13 +737,13 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                     boolean drNeedResolve = cacheCtx.conflictNeedResolve(cached.version(), explicitVer);
 
                                     if (drNeedResolve) {
-                                        IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContextImpl<K, V>>
+                                        IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>>
                                             drRes = conflictResolve(op, txEntry.key(), val, valBytes, txEntry.ttl(),
                                                 txEntry.drExpireTime(), explicitVer, cached);
 
                                         assert drRes != null;
 
-                                        GridCacheVersionConflictContextImpl<K, V> conflictCtx = drRes.get2();
+                                        GridCacheVersionConflictContext<K, V> conflictCtx = drRes.get2();
 
                                         if (conflictCtx.isUseOld())
                                             op = NOOP;
