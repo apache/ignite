@@ -57,9 +57,6 @@ import static org.apache.ignite.transactions.IgniteTxState.*;
     "NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope", "FieldAccessedSynchronizedAndUnsynchronized"})
 public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> {
     /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
     private static final sun.misc.Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** */
@@ -1165,8 +1162,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     subjId, null, taskName);
             }
 
-            CacheMode mode = cctx.config().getCacheMode();
-
             if (cctx.isLocal() || cctx.isReplicated() || (tx != null && tx.local() && !isNear()))
                 cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes, false);
 
@@ -1325,8 +1320,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         EVT_CACHE_OBJECT_REMOVED, null, false, evtOld, evtOld != null || hasValueUnlocked(), subjId,
                         null, taskName);
                 }
-
-                CacheMode mode = cctx.config().getCacheMode();
 
                 if (cctx.isLocal() || cctx.isReplicated() || (tx != null && tx.local() && !isNear()))
                     cctx.continuousQueries().onEntryUpdate(this, key, null, null, old, oldBytes, false);
@@ -1674,16 +1667,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (isNew())
                 unswap(true, retval);
 
-            boolean newTtlResolved = false;
-
-            boolean drNeedResolve = false;
-
             Object transformClo = null;
 
             if (drResolve) {
                 GridCacheVersion oldDrVer = version().drVersion();
 
-                drNeedResolve = cctx.conflictNeedResolve(oldDrVer, drVer);
+                boolean drNeedResolve = cctx.conflictNeedResolve(oldDrVer, drVer);
 
                 if (drNeedResolve) {
                     // Get old value.
@@ -1713,8 +1702,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         newTtl = ttl < 0 ? ttlExtras() : ttl;
                         newExpireTime = CU.toExpireTime(newTtl);
                     }
-
-                    newTtlResolved = true;
 
                     GridCacheVersionedEntryEx<K, V> oldEntry = versionedEntry();
                     GridCacheVersionedEntryEx<K, V> newEntry =
@@ -1870,7 +1857,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                             expiryPlc.ttlUpdated(key,
                                 getOrMarshalKeyBytes(),
                                 version(),
-                                hasReaders() ? ((GridDhtCacheEntry) this).readers() : null);
+                                hasReaders() ? ((GridDhtCacheEntry<K, V>) this).readers() : null);
                         }
                     }
 
@@ -4349,19 +4336,37 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
         @Override public V getValue() {
-            for (;;) {
-                GridCacheEntryEx<K, V> e = cctx.cache().peekEx(key);
+            try {
+                IgniteInternalTx<K, V> tx = cctx.tm().userTx();
 
-                if (e == null)
-                    return null;
+                if (tx != null) {
+                    GridTuple<V> peek = tx.peek(cctx, false, key, null);
 
-                try {
-                    return e.peek(GridCachePeekMode.GLOBAL, CU.<K, V>empty());
+                    if (peek != null)
+                        return peek.get();
                 }
-                catch (GridCacheEntryRemovedException ignored) {
-                    // No-op.
+
+                if (detached())
+                    return rawGet();
+
+                for (;;) {
+                    GridCacheEntryEx<K, V> e = cctx.cache().peekEx(key);
+
+                    if (e == null)
+                        return null;
+
+                    try {
+                        return e.peek(GridCachePeekMode.GLOBAL, CU.<K, V>empty());
+                    }
+                    catch (GridCacheEntryRemovedException ignored) {
+                        // No-op.
+                    }
                 }
+            }
+            catch (GridCacheFilterFailedException ignored) {
+                throw new IgniteException("Should never happen.");
             }
         }
 

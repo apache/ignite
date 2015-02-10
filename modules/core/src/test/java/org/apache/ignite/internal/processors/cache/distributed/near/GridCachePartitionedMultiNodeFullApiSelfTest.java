@@ -236,11 +236,12 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
                 assertEquals((Integer)1, c.localPeek("key", BACKUP));
             }
             else if (!c.unwrap(Ignite.class).affinity(null).isPrimaryOrBackup(grid(i).localNode(), "key")) {
+                // Initialize near reader.
+                assertEquals((Integer)1, jcache(i).get("key"));
+
                 assertEquals(nearPeekVal, c.localPeek("key", NEAR));
 
                 assertNull(c.localPeek("key", PRIMARY, BACKUP));
-
-                assertEquals((Integer)1, jcache(i).get("key"));
             }
         }
     }
@@ -264,6 +265,9 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
                 assert c.peek("key", Arrays.asList(PARTITIONED_ONLY)) == 1;
             }
             else if (!c.affinity().isPrimaryOrBackup(grid(i).localNode(), "key")) {
+                // Initialize near reader.
+                assertEquals((Integer)1, jcache(i).get("key"));
+
                 assertEquals(nearPeekVal, c.peek("key", Arrays.asList(NEAR_ONLY)));
 
                 assert c.peek("key", Arrays.asList(PARTITIONED_ONLY)) == null;

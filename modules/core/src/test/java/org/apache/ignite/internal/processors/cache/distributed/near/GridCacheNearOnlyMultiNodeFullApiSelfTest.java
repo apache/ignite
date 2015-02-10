@@ -24,10 +24,14 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
 
+import javax.cache.expiry.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -119,7 +123,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     /**
      * @return A not near-only cache.
      */
-    protected IgniteCache<String, Integer> fullCache() {
+    @Override protected IgniteCache<String, Integer> fullCache() {
         return nearIdx == 0 ? jcache(1) : jcache(0);
     }
 
@@ -202,167 +206,242 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
      * @throws Exception
      */
     private void checkReaderTtl(boolean inTx) throws Exception {
-        assert false : "ignite-96";
+        int ttl = 1000;
 
-//        int ttl = 1000;
-//
-//        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
-//
-//        final GridCache<String, Integer> c = cache();
-//
-//        final String key = primaryKeysForCache(jcache(), 1).get(0);
-//
-//        c.put(key, 1);
-//
-//        Cache.Entry<String, Integer> entry = c.entry(key);
-//
-//        assert entry != null;
-//
-//        assertEquals(0, entry.timeToLive());
-//        assertEquals(0, entry.expirationTime());
-//
-//        long startTime = System.currentTimeMillis();
-//
-//        int fullIdx = nearIdx == 0 ? 1 : 0;
-//
-//        // Now commit transaction and check that ttl and expire time have been saved.
-//        IgniteTx tx = inTx ? grid(fullIdx).transactions().txStart() : null;
-//
-//        try {
-//            jcache(fullIdx).withExpiryPolicy(expiry).put(key, 1);
-//
-//            if (tx != null)
-//                tx.commit();
-//        }
-//        finally {
-//            if (tx != null)
-//                tx.close();
-//        }
-//
-//        long[] expireTimes = new long[gridCount()];
-//
-//        for (int i = 0; i < gridCount(); i++) {
-//            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
-//
-//            if (curEntry.primary() || curEntry.backup() || i == nearIdx) {
-//                assertEquals(ttl, curEntry.timeToLive());
-//
-//                assert curEntry.expirationTime() > startTime;
-//
-//                expireTimes[i] = curEntry.expirationTime();
-//            }
-//        }
-//
-//        // One more update from the same cache entry to ensure that expire time is shifted forward.
-//        U.sleep(100);
-//
-//        tx = inTx ? grid(fullIdx).transactions().txStart() : null;
-//
-//        try {
-//            jcache(fullIdx).withExpiryPolicy(expiry).put(key, 2);
-//
-//            if (tx != null)
-//                tx.commit();
-//        }
-//        finally {
-//            if (tx != null)
-//                tx.close();
-//        }
-//
-//        for (int i = 0; i < gridCount(); i++) {
-//            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
-//
-//            if (curEntry.primary() || curEntry.backup() || i == nearIdx) {
-//                assertEquals(ttl, curEntry.timeToLive());
-//
-//                assert curEntry.expirationTime() > expireTimes[i];
-//
-//                expireTimes[i] = curEntry.expirationTime();
-//            }
-//        }
-//
-//        // And one more update to ensure that ttl is not changed and expire time is not shifted forward.
-//        U.sleep(100);
-//
-//        tx = inTx ? grid(fullIdx).transactions().txStart() : null;
-//
-//        try {
-//            jcache(fullIdx).put(key, 4);
-//        }
-//        finally {
-//            if (tx != null)
-//                tx.commit();
-//        }
-//
-//        for (int i = 0; i < gridCount(); i++) {
-//            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
-//
-//            if (curEntry.primary() || curEntry.backup() || i == nearIdx) {
-//                assertEquals(ttl, curEntry.timeToLive());
-//                assertEquals(expireTimes[i], curEntry.expirationTime());
-//            }
-//        }
-//
-//        // Avoid reloading from store.
-//        map.remove(key);
-//
-//        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
-//            @SuppressWarnings("unchecked")
-//            @Override public boolean applyx() throws IgniteCheckedException {
-//                try {
-//                    Integer val = c.get(key);
-//
-//                    if (val != null) {
-//                        info("Value is in cache [key=" + key + ", val=" + val + ']');
-//
-//                        return false;
-//                    }
-//
-//                    // Get "cache" field from GridCacheProxyImpl.
-//                    GridCacheAdapter c0 = GridTestUtils.getFieldValue(c, "cache");
-//
-//                    if (!c0.context().deferredDelete()) {
-//                        GridCacheEntryEx e0 = c0.peekEx(key);
-//
-//                        return e0 == null || (e0.rawGet() == null && e0.valueBytes() == null);
-//                    }
-//                    else
-//                        return true;
-//                }
-//                catch (GridCacheEntryRemovedException e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//        }, Math.min(ttl * 10, getTestTimeout())));
-//
-//        // Ensure that old TTL and expire time are not longer "visible".
-//        entry = c.entry(key);
-//
-//        assert entry.get() == null;
-//
-//        assertEquals(0, entry.timeToLive());
-//        assertEquals(0, entry.expirationTime());
-//
-//        // Ensure that next update will not pick old expire time.
-//
-//        tx = inTx ? c.txStart() : null;
-//
-//        try {
-//            entry.set(10);
-//        }
-//        finally {
-//            if (tx != null)
-//                tx.commit();
-//        }
-//
-//        U.sleep(2000);
-//
-//        entry = c.entry(key);
-//
-//        assertEquals((Integer)10, entry.get());
-//
-//        assertEquals(0, entry.timeToLive());
-//        assertEquals(0, entry.expirationTime());
+        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(TimeUnit.MILLISECONDS, ttl));
+
+        final GridCache<String, Integer> c = cache();
+
+        final String key = primaryKeysForCache(fullCache(), 1).get(0);
+
+        c.put(key, 1);
+
+        info("Finished first put.");
+
+        {
+            GridCacheAdapter<String, Integer> dht = internalCache(fullCache());
+
+            if (dht.context().isNear())
+                dht = dht.context().near().dht();
+
+            GridCacheEntryEx<String, Integer> entry = dht.peekEx(key);
+
+            assert entry != null;
+
+            assertEquals(0, entry.ttl());
+            assertEquals(0, entry.expireTime());
+        }
+
+        long startTime = System.currentTimeMillis();
+
+        int fullIdx = nearIdx == 0 ? 1 : 0;
+
+        // Now commit transaction and check that ttl and expire time have been saved.
+        IgniteTx tx = inTx ? grid(fullIdx).transactions().txStart() : null;
+
+        try {
+            jcache(fullIdx).withExpiryPolicy(expiry).put(key, 1);
+
+            if (tx != null)
+                tx.commit();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
+
+        long[] expireTimes = new long[gridCount()];
+
+        for (int i = 0; i < gridCount(); i++) {
+            info("Checking grid: " + grid(i).localNode().id());
+
+            GridCacheEntryEx<String, Integer> entry = null;
+
+            if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
+                GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
+
+                if (dht.context().isNear())
+                    dht = dht.context().near().dht();
+
+                entry = dht.peekEx(key);
+
+                assert entry != null;
+            }
+            else if (i == nearIdx) {
+                GridCacheAdapter<String, Integer> near = internalCache(jcache(i));
+
+                entry = near.peekEx(key);
+
+                assert entry != null;
+            }
+
+            if (entry != null) {
+                assertEquals(ttl, entry.ttl());
+                assert entry.expireTime() > startTime;
+                expireTimes[i] = entry.expireTime();
+            }
+        }
+
+        // One more update from the same cache entry to ensure that expire time is shifted forward.
+        U.sleep(100);
+
+        tx = inTx ? grid(fullIdx).transactions().txStart() : null;
+
+        try {
+            jcache(fullIdx).withExpiryPolicy(expiry).put(key, 2);
+
+            if (tx != null)
+                tx.commit();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
+
+        for (int i = 0; i < gridCount(); i++) {
+            GridCacheEntryEx<String, Integer> entry = null;
+
+            if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
+                GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
+
+                if (dht.context().isNear())
+                    dht = dht.context().near().dht();
+
+                entry = dht.peekEx(key);
+
+                assert entry != null;
+            }
+            else if (i == nearIdx) {
+                GridCacheAdapter<String, Integer> near = internalCache(jcache(i));
+
+                entry = near.peekEx(key);
+
+                assert entry != null;
+            }
+
+            if (entry != null) {
+                assertEquals(ttl, entry.ttl());
+                assert entry.expireTime() > expireTimes[i];
+                expireTimes[i] = entry.expireTime();
+            }
+        }
+
+        // And one more update to ensure that ttl is not changed and expire time is not shifted forward.
+        U.sleep(100);
+
+        tx = inTx ? grid(fullIdx).transactions().txStart() : null;
+
+        try {
+            jcache(fullIdx).put(key, 4);
+        }
+        finally {
+            if (tx != null)
+                tx.commit();
+        }
+
+        for (int i = 0; i < gridCount(); i++) {
+            GridCacheEntryEx<String, Integer> entry = null;
+
+            if (cache(i).affinity().isPrimaryOrBackup(grid(i).localNode(), key)) {
+                GridCacheAdapter<String, Integer> dht = internalCache(jcache(i));
+
+                if (dht.context().isNear())
+                    dht = dht.context().near().dht();
+
+                entry = dht.peekEx(key);
+
+                assert entry != null;
+            }
+            else if (i == nearIdx) {
+                GridCacheAdapter<String, Integer> near = internalCache(jcache(i));
+
+                entry = near.peekEx(key);
+
+                assert entry != null;
+            }
+
+            if (entry != null) {
+                assertEquals(ttl, entry.ttl());
+                assertEquals(expireTimes[i], entry.expireTime());
+            }
+        }
+
+        // Avoid reloading from store.
+        map.remove(key);
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
+            @SuppressWarnings("unchecked")
+            @Override public boolean applyx() throws IgniteCheckedException {
+                try {
+                    Integer val = c.get(key);
+
+                    if (val != null) {
+                        info("Value is in cache [key=" + key + ", val=" + val + ']');
+
+                        return false;
+                    }
+
+                    // Get "cache" field from GridCacheProxyImpl.
+                    GridCacheAdapter c0 = GridTestUtils.getFieldValue(c, "cache");
+
+                    if (!c0.context().deferredDelete()) {
+                        GridCacheEntryEx e0 = c0.peekEx(key);
+
+                        return e0 == null || (e0.rawGet() == null && e0.valueBytes() == null);
+                    }
+                    else
+                        return true;
+                }
+                catch (GridCacheEntryRemovedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }, Math.min(ttl * 10, getTestTimeout())));
+
+        // Ensure that old TTL and expire time are not longer "visible".
+        {
+            GridCacheAdapter<String, Integer> dht = internalCache(fullCache());
+
+            if (dht.context().isNear())
+                dht = dht.context().near().dht();
+
+            GridCacheEntryEx<String, Integer> entry = dht.peekEx(key);
+
+            assert entry != null;
+
+            assertEquals(0, entry.ttl());
+            assertEquals(0, entry.expireTime());
+        }
+
+        // Ensure that next update will not pick old expire time.
+        tx = inTx ? c.txStart() : null;
+
+        try {
+            c.put(key, 10);
+
+            if (tx != null)
+                tx.commit();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
+
+        U.sleep(2000);
+
+        {
+            GridCacheAdapter<String, Integer> dht = internalCache(fullCache());
+
+            if (dht.context().isNear())
+                dht = dht.context().near().dht();
+
+            GridCacheEntryEx<String, Integer> entry = dht.peekEx(key);
+
+            assert entry != null;
+
+            assertEquals(0, entry.ttl());
+            assertEquals(0, entry.expireTime());
+        }
     }
 
     /** {@inheritDoc} */

@@ -162,6 +162,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
+     * @return A not near-only cache.
+     */
+    protected IgniteCache<String, Integer> fullCache() {
+        return jcache();
+    }
+
+    /**
      * @throws Exception In case of error.
      */
     public void testSize() throws Exception {
@@ -1566,14 +1573,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             IgniteFuture<Integer> fut1 = cacheAsync.future();
 
             assert fut1.get() == null;
-            assert cache.get("key") != null && cache.get("key") == 1;
+            assertEquals((Integer)1, cache.get("key"));
 
             cacheAsync.getAndPutIfAbsent("key", 2);
 
             IgniteFuture<Integer> fut2 = cacheAsync.future();
 
-            assert fut2.get() != null && fut2.get() == 1;
-            assert cache.get("key") != null && cache.get("key") == 1;
+            assertEquals((Integer)1, fut2.get());
+            assertEquals((Integer)1, cache.get("key"));
 
             if (tx != null)
                 tx.commit();
@@ -2987,20 +2994,23 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         final String key = primaryKeysForCache(jcache(), 1).get(0);
 
-        if (oldEntry)
-            c.put(key, 1);
-
-        GridCacheAdapter<Object, Object> internalCache = ((IgniteKernal)grid(0)).internalCache();
+        GridCacheAdapter<String, Integer> internalCache = internalCache(fullCache());
 
         if (internalCache.isNear())
             internalCache = internalCache.context().near().dht();
 
-        GridCacheEntryEx entry = internalCache.peekEx(key);
+        GridCacheEntryEx entry;
 
-        assert entry != null;
+        if (oldEntry) {
+            c.put(key, 1);
 
-        assertEquals(0, entry.ttl());
-        assertEquals(0, entry.expireTime());
+            entry = internalCache.peekEx(key);
+
+            assert entry != null;
+
+            assertEquals(0, entry.ttl());
+            assertEquals(0, entry.expireTime());
+        }
 
         long startTime = System.currentTimeMillis();
 
@@ -3015,10 +3025,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 tx.rollback();
             }
 
-            entry = internalCache.peekEx(key);
+            if (oldEntry) {
+                entry = internalCache.peekEx(key);
 
-            assertEquals(0, entry.ttl());
-            assertEquals(0, entry.expireTime());
+                assertEquals(0, entry.ttl());
+                assertEquals(0, entry.expireTime());
+            }
         }
 
         // Now commit transaction and check that ttl and expire time have been saved.
@@ -3039,8 +3051,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheEntryEx<Object, Object> curEntry =
-                    internalCache.peekEx(key);
+                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
+
+                if (cache.context().isNear())
+                    cache = cache.context().near().dht();
+
+                GridCacheEntryEx<String, Integer> curEntry = cache.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
 
@@ -3068,8 +3084,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheEntryEx<Object, Object> curEntry =
-                    internalCache.peekEx(key);
+                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
+
+                if (cache.context().isNear())
+                    cache = cache.context().near().dht();
+
+                GridCacheEntryEx<String, Integer> curEntry = cache.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
 
@@ -3097,8 +3117,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheEntryEx<Object, Object> curEntry =
-                    internalCache.peekEx(key);
+                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
+
+                if (cache.context().isNear())
+                    cache = cache.context().near().dht();
+
+                GridCacheEntryEx<String, Integer> curEntry = cache.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
 
@@ -3130,8 +3154,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheEntryEx<Object, Object> curEntry =
-                    internalCache.peekEx(key);
+                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
+
+                if (cache.context().isNear())
+                    cache = cache.context().near().dht();
+
+                GridCacheEntryEx<String, Integer> curEntry = cache.peekEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
                 assertEquals(expireTimes[i], curEntry.expireTime());
@@ -3143,7 +3171,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
             @SuppressWarnings("unchecked")
-            @Override public boolean applyx() throws IgniteCheckedException {
+            @Override public boolean applyx() {
                 try {
                     Integer val = c.get(key);
 
@@ -3173,10 +3201,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (internalCache.isLocal())
             return;
 
+        assert c.get(key) == null;
+
+        internalCache = internalCache(fullCache());
+
+        if (internalCache.isNear())
+            internalCache = internalCache.context().near().dht();
+
         // Ensure that old TTL and expire time are not longer "visible".
         entry = internalCache.peekEx(key);
-
-        assert c.get(key) == null;
 
         assertEquals(0, entry.ttl());
         assertEquals(0, entry.expireTime());
