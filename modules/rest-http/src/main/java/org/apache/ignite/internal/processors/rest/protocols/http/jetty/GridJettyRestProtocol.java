@@ -103,7 +103,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
     @Override public void start(GridRestProtocolHandler hnd) throws IgniteCheckedException {
-        assert ctx.config().getClientConnectionConfiguration() != null;
+        assert ctx.config().getConnectorConfiguration() != null;
 
         InetAddress locHost;
 
@@ -122,7 +122,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             }
         }, log);
 
-        String jettyPath = config().getRestJettyPath();
+        String jettyPath = config().getJettyPath();
 
         final URL cfgUrl;
 
@@ -154,7 +154,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         int initPort = connector.getPort();
 
-        int lastPort = initPort + config().getRestPortRange() - 1;
+        int lastPort = initPort + config().getPortRange() - 1;
 
         for (port = initPort; port <= lastPort; port++) {
             connector.setPort(port);

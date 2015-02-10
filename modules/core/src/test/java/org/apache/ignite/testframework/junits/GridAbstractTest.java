@@ -72,7 +72,7 @@ public abstract class GridAbstractTest extends TestCase {
     private static final String NULL_NAME = UUID.randomUUID().toString();
 
     /** */
-    private static final long DFLT_TEST_TIMEOUT = 5000 * 60 * 1000;
+    private static final long DFLT_TEST_TIMEOUT = 5 * 60 * 1000;
 
     /** */
     private static final transient Map<Class<?>, TestCounters> tests = new ConcurrentHashMap<>();
@@ -1060,6 +1060,8 @@ public abstract class GridAbstractTest extends TestCase {
         cfg.setMBeanServer(rsrcs.getMBeanServer());
         cfg.setPeerClassLoadingEnabled(true);
         cfg.setMetricsLogFrequency(0);
+
+        cfg.setConnectorConfiguration(null);
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 

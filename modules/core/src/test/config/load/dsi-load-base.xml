@@ -72,6 +72,8 @@
 
         <property name="peerClassLoadingEnabled" value="false"/>
 
+        <property name="connectorConfiguration"><null/></property>
+
         <property name="deploymentMode" value="CONTINUOUS"/>
 
         <property name="publicThreadPoolSize" value="#{T(java.lang.Runtime).getRuntime().availableProcessors() * 4}"/>
