@@ -165,7 +165,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
             });
 
             for (int i = 0; i < gridCnt; i++) {
-                final GridCacheAdapter cache = internalCache(i);
+                final GridCache cache = internalCache(i);
 
                 // Repeatedly check cache sizes because of concurrent cache updates.
                 assertTrue(GridTestUtils.waitForCondition(new PA() {

@@ -99,23 +99,23 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param idx Grid index.
      * @return Cache.
      */
-    protected <K, V> GridCacheAdapter<K, V> internalCache(int idx) {
-        return ((IgniteKernal)grid(idx)).internalCache(null);
+    protected <K, V> GridCache<K, V> internalCache(int idx) {
+        return ((IgniteKernal)grid(idx)).cache(null);
     }
 
     /**
      * @param idx Grid index.
      * @return Cache.
      */
-    protected <K, V> GridCacheAdapter<K, V> internalCache(int idx, String cacheName) {
-        return ((IgniteKernal)grid(idx)).internalCache(null);
+    protected <K, V> GridCache<K, V> internalCache(int idx, String cacheName) {
+        return ((IgniteKernal)grid(idx)).cache(null);
     }
 
     /**
      * @return Cache.
      */
-    protected <K, V> GridCacheAdapter<K, V> internalCache() {
-        return ((IgniteKernal)grid()).internalCache(null);
+    protected <K, V> GridCache<K, V> internalCache() {
+        return ((IgniteKernal)grid()).cache(null);
     }
 
     /**
