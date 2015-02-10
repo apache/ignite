@@ -29,6 +29,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
+import javax.cache.*;
 import javax.cache.expiry.*;
 import java.util.concurrent.*;
 
@@ -194,9 +195,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
 
             cache1Async.put("async1", "asyncval1");
 
-            f1 = cache1Async.future();
-
-            assert f1.get() == null;
+            cache1Async.future().get();
 
             cache1Async.get("async1");
 
@@ -230,7 +229,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
 
             cache2Async.getAndRemove("async1");
 
-            f2 = cache2.future();
+            f2 = cache2Async.future();
 
             assert "asyncval1".equals(f2.get());
 
@@ -277,15 +276,15 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
         IgnitePredicate<Event> lsnr = new CacheEventListener(latch);
 
         try {
-            GridCache<String, String> cache1 = ignite1.cache(null);
-            GridCache<String, String> cache2 = ignite2.cache(null);
-            GridCache<String, String> cache3 = ignite3.cache(null);
+            IgniteCache<String, String> cache1 = ignite1.jcache(null);
+            IgniteCache<String, String> cache2 = ignite2.jcache(null);
+            IgniteCache<String, String> cache3 = ignite3.jcache(null);
 
             ignite1.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
             ignite2.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
             ignite3.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
 
-            IgniteTx tx = cache1.txStart(OPTIMISTIC, READ_COMMITTED, 0, 0);
+            IgniteTx tx = ignite1.transactions().txStart(OPTIMISTIC, READ_COMMITTED, 0, 0);
 
             try {
                 cache1.put("tx1", "val1");
@@ -302,7 +301,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
 
                 tx.commit();
             }
-            catch (IgniteCheckedException e) {
+            catch (CacheException e) {
                 tx.rollback();
 
                 throw e;

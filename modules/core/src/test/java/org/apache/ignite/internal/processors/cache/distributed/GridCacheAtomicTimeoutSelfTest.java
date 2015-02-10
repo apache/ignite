@@ -125,7 +125,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         cacheAsync.put(key, 1);
 
-        IgniteFuture<Object> fut = cacheAsync.future();
+        IgniteFuture<?> fut = cacheAsync.future();
 
         Map<UUID, GridCommunicationClient> clients = U.field(commSpi, "clients");
 
@@ -165,7 +165,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         cacheAsync.put(key, 1);
 
-        IgniteFuture<Object> fut = cacheAsync.future();
+        IgniteFuture<?> fut = cacheAsync.future();
 
         Map<UUID, GridCommunicationClient> clients = U.field(commSpi, "clients");
 
@@ -192,7 +192,8 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     public void testDhtUpdateRequestLost() throws Exception {
         Ignite ignite = grid(0);
 
-        GridCache<Object, Object> cache = ignite.cache(null);
+        IgniteCache<Object, Object> cache = ignite.jcache(null);
+        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
         int key = keyForTest();
 
@@ -202,7 +203,9 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         commSpi.skipDhtRequest = true;
 
-        IgniteInternalFuture<Object> fut = cache.putAsync(key, 1);
+        cacheAsync.put(key, 1);
+
+        IgniteFuture<?> fut = cacheAsync.future();
 
         Map<UUID, GridCommunicationClient> clients = U.field(commSpi, "clients");
 
@@ -215,7 +218,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             assertTrue("Invalid exception thrown: " + e, X.hasCause(e, CacheAtomicUpdateTimeoutCheckedException.class)
                 || X.hasSuppressed(e, CacheAtomicUpdateTimeoutCheckedException.class));
         }
@@ -240,7 +243,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         cacheAsync.put(key, 1);
 
-        IgniteFuture<Object> fut = cacheAsync.future();
+        IgniteFuture<?> fut = cacheAsync.future();
 
         Map<UUID, GridCommunicationClient> clients = U.field(commSpi, "clients");
 

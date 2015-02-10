@@ -356,9 +356,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cacheAsync.put(1, 1);
 
-        IgniteFuture<Boolean> fut = cache.future();
-
-        fut.get();
+        cacheAsync.future().get();
 
         TimeUnit.MILLISECONDS.sleep(100L);
 
@@ -448,7 +446,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cacheAsync.getAndPutIfAbsent(key, key);
 
-        IgniteFuture<?> fut = cache.future();
+        IgniteFuture<?> fut = cacheAsync.future();
 
         fut.get();
 
