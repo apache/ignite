@@ -1459,7 +1459,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cacheAsync.putAll(map);
 
-        IgniteFuture<Object> f1 = cacheAsync.future();
+        IgniteFuture<?> f1 = cacheAsync.future();
 
         map.put("key1", 10);
         map.put("key2", 20);
