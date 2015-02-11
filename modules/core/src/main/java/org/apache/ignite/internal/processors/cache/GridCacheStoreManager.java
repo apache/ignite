@@ -784,8 +784,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     private void handleClassCastException(ClassCastException e) throws IgniteCheckedException {
         assert e != null;
 
-        if (cctx.portableEnabled() && e.getMessage() != null &&
-            e.getMessage().startsWith("org.gridgain.grid.util.portable.GridPortableObjectImpl")) {
+        if (cctx.portableEnabled() && e.getMessage() != null) {
             throw new IgniteCheckedException("Cache store must work with portable objects if portables are " +
                 "enabled for cache [cacheName=" + cctx.namex() + ']', e);
         }
