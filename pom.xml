@@ -1316,7 +1316,6 @@
                                     </descriptors>
                                     <finalName>release-package</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
-                                    <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
                                 </configuration>
                             </execution>
                         </executions>
