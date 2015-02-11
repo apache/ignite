@@ -340,15 +340,15 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         cache2.put(2, "val2");
         cache3.put(3, "val3");
 
-        assert cache1.size() == 3;
-        assert cache2.size() == 3;
-        assert cache3.size() == 3;
+        assertEquals(3, cache1.localSize());
+        assertEquals(3, cache2.localSize());
+        assertEquals(3, cache3.localSize());
 
         cache1.clear();
 
-        assert cache1.localSize() == 0;
-        assert cache2.localSize() == 0;
-        assert cache3.localSize() == 0;
+        assertEquals(0, cache1.localSize());
+        assertEquals(0, cache2.localSize());
+        assertEquals(0, cache3.localSize());
     }
 
     /**

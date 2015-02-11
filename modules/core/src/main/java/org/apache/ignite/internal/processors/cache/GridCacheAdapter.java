@@ -5472,11 +5472,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @return Peek modes flags.
      */
     private static PeekModes parsePeekModes(CachePeekMode[] peekModes) {
-        assert peekModes != null;
-
         PeekModes modes = new PeekModes();
 
-        if (peekModes.length == 0) {
+        if (F.isEmpty(peekModes)) {
             modes.near = true;
             modes.primary = true;
             modes.backup = true;

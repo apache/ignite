@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.transactions.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
+
+import javax.cache.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
@@ -145,7 +146,9 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
 
             tx.commit();
         }
-        catch (IgniteException e) {
+        catch (CacheException e) {
+            assertTrue(X.hasCause(e, IgniteTxTimeoutException.class));
+
             info("Received expected optimistic exception: " + e.getMessage());
 
             wasEx = true;

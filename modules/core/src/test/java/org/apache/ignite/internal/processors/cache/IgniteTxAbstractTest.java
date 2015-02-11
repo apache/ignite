@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -30,7 +29,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
 
-import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -400,35 +398,28 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
         for (int i = 1; i <= maxKeyValue(); i++) {
             for (int k = 0; k < 3; k++) {
                 try {
-                    Cache.Entry<Integer, String> e1 = null;
-
                     String v1 = null;
 
                     for (int j = 0; j < gridCount(); j++) {
-                        GridCache<Integer, String> cache = internalCache(j);
+                        IgniteCache<Integer, String> cache = jcache(j);
 
                         IgniteTx tx = ignite(j).transactions().tx();
 
                         assertNull("Transaction is not completed: " + tx, tx);
 
                         if (j == 0) {
-                            e1 = cache.entry(i);
-
-                            v1 = e1.getValue();
+                            v1 = cache.get(i);
                         }
                         else {
-                            Cache.Entry<Integer, String> e2 = cache.entry(i);
-
-                            String v2 = e2.getValue();
+                            String v2 = cache.get(i);
 
                             if (!F.eq(v2, v1)) {
-                                v1 = e1.getValue();
-                                v2 = e2.getValue();
+                                v1 = this.<Integer, String>jcache(0).get(i);
+                                v2 = cache.get(i);
                             }
 
                             assert F.eq(v2, v1) :
-                                "Invalid cached value [key=" + i + ", v1=" + v1 + ", v2=" + v2 + ", e1=" + e1 +
-                                    ", e2=" + e2 + ", grid=" + j + ']';
+                                "Invalid cached value [key=" + i + ", v1=" + v1 + ", v2=" + v2 + ", grid=" + j + ']';
                         }
                     }
 

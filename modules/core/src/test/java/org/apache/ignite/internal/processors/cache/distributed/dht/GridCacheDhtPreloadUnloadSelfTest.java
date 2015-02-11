@@ -173,7 +173,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
                 IgniteCache<Integer, String> c = grid(i).jcache(null);
 
                 // Nothing should be unloaded since nodes are backing up each other.
-                assert c.size() == cnt;
+                assertEquals(cnt, c.localSize());
             }
         }
         finally {
@@ -299,8 +299,8 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
     /**
      * @param c Cache.
      * @param cnt Key count.
-     * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("TypeMayBeWeakened")
     private void populate(IgniteCache<Integer, String> c, int cnt) {
         for (int i = 0; i < cnt; i++)
             c.put(i, value(1024));

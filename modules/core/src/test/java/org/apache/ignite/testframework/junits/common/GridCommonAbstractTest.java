@@ -458,7 +458,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Set
      */
     protected <K, V> Set<Cache.Entry<K, V>> entrySet(Iterable<Cache.Entry<K, V>> iterable){
-        Set<Cache.Entry<K, V>> set = new TreeSet<>();
+        Set<Cache.Entry<K, V>> set = new HashSet<>();
 
         for (Cache.Entry<K, V> entry : iterable)
             set.add(entry);
