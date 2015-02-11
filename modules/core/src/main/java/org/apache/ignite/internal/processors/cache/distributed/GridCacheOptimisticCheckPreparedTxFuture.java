@@ -175,8 +175,8 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
 
                 add(fut);
 
-                GridCacheOptimisticCheckPreparedTxRequest<K, V> req = new GridCacheOptimisticCheckPreparedTxRequest<>(tx,
-                        nodeTransactions(nodeId), futureId(), fut.futureId());
+                GridCacheOptimisticCheckPreparedTxRequest<K, V> req = new GridCacheOptimisticCheckPreparedTxRequest<>(
+                    tx, nodeTransactions(nodeId), futureId(), fut.futureId());
 
                 try {
                     cctx.io().send(nodeId, req, tx.ioPolicy());
