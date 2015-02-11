@@ -773,7 +773,7 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     GridCacheBatchSwapEntry<K, V> unswapped = new GridCacheBatchSwapEntry<>(key,
                         keyBytes,
                         part,
-                        ByteBuffer.wrap(entry.valueBytes()),
+                        entry.valueIsByteArray() ? null : ByteBuffer.wrap(entry.valueBytes()),
                         entry.valueIsByteArray(),
                         entry.version(), entry.ttl(),
                         entry.expireTime(),
