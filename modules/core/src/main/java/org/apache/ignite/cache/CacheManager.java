@@ -57,6 +57,9 @@ public class CacheManager implements javax.cache.CacheManager {
     /** */
     private final AtomicBoolean closed = new AtomicBoolean();
 
+    /** */
+    private final AtomicInteger mgrIdx = new AtomicInteger();
+
     /**
      * @param uri Uri.
      * @param cachingProvider Caching provider.
@@ -128,7 +131,7 @@ public class CacheManager implements javax.cache.CacheManager {
 
             if (uri.equals(cachingProvider.getDefaultURI())) {
                 IgniteConfiguration cfg = new IgniteConfiguration();
-                cfg.setGridName("grid-for-" + cacheName);
+                cfg.setGridName(mgrIdx.incrementAndGet() + "-grid-for-" + cacheName);
 
                 cfg.setCacheConfiguration(new CacheConfiguration((CompleteConfiguration)cacheCfg));
 
@@ -346,20 +349,20 @@ public class CacheManager implements javax.cache.CacheManager {
      * @param name cache name.
      */
     public void registerCacheObject(MBeanServer mBeanServer, Object mxbean, String name, String objectName) {
-        ObjectName registeredObjectName = getObjectName(name, objectName);
+        ObjectName registeredObjName = getObjectName(name, objectName);
 
         try {
-            if (!isRegistered(mBeanServer, registeredObjectName))
+            if (!isRegistered(mBeanServer, registeredObjName))
                 if (objectName.equals(CACHE_CONFIGURATION))
                     mBeanServer.registerMBean(new IgniteStandardMXBean((CacheMXBean)mxbean, CacheMXBean.class),
-                        registeredObjectName);
+                        registeredObjName);
                 else
                     mBeanServer.registerMBean(
                         new IgniteStandardMXBean((CacheStatisticsMXBean)mxbean, CacheStatisticsMXBean.class),
-                        registeredObjectName);
+                        registeredObjName);
         }
         catch (Exception e) {
-            throw new CacheException("Failed to register MBean: " + registeredObjectName, e);
+            throw new CacheException("Failed to register MBean: " + registeredObjName, e);
         }
     }
 

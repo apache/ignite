@@ -944,7 +944,7 @@ public class SchemaLoadApp extends Application {
                         }
                     }
                 }),
-            button("Reset Selected", "Revert changes for selected items to initial values", new EventHandler<ActionEvent>() {
+            button("Reset Selected", "Revert changes for selected items to initial auto-generated values", new EventHandler<ActionEvent>() {
                 @Override public void handle(ActionEvent evt) {
                     String sel = replaceCb.getSelectionModel().getSelectedItem();
 

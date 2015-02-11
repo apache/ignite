@@ -175,7 +175,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             GridRestResponse res = new GridRestResponse(STATUS_SECURITY_CHECK_FAILED, e.getMessage());
 
-            if (ctx.isEnterprise()) {
+            if (ctx.secureSession().enabled()) {
                 try {
                     res.sessionTokenBytes(updateSessionToken(req, subjCtx));
                 }
