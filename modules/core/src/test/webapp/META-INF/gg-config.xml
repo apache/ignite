@@ -65,13 +65,6 @@
             </bean>
         </property>
 
-        <!-- Configure REST TCP server address. -->
-        <property name="connectorConfiguration">
-            <bean class="org.apache.ignite.configuration.ConnectorConfiguration">
-                <property name="host" value="127.0.0.1"/>
-            </bean>
-        </property>
-
         <!-- Set to local host address just for examples. -->
         <property name="localHost" value="127.0.0.1"/>
 
