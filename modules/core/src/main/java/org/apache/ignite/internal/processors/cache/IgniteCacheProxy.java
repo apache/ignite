@@ -971,9 +971,44 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         return new IgniteCacheProxy<>(ctx, delegate, prj, true);
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public <K1, V1> IgniteCache<K1, V1> keepPortable() {
+    /**
+     * Creates projection that will operate with portable objects.
+     * <p>
+     * Projection returned by this method will force cache not to deserialize portable objects,
+     * so keys and values will be returned from cache API methods without changes. Therefore,
+     * signature of the projection can contain only following types:
+     * <ul>
+     *     <li>{@code PortableObject} for portable classes</li>
+     *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
+     *     <li>Arrays of primitives (byte[], int[], ...)</li>
+     *     <li>{@link String} and array of {@link String}s</li>
+     *     <li>{@link UUID} and array of {@link UUID}s</li>
+     *     <li>{@link Date} and array of {@link Date}s</li>
+     *     <li>{@link java.sql.Timestamp} and array of {@link java.sql.Timestamp}s</li>
+     *     <li>Enums and array of enums</li>
+     *     <li>
+     *         Maps, collections and array of objects (but objects inside
+     *         them will still be converted if they are portable)
+     *     </li>
+     * </ul>
+     * <p>
+     * For example, if you use {@link Integer} as a key and {@code Value} class as a value
+     * (which will be stored in portable format), you should acquire following projection
+     * to avoid deserialization:
+     * <pre>
+     * CacheProjection<Integer, GridPortableObject> prj = cache.keepPortable();
+     *
+     * // Value is not deserialized and returned in portable format.
+     * GridPortableObject po = prj.get(1);
+     * </pre>
+     * <p>
+     * Note that this method makes sense only if cache is working in portable mode
+     * ({@code CacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
+     * this method is no-op and will return current projection.
+     *
+     * @return Projection for portable objects.
+     */
+    public <K1, V1> IgniteCache<K1, V1> keepPortable() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
