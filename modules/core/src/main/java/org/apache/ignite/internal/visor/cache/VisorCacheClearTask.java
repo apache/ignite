@@ -54,6 +54,9 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
         /** */
         private final IgniteFuture<Integer>[] futs = new IgniteFuture[3];
 
+        /** */
+        private final String cacheName;
+
         /**
          * Create job.
          *
@@ -62,6 +65,8 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
          */
         private VisorCacheClearJob(String cacheName, boolean debug) {
             super(cacheName, debug);
+
+            this.cacheName = cacheName;
 
             lsnr = new IgniteInClosure<IgniteFuture<Integer>>() {
                 @Override public void apply(IgniteFuture<Integer> f) {
@@ -79,7 +84,7 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
          * @return {@code true} If subJob was not completed and this job should be suspended.
          */
         private boolean callAsync(IgniteCallable<Integer> subJob, int idx) {
-            IgniteCompute compute = ignite.compute(ignite.forLocal()).withAsync();
+            IgniteCompute compute = ignite.compute(ignite.forCacheNodes(cacheName)).withAsync();
 
             compute.call(subJob);
 
@@ -99,19 +104,20 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
 
         /** {@inheritDoc} */
         @Override protected IgniteBiTuple<Integer, Integer> run(final String cacheName) {
-            if (futs[0] != null && futs[1] != null && futs[2] != null)
-                return new IgniteBiTuple<>(futs[0].get(), futs[2].get());
+            if (futs[0] == null || futs[1] == null || futs[2] == null) {
+                IgniteCache cache = ignite.jcache(cacheName);
 
-            IgniteCache cache = ignite.jcache(cacheName);
+                if (futs[0] == null && callAsync(new VisorCacheSizeCallable(cache), 0))
+                    return null;
 
-            if (futs[0] == null && callAsync(new VisorCacheSizeCallable(cache), 0))
-                return null;
+                if (futs[1] == null && callAsync(new VisorCacheClearCallable(cache), 1))
+                    return null;
 
-            if (futs[1] == null && callAsync(new VisorCacheClearCallable(cache), 1))
-                return null;
+                if (futs[2] == null && callAsync(new VisorCacheSizeCallable(cache), 2))
+                    return null;
+            }
 
-            if (futs[2] == null && callAsync(new VisorCacheSizeCallable(cache), 2))
-                return null;
+            assert futs[0].isDone() && futs[1].isDone() && futs[2].isDone();
 
             return new IgniteBiTuple<>(futs[0].get(), futs[2].get());
         }
