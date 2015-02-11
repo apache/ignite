@@ -152,6 +152,8 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         cfg.setLifecycleBeans(bean1, bean2);
         cfg.setGridName(gridName);
 
+        cfg.setConnectorConfiguration(null);
+
         try (Ignite g = IgniteSpring.start(cfg, new GenericApplicationContext())) {
             bean1.checkState(gridName, true);
             bean2.checkState(gridName, true);
@@ -266,6 +268,8 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                         try {
                             IgniteConfiguration cfg = new IgniteConfiguration();
 
+                            cfg.setConnectorConfiguration(null);
+
                             G.start(cfg);
                         }
                         catch (Throwable t) {
@@ -302,6 +306,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                             IgniteConfiguration cfg = new IgniteConfiguration();
 
                             cfg.setGridName("TEST_NAME");
+                            cfg.setConnectorConfiguration(null);
 
                             G.start(cfg);
                         }
@@ -425,6 +430,8 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     IgniteConfiguration cfg = new IgniteConfiguration();
+
+                    cfg.setConnectorConfiguration(null);
 
                     cfg.setDiscoverySpi(new TcpDiscoverySpi() {
                         @Override public void spiStart(String gridName) throws IgniteSpiException {
@@ -741,6 +748,8 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      */
     public void testStopCancel() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setConnectorConfiguration(null);
 
         Ignite ignite = G.start(cfg);
 

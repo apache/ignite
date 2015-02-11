@@ -78,7 +78,7 @@ class GridMarshallerResourceBean implements Serializable {
     /**
      * Checks that all resources are null.
      */
-    void checkNullResources() {
+    public void checkNullResources() {
         assert log == null;
         assert marshaller == null;
         assert balancer == null;

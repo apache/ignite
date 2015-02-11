@@ -63,10 +63,10 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         cfg.setLocalHost("localhost");
 
-        ClientConnectionConfiguration clnCfg = new ClientConnectionConfiguration();
-        clnCfg.setRestTcpHost("localhost");
+        ConnectorConfiguration clnCfg = new ConnectorConfiguration();
+        clnCfg.setHost("localhost");
 
-        cfg.setClientConnectionConfiguration(clnCfg);
+        cfg.setConnectorConfiguration(clnCfg);
         cfg.setDiscoverySpi(disco);
         cfg.setCacheConfiguration(cacheCfg); // Add 'null' cache configuration.
 

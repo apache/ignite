@@ -1657,7 +1657,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         GridCacheVersion enqueueVer = null;
 
-        GridCacheVersionConflictContextImpl<K, V> drRes = null;
+        GridCacheVersionConflictContext<K, V> drRes = null;
 
         EntryProcessorResult<?> invokeRes = null;
 

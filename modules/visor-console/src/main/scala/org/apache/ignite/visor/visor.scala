@@ -1517,7 +1517,7 @@ object visor extends VisorTag {
                 if (cpuCnt < 4)
                     cpuCnt = 4
 
-                cfg.setClientConnectionConfiguration(null)
+                cfg.setConnectorConfiguration(null)
 
                 // All thread pools are overridden to have size equal to number of CPUs.
                 cfg.setPublicThreadPoolSize(cpuCnt)

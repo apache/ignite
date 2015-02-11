@@ -288,7 +288,7 @@ class VisorCacheCommand {
 
                 val sumT = VisorTextTable()
 
-                sumT #= ("Name(@),", "Nodes", "Entries", "Hits", "Misses", "Reads", "Writes")
+                sumT #= ("Name(@)", "Nodes", "Entries", "Hits", "Misses", "Reads", "Writes")
 
                 sortAggregatedData(aggrData, sortType.getOrElse("cn"), reversed).foreach(
                     ad => {
