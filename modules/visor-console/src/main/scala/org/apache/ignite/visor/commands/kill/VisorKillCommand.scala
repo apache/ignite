@@ -162,7 +162,7 @@ class VisorKillCommand {
                 }
                 else if (id.isDefined)
                     try {
-                        node = grid.node(java.util.UUID.fromString(id.get))
+                        node = ignite.node(java.util.UUID.fromString(id.get))
 
                         if (node == null)
                             scold("'id' does not match any node : " + args).^^
@@ -185,7 +185,7 @@ class VisorKillCommand {
                 val op = if (restart) "restart" else "kill"
 
                 try
-                    killOrRestart(if (node == null) grid.nodes().map(_.id()) else Collections.singleton(node.id()), restart)
+                    killOrRestart(if (node == null) ignite.nodes().map(_.id()) else Collections.singleton(node.id()), restart)
                 catch {
                     case _: IgniteException => scold("Failed to " + op + " due to system error.").^^
                 }

@@ -92,19 +92,19 @@ public class VisorCache implements Serializable {
     private GridDhtPartitionMap partsMap;
 
     /**
-     * @param g Grid.
+     * @param ignite Grid.
      * @param c Actual cache.
      * @param sample Sample size.
      * @return Data transfer object for given cache.
      * @throws IgniteCheckedException
      */
-    public static VisorCache from(Ignite g, GridCache c, int sample) throws IgniteCheckedException {
-        assert g != null;
+    public static VisorCache from(Ignite ignite, GridCache c, int sample) throws IgniteCheckedException {
+        assert ignite != null;
         assert c != null;
 
         String cacheName = c.name();
 
-        GridCacheAdapter ca = ((IgniteKernal)g).internalCache(cacheName);
+        GridCacheAdapter ca = ((IgniteKernal)ignite).internalCache(cacheName);
 
         long swapSize;
         long swapKeys;
@@ -161,7 +161,7 @@ public class VisorCache implements Serializable {
             }
             else {
                 // Old way of collecting partitions info.
-                ClusterNode node = g.cluster().localNode();
+                ClusterNode node = ignite.cluster().localNode();
 
                 int[] pp = ca.affinity().primaryPartitions(node);
 

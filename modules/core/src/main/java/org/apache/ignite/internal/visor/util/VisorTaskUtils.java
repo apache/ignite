@@ -315,11 +315,11 @@ public class VisorTaskUtils {
     /**
      * Checks for explicit events configuration.
      *
-     * @param g Grid instance.
+     * @param ignite Grid instance.
      * @return {@code true} if all task events explicitly specified in configuration.
      */
-    public static boolean checkExplicitTaskMonitoring(Ignite g) {
-        int[] evts = g.configuration().getIncludeEventTypes();
+    public static boolean checkExplicitTaskMonitoring(Ignite ignite) {
+        int[] evts = ignite.configuration().getIncludeEventTypes();
 
         if (F.isEmpty(evts))
             return false;
@@ -342,17 +342,17 @@ public class VisorTaskUtils {
     /**
      * Grabs local events and detects if events was lost since last poll.
      *
-     * @param g Target grid.
+     * @param ignite Target grid.
      * @param evtOrderKey Unique key to take last order key from node local map.
      * @param evtThrottleCntrKey  Unique key to take throttle count from node local map.
      * @param all If {@code true} then collect all events otherwise collect only non task events.
      * @return Collections of node events
      */
-    public static Collection<VisorGridEvent> collectEvents(Ignite g, String evtOrderKey, String evtThrottleCntrKey,
+    public static Collection<VisorGridEvent> collectEvents(Ignite ignite, String evtOrderKey, String evtThrottleCntrKey,
         final boolean all) {
-        assert g != null;
+        assert ignite != null;
 
-        ClusterNodeLocalMap<String, Long> nl = g.cluster().nodeLocalMap();
+        ClusterNodeLocalMap<String, Long> nl = ignite.cluster().nodeLocalMap();
 
         final long lastOrder = getOrElse(nl, evtOrderKey, -1L);
         final long throttle = getOrElse(nl, evtThrottleCntrKey, 0L);
@@ -377,7 +377,7 @@ public class VisorTaskUtils {
             }
         };
 
-        Collection<Event> evts = g.events().localQuery(p);
+        Collection<Event> evts = ignite.events().localQuery(p);
 
         // Update latest order in node local, if not empty.
         if (!evts.isEmpty()) {
@@ -395,7 +395,7 @@ public class VisorTaskUtils {
         Collection<VisorGridEvent> res = new ArrayList<>(evts.size() + (lost ? 1 : 0));
 
         if (lost)
-            res.add(new VisorGridEventsLost(g.cluster().localNode().id()));
+            res.add(new VisorGridEventsLost(ignite.cluster().localNode().id()));
 
         for (Event e : evts) {
             int tid = e.type();

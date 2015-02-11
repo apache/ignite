@@ -257,7 +257,7 @@ class VisorEventsCommand {
             }
             else {
                 val node = try
-                    grid.node(UUID.fromString(id.get))
+                    ignite.node(UUID.fromString(id.get))
                 catch {
                     case _: IllegalArgumentException =>
                         scold("Invalid node 'id': " + id.get)
