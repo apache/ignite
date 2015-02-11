@@ -52,8 +52,6 @@ import org.apache.ignite.spi.failover.always.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.loadbalancing.roundrobin.*;
-import org.apache.ignite.spi.securesession.*;
-import org.apache.ignite.spi.securesession.noop.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.spi.swapspace.noop.*;
@@ -1445,7 +1443,6 @@ public class IgnitionEx {
             DiscoverySpi discoSpi = cfg.getDiscoverySpi();
             EventStorageSpi evtSpi = cfg.getEventStorageSpi();
             CollisionSpi colSpi = cfg.getCollisionSpi();
-            SecureSessionSpi sesSpi = cfg.getSecureSessionSpi();
             DeploymentSpi deploySpi = cfg.getDeploymentSpi();
             CheckpointSpi[] cpSpi = cfg.getCheckpointSpi();
             FailoverSpi[] failSpi = cfg.getFailoverSpi();
@@ -1607,9 +1604,6 @@ public class IgnitionEx {
             if (colSpi == null)
                 colSpi = new NoopCollisionSpi();
 
-            if (sesSpi == null)
-                sesSpi = new NoopSecureSessionSpi();
-
             if (deploySpi == null)
                 deploySpi = new LocalDeploymentSpi();
 
@@ -1647,7 +1641,6 @@ public class IgnitionEx {
             myCfg.setDiscoverySpi(discoSpi);
             myCfg.setCheckpointSpi(cpSpi);
             myCfg.setEventStorageSpi(evtSpi);
-            myCfg.setSecureSessionSpi(sesSpi);
             myCfg.setDeploymentSpi(deploySpi);
             myCfg.setFailoverSpi(failSpi);
             myCfg.setCollisionSpi(colSpi);
@@ -1820,7 +1813,6 @@ public class IgnitionEx {
                 ensureMultiInstanceSupport(evtSpi);
                 ensureMultiInstanceSupport(colSpi);
                 ensureMultiInstanceSupport(failSpi);
-                ensureMultiInstanceSupport(sesSpi);
                 ensureMultiInstanceSupport(loadBalancingSpi);
                 ensureMultiInstanceSupport(swapspaceSpi);
             }

@@ -378,13 +378,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public String getSecureSessionSpiFormatted() {
-        assert cfg != null;
-
-        return cfg.getSecureSessionSpi().toString();
-    }
-
-    /** {@inheritDoc} */
     @Override public String getOsInformation() {
         return U.osString();
     }
@@ -1118,8 +1111,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         A.notNull(cfg.getCommunicationSpi(), "cfg.getCommunicationSpi()");
         A.notNull(cfg.getDeploymentSpi(), "cfg.getDeploymentSpi()");
         A.notNull(cfg.getDiscoverySpi(), "cfg.getDiscoverySpi()");
-        A.notNull(cfg.getEventStorageSpi(), "cfg.getEventStorageSpi()");
-        A.notNull(cfg.getSecureSessionSpi(), "cfg.getSecureSessionSpi()");
         A.notNull(cfg.getCollisionSpi(), "cfg.getCollisionSpi()");
         A.notNull(cfg.getFailoverSpi(), "cfg.getFailoverSpi()");
         A.notNull(cfg.getLoadBalancingSpi(), "cfg.getLoadBalancingSpi()");
@@ -1200,9 +1191,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
         if (!F.isEmpty(cfg.getSegmentationResolvers()))
             msgs.add("Network segmentation detection.");
-
-        if (cfg.getSecureSessionSpi() != null && !(cfg.getSecureSessionSpi() instanceof NoopSecureSessionSpi))
-            msgs.add("Secure session SPI.");
 
         if (!F.isEmpty(msgs)) {
             U.quietAndInfo(log, "The following features are not supported in open source edition, " +
@@ -1358,7 +1346,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         addAttributes(attrs, cfg.getEventStorageSpi());
         addAttributes(attrs, cfg.getCheckpointSpi());
         addAttributes(attrs, cfg.getLoadBalancingSpi());
-        addAttributes(attrs, cfg.getSecureSessionSpi());
         addAttributes(attrs, cfg.getDeploymentSpi());
 
 
@@ -2241,7 +2228,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             log.debug("Grid event storage SPI  : " + cfg.getEventStorageSpi());
             log.debug("Grid failover SPI       : " + Arrays.toString(cfg.getFailoverSpi()));
             log.debug("Grid load balancing SPI : " + Arrays.toString(cfg.getLoadBalancingSpi()));
-            log.debug("Grid secure session SPI : " + cfg.getSecureSessionSpi());
             log.debug("Grid swap space SPI     : " + cfg.getSwapSpaceSpi());
         }
     }

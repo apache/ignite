@@ -31,7 +31,6 @@ import org.apache.ignite.streamer.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.services.*;
-import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.spi.communication.*;
@@ -39,11 +38,8 @@ import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.spi.failover.*;
-import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.*;
-import org.apache.ignite.spi.securesession.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.streamer.*;
 
 import javax.management.*;
 import java.lang.management.*;
@@ -299,9 +295,6 @@ public class IgniteConfiguration {
     /** Collision SPI. */
     private CollisionSpi colSpi;
 
-    /** Secure session SPI. */
-    private SecureSessionSpi sesSpi;
-
     /** Deployment SPI. */
     private DeploymentSpi deploySpi;
 
@@ -439,7 +432,6 @@ public class IgniteConfiguration {
         cpSpi = cfg.getCheckpointSpi();
         colSpi = cfg.getCollisionSpi();
         failSpi = cfg.getFailoverSpi();
-        sesSpi = cfg.getSecureSessionSpi();
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         swapSpaceSpi = cfg.getSwapSpaceSpi();
         indexingSpi = cfg.getIndexingSpi();
@@ -1673,27 +1665,6 @@ public class IgniteConfiguration {
      */
     public void setCollisionSpi(CollisionSpi colSpi) {
         this.colSpi = colSpi;
-    }
-
-    /**
-     * Should return fully configured secure session SPI implementation. If not provided,
-     * {@link org.apache.ignite.spi.securesession.noop.NoopSecureSessionSpi} will be used.
-     *
-     * @return Grid secure session SPI implementation or {@code null} to use default implementation.
-     */
-    public SecureSessionSpi getSecureSessionSpi() {
-        return sesSpi;
-    }
-
-    /**
-     * Sets fully configured instance of {@link org.apache.ignite.spi.securesession.SecureSessionSpi}.
-     *
-     * @param sesSpi Fully configured instance of {@link org.apache.ignite.spi.securesession.SecureSessionSpi} or
-     * {@code null} if no SPI provided.
-     * @see IgniteConfiguration#getSecureSessionSpi()
-     */
-    public void setSecureSessionSpi(SecureSessionSpi sesSpi) {
-        this.sesSpi = sesSpi;
     }
 
     /**

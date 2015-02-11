@@ -21,9 +21,9 @@ import org.apache.ignite.mxbean.*;
 import org.apache.ignite.spi.*;
 
 /**
- * Management bean for {@link NoopSecureSessionSpi}.
+ * Management bean for {@link NoopSecureSession}.
  */
 @MXBeanDescription("MBean that provides access to no-op secure session SPI configuration.")
-public interface NoopSecureSessionSpiMBean extends IgniteSpiManagementMBean {
+public interface NoopSecureSessionMBean extends IgniteSpiManagementMBean {
     // No-op.
 }
