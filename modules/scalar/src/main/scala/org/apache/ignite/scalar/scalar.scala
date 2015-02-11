@@ -22,6 +22,7 @@ import org.apache.ignite.cache.query.{CacheQuerySqlField, CacheQueryTextField}
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.internal.GridProductImpl
+import org.apache.ignite.internal.product.IgniteProduct
 import org.apache.ignite.{Ignite, IgniteDataLoader, IgniteState, Ignition}
 import org.jetbrains.annotations.Nullable
 
@@ -128,7 +129,7 @@ import scala.annotation.meta.field
  */
 object scalar extends ScalarConversions {
     /** Visor copyright blurb. */
-    private val COPYRIGHT = GridProductImpl.COPYRIGHT
+    private val COPYRIGHT = IgniteProduct.COPYRIGHT
 
     /** Type alias for `CacheQuerySqlField`. */
     type ScalarCacheQuerySqlField = CacheQuerySqlField @field

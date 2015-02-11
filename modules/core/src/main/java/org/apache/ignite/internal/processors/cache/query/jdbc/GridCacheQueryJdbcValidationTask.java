@@ -20,15 +20,12 @@ package org.apache.ignite.internal.processors.cache.query.jdbc;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
-
-import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
 
 /**
  * Task to validate connection. Checks that cache with provided name exists in grid.
@@ -41,8 +38,6 @@ public class GridCacheQueryJdbcValidationTask extends ComputeTaskSplitAdapter<St
     @Override protected Collection<? extends ComputeJob> split(int gridSize,
         @Nullable final String cacheName) {
         // Register big data usage.
-        GridLicenseUseRegistry.onUsage(DATA_GRID, getClass());
-
         return F.asSet(new ComputeJobAdapter() {
             @IgniteInstanceResource
             private Ignite ignite;

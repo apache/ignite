@@ -36,26 +36,6 @@ public interface GridLicenseProcessor extends GridProcessor {
     public void updateLicense(String licTxt) throws IgniteProductLicenseException;
 
     /**
-     * Acks the license to the log.
-     */
-    public void ackLicense();
-
-    /**
-     * This method is called periodically by the Ignite to check the license conformance.
-     *
-     * @throws org.apache.ignite.internal.product.IgniteProductLicenseException Thrown in case of any license violation.
-     */
-    public void checkLicense() throws IgniteProductLicenseException;
-
-    /**
-     * Checks if subsystem is enabled.
-     *
-     * @param ed Subsystem to check.
-     * @return {@code True} if enabled.
-     */
-    public boolean enabled(GridLicenseSubsystem ed);
-
-    /**
      * Gets license descriptor.
      *
      * @return License descriptor or {@code null} for open-source edition.

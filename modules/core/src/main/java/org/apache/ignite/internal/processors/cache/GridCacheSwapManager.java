@@ -41,7 +41,6 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.events.EventType.*;
-import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
 
 /**
  * Handles all swap operations.
@@ -108,8 +107,6 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
      */
     private void initOffHeap() {
         // Register big data usage.
-        GridLicenseUseRegistry.onUsage(DATA_GRID, GridOffHeapMapFactory.class);
-
         long max = cctx.config().getOffHeapMaxMemory();
 
         long init = max > 0 ? max / 1024 : 8L * 1024L * 1024L;

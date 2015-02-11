@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.product;
 
-import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
+
+import java.text.*;
+import java.util.*;
 
 /**
  * Provides information about current release. Note that enterprise users are also
@@ -28,13 +31,56 @@ import org.jetbrains.annotations.*;
  * GridProduct p = Ignition.ignite().product();
  * </pre>
  */
-public interface IgniteProduct {
+public abstract class IgniteProduct {
+    /** Ignite version in String form. */
+    public static final String VER_STR;
+
+    /** Ignite version. */
+    public static final IgniteProductVersion VER;
+
+    /** Formatted build date. */
+    public static final String BUILD_TSTAMP_STR;
+
+    /** Build timestamp in seconds. */
+    public static final long BUILD_TSTAMP;
+
+    /** Revision hash. */
+    public static final String REV_HASH_STR;
+
+    /** Release date. */
+    public static final String RELEASE_DATE_STR;
+
+    /** Compound version. */
+    public static final String ACK_VER_STR;
+
+    /** Copyright blurb. */
+    public static final String COPYRIGHT = "2015 Copyright(C) Apache Software Foundation";
+
+    /**
+     *
+     */
+    static {
+        VER_STR = GridProperties.get("ignite.version");
+
+        BUILD_TSTAMP = Long.valueOf(GridProperties.get("ignite.build"));
+        BUILD_TSTAMP_STR = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD_TSTAMP * 1000));
+
+        REV_HASH_STR = GridProperties.get("ignite.revision");
+        RELEASE_DATE_STR = GridProperties.get("ignite.rel.date");
+
+        String rev = REV_HASH_STR.length() > 8 ? REV_HASH_STR.substring(0, 8) : REV_HASH_STR;
+
+        ACK_VER_STR = VER_STR + '#' + BUILD_TSTAMP_STR + "-sha1:" + rev;
+
+        VER = IgniteProductVersion.fromString(VER_STR + '-' + BUILD_TSTAMP + '-' + REV_HASH_STR);
+    }
+
     /**
      * Gets license descriptor for enterprise edition or {@code null} for open source edition.
      *
      * @return License descriptor.
      */
-    @Nullable public IgniteProductLicense license();
+    @Nullable public abstract IgniteProductLicense license();
 
     /**
      * Updates to a new license in enterprise edition. This method is no-op in open source edition.
@@ -42,21 +88,12 @@ public interface IgniteProduct {
      * @param lic The content of the license.
      * @throws IgniteProductLicenseException If license could not be updated.
      */
-    public void updateLicense(String lic) throws IgniteProductLicenseException;
+    public abstract void updateLicense(String lic) throws IgniteProductLicenseException;
 
     /**
-     * Gets product version for this release.
-     *
-     * @return Product version for this release.
+     * @return Grace period left.
      */
-    public IgniteProductVersion version();
-
-    /**
-     * Copyright statement for Ignite code.
-     *
-     * @return Legal copyright statement for Ignite code.
-     */
-    public String copyright();
+    public abstract long gracePeriodLeft();
 
     /**
      * Gets latest version available for download or
@@ -64,12 +101,5 @@ public interface IgniteProduct {
      *
      * @return Latest version string or {@code null} if information is not available.
      */
-    @Nullable public String latestVersion();
-
-    /**
-     * Acks Visor instructions.
-     *
-     * @param log Logger.
-     */
-    public void ackVisor(IgniteLogger log);
+    @Nullable public abstract String latestVersion();
 }

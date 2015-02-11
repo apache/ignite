@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.util.ipc.shmem;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
@@ -42,7 +42,7 @@ public class IpcSharedMemoryNativeLoader {
     private static final File LOCK_FILE = new File(System.getProperty("java.io.tmpdir"), "igniteshmem.lock");
 
     /** Library name. */
-    static final String LIB_NAME = LIB_NAME_BASE + "-" + GridProductImpl.VER;
+    static final String LIB_NAME = LIB_NAME_BASE + "-" + IgniteProduct.VER_STR;
 
     /**
      * @return Operating system name to resolve path to library.

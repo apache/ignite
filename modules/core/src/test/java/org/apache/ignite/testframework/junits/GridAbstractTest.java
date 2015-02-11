@@ -428,9 +428,6 @@ public abstract class GridAbstractTest extends TestCase {
         // Clear log throttle.
         LT.clear();
 
-        // Clear license registry.
-        GridLicenseUseRegistry.clear();
-
         TestCounters cntrs = getTestCounters();
 
         if (isDebug())

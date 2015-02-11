@@ -40,21 +40,6 @@ public class GridOsLicenseProcessor extends GridProcessorAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public void ackLicense() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void checkLicense() throws IgniteProductLicenseException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean enabled(GridLicenseSubsystem ed) {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public IgniteProductLicense license() {
         return null;
     }

@@ -31,39 +31,40 @@ public class GridVersionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testVersions() throws Exception {
-        String propVal = System.getProperty(IGNITE_UPDATE_NOTIFIER);
-
-        System.setProperty(IGNITE_UPDATE_NOTIFIER, "true");
-
-        try {
-            Ignite ignite = startGrid();
-
-            IgniteProductVersion currVer = ignite.product().version();
-
-            String newVer = null;
-
-            for (int i = 0; i < 30; i++) {
-                newVer = ignite.product().latestVersion();
-
-                if (newVer != null)
-                    break;
-
-                U.sleep(100);
-            }
-
-            info("Versions [cur=" + currVer + ", latest=" + newVer + ']');
-
-            assertNotNull(newVer);
-            assertNotSame(currVer.toString(), newVer);
-        }
-        finally {
-            stopGrid();
-
-            if (propVal != null)
-                System.setProperty(IGNITE_UPDATE_NOTIFIER, propVal);
-            else
-                System.clearProperty(IGNITE_UPDATE_NOTIFIER);
-        }
+    // TODO: IGNITE-191: Move to ENT.
+    public void _testVersions() throws Exception {
+//        String propVal = System.getProperty(IGNITE_UPDATE_NOTIFIER);
+//
+//        System.setProperty(IGNITE_UPDATE_NOTIFIER, "true");
+//
+//        try {
+//            Ignite ignite = startGrid();
+//
+//            IgniteProductVersion currVer = ignite.product().version();
+//
+//            String newVer = null;
+//
+//            for (int i = 0; i < 30; i++) {
+//                newVer = ignite.product().latestVersion();
+//
+//                if (newVer != null)
+//                    break;
+//
+//                U.sleep(100);
+//            }
+//
+//            info("Versions [cur=" + currVer + ", latest=" + newVer + ']');
+//
+//            assertNotNull(newVer);
+//            assertNotSame(currVer.toString(), newVer);
+//        }
+//        finally {
+//            stopGrid();
+//
+//            if (propVal != null)
+//                System.setProperty(IGNITE_UPDATE_NOTIFIER, propVal);
+//            else
+//                System.clearProperty(IGNITE_UPDATE_NOTIFIER);
+//        }
     }
 }

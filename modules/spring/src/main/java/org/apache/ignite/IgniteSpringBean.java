@@ -21,6 +21,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.internal.product.*;
 import org.apache.ignite.plugin.security.*;
@@ -134,6 +135,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         assert g != null;
 
         return g.product();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteProductVersion version() {
+        assert g != null;
+
+        return g.version();
     }
 
     /** {@inheritDoc} */
