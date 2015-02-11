@@ -883,7 +883,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @param obj Object field to use.
      * @return New test bean.
      */
-    static GridMarshallerTestBean newTestBean(@Nullable Object obj) {
+    public static GridMarshallerTestBean newTestBean(@Nullable Object obj) {
         GridByteArrayList buf = new GridByteArrayList(1);
 
         buf.add((byte)321);

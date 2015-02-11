@@ -40,7 +40,7 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
 
     /** Regexp parse pattern. */
     private static final Pattern VER_PATTERN =
-        Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)((?!-(os|ent))-([^-]+))?(-(os|ent))?(-(\\d+))?(-([\\da-f]+))?");
+        Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)(-([^0123456789][^-]+))?(-(\\d+))?(-([\\da-f]+))?");
 
     /** Major version number. */
     private byte major;
@@ -267,17 +267,17 @@ public class IgniteProductVersion implements Comparable<IgniteProductVersion>, E
                 String stage = "";
 
                 if (match.group(4) != null)
-                    stage = match.group(6);
+                    stage = match.group(5);
 
                 long revTs = 0;
 
-                if (match.group(9) != null)
-                    revTs = Long.parseLong(match.group(10));
+                if (match.group(6) != null)
+                    revTs = Long.parseLong(match.group(7));
 
                 byte[] revHash = null;
 
-                if (match.group(11) != null)
-                    revHash = U.decodeHex(match.group(12).toCharArray());
+                if (match.group(8) != null)
+                    revHash = U.decodeHex(match.group(9).toCharArray());
 
                 return new IgniteProductVersion(major, minor, maintenance, stage, revTs, revHash);
             }
