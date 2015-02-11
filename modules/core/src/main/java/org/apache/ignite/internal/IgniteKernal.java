@@ -764,9 +764,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                 provider.start(ctx.plugins().pluginContextForProvider(provider), attrs);
             }
 
-            if (ctx.isEnterprise()) {
-                security = new GridSecurityImpl(ctx);
-            }
+            security = new GridSecurityImpl(ctx);
 
             gw.writeLock();
 
@@ -3231,9 +3229,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
     /** {@inheritDoc} */
     @Override public GridSecurity security() {
-        if (!ctx.isEnterprise())
-            throw new UnsupportedOperationException("Security interface available in Enterprise edition only.");
-
         return security;
     }
 
