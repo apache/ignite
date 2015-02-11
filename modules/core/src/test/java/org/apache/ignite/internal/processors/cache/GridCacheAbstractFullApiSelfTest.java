@@ -2896,7 +2896,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         CacheAffinity<String> aff = ignite(0).affinity(null);
 
         for (int i = 0; i < gridCount(); i++) {
-            if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key))
+            if (aff.isPrimary(grid(i).cluster().localNode(), key))
+                assertEquals((Integer)1, peek(jcache(i), key));
+
+            if (aff.isBackup(grid(i).cluster().localNode(), key))
                 assertEquals((Integer)1, peek(jcache(i), key));
         }
     }
