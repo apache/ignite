@@ -492,7 +492,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         // Put and get a few keys.
         for (int i = 0; i < keyCnt; i++) {
-            cache0.put(i, i); // +1 put
+            cache0.getAndPut(i, i); // +1 put
 
             boolean isPrimary = affinity(cache0).isPrimary(grid(0).localNode(), i);
 
@@ -547,7 +547,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         // Put and get a few keys.
         for (int i = 0; i < keyCnt; i++) {
-            cache0.put(i, i); // +1 read
+            cache0.getAndPut(i, i); // +1 read
 
             info("Puts: " + cache0.metrics().getCachePuts());
 
@@ -639,7 +639,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertEquals("Expected 1 read", 1, cache.metrics().getCacheGets());
         assertEquals("Expected 1 miss", 1, cache.metrics().getCacheMisses());
 
-        cache.put(key, key); // +1 read, +1 miss.
+        cache.getAndPut(key, key); // +1 read, +1 miss.
 
         cache.get(key);
 
@@ -711,7 +711,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         c.put(key, 1);
 
-        GridCacheEntryEx entry = ((IgniteKernal)grid(0)).internalCache().peekEx(key);
+        GridCacheEntryEx entry = ((IgniteKernal)grid(0)).internalCache().entryEx(key);
 
         assert entry != null;
 
@@ -731,7 +731,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
                 tx.rollback();
             }
 
-            entry = ((IgniteKernal)grid(0)).internalCache().peekEx(key);
+            entry = ((IgniteKernal)grid(0)).internalCache().entryEx(key);
 
             assertEquals(0, entry.ttl());
             assertEquals(0, entry.expireTime());
@@ -753,7 +753,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheEntryEx<Object, Object> curEntry =
-                    ((IgniteKernal)grid(0)).internalCache().peekEx(key);
+                    ((IgniteKernal)grid(0)).internalCache().entryEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
 
@@ -779,7 +779,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheEntryEx<Object, Object> curEntry =
-                    ((IgniteKernal)grid(0)).internalCache().peekEx(key);
+                    ((IgniteKernal)grid(0)).internalCache().entryEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
 
@@ -805,7 +805,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheEntryEx<Object, Object> curEntry =
-                    ((IgniteKernal)grid(0)).internalCache().peekEx(key);
+                    ((IgniteKernal)grid(0)).internalCache().entryEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
 
@@ -835,7 +835,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheEntryEx<Object, Object> curEntry =
-                    ((IgniteKernal)grid(0)).internalCache().peekEx(key);
+                    ((IgniteKernal)grid(0)).internalCache().entryEx(key);
 
                 assertEquals(ttl, curEntry.ttl());
                 assertEquals(expireTimes[i], curEntry.expireTime());
@@ -870,7 +870,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         }, Math.min(ttl * 10, getTestTimeout())));
 
         // Ensure that old TTL and expire time are not longer "visible".
-        entry = ((IgniteKernal)grid(0)).internalCache().peekEx(key);
+        entry = ((IgniteKernal)grid(0)).internalCache().entryEx(key);
 
         assertEquals(0, entry.ttl());
         assertEquals(0, entry.expireTime());

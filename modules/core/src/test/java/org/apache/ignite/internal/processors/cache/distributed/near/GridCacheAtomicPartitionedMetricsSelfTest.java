@@ -61,4 +61,9 @@ public class GridCacheAtomicPartitionedMetricsSelfTest extends GridCacheAbstract
     @Override protected int expectedMissesPerPut(boolean isPrimary) {
         return 1;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testNonTxEvictions() throws Exception {
+        //TODO: IGNITE-96 eviction.
+    }
 }

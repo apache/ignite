@@ -163,7 +163,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         // Put and get a few keys.
         for (int i = 0; ; i++) {
             if (affinity(cache0).isBackup(g0.cluster().localNode(), i)) {
-                cache0.put(i, i); // +1 read.
+                cache0.getAndPut(i, i); // +1 read.
 
                 cache0.get(i); // +1 read.
 
@@ -217,7 +217,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
         // Put and get a few keys.
         for (int i = 0; ; i++) {
             if (!affinity(cache0).isPrimaryOrBackup(g0.cluster().localNode(), i)) {
-                cache0.put(i, i); // +1 read.
+                cache0.getAndPut(i, i); // +1 read.
 
                 cache0.get(i); // +1 read.
 
