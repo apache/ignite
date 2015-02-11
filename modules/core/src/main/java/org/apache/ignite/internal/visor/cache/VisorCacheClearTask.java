@@ -45,6 +45,7 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
         @JobContextResource
         private ComputeJobContext jobCtx;
 
@@ -60,7 +61,7 @@ public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<
         /**
          * Create job.
          *
-         * @param cacheName Cache names to clear.
+         * @param cacheName Cache name to clear.
          * @param debug Debug flag.
          */
         private VisorCacheClearJob(String cacheName, boolean debug) {
