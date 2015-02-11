@@ -1338,6 +1338,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     cache.preloader().syncFuture().get();
             }
         }
+
+        ctx.portable().onCacheProcessorStarted();
     }
 
     /** {@inheritDoc} */
