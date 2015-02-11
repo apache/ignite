@@ -46,7 +46,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 /**
  * Cached connections manager.
  */
-abstract class GridClientConnectionManagerAdapter implements GridClientConnectionManager {
+public abstract class GridClientConnectionManagerAdapter implements GridClientConnectionManager {
     /** Count of reconnect retries before init considered failed. */
     private static final int INIT_RETRY_CNT = 3;
 

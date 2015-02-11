@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
  * Nio listener for the router. Extracts necessary meta information from messages
  * and delegates their delivery to underlying client.
  */
-abstract class GridTcpRouterNioListenerAdapter implements GridNioServerListener<GridClientMessage> {
+public abstract class GridTcpRouterNioListenerAdapter implements GridNioServerListener<GridClientMessage> {
     /** Supported protocol versions. */
     private static final Collection<Short> SUPP_VERS = new HashSet<>();
 
@@ -59,7 +59,7 @@ abstract class GridTcpRouterNioListenerAdapter implements GridNioServerListener<
      * @param client Client for grid access.
      */
     @SuppressWarnings({"AbstractMethodCallInConstructor", "OverriddenMethodCallDuringObjectConstruction"})
-    GridTcpRouterNioListenerAdapter(IgniteLogger log, GridRouterClientImpl client) {
+    public GridTcpRouterNioListenerAdapter(IgniteLogger log, GridRouterClientImpl client) {
         this.log = log;
         this.client = client;
 
