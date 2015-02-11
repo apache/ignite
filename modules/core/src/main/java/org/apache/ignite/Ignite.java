@@ -190,13 +190,6 @@ public interface Ignite extends AutoCloseable {
     public IgniteScheduler scheduler();
 
     /**
-     * Gets an instance of {@code GridSecurity} interface. Available in enterprise edition only.
-     *
-     * @return Instance of {@code GridSecurity} interface.
-     */
-    public GridSecurity security();
-
-    /**
      * Gets the cache instance for the given name, if one does not
      * exist {@link IllegalArgumentException} will be thrown.
      * Note that in case named cache instance is used as GGFS data or meta cache, {@link IllegalStateException}

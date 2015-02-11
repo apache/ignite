@@ -206,10 +206,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     @GridToStringExclude
     private IgniteScheduler scheduler;
 
-    /** Grid security instance. */
-    @GridToStringExclude
-    private GridSecurity security;
-
     /** Kernal gateway. */
     @GridToStringExclude
     private final AtomicReference<GridKernalGateway> gw = new AtomicReference<>();
@@ -761,8 +757,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
                 provider.start(ctx.plugins().pluginContextForProvider(provider), attrs);
             }
-
-            security = new GridSecurityImpl(ctx);
 
             gw.writeLock();
 
@@ -3184,11 +3178,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     /** {@inheritDoc} */
     @Override public IgniteScheduler scheduler() {
         return scheduler;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridSecurity security() {
-        return security;
     }
 
     /** {@inheritDoc} */

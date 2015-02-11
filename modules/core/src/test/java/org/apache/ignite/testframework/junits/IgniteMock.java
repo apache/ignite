@@ -163,11 +163,6 @@ public class IgniteMock implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecurity security() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public <K, V> GridCache<K, V> cache(@Nullable String name) {
         return null;
     }
