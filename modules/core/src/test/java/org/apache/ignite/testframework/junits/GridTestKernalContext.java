@@ -44,8 +44,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
             null,
             null,
             null,
-            null,
-            false);
+            null);
 
         GridTestUtils.setFieldValue(grid(), "cfg", config());
     }
