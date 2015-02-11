@@ -263,18 +263,18 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
         @Override protected Collection<? extends VisorGridEvent> run(final VisorNodeEventsCollectorTaskArg arg) {
             final long startEvtTime = arg.timeArgument() == null ? 0L : System.currentTimeMillis() - arg.timeArgument();
 
-            final ClusterNodeLocalMap<String, Long> nl = g.nodeLocalMap();
+            final ClusterNodeLocalMap<String, Long> nl = ignite.nodeLocalMap();
 
             final Long startEvtOrder = arg.keyOrder() != null && nl.containsKey(arg.keyOrder()) ?
                 nl.get(arg.keyOrder()) : -1L;
 
-            Collection<Event> evts = g.events().localQuery(new IgnitePredicate<Event>() {
-                @Override public boolean apply(Event event) {
-                    return event.localOrder() > startEvtOrder &&
-                        (arg.typeArgument() == null || F.contains(arg.typeArgument(), event.type())) &&
-                        event.timestamp() >= startEvtTime &&
-                        (arg.taskName() == null || filterByTaskName(event, arg.taskName())) &&
-                        (arg.taskSessionId() == null || filterByTaskSessionId(event, arg.taskSessionId()));
+            Collection<Event> evts = ignite.events().localQuery(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    return evt.localOrder() > startEvtOrder &&
+                        (arg.typeArgument() == null || F.contains(arg.typeArgument(), evt.type())) &&
+                        evt.timestamp() >= startEvtTime &&
+                        (arg.taskName() == null || filterByTaskName(evt, arg.taskName())) &&
+                        (arg.taskSessionId() == null || filterByTaskSessionId(evt, arg.taskSessionId()));
                 }
             });
 

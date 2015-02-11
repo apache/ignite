@@ -229,7 +229,7 @@ class VisorStartCommand {
                     scold("File is a directory: " + file.getAbsolutePath).^^
 
                 try
-                    res = grid.startNodes(file, restart, timeout, maxConn).map(t => {
+                    res = ignite.startNodes(file, restart, timeout, maxConn).map(t => {
                         Result(t.get1, t.get2, t.get3)
                     }).toSeq
                 catch {
@@ -285,7 +285,7 @@ class VisorStartCommand {
                 )
 
                 try
-                    res = grid.startNodes(asJavaCollection(Seq(params)), null, restart, timeout, maxConn).
+                    res = ignite.startNodes(asJavaCollection(Seq(params)), null, restart, timeout, maxConn).
                         map(t => Result(t.get1, t.get2, t.get3)).toSeq
                 catch {
                     case e: IgniteException => scold(e.getMessage).^^

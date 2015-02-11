@@ -58,10 +58,10 @@ import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
  */
 public class GridCacheUtils {
     /**  Hadoop syste cache name. */
-    public static final String SYS_CACHE_HADOOP_MR = "gg-hadoop-mr-sys-cache";
+    public static final String SYS_CACHE_HADOOP_MR = "ignite-hadoop-mr-sys-cache";
 
     /** System cache name. */
-    public static final String UTILITY_CACHE_NAME = "gg-sys-cache";
+    public static final String UTILITY_CACHE_NAME = "ignite-sys-cache";
 
     /** Atomics system cache name. */
     public static final String ATOMICS_CACHE_NAME = "ignite-atomics-sys-cache";
