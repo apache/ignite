@@ -803,34 +803,6 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    public void testAffinity() throws Exception {
-        IgniteCache<String, String> cache = grid().jcache(CACHE_NAME);
-
-        CacheAffinity<String> affinity = affinity(cache);
-
-        cache.put("tst", "test");
-
-        GridMarshallerTestBean inBean = newTestBean(affinity);
-
-        byte[] buf = marshal(inBean);
-
-        GridMarshallerTestBean outBean = unmarshal(buf);
-
-        assert inBean.getObjectField() != null;
-        assert outBean.getObjectField() != null;
-
-        assert inBean.getObjectField().getClass().equals(GridCacheAffinityImpl.class);
-        assert outBean.getObjectField().getClass().equals(GridCacheAffinityImpl.class);
-
-        assert inBean != outBean;
-        assert inBean.equals(outBean);
-
-        outBean.checkNullResources();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testStreamer() throws Exception {
         IgniteStreamer streamer = grid().streamer(null);
 
