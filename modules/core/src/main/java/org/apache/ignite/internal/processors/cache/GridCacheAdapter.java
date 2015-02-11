@@ -27,6 +27,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.processors.cache.affinity.*;
+import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.query.*;
@@ -3816,13 +3817,15 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final boolean replicate = ctx.isDrEnabled();
         final long topVer = ctx.affinity().affinityTopologyVersion();
 
+        final ExpiryPolicy plc = ctx.expiry();
+
         if (ctx.store().isLocalStore()) {
             IgniteDataLoaderImpl<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false);
 
             try {
                 ldr.updater(new GridDrDataLoadCacheUpdater<K, V>());
 
-                LocalStoreLoadClosure c = new LocalStoreLoadClosure(p, ldr, ttl);
+                LocalStoreLoadClosure c = new LocalStoreLoadClosure(p, ldr, plc);
 
                 ctx.store().loadCache(c, args);
 
@@ -3840,6 +3843,17 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 @Override public void applyx(K key, V val, @Nullable GridCacheVersion ver)
                     throws IgniteException {
                     assert ver == null;
+
+                    long ttl = 0;
+
+                    if (plc != null) {
+                        ttl = CU.toTtl(plc.getExpiryForCreation());
+
+                        if (ttl == CU.TTL_ZERO)
+                            return;
+                        else if (ttl == CU.TTL_NOT_CHANGED)
+                            ttl = 0;
+                    }
 
                     loadEntry(key, val, ver0, p, topVer, replicate, ttl);
                 }
@@ -3916,6 +3930,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         if (!ctx.store().configured())
             return new GridFinishedFuture<>(ctx.kernalContext());
 
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
+
+        ExpiryPolicy plc = prj != null ? prj.expiry() : null;
+
         if (replaceExisting) {
             if (ctx.store().isLocalStore()) {
                 Collection<ClusterNode> nodes = ctx.grid().forCacheNodes(name()).nodes();
@@ -3924,7 +3942,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     return new GridFinishedFuture<>(ctx.kernalContext());
 
                 return ctx.closures().callAsyncNoFailover(BROADCAST,
-                    new LoadKeysCallable<>(ctx.name(), keys, true),
+                    new LoadKeysCallable<>(ctx.name(), keys, true, plc),
                     nodes,
                     true);
             }
@@ -3945,7 +3963,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 return new GridFinishedFuture<>(ctx.kernalContext());
 
             return ctx.closures().callAsyncNoFailover(BROADCAST,
-                new LoadKeysCallable<>(ctx.name(), keys, false),
+                new LoadKeysCallable<>(ctx.name(), keys, false, plc),
                 nodes,
                 true);
         }
@@ -3985,11 +4003,17 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /**
      * @param keys Keys to load.
+     * @param plc Optional expiry policy.
      * @throws IgniteCheckedException If failed.
      */
-    public void localLoad(Collection<? extends K> keys) throws IgniteCheckedException {
+    public void localLoad(Collection<? extends K> keys,
+        @Nullable ExpiryPolicy plc)
+        throws IgniteCheckedException
+    {
         final boolean replicate = ctx.isDrEnabled();
         final long topVer = ctx.affinity().affinityTopologyVersion();
+
+        final ExpiryPolicy plc0 = plc != null ? plc : ctx.expiry();
 
         if (ctx.store().isLocalStore()) {
             IgniteDataLoaderImpl<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false);
@@ -3997,7 +4021,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             try {
                 ldr.updater(new GridDrDataLoadCacheUpdater<K, V>());
 
-                LocalStoreLoadClosure c = new LocalStoreLoadClosure(null, ldr, 0);
+                LocalStoreLoadClosure c = new LocalStoreLoadClosure(null, ldr, plc0);
 
                 ctx.store().localStoreLoadAll(null, keys, c);
 
@@ -4013,7 +4037,18 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             ctx.store().loadAllFromStore(null, keys, new CI2<K, V>() {
                 @Override public void apply(K key, V val) {
-                    loadEntry(key, val, ver0, null, topVer, replicate, 0);
+                    long ttl = 0;
+
+                    if (plc0 != null) {
+                        ttl = CU.toTtl(plc0.getExpiryForCreation());
+
+                        if (ttl == CU.TTL_ZERO)
+                            return;
+                        else if (ttl == CU.TTL_NOT_CHANGED)
+                            ttl = 0;
+                    }
+
+                    loadEntry(key, val, ver0, null, topVer, replicate, ttl);
                 }
             });
         }
@@ -5923,10 +5958,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /**
      *
      */
-    protected static class GetExpiryPolicy implements IgniteCacheExpiryPolicy {
-        /** */
-        private final long accessTtl;
-
+    protected abstract static class GetExpiryPolicy implements IgniteCacheExpiryPolicy {
         /** */
         private Map<Object, IgniteBiTuple<byte[], GridCacheVersion>> entries;
 
@@ -5937,30 +5969,30 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param expiryPlc Expiry policy.
          * @return Access expire policy.
          */
-        public static GetExpiryPolicy forPolicy(@Nullable ExpiryPolicy expiryPlc) {
+        @Nullable public static GetExpiryPolicy forPolicy(@Nullable final ExpiryPolicy expiryPlc) {
             if (expiryPlc == null)
                 return null;
 
-            Duration duration = expiryPlc.getExpiryForAccess();
-
-            if (duration == null)
-                return null;
-
-            return new GetExpiryPolicy(CU.toTtl(duration));
+            return new GetExpiryPolicy() {
+                @Override public long forAccess() {
+                    return CU.toTtl(expiryPlc.getExpiryForAccess());
+                }
+            };
         }
 
         /**
-         * @param accessTtl TTL for access.
+         * @param ttl Access TTL.
+         * @return Access expire policy.
          */
-        public GetExpiryPolicy(long accessTtl) {
-            assert accessTtl >= 0 : accessTtl;
+        @Nullable public static GetExpiryPolicy forTtl(final long ttl) {
+            if (ttl == CU.TTL_NOT_CHANGED)
+                return null;
 
-            this.accessTtl = accessTtl;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long forAccess() {
-            return accessTtl;
+            return new GetExpiryPolicy() {
+                @Override public long forAccess() {
+                    return ttl;
+                }
+            };
         }
 
         /** {@inheritDoc} */
@@ -6052,6 +6084,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         /** Update flag. */
         private boolean update;
 
+        /** */
+        private ExpiryPolicy plc;
+
         /**
          * Required by {@link Externalizable}.
          */
@@ -6063,12 +6098,16 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param cacheName Cache name.
          * @param keys Keys.
          * @param update If {@code true} calls {@link #localLoadAndUpdate(Collection)}
-         *        otherwise {@link #localLoad(Collection)}.
+         *        otherwise {@link #localLoad(Collection, ExpiryPolicy)}.
          */
-        LoadKeysCallable(String cacheName, Collection<? extends K> keys, boolean update) {
+        LoadKeysCallable(String cacheName,
+            Collection<? extends K> keys,
+            boolean update,
+            ExpiryPolicy plc) {
             this.cacheName = cacheName;
             this.keys = keys;
             this.update = update;
+            this.plc = plc;
         }
 
         /** {@inheritDoc} */
@@ -6083,7 +6122,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 if (update)
                     cache.localLoadAndUpdate(keys);
                 else
-                    cache.localLoad(keys);
+                    cache.localLoad(keys, plc);
             }
             finally {
                 cache.context().gate().leave();
@@ -6099,6 +6138,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             U.writeCollection(out, keys);
 
             out.writeBoolean(update);
+
+            out.writeObject(plc != null ? new IgniteExternalizableExpiryPolicy(plc) : null);
         }
 
         /** {@inheritDoc} */
@@ -6108,6 +6149,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             keys = U.readCollection(in);
 
             update = in.readBoolean();
+
+            plc = (ExpiryPolicy)in.readObject();
         }
     }
 
@@ -6125,17 +6168,19 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final IgniteDataLoaderImpl<K, V> ldr;
 
         /** */
-        final long ttl;
+        final ExpiryPolicy plc;
 
         /**
          * @param p Key/value predicate.
          * @param ldr Loader.
-         * @param ttl TTL.
+         * @param plc Optional expiry policy.
          */
-        private LocalStoreLoadClosure(@Nullable IgniteBiPredicate<K, V> p, IgniteDataLoaderImpl<K, V> ldr, long ttl) {
+        private LocalStoreLoadClosure(@Nullable IgniteBiPredicate<K, V> p,
+            IgniteDataLoaderImpl<K, V> ldr,
+            @Nullable ExpiryPolicy plc) {
             this.p = p;
             this.ldr = ldr;
-            this.ttl = ttl;
+            this.plc = plc;
 
             col = new ArrayList<>(ldr.perNodeBufferSize());
         }
@@ -6147,12 +6192,29 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             if (p != null && !p.apply(key, val))
                 return;
 
+            long ttl = 0;
+
+            if (plc != null) {
+                ttl = CU.toTtl(plc.getExpiryForCreation());
+
+                if (ttl == CU.TTL_ZERO)
+                    return;
+                else if (ttl == CU.TTL_NOT_CHANGED)
+                    ttl = 0;
+            }
+
             if (ctx.portableEnabled()) {
                 key = (K)ctx.marshalToPortable(key);
                 val = (V)ctx.marshalToPortable(val);
             }
 
-            GridCacheRawVersionedEntry<K,V> e = new GridCacheRawVersionedEntry<>(key, null, val, null, ttl, 0, ver);
+            GridCacheRawVersionedEntry<K,V> e = new GridCacheRawVersionedEntry<>(key,
+                null,
+                val,
+                null,
+                ttl,
+                0,
+                ver);
 
             e.marshal(ctx.marshaller());
 

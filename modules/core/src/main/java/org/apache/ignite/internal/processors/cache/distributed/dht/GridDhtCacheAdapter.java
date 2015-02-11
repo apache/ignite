@@ -36,6 +36,7 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -358,9 +359,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void localLoad(Collection<? extends K> keys) throws IgniteCheckedException {
+    @Override public void localLoad(Collection<? extends K> keys, final ExpiryPolicy plc)
+        throws IgniteCheckedException {
         if (ctx.store().isLocalStore()) {
-            super.localLoad(keys);
+            super.localLoad(keys, plc);
 
             return;
         }
@@ -372,9 +374,11 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         final long topVer = ctx.affinity().affinityTopologyVersion();
 
+        final ExpiryPolicy plc0 = plc != null ? plc : ctx.expiry();
+
         ctx.store().loadAllFromStore(null, keys, new CI2<K, V>() {
             @Override public void apply(K key, V val) {
-                loadEntry(key, val, ver0, null, topVer, replicate, 0);
+                loadEntry(key, val, ver0, null, topVer, replicate, plc0);
             }
         });
     }
@@ -394,11 +398,13 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         final long topVer = ctx.affinity().affinityTopologyVersion();
 
+        final ExpiryPolicy plc = ctx.expiry();
+
         ctx.store().loadCache(new CI3<K, V, GridCacheVersion>() {
             @Override public void apply(K key, V val, @Nullable GridCacheVersion ver) {
                 assert ver == null;
 
-                loadEntry(key, val, ver0, p, topVer, replicate, ttl);
+                loadEntry(key, val, ver0, p, topVer, replicate, plc);
             }
         }, args);
     }
@@ -410,7 +416,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param p Optional predicate.
      * @param topVer Topology version.
      * @param replicate Replication flag.
-     * @param ttl TTL.
+     * @param plc Expiry policy.
      */
     private void loadEntry(K key,
         V val,
@@ -418,7 +424,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteBiPredicate<K, V> p,
         long topVer,
         boolean replicate,
-        long ttl) {
+        @Nullable ExpiryPolicy plc) {
         if (p != null && !p.apply(key, val))
             return;
 
@@ -430,6 +436,17 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 GridCacheEntryEx<K, V> entry = null;
 
                 try {
+                    long ttl = 0;
+
+                    if (plc != null) {
+                        ttl = CU.toTtl(plc.getExpiryForCreation());
+
+                        if (ttl == CU.TTL_ZERO)
+                            return;
+                        else if (ttl == CU.TTL_NOT_CHANGED)
+                            ttl = 0;
+                    }
+
                     if (ctx.portableEnabled()) {
                         key = (K)ctx.marshalToPortable(key);
                         val = (V)ctx.marshalToPortable(val);
@@ -604,7 +621,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         long ttl = req.accessTtl();
 
-        final GetExpiryPolicy expiryPlc = ttl == -1L ? null : new GetExpiryPolicy(ttl);
+        final GetExpiryPolicy expiryPlc = GetExpiryPolicy.forTtl(ttl);
 
         IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>> fut =
             getDhtAsync(nodeId,

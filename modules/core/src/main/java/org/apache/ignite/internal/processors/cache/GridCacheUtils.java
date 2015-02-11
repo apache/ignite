@@ -72,6 +72,12 @@ public class GridCacheUtils {
     /** Peek flags. */
     private static final GridCachePeekMode[] PEEK_FLAGS = new GridCachePeekMode[] { GLOBAL, SWAP };
 
+    /** */
+    public static final long TTL_NOT_CHANGED = -1L;
+
+    /** */
+    public static final long TTL_ZERO = -2L;
+
     /** Per-thread generated UID store. */
     private static final ThreadLocal<String> UUIDS = new ThreadLocal<String>() {
         @Override protected String initialValue() {
@@ -1678,7 +1684,7 @@ public class GridCacheUtils {
      */
     public static long toTtl(Duration duration) {
         if (duration == null)
-            return -1;
+            return TTL_NOT_CHANGED;
 
         if (duration.getDurationAmount() == 0) {
             if (duration.isEternal())
@@ -1686,10 +1692,10 @@ public class GridCacheUtils {
 
             assert duration.isZero();
 
-            return 1L;
+            return TTL_ZERO;
         }
 
-        assert duration.getTimeUnit() != null;
+        assert duration.getTimeUnit() != null : duration;
 
         return duration.getTimeUnit().toMillis(duration.getDurationAmount());
     }
