@@ -169,6 +169,7 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
         cfg.setGgfsConfiguration(ggfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
+        cfg.setConnectorConfiguration(null);
 
         return G.start(cfg);
     }

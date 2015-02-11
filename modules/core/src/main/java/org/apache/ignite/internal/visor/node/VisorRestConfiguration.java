@@ -68,21 +68,20 @@ public class VisorRestConfiguration implements Serializable {
     public static VisorRestConfiguration from(IgniteConfiguration c) {
         VisorRestConfiguration cfg = new VisorRestConfiguration();
 
-        ClientConnectionConfiguration clnCfg = c.getClientConnectionConfiguration();
+        ConnectorConfiguration clnCfg = c.getConnectorConfiguration();
 
         boolean restEnabled = clnCfg != null;
 
         cfg.restEnabled(restEnabled);
 
         if (restEnabled) {
-            cfg.tcpSslEnabled(clnCfg.isRestTcpSslEnabled());
-            cfg.accessibleFolders(clnCfg.getRestAccessibleFolders());
-            cfg.jettyPath(clnCfg.getRestJettyPath());
+            cfg.tcpSslEnabled(clnCfg.isSslEnabled());
+            cfg.jettyPath(clnCfg.getJettyPath());
             cfg.jettyHost(getProperty(IGNITE_JETTY_HOST));
             cfg.jettyPort(intValue(IGNITE_JETTY_PORT, null));
-            cfg.tcpHost(clnCfg.getRestTcpHost());
-            cfg.tcpPort(clnCfg.getRestTcpPort());
-            cfg.tcpSslContextFactory(compactClass(clnCfg.getRestTcpSslContextFactory()));
+            cfg.tcpHost(clnCfg.getHost());
+            cfg.tcpPort(clnCfg.getPort());
+            cfg.tcpSslContextFactory(compactClass(clnCfg.getSslContextFactory()));
         }
 
         return cfg;

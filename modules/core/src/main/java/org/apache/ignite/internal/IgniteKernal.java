@@ -1365,8 +1365,8 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         add(attrs, ATTR_RESTART_ENABLED, Boolean.toString(isRestartEnabled()));
 
         // Save port range, port numbers will be stored by rest processor at runtime.
-        if (cfg.getClientConnectionConfiguration() != null)
-            add(attrs, ATTR_REST_PORT_RANGE, cfg.getClientConnectionConfiguration().getRestPortRange());
+        if (cfg.getConnectorConfiguration() != null)
+            add(attrs, ATTR_REST_PORT_RANGE, cfg.getConnectorConfiguration().getPortRange());
 
         try {
             AuthenticationSpi authSpi = cfg.getAuthenticationSpi();
@@ -1486,7 +1486,9 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         mgmtExecSvcMBean = registerExecutorMBean(mgmtExecSvc, "GridManagementExecutor");
         p2PExecSvcMBean = registerExecutorMBean(p2pExecSvc, "GridClassLoadingExecutor");
 
-        if (restExecSvc != null)
+        ConnectorConfiguration clientCfg = cfg.getConnectorConfiguration();
+
+        if (clientCfg != null)
             restExecSvcMBean = registerExecutorMBean(restExecSvc, "GridRestExecutor");
     }
 
@@ -1619,7 +1621,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     private boolean isRestEnabled() {
         assert cfg != null;
 
-        return cfg.getClientConnectionConfiguration() != null;
+        return cfg.getConnectorConfiguration() != null;
     }
 
     /**
@@ -2432,9 +2434,9 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         if (!F.isEmpty(cfg.getSegmentationResolvers()))
             F.copy(objs, cfg.getSegmentationResolvers());
 
-        if (cfg.getClientConnectionConfiguration() != null)
-            F.copy(objs, cfg.getClientConnectionConfiguration().getClientMessageInterceptor(),
-                cfg.getClientConnectionConfiguration().getRestTcpSslContextFactory());
+        if (cfg.getConnectorConfiguration() != null)
+            F.copy(objs, cfg.getConnectorConfiguration().getMessageInterceptor(),
+                cfg.getConnectorConfiguration().getSslContextFactory());
 
         F.copy(objs, cfg.getMarshaller(), cfg.getGridLogger(), cfg.getMBeanServer());
 

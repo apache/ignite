@@ -30,6 +30,9 @@
     -->
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true">
         <!-- Grid with default name. -->
+
+        <property name="connectorConfiguration"><null/></property>
+
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
@@ -44,6 +47,8 @@
 
     <bean id="grid.cfg.2" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true">
         <property name="gridName" value="gridName2"/>
+
+        <property name="connectorConfiguration"><null/></property>
 
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">

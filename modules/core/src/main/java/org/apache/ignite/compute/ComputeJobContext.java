@@ -58,26 +58,6 @@ import java.util.concurrent.*;
  */
 public interface ComputeJobContext extends ComputeJobContinuation {
     /**
-     * Gets cache name for which job was co-located.
-     *
-     * @return Cache name if job was co-located or {@code null} otherwise.
-     * @see #affinityKey()
-     * @see org.apache.ignite.IgniteCompute#affinityCall(String, Object, Callable)
-     * @see org.apache.ignite.IgniteCompute#affinityRun(String, Object, Runnable)
-     */
-    @Nullable public String cacheName();
-
-    /**
-     * Gets affinity key with which job was co-located.
-     *
-     * @return Affinity key if job was co-located or {@code null} otherwise.
-     * @see #cacheName()
-     * @see org.apache.ignite.IgniteCompute#affinityCall(String, Object, Callable)
-     * @see org.apache.ignite.IgniteCompute#affinityRun(String, Object, Runnable)
-     */
-    @Nullable public <T> T affinityKey();
-
-    /**
      * Gets ID of the job this context belongs to.
      *
      * @return ID of the job this context belongs to.
