@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -37,7 +38,7 @@ public class GridProductImpl implements IgniteProduct, Externalizable {
     public static final String COPYRIGHT = "2015 Copyright(C) Apache Software Foundation";
 
     /** Enterprise edition flag. */
-    public static final boolean ENT;
+    private static final boolean ENT;
 
     /** Ignite version. */
     public static final String VER;
@@ -165,6 +166,14 @@ public class GridProductImpl implements IgniteProduct, Externalizable {
         finally {
             ctx.gateway().readUnlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void ackVisor(IgniteLogger log) {
+        if (ENT)
+            U.quietAndInfo(log, "To start GUI Management & Monitoring run ggvisorui.{sh|bat}");
+        else
+            U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
     }
 
     /** {@inheritDoc} */

@@ -78,8 +78,6 @@ import org.apache.ignite.plugin.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.authentication.*;
-import org.apache.ignite.spi.authentication.noop.*;
-import org.apache.ignite.spi.securesession.noop.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
@@ -663,7 +661,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         try {
             GridKernalContextImpl ctx =
                 new GridKernalContextImpl(log, this, cfg, gw, utilityCachePool, execSvc, sysExecSvc, p2pExecSvc,
-                    mgmtExecSvc, ggfsExecSvc, restExecSvc, ENT);
+                    mgmtExecSvc, ggfsExecSvc, restExecSvc);
 
             nodeLoc = new ClusterNodeLocalMapImpl(ctx);
 
@@ -783,9 +781,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
             // Suggest configuration optimizations.
             suggestOptimizations(ctx, cfg);
-
-            if (!ctx.isEnterprise())
-                warnNotSupportedFeaturesForOs(cfg);
 
             // Notify discovery manager the first to make sure that topology is discovered.
             ctx.discovery().onKernalStart();
@@ -1087,8 +1082,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                     "License ID: " + lic.id().toString().toUpperCase() + NL +
                     "Licensed to: " + lic.userOrganization() + NL;
             }
-            else
-                assert !ENT;
 
             body +=
                 "----" + NL +
@@ -1195,35 +1188,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         if (OptimizedMarshaller.available() && !(cfg.getMarshaller() instanceof OptimizedMarshaller))
             perf.add("Enable optimized marshaller (set 'marshaller' to " +
                 OptimizedMarshaller.class.getSimpleName() + ')');
-    }
-
-    /**
-     * Warns user about unsupported features which was configured in OS edition.
-     *
-     * @param cfg Grid configuration.
-     */
-    private void warnNotSupportedFeaturesForOs(IgniteConfiguration cfg) {
-        Collection<String> msgs = new ArrayList<>();
-
-        if (!F.isEmpty(cfg.getSegmentationResolvers()))
-            msgs.add("Network segmentation detection.");
-
-        if (cfg.getSecureSessionSpi() != null && !(cfg.getSecureSessionSpi() instanceof NoopSecureSessionSpi))
-            msgs.add("Secure session SPI.");
-
-        if (cfg.getAuthenticationSpi() != null && !(cfg.getAuthenticationSpi() instanceof NoopAuthenticationSpi))
-            msgs.add("Authentication SPI.");
-
-        if (!F.isEmpty(msgs)) {
-            U.quietAndInfo(log, "The following features are not supported in open source edition, " +
-                "related configuration settings will be ignored " +
-                "(consider downloading enterprise edition from http://www.gridgain.com):");
-
-            for (String s : msgs)
-                U.quietAndInfo(log, "  ^-- " + s);
-
-            U.quietAndInfo(log, "");
-        }
     }
 
     /**
@@ -1673,10 +1637,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         if (isDaemon())
             return;
 
-        if (ctx.isEnterprise())
-            U.quietAndInfo(log, "To start GUI Management & Monitoring run ggvisorui.{sh|bat}");
-        else
-            U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
+        ctx.product().ackVisor(log);
     }
 
     /**
@@ -2071,8 +2032,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                         "License ID: " + lic.id().toString().toUpperCase() + NL +
                         "Licensed to: " + lic.userOrganization() + NL;
                 }
-                else
-                    assert !ENT;
 
                 body +=
                     "----" + NL +

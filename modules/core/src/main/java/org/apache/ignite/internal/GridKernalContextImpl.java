@@ -315,9 +315,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Performance suggestions. */
     private final GridPerformanceSuggestions perf = new GridPerformanceSuggestions();
 
-    /** Enterprise release flag. */
-    private boolean ent;
-
     /**
      * No-arg constructor is required by externalization.
      */
@@ -339,7 +336,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      *  @param mgmtExecSvc Management executor service.
      *  @param ggfsExecSvc GGFS executor service.
      *  @param restExecSvc REST executor service.
-     *  @param ent Release enterprise flag.
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(
@@ -353,8 +349,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService p2pExecSvc,
         ExecutorService mgmtExecSvc,
         ExecutorService ggfsExecSvc,
-        ExecutorService restExecSvc,
-        boolean ent) {
+        ExecutorService restExecSvc) {
         assert grid != null;
         assert cfg != null;
         assert gw != null;
@@ -362,7 +357,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.grid = grid;
         this.cfg = cfg;
         this.gw = gw;
-        this.ent = ent;
         this.utilityCachePool = utilityCachePool;
         this.execSvc = execSvc;
         this.sysExecSvc = sysExecSvc;
@@ -791,11 +785,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridPerformanceSuggestions performance() {
         return perf;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isEnterprise() {
-        return ent;
     }
 
     /** {@inheritDoc} */
