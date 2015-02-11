@@ -60,7 +60,6 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
     private Ignite ignite;
 
     /** */
-    @CacheName
     private String cacheName = "PARTITIONED_CACHE";
 
     /**

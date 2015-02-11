@@ -8550,7 +8550,7 @@ public abstract class IgniteUtils {
     /**
      * Nullifies Ignite home directory. For test purposes only.
      */
-    static void nullifyHomeDirectory() {
+    public static void nullifyHomeDirectory() {
         ggHome = null;
     }
 

@@ -94,7 +94,7 @@ public class GridProductImpl implements IgniteProduct, Externalizable {
 
         VER_BYTES = U.intToBytes(VER.hashCode());
 
-        COMPOUND_VER = VER + "-" + (ENT ? "ent" : "os");
+        COMPOUND_VER = VER;
 
         BUILD_TSTAMP_STR = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD_TSTAMP * 1000));
 
@@ -118,9 +118,7 @@ public class GridProductImpl implements IgniteProduct, Externalizable {
         this.ctx = ctx;
         this.verChecker = verChecker;
 
-        String releaseType = ctx.isEnterprise() ? "ent" : "os";
-
-        ver = IgniteProductVersion.fromString(VER + '-' + releaseType + '-' + BUILD_TSTAMP + '-' + REV_HASH);
+        ver = IgniteProductVersion.fromString(VER + '-' + BUILD_TSTAMP + '-' + REV_HASH);
     }
 
     /** {@inheritDoc} */

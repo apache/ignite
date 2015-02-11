@@ -26,14 +26,6 @@ import java.util.*;
 @MXBeanDescription("MBean that provides access to Kernal information.")
 public interface IgniteMXBean {
     /**
-     * Gets file path of the license.
-     *
-     * @return File path of the license.
-     */
-    @MXBeanDescription("File path of the license.")
-    public String getLicenseFilePath();
-
-    /**
      * Gets string presentation of the version.
      *
      * @return String presentation of the version.

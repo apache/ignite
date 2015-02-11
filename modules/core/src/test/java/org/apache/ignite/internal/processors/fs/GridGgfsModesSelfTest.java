@@ -131,6 +131,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
         cfg.setGgfsConfiguration(ggfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
+        cfg.setConnectorConfiguration(null);
 
         grid = (IgniteEx)G.start(cfg);
 
@@ -187,6 +188,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
         cfg.setGgfsConfiguration(ggfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
+        cfg.setConnectorConfiguration(null);
 
         ggfsSecondary = (GridGgfsImpl)G.start(cfg).fileSystem("ggfs-secondary");
     }
