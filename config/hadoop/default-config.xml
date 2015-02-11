@@ -103,7 +103,11 @@
         <!--
             This port will be used by Apache Hadoop client to connect to Ignite node as if it was a job tracker.
         -->
-        <property name="restTcpPort" value="11211"/>
+        <property name="connectorConfiguration">
+            <bean class="org.apache.ignite.configuration.ConnectorConfiguration">
+                <property name="port" value="11211"/>
+            </bean>
+        </property>
 
         <!--
             Configure one GGFS file system instance named "ggfs" on this node.
