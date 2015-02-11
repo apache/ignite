@@ -646,6 +646,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                  */
                 evtMgr,
                 swapMgr,
+                serMgr,
                 storeMgr,
                 evictMgr,
                 qryMgr,
@@ -654,7 +655,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 dataStructuresMgr,
                 ttlMgr,
                 drMgr,
-                serMgr,
                 jta);
 
             GridCacheAdapter cache = null;
@@ -772,7 +772,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 evictMgr = new GridCacheEvictionManager();
                 evtMgr = new GridCacheEventManager();
                 drMgr = ctx.createComponent(GridCacheDrManager.class);
-                serMgr = ctx.createComponent(IgniteCacheSerializationManager.class);
 
                 cacheCtx = new GridCacheContext(
                     ctx,
@@ -785,6 +784,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                      */
                     evtMgr,
                     swapMgr,
+                    serMgr,
                     storeMgr,
                     evictMgr,
                     qryMgr,
@@ -793,7 +793,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     dataStructuresMgr,
                     ttlMgr,
                     drMgr,
-                    serMgr,
                     jta);
 
                 GridDhtCacheAdapter dht = null;
