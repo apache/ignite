@@ -219,7 +219,7 @@ class VisorKillCommand {
 
         val op = if (restart) "restart" else "kill"
 
-        if (nodes.size() == grid.nodes().size())
+        if (nodes.size() == ignite.nodes().size())
             ask("Are you sure you want to " + op + " ALL nodes? (y/n) [n]: ", "n") match {
                 case "y" | "Y" =>  ask("You are about to " + op + " ALL nodes. " +
                     "Are you 100% sure? (y/n) [n]: ", "n") match {
@@ -244,9 +244,9 @@ class VisorKillCommand {
             }
 
         if (restart)
-            grid.restartNodes(nodes)
+            ignite.restartNodes(nodes)
         else
-            grid.stopNodes(nodes)
+            ignite.stopNodes(nodes)
     }
 
     /**

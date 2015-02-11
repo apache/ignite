@@ -295,7 +295,7 @@ class VisorEventsCommand {
             }
 
             val evts = try
-                grid.compute(grid.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
+                ignite.compute(ignite.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
                     toTaskArgument(nid, VisorNodeEventsCollectorTaskArg.createEventsArg(tpFilter, tmFilter)))
             catch {
                 case e: IgniteException =>
