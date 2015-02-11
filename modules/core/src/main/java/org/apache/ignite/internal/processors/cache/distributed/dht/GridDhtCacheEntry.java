@@ -54,7 +54,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
     /** Reader clients. */
     @GridToStringInclude
-    private volatile List<ReaderId<K, V>> rdrs = Collections.emptyList();
+    private volatile ReaderId<K, V>[] rdrs = ReaderId.EMPTY_ARRAY;
 
     /** Local partition. */
     private final GridDhtLocalPartition<K, V> locPart;
@@ -79,11 +79,10 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
     /** {@inheritDoc} */
     @Override public int memorySize() throws IgniteCheckedException {
-        int rdrsOverhead = 0;
+        int rdrsOverhead;
 
         synchronized (this) {
-            if (rdrs != null)
-                rdrsOverhead += ReaderId.READER_ID_SIZE * rdrs.size();
+            rdrsOverhead = ReaderId.READER_ID_SIZE * rdrs.length;
         }
 
         return super.memorySize() + DHT_SIZE_OVERHEAD + rdrsOverhead;
@@ -340,6 +339,8 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @return reader ID.
      */
     @Nullable public ReaderId<K, V> readerId(UUID nodeId) {
+        ReaderId<K, V>[] rdrs = this.rdrs;
+
         for (ReaderId<K, V> reader : rdrs)
             if (reader.nodeId().equals(nodeId))
                 return reader;
@@ -404,13 +405,12 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
             if (reader == null) {
                 reader = new ReaderId<>(nodeId, msgId);
 
-                List<ReaderId<K, V>> rdrs = new ArrayList<>(this.rdrs.size() + 1);
+                ReaderId<K, V>[] rdrs = Arrays.copyOf(this.rdrs, this.rdrs.length + 1);
 
-                rdrs.addAll(this.rdrs);
-                rdrs.add(reader);
+                rdrs[rdrs.length] = reader;
 
                 // Seal.
-                this.rdrs = Collections.unmodifiableList(rdrs);
+                this.rdrs = rdrs;
 
                 // No transactions in ATOMIC cache.
                 if (!cctx.atomic()) {
@@ -479,23 +479,35 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @return {@code True} if reader was removed as a result of this operation.
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
+    @SuppressWarnings("unchecked")
     public synchronized boolean removeReader(UUID nodeId, long msgId) throws GridCacheEntryRemovedException {
         checkObsolete();
 
-        ReaderId reader = readerId(nodeId);
+        ReaderId<K, V>[] rdrs = this.rdrs;
 
-        if (reader == null || (reader.messageId() > msgId && msgId >= 0))
-            return false;
+        int readerIdx = -1;
 
-        List<ReaderId<K, V>> rdrs = new ArrayList<>(this.rdrs.size());
+        for (int i = 0; i < rdrs.length; i++) {
+            if (rdrs[i].nodeId().equals(nodeId)) {
+                readerIdx = i;
 
-        for (ReaderId<K, V> rdr : this.rdrs) {
-            if (!rdr.equals(reader))
-                rdrs.add(rdr);
+                break;
+            }
         }
 
-        // Seal.
-        this.rdrs = rdrs.isEmpty() ? Collections.<ReaderId<K, V>>emptyList() : Collections.unmodifiableList(rdrs);
+        if (readerIdx == -1 || (rdrs[readerIdx].messageId() > msgId && msgId >= 0))
+            return false;
+
+        if (rdrs.length == 1)
+            this.rdrs = ReaderId.EMPTY_ARRAY;
+        else {
+            ReaderId<K, V>[] newRdrs = Arrays.copyOf(rdrs, rdrs.length - 1);
+
+            System.arraycopy(rdrs, readerIdx + 1, newRdrs, readerIdx, rdrs.length - readerIdx - 1);
+
+            // Seal.
+            this.rdrs = newRdrs;
+        }
 
         return true;
     }
@@ -503,8 +515,9 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     /**
      * Clears all readers (usually when partition becomes invalid and ready for eviction).
      */
+    @SuppressWarnings("unchecked")
     @Override public synchronized void clearReaders() {
-        rdrs = Collections.emptyList();
+        rdrs = ReaderId.EMPTY_ARRAY;
     }
 
     /** {@inheritDoc} */
@@ -537,7 +550,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
                     return false;
                 }
 
-                rdrs = Collections.emptyList();
+                rdrs = ReaderId.EMPTY_ARRAY;
 
                 if (log.isDebugEnabled())
                     log.debug("Entry has been marked obsolete: " + this);
@@ -569,43 +582,46 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @return Collection of readers after check.
      * @throws GridCacheEntryRemovedException If removed.
      */
+    @SuppressWarnings("unchecked")
     public synchronized Collection<ReaderId<K, V>> checkReaders() throws GridCacheEntryRemovedException {
         checkObsolete();
 
-        if (!rdrs.isEmpty()) {
-            Collection<ReaderId> rmv = null;
+        ReaderId<K, V>[] rdrs = this.rdrs;
 
-            for (ReaderId reader : rdrs) {
-                if (!cctx.discovery().alive(reader.nodeId())) {
-                    if (rmv == null)
-                        rmv = new HashSet<>();
+        if (rdrs.length == 0)
+            return Collections.emptySet();
 
-                    rmv.add(reader);
+        List<ReaderId<K, V>> newRdrs = null;
+
+        for (int i = 0; i < rdrs.length; i++) {
+            if (!cctx.discovery().alive(rdrs[i].nodeId())) {
+                if (newRdrs == null) {
+                    newRdrs = new ArrayList<>(rdrs.length);
+
+                    for (int k = 0; k < i; k++)
+                        newRdrs.add(rdrs[i]);
                 }
             }
-
-            if (rmv != null) {
-                List<ReaderId<K, V>> rdrs = new ArrayList<>(this.rdrs.size() - rmv.size());
-
-                for (ReaderId<K, V> rdr : this.rdrs) {
-                    if (!rmv.contains(rdr))
-                        rdrs.add(rdr);
-                }
-
-                // Seal.
-                this.rdrs = rdrs.isEmpty() ? Collections.<ReaderId<K, V>>emptyList() :
-                    Collections.unmodifiableList(rdrs);
+            else {
+                if (newRdrs != null)
+                    newRdrs.add(rdrs[i]);
             }
         }
 
-        return rdrs;
+        if (newRdrs != null) {
+            rdrs = newRdrs.toArray(new ReaderId[newRdrs.size()]);
+
+            this.rdrs = rdrs;
+        }
+
+        return Arrays.asList(rdrs);
     }
 
     /** {@inheritDoc} */
     @Override protected synchronized boolean hasReaders() throws GridCacheEntryRemovedException {
         checkReaders();
 
-        return !rdrs.isEmpty();
+        return rdrs.length > 0;
     }
 
     /**
@@ -658,6 +674,9 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * Reader ID.
      */
     private static class ReaderId<K, V> {
+        /** */
+        private static final ReaderId[] EMPTY_ARRAY = new ReaderId[0];
+
         /** Reader ID size. */
         private static final int READER_ID_SIZE = 24;
 
