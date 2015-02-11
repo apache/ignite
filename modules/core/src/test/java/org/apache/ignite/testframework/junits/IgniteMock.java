@@ -25,7 +25,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.internal.product.*;
 import org.apache.ignite.plugin.*;
-import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
