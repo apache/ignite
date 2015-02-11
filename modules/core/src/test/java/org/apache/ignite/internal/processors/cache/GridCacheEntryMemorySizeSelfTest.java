@@ -20,14 +20,14 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -82,7 +82,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
             NEAR_ENTRY_OVERHEAD = U.<Integer>staticField(GridNearCacheEntry.class, "NEAR_SIZE_OVERHEAD");
             REPLICATED_ENTRY_OVERHEAD = DHT_ENTRY_OVERHEAD;
 
-            IgniteMarshaller marsh = new IgniteOptimizedMarshaller();
+            Marshaller marsh = new OptimizedMarshaller();
 
             KEY_SIZE = marsh.marshal(1).length;
             ONE_KB_VAL_SIZE = marsh.marshal(new Value(new byte[1024])).length;
@@ -186,7 +186,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
                     if (grid(0).mapKeyToNode(null, key).equals(grid(0).localNode())) {
                         if (i > 0)
-                            assertTrue(cache(0).putx(key, new Value(new byte[i * 1024])));
+                            jcache(0).put(key, new Value(new byte[i * 1024]));
 
                         keys[i] = key;
 
@@ -196,8 +196,8 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
             }
 
             // Create near entries.
-            assertNotNull(cache(1).get(keys[1]));
-            assertNotNull(cache(1).get(keys[2]));
+            assertNotNull(jcache(1).get(keys[1]));
+            assertNotNull(jcache(1).get(keys[2]));
 
             assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
                 extrasSize(cache(0).entry(keys[0])), cache(0).entry(keys[0]).memorySize());

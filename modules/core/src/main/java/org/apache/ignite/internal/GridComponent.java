@@ -25,9 +25,20 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Interface for all main internal GridGain components (managers and processors).
+ * Interface for all main internal Ignite components (managers and processors).
  */
 public interface GridComponent {
+    /**
+     * Unique component type for discovery data exchange.
+     */
+    enum DiscoveryDataExchangeType {
+        /** */
+        CONTINUOUS_PROC,
+
+        /** */
+        PLUGIN
+    }
+
     /**
      * Starts grid component.
      *
@@ -93,4 +104,12 @@ public interface GridComponent {
      * @return Validation result or {@code null} in case of success.
      */
     @Nullable public IgniteSpiNodeValidationResult validateNode(ClusterNode node);
+
+    /**
+     * Gets unique component type to distinguish components providing discovery data. Must return non-null value
+     * if component implements method {@link #collectDiscoveryData(UUID)}.
+     *
+     * @return Unique component type for discovery data exchange.
+     */
+    @Nullable public DiscoveryDataExchangeType discoveryDataType();
 }

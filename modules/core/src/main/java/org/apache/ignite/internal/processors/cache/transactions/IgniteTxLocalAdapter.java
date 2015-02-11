@@ -21,20 +21,20 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.dr.*;
+import org.apache.ignite.internal.transactions.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
@@ -43,10 +43,10 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.transactions.IgniteTxState.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 
 /**
  * Transaction adapter for cache transactions.
@@ -362,7 +362,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     public void userPrepare() throws IgniteCheckedException {
         if (state() != PREPARING) {
             if (timedOut())
-                throw new IgniteTxTimeoutException("Transaction timed out: " + this);
+                throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
 
             IgniteTxState state = state();
 
@@ -630,7 +630,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
         if (state != COMMITTING) {
             if (timedOut())
-                throw new IgniteTxTimeoutException("Transaction timed out: " + this);
+                throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
 
             setRollbackOnly();
 
@@ -737,13 +737,13 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                     boolean drNeedResolve = cacheCtx.conflictNeedResolve(cached.version(), explicitVer);
 
                                     if (drNeedResolve) {
-                                        IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContextImpl<K, V>>
+                                        IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>>
                                             drRes = conflictResolve(op, txEntry.key(), val, valBytes, txEntry.ttl(),
                                                 txEntry.drExpireTime(), explicitVer, cached);
 
                                         assert drRes != null;
 
-                                        GridCacheVersionConflictContextImpl<K, V> conflictCtx = drRes.get2();
+                                        GridCacheVersionConflictContext<K, V> conflictCtx = drRes.get2();
 
                                         if (conflictCtx.isUseOld())
                                             op = NOOP;
@@ -925,7 +925,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                             throw ex;
                         }
                         else {
-                            IgniteCheckedException err = new IgniteTxHeuristicException("Failed to locally write to cache " +
+                            IgniteCheckedException err = new IgniteTxHeuristicCheckedException("Failed to locally write to cache " +
                                 "(all transaction entries will be invalidated, however there was a window when " +
                                 "entries for this transaction were visible to others): " + this, ex);
 
@@ -2444,7 +2444,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             Object res = null;
 
             for (T2<EntryProcessor<K, V, ?>, Object[]> t : txEntry.entryProcessors()) {
-                CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(txEntry.key(), val);
+                CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(txEntry.context(), txEntry.key(), val);
 
                 EntryProcessor<K, V, ?> entryProcessor = t.get1();
 
@@ -2514,7 +2514,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         map0.put(key, val);
                     }
                 }
-                catch (PortableException e) {
+                catch (IgniteException e) {
                     return new GridFinishedFuture<>(cctx.kernalContext(), e);
                 }
             }
@@ -2531,7 +2531,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         invokeMap0.put(key, e.getValue());
                     }
                 }
-                catch (PortableException e) {
+                catch (IgniteException e) {
                     return new GridFinishedFuture<>(cctx.kernalContext(), e);
                 }
             }
@@ -2735,7 +2735,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 else
                     keys0 = null;
             }
-            catch (PortableException e) {
+            catch (IgniteException e) {
                 return new GridFinishedFuture<>(cctx.kernalContext(), e);
             }
         }
@@ -3055,23 +3055,23 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     protected void checkValid() throws IgniteCheckedException {
         if (isRollbackOnly()) {
             if (timedOut())
-                throw new IgniteTxTimeoutException("Cache transaction timed out: " + this);
+                throw new IgniteTxTimeoutCheckedException("Cache transaction timed out: " + this);
 
             IgniteTxState state = state();
 
             if (state == ROLLING_BACK || state == ROLLED_BACK)
-                throw new IgniteTxRollbackException("Cache transaction is marked as rollback-only " +
+                throw new IgniteTxRollbackCheckedException("Cache transaction is marked as rollback-only " +
                     "(will be rolled back automatically): " + this);
 
             if (state == UNKNOWN)
-                throw new IgniteTxHeuristicException("Cache transaction is in unknown state " +
+                throw new IgniteTxHeuristicCheckedException("Cache transaction is in unknown state " +
                     "(remote transactions will be invalidated): " + this);
 
             throw new IgniteCheckedException("Cache transaction marked as rollback-only: " + this);
         }
 
         if (remainingTime() == 0 && setRollbackOnly())
-            throw new IgniteTxTimeoutException("Cache transaction timed out " +
+            throw new IgniteTxTimeoutCheckedException("Cache transaction timed out " +
                 "(was rolled back automatically): " + this);
     }
 
@@ -3420,8 +3420,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 setRollbackOnly();
 
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteTx>, T>() {
-                        @Override public T apply(IgniteInternalFuture<IgniteTx> f) {
+                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteInternalTx>, T>() {
+                        @Override public T apply(IgniteInternalFuture<IgniteInternalTx> f) {
                             throw new GridClosureException(e);
                         }
                     });
@@ -3432,13 +3432,13 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             if (!locked) {
                 setRollbackOnly();
 
-                final GridClosureException ex = new GridClosureException(new IgniteTxTimeoutException("Failed to " +
+                final GridClosureException ex = new GridClosureException(new IgniteTxTimeoutCheckedException("Failed to " +
                     "acquire lock within provided timeout for transaction [timeout=" + timeout() +
                     ", tx=" + this + ']'));
 
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteTx>, T>() {
-                        @Override public T apply(IgniteInternalFuture<IgniteTx> f) {
+                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteInternalTx>, T>() {
+                        @Override public T apply(IgniteInternalFuture<IgniteInternalTx> f) {
                             throw ex;
                         }
                     });
@@ -3455,8 +3455,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 if (commit && commitAfterLock()) {
                     rollback = false;
 
-                    return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteTx>, T>() {
-                        @Override public T applyx(IgniteInternalFuture<IgniteTx> f) throws IgniteCheckedException {
+                    return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, T>() {
+                        @Override public T applyx(IgniteInternalFuture<IgniteInternalTx> f) throws IgniteCheckedException {
                             f.get();
 
                             return r;
@@ -3470,8 +3470,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             }
             catch (final IgniteCheckedException ex) {
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteTx>, T>() {
-                        @Override public T apply(IgniteInternalFuture<IgniteTx> f) {
+                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteInternalTx>, T>() {
+                        @Override public T apply(IgniteInternalFuture<IgniteInternalTx> f) {
                             throw new GridClosureException(ex);
                         }
                     });
@@ -3512,7 +3512,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     throw new GridClosureException(e);
 
                 if (!locked)
-                    throw new GridClosureException(new IgniteTxTimeoutException("Failed to acquire lock " +
+                    throw new GridClosureException(new IgniteTxTimeoutCheckedException("Failed to acquire lock " +
                         "within provided timeout for transaction [timeout=" + timeout() + ", tx=" + this + ']'));
 
                 IgniteInternalFuture<T> fut = postLock();

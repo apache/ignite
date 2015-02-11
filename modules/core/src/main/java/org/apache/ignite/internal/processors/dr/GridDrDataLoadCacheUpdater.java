@@ -18,60 +18,64 @@
 package org.apache.ignite.internal.processors.dr;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.dataload.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 
 /**
  * Data center replication cache updater for data loader.
  */
-public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataLoadCacheUpdater<K, V> {
+public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataLoader.Updater<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public void update(IgniteCache<K, V> cache0, Collection<Map.Entry<K, V>> col)
-        throws IgniteCheckedException {
-        String cacheName = cache0.getConfiguration(CacheConfiguration.class).getName();
+    @Override public void update(IgniteCache<K, V> cache0, Collection<Map.Entry<K, V>> col) {
+        try {
+            String cacheName = cache0.getConfiguration(CacheConfiguration.class).getName();
 
-        GridKernalContext ctx = ((IgniteKernal)cache0.unwrap(Ignite.class)).context();
-        IgniteLogger log = ctx.log(GridDrDataLoadCacheUpdater.class);
-        GridCacheAdapter<K, V> cache = ctx.cache().internalCache(cacheName);
+            GridKernalContext ctx = ((IgniteKernal)cache0.unwrap(Ignite.class)).context();
+            IgniteLogger log = ctx.log(GridDrDataLoadCacheUpdater.class);
+            GridCacheAdapter<K, V> cache = ctx.cache().internalCache(cacheName);
 
-        assert !F.isEmpty(col);
+            assert !F.isEmpty(col);
 
-        if (log.isDebugEnabled())
-            log.debug("Running DR put job [nodeId=" + ctx.localNodeId() + ", cacheName=" + cacheName + ']');
+            if (log.isDebugEnabled())
+                log.debug("Running DR put job [nodeId=" + ctx.localNodeId() + ", cacheName=" + cacheName + ']');
 
-        IgniteInternalFuture<?> f = cache.context().preloader().startFuture();
+            IgniteInternalFuture<?> f = cache.context().preloader().startFuture();
 
-        if (!f.isDone())
-            f.get();
+            if (!f.isDone())
+                f.get();
 
-        for (Map.Entry<K, V> entry0 : col) {
-            GridCacheRawVersionedEntry<K, V> entry = (GridCacheRawVersionedEntry<K, V>)entry0;
+            for (Map.Entry<K, V> entry0 : col) {
+                GridCacheRawVersionedEntry<K, V> entry = (GridCacheRawVersionedEntry<K, V>)entry0;
 
-            entry.unmarshal(ctx.config().getMarshaller());
+                entry.unmarshal(ctx.config().getMarshaller());
 
-            K key = entry.key();
+                K key = entry.key();
 
-            GridCacheDrInfo<V> val = entry.value() != null ? entry.expireTime() != 0 ?
-                new GridCacheDrExpirationInfo<>(entry.value(), entry.version(), entry.ttl(), entry.expireTime()) :
-                new GridCacheDrInfo<>(entry.value(), entry.version()) : null;
+                GridCacheDrInfo<V> val = entry.value() != null ? entry.expireTime() != 0 ?
+                    new GridCacheDrExpirationInfo<>(entry.value(), entry.version(), entry.ttl(), entry.expireTime()) :
+                    new GridCacheDrInfo<>(entry.value(), entry.version()) : null;
 
-            if (val == null)
-                cache.removeAllDr(Collections.singletonMap(key, entry.version()));
-            else
-                cache.putAllDr(Collections.singletonMap(key, val));
+                if (val == null)
+                    cache.removeAllDr(Collections.singletonMap(key, entry.version()));
+                else
+                    cache.putAllDr(Collections.singletonMap(key, val));
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("DR put job finished [nodeId=" + ctx.localNodeId() + ", cacheName=" + cacheName + ']');
         }
-
-        if (log.isDebugEnabled())
-            log.debug("DR put job finished [nodeId=" + ctx.localNodeId() + ", cacheName=" + cacheName + ']');
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 }

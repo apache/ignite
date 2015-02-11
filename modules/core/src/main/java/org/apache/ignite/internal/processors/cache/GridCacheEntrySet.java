@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -66,7 +66,7 @@ public class GridCacheEntrySet<K, V> extends AbstractSet<CacheEntry<K, V>> {
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        ctx.cache().clearAll0(F.viewReadOnly(set, F.<K>mapEntry2Key(), filter), CU.<K, V>empty());
+        ctx.cache().clearLocally0(F.viewReadOnly(set, F.<K>mapEntry2Key(), filter), CU.<K, V>empty());
 
         set.clear();
     }

@@ -26,6 +26,9 @@ import java.util.*;
  */
 public class CacheStorePartialUpdateException extends IgniteCheckedException {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private Collection<Object> failedKeys;
 
     /**

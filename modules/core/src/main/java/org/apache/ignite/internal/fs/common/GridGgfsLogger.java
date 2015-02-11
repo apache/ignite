@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.fs.common;
 
-import org.apache.ignite.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 
@@ -444,7 +444,7 @@ public final class GridGgfsLogger {
             try {
                 U.join(flushWorker);
             }
-            catch (IgniteInterruptedException ignore) {
+            catch (IgniteInterruptedCheckedException ignore) {
                 // No-op.
             }
 
@@ -694,7 +694,7 @@ public final class GridGgfsLogger {
                         try {
                             U.await(flushCond, 1000L, TimeUnit.MILLISECONDS);
                         }
-                        catch (IgniteInterruptedException ignore) {
+                        catch (IgniteInterruptedCheckedException ignore) {
                             t.interrupt();
 
                             break;

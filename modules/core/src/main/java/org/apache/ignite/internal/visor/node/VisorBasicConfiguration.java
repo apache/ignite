@@ -66,9 +66,6 @@ public class VisorBasicConfiguration implements Serializable {
     /** Network timeout. */
     private long netTimeout;
 
-    /** Node license URL */
-    private String licenseUrl;
-
     /** Logger used on node. */
     private String log;
 
@@ -111,7 +108,7 @@ public class VisorBasicConfiguration implements Serializable {
         VisorBasicConfiguration cfg = new VisorBasicConfiguration();
 
         cfg.gridName(c.getGridName());
-        cfg.ggHome(getProperty(IGNITE_HOME, c.getGridGainHome()));
+        cfg.ggHome(getProperty(IGNITE_HOME, c.getIgniteHome()));
         cfg.localHost(getProperty(IGNITE_LOCAL_HOST, c.getLocalHost()));
         cfg.nodeId(g.localNode().id());
         cfg.marshaller(compactClass(c.getMarshaller()));
@@ -120,7 +117,6 @@ public class VisorBasicConfiguration implements Serializable {
         cfg.jmxRemote(g.isJmxRemoteEnabled());
         cfg.restart(g.isRestartEnabled());
         cfg.networkTimeout(c.getNetworkTimeout());
-        cfg.licenseUrl(c.getLicenseUrl());
         cfg.logger(compactClass(c.getGridLogger()));
         cfg.discoStartupDelay(c.getDiscoveryStartupDelay());
         cfg.mBeanServer(compactClass(c.getMBeanServer()));
@@ -274,20 +270,6 @@ public class VisorBasicConfiguration implements Serializable {
      */
     public void networkTimeout(long netTimeout) {
         this.netTimeout = netTimeout;
-    }
-
-    /**
-     * @return Node license URL
-     */
-    @Nullable public String licenseUrl() {
-        return licenseUrl;
-    }
-
-    /**
-     * @param licenseUrl New node license URL
-     */
-    public void licenseUrl(@Nullable String licenseUrl) {
-        this.licenseUrl = licenseUrl;
     }
 
     /**

@@ -20,13 +20,13 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -346,7 +346,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors",
         "OverriddenMethodCallDuringObjectConstruction"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDistributedTxFinishRequest _clone = new GridDistributedTxFinishRequest();
 
         clone0(_clone);
@@ -355,17 +355,19 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridDistributedTxFinishRequest _clone = (GridDistributedTxFinishRequest)_msg;
 
         _clone.futId = futId;
         _clone.threadId = threadId;
-        _clone.commitVer = commitVer;
+        _clone.commitVer = commitVer != null ? (GridCacheVersion)commitVer.clone() : null;
         _clone.invalidate = invalidate;
         _clone.commit = commit;
-        _clone.baseVer = baseVer;
+        _clone.syncCommit = syncCommit;
+        _clone.syncRollback = syncRollback;
+        _clone.baseVer = baseVer != null ? (GridCacheVersion)baseVer.clone() : null;
         _clone.writeEntries = writeEntries;
         _clone.writeEntriesBytes = writeEntriesBytes;
         _clone.recoveryWrites = recoveryWrites;
@@ -379,138 +381,97 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 8:
-                if (!commState.putCacheVersion(baseVer))
+                if (!writer.writeMessage("baseVer", baseVer))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 9:
-                if (!commState.putBoolean(commit))
+                if (!writer.writeBoolean("commit", commit))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 10:
-                if (!commState.putCacheVersion(commitVer))
+                if (!writer.writeMessage("commitVer", commitVer))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 11:
-                if (!commState.putGridUuid(futId))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 12:
-                if (!commState.putByteArray(grpLockKeyBytes))
+                if (!writer.writeByteArray("grpLockKeyBytes", grpLockKeyBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 13:
-                if (!commState.putBoolean(invalidate))
+                if (!writer.writeBoolean("invalidate", invalidate))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 14:
-                if (!commState.putBoolean(syncCommit))
+                if (!writer.writeCollection("recoveryWritesBytes", recoveryWritesBytes, byte[].class))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 15:
-                if (!commState.putBoolean(syncRollback))
+                if (!writer.writeBoolean("syncCommit", syncCommit))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 16:
-                if (recoveryWritesBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(recoveryWritesBytes.size()))
-                            return false;
+                if (!writer.writeBoolean("syncRollback", syncRollback))
+                    return false;
 
-                        commState.it = recoveryWritesBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 17:
-                if (!commState.putLong(threadId))
+                if (!writer.writeBoolean("sys", sys))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 18:
-                if (!commState.putInt(txSize))
+                if (!writer.writeLong("threadId", threadId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 19:
-                if (writeEntriesBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(writeEntriesBytes.size()))
-                            return false;
-
-                        commState.it = writeEntriesBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
-
-            case 20:
-                if (!commState.putBoolean(sys))
+                if (!writer.writeInt("txSize", txSize))
                     return false;
 
-                commState.idx++;
+                state++;
+
+            case 20:
+                if (!writer.writeCollection("writeEntriesBytes", writeEntriesBytes, byte[].class))
+                    return false;
+
+                state++;
+
         }
 
         return true;
@@ -519,165 +480,116 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 8:
-                GridCacheVersion baseVer0 = commState.getCacheVersion();
+                baseVer = reader.readMessage("baseVer");
 
-                if (baseVer0 == CACHE_VER_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                baseVer = baseVer0;
-
-                commState.idx++;
+                state++;
 
             case 9:
-                if (buf.remaining() < 1)
+                commit = reader.readBoolean("commit");
+
+                if (!reader.isLastRead())
                     return false;
 
-                commit = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 10:
-                GridCacheVersion commitVer0 = commState.getCacheVersion();
+                commitVer = reader.readMessage("commitVer");
 
-                if (commitVer0 == CACHE_VER_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                commitVer = commitVer0;
-
-                commState.idx++;
+                state++;
 
             case 11:
-                IgniteUuid futId0 = commState.getGridUuid();
+                futId = reader.readIgniteUuid("futId");
 
-                if (futId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                futId = futId0;
-
-                commState.idx++;
+                state++;
 
             case 12:
-                byte[] grpLockKeyBytes0 = commState.getByteArray();
+                grpLockKeyBytes = reader.readByteArray("grpLockKeyBytes");
 
-                if (grpLockKeyBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                grpLockKeyBytes = grpLockKeyBytes0;
-
-                commState.idx++;
+                state++;
 
             case 13:
-                if (buf.remaining() < 1)
+                invalidate = reader.readBoolean("invalidate");
+
+                if (!reader.isLastRead())
                     return false;
 
-                invalidate = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 14:
-                if (buf.remaining() < 1)
+                recoveryWritesBytes = reader.readCollection("recoveryWritesBytes", byte[].class);
+
+                if (!reader.isLastRead())
                     return false;
 
-                syncCommit = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 15:
-                if (buf.remaining() < 1)
+                syncCommit = reader.readBoolean("syncCommit");
+
+                if (!reader.isLastRead())
                     return false;
 
-                syncRollback = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 16:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                syncRollback = reader.readBoolean("syncRollback");
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (recoveryWritesBytes == null)
-                        recoveryWritesBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        recoveryWritesBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 17:
-                if (buf.remaining() < 8)
+                sys = reader.readBoolean("sys");
+
+                if (!reader.isLastRead())
                     return false;
 
-                threadId = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 18:
-                if (buf.remaining() < 4)
+                threadId = reader.readLong("threadId");
+
+                if (!reader.isLastRead())
                     return false;
 
-                txSize = commState.getInt();
-
-                commState.idx++;
+                state++;
 
             case 19:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                txSize = reader.readInt("txSize");
 
-                    commState.readSize = commState.getInt();
-                }
-
-                if (commState.readSize >= 0) {
-                    if (writeEntriesBytes == null)
-                        writeEntriesBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        writeEntriesBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
-
-            case 20:
-                if (buf.remaining() < 1)
+                if (!reader.isLastRead())
                     return false;
 
-                sys = commState.getBoolean();
+                state++;
 
-                commState.idx++;
+            case 20:
+                writeEntriesBytes = reader.readCollection("writeEntriesBytes", byte[].class);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
+
         }
 
         return true;
@@ -685,7 +597,7 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 24;
+        return 23;
     }
 
     /** {@inheritDoc} */

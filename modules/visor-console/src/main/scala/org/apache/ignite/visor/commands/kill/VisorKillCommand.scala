@@ -17,8 +17,8 @@
 
 package org.apache.ignite.visor.commands.kill
 
-import org.apache.ignite.internal.GridNodeAttributes
-import GridNodeAttributes._
+import org.apache.ignite.internal.IgniteNodeAttributes
+import IgniteNodeAttributes._
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
@@ -179,7 +179,7 @@ class VisorKillCommand {
                     if (restart && node != null && node.attribute[String](ATTR_RESTART_ENABLED) != "true")
                         scold("Node doesn't support restart: " + nid8(node)).^^
                 catch {
-                    case e: IgniteCheckedException => scold("Failed to restart the node. " + e.getMessage).^^
+                    case e: IgniteException => scold("Failed to restart the node. " + e.getMessage).^^
                 }
 
                 val op = if (restart) "restart" else "kill"
@@ -187,7 +187,7 @@ class VisorKillCommand {
                 try
                     killOrRestart(if (node == null) grid.nodes().map(_.id()) else Collections.singleton(node.id()), restart)
                 catch {
-                    case _: IgniteCheckedException => scold("Failed to " + op + " due to system error.").^^
+                    case _: IgniteException => scold("Failed to " + op + " due to system error.").^^
                 }
             }
         }

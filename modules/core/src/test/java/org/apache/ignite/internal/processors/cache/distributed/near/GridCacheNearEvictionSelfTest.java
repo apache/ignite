@@ -20,12 +20,13 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -71,7 +72,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        c.setMarshaller(new IgniteOptimizedMarshaller(false));
+        c.setMarshaller(new OptimizedMarshaller(false));
 
         return c;
     }
@@ -115,7 +116,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
         try {
             final int cnt = 100;
 
-            grid(0).compute().broadcast(new Callable<Object>() {
+            grid(0).compute().broadcast(new IgniteCallable<Object>() {
                 @IgniteInstanceResource
                 private Ignite ignite;
 
@@ -149,7 +150,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
         try {
             final int cnt = 100;
 
-            grid(0).compute().broadcast(new Callable<Object>() {
+            grid(0).compute().broadcast(new IgniteCallable<Object>() {
                 @IgniteInstanceResource
                 private Ignite ignite;
 

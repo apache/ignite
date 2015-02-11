@@ -20,20 +20,20 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Continuous routine handler for remote event listening.
@@ -43,18 +43,18 @@ class GridEventConsumeHandler implements GridContinuousHandler {
     private static final long serialVersionUID = 0L;
 
     /** Default callback. */
-    private static final P2<UUID, IgniteEvent> DFLT_CALLBACK = new P2<UUID, IgniteEvent>() {
-        @Override public boolean apply(UUID uuid, IgniteEvent e) {
+    private static final P2<UUID, Event> DFLT_CALLBACK = new P2<UUID, Event>() {
+        @Override public boolean apply(UUID uuid, Event e) {
             return true;
         }
     };
 
     /** Local callback. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private IgniteBiPredicate<UUID, IgniteEvent> cb;
+    private IgniteBiPredicate<UUID, Event> cb;
 
     /** Filter. */
-    private IgnitePredicate<IgniteEvent> filter;
+    private IgnitePredicate<Event> filter;
 
     /** Serialized filter. */
     private byte[] filterBytes;
@@ -83,7 +83,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
      * @param filter Filter.
      * @param types Types.
      */
-    GridEventConsumeHandler(@Nullable IgniteBiPredicate<UUID, IgniteEvent> cb, @Nullable IgnitePredicate<IgniteEvent> filter,
+    GridEventConsumeHandler(@Nullable IgniteBiPredicate<UUID, Event> cb, @Nullable IgnitePredicate<Event> filter,
         @Nullable int[] types) {
         this.cb = cb == null ? DFLT_CALLBACK : cb;
         this.filter = filter;
@@ -121,7 +121,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         final boolean loc = nodeId.equals(ctx.localNodeId());
 
         lsnr = new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
+            @Override public void onEvent(Event evt) {
                 if (filter == null || filter.apply(evt)) {
                     if (loc) {
                         if (!cb.apply(nodeId, evt))
@@ -134,8 +134,8 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                             try {
                                 EventWrapper wrapper = new EventWrapper(evt);
 
-                                if (evt instanceof IgniteCacheEvent) {
-                                    String cacheName = ((IgniteCacheEvent)evt).cacheName();
+                                if (evt instanceof CacheEvent) {
+                                    String cacheName = ((CacheEvent)evt).cacheName();
 
                                     if (ctx.config().isPeerClassLoadingEnabled() && U.hasCache(node, cacheName)) {
                                         wrapper.p2pMarshal(ctx.config().getMarshaller());
@@ -251,7 +251,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
             GridDeployment dep = ctx.deploy().deploy(cls, U.detectClassLoader(cls));
 
             if (dep == null)
-                throw new IgniteDeploymentException("Failed to deploy event filter: " + filter);
+                throw new IgniteDeploymentCheckedException("Failed to deploy event filter: " + filter);
 
             depInfo = new GridDeploymentInfoBean(dep);
 
@@ -270,7 +270,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                 depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
 
             if (dep == null)
-                throw new IgniteDeploymentException("Failed to obtain deployment for class: " + clsName);
+                throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
 
             filter = ctx.config().getMarshaller().unmarshal(filterBytes, dep.classLoader());
         }
@@ -308,7 +308,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
             depInfo = (GridDeploymentInfo)in.readObject();
         }
         else
-            filter = (IgnitePredicate<IgniteEvent>)in.readObject();
+            filter = (IgnitePredicate<Event>)in.readObject();
 
         types = (int[])in.readObject();
     }
@@ -321,7 +321,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         private static final long serialVersionUID = 0L;
 
         /** Event. */
-        private IgniteEvent evt;
+        private Event evt;
 
         /** Serialized event. */
         private byte[] bytes;
@@ -342,7 +342,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
         /**
          * @param evt Event.
          */
-        EventWrapper(IgniteEvent evt) {
+        EventWrapper(Event evt) {
             assert evt != null;
 
             this.evt = evt;
@@ -352,7 +352,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
          * @param marsh Marshaller.
          * @throws IgniteCheckedException In case of error.
          */
-        void p2pMarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
+        void p2pMarshal(Marshaller marsh) throws IgniteCheckedException {
             assert marsh != null;
 
             bytes = marsh.marshal(evt);
@@ -363,7 +363,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
          * @param ldr Class loader.
          * @throws IgniteCheckedException In case of error.
          */
-        void p2pUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
+        void p2pUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
             assert marsh != null;
 
             assert evt == null;
@@ -374,7 +374,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
         /** {@inheritDoc} */
         @Override public void prepare(GridDeploymentInfo depInfo) {
-            assert evt instanceof IgniteCacheEvent;
+            assert evt instanceof CacheEvent;
 
             this.depInfo = depInfo;
         }
@@ -409,7 +409,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                 depInfo = (GridDeploymentInfo)in.readObject();
             }
             else
-                evt = (IgniteEvent)in.readObject();
+                evt = (Event)in.readObject();
         }
     }
 }

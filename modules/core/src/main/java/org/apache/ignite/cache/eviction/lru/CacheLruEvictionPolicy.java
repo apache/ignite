@@ -19,9 +19,10 @@ package org.apache.ignite.cache.eviction.lru;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jdk8.backport.ConcurrentLinkedDeque8.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 

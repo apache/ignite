@@ -21,22 +21,24 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.transactions.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
+import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.IgniteState.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Tests for node failure in transactions.
@@ -79,7 +81,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         c.setDiscoverySpi(disco);
 
-        c.setDeploymentMode(IgniteDeploymentMode.SHARED);
+        c.setDeploymentMode(DeploymentMode.SHARED);
 
         return c;
     }
@@ -131,7 +133,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      */
     public void testPessimisticReadCommitted() throws Throwable {
         // TODO:  GG-7437.
-        if (cache(0).configuration().getCacheMode() == CacheMode.REPLICATED)
+        if (jcache(0).getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.REPLICATED)
             return;
 
         checkTransaction(PESSIMISTIC, READ_COMMITTED);
@@ -163,19 +165,17 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         Ignite g = grid(idx);
 
-        GridCache<Integer, String> cache = cache(idx);
-
-        IgniteTx tx = cache.txStart(concurrency, isolation);
+        IgniteTx tx = g.transactions().txStart(concurrency, isolation);
 
         try {
-            cache.put(KEY, VALUE);
+            g.jcache(null).put(KEY, VALUE);
 
             int checkIdx = (idx + 1) % G.allGrids().size();
 
             info("Check grid index: " + checkIdx);
 
-            IgniteInternalFuture<?> f = waitForLocalEvent(grid(checkIdx).events(), new P1<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent e) {
+            IgniteFuture<?> f = waitForLocalEvent(grid(checkIdx).events(), new P1<Event>() {
+                @Override public boolean apply(Event e) {
                     info("Received grid event: " + e);
 
                     return true;
@@ -188,12 +188,13 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
             U.sleep(getInteger(IGNITE_TX_SALVAGE_TIMEOUT, 3000));
 
-            GridCache<Integer, String> checkCache = cache(checkIdx);
+            IgniteCache<Integer, String> checkCache = jcache(checkIdx);
 
             boolean locked = false;
+            Lock lock = checkCache.lock(KEY);
 
             for (int i = 0; !locked && i < 3; i++) {
-                locked = checkCache.lock(KEY, -1);
+                locked = lock.tryLock();
 
                 if (!locked)
                     U.sleep(500);
@@ -201,14 +202,11 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
                     break;
             }
 
-            try {
-                assert locked : "Failed to lock key on cache [idx=" + checkIdx + ", key=" + KEY + ']';
-            }
-            finally {
-                checkCache.unlockAll(F.asList(KEY));
-            }
+            assert locked : "Failed to lock key on cache [idx=" + checkIdx + ", key=" + KEY + ']';
+
+            lock.unlock();
         }
-        catch (IgniteTxOptimisticException e) {
+        catch (IgniteTxOptimisticCheckedException e) {
             U.warn(log, "Optimistic transaction failure (will rollback) [msg=" + e.getMessage() + ", tx=" + tx + ']');
 
             if (G.state(g.name()) == IgniteState.STARTED)
@@ -237,30 +235,28 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
         info("Nodes for key [id=" + grid(idx).cache(null).affinity().mapKeyToPrimaryAndBackups(KEY) +
             ", key=" + KEY + ']');
 
-        GridCache<Integer, String> cache = cache(idx);
+        IgniteCache<Integer, String> cache = jcache(idx);
 
         // TODO:  GG-7437.
-        if (cache.configuration().getCacheMode() == CacheMode.REPLICATED)
+        if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.REPLICATED)
             return;
 
         cache.put(KEY, VALUE);
 
-        assert cache.lock(KEY, -1);
+        Lock lock = cache.lock(KEY);
+
+        assert lock.tryLock();
 
         int checkIdx = 1;
 
         info("Check grid index: " + checkIdx);
 
-        GridCache<Integer, String> checkCache = cache(checkIdx);
+        IgniteCache<Integer, String> checkCache = jcache(checkIdx);
 
-        assert !checkCache.lock(KEY, -1);
+        assert !checkCache.lock(KEY).tryLock();
 
-        CacheEntry e = checkCache.entry(KEY);
-
-        assert e.isLocked() : "Entry is not locked for grid [idx=" + checkIdx + ", entry=" + e + ']';
-
-        IgniteInternalFuture<?> f = waitForLocalEvent(grid(checkIdx).events(), new P1<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent e) {
+        IgniteFuture<?> f = waitForLocalEvent(grid(checkIdx).events(), new P1<Event>() {
+            @Override public boolean apply(Event e) {
                 info("Received grid event: " + e);
 
                 return true;
@@ -272,9 +268,10 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
         f.get();
 
         boolean locked = false;
+        Lock checkLock = checkCache.lock(KEY);
 
         for (int i = 0; !locked && i < 3; i++) {
-            locked = checkCache.lock(KEY, -1);
+            locked = checkLock.tryLock();
 
             if (!locked) {
                 info("Still not locked...");
@@ -285,12 +282,10 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
                 break;
         }
 
-        assert locked : "Failed to lock entry: " + e;
+        assert locked : "Failed to lock";
 
-        checkCache.unlockAll(F.asList(KEY));
+        checkLock.unlock();
 
-        e = checkCache.entry(KEY);
-
-        assert !e.isLocked() : "Entry is locked for grid [idx=" + checkIdx + ", entry=" + e + ']';
+        assert !checkCache.isLocalLocked(KEY, false);
     }
 }

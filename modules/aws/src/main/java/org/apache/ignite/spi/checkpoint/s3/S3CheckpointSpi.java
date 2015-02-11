@@ -22,13 +22,14 @@ import com.amazonaws.auth.*;
 import com.amazonaws.services.s3.*;
 import com.amazonaws.services.s3.model.*;
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.checkpoint.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -73,10 +74,10 @@ import java.util.*;
  * <h2 class="header">Spring Example</h2>
  * {@link S3CheckpointSpi} can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
+ * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *        &lt;property name=&quot;checkpointSpi&quot;&gt;
- *            &lt;bean class=&quot;org.gridgain.grid.spi.checkpoint.s3.S3CheckpointSpi&quot;&gt;
+ *            &lt;bean class=&quot;org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpi&quot;&gt;
  *                &lt;property name=&quot;awsCredentials&quot;&gt;
  *                    &lt;bean class=&quot;com.amazonaws.auth.BasicAWSCredentials&quot;&gt;
  *                        &lt;constructor-arg value=&quot;YOUR_ACCESS_KEY_ID&quot; /&gt;
@@ -102,7 +103,7 @@ import java.util.*;
 public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, S3CheckpointSpiMBean {
     /** Logger. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Ignite instance. */
@@ -116,7 +117,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
     private CheckpointListener lsnr;
 
     /** Prefix to use in bucket name generation. */
-    public static final String BUCKET_NAME_PREFIX = "gridgain-checkpoint-";
+    public static final String BUCKET_NAME_PREFIX = "ignite-checkpoint-";
 
     /** Suffix to use in bucket name generation. */
     public static final String DFLT_BUCKET_NAME_SUFFIX = "default-bucket";
@@ -276,7 +277,7 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
                     try {
                         U.sleep(200);
                     }
-                    catch (IgniteInterruptedException e) {
+                    catch (IgniteInterruptedCheckedException e) {
                         throw new IgniteSpiException("Thread has been interrupted.", e);
                     }
             }

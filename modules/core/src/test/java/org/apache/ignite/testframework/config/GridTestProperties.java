@@ -17,8 +17,8 @@
 
 package org.apache.ignite.testframework.config;
 
-import org.apache.log4j.xml.*;
 import org.apache.ignite.testframework.*;
+import org.apache.log4j.xml.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -260,7 +260,7 @@ public final class GridTestProperties {
 
         path += File.separatorChar + fileName;
 
-        File file = GridTestUtils.resolveGridGainPath(path);
+        File file = GridTestUtils.resolveIgnitePath(path);
 
         if (file != null && file.exists()) {
             assert !file.isDirectory();

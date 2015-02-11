@@ -25,14 +25,14 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -40,15 +40,12 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
- *
- * Forum example <a href="http://www.gridgainsystems.com/jiveforums/thread.jspa?threadID=1449">
- * http://www.gridgainsystems.com/jiveforums/thread.jspa?threadID=1449</a>
  */
 public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
     /** Key count. */
@@ -127,21 +124,21 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
 
-        g1.events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        g1.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 l1.countDown();
 
                 return true;
             }
-        }, IgniteEventType.EVT_CACHE_PRELOAD_STOPPED);
+        }, EventType.EVT_CACHE_PRELOAD_STOPPED);
 
-        g2.events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        g2.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 l2.countDown();
 
                 return true;
             }
-        }, IgniteEventType.EVT_CACHE_PRELOAD_STOPPED);
+        }, EventType.EVT_CACHE_PRELOAD_STOPPED);
 
         info("Beginning to wait for cache1 repartition.");
 
@@ -204,21 +201,21 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
 
-        g1.events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        g1.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 l1.countDown();
 
                 return true;
             }
-        }, IgniteEventType.EVT_CACHE_PRELOAD_STOPPED);
+        }, EventType.EVT_CACHE_PRELOAD_STOPPED);
 
-        g2.events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        g2.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 l2.countDown();
 
                 return true;
             }
-        }, IgniteEventType.EVT_CACHE_PRELOAD_STOPPED);
+        }, EventType.EVT_CACHE_PRELOAD_STOPPED);
 
         U.sleep(1000);
 
@@ -413,7 +410,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @param caches Maps to compare.
      */
     private void checkMaps(final boolean strict, final GridDhtCacheAdapter<String, Integer>... caches)
-        throws IgniteInterruptedException {
+        throws IgniteInterruptedCheckedException {
         if (caches.length < 2)
             return;
 

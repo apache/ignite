@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
@@ -684,7 +684,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         final GridCache<Integer, Integer> c = grid(0).cache(null);
 
-        final Integer key = primaryKeysForCache(c, 1, 0).get(0);
+        final Integer key = primaryKeys(jcache(0), 1, 0).get(0);
 
         c.put(key, 1);
 
@@ -875,28 +875,5 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         if (c.configuration().getCacheMode() != CacheMode.PARTITIONED && inTx)
             assertEquals(1, grid(0).cache(null).metrics().getCacheEvictions());
-    }
-
-    /**
-     * @param cache Cache.
-     * @param cnt Keys count.
-     * @param startFrom Start value for keys search.
-     * @return Collection of keys for which given cache is primary.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected List<Integer> primaryKeysForCache(CacheProjection<Integer, Integer> cache, int cnt, int startFrom)
-            throws IgniteCheckedException {
-        List<Integer> found = new ArrayList<>(cnt);
-
-        for (int i = startFrom; i < startFrom + 100_000; i++) {
-            if (cache.entry(i).primary()) {
-                found.add(i);
-
-                if (found.size() == cnt)
-                    return found;
-            }
-        }
-
-        throw new IgniteCheckedException("Unable to find " + cnt + " keys as primary for cache.");
     }
 }

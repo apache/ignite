@@ -22,7 +22,6 @@ import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.processors.port.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
@@ -31,11 +30,12 @@ import org.apache.ignite.internal.processors.rest.request.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.*;
 
 import java.net.*;
 import java.util.*;
 
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
 
 /**
@@ -269,7 +269,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
             for (Iterator<Map.Entry<String, Object>> i = attrs.entrySet().iterator(); i.hasNext();) {
                 Map.Entry<String, Object> e = i.next();
 
-                if (!e.getKey().startsWith("org.gridgain.") && System.getProperty(e.getKey()) == null) {
+                if (!e.getKey().startsWith("org.apache.ignite.") && System.getProperty(e.getKey()) == null) {
                     i.remove();
 
                     continue;

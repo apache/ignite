@@ -18,8 +18,8 @@
 package org.apache.ignite.loadtests.hashmap;
 
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.loadtests.util.*;
 import org.jdk8.backport.*;
 
@@ -27,7 +27,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy;
+import static org.jdk8.backport.ConcurrentLinkedHashMap.*;
 import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**

@@ -17,9 +17,10 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.lang.*;
+import org.apache.ignite.*;
 import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -37,7 +38,7 @@ public class GridProductImpl implements IgniteProduct, Externalizable {
     public static final String COPYRIGHT = "2015 Copyright(C) Apache Software Foundation";
 
     /** Enterprise edition flag. */
-    public static final boolean ENT;
+    private static final boolean ENT;
 
     /** Ignite version. */
     public static final String VER;
@@ -94,7 +95,7 @@ public class GridProductImpl implements IgniteProduct, Externalizable {
 
         VER_BYTES = U.intToBytes(VER.hashCode());
 
-        COMPOUND_VER = VER + "-" + (ENT ? "ent" : "os");
+        COMPOUND_VER = VER;
 
         BUILD_TSTAMP_STR = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD_TSTAMP * 1000));
 
@@ -118,9 +119,7 @@ public class GridProductImpl implements IgniteProduct, Externalizable {
         this.ctx = ctx;
         this.verChecker = verChecker;
 
-        String releaseType = ctx.isEnterprise() ? "ent" : "os";
-
-        ver = IgniteProductVersion.fromString(VER + '-' + releaseType + '-' + BUILD_TSTAMP + '-' + REV_HASH);
+        ver = IgniteProductVersion.fromString(VER + '-' + BUILD_TSTAMP + '-' + REV_HASH);
     }
 
     /** {@inheritDoc} */
@@ -167,6 +166,14 @@ public class GridProductImpl implements IgniteProduct, Externalizable {
         finally {
             ctx.gateway().readUnlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void ackVisor(IgniteLogger log) {
+        if (ENT)
+            U.quietAndInfo(log, "To start GUI Management & Monitoring run ggvisorui.{sh|bat}");
+        else
+            U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
     }
 
     /** {@inheritDoc} */

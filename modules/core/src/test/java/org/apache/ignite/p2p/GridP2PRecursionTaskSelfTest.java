@@ -35,7 +35,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
     /**
      * Current deployment mode. Used in {@link #getConfiguration(String)}.
      */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -52,7 +52,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception if error occur.
      */
-    private void processTest(IgniteDeploymentMode depMode) throws Exception {
+    private void processTest(DeploymentMode depMode) throws Exception {
         this.depMode = depMode;
 
         try {
@@ -79,7 +79,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testPrivateMode() throws Exception {
-        processTest(IgniteDeploymentMode.PRIVATE);
+        processTest(DeploymentMode.PRIVATE);
     }
 
     /**
@@ -88,7 +88,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testIsolatedMode() throws Exception {
-        processTest(IgniteDeploymentMode.ISOLATED);
+        processTest(DeploymentMode.ISOLATED);
     }
 
     /**
@@ -97,7 +97,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testContinuousMode() throws Exception {
-        processTest(IgniteDeploymentMode.CONTINUOUS);
+        processTest(DeploymentMode.CONTINUOUS);
     }
 
     /**
@@ -106,7 +106,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testSharedMode() throws Exception {
-        processTest(IgniteDeploymentMode.SHARED);
+        processTest(DeploymentMode.SHARED);
     }
 
     /**
@@ -129,7 +129,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
      */
     public static class FactorialTask extends ComputeTaskAdapter<Long, Long> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Long arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Long arg) {
             assert arg > 1;
 
             Map<FactorialJob, ClusterNode> map = new HashMap<>();
@@ -150,12 +150,11 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Long reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Long reduce(List<ComputeJobResult> results) {
             long retVal = 0;
 
-            for (ComputeJobResult res : results) {
+            for (ComputeJobResult res : results)
                 retVal += (Long)res.getData();
-            }
 
             return retVal;
         }
@@ -176,7 +175,7 @@ public class GridP2PRecursionTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Long execute() throws IgniteCheckedException {
+        @Override public Long execute() {
             Long arg = argument(0);
 
             assert arg != null;

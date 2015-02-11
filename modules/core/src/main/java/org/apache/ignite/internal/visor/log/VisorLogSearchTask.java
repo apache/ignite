@@ -20,12 +20,12 @@ package org.apache.ignite.internal.visor.log;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -58,7 +58,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
 
     /** {@inheritDoc} */
     @Nullable @Override protected IgniteBiTuple<Iterable<IgniteBiTuple<Exception, UUID>>,
-            Iterable<VisorLogSearchResult>> reduce0(List<ComputeJobResult> results) throws IgniteCheckedException {
+            Iterable<VisorLogSearchResult>> reduce0(List<ComputeJobResult> results) {
         Collection<VisorLogSearchResult> searchRes = new ArrayList<>();
         Collection<IgniteBiTuple<Exception, UUID>> exRes = new ArrayList<>();
 
@@ -76,6 +76,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
         return new IgniteBiTuple<Iterable<IgniteBiTuple<Exception, UUID>>, Iterable<VisorLogSearchResult>>
             (exRes.isEmpty() ? null : exRes, searchRes.isEmpty() ? null : searchRes);
     }
+
     /**
      * Arguments for {@link VisorLogSearchTask}.
      */
@@ -208,11 +209,11 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
         }
 
         /** {@inheritDoc} */
-        @Override protected  Collection<VisorLogSearchResult> run(VisorLogSearchArg arg) throws IgniteCheckedException {
-            URL url = U.resolveGridGainUrl(arg.folder);
+        @Override protected  Collection<VisorLogSearchResult> run(VisorLogSearchArg arg) {
+            URL url = U.resolveIgniteUrl(arg.folder);
 
             if (url == null)
-                throw new GridInternalException(new FileNotFoundException("Log folder not found: " + arg.folder));
+                throw U.convertException(new GridInternalException(new FileNotFoundException("Log folder not found: " + arg.folder)));
 
             UUID uuid = g.localNode().id();
             String nid = uuid.toString().toLowerCase();
@@ -258,7 +259,7 @@ public class VisorLogSearchTask extends VisorMultiNodeTask<VisorLogSearchTask.Vi
 
                 return results.isEmpty() ? null : results;
             } catch (Exception e) {
-                throw new IgniteCheckedException(e);
+                throw new IgniteException(e);
             }
         }
 

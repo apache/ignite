@@ -18,12 +18,12 @@
 package org.apache.ignite.spi.discovery.tcp.ipfinder.vm;
 
 import org.apache.ignite.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 
 import java.net.*;
 import java.util.*;
@@ -46,7 +46,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  */
 public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Addresses. */

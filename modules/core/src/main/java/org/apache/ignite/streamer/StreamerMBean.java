@@ -23,14 +23,14 @@ import org.jetbrains.annotations.*;
 /**
  * Streamer MBean interface.
  */
-@IgniteMXBeanDescription("MBean that provides access to streamer description and metrics.")
+@MXBeanDescription("MBean that provides access to streamer description and metrics.")
 public interface StreamerMBean {
     /**
      * Gets streamer name.
      *
      * @return Streamer name.
      */
-    @IgniteMXBeanDescription("Streamer name.")
+    @MXBeanDescription("Streamer name.")
     @Nullable public String getName();
 
     /**
@@ -38,7 +38,7 @@ public interface StreamerMBean {
      *
      * @return {@code True} if {@code atLeastOnce} is configured.
      */
-    @IgniteMXBeanDescription("True if atLeastOnce is configured.")
+    @MXBeanDescription("True if atLeastOnce is configured.")
     public boolean isAtLeastOnce();
 
     /**
@@ -47,7 +47,7 @@ public interface StreamerMBean {
      *
      * @return Stage future map size.
      */
-    @IgniteMXBeanDescription("Stage future map size.")
+    @MXBeanDescription("Stage future map size.")
     public int getStageFutureMapSize();
 
     /**
@@ -55,7 +55,7 @@ public interface StreamerMBean {
      *
      * @return Batch future map size.
      */
-    @IgniteMXBeanDescription("Batch future map size.")
+    @MXBeanDescription("Batch future map size.")
     public int getBatchFutureMapSize();
 
     /**
@@ -63,7 +63,7 @@ public interface StreamerMBean {
      *
      * @return Number of stages. Cannot be more than pool thread count.
      */
-    @IgniteMXBeanDescription("Number of stages currently being executed in streamer pool.")
+    @MXBeanDescription("Number of stages currently being executed in streamer pool.")
     public int getStageActiveExecutionCount();
 
     /**
@@ -71,7 +71,7 @@ public interface StreamerMBean {
      *
      * @return Number of event batches waiting to be processed.
      */
-    @IgniteMXBeanDescription("Number of event batches currently waiting to be executed.")
+    @MXBeanDescription("Number of event batches currently waiting to be executed.")
     public int getStageWaitingExecutionCount();
 
     /**
@@ -79,7 +79,7 @@ public interface StreamerMBean {
      *
      * @return Total number of stages executed since last reset.
      */
-    @IgniteMXBeanDescription("Total number of stages executed since last reset.")
+    @MXBeanDescription("Total number of stages executed since last reset.")
     public long getStageTotalExecutionCount();
 
     /**
@@ -89,7 +89,7 @@ public interface StreamerMBean {
      *
      * @return Pipeline maximum execution time.
      */
-    @IgniteMXBeanDescription("Pipeline maximum execution time.")
+    @MXBeanDescription("Pipeline maximum execution time.")
     public long getPipelineMaximumExecutionTime();
 
     /**
@@ -99,7 +99,7 @@ public interface StreamerMBean {
      *
      * @return Pipeline minimum execution time.
      */
-    @IgniteMXBeanDescription("Pipeline minimum execution time.")
+    @MXBeanDescription("Pipeline minimum execution time.")
     public long getPipelineMinimumExecutionTime();
 
     /**
@@ -108,7 +108,7 @@ public interface StreamerMBean {
      *
      * @return Pipeline average execution time.
      */
-    @IgniteMXBeanDescription("Pipeline average execution time.")
+    @MXBeanDescription("Pipeline average execution time.")
     public long getPipelineAverageExecutionTime();
 
     /**
@@ -117,7 +117,7 @@ public interface StreamerMBean {
      *
      * @return Maximum number of unique nodes in pipeline execution.
      */
-    @IgniteMXBeanDescription("Maximum number of unique nodes participated in pipeline execution.")
+    @MXBeanDescription("Maximum number of unique nodes participated in pipeline execution.")
     public int getPipelineMaximumExecutionNodes();
 
     /**
@@ -126,7 +126,7 @@ public interface StreamerMBean {
      *
      * @return Minimum number of unique nodes in pipeline execution.
      */
-    @IgniteMXBeanDescription("Minimum number of unique nodes participated in pipeline execution.")
+    @MXBeanDescription("Minimum number of unique nodes participated in pipeline execution.")
     public int getPipelineMinimumExecutionNodes();
 
     /**
@@ -135,7 +135,7 @@ public interface StreamerMBean {
      *
      * @return Average number of unique nodes in pipeline execution.
      */
-    @IgniteMXBeanDescription("Average number of unique nodes participated in pipeline execution.")
+    @MXBeanDescription("Average number of unique nodes participated in pipeline execution.")
     public int getPipelineAverageExecutionNodes();
 
     /**
@@ -145,7 +145,7 @@ public interface StreamerMBean {
      *
      * @return Number of current active sessions.
      */
-    @IgniteMXBeanDescription("Number of current active sessions.")
+    @MXBeanDescription("Number of current active sessions.")
     public int getCurrentActiveSessions();
 
     /**
@@ -155,7 +155,7 @@ public interface StreamerMBean {
      *
      * @return Maximum active sessions since last reset.
      */
-    @IgniteMXBeanDescription("Maximum number of active sessions since last reset.")
+    @MXBeanDescription("Maximum number of active sessions since last reset.")
     public int getMaximumActiveSessions();
 
     /**
@@ -164,6 +164,6 @@ public interface StreamerMBean {
      *
      * @return Failures count.
      */
-    @IgniteMXBeanDescription("Number of failures since last reset.")
+    @MXBeanDescription("Number of failures since last reset.")
     public int getFailuresCount();
 }

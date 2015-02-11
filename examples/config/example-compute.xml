@@ -15,10 +15,10 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
-    Grid configuration with all defaults and enabled p2p deployment and enabled events.
+    Ignite configuration with all defaults and enabled p2p deployment and enabled events.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -28,12 +28,12 @@
         http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
-    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <!-- Set to true to enable grid-aware class loading for examples, default is false. -->
+    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <!-- Set to true to enable distributed class loading for examples, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
+            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
                 <!-- Set to false to allow non-serializable objects in examples, default is true. -->
                 <property name="requireSerializable" value="false"/>
             </bean>
@@ -41,7 +41,7 @@
 
         <!-- Enable task execution events for examples. -->
         <property name="includeEventTypes">
-            <util:constant static-field="org.apache.ignite.events.IgniteEventType.EVTS_TASK_EXECUTION"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVTS_TASK_EXECUTION"/>
         </property>
 
         <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
@@ -49,7 +49,7 @@
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
                     <!--
-                        GridGain provides several options for automatic discovery that can be used
+                        Ignite provides several options for automatic discovery that can be used
                         instead os static IP based discovery. For information on all options refer
                         to our documentation: http://doc.gridgain.org/latest/Automatic+Node+Discovery
                     -->

@@ -68,7 +68,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
     }
 
     /**
-     * Need to parse only GridGain Hadoop and GGFS classes.
+     * Need to parse only Ignite Hadoop and GGFS classes.
      *
      * @param cls Class name.
      * @return {@code true} if we need to check this class.
@@ -77,7 +77,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
         String gg = "org.apache.ignite";
         int len = gg.length();
 
-        return cls.startsWith(gg) && (cls.indexOf("ggfs.", len) != -1 || cls.indexOf(".fs.", len) != -1 || cls.indexOf("hadoop.", len) != -1);
+        return cls.startsWith(gg) && (cls.indexOf("ignitefs.", len) != -1 || cls.indexOf(".fs.", len) != -1 || cls.indexOf("hadoop.", len) != -1);
     }
 
     /**

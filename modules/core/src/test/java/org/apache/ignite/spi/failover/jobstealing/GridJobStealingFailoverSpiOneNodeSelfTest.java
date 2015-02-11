@@ -20,9 +20,9 @@ package org.apache.ignite.spi.failover.jobstealing;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
 import org.apache.ignite.spi.failover.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.spi.*;
 
@@ -53,11 +53,11 @@ public class GridJobStealingFailoverSpiOneNodeSelfTest extends GridSpiAbstractTe
      */
     private ClusterNode addSpiDependency(GridTestNode node) throws Exception {
         node.addAttribute(
-            U.spiAttribute(getSpi(), GridNodeAttributes.ATTR_SPI_CLASS),
+            U.spiAttribute(getSpi(), IgniteNodeAttributes.ATTR_SPI_CLASS),
             JobStealingCollisionSpi.class.getName());
 
         node.addAttribute(
-            U.spiAttribute(getSpi(), GridNodeAttributes.ATTR_SPI_CLASS),
+            U.spiAttribute(getSpi(), IgniteNodeAttributes.ATTR_SPI_CLASS),
             JobStealingCollisionSpi.class.getName());
 
         return node;

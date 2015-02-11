@@ -19,7 +19,6 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
@@ -28,6 +27,7 @@ import org.apache.ignite.internal.managers.events.*;
 import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.port.*;
 import org.apache.ignite.internal.processors.service.*;
+import org.apache.ignite.internal.util.*;
 
 /**
  * Kernal self test suite.
@@ -60,7 +60,6 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridPortProcessorSelfTest.class);
         suite.addTestSuite(GridHomePathSelfTest.class);
         suite.addTestSuite(GridStartupWithSpecifiedWorkDirectorySelfTest.class);
-        suite.addTestSuite(GridStartupWithUndefinedGridGainHomeSelfTest.class);
         suite.addTestSuite(GridVersionSelfTest.class);
         suite.addTestSuite(GridListenActorSelfTest.class);
         suite.addTestSuite(GridNodeLocalSelfTest.class);

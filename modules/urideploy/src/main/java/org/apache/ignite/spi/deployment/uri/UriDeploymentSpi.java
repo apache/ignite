@@ -19,6 +19,9 @@ package org.apache.ignite.spi.deployment.uri;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
@@ -27,8 +30,6 @@ import org.apache.ignite.spi.deployment.uri.scanners.*;
 import org.apache.ignite.spi.deployment.uri.scanners.file.*;
 import org.apache.ignite.spi.deployment.uri.scanners.ftp.*;
 import org.apache.ignite.spi.deployment.uri.scanners.http.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -70,7 +71,7 @@ import java.util.Map.*;
  *   <pre class="snippet">
  *      META-INF/
  *              |
- *               - gridgain.xml
+ *               - ignite.xml
  *               - ...
  *      lib/
  *         |
@@ -80,7 +81,7 @@ import java.util.Map.*;
  *      ...</pre>
  * <ul>
  * <li>
- * {@code META-INF/} entry may contain {@code gridgain.xml} file which is a
+ * {@code META-INF/} entry may contain {@code ignite.xml} file which is a
  * task descriptor file. The purpose of task descriptor XML file is to specify
  * all tasks to be deployed. This file is a regular
  * <a href="http://www.springframework.org/documentation">Spring</a> XML
@@ -170,12 +171,12 @@ import java.util.Map.*;
  *  </tr>
  * </table>
  * <h2 class="header">File URI Example</h2>
- * The following example will scan {@code 'c:/Program files/gridgain/deployment'}
+ * The following example will scan {@code 'c:/Program files/ignite/deployment'}
  * folder on local box every {@code '5000'} milliseconds. Note that since path
  * has spaces, {@link #setEncodeUri(boolean) setEncodeUri(boolean)} parameter must
  * be set to {@code true} (which is default behavior).
  * <blockquote class="snippet">
- * {@code file://freq=5000@localhost/c:/Program files/gridgain/deployment}
+ * {@code file://freq=5000@localhost/c:/Program files/ignite/deployment}
  * </blockquote>
  * <a name="classes"></a>
  * <h1 class="header">Classes</h1>
@@ -201,12 +202,12 @@ import java.util.Map.*;
  *  </tr>
  * </table>
  * <h2 class="header">Classes URI Example</h2>
- * The following example will scan {@code 'c:/Program files/gridgain/deployment'}
+ * The following example will scan {@code 'c:/Program files/ignite/deployment'}
  * folder on local box every {@code '5000'} milliseconds. Note that since path
  * has spaces, {@link #setEncodeUri(boolean) setEncodeUri(boolean)} parameter must
  * be set to {@code true} (which is default behavior).
  * <blockquote class="snippet">
- * {@code classes://freq=5000@localhost/c:/Program files/gridgain/deployment}
+ * {@code classes://freq=5000@localhost/c:/Program files/ignite/deployment}
  * </blockquote>
  * <a name="ftp"></a>
  * <h1 class="header">FTP</h1>
@@ -239,17 +240,17 @@ import java.util.Map.*;
  * <h2 class="header">FTP URI Example</h2>
  * Here is an example of an FTP URI that connects identified as
  * {@code username:password} to {@code 'localhost'} on port {@code '21'},
- * with initial path set to {@code 'gridgain/deployment'}
+ * with initial path set to {@code 'ignite/deployment'}
  * <blockquote class="snippet">
- * ftp://username:password;freq=10000@localhost:21/gridgain/deployment
+ * ftp://username:password;freq=10000@localhost:21/ignite/deployment
  * </blockquote>
  * <p>
  * <h2 class="header">HTTP URI Example</h2>
- * The following example will scan {@code 'gridgain/deployment'} folder with
+ * The following example will scan {@code 'ignite/deployment'} folder with
  * on site {@code 'www.mysite.com'} using authentication
  * {@code 'username:password'} every {@code '10000'} milliseconds.
  * <blockquote class="snippet">
- * {@code http://username:password;freq=10000@www.mysite.com:110/gridgain/deployment}
+ * {@code http://username:password;freq=10000@www.mysite.com:110/ignite/deployment}
  * </blockquote>
  * <h2 class="header">Java Example</h2>
  * UriDeploymentSpi needs to be explicitly configured to override default local deployment SPI.
@@ -281,10 +282,10 @@ import java.util.Map.*;
  * <h2 class="header">Spring Example</h2>
  * UriDeploymentSpi can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
+ * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *         ...
  *         &lt;property name="deploymentSpi"&gt;
- *             &lt;bean class="org.gridgain.grid.spi.deployment.uri.UriDeploymentSpi"&gt;
+ *             &lt;bean class="org.apache.ignite.grid.spi.deployment.uri.UriDeploymentSpi"&gt;
  *                 &lt;property name="temporaryDirectoryPath" value="c:/tmp/grid"/&gt;
  *                 &lt;property name="uriList"&gt;
  *                     &lt;list&gt;
@@ -327,8 +328,8 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
     /** Default scan frequency for {@code http://} protocol (value is {@code 300000}). */
     public static final int DFLT_HTTP_SCAN_FREQUENCY = 300000;
 
-    /** Default task description file path and name (value is {@code META-INF/gridgain.xml}). */
-    public static final String XML_DESCRIPTOR_PATH = "META-INF/gridgain.xml";
+    /** Default task description file path and name (value is {@code META-INF/ignite.xml}). */
+    public static final String XML_DESCRIPTOR_PATH = "META-INF/ignite.xml";
 
     /**
      * Default temporary directory name relative to file path
@@ -376,7 +377,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
     private final Object mux = new Object();
 
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** NOTE: flag for test purposes only. */
@@ -537,7 +538,7 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
                     try {
                         U.sleep(10000);
                     }
-                    catch (IgniteInterruptedException ignored) {
+                    catch (IgniteInterruptedCheckedException ignored) {
                         // No-op
                     }
 

@@ -22,7 +22,7 @@ import org.apache.ignite.*;
 /**
  * Exception thrown whenever grid transactions time out.
  */
-public class IgniteTxTimeoutException extends IgniteCheckedException {
+public class IgniteTxTimeoutException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 

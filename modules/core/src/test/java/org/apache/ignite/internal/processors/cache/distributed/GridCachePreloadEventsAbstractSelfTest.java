@@ -21,21 +21,21 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.eventstorage.memory.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  *
@@ -104,7 +104,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
 
         Ignite g2 = startGrid("g2");
 
-        Collection<IgniteEvent> evts = g2.events().localQuery(F.<IgniteEvent>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_LOADED);
+        Collection<Event> evts = g2.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_LOADED);
 
         checkPreloadEvents(evts, g2, U.toIntList(new int[]{1, 2, 3}));
     }
@@ -114,11 +114,11 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
      * @param g Grid.
      * @param keys Keys.
      */
-    protected void checkPreloadEvents(Collection<IgniteEvent> evts, Ignite g, Collection<? extends Object> keys) {
+    protected void checkPreloadEvents(Collection<Event> evts, Ignite g, Collection<? extends Object> keys) {
         assertEquals(keys.size(), evts.size());
 
-        for (IgniteEvent evt : evts) {
-            IgniteCacheEvent cacheEvt = (IgniteCacheEvent)evt;
+        for (Event evt : evts) {
+            CacheEvent cacheEvt = (CacheEvent)evt;
             assertEquals(EVT_CACHE_PRELOAD_OBJECT_LOADED, cacheEvt.type());
             assertEquals(g.cache(null).name(), cacheEvt.cacheName());
             assertEquals(g.cluster().localNode().id(), cacheEvt.node().id());

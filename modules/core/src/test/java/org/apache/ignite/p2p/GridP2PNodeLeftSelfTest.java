@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.common.*;
+
 import java.net.*;
 
 /**
@@ -49,7 +50,7 @@ public class GridP2PNodeLeftSelfTest extends GridCommonAbstractTest {
     /**
      * Current deployment mode. Used in {@link #getConfiguration(String)}.
      */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -102,7 +103,7 @@ public class GridP2PNodeLeftSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testContinuousMode() throws Exception {
-        depMode = IgniteDeploymentMode.CONTINUOUS;
+        depMode = DeploymentMode.CONTINUOUS;
 
         processTest(false);
     }
@@ -113,7 +114,7 @@ public class GridP2PNodeLeftSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testSharedMode() throws Exception {
-        depMode = IgniteDeploymentMode.SHARED;
+        depMode = DeploymentMode.SHARED;
 
         processTest(true);
     }

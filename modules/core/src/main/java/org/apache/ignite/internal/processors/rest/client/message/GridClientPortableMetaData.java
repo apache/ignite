@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import org.apache.ignite.portables.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
@@ -25,7 +24,7 @@ import java.util.*;
 /**
  * Portable meta data sent from client.
  */
-public class GridClientPortableMetaData implements PortableMarshalAware {
+public class GridClientPortableMetaData {
     /** */
     private int typeId;
 
@@ -64,26 +63,6 @@ public class GridClientPortableMetaData implements PortableMarshalAware {
      */
     public String affinityKeyFieldName() {
         return affKeyFieldName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writePortable(PortableWriter writer) throws PortableException {
-        PortableRawWriter raw = writer.rawWriter();
-
-        raw.writeInt(typeId);
-        raw.writeString(typeName);
-        raw.writeString(affKeyFieldName);
-        raw.writeMap(fields);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readPortable(PortableReader reader) throws PortableException {
-        PortableRawReader raw = reader.rawReader();
-
-        typeId = raw.readInt();
-        typeName = raw.readString();
-        affKeyFieldName = raw.readString();
-        fields = raw.readMap();
     }
 
     /** {@inheritDoc} */

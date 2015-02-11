@@ -20,10 +20,10 @@ package org.apache.ignite.session;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.checkpoint.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -58,7 +58,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
 
         serState = spi.loadCheckpoint(globalKey);
 
-        IgniteMarshaller marshaller = getTestResources().getMarshaller();
+        Marshaller marshaller = getTestResources().getMarshaller();
 
         assert marshaller != null;
 
@@ -84,7 +84,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
      * @throws Exception If check failed.
      */
     private static void checkRunningState(String sesKey, String sesState, String globalKey, String globalState,
-        IgniteMarshaller marsh, ClassLoader cl) throws Exception {
+        Marshaller marsh, ClassLoader cl) throws Exception {
         assert marsh != null;
         assert cl != null;
 
@@ -146,7 +146,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
     @ComputeTaskSessionFullSupport
     private static class GridCheckpointTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession ses;
 
         /** */
@@ -154,7 +154,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) {
             for (int i = 0; i < SPLIT_COUNT; i++) {
                 ses.saveCheckpoint("map:session:key:" + i, "map:session:testval:" + i);
                 ses.saveCheckpoint("map:global:key:" + i, "map:global:testval:" + i,
@@ -169,7 +169,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
                     private static final long serialVersionUID = -9118687978815477993L;
 
                     /** {@inheritDoc} */
-                    @Override public Serializable execute() throws IgniteCheckedException {
+                    @Override public Serializable execute() {
                         ses.saveCheckpoint("job:session:key:" + argument(0), "job:session:testval:" + argument(0));
                         ses.saveCheckpoint("job:global:key:" + argument(0), "job:global:testval:" + argument(0),
                             ComputeTaskSessionScope.GLOBAL_SCOPE, 0);
@@ -183,7 +183,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             int res = 0;
 
             for (ComputeJobResult result : results) {
@@ -201,7 +201,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
                 Thread.sleep(200);
             }
             catch (InterruptedException e) {
-                throw new IgniteCheckedException("Got interrupted during reducing.", e);
+                throw new IgniteException("Got interrupted during reducing.", e);
             }
 
             try {
@@ -222,7 +222,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
                 }
             }
             catch (Exception e) {
-                throw new IgniteCheckedException("Running state check failure.", e);
+                throw new IgniteException("Running state check failure.", e);
             }
 
             return res;

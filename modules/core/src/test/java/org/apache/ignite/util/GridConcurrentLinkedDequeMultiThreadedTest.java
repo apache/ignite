@@ -18,9 +18,9 @@
 package org.apache.ignite.util;
 
 import org.apache.ignite.internal.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jdk8.backport.ConcurrentLinkedDeque8.*;
-import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

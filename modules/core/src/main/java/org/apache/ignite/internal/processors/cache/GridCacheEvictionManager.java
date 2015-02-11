@@ -19,24 +19,27 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.thread.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.timeout.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
@@ -48,9 +51,9 @@ import java.util.concurrent.locks.*;
 import java.util.concurrent.locks.Lock;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 import static org.jdk8.backport.ConcurrentLinkedDeque8.*;
@@ -169,11 +172,11 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
             cctx.events().addListener(
                 new GridLocalEventListener() {
-                    @Override public void onEvent(IgniteEvent evt) {
+                    @Override public void onEvent(Event evt) {
                         assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT ||
                             evt.type() == EVT_NODE_JOINED;
 
-                        IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                        DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                         // Notify backup worker on each topology change.
                         if (CU.affinityNode(cctx, discoEvt.eventNode()))
@@ -207,10 +210,10 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
             cctx.events().addListener(
                 new GridLocalEventListener() {
-                    @Override public void onEvent(IgniteEvent evt) {
+                    @Override public void onEvent(Event evt) {
                         assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
-                        IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                        DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                         for (EvictionFuture fut : futs.values())
                             fut.onNodeLeft(discoEvt.eventNode().id());
@@ -254,7 +257,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             // Add dummy event to worker.
             ClusterNode locNode = cctx.localNode();
 
-            IgniteDiscoveryEvent evt = new IgniteDiscoveryEvent(locNode, "Dummy event.", EVT_NODE_JOINED, locNode);
+            DiscoveryEvent evt = new DiscoveryEvent(locNode, "Dummy event.", EVT_NODE_JOINED, locNode);
 
             evt.topologySnapshot(locNode.order(), cctx.discovery().topology(locNode.order()));
 
@@ -476,7 +479,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                 log.debug("Sent eviction response [node=" + nodeId + ", localNode=" + cctx.nodeId() +
                     ", res" + res + ']');
         }
-        catch (ClusterTopologyException ignored) {
+        catch (ClusterTopologyCheckedException ignored) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send eviction response since initiating node left grid " +
                     "[node=" + nodeId + ", localNode=" + cctx.nodeId() + ']');
@@ -1120,7 +1123,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             try {
                 t = fut.get();
             }
-            catch (IgniteFutureCancelledException ignored) {
+            catch (IgniteFutureCancelledCheckedException ignored) {
                 assert false : "Future has been cancelled, but manager is not stopping: " + fut;
 
                 return;
@@ -1363,7 +1366,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      */
     private class BackupWorker extends GridWorker {
         /** */
-        private final BlockingQueue<IgniteDiscoveryEvent> evts = new LinkedBlockingQueue<>();
+        private final BlockingQueue<DiscoveryEvent> evts = new LinkedBlockingQueue<>();
 
         /** */
         private final Collection<Integer> primaryParts = new HashSet<>();
@@ -1380,14 +1383,14 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         /**
          * @param evt New event.
          */
-        void addEvent(IgniteDiscoveryEvent evt) {
+        void addEvent(DiscoveryEvent evt) {
             assert evt != null;
 
             evts.add(evt);
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
                 assert !cctx.isNear() && evictSync;
 
@@ -1398,7 +1401,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                     cctx.affinity().affinityTopologyVersion()));
 
                 while (!isCancelled()) {
-                    IgniteDiscoveryEvent evt = evts.take();
+                    DiscoveryEvent evt = evts.take();
 
                     if (log.isDebugEnabled())
                         log.debug("Processing event: " + evt);
@@ -1734,7 +1737,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                 try {
                     cctx.io().send(nodeId, req);
                 }
-                catch (ClusterTopologyException ignored) {
+                catch (ClusterTopologyCheckedException ignored) {
                     // Node left the topology.
                     onNodeLeft(nodeId);
                 }

@@ -17,9 +17,9 @@
 
 package org.apache.ignite.visor.commands.top
 
-import org.apache.ignite.internal.GridNodeAttributes
+import org.apache.ignite.internal.IgniteNodeAttributes
 import org.apache.ignite.internal.util.IgniteUtils
-import GridNodeAttributes._
+import IgniteNodeAttributes._
 import org.apache.ignite.internal.util.typedef._
 
 import org.apache.ignite._
@@ -192,7 +192,7 @@ class VisorTopologyCommand {
             }
             catch {
                 case e: NumberFormatException => scold(e.getMessage)
-                case e: IgniteCheckedException => scold(e.getMessage)
+                case e: IgniteException => scold(e.getMessage)
             }
         }
     }
@@ -213,7 +213,7 @@ class VisorTopologyCommand {
         if (expr.isDefined)
             (n: ClusterNode) => f(n) && expr.get.apply(v(n))
         else
-            throw new IgniteCheckedException("Invalid expression: " + exprStr)
+            throw new IgniteException("Invalid expression: " + exprStr)
     }
 
     /**

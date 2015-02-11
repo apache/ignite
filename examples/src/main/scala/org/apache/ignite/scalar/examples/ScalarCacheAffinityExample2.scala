@@ -47,23 +47,23 @@ object ScalarCacheAffinityExample2 {
     def main(args: Array[String]) {
         scalar(CONFIG) {
             // Clean up caches on all nodes before run.
-            cache$(NAME).get.globalClearAll(0)
+            cache$(NAME).get.clear(0)
 
             var keys = Seq.empty[String]
 
             ('A' to 'Z').foreach(keys :+= _.toString)
 
-            populateCache(grid$, keys)
+            populateCache(ignite$, keys)
 
             // Map all keys to nodes.
-            val mappings = grid$.cluster().mapKeysToNodes(NAME, keys)
+            val mappings = ignite$.cluster().mapKeysToNodes(NAME, keys)
 
             mappings.foreach(mapping => {
                 val node = mapping._1
                 val mappedKeys = mapping._2
 
                 if (node != null) {
-                    grid$.cluster().forNode(node) *< (() => {
+                    ignite$.cluster().forNode(node) *< (() => {
                         breakable {
                             println(">>> Executing affinity job for keys: " + mappedKeys)
 
@@ -73,7 +73,7 @@ object ScalarCacheAffinityExample2 {
                             // If cache is not defined at this point then it means that
                             // job was not routed by affinity.
                             if (!cache.isDefined)
-                                println(">>> Cache not found [nodeId=" + grid$.cluster().localNode().id() +
+                                println(">>> Cache not found [nodeId=" + ignite$.cluster().localNode().id() +
                                     ", cacheName=" + NAME + ']').^^
 
                             // Check cache without loading the value.
@@ -90,15 +90,15 @@ object ScalarCacheAffinityExample2 {
      * cache is not started on local node. In that case a job which populates
      * the cache will be sent to the node where cache is started.
      *
-     * @param g Grid.
+     * @param ignite Ignite.
      * @param keys Keys to populate.
      */
-    private def populateCache(g: Ignite, keys: Seq[String]) {
-        var prj = g.cluster().forCache(NAME)
+    private def populateCache(ignite: Ignite, keys: Seq[String]) {
+        var prj = ignite.cluster().forCacheNodes(NAME)
 
         // Give preference to local node.
-        if (prj.nodes().contains(g.cluster().localNode))
-            prj = g.cluster().forLocal()
+        if (prj.nodes().contains(ignite.cluster().localNode))
+            prj = ignite.cluster().forLocal()
 
         // Populate cache on some node (possibly this node)
         // which has cache with given name started.

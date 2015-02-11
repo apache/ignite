@@ -20,12 +20,13 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -334,7 +335,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param node Node to send the message to.
      * @param msg Message to send.
      * @throws IgniteCheckedException If sending failed.
-     * @throws ClusterTopologyException If receiver left.
+     * @throws ClusterTopologyCheckedException If receiver left.
      */
     public void send(ClusterNode node, GridCacheMessage<K, V> msg) throws IgniteCheckedException {
         send(node, msg, SYSTEM_POOL);
@@ -346,7 +347,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param node Node to send the message to.
      * @param msg Message to send.
      * @throws IgniteCheckedException If sending failed.
-     * @throws ClusterTopologyException If receiver left.
+     * @throws ClusterTopologyCheckedException If receiver left.
      */
     public void send(ClusterNode node, GridCacheMessage<K, V> msg, GridIoPolicy plc) throws IgniteCheckedException {
         assert !node.isLocal();
@@ -357,29 +358,18 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             log.debug("Sending cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
 
         int cnt = 0;
-        boolean first = true;
 
         while (cnt <= retryCnt) {
             try {
                 cnt++;
 
-                GridCacheMessage<K, V> msg0;
-
-                if (first) {
-                    msg0 = msg;
-
-                    first = false;
-                }
-                else
-                    msg0 = (GridCacheMessage<K, V>)msg.clone();
-
-                cctx.gridIO().send(node, TOPIC_CACHE, msg0, plc);
+                cctx.gridIO().send(node, TOPIC_CACHE, msg, plc);
 
                 return;
             }
             catch (IgniteCheckedException e) {
                 if (!cctx.discovery().alive(node.id()) || !cctx.discovery().pingNode(node.id()))
-                    throw new ClusterTopologyException("Node left grid while sending message to: " + node.id(), e);
+                    throw new ClusterTopologyCheckedException("Node left grid while sending message to: " + node.id(), e);
 
                 if (cnt == retryCnt)
                     throw e;
@@ -425,7 +415,6 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         final Collection<UUID> leftIds = new GridLeanSet<>();
 
         int cnt = 0;
-        boolean first = true;
 
         while (cnt < retryCnt) {
             try {
@@ -435,17 +424,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                     }
                 });
 
-                GridCacheMessage<K, V> msg0;
-
-                if (first) {
-                    msg0 = msg;
-
-                    first = false;
-                }
-                else
-                    msg0 = (GridCacheMessage<K, V>)msg.clone();
-
-                cctx.gridIO().send(nodesView, TOPIC_CACHE, msg0, SYSTEM_POOL);
+                cctx.gridIO().send(nodesView, TOPIC_CACHE, msg, SYSTEM_POOL);
 
                 boolean added = false;
 
@@ -531,7 +510,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         ClusterNode n = cctx.discovery().node(nodeId);
 
         if (n == null)
-            throw new ClusterTopologyException("Failed to send message because node left grid [node=" + n + ", msg=" +
+            throw new ClusterTopologyCheckedException("Failed to send message because node left grid [node=" + n + ", msg=" +
                 msg + ']');
 
         send(n, msg);
@@ -548,7 +527,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         ClusterNode n = cctx.discovery().node(nodeId);
 
         if (n == null)
-            throw new ClusterTopologyException("Failed to send message because node left grid [node=" + n + ", msg=" +
+            throw new ClusterTopologyCheckedException("Failed to send message because node left grid [node=" + n + ", msg=" +
                 msg + ']');
 
         send(n, msg, plc);
@@ -581,7 +560,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             }
             catch (IgniteCheckedException e) {
                 if (cctx.discovery().node(node.id()) == null)
-                    throw new ClusterTopologyException("Node left grid while sending ordered message to: " + node.id(), e);
+                    throw new ClusterTopologyCheckedException("Node left grid while sending ordered message to: " + node.id(), e);
 
                 if (cnt == retryCnt)
                     throw e;
@@ -807,6 +786,9 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         }
     }
 
+    /**
+     *
+     */
     private static class ListenerKey {
         /** Cache ID. */
         private int cacheId;

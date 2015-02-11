@@ -22,7 +22,7 @@ import org.apache.ignite.scalar.scalar._
 
 /**
  * Demonstrates a cron-based `Runnable` execution scheduling.
- * Test runnable object broadcasts a phrase to all grid nodes every minute
+ * Test runnable object broadcasts a phrase to all cluster nodes every minute
  * three times with initial scheduling delay equal to five seconds.
  * <p>
  * Remote nodes should always be started with special configuration file which
@@ -33,12 +33,12 @@ object ScalarScheduleExample extends App {
         println()
         println("Compute schedule example started.")
 
-        val g = grid$
+        val g = ignite$
 
         var invocations = 0
 
         // Schedule callable that returns incremented value each time.
-        val fut = grid$.scheduleLocalCall(
+        val fut = ignite$.scheduleLocalCall(
             () => {
                 invocations += 1
 

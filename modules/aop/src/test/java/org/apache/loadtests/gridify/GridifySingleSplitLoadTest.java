@@ -19,17 +19,18 @@ package org.apache.loadtests.gridify;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.logger.log4j.*;
-import org.apache.log4j.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.loadtest.*;
+import org.apache.ignite.logger.log4j.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.log4j.*;
+
 import java.util.concurrent.*;
 
 /**
@@ -68,11 +69,9 @@ public class GridifySingleSplitLoadTest extends GridCommonAbstractTest {
         /*
          */
         @SuppressWarnings("TypeMayBeWeakened")
-        IgniteLog4jLogger log = (IgniteLog4jLogger)cfg.getGridLogger();
+        Log4JLogger log = (Log4JLogger)cfg.getGridLogger();
 
-        log.getLogger("org.gridgain.grid").setLevel(Level.INFO);
-
-        ((ThreadPoolExecutor)cfg.getExecutorService()).prestartAllCoreThreads();
+        log.getLogger("org.apache.ignite").setLevel(Level.INFO);
 
         return cfg;
     }

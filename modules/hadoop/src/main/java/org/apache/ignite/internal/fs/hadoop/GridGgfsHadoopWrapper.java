@@ -20,7 +20,7 @@ package org.apache.ignite.internal.fs.hadoop;
 import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
 import org.apache.ignite.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -339,7 +339,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
                 try {
                     Ignite ignite = G.ignite();
 
-                    ggfs = (GridGgfsEx) ignite.fileSystem(endpoint.ggfs());
+                    ggfs = (GridGgfsEx)ignite.fileSystem(endpoint.ggfs());
                 }
                 catch (Exception e) {
                     err = e;
@@ -348,7 +348,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
             else {
                 for (Ignite ignite : G.allGrids()) {
                     try {
-                        ggfs = (GridGgfsEx) ignite.fileSystem(endpoint.ggfs());
+                        ggfs = (GridGgfsEx)ignite.fileSystem(endpoint.ggfs());
 
                         break;
                     }
@@ -401,9 +401,9 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
         }
 
         // 4. Try local TCP connection.
-        boolean skipLocalTcp = parameter(conf, PARAM_GGFS_ENDPOINT_NO_LOCAL_TCP, authority, false);
+        boolean skipLocTcp = parameter(conf, PARAM_GGFS_ENDPOINT_NO_LOCAL_TCP, authority, false);
 
-        if (!skipLocalTcp) {
+        if (!skipLocTcp) {
             if (curDelegate == null) {
                 GridGgfsHadoopEx hadoop = null;
 
@@ -426,7 +426,7 @@ public class GridGgfsHadoopWrapper implements GridGgfsHadoop {
         }
 
         // 5. Try remote TCP connection.
-        if (curDelegate == null && (skipLocalTcp || !F.eq(LOCALHOST, endpoint.host()))) {
+        if (curDelegate == null && (skipLocTcp || !F.eq(LOCALHOST, endpoint.host()))) {
             GridGgfsHadoopEx hadoop = null;
 
             try {

@@ -20,23 +20,24 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Basic store test.
@@ -62,7 +63,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        cache().clearAll();
+        jcache().clear();
 
         store.reset();
     }
@@ -118,16 +119,16 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
      * @throws IgniteCheckedException If failed.
      */
     public void testNotExistingKeys() throws IgniteCheckedException {
-        GridCache<Integer, String> cache = cache();
+        IgniteCache<Integer, String> cache = jcache();
         Map<Integer, String> map = store.getMap();
 
         cache.put(100, "hacuna matata");
         assertEquals(1, map.size());
 
-        cache.evict(100);
+        cache.localEvict(Collections.<Integer>singleton(100));
         assertEquals(1, map.size());
 
-        assertEquals("hacuna matata", cache.remove(100));
+        assertEquals("hacuna matata", cache.getAndRemove(100));
         assertTrue(map.isEmpty());
 
         store.resetLastMethod();
@@ -142,16 +143,16 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
     /** @throws Exception If test fails. */
     public void testWriteThrough() throws Exception {
-        GridCache<Integer, String> cache = cache();
+        IgniteCache<Integer, String> cache = jcache();
 
         Map<Integer, String> map = store.getMap();
 
         assert map.isEmpty();
 
         if (atomicityMode() == TRANSACTIONAL) {
-            try (IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = grid().transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
                 for (int i = 1; i <= 10; i++) {
-                    cache.putx(i, Integer.toString(i));
+                    cache.put(i, Integer.toString(i));
 
                     checkLastMethod(null);
                 }
@@ -182,9 +183,9 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         store.resetLastMethod();
 
         if (atomicityMode() == TRANSACTIONAL) {
-            try (IgniteTx tx = cache.txStart()) {
+            try (IgniteTx tx = grid().transactions().txStart()) {
                 for (int i = 1; i <= 10; i++) {
-                    String val = cache.remove(i);
+                    String val = cache.getAndRemove(i);
 
                     checkLastMethod(null);
 
@@ -198,7 +199,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
             }
         }
         else {
-            Collection<Integer> keys = new ArrayList<>(10);
+            Set<Integer> keys = new HashSet<>();
 
             for (int i = 1; i <= 10; i++)
                 keys.add(i);
@@ -213,16 +214,16 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
     /** @throws Exception If test failed. */
     public void testReadThrough() throws Exception {
-        GridCache<Integer, String> cache = cache();
+        IgniteCache<Integer, String> cache = jcache();
 
         Map<Integer, String> map = store.getMap();
 
         assert map.isEmpty();
 
         if (atomicityMode() == TRANSACTIONAL) {
-            try (IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = grid().transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
                 for (int i = 1; i <= 10; i++)
-                    cache.putx(i, Integer.toString(i));
+                    cache.put(i, Integer.toString(i));
 
                 checkLastMethod(null);
 
@@ -247,10 +248,10 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
             assert val.equals(Integer.toString(i));
         }
 
-        cache.clearAll();
+        cache.clear();
 
-        assert cache.isEmpty();
-        assert cache.isEmpty();
+        assert cache.localSize() == 0;
+        assert cache.localSize() == 0;
 
         assert map.size() == 10;
 
@@ -266,14 +267,14 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         assert cache.size() == 10;
 
-        cache.clearAll();
+        cache.clear();
 
-        assert cache.isEmpty();
-        assert cache.isEmpty();
+        assert cache.localSize() == 0;
+        assert cache.localSize() == 0;
 
         assert map.size() == 10;
 
-        Collection<Integer> keys = new ArrayList<>();
+        Set<Integer> keys = new HashSet<>();
 
         for (int i = 1; i <= 10; i++)
             keys.add(i);
@@ -298,25 +299,25 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         checkLastMethod("removeAll");
 
-        assert cache.isEmpty();
-        assert cache.isEmpty();
+        assert cache.localSize() == 0;
+        assert cache.localSize() == 0;
 
         assert map.isEmpty();
     }
 
     /** @throws Exception If test failed. */
     public void testLoadCache() throws Exception {
-        GridCache<Integer, String> cache = cache();
+        IgniteCache<Integer, String> cache = jcache();
 
         int cnt = 1;
 
-        cache.loadCache(null, 0, cnt);
+        cache.loadCache(null, cnt);
 
         checkLastMethod("loadAllFull");
 
-        assert !cache.isEmpty();
+        assert !(cache.localSize() == 0);
 
-        Map<Integer, String> map = cache.getAll(cache.keySet());
+        Map<Integer, String> map = cache.getAll(keySet(cache));
 
         assert map.size() == cnt : "Invalid map size: " + map.size();
 
@@ -336,7 +337,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
     /** @throws Exception If test failed. */
     public void testLoadCacheWithPredicate() throws Exception {
-        GridCache<Integer, String> cache = cache();
+        IgniteCache<Integer, String> cache = jcache();
 
         int cnt = 10;
 
@@ -345,11 +346,11 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
                 // Accept only even numbers.
                 return key % 2 == 0;
             }
-        }, 0, cnt);
+        }, cnt);
 
         checkLastMethod("loadAllFull");
 
-        Map<Integer, String> map = cache.getAll(cache.keySet());
+        Map<Integer, String> map = cache.getAll(keySet(cache));
 
         assert map.size() == cnt / 2 : "Invalid map size: " + map.size();
 
@@ -373,15 +374,19 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
     /** @throws Exception If test failed. */
     public void testReloadCache() throws Exception {
-        GridCache<Integer, String> cache = cache();
+        IgniteCache<Integer, String> cache = jcache();
 
-        cache.loadCache(null, 0, 0);
+        cache.loadCache(null, 0);
 
-        assert cache.isEmpty();
+        assert cache.size() == 0;
 
         checkLastMethod("loadAllFull");
 
+        Set<Integer> keys = new HashSet<>();
+
         for (int i = 1; i <= 10; i++) {
+            keys.add(i);
+
             cache.put(i, Integer.toString(i));
 
             checkLastMethod("put");
@@ -389,7 +394,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         assert cache.size() == 10;
 
-        cache.reloadAll();
+        loadAll(cache, keys, true);
 
         checkLastMethod("loadAll");
 
@@ -407,14 +412,14 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
             checkLastMethod(null);
         }
 
-        cache.clearAll();
+        cache.clear();
 
         cache.loadCache(new P2<Integer, String>() {
             @Override public boolean apply(Integer k, String v) {
                 // Only accept even numbers.
                 return k % 2 == 0;
             }
-        }, 0, 10);
+        }, 10);
 
         checkLastMethod("loadAllFull");
 
@@ -422,18 +427,16 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         assertEquals(5, cache.size());
 
-        cache.forEach(new CIX1<CacheEntry<Integer, String>>() {
-            @Override public void applyx(CacheEntry<Integer, String> entry) throws IgniteCheckedException {
-                String val = entry.get();
+        for (Cache.Entry<Integer, String> entry : cache) {
+            String val = entry.getValue();
 
-                assert val != null;
-                assert val.equals(Integer.toString(entry.getKey()));
-                assert entry.getKey() % 2 == 0;
+            assert val != null;
+            assert val.equals(Integer.toString(entry.getKey()));
+            assert entry.getKey() % 2 == 0;
 
-                // Make sure that value is coming from cache, not from store.
-                checkLastMethod(null);
-            }
-        });
+            // Make sure that value is coming from cache, not from store.
+            checkLastMethod(null);
+        }
 
         // Make sure that value is coming from cache, not from store.
         checkLastMethod(null);
@@ -441,18 +444,18 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
     /** @throws Exception If test failed. */
     public void testReloadAll() throws Exception {
-        GridCache<Integer, String> cache = cache();
+        IgniteCache<Integer, String> cache = jcache();
 
-        assert cache.isEmpty();
+        assert cache.size() == 0;
 
         Map<Integer, String> vals = new HashMap<>();
 
         for (int i = 1; i <= 10; i++)
             vals.put(i, Integer.toString(i));
 
-        cache.reloadAll(vals.keySet());
+        loadAll(cache, vals.keySet(), true);
 
-        assert cache.isEmpty() : "Cache is not empty: " + cache.values();
+        assert cache.size() == 0: "Cache is not empty.";
 
         checkLastMethod("loadAll");
 
@@ -462,7 +465,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         assert cache.size() == 10;
 
-        cache.reloadAll(vals.keySet());
+        loadAll(cache, vals.keySet(), true);
 
         checkLastMethod("loadAll");
 
@@ -483,7 +486,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         for (int i = 1; i <= 10; i++)
             store.write(new CacheEntryImpl<>(i, "reloaded-" + i));
 
-        cache.reloadAll(vals.keySet());
+        loadAll(cache, vals.keySet(), true);
 
         checkLastMethod("loadAll");
 
@@ -505,18 +508,18 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     /** @throws Exception If test failed. */
     @SuppressWarnings("StringEquality")
     public void testReload() throws Exception {
-        GridCache<Integer, String> cache = cache();
+        IgniteCache<Integer, String> cache = jcache();
 
-        assert cache.isEmpty();
+        assert cache.size() == 0;
 
         Map<Integer, String> vals = new HashMap<>();
 
         for (int i = 1; i <= 10; i++)
             vals.put(i, Integer.toString(i));
 
-        cache.reloadAll(vals.keySet());
+        loadAll(cache, vals.keySet(), true);
 
-        assert cache.isEmpty();
+        assert cache.size() == 0;
 
         checkLastMethod("loadAll");
 
@@ -526,7 +529,9 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         assert cache.size() == 10;
 
-        String val = cache.reload(1);
+        load(cache, 1, true);
+
+        String val = cache.localPeek(1, CachePeekMode.ONHEAP);
 
         assert val != null;
         assert "1".equals(val);
@@ -555,7 +560,9 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         assert cache.size() == 10;
 
         for (int i = 1; i <= 10; i++) {
-            val = cache.reload(i);
+            load(cache, i, true);
+
+            val = cache.localPeek(i, CachePeekMode.ONHEAP);
 
             checkLastMethod("load");
 

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
@@ -38,7 +38,7 @@ public class GridGgfsAttributes implements Externalizable {
     /** File's data block size (bytes). */
     private int blockSize;
 
-    /** Size of the group figured in {@link org.apache.ignite.fs.IgniteFsGroupDataBlocksKeyMapper}. */
+    /** Size of the group figured in {@link org.apache.ignite.ignitefs.IgniteFsGroupDataBlocksKeyMapper}. */
     private int grpSize;
 
     /** Meta cache name. */
@@ -59,7 +59,7 @@ public class GridGgfsAttributes implements Externalizable {
     /**
      * @param ggfsName GGFS name.
      * @param blockSize File's data block size (bytes).
-     * @param grpSize Size of the group figured in {@link org.apache.ignite.fs.IgniteFsGroupDataBlocksKeyMapper}.
+     * @param grpSize Size of the group figured in {@link org.apache.ignite.ignitefs.IgniteFsGroupDataBlocksKeyMapper}.
      * @param metaCacheName Meta cache name.
      * @param dataCacheName Data cache name.
      * @param dfltMode Default mode.
@@ -99,7 +99,7 @@ public class GridGgfsAttributes implements Externalizable {
     }
 
     /**
-     * @return Size of the group figured in {@link org.apache.ignite.fs.IgniteFsGroupDataBlocksKeyMapper}.
+     * @return Size of the group figured in {@link org.apache.ignite.ignitefs.IgniteFsGroupDataBlocksKeyMapper}.
      */
     public int groupSize() {
         return grpSize;
@@ -147,7 +147,7 @@ public class GridGgfsAttributes implements Externalizable {
         out.writeInt(grpSize);
         U.writeString(out, metaCacheName);
         U.writeString(out, dataCacheName);
-        U.writeEnum0(out, dfltMode);
+        U.writeEnum(out, dfltMode);
         out.writeBoolean(fragmentizerEnabled);
 
         if (pathModes != null) {
@@ -157,7 +157,7 @@ public class GridGgfsAttributes implements Externalizable {
 
             for (Map.Entry<String, IgniteFsMode> pathMode : pathModes.entrySet()) {
                 U.writeString(out, pathMode.getKey());
-                U.writeEnum0(out, pathMode.getValue());
+                U.writeEnum(out, pathMode.getValue());
             }
         }
         else
@@ -171,7 +171,7 @@ public class GridGgfsAttributes implements Externalizable {
         grpSize = in.readInt();
         metaCacheName = U.readString(in);
         dataCacheName = U.readString(in);
-        dfltMode = IgniteFsMode.fromOrdinal(U.readEnumOrdinal0(in));
+        dfltMode = IgniteFsMode.fromOrdinal(in.readByte());
         fragmentizerEnabled = in.readBoolean();
 
         if (in.readBoolean()) {
@@ -180,7 +180,7 @@ public class GridGgfsAttributes implements Externalizable {
             pathModes = new HashMap<>(size, 1.0f);
 
             for (int i = 0; i < size; i++)
-                pathModes.put(U.readString(in), IgniteFsMode.fromOrdinal(U.readEnumOrdinal0(in)));
+                pathModes.put(U.readString(in), IgniteFsMode.fromOrdinal(in.readByte()));
         }
     }
 }

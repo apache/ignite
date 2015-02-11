@@ -20,14 +20,16 @@ package org.apache.ignite.internal.processors.fs;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.thread.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.thread.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -35,7 +37,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.fs.GridGgfsFileAffinityRange.*;
@@ -82,10 +84,10 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
 
         // We care only about node leave and fail events.
         ggfsCtx.kernalContext().event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
+            @Override public void onEvent(Event evt) {
                 assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                 checkLaunchCoordinator(discoEvt);
             }
@@ -106,7 +108,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         if (ggfsCtx.configuration().isFragmentizerEnabled()) {
             // Check at startup if this node is a fragmentizer coordinator.
-            IgniteDiscoveryEvent locJoinEvt = ggfsCtx.kernalContext().discovery().localJoinEvent();
+            DiscoveryEvent locJoinEvt = ggfsCtx.kernalContext().discovery().localJoinEvent();
 
             checkLaunchCoordinator(locJoinEvt);
         }
@@ -168,7 +170,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
             }
             catch (IgniteCheckedException e) {
                 if (!ggfsCtx.kernalContext().discovery().alive(nodeId))
-                    throw new ClusterTopologyException("Failed to send message (node left the grid) " +
+                    throw new ClusterTopologyCheckedException("Failed to send message (node left the grid) " +
                         "[nodeId=" + nodeId + ", msg=" + msg + ']');
 
                 if (i == MESSAGE_SEND_RETRY_COUNT - 1)
@@ -185,7 +187,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
      *
      * @param discoEvt Discovery event.
      */
-    private void checkLaunchCoordinator(IgniteDiscoveryEvent discoEvt) {
+    private void checkLaunchCoordinator(DiscoveryEvent discoEvt) {
         rw.readLock();
 
         try {
@@ -391,7 +393,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             // Wait for all previous fragmentizer tasks to complete.
             syncStart();
 
@@ -409,7 +411,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                     }
                 }
                 catch (IgniteCheckedException | IgniteException e) {
-                    if (!X.hasCause(e, InterruptedException.class) && !X.hasCause(e, IgniteInterruptedException.class))
+                    if (!X.hasCause(e, InterruptedException.class) && !X.hasCause(e, IgniteInterruptedCheckedException.class))
                         LT.warn(log, e, "Failed to get fragmentizer file info (will retry).");
                     else {
                         if (log.isDebugEnabled())
@@ -431,10 +433,10 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override public void onEvent(IgniteEvent evt) {
+        @Override public void onEvent(Event evt) {
             assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-            IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+            DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
             if (log.isDebugEnabled())
                 log.debug("Processing node leave event: " + discoEvt);
@@ -576,7 +578,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                             startSync0.remove(nodeId);
                     }
                     catch (IgniteCheckedException e) {
-                        if (e.hasCause(ClusterTopologyException.class)) {
+                        if (e.hasCause(ClusterTopologyCheckedException.class)) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed to send sync message to remote node (node has left the grid): " +
                                     nodeId);
@@ -652,7 +654,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                     sendWithRetries(nodeId, msg);
                 }
                 catch (IgniteCheckedException e) {
-                    if (e.hasCause(ClusterTopologyException.class)) {
+                    if (e.hasCause(ClusterTopologyCheckedException.class)) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to send fragmentizer request to remote node (node left grid): " +
                                 nodeId);
@@ -725,7 +727,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             while (!isCancelled()) {
                 IgniteBiTuple<UUID, GridGgfsCommunicationMessage> req = msgs.take();
 
@@ -747,7 +749,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                             processFragmentizerRequest(fragmentizerReq);
                         }
                         catch (IgniteCheckedException e) {
-                            if (e.hasCause(ClusterTopologyException.class)) {
+                            if (e.hasCause(ClusterTopologyCheckedException.class)) {
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to process fragmentizer request (remote node left the grid) " +
                                         "[req=" + req + ", err=" + e.getMessage() + ']');
@@ -793,7 +795,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                 sendWithRetries(nodeId, msg);
             }
             catch (IgniteCheckedException e) {
-                if (e.hasCause(ClusterTopologyException.class)) {
+                if (e.hasCause(ClusterTopologyCheckedException.class)) {
                     if (log.isDebugEnabled())
                         log.debug("Failed to send sync response to GGFS fragmentizer coordinator " +
                             "(originating node left the grid): " + nodeId);

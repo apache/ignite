@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -31,7 +31,7 @@ import java.nio.*;
  * File's binary data block key.
  */
 @GridInternal
-public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
+public final class GridGgfsBlockKey extends MessageAdapter
     implements Externalizable, Comparable<GridGgfsBlockKey> {
     /** */
     private static final long serialVersionUID = 0L;
@@ -160,7 +160,7 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridGgfsBlockKey _clone = new GridGgfsBlockKey();
 
         clone0(_clone);
@@ -169,7 +169,7 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridGgfsBlockKey _clone = (GridGgfsBlockKey)_msg;
 
         _clone.fileId = fileId;
@@ -181,39 +181,39 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putGridUuid(affKey))
+                if (!writer.writeIgniteUuid("affKey", affKey))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putLong(blockId))
+                if (!writer.writeLong("blockId", blockId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putBoolean(evictExclude))
+                if (!writer.writeBoolean("evictExclude", evictExclude))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                if (!commState.putGridUuid(fileId))
+                if (!writer.writeIgniteUuid("fileId", fileId))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -223,44 +223,40 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                IgniteUuid affKey0 = commState.getGridUuid();
+                affKey = reader.readIgniteUuid("affKey");
 
-                if (affKey0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                affKey = affKey0;
-
-                commState.idx++;
+                state++;
 
             case 1:
-                if (buf.remaining() < 8)
+                blockId = reader.readLong("blockId");
+
+                if (!reader.isLastRead())
                     return false;
 
-                blockId = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 2:
-                if (buf.remaining() < 1)
+                evictExclude = reader.readBoolean("evictExclude");
+
+                if (!reader.isLastRead())
                     return false;
 
-                evictExclude = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 3:
-                IgniteUuid fileId0 = commState.getGridUuid();
+                fileId = reader.readIgniteUuid("fileId");
 
-                if (fileId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                fileId = fileId0;
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -269,7 +265,7 @@ public final class GridGgfsBlockKey extends GridTcpCommunicationMessageAdapter
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 66;
+        return 65;
     }
 
     /** {@inheritDoc} */

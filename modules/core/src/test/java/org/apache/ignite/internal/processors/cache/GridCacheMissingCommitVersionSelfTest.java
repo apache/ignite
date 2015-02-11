@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -84,7 +85,7 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testMissingCommitVersion() throws Exception {
-        final GridCache<Integer, Integer> cache = cache();
+        final IgniteCache<Integer, Integer> cache = jcache();
 
         final int KEYS_PER_THREAD = 10_000;
 
@@ -116,7 +117,11 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
 
         log.info("Trying to update " + failedKey);
 
-        IgniteInternalFuture<?> fut = cache.putAsync(failedKey, 2);
+        IgniteCache<Integer, Integer> asyncCache = cache.withAsync();
+
+        asyncCache.put(failedKey, 2);
+
+        IgniteFuture<?> fut = asyncCache.future();
 
         try {
             fut.get(5000);

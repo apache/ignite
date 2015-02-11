@@ -18,27 +18,26 @@
 package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 
 import java.lang.reflect.*;
 import java.util.*;
 
-import static org.apache.ignite.fs.IgniteFsMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 
 /**
  * Tests for node validation logic in {@link IgniteFsProcessor}.
  * <p>
  * Tests starting with "testLocal" are checking
- * {@link IgniteFsProcessor#validateLocalGgfsConfigurations(org.apache.ignite.fs.IgniteFsConfiguration[])}.
+ * {@link IgniteFsProcessor#validateLocalGgfsConfigurations(org.apache.ignite.configuration.IgniteFsConfiguration[])}.
  * <p>
  * Tests starting with "testRemote" are checking {@link IgniteFsProcessor#checkGgfsOnRemoteNode(org.apache.ignite.cluster.ClusterNode)}.
  */
@@ -466,10 +465,11 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
 
             fail("No exception has been thrown.");
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             if (testLoc) {
                 if ("Failed to start processor: GridProcessorAdapter []".equals(e.getMessage()) &&
-                    e.getCause().getMessage().contains(excMsgSnippet))
+                    (e.getCause().getMessage().contains(excMsgSnippet) ||
+                     e.getCause().getCause().getMessage().contains(excMsgSnippet)))
                     return; // Expected exception.
             }
             else if (e.getMessage().contains(excMsgSnippet))
@@ -482,7 +482,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
     }
 
     /**
-     * @param grpSize Group size to use in {@link org.apache.ignite.fs.IgniteFsGroupDataBlocksKeyMapper}.
+     * @param grpSize Group size to use in {@link org.apache.ignite.ignitefs.IgniteFsGroupDataBlocksKeyMapper}.
      * @param cacheNames 2 Optional caches names.
      * @return 2 preconfigured data caches.
      */

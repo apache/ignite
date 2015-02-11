@@ -32,7 +32,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  *
@@ -61,7 +61,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
         // Following tests makes sense in ISOLATED modes (they redeploy tasks
         // and don't change task version. The different tasks with the same version from the same node
         // executed in parallel - this does not work in share mode.)
-        cfg.setDeploymentMode(IgniteDeploymentMode.ISOLATED);
+        cfg.setDeploymentMode(DeploymentMode.ISOLATED);
 
         cfg.setPeerClassLoadingLocalClassPathExclude(
             "org.apache.ignite.internal.GridMultipleVersionsDeploymentSelfTest*");
@@ -154,8 +154,8 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
             final CountDownLatch latch = new CountDownLatch(2);
 
             g2.events().localListen(
-                new IgnitePredicate<IgniteEvent>() {
-                    @Override public boolean apply(IgniteEvent evt) {
+                new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
                         info("Received event: " + evt);
 
                         latch.countDown();
@@ -238,7 +238,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             boolean ignoreLocNode = false;
@@ -266,7 +266,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             return results.get(0).getData();
         }
     }
@@ -278,11 +278,11 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     @SuppressWarnings({"PublicInnerClass"})
     public static class GridDeploymentTestJob extends ComputeJobAdapter {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Integer execute() throws IgniteCheckedException {
+        @Override public Integer execute() {
             try {
                 if (log.isInfoEnabled())
                     log.info("GridDeploymentTestJob job started");
@@ -299,7 +299,7 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
                 return res - 48;
             }
             catch (IOException | InterruptedException e) {
-                throw new IgniteCheckedException("Failed to execute job.", e);
+                throw new IgniteException("Failed to execute job.", e);
             }
         }
     }

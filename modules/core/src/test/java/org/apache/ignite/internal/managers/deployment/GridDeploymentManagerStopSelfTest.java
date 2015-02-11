@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.managers.deployment;
 
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.testframework.junits.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -40,7 +40,7 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
 
         GridTestKernalContext ctx = newContext();
 
-        ctx.config().setMarshaller(new IgniteJdkMarshaller());
+        ctx.config().setMarshaller(new JdkMarshaller());
         ctx.config().setDeploymentSpi(spi);
 
         GridResourceProcessor resProc = new GridResourceProcessor(ctx);

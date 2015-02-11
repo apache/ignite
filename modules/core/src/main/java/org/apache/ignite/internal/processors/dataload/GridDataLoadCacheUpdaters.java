@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.processors.dataload;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.dataload.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -37,16 +36,16 @@ import static org.apache.ignite.transactions.IgniteTxIsolation.*;
  */
 public class GridDataLoadCacheUpdaters {
     /** */
-    private static final IgniteDataLoadCacheUpdater INDIVIDUAL = new Individual();
+    private static final IgniteDataLoader.Updater INDIVIDUAL = new Individual();
 
     /** */
-    private static final IgniteDataLoadCacheUpdater BATCHED = new Batched();
+    private static final IgniteDataLoader.Updater BATCHED = new Batched();
 
     /** */
-    private static final IgniteDataLoadCacheUpdater BATCHED_SORTED = new BatchedSorted();
+    private static final IgniteDataLoader.Updater BATCHED_SORTED = new BatchedSorted();
 
     /** */
-    private static final IgniteDataLoadCacheUpdater GROUP_LOCKED = new GroupLocked();
+    private static final IgniteDataLoader.Updater GROUP_LOCKED = new GroupLocked();
 
     /**
      * Updates cache using independent {@link org.apache.ignite.cache.GridCache#put(Object, Object, org.apache.ignite.lang.IgnitePredicate[])} and
@@ -55,7 +54,7 @@ public class GridDataLoadCacheUpdaters {
      *
      * @return Single updater.
      */
-    public static <K, V> IgniteDataLoadCacheUpdater<K, V> individual() {
+    public static <K, V> IgniteDataLoader.Updater<K, V> individual() {
         return INDIVIDUAL;
     }
 
@@ -66,7 +65,7 @@ public class GridDataLoadCacheUpdaters {
      *
      * @return Batched updater.
      */
-    public static <K, V> IgniteDataLoadCacheUpdater<K, V> batched() {
+    public static <K, V> IgniteDataLoader.Updater<K, V> batched() {
         return BATCHED;
     }
 
@@ -77,7 +76,7 @@ public class GridDataLoadCacheUpdaters {
      *
      * @return Batched sorted updater.
      */
-    public static <K extends Comparable<?>, V> IgniteDataLoadCacheUpdater<K, V> batchedSorted() {
+    public static <K extends Comparable<?>, V> IgniteDataLoader.Updater<K, V> batchedSorted() {
         return BATCHED_SORTED;
     }
 
@@ -88,7 +87,7 @@ public class GridDataLoadCacheUpdaters {
      *
      * @return Updater with group lock.
      */
-    public static <K, V> IgniteDataLoadCacheUpdater<K, V> groupLocked() {
+    public static <K, V> IgniteDataLoader.Updater<K, V> groupLocked() {
         return GROUP_LOCKED;
     }
 
@@ -98,10 +97,10 @@ public class GridDataLoadCacheUpdaters {
      * @param cache Cache.
      * @param rmvCol Keys to remove.
      * @param putMap Entries to put.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    protected static <K, V> void updateAll(IgniteCache<K, V> cache, @Nullable Collection<K> rmvCol,
-        Map<K, V> putMap) throws IgniteCheckedException {
+    protected static <K, V> void updateAll(IgniteCache<K, V> cache, @Nullable Set<K> rmvCol,
+        Map<K, V> putMap) {
         assert rmvCol != null || putMap != null;
 
         // Here we assume that there are no key duplicates, so the following calls are valid.
@@ -115,13 +114,12 @@ public class GridDataLoadCacheUpdaters {
     /**
      * Simple cache updater implementation. Updates keys one by one thus is not dead lock prone.
      */
-    private static class Individual<K, V> implements IgniteDataLoadCacheUpdater<K, V> {
+    private static class Individual<K, V> implements IgniteDataLoader.Updater<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
-            throws IgniteCheckedException {
+        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
             assert cache != null;
             assert !F.isEmpty(entries);
 
@@ -143,18 +141,17 @@ public class GridDataLoadCacheUpdaters {
     /**
      * Batched updater. Updates cache using batch operations thus is dead lock prone.
      */
-    private static class Batched<K, V> implements IgniteDataLoadCacheUpdater<K, V> {
+    private static class Batched<K, V> implements IgniteDataLoader.Updater<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
-            throws IgniteCheckedException {
+        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
             assert cache != null;
             assert !F.isEmpty(entries);
 
             Map<K, V> putAll = null;
-            Collection<K> rmvAll = null;
+            Set<K> rmvAll = null;
 
             for (Map.Entry<K, V> entry : entries) {
                 K key = entry.getKey();
@@ -165,7 +162,7 @@ public class GridDataLoadCacheUpdaters {
 
                 if (val == null) {
                     if (rmvAll == null)
-                        rmvAll = new ArrayList<>();
+                        rmvAll = new HashSet<>();
 
                     rmvAll.add(key);
                 }
@@ -184,18 +181,17 @@ public class GridDataLoadCacheUpdaters {
     /**
      * Batched updater. Updates cache using batch operations thus is dead lock prone.
      */
-    private static class BatchedSorted<K, V> implements IgniteDataLoadCacheUpdater<K, V> {
+    private static class BatchedSorted<K, V> implements IgniteDataLoader.Updater<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
-            throws IgniteCheckedException {
+        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
             assert cache != null;
             assert !F.isEmpty(entries);
 
             Map<K, V> putAll = null;
-            Collection<K> rmvAll = null;
+            Set<K> rmvAll = null;
 
             for (Map.Entry<K, V> entry : entries) {
                 K key = entry.getKey();
@@ -225,13 +221,12 @@ public class GridDataLoadCacheUpdaters {
     /**
      * Cache updater which uses group lock.
      */
-    private static class GroupLocked<K, V> implements IgniteDataLoadCacheUpdater<K, V> {
+    private static class GroupLocked<K, V> implements IgniteDataLoader.Updater<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
-            throws IgniteCheckedException {
+        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries) {
             assert cache != null;
             assert !F.isEmpty(entries);
 
@@ -240,7 +235,7 @@ public class GridDataLoadCacheUpdaters {
             Map<Integer, Integer> partsCounts = new HashMap<>();
 
             // Group by partition ID.
-            Map<Integer, Collection<K>> rmvPartMap = null;
+            Map<Integer, Set<K>> rmvPartMap = null;
             Map<Integer, Map<K, V>> putPartMap = null;
 
             Ignite ignite = cache.unwrap(Ignite.class);
@@ -264,7 +259,7 @@ public class GridDataLoadCacheUpdaters {
                     if (rmvPartMap == null)
                         rmvPartMap = new HashMap<>();
 
-                    F.addIfAbsent(rmvPartMap, part, F.<K>newList()).add(key);
+                    F.addIfAbsent(rmvPartMap, part, F.<K>newSet()).add(key);
                 }
                 else {
                     if (putPartMap == null)

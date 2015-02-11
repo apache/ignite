@@ -1,21 +1,23 @@
 #!/bin/bash
-#  Licensed to the Apache Software Foundation (ASF) under one or more
-#  contributor license agreements.  See the NOTICE file distributed with
-#  this work for additional information regarding copyright ownership.
-#  The ASF licenses this file to You under the Apache License, Version 2.0
-#  (the "License"); you may not use this file except in compliance with
-#  the License.  You may obtain a copy of the License at
 #
-#       http://www.apache.org/licenses/LICENSE-2.0
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
 #
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 #
-# This is a collection of utility functions to be used in other GridGain scripts.
+# This is a collection of utility functions to be used in other Ignite scripts.
 # Before calling any function from this file you have to import it:
 #   if [ "${IGNITE_HOME}" = "" ];
 #       then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
@@ -76,9 +78,9 @@ checkJava() {
 #
 # Discovers IGNITE_HOME environment variable.
 # The function expects IGNITE_HOME_TMP variable is set and points to the directory where the callee script resides.
-# The function exports IGNITE_HOME variable with path to GridGain home directory.
+# The function exports IGNITE_HOME variable with path to Ignite home directory.
 #
-setGridGainHome() {
+setIgniteHome() {
     #
     # Set IGNITE_HOME, if needed.
     #
@@ -91,8 +93,8 @@ setGridGainHome() {
     #
     if [ ! -d "${IGNITE_HOME}/config" ]; then
         echo $0", ERROR:"
-        echo "GridGain installation folder is not found or IGNITE_HOME environment variable is not valid."
-        echo "Please create IGNITE_HOME environment variable pointing to location of GridGain installation folder."
+        echo "Ignite installation folder is not found or IGNITE_HOME environment variable is not valid."
+        echo "Please create IGNITE_HOME environment variable pointing to location of Ignite installation folder."
 
         exit 1
     fi
@@ -111,7 +113,7 @@ setGridGainHome() {
 # The function exports JMX_MON variable with Java JMX options.
 #
 findAvailableJmxPort() {
-    JMX_PORT=`"$JAVA" -cp "${IGNITE_LIBS}" org.gridgain.grid.util.portscanner.GridJmxPortFinder`
+    JMX_PORT=`"$JAVA" -cp "${IGNITE_LIBS}" org.apache.ignite.internal.util.portscanner.GridJmxPortFinder`
 
     #
     # This variable defines necessary parameters for JMX

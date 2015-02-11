@@ -15,16 +15,16 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
-    GridGain Spring configuration file to startup grid cache.
+    Ignite Spring configuration file to startup grid cache.
 
-    When starting a standalone GridGain node, you need to execute the following command:
+    When starting a standalone Ignite node, you need to execute the following command:
     {IGNITE_HOME}/bin/ignite.{bat|sh} path-to-this-file/example-ggfs-loopback.xml
 
-    When starting GridGain from Java IDE, pass path to this file into GridGain:
-    GridGain.start("path-to-this-file/example-ggfs-loopback.xml");
+    When starting Ignite from Java IDE, pass path to this file into Ignite:
+    Ignition.start("path-to-this-file/example-ggfs-loopback.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
@@ -64,7 +64,7 @@
             Configure optimized marshaller.
         -->
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
+            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
                 <!--
                     For better performance set this property to true in case
                     all marshalled classes implement java.io.Serializable.
@@ -80,7 +80,7 @@
 
         <property name="ggfsConfiguration">
             <list>
-                <bean class="org.apache.ignite.fs.IgniteFsConfiguration">
+                <bean class="org.apache.ignite.configuration.IgniteFsConfiguration">
                     <property name="name" value="ggfs"/>
                     <property name="metaCacheName" value="ggfs-meta"/>
                     <property name="dataCacheName" value="ggfs-data"/>
@@ -106,7 +106,7 @@
 
         <property name="cacheConfiguration">
             <list>
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="ggfs-data"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
@@ -115,14 +115,14 @@
                     <property name="distributionMode" value="PARTITIONED_ONLY"/>
                     <property name="backups" value="0"/>
                     <property name="affinityMapper">
-                        <bean class="org.apache.ignite.fs.IgniteFsGroupDataBlocksKeyMapper">
+                        <bean class="org.apache.ignite.ignitefs.IgniteFsGroupDataBlocksKeyMapper">
                             <!-- Haw many blocks in row will be stored on the same node. -->
                             <constructor-arg value="512"/>
                         </bean>
                     </property>
                 </bean>
 
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="ggfs-meta"/>
                     <property name="cacheMode" value="REPLICATED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
@@ -137,9 +137,9 @@
         -->
         <property name="includeEventTypes">
             <list>
-                <util:constant static-field="org.apache.ignite.events.IgniteEventType.EVT_TASK_FAILED"/>
-                <util:constant static-field="org.apache.ignite.events.IgniteEventType.EVT_TASK_FINISHED"/>
-                <util:constant static-field="org.apache.ignite.events.IgniteEventType.EVT_JOB_MAPPED"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_FAILED"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_FINISHED"/>
+                <util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_MAPPED"/>
             </list>
         </property>
 

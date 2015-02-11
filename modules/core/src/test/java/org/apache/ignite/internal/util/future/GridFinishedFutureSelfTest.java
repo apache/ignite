@@ -19,9 +19,9 @@ package org.apache.ignite.internal.util.future;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -65,7 +65,7 @@ public class GridFinishedFutureSelfTest extends GridCommonAbstractTest {
     private void testExternalizable(@Nullable Object t, @Nullable Throwable ex, boolean syncNotify) throws Exception {
         GridKernalContext ctx = ((IgniteKernal)grid()).context();
 
-        IgniteMarshaller m = new IgniteOptimizedMarshaller();
+        Marshaller m = new OptimizedMarshaller();
         ClassLoader clsLdr = getClass().getClassLoader();
 
         IgniteInternalFuture<Object> orig = t == null ? new GridFinishedFuture<>(ctx, ex) :

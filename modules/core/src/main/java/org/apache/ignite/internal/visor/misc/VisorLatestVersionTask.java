@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.visor.misc;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
 
 /**
  * Task for collecting latest version.
@@ -51,7 +50,7 @@ public class VisorLatestVersionTask extends VisorOneNodeTask<Void, String> {
         }
 
         /** {@inheritDoc} */
-        @Override protected String run(Void arg) throws IgniteCheckedException {
+        @Override protected String run(Void arg) {
             return g.product().latestVersion();
         }
 

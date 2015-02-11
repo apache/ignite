@@ -26,8 +26,8 @@ Usage with Apache Ignite
 -------------------
 
 Copy compiled library to folder that already listed in 'java.library.path'
-with name in form: 'libigniteshmem-<gridgain-version>.<extention>'.
-Note: Grid should be restarted.
+with name in form: 'libigniteshmem-<ignite-version>.<extention>'.
+Note: Ignite should be restarted.
 
 **************************************************************************************
 *** Additional notes:

@@ -21,19 +21,16 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.IgniteFsConfiguration;
-import org.apache.ignite.plugin.*;
 import org.apache.ignite.internal.product.*;
-import org.apache.ignite.hadoop.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Main entry-point for all GridGain APIs.
+ * Main entry-point for all Ignite APIs.
  * You can obtain an instance of {@code Grid} through {@link Ignition#ignite()},
  * or for named grids you can use {@link Ignition#ignite(String)}. Note that you
  * can have multiple instances of {@code Grid} running in the same VM by giving
@@ -83,7 +80,7 @@ public interface Ignite extends AutoCloseable {
      * <b>NOTE:</b>
      * <br>
      * SPIs obtains through this method should never be used directly. SPIs provide
-     * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
+     * internal view on the subsystem and is used internally by Ignite kernal. In rare use cases when
      * access to a specific implementation of this SPI is required - an instance of this SPI can be obtained
      * via this method to check its configuration properties or call other non-SPI
      * methods.
@@ -109,10 +106,10 @@ public interface Ignite extends AutoCloseable {
     public IgniteCompute compute();
 
     /**
-     * @param prj Projection.
-     * @return Compute instance over given projection.
+     * @param grp Cluster group..
+     * @return Compute instance over given cluster group.
      */
-    public IgniteCompute compute(ClusterGroup prj);
+    public IgniteCompute compute(ClusterGroup grp);
 
     /**
      * Gets {@code messaging} functionality over this grid projection. All operations
@@ -124,10 +121,10 @@ public interface Ignite extends AutoCloseable {
     public IgniteMessaging message();
 
     /**
-     * @param prj Projection.
-     * @return Messaging instance over given projection.
+     * @param grp Cluster group.
+     * @return Messaging instance over given cluster group.
      */
-    public IgniteMessaging message(ClusterGroup prj);
+    public IgniteMessaging message(ClusterGroup grp);
 
     /**
      * Gets {@code events} functionality over this grid projection. All operations
@@ -139,10 +136,10 @@ public interface Ignite extends AutoCloseable {
     public IgniteEvents events();
 
     /**
-     * @param prj Projection.
-     * @return Events instance over given projection.
+     * @param grp Cluster group.
+     * @return Events instance over given cluster group.
      */
-    public IgniteEvents events(ClusterGroup prj);
+    public IgniteEvents events(ClusterGroup grp);
 
     /**
      * Gets {@code services} functionality over this grid projection. All operations
@@ -151,13 +148,13 @@ public interface Ignite extends AutoCloseable {
      *
      * @return Services instance over this grid projection.
      */
-    public IgniteManaged managed();
+    public IgniteServices services();
 
     /**
-     * @param prj Projection.
-     * @return {@code Services} functionality over given projection.
+     * @param grp Cluster group.
+     * @return {@code Services} functionality over given cluster group.
      */
-    public IgniteManaged managed(ClusterGroup prj);
+    public IgniteServices services(ClusterGroup grp);
 
     /**
      * Creates new {@link ExecutorService} which will execute all submitted
@@ -171,10 +168,10 @@ public interface Ignite extends AutoCloseable {
     public ExecutorService executorService();
 
     /**
-     * @param prj Projection.
-     * @return {@link ExecutorService} which will execute jobs on nodes in given projection.
+     * @param grp Cluster group.
+     * @return {@link ExecutorService} which will execute jobs on nodes in given cluster group.
      */
-    public ExecutorService executorService(ClusterGroup prj);
+    public ExecutorService executorService(ClusterGroup grp);
 
     /**
      * Gets information about product as well as license management capabilities.
@@ -189,20 +186,6 @@ public interface Ignite extends AutoCloseable {
      * @return Instance of scheduler.
      */
     public IgniteScheduler scheduler();
-
-    /**
-     * Gets an instance of {@code GridSecurity} interface. Available in enterprise edition only.
-     *
-     * @return Instance of {@code GridSecurity} interface.
-     */
-    public GridSecurity security();
-
-    /**
-     * Gets an instance of {@code GridPortables} interface. Available in enterprise edition only.
-     *
-     * @return Instance of {@code GridPortables} interface.
-     */
-    public IgnitePortables portables();
 
     /**
      * Gets the cache instance for the given name, if one does not
@@ -258,12 +241,12 @@ public interface Ignite extends AutoCloseable {
     public <K, V> IgniteDataLoader<K, V> dataLoader(@Nullable String cacheName);
 
     /**
-     * Gets an instance of GGFS - GridGain In-Memory File System, if one is not
+     * Gets an instance of GGFS - Ignite In-Memory File System, if one is not
      * configured then {@link IllegalArgumentException} will be thrown.
      * <p>
      * GGFS is fully compliant with Hadoop {@code FileSystem} APIs and can
      * be plugged into Hadoop installations. For more information refer to
-     * documentation on Hadoop integration shipped with GridGain.
+     * documentation on Hadoop integration shipped with Ignite.
      *
      * @param name GGFS name.
      * @return GGFS instance.
@@ -276,13 +259,6 @@ public interface Ignite extends AutoCloseable {
      * @return Collection of grid file systems instances.
      */
     public Collection<IgniteFs> fileSystems();
-
-    /**
-     * Gets an instance of Hadoop.
-     *
-     * @return Hadoop instance.
-     */
-    public GridHadoop hadoop();
 
     /**
      * Gets an instance of streamer by name, if one does not exist then
@@ -301,6 +277,102 @@ public interface Ignite extends AutoCloseable {
     public Collection<IgniteStreamer> streamers();
 
     /**
+     * Will get an atomic sequence from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Sequence name.
+     * @param initVal Initial value for sequence. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Sequence for the given name.
+     * @throws IgniteException If sequence could not be fetched or created.
+     */
+    public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)
+        throws IgniteException;
+
+    /**
+     * Will get a atomic long from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Name of atomic long.
+     * @param initVal Initial value for atomic long. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic long.
+     * @throws IgniteException If atomic long could not be fetched or created.
+     */
+    public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteException;
+
+    /**
+     * Will get a atomic reference from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Atomic reference name.
+     * @param initVal Initial value for atomic reference. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic reference for the given name.
+     * @throws IgniteException If atomic reference could not be fetched or created.
+     */
+    public <T> IgniteAtomicReference<T> atomicReference(String name, @Nullable T initVal, boolean create)
+        throws IgniteException;
+
+    /**
+     * Will get a atomic stamped from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Atomic stamped name.
+     * @param initVal Initial value for atomic stamped. Ignored if {@code create} flag is {@code false}.
+     * @param initStamp Initial stamp for atomic stamped. Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic stamped for the given name.
+     * @throws IgniteException If atomic stamped could not be fetched or created.
+     */
+    public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, @Nullable T initVal,
+        @Nullable S initStamp, boolean create) throws IgniteException;
+
+    /**
+     * Gets or creates count down latch. If count down latch is not found in cache and {@code create} flag
+     * is {@code true}, it is created using provided name and count parameter.
+     *
+     * @param name Name of the latch.
+     * @param cnt Count for new latch creation. Ignored if {@code create} flag is {@code false}.
+     * @param autoDel {@code True} to automatically delete latch from cache when its count reaches zero.
+     *        Ignored if {@code create} flag is {@code false}.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Count down latch for the given name.
+     * @throws IgniteException If latch could not be fetched or created.
+     */
+    public IgniteCountDownLatch countDownLatch(String name, int cnt, boolean autoDel, boolean create)
+        throws IgniteException;
+
+    /**
+     * Will get a named queue from cache and create one if it has not been created yet and {@code cfg} is not
+     * {@code null}.
+     * If queue is present already, queue properties will not be changed. Use
+     * collocation for {@link CacheMode#PARTITIONED} caches if you have lots of relatively
+     * small queues as it will make fetching, querying, and iteration a lot faster. If you have
+     * few very large queues, then you should consider turning off collocation as they simply
+     * may not fit in a single node's memory.
+     *
+     * @param name Name of queue.
+     * @param cap Capacity of queue, {@code 0} for unbounded queue. Ignored if {@code cfg} is {@code null}.
+     * @param cfg Queue configuration if new queue should be created.
+     * @return Queue with given properties.
+     * @throws IgniteException If queue could not be fetched or created.
+     */
+    public <T> IgniteQueue<T> queue(String name, int cap, @Nullable CollectionConfiguration cfg)
+        throws IgniteException;
+
+    /**
+     * Will get a named set from cache and create one if it has not been created yet and {@code cfg} is not
+     * {@code null}.
+     *
+     * @param name Set name.
+     * @param cfg Set configuration if new set should be created.
+     * @return Set with given properties.
+     * @throws IgniteException If set could not be fetched or created.
+     */
+    public <T> IgniteSet<T> set(String name, @Nullable CollectionConfiguration cfg) throws IgniteException;
+
+    /**
      * Gets an instance of deployed Ignite plugin.
      *
      * @param name Plugin name.
@@ -317,9 +389,9 @@ public interface Ignite extends AutoCloseable {
      * The method is invoked automatically on objects managed by the
      * {@code try-with-resources} statement.
      *
-     * @throws IgniteCheckedException If failed to stop grid.
+     * @throws IgniteException If failed to stop grid.
      */
-    @Override public void close() throws IgniteCheckedException;
+    @Override public void close() throws IgniteException;
 
     /**
      * Gets affinity service to provide information about data partitioning

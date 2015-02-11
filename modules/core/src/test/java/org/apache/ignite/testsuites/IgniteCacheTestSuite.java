@@ -21,17 +21,17 @@ import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.context.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
-import org.apache.ignite.internal.processors.cache.expiry.*;
-import org.apache.ignite.internal.processors.cache.integration.*;
-import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.preloader.*;
+import org.apache.ignite.internal.processors.cache.expiry.*;
+import org.apache.ignite.internal.processors.cache.integration.*;
 import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.dataload.*;
 
@@ -93,6 +93,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheConfigurationConsistencySelfTest.class);
         suite.addTestSuite(GridCacheJdbcBlobStoreSelfTest.class);
         suite.addTestSuite(GridCacheJdbcBlobStoreMultithreadedSelfTest.class);
+        suite.addTestSuite(CacheJdbcPojoStoreTest.class);
+        suite.addTestSuite(CacheJdbcPojoStoreMultitreadedSelfTest.class);
         suite.addTestSuite(GridCacheBalancingStoreSelfTest.class);
         suite.addTestSuite(GridCacheAffinityApiSelfTest.class);
         suite.addTestSuite(GridCacheStoreValueBytesSelfTest.class);
@@ -131,8 +133,6 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheGlobalLoadTest.class);
 
         // Local cache.
-        suite.addTestSuite(GridCacheLocalProjectionSelfTest.class);
-        suite.addTestSuite(GridCacheLocalAtomicProjectionSelfTest.class);
         suite.addTestSuite(GridCacheLocalBasicApiSelfTest.class);
         suite.addTestSuite(GridCacheLocalBasicStoreSelfTest.class);
         suite.addTestSuite(GridCacheLocalAtomicBasicStoreSelfTest.class);
@@ -154,8 +154,6 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCachePartitionedBasicApiTest.class));
         suite.addTest(new TestSuite(GridCacheNearMultiGetSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearJobExecutionSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedProjectionSelfTest.class));
-        suite.addTest(new TestSuite(GridCachePartitionedOnlyProjectionSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearOneNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicNearMultiNodeSelfTest.class));
@@ -257,7 +255,6 @@ public class IgniteCacheTestSuite extends TestSuite {
         //suite.addTestSuite(GridCacheReplicatedMultiNodeLockSelfTest.class);
         //suite.addTestSuite(GridCacheReplicatedMultiNodeSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedNodeFailureSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedProjectionSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedTxSingleThreadedSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedTxTimeoutSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedPreloadSelfTest.class);
@@ -373,6 +370,13 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxNoWriteThroughTest.class);
         suite.addTestSuite(IgniteCacheTxNearEnabledNoWriteThroughTest.class);
         suite.addTestSuite(IgniteCacheTxLocalNoWriteThroughTest.class);
+
+        suite.addTestSuite(IgniteCacheAtomicPeekModesTest.class);
+        suite.addTestSuite(IgniteCacheAtomicReplicatedPeekModesTest.class);
+        suite.addTestSuite(IgniteCacheAtomicLocalPeekModesTest.class);
+        suite.addTestSuite(IgniteCacheTxPeekModesTest.class);
+        suite.addTestSuite(IgniteCacheTxLocalPeekModesTest.class);
+        suite.addTestSuite(IgniteCacheTxReplicatedPeekModesTest.class);
 
         // TODO: IGNITE-114.
         // suite.addTestSuite(IgniteCacheInvokeReadThroughTest.class);

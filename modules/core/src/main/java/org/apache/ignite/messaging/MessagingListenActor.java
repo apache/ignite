@@ -19,15 +19,15 @@ package org.apache.ignite.messaging;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
- * Convenience actor-base adapter for {@link IgniteMessaging#localListen(Object, org.apache.ignite.lang.IgniteBiPredicate)}
+ * Convenience actor-base adapter for {@link IgniteMessaging#localListen(Object, IgniteBiPredicate)}
  * method.
  */
 public abstract class MessagingListenActor<T> implements IgniteBiPredicate<UUID, T> {
@@ -45,7 +45,7 @@ public abstract class MessagingListenActor<T> implements IgniteBiPredicate<UUID,
     private transient Ignite ignite;
 
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private transient IgniteLogger log;
 
     /**
@@ -130,9 +130,9 @@ public abstract class MessagingListenActor<T> implements IgniteBiPredicate<UUID,
      *
      * @param respMsg Optional response message. If not {@code null} - it will be sent to the original
      *      sender node.
-     * @throws IgniteCheckedException Thrown in case of any errors.
+     * @throws IgniteException Thrown in case of any errors.
      */
-    protected final void stop(@Nullable Object respMsg) throws IgniteCheckedException {
+    protected final void stop(@Nullable Object respMsg) throws IgniteException {
         keepGoing = false;
 
         send(nodeId, respMsg);
@@ -161,9 +161,9 @@ public abstract class MessagingListenActor<T> implements IgniteBiPredicate<UUID,
      *
      * @param respMsg Optional response message. If not {@code null} - it will be sent to the original
      *      sender node.
-     * @throws IgniteCheckedException Thrown in case of any errors.
+     * @throws IgniteException Thrown in case of any errors.
      */
-    protected final void respond(@Nullable Object respMsg) throws IgniteCheckedException {
+    protected final void respond(@Nullable Object respMsg) throws IgniteException {
         checkReversing();
 
         keepGoing = true;
@@ -181,9 +181,9 @@ public abstract class MessagingListenActor<T> implements IgniteBiPredicate<UUID,
      * @param id ID of the node to send the message to, if any.
      * @param respMsg Optional response message. If not {@code null} - it will be sent to the original
      *      sender node.
-     * @throws IgniteCheckedException Thrown in case of any errors.
+     * @throws IgniteException Thrown in case of any errors.
      */
-    protected final void respond(UUID id, @Nullable Object respMsg) throws IgniteCheckedException {
+    protected final void respond(UUID id, @Nullable Object respMsg) throws IgniteException {
         checkReversing();
 
         keepGoing = true;
@@ -205,9 +205,9 @@ public abstract class MessagingListenActor<T> implements IgniteBiPredicate<UUID,
      *
      * @param nodeId ID of the node to send message to.
      * @param respMsg Message to send.
-     * @throws IgniteCheckedException Thrown in case of any errors.
+     * @throws IgniteException Thrown in case of any errors.
      */
-    private void send(UUID nodeId, @Nullable Object respMsg) throws IgniteCheckedException {
+    private void send(UUID nodeId, @Nullable Object respMsg) throws IgniteException {
         assert nodeId != null;
 
         if (respMsg != null) {
@@ -216,7 +216,7 @@ public abstract class MessagingListenActor<T> implements IgniteBiPredicate<UUID,
             if (node != null)
                 ignite.message(ignite.cluster().forNode(node)).send(null, respMsg); // Can still fail.
             else
-                throw new IgniteCheckedException("Failed to send message since destination node has " +
+                throw new IgniteException("Failed to send message since destination node has " +
                     "left topology (ignoring) [nodeId=" +nodeId + ", respMsg=" + respMsg + ']');
         }
     }

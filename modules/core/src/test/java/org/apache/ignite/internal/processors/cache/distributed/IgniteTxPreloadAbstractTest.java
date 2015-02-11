@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;
@@ -30,9 +30,9 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 
 /**
  * Tests transaction during cache preloading.
@@ -125,7 +125,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
 
         for (int i = 0; i < GRID_CNT; i++) {
             for (String key : keys)
-                assertEquals("Unexpected value for cache " + i, (Integer)1, cache(i).get(key));
+                assertEquals("Unexpected value for cache " + i, (Integer)1, jcache(i).get(key));
         }
     }
 
@@ -202,7 +202,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
         }
 
         for (int i = 0; i < GRID_CNT; i++)
-            assertEquals("Unexpected value for cache " + i, (Integer)expVal, cache(i).get(TX_KEY));
+            assertEquals("Unexpected value for cache " + i, (Integer)expVal, jcache(i).get(TX_KEY));
     }
 
     /** {@inheritDoc} */

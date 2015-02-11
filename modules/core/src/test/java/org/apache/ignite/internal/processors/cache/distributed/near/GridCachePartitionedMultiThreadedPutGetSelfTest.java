@@ -22,12 +22,12 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.concurrent.atomic.*;
 
@@ -60,7 +60,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+        c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -101,8 +101,11 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        if (GRID_CNT > 0)
+            grid(0).cache(null).removeAll();
+
         for (int i = 0; i < GRID_CNT; i++) {
-            grid(i).cache(null).removeAll();
+            grid(0).cache(null).clearLocally();
 
             assert grid(i).cache(null).isEmpty();
         }

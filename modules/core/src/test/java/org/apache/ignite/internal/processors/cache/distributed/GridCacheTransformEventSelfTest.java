@@ -22,14 +22,14 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
-import org.eclipse.jetty.util.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
+import org.eclipse.jetty.util.*;
 
 import javax.cache.processor.*;
 import java.io.*;
@@ -38,10 +38,10 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Test for TRANSFORM events recording.
@@ -82,7 +82,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     private IgniteCache<Integer, Integer>[] caches;
 
     /** Recorded events.*/
-    private ConcurrentHashSet<IgniteCacheEvent> evts;
+    private ConcurrentHashSet<CacheEvent> evts;
 
     /** Cache mode. */
     private CacheMode cacheMode;
@@ -104,7 +104,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
         discoSpi.setIpFinder(IP_FINDER);
 
-        TransactionsConfiguration tCfg = cfg.getTransactionsConfiguration();
+        TransactionConfiguration tCfg = cfg.getTransactionConfiguration();
 
         tCfg.setDefaultTxConcurrency(txConcurrency);
         tCfg.setDefaultTxIsolation(txIsolation);
@@ -177,9 +177,9 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
             caches[i] = ignites[i].jcache(CACHE_NAME);
 
-            ignites[i].events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    IgniteCacheEvent evt0 = (IgniteCacheEvent)evt;
+            ignites[i].events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    CacheEvent evt0 = (CacheEvent)evt;
 
                     if (evt0.closureClassName() != null) {
                         System.out.println("ADDED: [nodeId=" + evt0.node() + ", evt=" + evt0 + ']');
@@ -223,9 +223,9 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         caches[0].put(key2, 2);
 
         for (int i = 0; i < GRID_CNT; i++) {
-            ignites[i].events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    IgniteCacheEvent evt0 = (IgniteCacheEvent)evt;
+            ignites[i].events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    CacheEvent evt0 = (CacheEvent)evt;
 
                     if (evt0.closureClassName() != null)
                         evts.add(evt0);
@@ -562,9 +562,9 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
             assertEquals(ids.length, evts.size());
 
             for (UUID id : ids) {
-                IgniteCacheEvent foundEvt = null;
+                CacheEvent foundEvt = null;
 
-                for (IgniteCacheEvent evt : evts) {
+                for (CacheEvent evt : evts) {
                     if (F.eq(id, evt.node().id())) {
                         assertEquals(CLO_NAME, evt.closureClassName());
 

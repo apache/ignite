@@ -21,20 +21,21 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.continuous.*;
-import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.event.*;
 import java.util.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Continuous query implementation.
@@ -103,38 +104,6 @@ public class GridCacheContinuousQueryAdapter<K, V> implements CacheContinuousQue
         keepPortable = ctx.keepPortable();
 
         log = ctx.logger(getClass());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void callback(final IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb) {
-        if (cb != null) {
-            this.cb = cb;
-
-            localCallback(new CallbackWrapper<>(cb));
-        }
-        else
-            localCallback(null);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> callback() {
-        return cb;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void filter(final IgniteBiPredicate<K, V> filter) {
-        if (filter != null) {
-            this.filter = filter;
-
-            remoteFilter(new FilterWrapper<>(filter));
-        }
-        else
-            remoteFilter(null);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public IgniteBiPredicate<K, V> filter() {
-        return filter;
     }
 
     /** {@inheritDoc} */
@@ -256,30 +225,42 @@ public class GridCacheContinuousQueryAdapter<K, V> implements CacheContinuousQue
         if (prj == null)
             prj = ctx.grid();
 
-        prj = prj.forCache(ctx.name());
+        prj = prj.forCacheNodes(ctx.name());
 
         if (prj.nodes().isEmpty())
-            throw new ClusterTopologyException("Failed to execute query (projection is empty): " + this);
+            throw new ClusterTopologyCheckedException("Failed to continuous execute query (projection is empty): " +
+                this);
 
-        CacheMode mode = ctx.config().getCacheMode();
+        boolean skipPrimaryCheck = false;
 
-        if (mode == LOCAL || mode == REPLICATED) {
-            Collection<ClusterNode> nodes = prj.nodes();
+        Collection<ClusterNode> nodes = prj.nodes();
 
-            ClusterNode node = nodes.contains(ctx.localNode()) ? ctx.localNode() : F.rand(nodes);
+        if (nodes.isEmpty())
+            throw new ClusterTopologyCheckedException("Failed to execute continuous query (empty projection is " +
+                "provided): " + this);
 
-            assert node != null;
+        switch (ctx.config().getCacheMode()) {
+            case LOCAL:
+                if (!nodes.contains(ctx.localNode()))
+                    throw new ClusterTopologyCheckedException("Continuous query for LOCAL cache can be executed " +
+                        "only locally (provided projection contains remote nodes only): " + this);
+                else if (nodes.size() > 1)
+                    U.warn(log, "Continuous query for LOCAL cache will be executed locally (provided projection is " +
+                        "ignored): " + this);
 
-            if (nodes.size() > 1) {
-                if (node.id().equals(ctx.localNodeId()))
-                    U.warn(log, "Continuous query for " + mode + " cache can be run only on local node. " +
-                        "Will execute query locally: " + this);
-                else
-                    U.warn(log, "Continuous query for " + mode + " cache can be run only on single node. " +
-                        "Will execute query on remote node [qry=" + this + ", node=" + node + ']');
-            }
+                prj = prj.forNode(ctx.localNode());
 
-            prj = prj.forNode(node);
+                break;
+
+            case REPLICATED:
+                if (nodes.size() == 1 && F.first(nodes).equals(ctx.localNode())) {
+                    CacheDistributionMode distributionMode = ctx.config().getDistributionMode();
+
+                    if (distributionMode == PARTITIONED_ONLY || distributionMode == NEAR_PARTITIONED)
+                        skipPrimaryCheck = true;
+                }
+
+                break;
         }
 
         closeLock.lock();
@@ -302,6 +283,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements CacheContinuousQue
                 entryLsnr,
                 sync,
                 oldVal,
+                skipPrimaryCheck,
                 taskNameHash,
                 keepPortable);
 
@@ -332,53 +314,5 @@ public class GridCacheContinuousQueryAdapter<K, V> implements CacheContinuousQue
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheContinuousQueryAdapter.class, this);
-    }
-
-    /**
-     * Deprecated callback wrapper.
-     */
-    static class CallbackWrapper<K, V> implements IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<K, V>>> {
-        /** Serialization ID. */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb;
-
-        /**
-         * @param cb Deprecated callback.
-         */
-        private CallbackWrapper(IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb) {
-            this.cb = cb;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public boolean apply(UUID nodeId, Collection<CacheContinuousQueryEntry<K, V>> entries) {
-            return cb.apply(nodeId, (Collection<Map.Entry<K,V>>)(Collection)entries);
-        }
-    }
-
-    /**
-     * Deprecated filter wrapper.
-     */
-    static class FilterWrapper<K, V> implements IgnitePredicate<CacheContinuousQueryEntry<K, V>> {
-        /** Serialization ID. */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final IgniteBiPredicate<K, V> filter;
-
-        /**
-         * @param filter Deprecated callback.
-         */
-        FilterWrapper(IgniteBiPredicate<K, V> filter) {
-            this.filter = filter;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public boolean apply(CacheContinuousQueryEntry<K, V> entry) {
-            return filter.apply(entry.getKey(), entry.getValue());
-        }
     }
 }

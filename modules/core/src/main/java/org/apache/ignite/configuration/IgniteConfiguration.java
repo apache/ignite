@@ -18,24 +18,18 @@
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.hadoop.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.managed.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.spi.authentication.*;
-import org.apache.ignite.spi.indexing.*;
-import org.apache.ignite.streamer.*;
-import org.apache.ignite.client.ssl.*;
-import org.apache.ignite.interop.*;
-import org.apache.ignite.hadoop.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.plugin.segmentation.*;
+import org.apache.ignite.services.*;
+import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.spi.communication.*;
@@ -43,11 +37,11 @@ import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.spi.failover.*;
+import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.securesession.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.streamer.*;
 
 import javax.management.*;
 import javax.cache.processor.*;
@@ -55,9 +49,7 @@ import javax.cache.expiry.*;
 import javax.cache.integration.*;
 import javax.cache.event.*;
 import java.lang.management.*;
-import java.net.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
@@ -66,7 +58,7 @@ import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
  * {@link org.apache.ignite.Ignition#start(IgniteConfiguration)} method. It defines all configuration
  * parameters required to start a grid instance. Usually, a special
  * class called "loader" will create an instance of this interface and apply
- * {@link org.apache.ignite.Ignition#start(IgniteConfiguration)} method to initialize GridGain instance.
+ * {@link org.apache.ignite.Ignition#start(IgniteConfiguration)} method to initialize Ignite instance.
  * <p>
  * Note that you should only set values that differ from defaults, as grid
  * will automatically pick default values for all values that are not set.
@@ -76,7 +68,7 @@ import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
  */
 public class IgniteConfiguration {
     /** Courtesy notice log category. */
-    public static final String COURTESY_LOGGER_NAME = "org.gridgain.grid.CourtesyConfigNotice";
+    public static final String COURTESY_LOGGER_NAME = "org.apache.ignite.CourtesyConfigNotice";
 
     /**
      * Default flag for peer class loading. By default the value is {@code false}
@@ -114,8 +106,8 @@ public class IgniteConfiguration {
     /** Default discovery startup delay in milliseconds (value is {@code 60,000ms}). */
     public static final long DFLT_DISCOVERY_STARTUP_DELAY = 60000;
 
-    /** Default deployment mode (value is {@link IgniteDeploymentMode#SHARED}). */
-    public static final IgniteDeploymentMode DFLT_DEPLOYMENT_MODE = IgniteDeploymentMode.SHARED;
+    /** Default deployment mode (value is {@link DeploymentMode#SHARED}). */
+    public static final DeploymentMode DFLT_DEPLOYMENT_MODE = DeploymentMode.SHARED;
 
     /** Default cache size for missed resources. */
     public static final int DFLT_P2P_MISSED_RESOURCES_CACHE_SIZE = 100;
@@ -139,10 +131,10 @@ public class IgniteConfiguration {
     public static final int DFLT_TIME_SERVER_PORT_RANGE = 100;
 
     /** Default core size of public thread pool. */
-    public static final int DFLT_PUBLIC_CORE_THREAD_CNT = Math.max(8, Runtime.getRuntime().availableProcessors()) * 2;
+    public static final int AVAILABLE_PROC_CNT = Runtime.getRuntime().availableProcessors();
 
-    /** Default max size of public thread pool. */
-    public static final int DFLT_PUBLIC_MAX_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
+    /** Default core size of public thread pool. */
+    public static final int DFLT_PUBLIC_THREAD_CNT = Math.max(8, AVAILABLE_PROC_CNT) * 2;
 
     /** Default keep alive time for public thread pool. */
     public static final long DFLT_PUBLIC_KEEP_ALIVE_TIME = 0;
@@ -151,10 +143,10 @@ public class IgniteConfiguration {
     public static final int DFLT_PUBLIC_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
 
     /** Default size of system thread pool. */
-    public static final int DFLT_SYSTEM_CORE_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
+    public static final int DFLT_SYSTEM_CORE_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default max size of system thread pool. */
-    public static final int DFLT_SYSTEM_MAX_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
+    public static final int DFLT_SYSTEM_MAX_THREAD_CNT = DFLT_PUBLIC_THREAD_CNT;
 
     /** Default keep alive time for system thread pool. */
     public static final long DFLT_SYSTEM_KEEP_ALIVE_TIME = 0;
@@ -167,18 +159,6 @@ public class IgniteConfiguration {
 
     /** Default size of management thread pool. */
     public static final int DFLT_MGMT_THREAD_CNT = 4;
-
-    /** Default size of REST thread pool. */
-    public static final int DFLT_REST_CORE_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
-
-    /** Default max size of REST thread pool. */
-    public static final int DFLT_REST_MAX_THREAD_CNT = DFLT_PUBLIC_CORE_THREAD_CNT;
-
-    /** Default keep alive time for REST thread pool. */
-    public static final long DFLT_REST_KEEP_ALIVE_TIME = 0;
-
-    /** Default max queue capacity of REST thread pool. */
-    public static final int DFLT_REST_THREADPOOL_QUEUE_CAP = Integer.MAX_VALUE;
 
     /** Default segmentation policy. */
     public static final GridSegmentationPolicy DFLT_SEG_PLC = STOP;
@@ -201,18 +181,6 @@ public class IgniteConfiguration {
     /** Default TCP server port. */
     public static final int DFLT_TCP_PORT = 11211;
 
-    /** Default TCP_NODELAY flag. */
-    public static final boolean DFLT_TCP_NODELAY = true;
-
-    /** Default TCP direct buffer flag. */
-    public static final boolean DFLT_REST_TCP_DIRECT_BUF = false;
-
-    /** Default REST idle timeout. */
-    public static final int DFLT_REST_IDLE_TIMEOUT = 7000;
-
-    /** Default rest port range. */
-    public static final int DFLT_REST_PORT_RANGE = 100;
-
     /** Default marshal local jobs flag. */
     public static final boolean DFLT_MARSHAL_LOCAL_JOBS = false;
 
@@ -228,49 +196,28 @@ public class IgniteConfiguration {
     /** Logger. */
     private IgniteLogger log;
 
-    /** Executor service. */
-    private ExecutorService execSvc;
+    /** Public pool size. */
+    private int pubPoolSize = DFLT_PUBLIC_THREAD_CNT;
 
-    /** Executor service. */
-    private ExecutorService sysSvc;
+    /** System pool size. */
+    private int sysPoolSize = DFLT_SYSTEM_CORE_THREAD_CNT;
 
-    /** Management executor service. */
-    private ExecutorService mgmtSvc;
+    /** Management pool size. */
+    private int mgmtPoolSize = DFLT_MGMT_THREAD_CNT;
 
-    /** GGFS executor service. */
-    private ExecutorService ggfsSvc;
-
-    /** REST requests executor service. */
-    private ExecutorService restExecSvc;
-
-    /** Peer class loading executor service shutdown flag. */
-    private boolean p2pSvcShutdown = true;
-
-    /** Executor service shutdown flag. */
-    private boolean execSvcShutdown = true;
-
-    /** System executor service shutdown flag. */
-    private boolean sysSvcShutdown = true;
-
-    /** Management executor service shutdown flag. */
-    private boolean mgmtSvcShutdown = true;
-
-    /** GGFS executor service shutdown flag. */
-    private boolean ggfsSvcShutdown = true;
-
-    /** REST executor service shutdown flag. */
-    private boolean restSvcShutdown = true;
+    /** GGFS pool size. */
+    private int ggfsPoolSize = AVAILABLE_PROC_CNT;
 
     /** Lifecycle email notification. */
     private boolean lifeCycleEmailNtf = true;
 
-    /** Executor service. */
-    private ExecutorService p2pSvc;
+    /** P2P pool size. */
+    private int p2pPoolSize = DFLT_P2P_THREAD_CNT;
 
-    /** Gridgain installation folder. */
+    /** Ignite installation folder. */
     private String ggHome;
 
-    /** Gridgain work folder. */
+    /** Ignite work folder. */
     private String ggWork;
 
     /** MBean server. */
@@ -280,19 +227,13 @@ public class IgniteConfiguration {
     private UUID nodeId;
 
     /** Marshaller. */
-    private IgniteMarshaller marsh;
+    private Marshaller marsh;
 
     /** Marshal local jobs. */
     private boolean marshLocJobs = DFLT_MARSHAL_LOCAL_JOBS;
 
     /** Daemon flag. */
     private boolean daemon;
-
-    /** Jetty XML configuration path. */
-    private String jettyPath;
-
-    /** {@code REST} flag. */
-    private boolean restEnabled = true;
 
     /** Whether or not peer class loading is enabled. */
     private boolean p2pEnabled = DFLT_P2P_ENABLED;
@@ -385,16 +326,13 @@ public class IgniteConfiguration {
     private GridIndexingSpi indexingSpi;
 
     /** Address resolver. */
-    private IgniteAddressResolver addrRslvr;
+    private AddressResolver addrRslvr;
 
     /** Cache configurations. */
     private CacheConfiguration[] cacheCfg;
 
     /** Transactions configuration. */
-    private TransactionsConfiguration txCfg = new TransactionsConfiguration();
-
-    /** Interop configuration. */
-    private InteropConfiguration interopCfg;
+    private TransactionConfiguration txCfg = new TransactionConfiguration();
 
     /** */
     private Collection<? extends PluginConfiguration> pluginCfgs;
@@ -406,7 +344,7 @@ public class IgniteConfiguration {
     private long discoStartupDelay = DFLT_DISCOVERY_STARTUP_DELAY;
 
     /** Tasks classes sharing mode. */
-    private IgniteDeploymentMode deployMode = DFLT_DEPLOYMENT_MODE;
+    private DeploymentMode deployMode = DFLT_DEPLOYMENT_MODE;
 
     /** Cache size of missed resources. */
     private int p2pMissedCacheSize = DFLT_P2P_MISSED_RESOURCES_CACHE_SIZE;
@@ -444,69 +382,18 @@ public class IgniteConfiguration {
     /** Port number range for time server. */
     private int timeSrvPortRange = DFLT_TIME_SERVER_PORT_RANGE;
 
-    /** REST secret key. */
-    private String restSecretKey;
-
     /** Property names to include into node attributes. */
     private String[] includeProps;
-
-    /** License custom URL. */
-    private String licUrl;
 
     /** Frequency of metrics log print out. */
     @SuppressWarnings("RedundantFieldInitialization")
     private long metricsLogFreq = DFLT_METRICS_LOG_FREQ;
 
     /** Local event listeners. */
-    private Map<IgnitePredicate<? extends IgniteEvent>, int[]> lsnrs;
-
-    /** TCP host. */
-    private String restTcpHost;
-
-    /** TCP port. */
-    private int restTcpPort = DFLT_TCP_PORT;
-
-    /** TCP no delay flag. */
-    private boolean restTcpNoDelay = DFLT_TCP_NODELAY;
-
-    /** REST TCP direct buffer flag. */
-    private boolean restTcpDirectBuf = DFLT_REST_TCP_DIRECT_BUF;
-
-    /** REST TCP send buffer size. */
-    private int restTcpSndBufSize;
-
-    /** REST TCP receive buffer size. */
-    private int restTcpRcvBufSize;
-
-    /** REST TCP send queue limit. */
-    private int restTcpSndQueueLimit;
-
-    /** REST TCP selector count. */
-    private int restTcpSelectorCnt = Math.min(4, Runtime.getRuntime().availableProcessors());
-
-    /** Idle timeout. */
-    private long restIdleTimeout = DFLT_REST_IDLE_TIMEOUT;
-
-    /** SSL enable flag, default is disabled. */
-    private boolean restTcpSslEnabled;
-
-    /** SSL need client auth flag. */
-    private boolean restTcpSslClientAuth;
-
-    /** SSL context factory for rest binary server. */
-    private GridSslContextFactory restTcpSslCtxFactory;
-
-    /** Port range */
-    private int restPortRange = DFLT_REST_PORT_RANGE;
-
-    /** Folders accessible by REST. */
-    private String[] restAccessibleFolders;
+    private Map<IgnitePredicate<? extends Event>, int[]> lsnrs;
 
     /** GGFS configuration. */
     private IgniteFsConfiguration[] ggfsCfg;
-
-    /** Client message interceptor. */
-    private ClientMessageInterceptor clientMsgInterceptor;
 
     /** Streamer configuration. */
     private StreamerConfiguration[] streamerCfg;
@@ -515,22 +402,22 @@ public class IgniteConfiguration {
     private GridSecurityCredentialsProvider securityCred;
 
     /** Service configuration. */
-    private ManagedServiceConfiguration[] svcCfgs;
+    private ServiceConfiguration[] svcCfgs;
 
     /** Hadoop configuration. */
     private GridHadoopConfiguration hadoopCfg;
 
     /** Client access configuration. */
-    private ClientConnectionConfiguration clientCfg;
-
-    /** Portable configuration. */
-    private PortableConfiguration portableCfg;
+    private ConnectorConfiguration connectorCfg = new ConnectorConfiguration();
 
     /** Warmup closure. Will be invoked before actual grid start. */
     private IgniteInClosure<IgniteConfiguration> warmupClos;
 
     /** */
-    private IgniteQueryConfiguration qryCfg;
+    private QueryConfiguration qryCfg;
+
+    /** */
+    private AtomicConfiguration atomicCfg = new AtomicConfiguration();
 
     /** User's class loader. */
     private ClassLoader classLdr;
@@ -572,29 +459,24 @@ public class IgniteConfiguration {
         addrRslvr = cfg.getAddressResolver();
         adminEmails = cfg.getAdminEmails();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
+        atomicCfg = cfg.getAtomicConfiguration();
         daemon = cfg.isDaemon();
         cacheCfg = cfg.getCacheConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
-        clientCfg = cfg.getClientConnectionConfiguration();
-        clientMsgInterceptor = cfg.getClientMessageInterceptor();
+        connectorCfg = cfg.getConnectorConfiguration();
         clockSyncFreq = cfg.getClockSyncFrequency();
         clockSyncSamples = cfg.getClockSyncSamples();
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
-        execSvc = cfg.getExecutorService();
-        execSvcShutdown = cfg.getExecutorServiceShutdown();
-        ggHome = cfg.getGridGainHome();
+        pubPoolSize = cfg.getPublicThreadPoolSize();
+        ggHome = cfg.getIgniteHome();
         ggWork = cfg.getWorkDirectory();
         gridName = cfg.getGridName();
         ggfsCfg = cfg.getGgfsConfiguration();
-        ggfsSvc = cfg.getGgfsExecutorService();
-        ggfsSvcShutdown = cfg.getGgfsExecutorServiceShutdown();
+        ggfsPoolSize = cfg.getGgfsThreadPoolSize();
         hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
-        interopCfg = cfg.getInteropConfiguration() != null ? cfg.getInteropConfiguration().copy() : null;
-        jettyPath = cfg.getRestJettyPath();
-        licUrl = cfg.getLicenseUrl();
         lifecycleBeans = cfg.getLifecycleBeans();
         lifeCycleEmailNtf = cfg.isLifeCycleEmailNotification();
         locHost = cfg.getLocalHost();
@@ -607,36 +489,15 @@ public class IgniteConfiguration {
         metricsExpTime = cfg.getMetricsExpireTime();
         metricsLogFreq = cfg.getMetricsLogFrequency();
         metricsUpdateFreq = cfg.getMetricsUpdateFrequency();
-        mgmtSvc = cfg.getManagementExecutorService();
-        mgmtSvcShutdown = cfg.getManagementExecutorServiceShutdown();
+        mgmtPoolSize = cfg.getManagementThreadPoolSize();
         netTimeout = cfg.getNetworkTimeout();
         nodeId = cfg.getNodeId();
         p2pEnabled = cfg.isPeerClassLoadingEnabled();
         p2pLocClsPathExcl = cfg.getPeerClassLoadingLocalClassPathExclude();
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();
-        p2pSvc = cfg.getPeerClassLoadingExecutorService();
-        p2pSvcShutdown = cfg.getPeerClassLoadingExecutorServiceShutdown();
+        p2pPoolSize = cfg.getPeerClassLoadingThreadPoolSize();
         pluginCfgs = cfg.getPluginConfigurations();
-        portableCfg = cfg.getPortableConfiguration();
         qryCfg = cfg.getQueryConfiguration();
-        restAccessibleFolders = cfg.getRestAccessibleFolders();
-        restEnabled = cfg.isRestEnabled();
-        restIdleTimeout = cfg.getRestIdleTimeout();
-        restPortRange = cfg.getRestPortRange();
-        restSecretKey = cfg.getRestSecretKey();
-        restTcpHost = cfg.getRestTcpHost();
-        restTcpNoDelay = cfg.isRestTcpNoDelay();
-        restTcpDirectBuf = cfg.isRestTcpDirectBuffer();
-        restTcpSndBufSize = cfg.getRestTcpSendBufferSize();
-        restTcpRcvBufSize = cfg.getRestTcpReceiveBufferSize();
-        restTcpSndQueueLimit = cfg.getRestTcpSendQueueLimit();
-        restTcpSelectorCnt = cfg.getRestTcpSelectorCount();
-        restTcpPort = cfg.getRestTcpPort();
-        restTcpSslCtxFactory = cfg.getRestTcpSslContextFactory();
-        restTcpSslEnabled = cfg.isRestTcpSslEnabled();
-        restTcpSslClientAuth = cfg.isRestTcpSslClientAuth();
-        restExecSvc = cfg.getRestExecutorService();
-        restSvcShutdown = cfg.getRestExecutorServiceShutdown();
         securityCred = cfg.getSecurityCredentialsProvider();
         segChkFreq = cfg.getSegmentCheckFrequency();
         segPlc = cfg.getSegmentationPolicy();
@@ -652,11 +513,10 @@ public class IgniteConfiguration {
         smtpSsl = cfg.isSmtpSsl();
         smtpStartTls = cfg.isSmtpStartTls();
         streamerCfg = cfg.getStreamerConfiguration();
-        sysSvc = cfg.getSystemExecutorService();
-        sysSvcShutdown = cfg.getSystemExecutorServiceShutdown();
+        sysPoolSize = cfg.getSystemThreadPoolSize();
         timeSrvPortBase = cfg.getTimeServerPortBase();
         timeSrvPortRange = cfg.getTimeServerPortRange();
-        txCfg = cfg.getTransactionsConfiguration();
+        txCfg = cfg.getTransactionConfiguration();
         userAttrs = cfg.getUserAttributes();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
@@ -679,19 +539,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets custom license file URL to be used instead of default license file location.
-     *
-     * @return Custom license file URL or {@code null} to use the default
-     *      {@code $IGNITE_HOME}-related location.
-     */
-    public String getLicenseUrl() {
-        return licUrl;
-    }
-
-    /**
      * Whether or not to use SSL fot SMTP. Default is {@link #DFLT_SMTP_SSL}.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -710,7 +560,7 @@ public class IgniteConfiguration {
     /**
      * Whether or not to use STARTTLS fot SMTP. Default is {@link #DFLT_SMTP_STARTTLS}.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -729,7 +579,7 @@ public class IgniteConfiguration {
     /**
      * Gets SMTP host name or {@code null} if SMTP is not configured.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -747,7 +597,7 @@ public class IgniteConfiguration {
     /**
      * Gets SMTP port. Default value is {@link #DFLT_SMTP_PORT}.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -766,7 +616,7 @@ public class IgniteConfiguration {
     /**
      * Gets SMTP username or {@code null} if not used.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -784,7 +634,7 @@ public class IgniteConfiguration {
     /**
      * SMTP password or {@code null} if not used.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -802,7 +652,7 @@ public class IgniteConfiguration {
     /**
      * Gets optional set of admin emails where email notifications will be set.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -830,15 +680,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets license URL different from the default location of the license file.
-     *
-     * @param licUrl License URl to set.
-     */
-    public void setLicenseUrl(String licUrl) {
-        this.licUrl = licUrl;
-    }
-
-    /**
      * Sets whether or not to enable lifecycle email notifications.
      *
      * @param lifeCycleEmailNtf {@code True} to enable lifecycle email notifications.
@@ -851,7 +692,7 @@ public class IgniteConfiguration {
     /**
      * Sets whether or not SMTP uses SSL.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -869,7 +710,7 @@ public class IgniteConfiguration {
     /**
      * Sets whether or not SMTP uses STARTTLS.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -887,7 +728,7 @@ public class IgniteConfiguration {
     /**
      * Sets SMTP host.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -905,7 +746,7 @@ public class IgniteConfiguration {
     /**
      * Sets SMTP port. Default value is {@link #DFLT_SMTP_PORT}.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -924,7 +765,7 @@ public class IgniteConfiguration {
     /**
      * Sets SMTP username or {@code null} if not used.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -942,7 +783,7 @@ public class IgniteConfiguration {
     /**
      * Sets SMTP password or {@code null} if not used.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -960,7 +801,7 @@ public class IgniteConfiguration {
     /**
      * Sets optional set of admin emails where email notifications will be set.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -1006,7 +847,7 @@ public class IgniteConfiguration {
      * way to see daemon nodes is to use {@link org.apache.ignite.cluster.ClusterGroup#forDaemons()} method.
      * <p>
      * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on GridGain and needs to participate in the topology but also needs to be
+     * is build on Ignite and needs to participate in the topology but also needs to be
      * excluded from "normal" topology so that it won't participate in task execution
      * or in-memory data grid storage.
      *
@@ -1025,7 +866,7 @@ public class IgniteConfiguration {
      * way to see daemon nodes is to use {@link org.apache.ignite.cluster.ClusterGroup#forDaemons()} method.
      * <p>
      * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on GridGain and needs to participate in the topology but also needs to be
+     * is build on Ignite and needs to participate in the topology but also needs to be
      * excluded from "normal" topology so that it won't participate in task execution
      * or in-memory data grid storage.
      *
@@ -1060,7 +901,7 @@ public class IgniteConfiguration {
      * to grid node attributes also. SPIs may also add node attributes that are
      * used for SPI implementation.
      * <p>
-     * <b>NOTE:</b> attributes names starting with {@code org.gridgain} are reserved
+     * <b>NOTE:</b> attributes names starting with {@code org.apache.ignite} are reserved
      * for internal use.
      *
      * @return User defined attributes for this node.
@@ -1101,293 +942,152 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Should return an instance of fully configured thread pool to be used in grid.
+     * Should return a thread pool size to be used in grid.
      * This executor service will be in charge of processing {@link org.apache.ignite.compute.ComputeJob GridJobs}
      * and user messages sent to node.
      * <p>
-     * If not provided, new executor service will be created using the following configuration:
-     * <ul>
-     *     <li>Core pool size - {@link #DFLT_PUBLIC_CORE_THREAD_CNT}</li>
-     *     <li>Max pool size - {@link #DFLT_PUBLIC_MAX_THREAD_CNT}</li>
-     *     <li>Queue capacity - {@link #DFLT_PUBLIC_THREADPOOL_QUEUE_CAP}</li>
-     * </ul>
+     * If not provided, executor service will have size {@link #DFLT_PUBLIC_THREAD_CNT}.
      *
-     * @return Thread pool implementation to be used in grid to process job execution
+     * @return Thread pool size to be used in grid to process job execution
      *      requests and user messages sent to the node.
      */
-    public ExecutorService getExecutorService() {
-        return execSvc;
+    public int getPublicThreadPoolSize() {
+        return pubPoolSize;
     }
 
     /**
-     * Executor service that is in charge of processing internal system messages.
+     * Size of thread pool that is in charge of processing internal system messages.
      * <p>
-     * If not provided, new executor service will be created using the following configuration:
-     * <ul>
-     *     <li>Core pool size - {@link #DFLT_SYSTEM_CORE_THREAD_CNT}</li>
-     *     <li>Max pool size - {@link #DFLT_SYSTEM_MAX_THREAD_CNT}</li>
-     *     <li>Queue capacity - {@link #DFLT_SYSTEM_THREADPOOL_QUEUE_CAP}</li>
-     * </ul>
+     * If not provided, executor service will have size {@link #DFLT_SYSTEM_CORE_THREAD_CNT}.
      *
-     * @return Thread pool implementation to be used in grid for internal system messages.
+     * @return Thread pool size to be used in grid for internal system messages.
      */
-    public ExecutorService getSystemExecutorService() {
-        return sysSvc;
+    public int getSystemThreadPoolSize() {
+        return sysPoolSize;
     }
 
     /**
-     * Executor service that is in charge of processing internal and Visor
+     * Size of thread pool that is in charge of processing internal and Visor
      * {@link org.apache.ignite.compute.ComputeJob GridJobs}.
      * <p>
-     * If not provided, new executor service will be created using the following configuration:
-     * <ul>
-     *     <li>Core pool size - {@link #DFLT_MGMT_THREAD_CNT}</li>
-     *     <li>Max pool size - {@link #DFLT_MGMT_THREAD_CNT}</li>
-     *     <li>Queue capacity - unbounded</li>
-     * </ul>
+     * If not provided, executor service will have size {@link #DFLT_MGMT_THREAD_CNT}
      *
-     * @return Thread pool implementation to be used in grid for internal and Visor
+     * @return Thread pool size to be used in grid for internal and Visor
      *      jobs processing.
      */
-    public ExecutorService getManagementExecutorService() {
-        return mgmtSvc;
+    public int getManagementThreadPoolSize() {
+        return mgmtPoolSize;
     }
 
     /**
-     * Should return an instance of fully configured executor service which
-     * is in charge of peer class loading requests/responses. If you don't use
+     * Size of thread pool which  is in charge of peer class loading requests/responses. If you don't use
      * peer class loading and use GAR deployment only we would recommend to decrease
      * the value of total threads to {@code 1}.
      * <p>
-     * If not provided, new executor service will be created using the following configuration:
-     * <ul>
-     *     <li>Core pool size - {@link #DFLT_P2P_THREAD_CNT}</li>
-     *     <li>Max pool size - {@link #DFLT_P2P_THREAD_CNT}</li>
-     *     <li>Queue capacity - unbounded</li>
-     * </ul>
+     * If not provided, executor service will have size {@link #DFLT_P2P_THREAD_CNT}.
      *
-     * @return Thread pool implementation to be used for peer class loading
+     * @return Thread pool size to be used for peer class loading
      *      requests handling.
      */
-    public ExecutorService getPeerClassLoadingExecutorService() {
-        return p2pSvc;
+    public int getPeerClassLoadingThreadPoolSize() {
+        return p2pPoolSize;
     }
 
     /**
-     * Executor service that is in charge of processing outgoing GGFS messages. Note that this
-     * executor must have limited task queue to avoid OutOfMemory errors when incoming data stream
-     * is faster than network bandwidth.
+     * Size of thread pool that is in charge of processing outgoing GGFS messages.
      * <p>
-     * If not provided, new executor service will be created using the following configuration:
-     * <ul>
-     *     <li>Core pool size - number of processors available in system</li>
-     *     <li>Max pool size - number of processors available in system</li>
-     * </ul>
+     * If not provided, executor service will have size equals number of processors available in system.
      *
-     * @return Thread pool implementation to be used for GGFS outgoing message sending.
+     * @return Thread pool size to be used for GGFS outgoing message sending.
      */
-    public ExecutorService getGgfsExecutorService() {
-        return ggfsSvc;
+    public int getGgfsThreadPoolSize() {
+        return ggfsPoolSize;
     }
 
     /**
-     * Shutdown flag for executor service.
-     * <p>
-     * If not provided, default value {@code true} will be used which will shutdown
-     * executor service when GridGain stops regardless of whether it was started before
-     * GridGain or by GridGain.
+     * Sets thread pool size to use within grid.
      *
-     * @return Executor service shutdown flag.
+     * @param poolSize Thread pool size to use within grid.
+     * @see IgniteConfiguration#getPublicThreadPoolSize()
      */
-    public boolean getExecutorServiceShutdown() {
-        return execSvcShutdown;
+    public void setPublicThreadPoolSize(int poolSize) {
+        this.pubPoolSize = poolSize;
     }
 
     /**
-     * Shutdown flag for system executor service.
-     * <p>
-     * If not provided, default value {@code true} will be used which will shutdown
-     * executor service when GridGain stops regardless of whether it was started before
-     * GridGain or by GridGain.
+     * Sets system thread pool size to use within grid.
      *
-     * @return System executor service shutdown flag.
+     * @param poolSize Thread pool size to use within grid.
+     * @see IgniteConfiguration#getSystemThreadPoolSize()
      */
-    public boolean getSystemExecutorServiceShutdown() {
-        return sysSvcShutdown;
+    public void setSystemThreadPoolSize(int poolSize) {
+        this.sysPoolSize = poolSize;
     }
 
     /**
-     * Shutdown flag for management executor service.
-     * <p>
-     * If not provided, default value {@code true} will be used which will shutdown
-     * executor service when GridGain stops regardless of whether it was started before
-     * GridGain or by GridGain.
+     * Sets management thread pool size to use within grid.
      *
-     * @return Management executor service shutdown flag.
+     * @param poolSize Thread pool size to use within grid.
+     * @see IgniteConfiguration#getManagementThreadPoolSize()
      */
-    public boolean getManagementExecutorServiceShutdown() {
-        return mgmtSvcShutdown;
+    public void setManagementThreadPoolSize(int poolSize) {
+        this.mgmtPoolSize = poolSize;
     }
 
     /**
-     * Should return flag of peer class loading executor service shutdown when the grid stops.
-     * <p>
-     * If not provided, default value {@code true} will be used which means
-     * that when grid will be stopped it will shut down peer class loading executor service.
+     * Sets thread pool size to use for peer class loading.
      *
-     * @return Peer class loading executor service shutdown flag.
+     * @param poolSize Thread pool size to use within grid.
+     * @see IgniteConfiguration#getPeerClassLoadingThreadPoolSize()
      */
-    public boolean getPeerClassLoadingExecutorServiceShutdown() {
-        return p2pSvcShutdown;
+    public void setPeerClassLoadingThreadPoolSize(int poolSize) {
+        this.p2pPoolSize = poolSize;
     }
 
     /**
-     * Shutdown flag for GGFS executor service.
-     * <p>
-     * If not provided, default value {@code true} will be used which will shutdown
-     * executor service when GridGain stops regardless whether it was started before GridGain
-     * or by GridGain.
+     * Set thread pool size that will be used to process outgoing GGFS messages.
      *
-     * @return GGFS executor service shutdown flag.
+     * @param poolSize Executor service to use for outgoing GGFS messages.
+     * @see IgniteConfiguration#getGgfsThreadPoolSize()
      */
-    public boolean getGgfsExecutorServiceShutdown() {
-        return ggfsSvcShutdown;
+    public void setGgfsThreadPoolSize(int poolSize) {
+        this.ggfsPoolSize = poolSize;
     }
 
     /**
-     * Sets thread pool to use within grid.
-     *
-     * @param execSvc Thread pool to use within grid.
-     * @see IgniteConfiguration#getExecutorService()
-     */
-    public void setExecutorService(ExecutorService execSvc) {
-        this.execSvc = execSvc;
-    }
-
-    /**
-     * Sets executor service shutdown flag.
-     *
-     * @param execSvcShutdown Executor service shutdown flag.
-     * @see IgniteConfiguration#getExecutorServiceShutdown()
-     */
-    public void setExecutorServiceShutdown(boolean execSvcShutdown) {
-        this.execSvcShutdown = execSvcShutdown;
-    }
-
-    /**
-     * Sets system thread pool to use within grid.
-     *
-     * @param sysSvc Thread pool to use within grid.
-     * @see IgniteConfiguration#getSystemExecutorService()
-     */
-    public void setSystemExecutorService(ExecutorService sysSvc) {
-        this.sysSvc = sysSvc;
-    }
-
-    /**
-     * Sets system executor service shutdown flag.
-     *
-     * @param sysSvcShutdown System executor service shutdown flag.
-     * @see IgniteConfiguration#getSystemExecutorServiceShutdown()
-     */
-    public void setSystemExecutorServiceShutdown(boolean sysSvcShutdown) {
-        this.sysSvcShutdown = sysSvcShutdown;
-    }
-
-    /**
-     * Sets management thread pool to use within grid.
-     *
-     * @param mgmtSvc Thread pool to use within grid.
-     * @see IgniteConfiguration#getManagementExecutorService()
-     */
-    public void setManagementExecutorService(ExecutorService mgmtSvc) {
-        this.mgmtSvc = mgmtSvc;
-    }
-
-    /**
-     * Sets management executor service shutdown flag.
-     *
-     * @param mgmtSvcShutdown Management executor service shutdown flag.
-     * @see IgniteConfiguration#getManagementExecutorServiceShutdown()
-     */
-    public void setManagementExecutorServiceShutdown(boolean mgmtSvcShutdown) {
-        this.mgmtSvcShutdown = mgmtSvcShutdown;
-    }
-
-    /**
-     * Sets thread pool to use for peer class loading.
-     *
-     * @param p2pSvc Thread pool to use within grid.
-     * @see IgniteConfiguration#getPeerClassLoadingExecutorService()
-     */
-    public void setPeerClassLoadingExecutorService(ExecutorService p2pSvc) {
-        this.p2pSvc = p2pSvc;
-    }
-
-    /**
-     * Sets peer class loading executor service shutdown flag.
-     *
-     * @param p2pSvcShutdown Peer class loading executor service shutdown flag.
-     * @see IgniteConfiguration#getPeerClassLoadingExecutorServiceShutdown()
-     */
-    public void setPeerClassLoadingExecutorServiceShutdown(boolean p2pSvcShutdown) {
-        this.p2pSvcShutdown = p2pSvcShutdown;
-    }
-
-    /**
-     * Set executor service that will be used to process outgoing GGFS messages.
-     *
-     * @param ggfsSvc Executor service to use for outgoing GGFS messages.
-     * @see IgniteConfiguration#getGgfsExecutorService()
-     */
-    public void setGgfsExecutorService(ExecutorService ggfsSvc) {
-        this.ggfsSvc = ggfsSvc;
-    }
-
-    /**
-     * Sets GGFS executor service shutdown flag.
-     *
-     * @param ggfsSvcShutdown GGFS executor service shutdown flag.
-     * @see IgniteConfiguration#getGgfsExecutorService()
-     */
-    public void setGgfsExecutorServiceShutdown(boolean ggfsSvcShutdown) {
-        this.ggfsSvcShutdown = ggfsSvcShutdown;
-    }
-
-    /**
-     * Should return GridGain installation home folder. If not provided, the system will check
+     * Should return Ignite installation home folder. If not provided, the system will check
      * {@code IGNITE_HOME} system property and environment variable in that order. If
      * {@code IGNITE_HOME} still could not be obtained, then grid will not start and exception
      * will be thrown.
      *
-     * @return GridGain installation home or {@code null} to make the system attempt to
+     * @return Ignite installation home or {@code null} to make the system attempt to
      *      infer it automatically.
      * @see org.apache.ignite.IgniteSystemProperties#IGNITE_HOME
      */
-    public String getGridGainHome() {
+    public String getIgniteHome() {
         return ggHome;
     }
 
     /**
-     * Sets GridGain installation folder.
+     * Sets Ignite installation folder.
      *
-     * @param ggHome {@code GridGain} installation folder.
-     * @see IgniteConfiguration#getGridGainHome()
+     * @param ggHome {@code Ignition} installation folder.
+     * @see IgniteConfiguration#getIgniteHome()
      * @see org.apache.ignite.IgniteSystemProperties#IGNITE_HOME
      */
-    public void setGridGainHome(String ggHome) {
+    public void setIgniteHome(String ggHome) {
         this.ggHome = ggHome;
     }
 
     /**
-     * Gets GridGain work folder. If not provided, the method will use work folder under
-     * {@code IGNITE_HOME} specified by {@link IgniteConfiguration#setGridGainHome(String)} or
+     * Gets Ignite work folder. If not provided, the method will use work folder under
+     * {@code IGNITE_HOME} specified by {@link IgniteConfiguration#setIgniteHome(String)} or
      * {@code IGNITE_HOME} environment variable or system property.
      * <p>
      * If {@code IGNITE_HOME} is not provided, then system temp folder is used.
      *
-     * @return GridGain work folder or {@code null} to make the system attempt to infer it automatically.
-     * @see IgniteConfiguration#getGridGainHome()
+     * @return Ignite work folder or {@code null} to make the system attempt to infer it automatically.
+     * @see IgniteConfiguration#getIgniteHome()
      * @see org.apache.ignite.IgniteSystemProperties#IGNITE_HOME
      */
     public String getWorkDirectory() {
@@ -1395,9 +1095,9 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets GridGain work folder.
+     * Sets Ignite work folder.
      *
-     * @param ggWork {@code GridGain} work folder.
+     * @param ggWork {@code Ignite} work folder.
      * @see IgniteConfiguration#getWorkDirectory()
      */
     public void setWorkDirectory(String ggWork) {
@@ -1445,12 +1145,12 @@ public class IgniteConfiguration {
 
     /**
      * Should return an instance of marshaller to use in grid. If not provided,
-     * {@link org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller} will be used on Java HotSpot VM, and
-     * {@link org.apache.ignite.marshaller.jdk.IgniteJdkMarshaller} will be used on other VMs.
+     * {@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller} will be used on Java HotSpot VM, and
+     * {@link org.apache.ignite.marshaller.jdk.JdkMarshaller} will be used on other VMs.
      *
      * @return Marshaller to use in grid.
      */
-    public IgniteMarshaller getMarshaller() {
+    public Marshaller getMarshaller() {
         return marsh;
     }
 
@@ -1460,7 +1160,7 @@ public class IgniteConfiguration {
      * @param marsh Marshaller to use within grid.
      * @see IgniteConfiguration#getMarshaller()
      */
-    public void setMarshaller(IgniteMarshaller marsh) {
+    public void setMarshaller(Marshaller marsh) {
         this.marsh = marsh;
     }
 
@@ -1966,7 +1666,7 @@ public class IgniteConfiguration {
      * on arrive to mapped node. This approach suits well for large amount of small
      * jobs (which is a wide-spread use case). User still can control the number
      * of concurrent jobs by setting maximum thread pool size defined by
-     * GridConfiguration.getExecutorService() configuration property.
+     * GridConfiguration.getPublicThreadPoolSize() configuration property.
      *
      * @return Grid collision SPI implementation or {@code null} to use default implementation.
      */
@@ -2189,7 +1889,7 @@ public class IgniteConfiguration {
      *
      * @return Address resolver.
      */
-    public IgniteAddressResolver getAddressResolver() {
+    public AddressResolver getAddressResolver() {
         return addrRslvr;
     }
 
@@ -2198,7 +1898,7 @@ public class IgniteConfiguration {
      *
      * @param addrRslvr Address resolver.
      */
-    public void setAddressResolver(IgniteAddressResolver addrRslvr) {
+    public void setAddressResolver(AddressResolver addrRslvr) {
         this.addrRslvr = addrRslvr;
     }
 
@@ -2207,17 +1907,17 @@ public class IgniteConfiguration {
      *
      * @param deployMode Task classes and resources sharing mode.
      */
-    public void setDeploymentMode(IgniteDeploymentMode deployMode) {
+    public void setDeploymentMode(DeploymentMode deployMode) {
         this.deployMode = deployMode;
     }
 
     /**
      * Gets deployment mode for deploying tasks and other classes on this node.
-     * Refer to {@link IgniteDeploymentMode} documentation for more information.
+     * Refer to {@link DeploymentMode} documentation for more information.
      *
      * @return Deployment mode.
      */
-    public IgniteDeploymentMode getDeploymentMode() {
+    public DeploymentMode getDeploymentMode() {
         return deployMode;
     }
 
@@ -2263,7 +1963,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets flag indicating whether cache sanity check is enabled. If enabled, then GridGain
+     * Gets flag indicating whether cache sanity check is enabled. If enabled, then Ignite
      * will perform the following checks and throw an exception if check fails:
      * <ul>
      *     <li>Cache entry is not externally locked with {@code lock(...)} or {@code lockAsync(...)}
@@ -2298,13 +1998,13 @@ public class IgniteConfiguration {
     /**
      * Gets array of event types, which will be recorded.
      * <p>
-     * Note that by default all events in GridGain are disabled. GridGain can and often does generate thousands
+     * Note that by default all events in Ignite are disabled. Ignite can and often does generate thousands
      * events per seconds under the load and therefore it creates a significant additional load on the system.
      * If these events are not needed by the application this load is unnecessary and leads to significant
      * performance degradation. So it is <b>highly recommended</b> to enable only those events that your
-     * application logic requires. Note that certain events are required for GridGain's internal operations
+     * application logic requires. Note that certain events are required for Ignite's internal operations
      * and such events will still be generated but not stored by event storage SPI if they are disabled
-     * in GridGain configuration.
+     * in Ignite configuration.
      *
      * @return Include event types.
      */
@@ -2313,7 +2013,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets array of event types, which will be recorded by {@link GridEventStorageManager#record(org.apache.ignite.events.IgniteEvent)}.
+     * Sets array of event types, which will be recorded by {@link GridEventStorageManager#record(org.apache.ignite.events.Event)}.
      * Note, that either the include event types or the exclude event types can be established.
      *
      * @param inclEvtTypes Include event types.
@@ -2323,476 +2023,8 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets path, either absolute or relative to {@code IGNITE_HOME}, to {@code JETTY}
-     * XML configuration file. {@code JETTY} is used to support REST over HTTP protocol for
-     * accessing GridGain APIs remotely.
-     *
-     * @param jettyPath Path to {@code JETTY} XML configuration file.
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestJettyPath(String)}.
-     */
-    @Deprecated
-    public void setRestJettyPath(String jettyPath) {
-        this.jettyPath = jettyPath;
-    }
-
-    /**
-     * Gets path, either absolute or relative to {@code IGNITE_HOME}, to {@code Jetty}
-     * XML configuration file. {@code Jetty} is used to support REST over HTTP protocol for
-     * accessing GridGain APIs remotely.
-     * <p>
-     * If not provided, Jetty instance with default configuration will be started picking
-     * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_HOST} and {@link org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_PORT}
-     * as host and port respectively.
-     *
-     * @return Path to {@code JETTY} XML configuration file.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_HOST
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_PORT
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestJettyPath()}.
-     */
-    @Deprecated
-    public String getRestJettyPath() {
-        return jettyPath;
-    }
-
-    /**
-     * Sets flag indicating whether external {@code REST} access is enabled or not.
-     *
-     * @param restEnabled Flag indicating whether external {@code REST} access is enabled or not.
-     * @deprecated Use {@link ClientConnectionConfiguration}.
-     */
-    @Deprecated
-    public void setRestEnabled(boolean restEnabled) {
-        this.restEnabled = restEnabled;
-    }
-
-    /**
-     * Gets flag indicating whether external {@code REST} access is enabled or not. By default,
-     * external {@code REST} access is turned on.
-     *
-     * @return Flag indicating whether external {@code REST} access is enabled or not.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_HOST
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_PORT
-     * @deprecated Use {@link ClientConnectionConfiguration}.
-     */
-    @Deprecated
-    public boolean isRestEnabled() {
-        return restEnabled;
-    }
-
-    /**
-     * Gets host for TCP binary protocol server. This can be either an
-     * IP address or a domain name.
-     * <p>
-     * If not defined, system-wide local address will be used
-     * (see {@link #getLocalHost()}.
-     * <p>
-     * You can also use {@code 0.0.0.0} value to bind to all
-     * locally-available IP addresses.
-     *
-     * @return TCP host.
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpHost()}.
-     */
-    @Deprecated
-    public String getRestTcpHost() {
-        return restTcpHost;
-    }
-
-    /**
-     * Sets host for TCP binary protocol server.
-     *
-     * @param restTcpHost TCP host.
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpHost(String)}.
-     */
-    @Deprecated
-    public void setRestTcpHost(String restTcpHost) {
-        this.restTcpHost = restTcpHost;
-    }
-
-    /**
-     * Gets port for TCP binary protocol server.
-     * <p>
-     * Default is {@link #DFLT_TCP_PORT}.
-     *
-     * @return TCP port.
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpPort()}.
-     */
-    @Deprecated
-    public int getRestTcpPort() {
-        return restTcpPort;
-    }
-
-    /**
-     * Sets port for TCP binary protocol server.
-     *
-     * @param restTcpPort TCP port.
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpPort(int)}.
-     */
-    @Deprecated
-    public void setRestTcpPort(int restTcpPort) {
-        this.restTcpPort = restTcpPort;
-    }
-
-    /**
-     * Gets flag indicating whether {@code TCP_NODELAY} option should be set for accepted client connections.
-     * Setting this option reduces network latency and should be set to {@code true} in majority of cases.
-     * For more information, see {@link Socket#setTcpNoDelay(boolean)}
-     * <p/>
-     * If not specified, default value is {@link #DFLT_TCP_NODELAY}.
-     *
-     * @return Whether {@code TCP_NODELAY} option should be enabled.
-     * @deprecated Use {@link ClientConnectionConfiguration#isRestTcpNoDelay()}.
-     */
-    @Deprecated
-    public boolean isRestTcpNoDelay() {
-        return restTcpNoDelay;
-    }
-
-    /**
-     * Sets whether {@code TCP_NODELAY} option should be set for all accepted client connections.
-     *
-     * @param restTcpNoDelay {@code True} if option should be enabled.
-     * @see #isRestTcpNoDelay()
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpNoDelay(boolean)}.
-     */
-    @Deprecated
-    public void setRestTcpNoDelay(boolean restTcpNoDelay) {
-        this.restTcpNoDelay = restTcpNoDelay;
-    }
-
-    /**
-     * Gets flag indicating whether REST TCP server should use direct buffers. A direct buffer is a buffer
-     * that is allocated and accessed using native system calls, without using JVM heap. Enabling direct
-     * buffer <em>may</em> improve performance and avoid memory issues (long GC pauses due to huge buffer
-     * size).
-     *
-     * @return Whether direct buffer should be used.
-     * @deprecated Use {@link ClientConnectionConfiguration#isRestTcpDirectBuffer()}.
-     */
-    @Deprecated
-    public boolean isRestTcpDirectBuffer() {
-        return restTcpDirectBuf;
-    }
-
-    /**
-     * Sets whether to use direct buffer for REST TCP server.
-     *
-     * @param restTcpDirectBuf {@code True} if option should be enabled.
-     * @see #isRestTcpDirectBuffer()
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpDirectBuffer(boolean)}.
-     */
-    @Deprecated
-    public void setRestTcpDirectBuffer(boolean restTcpDirectBuf) {
-        this.restTcpDirectBuf = restTcpDirectBuf;
-    }
-
-    /**
-     * Gets REST TCP server send buffer size.
-     *
-     * @return REST TCP server send buffer size (0 for default).
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpSendBufferSize()}.
-     */
-    @Deprecated
-    public int getRestTcpSendBufferSize() {
-        return restTcpSndBufSize;
-    }
-
-    /**
-     * Sets REST TCP server send buffer size.
-     *
-     * @param restTcpSndBufSize Send buffer size.
-     * @see #getRestTcpSendBufferSize()
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpSendBufferSize(int)}.
-     */
-    @Deprecated
-    public void setRestTcpSendBufferSize(int restTcpSndBufSize) {
-        this.restTcpSndBufSize = restTcpSndBufSize;
-    }
-
-    /**
-     * Gets REST TCP server receive buffer size.
-     *
-     * @return REST TCP server receive buffer size (0 for default).
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpReceiveBufferSize()}.
-     */
-    @Deprecated
-    public int getRestTcpReceiveBufferSize() {
-        return restTcpRcvBufSize;
-    }
-
-    /**
-     * Sets REST TCP server receive buffer size.
-     *
-     * @param restTcpRcvBufSize Receive buffer size.
-     * @see #getRestTcpReceiveBufferSize()
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpReceiveBufferSize(int)}.
-     */
-    @Deprecated
-    public void setRestTcpReceiveBufferSize(int restTcpRcvBufSize) {
-        this.restTcpRcvBufSize = restTcpRcvBufSize;
-    }
-
-    /**
-     * Gets REST TCP server send queue limit. If the limit exceeds, all successive writes will
-     * block until the queue has enough capacity.
-     *
-     * @return REST TCP server send queue limit (0 for unlimited).
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpSendQueueLimit()}.
-     */
-    @Deprecated
-    public int getRestTcpSendQueueLimit() {
-        return restTcpSndQueueLimit;
-    }
-
-    /**
-     * Sets REST TCP server send queue limit.
-     *
-     * @param restTcpSndQueueLimit REST TCP server send queue limit (0 for unlimited).
-     * @see #getRestTcpSendQueueLimit()
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpSendQueueLimit(int)}.
-     */
-    @Deprecated
-    public void setRestTcpSendQueueLimit(int restTcpSndQueueLimit) {
-        this.restTcpSndQueueLimit = restTcpSndQueueLimit;
-    }
-
-    /**
-     * Gets number of selector threads in REST TCP server. Higher value for this parameter
-     * may increase throughput, but also increases context switching.
-     *
-     * @return Number of selector threads for REST TCP server.
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpSelectorCount()}.
-     */
-    @Deprecated
-    public int getRestTcpSelectorCount() {
-        return restTcpSelectorCnt;
-    }
-
-    /**
-     * Sets number of selector threads for REST TCP server.
-     *
-     * @param restTcpSelectorCnt Number of selector threads for REST TCP server.
-     * @see #getRestTcpSelectorCount()
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpSelectorCount(int)}.
-     */
-    @Deprecated
-    public void setRestTcpSelectorCount(int restTcpSelectorCnt) {
-        this.restTcpSelectorCnt = restTcpSelectorCnt;
-    }
-
-    /**
-     * Gets idle timeout for REST server.
-     * <p>
-     * This setting is used to reject half-opened sockets. If no packets
-     * come within idle timeout, the connection is closed.
-     *
-     * @return Idle timeout in milliseconds.
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestIdleTimeout()}.
-     */
-    @Deprecated
-    public long getRestIdleTimeout() {
-        return restIdleTimeout;
-    }
-
-    /**
-     * Sets idle timeout for REST server.
-     *
-     * @param restIdleTimeout Idle timeout in milliseconds.
-     * @see #getRestIdleTimeout()
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestIdleTimeout(long)}.
-     */
-    @Deprecated
-    public void setRestIdleTimeout(long restIdleTimeout) {
-        this.restIdleTimeout = restIdleTimeout;
-    }
-
-    /**
-     * Whether secure socket layer should be enabled on binary rest server.
-     * <p>
-     * Note that if this flag is set to {@code true}, an instance of {@link GridSslContextFactory}
-     * should be provided, otherwise binary rest protocol will fail to start.
-     *
-     * @return {@code True} if SSL should be enabled.
-     * @deprecated Use {@link ClientConnectionConfiguration#isRestTcpSslEnabled()}.
-     */
-    @Deprecated
-    public boolean isRestTcpSslEnabled() {
-        return restTcpSslEnabled;
-    }
-
-    /**
-     * Sets whether Secure Socket Layer should be enabled for REST TCP binary protocol.
-     * <p/>
-     * Note that if this flag is set to {@code true}, then a valid instance of {@link GridSslContextFactory}
-     * should be provided in {@code GridConfiguration}. Otherwise, TCP binary protocol will fail to start.
-     *
-     * @param restTcpSslEnabled {@code True} if SSL should be enabled.
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpSslEnabled(boolean)}.
-     */
-    @Deprecated
-    public void setRestTcpSslEnabled(boolean restTcpSslEnabled) {
-        this.restTcpSslEnabled = restTcpSslEnabled;
-    }
-
-    /**
-     * Gets a flag indicating whether or not remote clients will be required to have a valid SSL certificate which
-     * validity will be verified with trust manager.
-     *
-     * @return Whether or not client authentication is required.
-     * @deprecated Use {@link ClientConnectionConfiguration#isRestTcpSslClientAuth()}.
-     */
-    @Deprecated
-    public boolean isRestTcpSslClientAuth() {
-        return restTcpSslClientAuth;
-    }
-
-    /**
-     * Sets flag indicating whether or not SSL client authentication is required.
-     *
-     * @param needClientAuth Whether or not client authentication is required.
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpSslClientAuth(boolean)}.
-     */
-    @Deprecated
-    public void setRestTcpSslClientAuth(boolean needClientAuth) {
-        restTcpSslClientAuth = needClientAuth;
-    }
-
-    /**
-     * Gets context factory that will be used for creating a secure socket layer of rest binary server.
-     *
-     * @return SslContextFactory instance.
-     * @see GridSslContextFactory
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestTcpSslContextFactory()}.
-     */
-    @Deprecated
-    public GridSslContextFactory getRestTcpSslContextFactory() {
-        return restTcpSslCtxFactory;
-    }
-
-    /**
-     * Sets instance of {@link GridSslContextFactory} that will be used to create an instance of {@code SSLContext}
-     * for Secure Socket Layer on TCP binary protocol. This factory will only be used if
-     * {@link #setRestTcpSslEnabled(boolean)} is set to {@code true}.
-     *
-     * @param restTcpSslCtxFactory Instance of {@link GridSslContextFactory}
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestTcpSslContextFactory(GridSslContextFactory)}.
-     */
-    @Deprecated
-    public void setRestTcpSslContextFactory(GridSslContextFactory restTcpSslCtxFactory) {
-        this.restTcpSslCtxFactory = restTcpSslCtxFactory;
-    }
-
-    /**
-     * Gets number of ports to try if configured port is already in use.
-     *
-     * @return Number of ports to try.
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestPortRange()}.
-     */
-    @Deprecated
-    public int getRestPortRange() {
-        return restPortRange;
-    }
-
-    /**
-     * Sets number of ports to try if configured one is in use.
-     *
-     * @param restPortRange Port range.
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestPortRange(int)}.
-     */
-    @Deprecated
-    public void setRestPortRange(int restPortRange) {
-        this.restPortRange = restPortRange;
-    }
-
-    /**
-     * Gets list of folders that are accessible for log reading command. When remote client requests
-     * a log file, file path is checked against this list. If requested file is not located in any
-     * sub-folder of these folders, request is not processed.
-     * <p>
-     * By default, list consists of a single {@code IGNITE_HOME} folder. If {@code IGNITE_HOME}
-     * could not be detected and property is not specified, no restrictions applied.
-     *
-     * @return Array of folders that are allowed be read by remote clients.
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestAccessibleFolders()}.
-     */
-    @Deprecated
-    public String[] getRestAccessibleFolders() {
-        return restAccessibleFolders;
-    }
-
-    /**
-     * Sets array of folders accessible by REST processor for log reading command.
-     *
-     * @param restAccessibleFolders Array of folder paths.
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestAccessibleFolders(String...)}.
-     */
-    @Deprecated
-    public void setRestAccessibleFolders(String... restAccessibleFolders) {
-        this.restAccessibleFolders = restAccessibleFolders;
-    }
-
-    /**
-     * Should return an instance of fully configured thread pool to be used for
-     * processing of client messages (REST requests).
-     * <p>
-     * If not provided, new executor service will be created using the following
-     * configuration:
-     * <ul>
-     *     <li>Core pool size - {@link #DFLT_REST_CORE_THREAD_CNT}</li>
-     *     <li>Max pool size - {@link #DFLT_REST_MAX_THREAD_CNT}</li>
-     *     <li>Queue capacity - {@link #DFLT_REST_THREADPOOL_QUEUE_CAP}</li>
-     * </ul>
-     *
-     * @return Thread pool implementation to be used for processing of client
-     *      messages.
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestExecutorService()}.
-     */
-    @Deprecated
-    public ExecutorService getRestExecutorService() {
-        return restExecSvc;
-    }
-
-    /**
-     * Sets thread pool to use for processing of client messages (REST requests).
-     *
-     * @param restExecSvc Thread pool to use for processing of client messages.
-     * @see IgniteConfiguration#getRestExecutorService()
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestExecutorService(ExecutorService)}.
-     */
-    @Deprecated
-    public void setRestExecutorService(ExecutorService restExecSvc) {
-        this.restExecSvc = restExecSvc;
-    }
-
-    /**
-     * Sets REST executor service shutdown flag.
-     *
-     * @param restSvcShutdown REST executor service shutdown flag.
-     * @see IgniteConfiguration#getRestExecutorService()
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestExecutorServiceShutdown(boolean)}.
-     */
-    @Deprecated
-    public void setRestExecutorServiceShutdown(boolean restSvcShutdown) {
-        this.restSvcShutdown = restSvcShutdown;
-    }
-
-    /**
-     * Shutdown flag for REST executor service.
-     * <p>
-     * If not provided, default value {@code true} will be used which will shutdown
-     * executor service when GridGain stops regardless whether it was started before GridGain
-     * or by GridGain.
-     *
-     * @return REST executor service shutdown flag.
-     * @deprecated Use {@link ClientConnectionConfiguration#isRestExecutorServiceShutdown()}.
-     */
-    @Deprecated
-    public boolean getRestExecutorServiceShutdown() {
-        return restSvcShutdown;
-    }
-
-    /**
-     * Sets system-wide local address or host for all GridGain components to bind to. If provided it will
-     * override all default local bind settings within GridGain or any of its SPIs.
+     * Sets system-wide local address or host for all Ignite components to bind to. If provided it will
+     * override all default local bind settings within Ignite or any of its SPIs.
      *
      * @param locHost Local IP address or host to bind to.
      */
@@ -2801,10 +2033,10 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets system-wide local address or host for all GridGain components to bind to. If provided it will
-     * override all default local bind settings within GridGain or any of its SPIs.
+     * Gets system-wide local address or host for all Ignite components to bind to. If provided it will
+     * override all default local bind settings within Ignite or any of its SPIs.
      * <p>
-     * If {@code null} then GridGain tries to use local wildcard address. That means that
+     * If {@code null} then Ignite tries to use local wildcard address. That means that
      * all services will be available on all network interfaces of the host machine.
      * <p>
      * It is strongly recommended to set this parameter for all production environments.
@@ -2857,30 +2089,6 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets secret key to authenticate REST requests. If key is {@code null} or empty authentication is disabled.
-     *
-     * @param restSecretKey REST secret key.
-     * @deprecated Use {@link ClientConnectionConfiguration#setRestSecretKey(String)}.
-     */
-    @Deprecated
-    public void setRestSecretKey(String restSecretKey) {
-        this.restSecretKey = restSecretKey;
-    }
-
-    /**
-     * Gets secret key to authenticate REST requests. If key is {@code null} or empty authentication is disabled.
-     *
-     * @return Secret key.
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_HOST
-     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_PORT
-     * @deprecated Use {@link ClientConnectionConfiguration#getRestSecretKey()}.
-     */
-    @Deprecated
-    public String getRestSecretKey() {
-        return restSecretKey;
-    }
-
-    /**
      * Gets array of system or environment properties to include into node attributes.
      * If this array is {@code null}, which is default, then all system and environment
      * properties will be included. If this array is empty, then none will be included.
@@ -2927,42 +2135,6 @@ public class IgniteConfiguration {
      */
     public void setMetricsLogFrequency(long metricsLogFreq) {
         this.metricsLogFreq = metricsLogFreq;
-    }
-
-    /**
-     * Gets interceptor for objects, moving to and from remote clients.
-     * If this method returns {@code null} then no interception will be applied.
-     * <p>
-     * Setting interceptor allows to transform all objects exchanged via REST protocol.
-     * For example if you use custom serialisation on client you can write interceptor
-     * to transform binary representations received from client to Java objects and later
-     * access them from java code directly.
-     * <p>
-     * Default value is {@code null}.
-     *
-     * @see ClientMessageInterceptor
-     * @return Interceptor.
-     * @deprecated Use {@link ClientConnectionConfiguration#getClientMessageInterceptor()}.
-     */
-    @Deprecated
-    public ClientMessageInterceptor getClientMessageInterceptor() {
-        return clientMsgInterceptor;
-    }
-
-    /**
-     * Sets client message interceptor.
-     * <p>
-     * Setting interceptor allows to transform all objects exchanged via REST protocol.
-     * For example if you use custom serialisation on client you can write interceptor
-     * to transform binary representations received from client to Java objects and later
-     * access them from java code directly.
-     *
-     * @param interceptor Interceptor.
-     * @deprecated Use {@link ClientConnectionConfiguration#setClientMessageInterceptor(ClientMessageInterceptor)}.
-     */
-    @Deprecated
-    public void setClientMessageInterceptor(ClientMessageInterceptor interceptor) {
-        clientMsgInterceptor = interceptor;
     }
 
     /**
@@ -3038,31 +2210,17 @@ public class IgniteConfiguration {
     }
 
     /**
-     * @return Client connection configuration.
+     * @return Connector configuration.
      */
-    public ClientConnectionConfiguration getClientConnectionConfiguration() {
-        return clientCfg;
+    public ConnectorConfiguration getConnectorConfiguration() {
+        return connectorCfg;
     }
 
     /**
-     * @param clientCfg Client connection configuration.
+     * @param connectorCfg Connector configuration.
      */
-    public void setClientConnectionConfiguration(ClientConnectionConfiguration clientCfg) {
-        this.clientCfg = clientCfg;
-    }
-
-    /**
-     * @return Portable configuration.
-     */
-    public PortableConfiguration getPortableConfiguration() {
-        return portableCfg;
-    }
-
-    /**
-     * @param portableCfg Portable configuration.
-     */
-    public void setPortableConfiguration(PortableConfiguration portableCfg) {
-        this.portableCfg = portableCfg;
+    public void setConnectorConfiguration(ConnectorConfiguration connectorCfg) {
+        this.connectorCfg = connectorCfg;
     }
 
     /**
@@ -3070,7 +2228,7 @@ public class IgniteConfiguration {
      *
      * @return Configurations for services to be deployed on the grid.
      */
-    public ManagedServiceConfiguration[] getServiceConfiguration() {
+    public ServiceConfiguration[] getServiceConfiguration() {
         return svcCfgs;
     }
 
@@ -3079,7 +2237,7 @@ public class IgniteConfiguration {
      *
      * @param svcCfgs Configurations for services to be deployed on the grid.
      */
-    public void setServiceConfiguration(ManagedServiceConfiguration... svcCfgs) {
+    public void setServiceConfiguration(ServiceConfiguration... svcCfgs) {
         this.svcCfgs = svcCfgs;
     }
 
@@ -3088,9 +2246,9 @@ public class IgniteConfiguration {
      * Each listener is mapped to array of event types.
      *
      * @return Pre-configured event listeners map.
-     * @see org.apache.ignite.events.IgniteEventType
+     * @see org.apache.ignite.events.EventType
      */
-    public Map<IgnitePredicate<? extends IgniteEvent>, int[]> getLocalEventListeners() {
+    public Map<IgnitePredicate<? extends Event>, int[]> getLocalEventListeners() {
         return lsnrs;
     }
 
@@ -3100,7 +2258,7 @@ public class IgniteConfiguration {
      *
      * @param lsnrs Pre-configured event listeners map.
      */
-    public void setLocalEventListeners(Map<IgnitePredicate<? extends IgniteEvent>, int[]> lsnrs) {
+    public void setLocalEventListeners(Map<IgnitePredicate<? extends Event>, int[]> lsnrs) {
         this.lsnrs = lsnrs;
     }
 
@@ -3125,29 +2283,11 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets interop configuration.
-     *
-     * @return Interop configuration.
-     */
-    @Nullable public InteropConfiguration getInteropConfiguration() {
-        return interopCfg;
-    }
-
-    /**
-     * Sets interop configuration.
-     *
-     * @param interopCfg Interop configuration.
-     */
-    public void setInteropConfiguration(@Nullable InteropConfiguration interopCfg) {
-        this.interopCfg = interopCfg;
-    }
-
-    /**
      * Gets transactions configuration.
      *
      * @return Transactions configuration.
      */
-    public TransactionsConfiguration getTransactionsConfiguration() {
+    public TransactionConfiguration getTransactionConfiguration() {
         return txCfg;
     }
 
@@ -3156,7 +2296,7 @@ public class IgniteConfiguration {
      *
      * @param txCfg Transactions configuration.
      */
-    public void setTransactionsConfiguration(TransactionsConfiguration txCfg) {
+    public void setTransactionConfiguration(TransactionConfiguration txCfg) {
         this.txCfg = txCfg;
     }
 
@@ -3177,15 +2317,29 @@ public class IgniteConfiguration {
     /**
      * @return Query configuration.
      */
-    public IgniteQueryConfiguration getQueryConfiguration() {
+    public QueryConfiguration getQueryConfiguration() {
         return qryCfg;
     }
 
     /**
      * @param qryCfg Query configuration.
      */
-    public void setQueryConfiguration(IgniteQueryConfiguration qryCfg) {
+    public void setQueryConfiguration(QueryConfiguration qryCfg) {
         this.qryCfg = qryCfg;
+    }
+
+    /**
+     * @return Atomic data structures configuration.
+     */
+    public AtomicConfiguration getAtomicConfiguration() {
+        return atomicCfg;
+    }
+
+    /**
+     * @param atomicCfg Atomic data structures configuration.
+     */
+    public void setAtomicConfiguration(AtomicConfiguration atomicCfg) {
+        this.atomicCfg = atomicCfg;
     }
 
     /**

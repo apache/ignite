@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.resource;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -53,7 +53,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
         Ignite ignite = grid(0);
 
         ignite.compute().call(new IgniteCallable<Object>() {
-            @IgniteLoggerResource(categoryClass = GridLoggerInjectionSelfTest.class)
+            @LoggerResource(categoryClass = GridLoggerInjectionSelfTest.class)
             private IgniteLogger log;
 
             @Override public Object call() throws Exception {
@@ -80,7 +80,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
         Ignite ignite = grid(0);
 
         ignite.compute().call(new IgniteCallable<Object>() {
-            @IgniteLoggerResource(categoryClass = GridLoggerInjectionSelfTest.class)
+            @LoggerResource(categoryClass = GridLoggerInjectionSelfTest.class)
             private void log(IgniteLogger log) {
                 if (log instanceof GridLoggerProxy) {
                     Object category = U.field(log,  "ctgr");
@@ -99,7 +99,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
     }
 
     /**
-     * Test that closure gets right log category injected through {@link org.apache.ignite.resources.IgniteLoggerResource#categoryName()}.
+     * Test that closure gets right log category injected through {@link org.apache.ignite.resources.LoggerResource#categoryName()}.
      *
      * @throws Exception If failed.
      */
@@ -107,7 +107,7 @@ public class GridLoggerInjectionSelfTest extends GridCommonAbstractTest implemen
         Ignite ignite = grid(0);
 
         ignite.compute().call(new IgniteCallable<Object>() {
-            @IgniteLoggerResource(categoryName = "GridLoggerInjectionSelfTest")
+            @LoggerResource(categoryName = "GridLoggerInjectionSelfTest")
             private void log(IgniteLogger log) {
                 if (log instanceof GridLoggerProxy) {
                     Object category = U.field(log,  "ctgr");

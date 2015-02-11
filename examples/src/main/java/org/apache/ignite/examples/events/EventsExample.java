@@ -26,24 +26,24 @@ import org.apache.ignite.resources.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Demonstrates event consume API that allows to register event listeners on remote nodes.
- * Note that grid events are disabled by default and must be specifically enabled,
+ * Note that ignite events are disabled by default and must be specifically enabled,
  * just like in {@code examples/config/example-compute.xml} file.
  * <p>
  * Remote nodes should always be started with configuration: {@code 'ignite.sh examples/config/example-compute.xml'}.
  * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start
- * GridGain node with {@code examples/config/example-compute.xml} configuration.
+ * node with {@code examples/config/example-compute.xml} configuration.
  */
 public class EventsExample {
     /**
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
@@ -53,7 +53,7 @@ public class EventsExample {
             // Listen to events happening on local node.
             localListen();
 
-            // Listen to events happening on all grid nodes.
+            // Listen to events happening on all cluster nodes.
             remoteListen();
 
             // Wait for a while while callback is notified about remaining puts.
@@ -64,16 +64,16 @@ public class EventsExample {
     /**
      * Listen to events that happen only on local node.
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void localListen() throws Exception {
+    private static void localListen() throws IgniteException {
         System.out.println();
         System.out.println(">>> Local event listener example.");
 
-        Ignite g = Ignition.ignite();
+        Ignite ignite = Ignition.ignite();
 
-        IgnitePredicate<IgniteTaskEvent> lsnr = new IgnitePredicate<IgniteTaskEvent>() {
-            @Override public boolean apply(IgniteTaskEvent evt) {
+        IgnitePredicate<TaskEvent> lsnr = new IgnitePredicate<TaskEvent>() {
+            @Override public boolean apply(TaskEvent evt) {
                 System.out.println("Received task event [evt=" + evt.name() + ", taskName=" + evt.taskName() + ']');
 
                 return true; // Return true to continue listening.
@@ -81,32 +81,32 @@ public class EventsExample {
         };
 
         // Register event listener for all local task execution events.
-        g.events().localListen(lsnr, EVTS_TASK_EXECUTION);
+        ignite.events().localListen(lsnr, EVTS_TASK_EXECUTION);
 
         // Generate task events.
-        g.compute().withName("example-event-task").run(new IgniteRunnable() {
+        ignite.compute().withName("example-event-task").run(new IgniteRunnable() {
             @Override public void run() {
                 System.out.println("Executing sample job.");
             }
         });
 
         // Unsubscribe local task event listener.
-        g.events().stopLocalListen(lsnr);
+        ignite.events().stopLocalListen(lsnr);
     }
 
     /**
-     * Listen to events coming from all grid nodes.
+     * Listen to events coming from all cluster nodes.
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void remoteListen() throws IgniteCheckedException {
+    private static void remoteListen() throws IgniteException {
         System.out.println();
         System.out.println(">>> Remote event listener example.");
 
         // This optional local callback is called for each event notification
         // that passed remote predicate listener.
-        IgniteBiPredicate<UUID, IgniteTaskEvent> locLsnr = new IgniteBiPredicate<UUID, IgniteTaskEvent>() {
-            @Override public boolean apply(UUID nodeId, IgniteTaskEvent evt) {
+        IgniteBiPredicate<UUID, TaskEvent> locLsnr = new IgniteBiPredicate<UUID, TaskEvent>() {
+            @Override public boolean apply(UUID nodeId, TaskEvent evt) {
                 // Remote filter only accepts tasks whose name being with "good-task" prefix.
                 assert evt.taskName().startsWith("good-task");
 
@@ -117,22 +117,22 @@ public class EventsExample {
         };
 
         // Remote filter which only accepts tasks whose name begins with "good-task" prefix.
-        IgnitePredicate<IgniteTaskEvent> rmtLsnr = new IgnitePredicate<IgniteTaskEvent>() {
-            @Override public boolean apply(IgniteTaskEvent evt) {
+        IgnitePredicate<TaskEvent> rmtLsnr = new IgnitePredicate<TaskEvent>() {
+            @Override public boolean apply(TaskEvent evt) {
                 return evt.taskName().startsWith("good-task");
             }
         };
 
-        Ignite g = Ignition.ignite();
+        Ignite ignite = Ignition.ignite();
 
         // Register event listeners on all nodes to listen for task events.
-        g.events().remoteListen(locLsnr, rmtLsnr, EVTS_TASK_EXECUTION);
+        ignite.events().remoteListen(locLsnr, rmtLsnr, EVTS_TASK_EXECUTION);
 
         // Generate task events.
         for (int i = 0; i < 10; i++) {
-            g.compute().withName(i < 5 ? "good-task-" + i : "bad-task-" + i).run(new IgniteRunnable() {
+            ignite.compute().withName(i < 5 ? "good-task-" + i : "bad-task-" + i).run(new IgniteRunnable() {
                 // Auto-inject task session.
-                @IgniteTaskSessionResource
+                @TaskSessionResource
                 private ComputeTaskSession ses;
 
                 @Override public void run() {

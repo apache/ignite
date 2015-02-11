@@ -16,7 +16,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
   - Primary file system configuration for shmem tests.
@@ -29,11 +29,11 @@
 
     <property>
         <name>fs.ggfs.impl</name>
-        <value>org.apache.ignite.fs.hadoop.v1.GridGgfsHadoopFileSystem</value>
+        <value>org.apache.ignite.ignitefs.hadoop.v1.GridGgfsHadoopFileSystem</value>
     </property>
 
     <property>
         <name>fs.AbstractFileSystem.ggfs.impl</name>
-        <value>org.apache.ignite.fs.hadoop.v2.GridGgfsHadoopFileSystem</value>
+        <value>org.apache.ignite.ignitefs.hadoop.v2.GridGgfsHadoopFileSystem</value>
     </property>
 </configuration>

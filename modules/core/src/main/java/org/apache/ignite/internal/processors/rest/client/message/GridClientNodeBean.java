@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import org.apache.ignite.portables.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
@@ -26,7 +25,7 @@ import java.util.*;
 /**
  * Node bean.
  */
-public class GridClientNodeBean implements Externalizable, PortableMarshalAware {
+public class GridClientNodeBean implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -252,43 +251,6 @@ public class GridClientNodeBean implements Externalizable, PortableMarshalAware 
         GridClientNodeBean other = (GridClientNodeBean)obj;
 
         return nodeId == null ? other.nodeId == null : nodeId.equals(other.nodeId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writePortable(PortableWriter writer) throws PortableException {
-        PortableRawWriter raw = writer.rawWriter();
-
-        raw.writeInt(tcpPort);
-        raw.writeInt(replicaCnt);
-        raw.writeString(dfltCacheMode);
-        raw.writeMap(attrs);
-        raw.writeMap(caches);
-        raw.writeCollection(tcpAddrs);
-        raw.writeCollection(tcpHostNames);
-        raw.writeUuid(nodeId);
-        raw.writeObject(consistentId);
-        raw.writeObject(metrics);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readPortable(PortableReader reader) throws PortableException {
-        PortableRawReader raw = reader.rawReader();
-
-        tcpPort = raw.readInt();
-        replicaCnt = raw.readInt();
-
-        dfltCacheMode = raw.readString();
-
-        attrs = raw.readMap();
-        caches = raw.readMap();
-
-        tcpAddrs = raw.readCollection();
-        tcpHostNames = raw.readCollection();
-
-        nodeId = raw.readUuid();
-
-        consistentId = raw.readObject();
-        metrics = (GridClientNodeMetricsBean)raw.readObject();
     }
 
     /** {@inheritDoc} */

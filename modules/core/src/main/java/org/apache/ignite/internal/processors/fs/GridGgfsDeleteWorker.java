@@ -20,18 +20,19 @@ package org.apache.ignite.internal.processors.fs;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.lang.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.processors.fs.GridGgfsFileInfo.*;
 
@@ -178,7 +179,7 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
                     else
                         break;
                 }
-                catch (IgniteInterruptedException ignored) {
+                catch (IgniteInterruptedCheckedException ignored) {
                     // Ignore this exception while stopping.
                 }
                 catch (IgniteCheckedException e) {
@@ -303,7 +304,7 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
                 try {
                     fut.get();
                 }
-                catch (IgniteFutureCancelledException ignore) {
+                catch (IgniteFutureCancelledCheckedException ignore) {
                     // This future can be cancelled only due to GGFS shutdown.
                     cancelled = true;
 
@@ -331,15 +332,9 @@ public class GridGgfsDeleteWorker extends GridGgfsThread {
 
         Collection<ClusterNode> nodes = meta.metaCacheNodes();
 
-        boolean first = true;
-
         for (ClusterNode node : nodes) {
-            GridGgfsCommunicationMessage msg0 = first ? msg : (GridGgfsCommunicationMessage)msg.clone();
-
-            first = false;
-
             try {
-                ggfsCtx.send(node, topic, msg0, GridIoPolicy.SYSTEM_POOL);
+                ggfsCtx.send(node, topic, msg, GridIoPolicy.SYSTEM_POOL);
             }
             catch (IgniteCheckedException e) {
                 U.warn(log, "Failed to send GGFS delete message to node [nodeId=" + node.id() +

@@ -21,34 +21,34 @@ import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Mode indicating how GridGain should wait for write replies from other nodes. Default
- * value is {@link #FULL_ASYNC}}, which means that GridGain will not wait for responses from
+ * Mode indicating how Ignite should wait for write replies from other nodes. Default
+ * value is {@link #FULL_ASYNC}}, which means that Ignite will not wait for responses from
  * participating nodes. This means that by default remote nodes may get their state updated slightly after
  * any of the cache write methods complete, or after {@link IgniteTx#commit()} method completes.
  * <p>
  * Note that regardless of write synchronization mode, cache data will always remain fully
  * consistent across all participating nodes.
  * <p>
- * Write synchronization mode may be configured via {@link org.apache.ignite.cache.CacheConfiguration#getWriteSynchronizationMode()}
+ * Write synchronization mode may be configured via {@link org.apache.ignite.configuration.CacheConfiguration#getWriteSynchronizationMode()}
  * configuration property.
  */
 public enum CacheWriteSynchronizationMode {
     /**
-     * Flag indicating that GridGain should wait for write or commit replies from all nodes.
+     * Flag indicating that Ignite should wait for write or commit replies from all nodes.
      * This behavior guarantees that whenever any of the atomic or transactional writes
      * complete, all other participating nodes which cache the written data have been updated.
      */
     FULL_SYNC,
 
     /**
-     * Flag indicating that GridGain will not wait for write or commit responses from participating nodes,
+     * Flag indicating that Ignite will not wait for write or commit responses from participating nodes,
      * which means that remote nodes may get their state updated a bit after any of the cache write methods
      * complete, or after {@link IgniteTx#commit()} method completes.
      */
     FULL_ASYNC,
 
     /**
-     * This flag only makes sense for {@link CacheMode#PARTITIONED} mode. When enabled, GridGain
+     * This flag only makes sense for {@link CacheMode#PARTITIONED} mode. When enabled, Ignite
      * will wait for write or commit to complete on {@code primary} node, but will not wait for
      * backups to be updated.
      */

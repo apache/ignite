@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.fs.common;
 
 import org.apache.ignite.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -324,7 +324,7 @@ public class GridGgfsMarshaller {
     }
 
     /**
-     * Reads GGFS path from data input that was written by {@link #writePath(ObjectOutput, org.apache.ignite.fs.IgniteFsPath)}
+     * Reads GGFS path from data input that was written by {@link #writePath(ObjectOutput, org.apache.ignite.ignitefs.IgniteFsPath)}
      * method.
      *
      * @param in Data input.

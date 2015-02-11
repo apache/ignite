@@ -23,13 +23,13 @@ import org.apache.ignite.spi.*;
 /**
  * Management MBean for {@link AdaptiveLoadBalancingSpi} SPI.
  */
-@IgniteMXBeanDescription("MBean that provides access to adaptive load balancing SPI configuration.")
+@MXBeanDescription("MBean that provides access to adaptive load balancing SPI configuration.")
 public interface AdaptiveLoadBalancingSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets text description of current load probing implementation used.
      *
      * @return Text description of current load probing implementation used.
      */
-    @IgniteMXBeanDescription("Text description of current load probing implementation used.")
+    @MXBeanDescription("Text description of current load probing implementation used.")
     public String getLoadProbeFormatted();
 }

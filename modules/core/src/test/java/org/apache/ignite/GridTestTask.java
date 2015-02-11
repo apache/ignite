@@ -27,7 +27,7 @@ import java.util.*;
  */
 public class GridTestTask extends ComputeTaskSplitAdapter<Object, Object> {
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** {@inheritDoc} */
@@ -44,7 +44,7 @@ public class GridTestTask extends ComputeTaskSplitAdapter<Object, Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Object reduce(List<ComputeJobResult> results) {
         if (log.isDebugEnabled())
             log.debug("Reducing task [task=" + this + ", results=" + results + ']');
 

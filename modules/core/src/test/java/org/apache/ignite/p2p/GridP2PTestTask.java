@@ -33,7 +33,7 @@ public class GridP2PTestTask extends ComputeTaskAdapter<Object, Integer> {
     public static final String TASK_NAME = GridP2PTestTask.class.getName();
 
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Ignite instance. */
@@ -41,7 +41,7 @@ public class GridP2PTestTask extends ComputeTaskAdapter<Object, Integer> {
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
         assert subgrid != null;
         assert !subgrid.isEmpty();
 
@@ -66,7 +66,7 @@ public class GridP2PTestTask extends ComputeTaskAdapter<Object, Integer> {
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Integer reduce(List<ComputeJobResult> results) {
         assert results.size() == 1 : "Results [received=" + results.size() + ", expected=" + 1 + ']';
 
         ComputeJobResult res = results.get(0);

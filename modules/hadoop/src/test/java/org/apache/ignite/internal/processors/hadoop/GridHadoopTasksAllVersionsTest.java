@@ -20,8 +20,7 @@ package org.apache.ignite.internal.processors.hadoop;
 import com.google.common.base.*;
 import org.apache.hadoop.io.*;
 import org.apache.ignite.*;
-import org.apache.ignite.fs.*;
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.processors.hadoop.examples.*;
 import org.apache.ignite.internal.processors.hadoop.v2.*;
 

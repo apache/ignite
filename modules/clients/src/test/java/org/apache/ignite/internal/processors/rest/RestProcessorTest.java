@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.rest;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import javax.swing.*;
@@ -35,17 +35,17 @@ import java.util.*;
  * <p>
  * URLs to test:
  * <ul>
- * <li>http://localhost:8080/gridgain?cmd=get&key=simpleBean</li>
- * <li>http://localhost:8080/gridgain?cmd=get&key=complexBean</li>
- * <li>http://localhost:8080/gridgain?cmd=get&key=list</li>
- * <li>http://localhost:8080/gridgain?cmd=get&key=map</li>
- * <li>http://localhost:8080/gridgain?cmd=get&key=int</li>
- * <li>http://localhost:8080/gridgain?cmd=get&key=string</li>
- * <li>http://localhost:8080/gridgain?cmd=get&key=date</li>
- * <li>http://localhost:8080/gridgain?cmd=top</li>
- * <li>http://localhost:8080/gridgain?cmd=exe&name=org.apache.ignite.internal.processors.rest.TestTask2</li>
- * <li>http://localhost:8080/gridgain?cmd=exe&name=org.apache.ignite.internal.processors.rest.TestTask2&async=true</li>
- * <li>http://localhost:8080/gridgain?cmd=res&id=XXXX</li>
+ * <li>http://localhost:8080/ignite?cmd=get&key=simpleBean</li>
+ * <li>http://localhost:8080/ignite?cmd=get&key=complexBean</li>
+ * <li>http://localhost:8080/ignite?cmd=get&key=list</li>
+ * <li>http://localhost:8080/ignite?cmd=get&key=map</li>
+ * <li>http://localhost:8080/ignite?cmd=get&key=int</li>
+ * <li>http://localhost:8080/ignite?cmd=get&key=string</li>
+ * <li>http://localhost:8080/ignite?cmd=get&key=date</li>
+ * <li>http://localhost:8080/ignite?cmd=top</li>
+ * <li>http://localhost:8080/ignite?cmd=exe&name=org.apache.ignite.internal.processors.rest.TestTask2</li>
+ * <li>http://localhost:8080/ignite?cmd=exe&name=org.apache.ignite.internal.processors.rest.TestTask2&async=true</li>
+ * <li>http://localhost:8080/ignite?cmd=res&id=XXXX</li>
  * </ul>
  */
 public class RestProcessorTest extends GridCommonAbstractTest {
@@ -80,14 +80,14 @@ public class RestProcessorTest extends GridCommonAbstractTest {
         JOptionPane.showMessageDialog(
             null,
             new JComponent[] {
-                new JLabel("GridGain started."),
+                new JLabel("Ignite started."),
                 new JLabel(
                     "<html>" +
                         "You can use JMX console at <u>http://localhost:1234</u>" +
                         "</html>"),
-                new JLabel("Press OK to stop GridGain.")
+                new JLabel("Press OK to stop Ignite.")
             },
-            "GridGain Startup JUnit",
+            "Ignite Startup JUnit",
             JOptionPane.INFORMATION_MESSAGE
         );
 
@@ -110,14 +110,14 @@ public class RestProcessorTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        assert cfg.getClientConnectionConfiguration() == null;
+        assert cfg.getConnectorConfiguration() == null;
 
-        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
+        ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
         // Ensure - no authentication.
-        clientCfg.setRestSecretKey(null);
+        clientCfg.setSecretKey(null);
 
-        cfg.setClientConnectionConfiguration(clientCfg);
+        cfg.setConnectorConfiguration(clientCfg);
 
         cfg.setCacheConfiguration(defaultCacheConfiguration());
 

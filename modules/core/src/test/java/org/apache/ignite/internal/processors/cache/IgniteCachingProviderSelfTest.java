@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import com.google.common.collect.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.CachingProvider;
 import org.apache.ignite.configuration.*;
 
 import javax.cache.*;

@@ -19,18 +19,17 @@ package org.apache.ignite.internal.processors.dataload;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -44,7 +43,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  *
@@ -91,7 +90,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
         cfg.setIncludeProperties();
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         if (useCache) {
             CacheConfiguration cc = defaultCacheConfiguration();
@@ -211,7 +210,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<?> f1 = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    Collection<IgniteInternalFuture<?>> futs = new ArrayList<>(cnt);
+                    Collection<IgniteFuture<?>> futs = new ArrayList<>(cnt);
 
                     for (int i = 0; i < cnt; i++) {
                         int idx = idxGen.getAndIncrement();
@@ -221,7 +220,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
                     l1.countDown();
 
-                    for (IgniteInternalFuture<?> fut : futs)
+                    for (IgniteFuture<?> fut : futs)
                         fut.get();
 
                     return null;
@@ -250,7 +249,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<?> f2 = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    Collection<IgniteInternalFuture<?>> futs = new ArrayList<>(cnt);
+                    Collection<IgniteFuture<?>> futs = new ArrayList<>(cnt);
 
                     for (int i = 0; i < cnt; i++) {
                         final int key = idxGen.decrementAndGet();
@@ -260,7 +259,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
                     l2.countDown();
 
-                    for (IgniteInternalFuture<?> fut : futs)
+                    for (IgniteFuture<?> fut : futs)
                         fut.get();
 
                     return null;
@@ -394,7 +393,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
                 IgniteInternalFuture<?> fut1 = multithreadedAsync(new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
+                        Collection<IgniteFuture<?>> futs = new ArrayList<>();
 
                         while (!done.get()) {
                             int idx = idxGen.getAndIncrement();
@@ -410,7 +409,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
                         ldr.flush();
 
-                        for (IgniteInternalFuture<?> fut : futs)
+                        for (IgniteFuture<?> fut : futs)
                             fut.get();
 
                         return null;
@@ -728,8 +727,8 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch latch = new CountDownLatch(9);
 
-            g.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            g.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     latch.countDown();
 
                     return true;
@@ -821,7 +820,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             for (int i = 1000; i < 2000; i++) {
                 assertEquals(i, storeMap.get(i));
 
-                assertNull(cache.localPeek(i));
+                assertNull(cache.localPeek(i, CachePeekMode.ONHEAP));
             }
         }
         finally {

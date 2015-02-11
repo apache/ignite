@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.taskexecutor.external.child
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.message.*;
 import org.apache.ignite.internal.processors.hadoop.shuffle.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.*;
@@ -34,7 +34,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.hadoop.GridHadoopTaskType.*;
+import static org.apache.ignite.internal.processors.hadoop.GridHadoopTaskType.*;
 
 /**
  * Hadoop process base.

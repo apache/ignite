@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.managed.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.services.*;
 
 import java.io.*;
 import java.util.*;
@@ -41,7 +41,7 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
     private final long topVer;
 
     /** Service configuration. */
-    private final ManagedServiceConfiguration cfg;
+    private final ServiceConfiguration cfg;
 
     /** Assignments. */
     @GridToStringInclude
@@ -52,7 +52,7 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
      * @param nodeId Node ID.
      * @param topVer Topology version.
      */
-    public GridServiceAssignments(ManagedServiceConfiguration cfg, UUID nodeId, long topVer) {
+    public GridServiceAssignments(ServiceConfiguration cfg, UUID nodeId, long topVer) {
         this.cfg = cfg;
         this.nodeId = nodeId;
         this.topVer = topVer;
@@ -61,7 +61,7 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
     /**
      * @return Configuration.
      */
-    public ManagedServiceConfiguration configuration() {
+    public ServiceConfiguration configuration() {
         return cfg;
     }
 
@@ -75,7 +75,7 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
     /**
      * @return Service.
      */
-    public ManagedService service() {
+    public Service service() {
         return cfg.getService();
     }
 

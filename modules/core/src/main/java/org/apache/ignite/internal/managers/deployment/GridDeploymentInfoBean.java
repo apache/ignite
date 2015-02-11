@@ -19,10 +19,10 @@ package org.apache.ignite.internal.managers.deployment;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Deployment info bean.
  */
-public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter implements GridDeploymentInfo,
+public class GridDeploymentInfoBean extends MessageAdapter implements GridDeploymentInfo,
     Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -40,7 +40,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
     private IgniteUuid clsLdrId;
 
     /** */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /** */
     private String userVer;
@@ -67,7 +67,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
      * @param participants Participants.
      * @param locDepOwner Local deployment owner flag.
      */
-    public GridDeploymentInfoBean(IgniteUuid clsLdrId, String userVer, IgniteDeploymentMode depMode,
+    public GridDeploymentInfoBean(IgniteUuid clsLdrId, String userVer, DeploymentMode depMode,
         Map<UUID, IgniteUuid> participants, boolean locDepOwner) {
         this.clsLdrId = clsLdrId;
         this.depMode = depMode;
@@ -93,7 +93,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteDeploymentMode deployMode() {
+    @Override public DeploymentMode deployMode() {
         return depMode;
     }
 
@@ -139,7 +139,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDeploymentInfoBean _clone = new GridDeploymentInfoBean();
 
         clone0(_clone);
@@ -148,7 +148,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridDeploymentInfoBean _clone = (GridDeploymentInfoBean)_msg;
 
         _clone.clsLdrId = clsLdrId;
@@ -161,77 +161,45 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putGridUuid(clsLdrId))
+                if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putEnum(depMode))
+                if (!writer.writeEnum("depMode", depMode))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putBoolean(locDepOwner))
+                if (!writer.writeBoolean("locDepOwner", locDepOwner))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                if (participants != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(participants.size()))
-                            return false;
-
-                        commState.it = participants.entrySet().iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        Map.Entry<UUID, IgniteUuid> e = (Map.Entry<UUID, IgniteUuid>)commState.cur;
-
-                        if (!commState.keyDone) {
-                            if (!commState.putUuid(e.getKey()))
-                                return false;
-
-                            commState.keyDone = true;
-                        }
-
-                        if (!commState.putGridUuid(e.getValue()))
-                            return false;
-
-                        commState.keyDone = false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
-
-            case 4:
-                if (!commState.putString(userVer))
+                if (!writer.writeMap("participants", participants, UUID.class, IgniteUuid.class))
                     return false;
 
-                commState.idx++;
+                state++;
+
+            case 4:
+                if (!writer.writeString("userVer", userVer))
+                    return false;
+
+                state++;
 
         }
 
@@ -241,88 +209,48 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                IgniteUuid clsLdrId0 = commState.getGridUuid();
+                clsLdrId = reader.readIgniteUuid("clsLdrId");
 
-                if (clsLdrId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                clsLdrId = clsLdrId0;
-
-                commState.idx++;
+                state++;
 
             case 1:
-                if (buf.remaining() < 1)
+                depMode = reader.readEnum("depMode", DeploymentMode.class);
+
+                if (!reader.isLastRead())
                     return false;
 
-                byte depMode0 = commState.getByte();
-
-                depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
-
-                commState.idx++;
+                state++;
 
             case 2:
-                if (buf.remaining() < 1)
+                locDepOwner = reader.readBoolean("locDepOwner");
+
+                if (!reader.isLastRead())
                     return false;
 
-                locDepOwner = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 3:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                participants = reader.readMap("participants", UUID.class, IgniteUuid.class, false);
 
-                    commState.readSize = commState.getInt();
-                }
-
-                if (commState.readSize >= 0) {
-                    if (participants == null)
-                        participants = U.newHashMap(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        if (!commState.keyDone) {
-                            UUID _val = commState.getUuid();
-
-                            if (_val == UUID_NOT_READ)
-                                return false;
-
-                            commState.cur = _val;
-                            commState.keyDone = true;
-                        }
-
-                        IgniteUuid _val = commState.getGridUuid();
-
-                        if (_val == GRID_UUID_NOT_READ)
-                            return false;
-
-                        participants.put((UUID)commState.cur, _val);
-
-                        commState.keyDone = false;
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-                commState.cur = null;
-
-                commState.idx++;
-
-            case 4:
-                String userVer0 = commState.getString();
-
-                if (userVer0 == STR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                userVer = userVer0;
+                state++;
 
-                commState.idx++;
+            case 4:
+                userVer = reader.readString("userVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
 
         }
 
@@ -346,7 +274,7 @@ public class GridDeploymentInfoBean extends GridTcpCommunicationMessageAdapter i
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         clsLdrId = U.readGridUuid(in);
-        depMode = IgniteDeploymentMode.fromOrdinal(in.readByte());
+        depMode = DeploymentMode.fromOrdinal(in.readByte());
         userVer = U.readString(in);
         locDepOwner = in.readBoolean();
         participants = U.readMap(in);

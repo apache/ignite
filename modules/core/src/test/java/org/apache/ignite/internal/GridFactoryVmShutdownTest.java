@@ -19,7 +19,6 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
@@ -45,7 +44,7 @@ public class GridFactoryVmShutdownTest {
     public static void main(String[] args) throws Exception {
         final ConcurrentMap<String, IgniteState> states = new ConcurrentHashMap<>();
 
-        G.addListener(new IgniteListener() {
+        G.addListener(new IgnitionListener() {
             @Override public void onStateChange(@Nullable String name, IgniteState state) {
                 if (state == STARTED) {
                     IgniteState state0 = states.put(maskNull(name), STARTED);
@@ -76,9 +75,6 @@ public class GridFactoryVmShutdownTest {
 
                 try {
                     G.start(cfg);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException("Failed to start grid in shutdown hook.", e);
                 }
                 finally {
                     X.println("States: " + states);

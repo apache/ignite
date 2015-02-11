@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.portable.os;
 
+import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.client.marshaller.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.portable.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.client.marshaller.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
-import java.util.*;
 
 /**
  * No-op implementation of {@link GridPortableProcessor}.
@@ -44,27 +44,27 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public ByteBuffer marshal(@Nullable Object obj, boolean trim) throws PortableException {
+    @Override public ByteBuffer marshal(@Nullable Object obj, boolean trim) throws IgniteException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object unmarshal(byte[] arr, int off) throws PortableException {
+    @Nullable @Override public Object unmarshal(byte[] arr, int off) throws IgniteException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public Object unmarshal(long ptr, boolean forceHeap) throws PortableException {
+    @Override public Object unmarshal(long ptr, boolean forceHeap) throws IgniteException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public Object unwrapTemporary(Object obj) throws PortableException {
+    @Override public Object unwrapTemporary(Object obj) throws IgniteException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object marshalToPortable(@Nullable Object obj) throws PortableException {
+    @Nullable @Override public Object marshalToPortable(@Nullable Object obj) throws IgniteException {
         return obj;
     }
 
@@ -84,43 +84,27 @@ public class GridOsPortableProcessor extends GridProcessorAdapter implements Gri
     }
 
     /** {@inheritDoc} */
-    @Override public PortableBuilder builder(int typeId) {
+    @Override public boolean portableEnabled(ClusterNode node, String cacheName) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isPortableObject(Object obj) {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object affinityKey(Object obj) {
+        return obj;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int typeId(Object obj) {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object field(Object obj, String fieldName) {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PortableBuilder builder(String clsName) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public PortableBuilder builder(PortableObject portableObj) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void addMeta(int typeId, PortableMetadata newMeta) throws PortableException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void updateMetaData(int typeId, String typeName, String affKeyFieldName,
-        Map<String, Integer> fieldTypeIds) throws PortableException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public PortableMetadata metadata(int typeId) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Map<Integer, PortableMetadata> metadata(Collection<Integer> typeIds) {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<PortableMetadata> metadata() throws PortableException {
-        return Collections.emptyList();
     }
 }

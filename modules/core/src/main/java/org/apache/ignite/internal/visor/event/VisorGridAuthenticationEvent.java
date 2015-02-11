@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.visor.event;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 
 /**
- * Lightweight counterpart for {@link org.apache.ignite.events.IgniteAuthenticationEvent}.
+ * Lightweight counterpart for {@link org.apache.ignite.events.AuthenticationEvent}.
  */
 public class VisorGridAuthenticationEvent extends VisorGridEvent {
     /** */

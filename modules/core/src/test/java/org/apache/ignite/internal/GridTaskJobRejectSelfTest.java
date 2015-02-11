@@ -22,9 +22,9 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.collision.fifoqueue.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -33,7 +33,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Test that rejected job is not failed over.
@@ -68,16 +68,16 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReject() throws Exception {
-        grid(1).events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        grid(1).events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 X.println("Task event: " + evt);
 
                 return true;
             }
         }, EVTS_TASK_EXECUTION);
 
-        grid(1).events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        grid(1).events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 X.println("Job event: " + evt);
 
                 return true;
@@ -86,8 +86,8 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch startedLatch = new CountDownLatch(1);
 
-        grid(1).events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        grid(1).events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 startedLatch.countDown();
 
                 return true;
@@ -96,8 +96,8 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
 
         final AtomicInteger failedOver = new AtomicInteger(0);
 
-        grid(1).events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        grid(1).events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 failedOver.incrementAndGet();
 
                 return true;
@@ -106,8 +106,8 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch finishedLatch = new CountDownLatch(1);
 
-        grid(1).events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        grid(1).events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 finishedLatch.countDown();
 
                 return true;
@@ -125,7 +125,7 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
             }
 
             /** {@inheritDoc} */
-            @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+            @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
                 return null;
             }
         }, null);

@@ -20,15 +20,15 @@ package org.apache.ignite.internal.processors.cache.version;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Makes sure that cache lock order values come in proper sequence.
@@ -65,10 +65,10 @@ public class GridCacheVersionManager<K, V> extends GridCacheSharedManagerAdapter
 
     /** */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
-        @Override public void onEvent(IgniteEvent evt) {
+        @Override public void onEvent(Event evt) {
             assert evt.type() == EVT_NODE_METRICS_UPDATED;
 
-            IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+            DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
             ClusterNode node = cctx.discovery().node(discoEvt.node().id());
 
@@ -86,7 +86,7 @@ public class GridCacheVersionManager<K, V> extends GridCacheSharedManagerAdapter
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        txSerEnabled = cctx.gridConfig().getTransactionsConfiguration().isTxSerializableEnabled();
+        txSerEnabled = cctx.gridConfig().getTransactionConfiguration().isTxSerializableEnabled();
 
         dataCenterId = cctx.dataCenterId();
 

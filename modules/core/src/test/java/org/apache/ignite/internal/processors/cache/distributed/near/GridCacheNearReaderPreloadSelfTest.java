@@ -21,10 +21,10 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -139,7 +139,7 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(spi);
         cfg.setCacheConfiguration(ccfg);
         cfg.setIncludeProperties();
-        cfg.setRestEnabled(false);
+        cfg.setConnectorConfiguration(null);
 
         return cfg;
     }
@@ -190,7 +190,7 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
      * @param expVal Expected value.
      * @throws Exception If failed.
      */
-    private void checkCache(CacheProjection<Integer, Integer> cache, int key, int expVal) throws Exception {
+    private void checkCache(GridCache<Integer, Integer> cache, int key, int expVal) throws Exception {
         CacheEntry<Integer, Integer> entry = cache.entry(key);
 
         assert F.eq(expVal, entry.getValue()) : "Unexpected cache value [key=" + key + ", expected=" + expVal +

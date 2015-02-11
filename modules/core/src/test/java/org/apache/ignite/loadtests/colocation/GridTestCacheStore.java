@@ -19,7 +19,6 @@ package org.apache.ignite.loadtests.colocation;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
@@ -37,7 +36,7 @@ public class GridTestCacheStore extends CacheStoreAdapter<GridTestKey, Long> {
     private Ignite ignite;
 
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /**

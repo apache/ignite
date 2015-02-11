@@ -30,7 +30,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Eviction event self test.
@@ -96,9 +96,9 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
 
         final AtomicReference<String> oldVal = new AtomicReference<>();
 
-        g.events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
-                IgniteCacheEvent e = (IgniteCacheEvent) evt;
+        g.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                CacheEvent e = (CacheEvent) evt;
 
                 oldVal.set((String) e.oldValue());
 
@@ -106,7 +106,7 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
 
                 return true;
             }
-        }, IgniteEventType.EVT_CACHE_ENTRY_EVICTED);
+        }, EventType.EVT_CACHE_ENTRY_EVICTED);
 
         GridCache<String, String> c = g.cache(null);
 

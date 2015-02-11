@@ -21,18 +21,18 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -46,22 +46,25 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePeekMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
+import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
 /**
  * Cache utility methods.
  */
 public class GridCacheUtils {
     /**  Hadoop syste cache name. */
-    public static final String SYS_CACHE_HADOOP_MR = "gg-hadoop-mr-sys-cache";
+    public static final String SYS_CACHE_HADOOP_MR = "ignite-hadoop-mr-sys-cache";
 
-    /** Security system cache name. */
-    public static final String UTILITY_CACHE_NAME = "gg-sys-cache";
+    /** System cache name. */
+    public static final String UTILITY_CACHE_NAME = "ignite-sys-cache";
+
+    /** Atomics system cache name. */
+    public static final String ATOMICS_CACHE_NAME = "ignite-atomics-sys-cache";
 
     /** Default mask name. */
     private static final String DEFAULT_MASK_NAME = "<default>";
@@ -166,20 +169,9 @@ public class GridCacheUtils {
         }
     };
 
-    /** Converts transaction to XID. */
-    private static final IgniteClosure<IgniteTx, IgniteUuid> tx2xid = new C1<IgniteTx, IgniteUuid>() {
-        @Override public IgniteUuid apply(IgniteTx tx) {
-            return tx.xid();
-        }
-
-        @Override public String toString() {
-            return "Transaction to XID converter.";
-        }
-    };
-
     /** Converts transaction to XID version. */
-    private static final IgniteClosure tx2xidVer = new C1<IgniteTxEx, GridCacheVersion>() {
-        @Override public GridCacheVersion apply(IgniteTxEx tx) {
+    private static final IgniteClosure tx2xidVer = new C1<IgniteInternalTx, GridCacheVersion>() {
+        @Override public GridCacheVersion apply(IgniteInternalTx tx) {
             return tx.xidVersion();
         }
 
@@ -801,15 +793,8 @@ public class GridCacheUtils {
      * @return Closure which converts transaction entry xid to XID version.
      */
     @SuppressWarnings( {"unchecked"})
-    public static <K, V> IgniteClosure<IgniteTxEx<K, V>, GridCacheVersion> tx2xidVersion() {
-        return (IgniteClosure<IgniteTxEx<K, V>, GridCacheVersion>)tx2xidVer;
-    }
-
-    /**
-     * @return Closure which converts transaction to xid.
-     */
-    public static IgniteClosure<IgniteTx, IgniteUuid> tx2xid() {
-        return tx2xid;
+    public static <K, V> IgniteClosure<IgniteInternalTx<K, V>, GridCacheVersion> tx2xidVersion() {
+        return (IgniteClosure<IgniteInternalTx<K, V>, GridCacheVersion>)tx2xidVer;
     }
 
     /**
@@ -1194,7 +1179,7 @@ public class GridCacheUtils {
             try {
                 return cmd.call();
             }
-            catch (IgniteCheckedException | IgniteException e) {
+            catch (IgniteCheckedException | IgniteException | IllegalStateException e) {
                 throw e;
             }
             catch (Exception e) {
@@ -1210,21 +1195,21 @@ public class GridCacheUtils {
      * @param isolation Isolation.
      * @return New transaction.
      */
-    public static IgniteTx txStartInternal(GridCacheContext ctx, CacheProjection prj,
+    public static IgniteInternalTx txStartInternal(GridCacheContext ctx, CacheProjection prj,
         IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
         assert ctx != null;
         assert prj != null;
 
         ctx.tm().txContextReset();
 
-        return prj.txStart(concurrency, isolation);
+        return prj.txStartEx(concurrency, isolation);
     }
 
     /**
      * @param tx Transaction.
      * @return String view of all safe-to-print transaction properties.
      */
-    public static String txString(@Nullable IgniteTx tx) {
+    public static String txString(@Nullable IgniteInternalTx tx) {
         if (tx == null)
             return "null";
 
@@ -1524,10 +1509,18 @@ public class GridCacheUtils {
 
     /**
      * @param cacheName Cache name.
+     * @return {@code True} if this is security system cache.
+     */
+    public static boolean isAtomicsCache(String cacheName) {
+        return ATOMICS_CACHE_NAME.equals(cacheName);
+    }
+
+    /**
+     * @param cacheName Cache name.
      * @return {@code True} if system cache.
      */
     public static boolean isSystemCache(String cacheName) {
-        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName);
+        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName) || isAtomicsCache(cacheName);
     }
 
     /**
@@ -1627,7 +1620,26 @@ public class GridCacheUtils {
     public static <K, V> void inTx(CacheProjection<K, V> cache, IgniteTxConcurrency concurrency,
         IgniteTxIsolation isolation, IgniteInClosureX<CacheProjection<K ,V>> clo) throws IgniteCheckedException {
 
-        try (IgniteTx tx = cache.txStart(concurrency, isolation)) {
+        try (IgniteInternalTx tx = cache.txStartEx(concurrency, isolation);) {
+            clo.applyx(cache);
+
+            tx.commit();
+        }
+    }
+
+    /**
+     * Execute closure inside cache transaction.
+     *
+     * @param cache Cache.
+     * @param concurrency Concurrency.
+     * @param isolation Isolation.
+     * @param clo Closure.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static <K, V> void inTx(Ignite ignite, IgniteCache<K, V> cache, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, IgniteInClosureX<IgniteCache<K ,V>> clo) throws IgniteCheckedException {
+
+        try (IgniteTx tx = ignite.transactions().txStart(concurrency, isolation)) {
             clo.applyx(cache);
 
             tx.commit();
@@ -1640,7 +1652,7 @@ public class GridCacheUtils {
      * @param tx Transaction.
      * @return Subject ID.
      */
-    public static <K, V> UUID subjectId(IgniteTxEx<K, V> tx, GridCacheSharedContext<K, V> ctx) {
+    public static <K, V> UUID subjectId(IgniteInternalTx<K, V> tx, GridCacheSharedContext<K, V> ctx) {
         if (tx == null)
             return ctx.localNodeId();
 
@@ -1657,7 +1669,7 @@ public class GridCacheUtils {
      * @return {@code True} if entry was invalidated.
      */
     public static <K, V> boolean invalidate(CacheProjection<K, V> cache, K key) {
-        return cache.clear(key);
+        return cache.clearLocally(key);
     }
 
     /**

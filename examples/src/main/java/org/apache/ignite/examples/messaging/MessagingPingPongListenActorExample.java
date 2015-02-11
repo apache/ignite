@@ -26,14 +26,14 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Demonstrates messaging with {@link org.apache.ignite.messaging.MessagingListenActor} convenience adapter.
+ * Demonstrates messaging with {@link MessagingListenActor} convenience adapter.
  * <p>
  * To run this example you must have at least one remote node started.
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
- * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
+ * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start node
  * with {@code examples/config/example-compute.xml} configuration.
  */
 public class MessagingPingPongListenActorExample {
@@ -44,18 +44,18 @@ public class MessagingPingPongListenActorExample {
      * @throws IgniteCheckedException If example execution failed.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        // Game is played over the default grid.
-        try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
-            if (!ExamplesUtils.checkMinTopologySize(g.cluster(), 2))
+        // Game is played over the default ignite.
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
+            if (!ExamplesUtils.checkMinTopologySize(ignite.cluster(), 2))
                 return;
 
             System.out.println();
             System.out.println(">>> Messaging ping-pong listen actor example started.");
 
             // Pick first remote node as a partner.
-            Collection<ClusterNode> rmtNodes = g.cluster().forRemotes().nodes();
+            Collection<ClusterNode> rmtNodes = ignite.cluster().forRemotes().nodes();
 
-            ClusterGroup nodeB = g.cluster().forNode(rmtNodes.iterator().next());
+            ClusterGroup nodeB = ignite.cluster().forNode(rmtNodes.iterator().next());
 
             // Note that both nodeA and nodeB will always point to
             // same nodes regardless of whether they were implicitly
@@ -63,8 +63,8 @@ public class MessagingPingPongListenActorExample {
             // anonymous closure's state during its remote execution.
 
             // Set up remote player.
-            g.message(nodeB).remoteListen(null, new MessagingListenActor<String>() {
-                @Override public void receive(UUID nodeId, String rcvMsg) throws IgniteCheckedException {
+            ignite.message(nodeB).remoteListen(null, new MessagingListenActor<String>() {
+                @Override public void receive(UUID nodeId, String rcvMsg) {
                     System.out.println(rcvMsg);
 
                     if ("PING".equals(rcvMsg))
@@ -79,8 +79,8 @@ public class MessagingPingPongListenActorExample {
             final CountDownLatch cnt = new CountDownLatch(MAX_PLAYS);
 
             // Set up local player.
-            g.message().localListen(null, new MessagingListenActor<String>() {
-                @Override protected void receive(UUID nodeId, String rcvMsg) throws IgniteCheckedException {
+            ignite.message().localListen(null, new MessagingListenActor<String>() {
+                @Override protected void receive(UUID nodeId, String rcvMsg) throws IgniteException {
                     System.out.println(rcvMsg);
 
                     if (cnt.getCount() == 1)
@@ -93,7 +93,7 @@ public class MessagingPingPongListenActorExample {
             });
 
             // Serve!
-            g.message(nodeB).send(null, "PING");
+            ignite.message(nodeB).send(null, "PING");
 
             // Wait til the game is over.
             try {

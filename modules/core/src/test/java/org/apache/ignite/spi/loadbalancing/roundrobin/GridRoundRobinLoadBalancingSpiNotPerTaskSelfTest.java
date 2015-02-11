@@ -27,7 +27,7 @@ import org.apache.ignite.testframework.junits.spi.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.spi.loadbalancing.roundrobin.GridRoundRobinTestUtils.*;
 
 /**
@@ -89,9 +89,9 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
 
         checkCyclicBalancing(getSpi(), allNodes, orderedNodes, ses1, ses2);
 
-        getSpiContext().triggerEvent(new IgniteTaskEvent(
+        getSpiContext().triggerEvent(new TaskEvent(
             null, null, EVT_TASK_FINISHED, ses1.getId(), null, null, false, null));
-        getSpiContext().triggerEvent(new IgniteTaskEvent(
+        getSpiContext().triggerEvent(new TaskEvent(
             null, null, EVT_TASK_FAILED, ses2.getId(), null, null, false, null));
     }
 
@@ -122,7 +122,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
         try {
             getSpi().getBalancedNode(ses, notInTop, new GridTestJob());
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             assertTrue(e.getMessage().contains("Task topology does not have alive nodes"));
         }
     }

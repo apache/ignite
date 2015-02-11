@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import org.apache.ignite.internal.util.portable.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -230,57 +228,11 @@ public class GridClientCacheRequest extends GridClientAbstractMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void writePortable(PortableWriter writer) throws PortableException {
-        super.writePortable(writer);
-
-        PortableRawWriterEx raw = (PortableRawWriterEx)writer.rawWriter();
-
-        raw.writeInt(op.ordinal());
-        raw.writeString(cacheName);
-        raw.writeInt(cacheFlagsOn);
-        raw.writeObjectDetached(key);
-        raw.writeObjectDetached(val);
-        raw.writeObjectDetached(val2);
-
-        raw.writeInt(vals != null ? vals.size() : -1);
-
-        if (vals != null) {
-            for (Map.Entry<Object, Object> e : vals.entrySet()) {
-                raw.writeObjectDetached(e.getKey());
-                raw.writeObjectDetached(e.getValue());
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readPortable(PortableReader reader) throws PortableException {
-        super.readPortable(reader);
-
-        PortableRawReaderEx raw = (PortableRawReaderEx)reader.rawReader();
-
-        op = GridCacheOperation.fromOrdinal(raw.readInt());
-        cacheName = raw.readString();
-        cacheFlagsOn = raw.readInt();
-        key = raw.readObjectDetached();
-        val = raw.readObjectDetached();
-        val2 = raw.readObjectDetached();
-
-        int valsSize = raw.readInt();
-
-        if (valsSize >= 0) {
-            vals = U.newHashMap(valsSize);
-
-            for (int i = 0; i < valsSize; i++)
-                vals.put(raw.readObjectDetached(), raw.readObjectDetached());
-        }
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
-        U.writeEnum0(out, op);
+        U.writeEnum(out, op);
 
         U.writeString(out, cacheName);
 
@@ -298,7 +250,7 @@ public class GridClientCacheRequest extends GridClientAbstractMessage {
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
 
-        op = GridCacheOperation.fromOrdinal(U.readEnumOrdinal0(in));
+        op = GridCacheOperation.fromOrdinal(in.readByte());
 
         cacheName = U.readString(in);
 

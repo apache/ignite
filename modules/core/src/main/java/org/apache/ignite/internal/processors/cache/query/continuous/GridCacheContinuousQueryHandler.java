@@ -23,19 +23,19 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.event.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Continuous query handler.
@@ -84,6 +84,9 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
     /** Keep portable flag. */
     private boolean keepPortable;
 
+    /** Whether to skip primary check for REPLICATED cache. */
+    private transient boolean skipPrimaryCheck;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -103,6 +106,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      * @param entryLsnr {@code True} if query created for {@link CacheEntryListener}.
      * @param sync {@code True} if query created for synchronous {@link CacheEntryListener}.
      * @param oldVal {@code True} if old value is required.
+     * @param skipPrimaryCheck Whether to skip primary check for REPLICATED cache.
      * @param taskHash Task name hash code.
      */
     GridCacheContinuousQueryHandler(@Nullable String cacheName,
@@ -114,6 +118,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         boolean entryLsnr,
         boolean sync,
         boolean oldVal,
+        boolean skipPrimaryCheck,
         int taskHash,
         boolean keepPortable) {
         assert topic != null;
@@ -131,6 +136,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         this.oldVal = oldVal;
         this.taskHash = taskHash;
         this.keepPortable = keepPortable;
+        this.skipPrimaryCheck = skipPrimaryCheck;
     }
 
     /** {@inheritDoc} */
@@ -166,7 +172,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         GridCacheContinuousQueryListener<K, V> lsnr = new GridCacheContinuousQueryListener<K, V>() {
             @Override public void onExecution() {
                 if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                    ctx.event().record(new IgniteCacheQueryExecutedEvent<>(
+                    ctx.event().record(new CacheQueryExecutedEvent<>(
                         ctx.discovery().localNode(),
                         "Continuous query executed.",
                         EVT_CACHE_QUERY_EXECUTED,
@@ -184,16 +190,21 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             }
 
             @Override public void onEntryUpdate(GridCacheContinuousQueryEntry<K, V> e, boolean recordEvt) {
+                GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+                if (cctx.isReplicated() && !skipPrimaryCheck && !e.primary())
+                    return;
+
                 boolean notify;
 
-                CacheFlag[] f = cacheContext(ctx).forceLocalRead();
+                CacheFlag[] f = cctx.forceLocalRead();
 
                 try {
                     notify = (prjPred == null || checkProjection(e)) &&
                         (filter == null || filter.apply(e));
                 }
                 finally {
-                    cacheContext(ctx).forceFlags(f);
+                    cctx.forceFlags(f);
                 }
 
                 if (notify) {
@@ -237,7 +248,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                     }
 
                     if (!entryLsnr && recordEvt) {
-                        ctx.event().record(new IgniteCacheQueryReadEvent<>(
+                        ctx.event().record(new CacheQueryReadEvent<>(
                             ctx.discovery().localNode(),
                             "Continuous query executed.",
                             EVT_CACHE_QUERY_OBJECT_READ,
@@ -515,7 +526,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             GridDeployment dep = ctx.deploy().deploy(cls, U.detectClassLoader(cls));
 
             if (dep == null)
-                throw new IgniteDeploymentException("Failed to deploy object: " + obj);
+                throw new IgniteDeploymentCheckedException("Failed to deploy object: " + obj);
 
             depInfo = new GridDeploymentInfoBean(dep);
 
@@ -535,7 +546,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
 
             if (dep == null)
-                throw new IgniteDeploymentException("Failed to obtain deployment for class: " + clsName);
+                throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
 
             return ctx.config().getMarshaller().unmarshal(bytes, dep.classLoader());
         }

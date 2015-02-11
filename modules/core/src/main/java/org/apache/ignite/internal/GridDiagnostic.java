@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 
 import java.io.*;
-import java.lang.management.ManagementFactory;
+import java.lang.management.*;
 import java.net.*;
 import java.util.concurrent.*;
 
@@ -111,7 +111,7 @@ final class GridDiagnostic {
                     if (!U.isSufficientlyTestedOs()) {
                         U.warn(log, "This operating system has been tested less rigorously: " + U.osString() +
                             ". Our team will appreciate the feedback if you experience any problems running " +
-                            "gridgain in this environment. You can always send your feedback to support@gridgain.com",
+                            "ignite in this environment. You can always send your feedback to support@gridgain.com",
                             "This OS is tested less rigorously: " + U.osString());
                     }
                 }
@@ -165,7 +165,7 @@ final class GridDiagnostic {
         }
         catch (RejectedExecutionException e) {
             U.error(log, "Failed to start background network diagnostics check due to thread pool execution " +
-                "rejection. In most cases it indicates a severe configuration problem with GridGain.",
+                "rejection. In most cases it indicates a severe configuration problem with Ignite.",
                 "Failed to start background network diagnostics.", e);
         }
     }

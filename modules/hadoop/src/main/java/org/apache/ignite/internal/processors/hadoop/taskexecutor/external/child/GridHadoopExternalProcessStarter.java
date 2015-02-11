@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external.child;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.logger.log4j.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.logger.log4j.*;
+import org.apache.ignite.marshaller.optimized.*;
 
 import java.io.*;
 import java.net.*;
@@ -76,7 +76,7 @@ public class GridHadoopExternalProcessStarter {
      * @throws Exception
      */
     public void run() throws Exception {
-        U.setWorkDirectory(args.workDir, U.getGridGainHome());
+        U.setWorkDirectory(args.workDir, U.getIgniteHome());
 
         File outputDir = outputDirectory();
 
@@ -90,7 +90,7 @@ public class GridHadoopExternalProcessStarter {
         GridHadoopExternalCommunication comm = new GridHadoopExternalCommunication(
             args.nodeId,
             args.childProcId,
-            new IgniteOptimizedMarshaller(),
+            new OptimizedMarshaller(),
             log,
             msgExecSvc,
             "external"
@@ -147,19 +147,19 @@ public class GridHadoopExternalProcessStarter {
      * @return Logger.
      */
     private IgniteLogger logger(final File outputDir) {
-        final URL url = U.resolveGridGainUrl(DFLT_LOG4J_CONFIG);
+        final URL url = U.resolveIgniteUrl(DFLT_LOG4J_CONFIG);
 
-        IgniteLog4jLogger logger;
+        Log4JLogger logger;
 
         try {
-            logger = url != null ? new IgniteLog4jLogger(url) : new IgniteLog4jLogger(true);
+            logger = url != null ? new Log4JLogger(url) : new Log4JLogger(true);
         }
         catch (IgniteCheckedException e) {
             System.err.println("Failed to create URL-based logger. Will use default one.");
 
             e.printStackTrace();
 
-            logger = new IgniteLog4jLogger(true);
+            logger = new Log4JLogger(true);
         }
 
         logger.updateFilePath(new IgniteClosure<String, String>() {

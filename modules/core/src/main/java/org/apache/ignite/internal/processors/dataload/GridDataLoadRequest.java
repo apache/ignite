@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.dataload;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -31,7 +31,7 @@ import java.util.*;
 /**
  *
  */
-public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
+public class GridDataLoadRequest extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -57,7 +57,7 @@ public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
     private boolean skipStore;
 
     /** */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /** */
     private String sampleClsName;
@@ -105,7 +105,7 @@ public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
         byte[] colBytes,
         boolean ignoreDepOwnership,
         boolean skipStore,
-        IgniteDeploymentMode depMode,
+        DeploymentMode depMode,
         String sampleClsName,
         String userVer,
         Map<UUID, IgniteUuid> ldrParticipants,
@@ -178,7 +178,7 @@ public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
     /**
      * @return Deployment mode.
      */
-    public IgniteDeploymentMode deploymentMode() {
+    public DeploymentMode deploymentMode() {
         return depMode;
     }
 
@@ -224,125 +224,93 @@ public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putString(cacheName))
+                if (!writer.writeString("cacheName", cacheName))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putGridUuid(clsLdrId))
+                if (!writer.writeIgniteUuid("clsLdrId", clsLdrId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putByteArray(colBytes))
+                if (!writer.writeByteArray("colBytes", colBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                if (!commState.putEnum(depMode))
+                if (!writer.writeEnum("depMode", depMode))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putBoolean(forceLocDep))
+                if (!writer.writeBoolean("forceLocDep", forceLocDep))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                if (!commState.putBoolean(ignoreDepOwnership))
+                if (!writer.writeBoolean("ignoreDepOwnership", ignoreDepOwnership))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 6:
-                if (ldrParticipants != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(ldrParticipants.size()))
-                            return false;
+                if (!writer.writeMap("ldrParticipants", ldrParticipants, UUID.class, IgniteUuid.class))
+                    return false;
 
-                        commState.it = ldrParticipants.entrySet().iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        Map.Entry<UUID, IgniteUuid> e = (Map.Entry<UUID, IgniteUuid>)commState.cur;
-
-                        if (!commState.keyDone) {
-                            if (!commState.putUuid(e.getKey()))
-                                return false;
-
-                            commState.keyDone = true;
-                        }
-
-                        if (!commState.putGridUuid(e.getValue()))
-                            return false;
-
-                        commState.keyDone = false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 7:
-                if (!commState.putLong(reqId))
+                if (!writer.writeLong("reqId", reqId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 8:
-                if (!commState.putByteArray(resTopicBytes))
+                if (!writer.writeByteArray("resTopicBytes", resTopicBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 9:
-                if (!commState.putString(sampleClsName))
+                if (!writer.writeString("sampleClsName", sampleClsName))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 10:
-                if (!commState.putBoolean(skipStore))
+                if (!writer.writeBoolean("skipStore", skipStore))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 11:
-                if (!commState.putByteArray(updaterBytes))
+                if (!writer.writeByteArray("updaterBytes", updaterBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 12:
-                if (!commState.putString(userVer))
+                if (!writer.writeString("userVer", userVer))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -351,162 +319,112 @@ public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                String cacheName0 = commState.getString();
+                cacheName = reader.readString("cacheName");
 
-                if (cacheName0 == STR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                cacheName = cacheName0;
-
-                commState.idx++;
+                state++;
 
             case 1:
-                IgniteUuid clsLdrId0 = commState.getGridUuid();
+                clsLdrId = reader.readIgniteUuid("clsLdrId");
 
-                if (clsLdrId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                clsLdrId = clsLdrId0;
-
-                commState.idx++;
+                state++;
 
             case 2:
-                byte[] colBytes0 = commState.getByteArray();
+                colBytes = reader.readByteArray("colBytes");
 
-                if (colBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                colBytes = colBytes0;
-
-                commState.idx++;
+                state++;
 
             case 3:
-                if (buf.remaining() < 1)
+                depMode = reader.readEnum("depMode", DeploymentMode.class);
+
+                if (!reader.isLastRead())
                     return false;
 
-                byte depMode0 = commState.getByte();
-
-                depMode = IgniteDeploymentMode.fromOrdinal(depMode0);
-
-                commState.idx++;
+                state++;
 
             case 4:
-                if (buf.remaining() < 1)
+                forceLocDep = reader.readBoolean("forceLocDep");
+
+                if (!reader.isLastRead())
                     return false;
 
-                forceLocDep = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 5:
-                if (buf.remaining() < 1)
+                ignoreDepOwnership = reader.readBoolean("ignoreDepOwnership");
+
+                if (!reader.isLastRead())
                     return false;
 
-                ignoreDepOwnership = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 6:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                ldrParticipants = reader.readMap("ldrParticipants", UUID.class, IgniteUuid.class, false);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (ldrParticipants == null)
-                        ldrParticipants = new HashMap<>(commState.readSize, 1.0f);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        if (!commState.keyDone) {
-                            UUID _val = commState.getUuid();
-
-                            if (_val == UUID_NOT_READ)
-                                return false;
-
-                            commState.cur = _val;
-                            commState.keyDone = true;
-                        }
-
-                        IgniteUuid _val = commState.getGridUuid();
-
-                        if (_val == GRID_UUID_NOT_READ)
-                            return false;
-
-                        ldrParticipants.put((UUID)commState.cur, _val);
-
-                        commState.keyDone = false;
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-                commState.cur = null;
-
-                commState.idx++;
+                state++;
 
             case 7:
-                if (buf.remaining() < 8)
+                reqId = reader.readLong("reqId");
+
+                if (!reader.isLastRead())
                     return false;
 
-                reqId = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 8:
-                byte[] resTopicBytes0 = commState.getByteArray();
+                resTopicBytes = reader.readByteArray("resTopicBytes");
 
-                if (resTopicBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                resTopicBytes = resTopicBytes0;
-
-                commState.idx++;
+                state++;
 
             case 9:
-                String sampleClsName0 = commState.getString();
+                sampleClsName = reader.readString("sampleClsName");
 
-                if (sampleClsName0 == STR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                sampleClsName = sampleClsName0;
-
-                commState.idx++;
+                state++;
 
             case 10:
-                if (buf.remaining() < 1)
+                skipStore = reader.readBoolean("skipStore");
+
+                if (!reader.isLastRead())
                     return false;
 
-                skipStore = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 11:
-                byte[] updaterBytes0 = commState.getByteArray();
+                updaterBytes = reader.readByteArray("updaterBytes");
 
-                if (updaterBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                updaterBytes = updaterBytes0;
-
-                commState.idx++;
+                state++;
 
             case 12:
-                String userVer0 = commState.getString();
+                userVer = reader.readString("userVer");
 
-                if (userVer0 == STR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                userVer = userVer0;
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -515,11 +433,11 @@ public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 61;
+        return 62;
     }
 
     /** {@inheritDoc} */
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDataLoadRequest _clone = new GridDataLoadRequest();
 
         clone0(_clone);
@@ -528,7 +446,7 @@ public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridDataLoadRequest _clone = (GridDataLoadRequest)_msg;
 
         _clone.reqId = reqId;

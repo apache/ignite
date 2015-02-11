@@ -19,27 +19,26 @@ package org.apache.ignite.testframework.junits;
 
 import junit.framework.*;
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.license.*;
+import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.log4j.*;
-import org.apache.ignite.internal.processors.license.*;
-import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.spi.checkpoint.sharedfs.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
+import org.apache.log4j.*;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
 import org.springframework.context.*;
@@ -57,7 +56,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
- * Common abstract test for GridGain tests.
+ * Common abstract test for Ignite tests.
  */
 @SuppressWarnings({
     "TransientFieldInNonSerializableClass",
@@ -96,7 +95,7 @@ public abstract class GridAbstractTest extends TestCase {
     static {
         System.setProperty(IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
 
-        Thread timer = new Thread(new GridTestClockTimer(), "gridgain-clock-for-tests");
+        Thread timer = new Thread(new GridTestClockTimer(), "ignite-clock-for-tests");
 
         timer.setDaemon(true);
 
@@ -162,7 +161,7 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * @return Test resources.
      */
-    protected GridTestResources getTestResources() {
+    protected IgniteTestResources getTestResources() {
         return getTestCounters().getTestResources();
     }
 
@@ -694,7 +693,7 @@ public abstract class GridAbstractTest extends TestCase {
         try {
             Ignite ignite = G.ignite(gridName);
 
-            assert ignite != null : "GridGain returned null grid for name: " + gridName;
+            assert ignite != null : "Ignite returned null grid for name: " + gridName;
 
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() + ']');
 
@@ -864,7 +863,7 @@ public abstract class GridAbstractTest extends TestCase {
      */
     @SuppressWarnings("deprecation")
     protected IgniteConfiguration loadConfiguration(String springCfgPath) throws IgniteCheckedException {
-        URL cfgLocation = U.resolveGridGainUrl(springCfgPath);
+        URL cfgLocation = U.resolveIgniteUrl(springCfgPath);
 
         assert cfgLocation != null;
 
@@ -921,7 +920,7 @@ public abstract class GridAbstractTest extends TestCase {
         try {
             Ignite ignite = G.ignite(gridName);
 
-            assert ignite != null : "GridGain returned null grid for name: " + gridName;
+            assert ignite != null : "Ignite returned null grid for name: " + gridName;
 
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() + ']');
 
@@ -976,7 +975,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param rsrcs Resources.
      * @throws Exception If failed.
      */
-    protected IgniteConfiguration getConfiguration(GridTestResources rsrcs) throws Exception {
+    protected IgniteConfiguration getConfiguration(IgniteTestResources rsrcs) throws Exception {
         return getConfiguration(getTestGridName(), rsrcs);
     }
 
@@ -1019,8 +1018,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @return Path for specific marshaller.
      */
     @SuppressWarnings({"IfMayBeConditional", "deprecation"})
-    protected String getDefaultCheckpointPath(IgniteMarshaller marshaller) {
-        if (marshaller instanceof IgniteJdkMarshaller)
+    protected String getDefaultCheckpointPath(Marshaller marshaller) {
+        if (marshaller instanceof JdkMarshaller)
             return SharedFsCheckpointSpi.DFLT_DIR_PATH + "/jdk/";
         else
             return SharedFsCheckpointSpi.DFLT_DIR_PATH + '/' + marshaller.getClass().getSimpleName() + '/';
@@ -1035,10 +1034,10 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @return GridGain home.
+     * @return Ignite home.
      */
     protected String home() {
-        return getTestResources().getGridgainHome();
+        return getTestResources().getIgniteHome();
     }
 
     /**
@@ -1050,17 +1049,19 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     @SuppressWarnings("deprecation")
-    protected IgniteConfiguration getConfiguration(String gridName, GridTestResources rsrcs) throws Exception {
+    protected IgniteConfiguration getConfiguration(String gridName, IgniteTestResources rsrcs) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName(gridName);
         cfg.setGridLogger(rsrcs.getLogger());
         cfg.setMarshaller(rsrcs.getMarshaller());
         cfg.setNodeId(rsrcs.getNodeId());
-        cfg.setGridGainHome(rsrcs.getGridgainHome());
+        cfg.setIgniteHome(rsrcs.getIgniteHome());
         cfg.setMBeanServer(rsrcs.getMBeanServer());
         cfg.setPeerClassLoadingEnabled(true);
         cfg.setMetricsLogFrequency(0);
+
+        cfg.setConnectorConfiguration(null);
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
@@ -1109,9 +1110,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setCheckpointSpi(cpSpi);
 
-        cfg.setRestEnabled(false);
-
-        cfg.setIncludeEventTypes(IgniteEventType.EVTS_ALL);
+        cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
         return cfg;
     }
@@ -1189,8 +1188,8 @@ public abstract class GridAbstractTest extends TestCase {
 
                 // Remove resources cached in static, if any.
                 GridClassLoaderCache.clear();
-                IgniteOptimizedMarshaller.clearCache();
-                IgniteMarshallerExclusions.clearCache();
+                OptimizedMarshaller.clearCache();
+                MarshallerExclusions.clearCache();
                 GridEnumCache.clear();
             }
 
@@ -1334,7 +1333,7 @@ public abstract class GridAbstractTest extends TestCase {
         private boolean reset;
 
         /** */
-        private GridTestResources rsrcs = new GridTestResources();
+        private IgniteTestResources rsrcs = new IgniteTestResources();
 
         /**
          * @return Reset flag.
@@ -1346,7 +1345,7 @@ public abstract class GridAbstractTest extends TestCase {
         /**
          * @return Test resources.
          */
-        public GridTestResources getTestResources() {
+        public IgniteTestResources getTestResources() {
             return rsrcs;
         }
 
@@ -1417,8 +1416,7 @@ public abstract class GridAbstractTest extends TestCase {
                 int cnt = 0;
 
                 for (Method m : GridAbstractTest.this.getClass().getMethods())
-                    if (m.getDeclaringClass().getName().startsWith("org.gridgain") ||
-                        m.getDeclaringClass().getName().startsWith("org.apache.ignite")) {
+                    if (m.getDeclaringClass().getName().startsWith("org.apache.ignite")) {
                         if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
                             cnt++;
                     }

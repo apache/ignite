@@ -30,7 +30,7 @@ import java.util.*;
  * are my top 10 best selling products over last 24 hours?", or "Who are my top 10 users out of
  * last 1,000,000 users who logged in?"
  * <p>
- * GridGain comes with following rolling windows implementations out of the box:
+ * Ignite comes with following rolling windows implementations out of the box:
  * <ul>
  * <li>{@link org.apache.ignite.streamer.window.StreamerUnboundedWindow}</li>
  * <li>{@link org.apache.ignite.streamer.window.StreamerBoundedSizeWindow}</li>
@@ -103,18 +103,18 @@ public interface StreamerWindow<E> extends Iterable<E> {
      *
      * @param evt Event to add.
      * @return {@code True} if event was added.
-     * @throws IgniteCheckedException If index update failed.
+     * @throws IgniteException If index update failed.
      */
-    public boolean enqueue(E evt) throws IgniteCheckedException;
+    public boolean enqueue(E evt) throws IgniteException;
 
     /**
      * Adds events to window.
      *
      * @param evts Events to add.
      * @return {@code}
-     * @throws IgniteCheckedException If index update failed.
+     * @throws IgniteException If index update failed.
      */
-    public boolean enqueue(E... evts) throws IgniteCheckedException;
+    public boolean enqueue(E... evts) throws IgniteException;
 
     /**
      * Adds all events to window.
@@ -122,17 +122,17 @@ public interface StreamerWindow<E> extends Iterable<E> {
      * @param evts Collection of events to add.
      * @return {@code True} if all events were added, {@code false} if at
      *      least 1 event was skipped.
-     * @throws IgniteCheckedException If index update failed.
+     * @throws IgniteException If index update failed.
      */
-    public boolean enqueueAll(Collection<E> evts) throws IgniteCheckedException;
+    public boolean enqueueAll(Collection<E> evts) throws IgniteException;
 
     /**
      * Dequeues last element from windows. Will return {@code null} if window is empty.
      *
      * @return Dequeued element.
-     * @throws IgniteCheckedException If index update failed.
+     * @throws IgniteException If index update failed.
      */
-    @Nullable public E dequeue() throws IgniteCheckedException;
+    @Nullable public E dequeue() throws IgniteException;
 
     /**
      * Dequeues up to {@code cnt} elements from window. If current window size is less than {@code cnt},
@@ -140,35 +140,35 @@ public interface StreamerWindow<E> extends Iterable<E> {
      *
      * @param cnt Count to dequeue.
      * @return Collection of dequeued elements.
-     * @throws IgniteCheckedException If index update failed.
+     * @throws IgniteException If index update failed.
      */
-    public Collection<E> dequeue(int cnt) throws IgniteCheckedException;
+    public Collection<E> dequeue(int cnt) throws IgniteException;
 
     /**
      * Dequeues all elements from window.
      *
      * @return Collection of dequeued elements.
-     * @throws IgniteCheckedException If index update failed.
+     * @throws IgniteException If index update failed.
      */
-    public Collection<E> dequeueAll() throws IgniteCheckedException;
+    public Collection<E> dequeueAll() throws IgniteException;
 
     /**
      * If window supports eviction, this method will return next evicted element.
      *
      * @return Polls and returns next evicted event or {@code null} if eviction queue is empty or if
      *      window does not support eviction.
-     * @throws IgniteCheckedException If index update failed.
+     * @throws IgniteException If index update failed.
      */
-    @Nullable public E pollEvicted() throws IgniteCheckedException;
+    @Nullable public E pollEvicted() throws IgniteException;
 
     /**
      * If window supports eviction, this method will return up to {@code cnt} evicted elements.
      *
      * @param cnt Number of elements to evict.
      * @return Collection of evicted elements.
-     * @throws IgniteCheckedException If index update failed.
+     * @throws IgniteException If index update failed.
      */
-    public Collection<E> pollEvicted(int cnt) throws IgniteCheckedException;
+    public Collection<E> pollEvicted(int cnt) throws IgniteException;
 
     /**
      * If window supports batch eviction, this method will poll next evicted batch from window.
@@ -177,24 +177,24 @@ public interface StreamerWindow<E> extends Iterable<E> {
      * If window does not support eviction, will return empty collection.
      *
      * @return Next evicted batch.
-     * @throws IgniteCheckedException If index update failed.
+     * @throws IgniteException If index update failed.
      */
-    public Collection<E> pollEvictedBatch() throws IgniteCheckedException;
+    public Collection<E> pollEvictedBatch() throws IgniteException;
 
     /**
      * If window supports eviction, this method will return all available evicted elements.
      *
      * @return Collection of evicted elements.
-     * @throws IgniteCheckedException If index update failed.
+     * @throws IgniteException If index update failed.
      */
-    public Collection<E> pollEvictedAll() throws IgniteCheckedException;
+    public Collection<E> pollEvictedAll() throws IgniteException;
 
     /**
      * Clears all evicted entries.
      *
-     * @throws IgniteCheckedException If index update failed.
+     * @throws IgniteException If index update failed.
      */
-    public void clearEvicted() throws IgniteCheckedException;
+    public void clearEvicted() throws IgniteException;
 
     /**
      * Create window snapshot. Evicted entries are not included.

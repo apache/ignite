@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -101,7 +100,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
             false
         );
 
-        IgniteMarshaller marshaller = getTestResources().getMarshaller();
+        Marshaller marshaller = getTestResources().getMarshaller();
 
         GridCacheMvccCandidate<String> unmarshalled = marshaller.unmarshal(marshaller.marshal(cand), null);
 

@@ -21,13 +21,13 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.event.*;
@@ -176,7 +176,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
      * @param ldr Class loader.
      * @throws IgniteCheckedException In case of error.
      */
-    void initValue(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
+    void initValue(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         assert marsh != null;
 
         if (newVal == null && newValBytes != null && !newValBytes.isNull())
@@ -201,7 +201,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
      * @param marsh Marshaller.
      * @throws IgniteCheckedException In case of error.
      */
-    void p2pMarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
+    void p2pMarshal(Marshaller marsh) throws IgniteCheckedException {
         assert marsh != null;
 
         assert key != null;
@@ -222,7 +222,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
      * @param ldr Class loader.
      * @throws IgniteCheckedException In case of error.
      */
-    void p2pUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
+    void p2pUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         assert marsh != null;
 
         assert key == null : "Key should be null: " + key;

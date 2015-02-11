@@ -67,7 +67,7 @@ import scala.util.control.Breaks._
  * {{{
  *     cache
  *     cache -i
- *     cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}
+ *     cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|re|wr|cn} {-a} {-r}
  *     cache -clear {-c=<cache-name>}
  *     cache -compact {-c=<cache-name>}
  *     cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}
@@ -86,15 +86,14 @@ import scala.util.control.Breaks._
  *         If neither is specified statistics will be gathered from all nodes.
  *     -c=<cache-name>
  *         Name of the cache.
- *     -s=lr|lw|hi|mi|re|wr|cn
+ *     -s=hi|mi|re|wr|cn
  *         Defines sorting type. Sorted by:
- *            lr Last read.
- *            lw Last write.
  *            hi Hits.
  *            mi Misses.
  *            rd Reads.
  *            wr Writes.
- *         If not specified - default sorting is 'lr'.
+ *            cn Cache name.
+ *         If not specified - default sorting is 'cn'.
  *     -i
  *         Interactive mode.
  *         User can interactively select node for cache statistics.
@@ -289,20 +288,15 @@ class VisorCacheCommand {
 
                 val sumT = VisorTextTable()
 
-                sumT #= (("Name(@),", "Last Read/Write"), "Nodes", "Entries", "Hits", "Misses", "Reads", "Writes")
+                sumT #= ("Name(@)", "Nodes", "Entries", "Hits", "Misses", "Reads", "Writes")
 
-                sortAggregatedData(aggrData, sortType.getOrElse("lr"), reversed).foreach(
+                sortAggregatedData(aggrData, sortType.getOrElse("cn"), reversed).foreach(
                     ad => {
                         // Add cache host as visor variable.
                         registerCacheName(ad.cacheName)
 
                         sumT += (
-                            (
-                                mkCacheName(ad.cacheName),
-                                " ",
-                                formatDateTime(ad.lastRead),
-                                formatDateTime(ad.lastWrite)
-                                ),
+                            mkCacheName(ad.cacheName),
                             ad.nodes,
                             (
                                 "min: " + ad.minimumSize,
@@ -363,10 +357,9 @@ class VisorCacheCommand {
 
                         val ciT = VisorTextTable()
 
-                        ciT #= ("Node ID8(@), IP", "CPUs", "Heap Used", "CPU Load", "Up Time", "Size",
-                            "Last Read/Write", "Hi/Mi/Rd/Wr")
+                        ciT #= ("Node ID8(@), IP", "CPUs", "Heap Used", "CPU Load", "Up Time", "Size", "Hi/Mi/Rd/Wr")
 
-                        sortData(m.toMap, sortType.getOrElse("lr"), reversed).foreach { case (nid, cm) => {
+                        sortData(m.toMap, sortType.getOrElse("hi"), reversed).foreach { case (nid, cm) => {
                             val nm = grid.node(nid).metrics()
 
                             ciT += (
@@ -376,11 +369,7 @@ class VisorCacheCommand {
 
                                 formatDouble(nm.getCurrentCpuLoad * 100.0) + " %",
                                 X.timeSpan2HMSM(nm.getUpTime),
-                                cm.size(),
-                                (
-                                    formatDateTime(cm.readTime),
-                                    formatDateTime(cm.writeTime)
-                                ),
+                                cm.keySize(),
                                 (
                                     "Hi: " + cm.hits(),
                                     "Mi: " + cm.misses(),
@@ -481,7 +470,7 @@ class VisorCacheCommand {
                 new IgniteBiTuple(new JavaBoolean(name.isEmpty), name.orNull))).toList
         }
         catch {
-            case e: IgniteCheckedException => Nil
+            case e: IgniteException => Nil
         }
     }
 
@@ -496,7 +485,7 @@ class VisorCacheCommand {
             grid.compute(grid.forNode(node)).withNoFailover()
                 .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
         catch {
-            case e: IgniteCheckedException =>
+            case e: IgniteException =>
                 scold(e.getMessage)
 
                 null
@@ -511,7 +500,7 @@ class VisorCacheCommand {
     private def isValidSortType(arg: String): Boolean = {
         assert(arg != null)
 
-        Set("lr", "lw", "hi", "mi", "rd", "wr", "cn").contains(arg.trim)
+        Set("hi", "mi", "rd", "wr", "cn").contains(arg.trim)
     }
 
     /**
@@ -527,8 +516,6 @@ class VisorCacheCommand {
         assert(arg != null)
 
         val sorted = arg.trim match {
-            case "lr" => data.toSeq.sortBy(_._2.readTime)
-            case "lw" => data.toSeq.sortBy(_._2.writeTime)
             case "hi" => data.toSeq.sortBy(_._2.hits)
             case "mi" => data.toSeq.sortBy(_._2.misses)
             case "rd" => data.toSeq.sortBy(_._2.reads)
@@ -556,8 +543,6 @@ class VisorCacheCommand {
         List[VisorCacheAggregatedMetrics] = {
 
         val sorted = arg.trim match {
-            case "lr" => data.toList.sortBy(_.lastRead)
-            case "lw" => data.toList.sortBy(_.lastWrite)
             case "hi" => data.toList.sortBy(_.averageHits)
             case "mi" => data.toList.sortBy(_.averageMisses)
             case "rd" => data.toList.sortBy(_.averageReads)
@@ -596,7 +581,7 @@ class VisorCacheCommand {
 
         val sumT = VisorTextTable()
 
-        sumT #= ("#", ("Name(@),", "Last Read/Write"), "Nodes", "Size")
+        sumT #= ("#", "Name(@),", "Nodes", "Size")
 
         (0 until sortedAggrData.size) foreach (i => {
             val ad = sortedAggrData(i)
@@ -606,12 +591,7 @@ class VisorCacheCommand {
 
             sumT += (
                 i,
-                (
-                    mkCacheName(ad.cacheName),
-                    " ",
-                    formatDateTime(ad.lastRead),
-                    formatDateTime(ad.lastWrite)
-                    ),
+                mkCacheName(ad.cacheName),
                 ad.nodes,
                 (
                     "min: " + ad.minimumSize,
@@ -668,7 +648,7 @@ object VisorCacheCommand {
         spec = Seq(
             "cache",
             "cache -i",
-            "cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=lr|lw|hi|mi|re|wr} {-a} {-r}",
+            "cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|re|wr} {-a} {-r}",
             "cache -compact {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
             "cache -clear {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
             "cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}",
@@ -702,16 +682,14 @@ object VisorCacheCommand {
             "-swap" -> Seq(
                 "Swaps backup entries in cache."
             ),
-            "-s=lr|lw|hi|mi|re|wr|cn" -> Seq(
+            "-s=hi|mi|re|wr|cn" -> Seq(
                 "Defines sorting type. Sorted by:",
-                "   lr Last read.",
-                "   lw Last write.",
                 "   hi Hits.",
                 "   mi Misses.",
                 "   rd Reads.",
                 "   wr Writes.",
                 "   cn Cache name.",
-                "If not specified - default sorting is 'lr'."
+                "If not specified - default sorting is 'cn'."
             ),
             "-i" -> Seq(
                 "Interactive mode.",

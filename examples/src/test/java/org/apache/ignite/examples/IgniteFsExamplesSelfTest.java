@@ -17,7 +17,7 @@
 
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.ggfs.*;
+import org.apache.ignite.examples.ignitefs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -25,24 +25,24 @@ import org.apache.ignite.testframework.junits.common.*;
  * IgniteFs examples self test.
  */
 public class IgniteFsExamplesSelfTest extends GridAbstractExamplesTest {
-    /** GGFS config with shared memory IPC. */
-    private static final String GGFS_SHMEM_CFG = "modules/core/src/test/config/ggfs-shmem.xml";
+    /** IgniteFs config with shared memory IPC. */
+    private static final String IGNITEFS_SHMEM_CFG = "modules/core/src/test/config/ggfs-shmem.xml";
 
-    /** GGFS config with loopback IPC. */
-    private static final String GGFS_LOOPBACK_CFG = "modules/core/src/test/config/ggfs-loopback.xml";
+    /** IgniteFs config with loopback IPC. */
+    private static final String IGNITEFS_LOOPBACK_CFG = "modules/core/src/test/config/ggfs-loopback.xml";
 
     /**
      * @throws Exception If failed.
      */
-    public void testGgfsApiExample() throws Exception {
-        String configPath = U.isWindows() ? GGFS_LOOPBACK_CFG : GGFS_SHMEM_CFG;
+    public void testIgniteFsApiExample() throws Exception {
+        String configPath = U.isWindows() ? IGNITEFS_LOOPBACK_CFG : IGNITEFS_SHMEM_CFG;
 
         try {
             startGrid("test1", configPath);
             startGrid("test2", configPath);
             startGrid("test3", configPath);
 
-            GgfsExample.main(EMPTY_ARGS);
+            IgniteFsExample.main(EMPTY_ARGS);
         }
         finally {
             stopAllGrids();

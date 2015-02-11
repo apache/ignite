@@ -18,13 +18,13 @@
 package org.apache.ignite.spi.authentication.noop;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.managers.security.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.authentication.*;
-import org.apache.ignite.internal.managers.security.*;
-import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Default implementation of the authentication SPI which permits any request.
@@ -45,15 +45,15 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * cfg.setAuthenticationSpi(authSpi);
  *
  * // Start grid.
- * GridGain.start(cfg);
+ * Ignition.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * GridNoopAuthenticationSpi can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
+ * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *         ...
  *         &lt;property name="authenticationSpi"&gt;
- *             &lt;bean class="org.gridgain.grid.spi.authentication.noop.GridNoopAuthenticationSpi"/&gt;
+ *             &lt;bean class="org.apache.ignite.spi.authentication.noop.NoopAuthenticationSpi"/&gt;
  *         &lt;/property&gt;
  *         ...
  * &lt;/bean&gt;
@@ -68,7 +68,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 public class NoopAuthenticationSpi extends IgniteSpiAdapter
     implements AuthenticationSpi, NoopAuthenticationSpiMBean {
     /** Injected grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     @GridToStringExclude
     private IgniteLogger log;
 

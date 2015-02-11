@@ -26,7 +26,7 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -60,19 +60,19 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(CACHE_NAME);
 
         /** {@inheritDoc} */
-        @Override public void start() throws IgniteCheckedException {
+        @Override public void start() {
             lifecycleAware.start();
         }
 
         /** {@inheritDoc} */
-        @Override public void stop() throws IgniteCheckedException {
+        @Override public void stop() {
             lifecycleAware.stop();
         }
 
         /**
          * @param cacheName Cache name.
          */
-        @IgniteCacheNameResource
+        @CacheNameResource
         public void setCacheName(String cacheName) {
             lifecycleAware.cacheName(cacheName);
         }

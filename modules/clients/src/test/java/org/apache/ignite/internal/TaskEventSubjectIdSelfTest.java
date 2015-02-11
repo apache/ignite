@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.client.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.client.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -31,14 +31,14 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests for security subject ID in task events.
  */
 public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final Collection<IgniteTaskEvent> evts = new ArrayList<>();
+    private static final Collection<TaskEvent> evts = new ArrayList<>();
 
     /** */
     private static CountDownLatch latch;
@@ -53,7 +53,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setRestEnabled(true);
+        cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         return cfg;
     }
@@ -62,11 +62,11 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         Ignite g = startGrid();
 
-        g.events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
-                assert evt instanceof IgniteTaskEvent;
+        g.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                assert evt instanceof TaskEvent;
 
-                evts.add((IgniteTaskEvent)evt);
+                evts.add((TaskEvent)evt);
 
                 latch.countDown();
 
@@ -107,11 +107,11 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, evts.size());
 
-        Iterator<IgniteTaskEvent> it = evts.iterator();
+        Iterator<TaskEvent> it = evts.iterator();
 
         assert it.hasNext();
 
-        IgniteTaskEvent evt = it.next();
+        TaskEvent evt = it.next();
 
         assert evt != null;
 
@@ -162,11 +162,11 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assertEquals(2, evts.size());
 
-        Iterator<IgniteTaskEvent> it = evts.iterator();
+        Iterator<TaskEvent> it = evts.iterator();
 
         assert it.hasNext();
 
-        IgniteTaskEvent evt = it.next();
+        TaskEvent evt = it.next();
 
         assert evt != null;
 
@@ -208,11 +208,11 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, evts.size());
 
-        Iterator<IgniteTaskEvent> it = evts.iterator();
+        Iterator<TaskEvent> it = evts.iterator();
 
         assert it.hasNext();
 
-        IgniteTaskEvent evt = it.next();
+        TaskEvent evt = it.next();
 
         assert evt != null;
 
@@ -256,11 +256,11 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, evts.size());
 
-        Iterator<IgniteTaskEvent> it = evts.iterator();
+        Iterator<TaskEvent> it = evts.iterator();
 
         assert it.hasNext();
 
-        IgniteTaskEvent evt = it.next();
+        TaskEvent evt = it.next();
 
         assert evt != null;
 
@@ -300,11 +300,11 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, evts.size());
 
-        Iterator<IgniteTaskEvent> it = evts.iterator();
+        Iterator<TaskEvent> it = evts.iterator();
 
         assert it.hasNext();
 
-        IgniteTaskEvent evt = it.next();
+        TaskEvent evt = it.next();
 
         assert evt != null;
 
@@ -335,7 +335,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /** */
     private static class SimpleTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return Collections.singleton(new ComputeJobAdapter() {
                 @Nullable @Override public Object execute() {
                     return null;
@@ -344,7 +344,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -352,7 +352,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /** */
     private static class FailedTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return Collections.singleton(new ComputeJobAdapter() {
                 @Nullable @Override public Object execute() {
                     return null;
@@ -361,15 +361,15 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
-            throw new IgniteCheckedException("Task failed.");
+        @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
+            throw new IgniteException("Task failed.");
         }
     }
 
     /** */
     private static class TimedOutTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return Collections.singleton(new ComputeJobAdapter() {
                 @Nullable @Override public Object execute() {
                     try {
@@ -385,7 +385,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

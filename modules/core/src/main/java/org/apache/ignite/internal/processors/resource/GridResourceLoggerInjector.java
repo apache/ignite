@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.resource;
 
 import org.apache.ignite.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.resources.*;
 
 /**
  *
@@ -35,13 +35,13 @@ public class GridResourceLoggerInjector extends GridResourceBasicInjector<Ignite
     /** {@inheritDoc} */
     @Override public void inject(GridResourceField field, Object target, Class<?> depCls, GridDeployment dep)
         throws IgniteCheckedException {
-        GridResourceUtils.inject(field.getField(), target, resource((IgniteLoggerResource)field.getAnnotation(), target));
+        GridResourceUtils.inject(field.getField(), target, resource((LoggerResource)field.getAnnotation(), target));
     }
 
     /** {@inheritDoc} */
     @Override public void inject(GridResourceMethod mtd, Object target, Class<?> depCls, GridDeployment dep)
         throws IgniteCheckedException {
-        GridResourceUtils.inject(mtd.getMethod(), target, resource((IgniteLoggerResource)mtd.getAnnotation(), target));
+        GridResourceUtils.inject(mtd.getMethod(), target, resource((LoggerResource)mtd.getAnnotation(), target));
     }
 
     /**
@@ -50,7 +50,7 @@ public class GridResourceLoggerInjector extends GridResourceBasicInjector<Ignite
      * @return Logger.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private IgniteLogger resource(IgniteLoggerResource ann, Object target) {
+    private IgniteLogger resource(LoggerResource ann, Object target) {
         Class<?> cls = ann.categoryClass();
         String cat = ann.categoryName();
 

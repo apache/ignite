@@ -20,18 +20,18 @@ package org.apache.ignite.startup.servlet;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 import javax.servlet.*;
 import java.net.*;
 import java.util.*;
 
 /**
- * This class defines GridGain startup based on servlet context listener.
- * This startup can be used to start GridGain inside any web container.
+ * This class defines Ignite startup based on servlet context listener.
+ * This startup can be used to start Ignite inside any web container.
  * <p>
  * This startup must be defined in {@code web.xml} file.
  * <pre name="code" class="xml">
@@ -46,7 +46,7 @@ import java.util.*;
  * </pre>
  * <p>
  * Servlet context listener based startup may be used in any web container like Tomcat, Jetty and etc.
- * Depending on the way this startup is deployed the GridGain instance can be accessed
+ * Depending on the way this startup is deployed the Ignite instance can be accessed
  * by either all web applications or by only one. See web container class loading architecture:
  * <ul>
  * <li><a target=_blank href="http://tomcat.apache.org/tomcat-7.0-doc/class-loader-howto.html">http://tomcat.apache.org/tomcat-7.0-doc/class-loader-howto.html</a></li>
@@ -54,11 +54,11 @@ import java.util.*;
  * </ul>
  * <p>
  * <h2 class="header">Tomcat</h2>
- * There are two ways to start GridGain on Tomcat.
+ * There are two ways to start Ignite on Tomcat.
  * <ul>
- * <li>GridGain started when web container starts and GridGain instance is accessible only to all web applications.
+ * <li>Ignite started when web container starts and Ignite instance is accessible only to all web applications.
  *     <ol>
- *     <li>Add GridGain libraries in Tomcat common loader.
+ *     <li>Add Ignite libraries in Tomcat common loader.
  *         Add in file {@code $TOMCAT_HOME/conf/catalina.properties} for property {@code common.loader}
  *         the following {@code $IGNITE_HOME/*.jar,$IGNITE_HOME/libs/*.jar}
  *         (replace {@code $IGNITE_HOME} with absolute path).
@@ -78,7 +78,7 @@ import java.util.*;
  *     </ol>
  * </li>
  * <li>
- * GridGain started from WAR-file and GridGain instance is accessible only to that web application.
+ * Ignite started from WAR-file and Ignite instance is accessible only to that web application.
  * Difference with approach described above is that {@code web.xml} file and all libraries should
  * be added in WAR file without changes in Tomcat configuration files.
  * </li>
@@ -112,7 +112,7 @@ public class IgniteServletContextListenerStartup implements ServletContextListen
 
             if (cfgUrl == null)
                 // Try with IGNITE_HOME and with context class loader.
-                cfgUrl = U.resolveGridGainUrl(cfgFile);
+                cfgUrl = U.resolveIgniteUrl(cfgFile);
 
             if (cfgUrl == null)
                 throw new IgniteException("Failed to find Spring configuration file (path provided should be " +
@@ -124,7 +124,7 @@ public class IgniteServletContextListenerStartup implements ServletContextListen
                 t = IgnitionEx.loadConfigurations(cfgUrl);
             }
             catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to load GridGain configuration.", e);
+                throw new IgniteException("Failed to load Ignite configuration.", e);
             }
 
             cfgs = t.get1();
@@ -163,7 +163,7 @@ public class IgniteServletContextListenerStartup implements ServletContextListen
             for (String name : gridNames)
                 G.stop(name, true);
 
-            throw new IgniteException("Failed to start GridGain.", e);
+            throw new IgniteException("Failed to start Ignite.", e);
         }
     }
 

@@ -19,14 +19,13 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import javax.cache.configuration.*;
 import java.util.concurrent.*;
@@ -56,11 +55,11 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         store.reset();
 
-        cache().removeAll();
+        jcache().removeAll();
 
         assertEquals("DHT entries: " + dht().entries(), 0, dht().size());
         assertEquals("Near entries: " + near().entries(), 0, near().size());
-        assertEquals("Cache entries: " + cache().entrySet(), 0, cache().size());
+        assertEquals(0, jcache().size());
     }
 
     /** {@inheritDoc} */
@@ -95,35 +94,35 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testRemove() throws Exception {
-        GridCache<Integer, String> near = cache();
+        IgniteCache<Object, Object> near = jcache();
 
         assertEquals("DHT entries: " + dht().entries(), 0, dht().size());
         assertEquals("Near entries: " + near().entries(), 0, near().size());
-        assertEquals("Cache entries: " + cache().entrySet(), 0, cache().size());
+        assertEquals(0, near.size());
 
         for (int i = 0; i < 10; i++)
             near.put(i, Integer.toString(i));
 
         assertEquals("DHT entries: " + dht().entries(), 10, dht().size());
         assertEquals("Near entries: " + near().entries(), 10, near().size());
-        assertEquals("Cache entries: " + cache().entrySet(), 10, cache().size());
+        assertEquals(10, near.size());
 
-        cache().remove(0);
+        near.remove(0);
 
         assertEquals("DHT entries: " + dht().entries(), 9, dht().size());
         assertEquals("Near entries: " + near().entries(), 9, near().size());
-        assertEquals("Cache entries: " + cache().entrySet(), 9, cache().size());
+        assertEquals(9, near.size());
 
-        cache().removeAll();
+        near.removeAll();
 
         assertEquals("DHT entries: " + dht().entries(), 0, dht().size());
         assertEquals("Near entries: " + near().entries(), 0, near().size());
-        assertEquals("Cache entries: " + cache().entrySet(), 0, cache().size());
+        assertEquals(0, near.size());
     }
 
     /** @throws Exception If failed. */
     public void testReadThrough() throws Exception {
-        GridCache<Integer, String> near = cache();
+        IgniteCache<Integer, String> near = jcache();
 
         GridCache<Integer, String> dht = dht();
 
@@ -153,11 +152,11 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"ConstantConditions"})
     public void testOptimisticTxWriteThrough() throws Exception {
-        GridCache<Integer, String> near = cache();
+        IgniteCache<Object, Object> near = jcache();
         GridCacheAdapter<Integer, String> dht = dht();
 
-        try (IgniteTx tx = cache().txStart(OPTIMISTIC, REPEATABLE_READ) ) {
-            near.putx(2, "2");
+        try (IgniteTx tx = grid().transactions().txStart(OPTIMISTIC, REPEATABLE_READ) ) {
+            near.put(2, "2");
             near.put(3, "3");
 
             assert "2".equals(near.get(2));
@@ -217,13 +216,13 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         try {
             near.put(1, "1");
 
-            assertEquals("1", near.localPeek(1));
+            assertEquals("1", near.localPeek(1, CachePeekMode.ONHEAP));
             assertEquals("1", dht().peek(1));
 
             assertEquals("1", near.get(1));
             assertEquals("1", near.getAndRemove(1));
 
-            assertNull(near.localPeek(1));
+            assertNull(near.localPeek(1, CachePeekMode.ONHEAP));
             assertNull(dht().peek(1));
 
             assertTrue(near.isLocalLocked(1, false));
@@ -248,7 +247,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         try {
             near.put(1, "1");
 
-            assertEquals("1", near.localPeek(1));
+            assertEquals("1", near.localPeek(1, CachePeekMode.ONHEAP));
             assertEquals("1", dht().peek(1));
 
             assertTrue(near.isLocalLocked(1, false));
@@ -260,7 +259,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
                 assertEquals("1", near.get(1));
                 assertEquals("1", near.getAndRemove(1));
 
-                assertNull(near.localPeek(1));
+                assertNull(near.localPeek(1, CachePeekMode.ONHEAP));
                 assertNull(dht().peek(1));
 
                 assertTrue(near.isLocalLocked(1, false));
@@ -283,14 +282,14 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testTransactionSingleGet() throws Exception {
-        GridCache<Integer, String> cache = cache();
+        IgniteCache<Object, Object> cache = jcache();
 
         cache.put(1, "val1");
 
         assertEquals("val1", dht().peek(1));
         assertNull(near().peekNearOnly(1));
 
-        IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
+        IgniteTx tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
         assertEquals("val1", cache.get(1));
 
@@ -302,18 +301,18 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testTransactionSingleGetRemove() throws Exception {
-        GridCache<Integer, String> cache = cache();
+        IgniteCache<Object, Object> cache = jcache();
 
         cache.put(1, "val1");
 
         assertEquals("val1", dht().peek(1));
         assertNull(near().peekNearOnly(1));
 
-        IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
+        IgniteTx tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
         assertEquals("val1", cache.get(1));
 
-        assertTrue(cache.removex(1));
+        assertTrue(cache.remove(1));
 
         tx.commit();
 

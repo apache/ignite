@@ -102,14 +102,14 @@ public class StreamerBoundedTimeWindow<E> extends StreamerWindowAdapter<E> {
     }
 
     /** {@inheritDoc} */
-    @Override public void checkConfiguration() throws IgniteCheckedException {
+    @Override public void checkConfiguration() {
         if (timeInterval <= 0)
-            throw new IgniteCheckedException("Failed to initialize window (timeInterval must be positive): [windowClass=" +
+            throw new IgniteException("Failed to initialize window (timeInterval must be positive): [windowClass=" +
                 getClass().getSimpleName() + ", maxSize=" + maxSize + ", timeInterval=" + timeInterval + ", unique=" +
                 unique + ']');
 
         if (maxSize < 0)
-            throw new IgniteCheckedException("Failed to initialize window (maximumSize cannot be negative): [windowClass=" +
+            throw new IgniteException("Failed to initialize window (maximumSize cannot be negative): [windowClass=" +
                 getClass().getSimpleName() + ", maxSize=" + maxSize + ", timeInterval=" + timeInterval + ", unique=" +
                 unique + ']');
     }

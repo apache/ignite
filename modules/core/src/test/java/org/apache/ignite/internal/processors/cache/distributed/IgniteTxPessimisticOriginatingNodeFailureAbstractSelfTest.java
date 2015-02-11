@@ -22,19 +22,19 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.spi.communication.tcp.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -190,7 +190,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
                     tx.commit();
 
-                    IgniteInternalFuture<IgniteTx> fut = tx.future();
+                    IgniteFuture<IgniteTx> fut = tx.future();
 
                     info("Got future for commitAsync().");
 
@@ -245,7 +245,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             for (ClusterNode node : e.getValue()) {
                 final UUID checkNodeId = node.id();
 
-                compute(G.ignite(checkNodeId).cluster().forNode(node)).call(new Callable<Void>() {
+                compute(G.ignite(checkNodeId).cluster().forNode(node)).call(new IgniteCallable<Void>() {
                     /** */
                     @IgniteInstanceResource
                     private Ignite ignite;
@@ -376,7 +376,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             for (ClusterNode node : e.getValue()) {
                 final UUID checkNodeId = node.id();
 
-                compute(G.ignite(checkNodeId).cluster().forNode(node)).call(new Callable<Void>() {
+                compute(G.ignite(checkNodeId).cluster().forNode(node)).call(new IgniteCallable<Void>() {
                     /** */
                     @IgniteInstanceResource
                     private Ignite ignite;
@@ -418,7 +418,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi() {
-            @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
+            @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
                 throws IgniteSpiException {
                 if (getSpiContext().localNode().id().equals(failingNodeId)) {
                     if (ignoredMessage((GridIoMessage)msg) && ignoreMsgNodeIds != null) {
@@ -433,7 +433,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             }
         });
 
-        cfg.getTransactionsConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
+        cfg.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
 
         return cfg;
     }

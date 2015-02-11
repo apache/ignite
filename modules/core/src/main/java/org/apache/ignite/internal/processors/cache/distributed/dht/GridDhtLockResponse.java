@@ -21,13 +21,13 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -55,7 +55,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     /** Invalid partitions. */
     @GridToStringInclude
     @GridDirectCollection(int.class)
-    private Set<Integer> invalidParts = new GridLeanSet<>();
+    private Collection<Integer> invalidParts = new GridLeanSet<>();
 
     @GridDirectTransient
     /** Preload entries. */
@@ -63,7 +63,6 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
     /** */
     @GridDirectCollection(byte[].class)
-    @GridDirectVersion(1)
     private List<byte[]> preloadEntriesBytes;
 
     /**
@@ -139,7 +138,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     /**
      * @return Invalid partitions.
      */
-    public Set<Integer> invalidPartitions() {
+    public Collection<Integer> invalidPartitions() {
         return invalidParts;
     }
 
@@ -201,7 +200,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDhtLockResponse _clone = new GridDhtLockResponse();
 
         clone0(_clone);
@@ -210,7 +209,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridDhtLockResponse _clone = (GridDhtLockResponse)_msg;
@@ -226,105 +225,42 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 11:
-                if (invalidParts != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(invalidParts.size()))
-                            return false;
-
-                        commState.it = invalidParts.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putInt((int)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
-
-            case 12:
-                if (!commState.putGridUuid(miniId))
+                if (!writer.writeCollection("invalidParts", invalidParts, int.class))
                     return false;
 
-                commState.idx++;
+                state++;
+
+            case 12:
+                if (!writer.writeIgniteUuid("miniId", miniId))
+                    return false;
+
+                state++;
 
             case 13:
-                if (nearEvictedBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(nearEvictedBytes.size()))
-                            return false;
+                if (!writer.writeCollection("nearEvictedBytes", nearEvictedBytes, byte[].class))
+                    return false;
 
-                        commState.it = nearEvictedBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
             case 14:
-                if (preloadEntriesBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(preloadEntriesBytes.size()))
-                            return false;
+                if (!writer.writeCollection("preloadEntriesBytes", preloadEntriesBytes, byte[].class))
+                    return false;
 
-                        commState.it = preloadEntriesBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -334,108 +270,43 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 11:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                invalidParts = reader.readCollection("invalidParts", int.class);
 
-                    commState.readSize = commState.getInt();
-                }
-
-                if (commState.readSize >= 0) {
-                    if (invalidParts == null)
-                        invalidParts = new HashSet<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        if (buf.remaining() < 4)
-                            return false;
-
-                        int _val = commState.getInt();
-
-                        invalidParts.add((Integer)_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
-
-            case 12:
-                IgniteUuid miniId0 = commState.getGridUuid();
-
-                if (miniId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                miniId = miniId0;
+                state++;
 
-                commState.idx++;
+            case 12:
+                miniId = reader.readIgniteUuid("miniId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
 
             case 13:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                nearEvictedBytes = reader.readCollection("nearEvictedBytes", byte[].class);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (nearEvictedBytes == null)
-                        nearEvictedBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        nearEvictedBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
             case 14:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                preloadEntriesBytes = reader.readCollection("preloadEntriesBytes", byte[].class);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (preloadEntriesBytes == null)
-                        preloadEntriesBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        preloadEntriesBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -444,7 +315,7 @@ public class GridDhtLockResponse<K, V> extends GridDistributedLockResponse<K, V>
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 30;
+        return 31;
     }
 
     /** {@inheritDoc} */

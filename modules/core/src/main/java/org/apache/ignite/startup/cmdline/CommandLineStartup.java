@@ -19,7 +19,6 @@ package org.apache.ignite.startup.cmdline;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -41,13 +40,13 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.internal.GridProductImpl.*;
 
 /**
- * This class defines command-line GridGain startup. This startup can be used to start GridGain
+ * This class defines command-line Ignite startup. This startup can be used to start Ignite
  * outside of any hosting environment from command line. This startup is a Java application with
  * {@link #main(String[])} method that accepts command line arguments. It accepts just one
  * parameter which is Spring XML configuration file path. You can run this class from command
  * line without parameters to get help message.
  * <p>
- * Note that scripts {@code ${IGNITE_HOME}/bin/ignite.{sh|bat}} shipped with GridGain use
+ * Note that scripts {@code ${IGNITE_HOME}/bin/ignite.{sh|bat}} shipped with Ignite use
  * this startup and you can use them as an example.
  */
 @SuppressWarnings({"CallToSystemExit"})
@@ -111,7 +110,7 @@ public final class CommandLineStartup {
                 new Class<?>[] {aboutHndCls},
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
-                        AboutDialog.centerShow("GridGain Node", bannerUrl.toExternalForm(), VER,
+                        AboutDialog.centerShow("Ignite Node", bannerUrl.toExternalForm(), VER,
                             releaseDate, COPYRIGHT);
 
                         return null;
@@ -167,7 +166,7 @@ public final class CommandLineStartup {
                     "                      Path can be absolute or relative to IGNITE_HOME.",
                     " ",
                     "Spring file should contain one bean definition of Java type",
-                    "'org.gridgain.grid.GridConfiguration'. Note that bean will be",
+                    "'org.apache.ignite.configuration.IgniteConfiguration'. Note that bean will be",
                     "fetched by the type and its ID is not used.");
             }
         }
@@ -248,7 +247,7 @@ public final class CommandLineStartup {
      */
     public static void main(String[] args) {
         if (!QUITE) {
-            X.println("GridGain Command Line Startup, ver. " + ACK_VER);
+            X.println("Ignite Command Line Startup, ver. " + ACK_VER);
             X.println(COPYRIGHT);
             X.println();
         }
@@ -303,7 +302,7 @@ public final class CommandLineStartup {
         // Exit latch for the grid loaded from the command line.
         final CountDownLatch latch = new CountDownLatch(1);
 
-        G.addListener(new IgniteListener() {
+        G.addListener(new IgnitionListener() {
             @Override public void onStateChange(String name, IgniteState state) {
                 // Skip all grids except loaded from the command line.
                 if (!F.eq(gridName, name))

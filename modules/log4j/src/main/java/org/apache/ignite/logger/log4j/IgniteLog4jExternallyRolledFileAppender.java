@@ -17,9 +17,9 @@
 
 package org.apache.ignite.logger.log4j;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.log4j.varia.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 
@@ -41,7 +41,7 @@ public class IgniteLog4jExternallyRolledFileAppender extends ExternallyRolledFil
      *
      */
     private void init() {
-        IgniteLog4jLogger.addAppender(this);
+        Log4JLogger.addAppender(this);
     }
 
     /** {@inheritDoc} */

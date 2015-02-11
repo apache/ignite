@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -31,7 +32,6 @@ import javax.cache.event.*;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
-
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -240,7 +240,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
             Map<Integer, Integer> vals = new HashMap<>();
 
-            for (Integer key : nearKeys(grid.cache(null), 100, 1_000_000))
+            for (Integer key : nearKeys(grid.jcache(null), 100, 1_000_000))
                 vals.put(key, 1);
 
             final AtomicBoolean done = new AtomicBoolean();
@@ -821,7 +821,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
      * @throws Exception If failed.
      */
     protected Collection<Integer> keys() throws Exception {
-        GridCache<Integer, Object> cache = cache(0);
+        IgniteCache<Integer, Object> cache = jcache(0);
 
         ArrayList<Integer> keys = new ArrayList<>();
 
@@ -830,7 +830,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         if (gridCount() > 1) {
             keys.add(backupKeys(cache, 1, lastKey).get(0));
 
-            if (cache.configuration().getCacheMode() != REPLICATED)
+            if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() != REPLICATED)
                 keys.add(nearKeys(cache, 1, lastKey).get(0));
         }
 

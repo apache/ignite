@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
@@ -28,7 +28,7 @@ import java.util.concurrent.*;
 /**
  * Externalizable wrapper for {@link ExpiryPolicy}.
  */
-public class IgniteExternalizableExpiryPolicy implements ExpiryPolicy, Externalizable, IgniteOptimizedMarshallable {
+public class IgniteExternalizableExpiryPolicy implements ExpiryPolicy, Externalizable, OptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 

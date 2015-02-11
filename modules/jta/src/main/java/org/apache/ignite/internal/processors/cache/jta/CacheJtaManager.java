@@ -18,10 +18,8 @@
 package org.apache.ignite.internal.processors.cache.jta;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.jta.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.jetbrains.annotations.*;
 
@@ -56,8 +54,14 @@ public class CacheJtaManager<K, V> extends CacheJtaManagerAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void checkJta() throws IgniteCheckedException {
-        if (jtaTm == null)
-            jtaTm = tmLookup.getTm();
+        if (jtaTm == null) {
+            try {
+                jtaTm = tmLookup.getTm();
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to get transaction manager: " + e, e);
+            }
+        }
 
         if (jtaTm != null) {
             GridCacheXAResource rsrc = xaRsrc.get();
@@ -67,11 +71,11 @@ public class CacheJtaManager<K, V> extends CacheJtaManagerAdapter<K, V> {
                     Transaction jtaTx = jtaTm.getTransaction();
 
                     if (jtaTx != null) {
-                        IgniteTx tx = cctx.tm().userTx();
+                        IgniteInternalTx tx = cctx.tm().userTx();
 
                         if (tx == null) {
-                            TransactionsConfiguration tCfg = cctx.kernalContext().config()
-                                .getTransactionsConfiguration();
+                            TransactionConfiguration tCfg = cctx.kernalContext().config()
+                                .getTransactionConfiguration();
 
                             tx = cctx.tm().newTx(
                                 /*implicit*/false,
@@ -88,7 +92,7 @@ public class CacheJtaManager<K, V> extends CacheJtaManagerAdapter<K, V> {
                             );
                         }
 
-                        rsrc = new GridCacheXAResource((IgniteTxEx)tx, cctx);
+                        rsrc = new GridCacheXAResource((IgniteInternalTx)tx, cctx);
 
                         if (!jtaTx.enlistResource(rsrc))
                             throw new IgniteCheckedException("Failed to enlist XA resource to JTA user transaction.");

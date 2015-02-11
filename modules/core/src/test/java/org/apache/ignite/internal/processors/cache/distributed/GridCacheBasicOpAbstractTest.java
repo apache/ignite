@@ -22,21 +22,21 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import javax.cache.expiry.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  * Simple cache test.
@@ -88,7 +88,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         for (Ignite g : G.allGrids())
-            g.cache(null).clearAll();
+            g.cache(null).clear();
     }
 
     /**
@@ -251,7 +251,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
     public void testOptimisticTransaction() throws Exception {
         CountDownLatch latch = new CountDownLatch(9);
 
-        IgnitePredicate<IgniteEvent> lsnr = new CacheEventListener(latch);
+        IgnitePredicate<Event> lsnr = new CacheEventListener(latch);
 
         try {
             GridCache<String, String> cache1 = ignite1.cache(null);
@@ -356,7 +356,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
     /**
      * Event listener.
      */
-    private class CacheEventListener implements IgnitePredicate<IgniteEvent> {
+    private class CacheEventListener implements IgnitePredicate<Event> {
         /** Wait latch. */
         private CountDownLatch latch;
 
@@ -375,7 +375,7 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
+        @Override public boolean apply(Event evt) {
             assert evt.type() == EVT_CACHE_OBJECT_PUT || evt.type() == EVT_CACHE_OBJECT_REMOVED :
                 "Unexpected event type: " + evt;
 

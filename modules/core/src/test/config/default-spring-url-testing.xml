@@ -15,8 +15,8 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
-        
+-->
+
 <!--
     Grid configuration for checking ability to start grid with a config provided by url.
 -->
@@ -38,6 +38,6 @@
         -->
         <property name="gridName" value="grid_with_url_config"/>
 
-        <property name="restEnabled" value="false" />
+        <property name="connectorConfiguration"><null/></property>
     </bean>
 </beans>

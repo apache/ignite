@@ -29,7 +29,7 @@ import java.util.*;
  */
 public class GridStealingLoadTestJob extends ComputeJobAdapter {
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Ignite instance. */
@@ -37,11 +37,11 @@ public class GridStealingLoadTestJob extends ComputeJobAdapter {
     private Ignite ignite;
 
     /** */
-    @IgniteJobContextResource
+    @JobContextResource
     private ComputeJobContext ctx;
 
     /** {@inheritDoc} */
-    @Override public Serializable execute() throws IgniteCheckedException {
+    @Override public Serializable execute() {
         UUID nodeId = ignite.configuration().getNodeId();
 
         if (log.isDebugEnabled())

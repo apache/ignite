@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
 
 import java.io.*;
 
@@ -243,7 +243,7 @@ public class GridCacheEntryInfo<K, V> implements Externalizable {
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public void unmarshal(GridCacheContext<K, V> ctx, ClassLoader clsLdr) throws IgniteCheckedException {
-        IgniteMarshaller mrsh = ctx.marshaller();
+        Marshaller mrsh = ctx.marshaller();
 
         if (key == null)
             key = mrsh.unmarshal(keyBytes, clsLdr);

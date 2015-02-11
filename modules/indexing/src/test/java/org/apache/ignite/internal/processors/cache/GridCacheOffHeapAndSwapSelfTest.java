@@ -23,25 +23,25 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePeekMode.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
+import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.processors.cache.GridCachePeekMode.*;
 
 /**
  * Tests off heap storage when both offheaped and swapped entries exists.
@@ -75,8 +75,8 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
     private final Map<Long, Object> versions = new HashMap<>();
 
     /** Listener on swap events. Updates counters. */
-    private final IgnitePredicate<IgniteEvent> swapLsnr = new IgnitePredicate<IgniteEvent>() {
-        @Override public boolean apply(IgniteEvent evt) {
+    private final IgnitePredicate<Event> swapLsnr = new IgnitePredicate<Event>() {
+        @Override public boolean apply(Event evt) {
             assert evt != null;
 
             switch (evt.type()) {
@@ -175,7 +175,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).cache(null).clearAll();
+        grid(0).cache(null).clear();
     }
 
     /** Resets event counters. */

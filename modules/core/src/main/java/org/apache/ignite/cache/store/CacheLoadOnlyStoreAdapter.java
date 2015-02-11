@@ -18,9 +18,9 @@
 package org.apache.ignite.cache.store;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -82,7 +82,7 @@ public abstract class CacheLoadOnlyStoreAdapter<K, V, I> extends CacheStore<K, V
     public static final int DFLT_THREADS_COUNT = Runtime.getRuntime().availableProcessors();
 
     /** Auto-injected logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Batch size. */

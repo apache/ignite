@@ -18,17 +18,16 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.worker.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.thread.*;
-import org.apache.ignite.internal.processors.interop.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.worker.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -38,7 +37,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static javax.cache.Cache.Entry;
+import static javax.cache.Cache.*;
 
 /**
  * Internal wrapper for a {@link CacheStore} that enables write-behind logic.
@@ -262,7 +261,7 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
      *
      * @throws IgniteCheckedException If cache cannot be started due to some reasons.
      */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start() {
         assert cacheFlushFreq != 0 || cacheMaxSize != 0;
 
         if (stopping.compareAndSet(true, false)) {
@@ -323,10 +322,8 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
     /**
      * Performs shutdown logic for store. No put, get and remove requests will be processed after
      * this method is called.
-     *
-     * @throws IgniteCheckedException If shutdown failed for some reason.
      */
-    @Override public void stop() throws IgniteCheckedException {
+    @Override public void stop() {
         if (stopping.compareAndSet(false, true)) {
             if (log.isDebugEnabled())
                 log.debug("Stopping write-behind store for cache '" + cacheName + '\'');
@@ -450,7 +447,7 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
 
             updateCache(entry.getKey(), entry, StoreOperation.PUT);
         }
-        catch (IgniteInterruptedException e) {
+        catch (IgniteInterruptedCheckedException e) {
             throw new CacheWriterException(e);
         }
     }
@@ -470,7 +467,7 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
 
             updateCache((K)key, null, StoreOperation.RMV);
         }
-        catch (IgniteInterruptedException e) {
+        catch (IgniteInterruptedCheckedException e) {
             throw new CacheWriterException(e);
         }
     }
@@ -491,12 +488,12 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
      * @param key Key for which update is performed.
      * @param val New value, may be null for remove operation.
      * @param operation Updated value status
-     * @throws org.apache.ignite.IgniteInterruptedException If interrupted while waiting for value to be flushed.
+     * @throws IgniteInterruptedCheckedException If interrupted while waiting for value to be flushed.
      */
     private void updateCache(K key,
         @Nullable Entry<? extends K, ? extends V> val,
         StoreOperation operation)
-        throws IgniteInterruptedException {
+        throws IgniteInterruptedCheckedException {
         StatefulValue<K, V> newVal = new StatefulValue<>(val, operation);
 
         StatefulValue<K, V> prev;
@@ -726,7 +723,7 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             while (!stopping.get() || writeCache.sizex() > 0) {
                 awaitOperationsAvailable();
 
@@ -961,9 +958,9 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
         /**
          * Awaits a signal on flush condition
          *
-         * @throws org.apache.ignite.IgniteInterruptedException If thread was interrupted.
+         * @throws IgniteInterruptedCheckedException If thread was interrupted.
          */
-        private void waitForFlush() throws IgniteInterruptedException {
+        private void waitForFlush() throws IgniteInterruptedCheckedException {
             U.await(flushCond);
         }
 

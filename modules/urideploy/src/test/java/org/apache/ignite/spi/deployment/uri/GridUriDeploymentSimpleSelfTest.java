@@ -17,11 +17,10 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.spi.*;
 
@@ -40,7 +39,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<UriDepl
     public List<String> getUriList() {
         // No real gar file is required. Add one just to avoid failure because of missed default directory.
         return Collections.singletonList(GridTestProperties.getProperty("ant.urideployment.gar.uri").
-            replace("EXTDATA", U.resolveGridGainPath("modules/extdata").getAbsolutePath()));
+            replace("EXTDATA", U.resolveIgnitePath("modules/extdata").getAbsolutePath()));
     }
 
     /**
@@ -139,7 +138,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<UriDepl
      */
     private static class TestTask extends ComputeTaskAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             assert subgrid.size() == 1;
 
             return Collections.singletonMap(new ComputeJobAdapter() {
@@ -148,7 +147,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<UriDepl
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             assert results.size() == 1;
 
             return results.get(0).getData();
@@ -161,7 +160,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<UriDepl
     @ComputeTaskName("TestTaskWithName")
     private static class TestTaskWithName extends ComputeTaskAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             assert subgrid.size() == 1;
 
             return Collections.singletonMap(new ComputeJobAdapter() {
@@ -170,7 +169,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<UriDepl
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             assert results.size() == 1;
 
             return results.get(0).getData();

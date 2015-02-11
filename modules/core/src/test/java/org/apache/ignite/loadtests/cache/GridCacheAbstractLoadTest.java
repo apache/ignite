@@ -21,13 +21,13 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.transactions.*;
-import org.apache.log4j.*;
-import org.apache.log4j.varia.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.logger.*;
+import org.apache.ignite.transactions.*;
+import org.apache.log4j.*;
+import org.apache.log4j.varia.*;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
 import org.springframework.context.*;
@@ -102,8 +102,8 @@ abstract class GridCacheAbstractLoadTest {
         Properties props = new Properties();
 
         try {
-            props.load(new FileReader(GridTestUtils.resolveGridGainPath(
-                "modules/tests/config/cache-load.properties")));
+            props.load(new FileReader(GridTestUtils.resolveIgnitePath(
+                    "modules/tests/config/cache-load.properties")));
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -249,7 +249,7 @@ abstract class GridCacheAbstractLoadTest {
 
         impl.removeAllAppenders();
 
-        String fileName =  U.getGridGainHome() + "/work/log/" + log;
+        String fileName =  U.getIgniteHome() + "/work/log/" + log;
 
         // Configure output that should go to System.out
         RollingFileAppender fileApp;
@@ -303,7 +303,7 @@ abstract class GridCacheAbstractLoadTest {
 
         impl.setLevel(Level.INFO);
 
-        //Logger.getLogger("org.gridgain").setLevel(Level.INFO);
+        //Logger.getLogger("org.apache.ignite").setLevel(Level.INFO);
         //Logger.getLogger(GridCacheVersionManager.class).setLevel(Level.DEBUG);
 
         return new GridTestLog4jLogger(false);
@@ -319,7 +319,7 @@ abstract class GridCacheAbstractLoadTest {
      */
     @SuppressWarnings("unchecked")
     protected IgniteConfiguration configuration(String springCfgPath, String log) throws IgniteCheckedException {
-        File path = GridTestUtils.resolveGridGainPath(springCfgPath);
+        File path = GridTestUtils.resolveIgnitePath(springCfgPath);
 
         if (path == null)
             throw new IgniteCheckedException("Spring XML configuration file path is invalid: " + new File(springCfgPath) +
@@ -368,8 +368,8 @@ abstract class GridCacheAbstractLoadTest {
 
         cfg.setGridLogger(initLogger(log));
 
-        cfg.getTransactionsConfiguration().setDefaultTxIsolation(isolation);
-        cfg.getTransactionsConfiguration().setDefaultTxConcurrency(concurrency);
+        cfg.getTransactionConfiguration().setDefaultTxIsolation(isolation);
+        cfg.getTransactionConfiguration().setDefaultTxConcurrency(concurrency);
 
         return cfg;
     }

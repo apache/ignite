@@ -20,13 +20,13 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Parent of all cache messages.
  */
-public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessageAdapter {
+public abstract class GridCacheMessage<K, V> extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -425,7 +425,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
 
         Object[] args = new Object[byteCol.length];
 
-        IgniteMarshaller marsh = ctx.marshaller();
+        Marshaller marsh = ctx.marshaller();
 
         for (int i = 0; i < byteCol.length; i++)
             args[i] = byteCol[i] == null ? null : marsh.unmarshal(byteCol[i], ldr);
@@ -478,7 +478,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
 
         IgnitePredicate<CacheEntry<K, V>>[] filter = new IgnitePredicate[byteCol.length];
 
-        IgniteMarshaller marsh = ctx.marshaller();
+        Marshaller marsh = ctx.marshaller();
 
         for (int i = 0; i < byteCol.length; i++)
             filter[i] = byteCol[i] == null ? null :
@@ -531,7 +531,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
 
         List<T> col = new ArrayList<>(byteCol.size());
 
-        IgniteMarshaller marsh = ctx.marshaller();
+        Marshaller marsh = ctx.marshaller();
 
         for (GridCacheValueBytes item : byteCol) {
             assert item == null || item.get() != null;
@@ -584,7 +584,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
 
         List<T> col = new ArrayList<>(byteCol.size());
 
-        IgniteMarshaller marsh = ctx.marshaller();
+        Marshaller marsh = ctx.marshaller();
 
         for (byte[] bytes : byteCol)
             col.add(bytes == null ? null : marsh.<T>unmarshal(bytes, ldr));
@@ -635,7 +635,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
 
         LinkedHashMap<K1, Boolean> map = U.newLinkedHashMap(byteMap.size());
 
-        IgniteMarshaller marsh = ctx.marshaller();
+        Marshaller marsh = ctx.marshaller();
 
         for (Map.Entry<byte[], Boolean> e : byteMap.entrySet())
             map.put(marsh.<K1>unmarshal(e.getKey(), ldr), e.getValue());
@@ -644,7 +644,7 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridCacheMessage _clone = (GridCacheMessage)_msg;
 
         _clone.msgId = msgId;
@@ -657,33 +657,33 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putInt(cacheId))
+                if (!writer.writeInt("cacheId", cacheId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putMessage(depInfo))
+                if (!writer.writeMessage("depInfo", depInfo))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putLong(msgId))
+                if (!writer.writeLong("msgId", msgId))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -693,34 +693,32 @@ public abstract class GridCacheMessage<K, V> extends GridTcpCommunicationMessage
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (buf.remaining() < 4)
+                cacheId = reader.readInt("cacheId");
+
+                if (!reader.isLastRead())
                     return false;
 
-                cacheId = commState.getInt();
-
-                commState.idx++;
+                state++;
 
             case 1:
-                Object depInfo0 = commState.getMessage();
+                depInfo = reader.readMessage("depInfo");
 
-                if (depInfo0 == MSG_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                depInfo = (GridDeploymentInfoBean)depInfo0;
-
-                commState.idx++;
+                state++;
 
             case 2:
-                if (buf.remaining() < 8)
+                msgId = reader.readLong("msgId");
+
+                if (!reader.isLastRead())
                     return false;
 
-                msgId = commState.getLong();
-
-                commState.idx++;
+                state++;
 
         }
 

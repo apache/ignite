@@ -21,10 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -69,9 +68,9 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testJobSubjectId() throws Exception {
-        node2.events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
-                IgniteJobEvent evt0 = (IgniteJobEvent)evt;
+        node2.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                JobEvent evt0 = (JobEvent)evt;
 
                 assert evtSubjId == null;
 
@@ -79,7 +78,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
 
                 return false;
             }
-        }, IgniteEventType.EVT_JOB_STARTED);
+        }, EventType.EVT_JOB_STARTED);
 
         node1.compute().execute(new Task(node2.cluster().localNode().id()), null);
 
@@ -96,7 +95,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
         private UUID targetNodeId;
 
         /** Session. */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession ses;
 
         /**
@@ -110,7 +109,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Object arg) throws IgniteCheckedException {
+            @Nullable Object arg) {
             taskSubjId = ((GridTaskSessionInternal)ses).subjectId();
 
             ClusterNode node = null;
@@ -129,7 +128,7 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -140,11 +139,11 @@ public class GridJobSubjectIdSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("PublicInnerClass")
     public static class Job extends ComputeJobAdapter {
         /** Session. */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() throws IgniteCheckedException {
+        @Nullable @Override public Object execute() {
             jobSubjId = ((GridTaskSessionInternal)ses).subjectId();
 
             return null;

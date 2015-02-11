@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
@@ -28,16 +27,16 @@ import java.util.*;
  *
  */
 class TestTask2 extends ComputeTaskSplitAdapter<String, String> {
+    /** */
     static final String RES = "Task 2 result.";
 
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
         Collection<ComputeJob> jobs = new ArrayList<>(gridSize);
 
         for (int i = 0; i < gridSize; i++)
             jobs.add(new ComputeJobAdapter() {
-                @Nullable
-                @Override public Object execute() {
+                @Nullable @Override public Object execute() {
                     X.println("Test task2.");
 
                     return null;
@@ -48,7 +47,7 @@ class TestTask2 extends ComputeTaskSplitAdapter<String, String> {
     }
 
     /** {@inheritDoc} */
-    @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public String reduce(List<ComputeJobResult> results) {
         return RES;
     }
 }

@@ -31,7 +31,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Task deployment tests.
@@ -224,7 +224,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
 
                 assert false : "Should not be able to deploy 2 task with same task name";
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 info("Received expected grid exception: " + e);
             }
 
@@ -357,12 +357,11 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
      */
     private static class GridDeploymentTestTask extends ComputeTaskAdapter<Object, Object> {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg)
-            throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             for (ClusterNode node : subgrid) {
@@ -380,7 +379,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -391,11 +390,11 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     @ComputeTaskName(value = "GridDeploymentTestTask")
     private static class GridDeploymentTestTask1 extends ComputeTaskAdapter<Object, Object> {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             for (ClusterNode node : subgrid) {
@@ -412,7 +411,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -423,11 +422,11 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     @ComputeTaskName(value = "GridDeploymentTestTask")
     private static class GridDeploymentTestTask2 extends ComputeTaskAdapter<Object, Object> {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             for (ClusterNode node : subgrid) {
@@ -445,7 +444,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -497,7 +496,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * Deployment listener.
      */
-    private static class DeploymentEventListener implements IgnitePredicate<IgniteEvent> {
+    private static class DeploymentEventListener implements IgnitePredicate<Event> {
         /** */
         private int depCnt;
 
@@ -509,7 +508,7 @@ public class GridDeploymentSelfTest extends GridCommonAbstractTest {
          *
          * @param evt local grid event.
          */
-        @Override public boolean apply(IgniteEvent evt) {
+        @Override public boolean apply(Event evt) {
             if (evt.type() == EVT_TASK_DEPLOYED)
                 depCnt++;
             else if (evt.type() == EVT_TASK_UNDEPLOYED)

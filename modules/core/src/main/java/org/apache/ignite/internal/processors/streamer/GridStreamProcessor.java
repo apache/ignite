@@ -21,20 +21,20 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.streamer.*;
-import org.apache.ignite.streamer.index.*;
-import org.apache.ignite.streamer.window.*;
 import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.streamer.*;
+import org.apache.ignite.streamer.index.*;
+import org.apache.ignite.streamer.window.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
 import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
 
 /**
  *

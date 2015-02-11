@@ -18,6 +18,7 @@
 package org.apache.ignite;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -29,22 +30,22 @@ import java.util.*;
  * cannot be reused between ordered and unordered messages. Instance of {@code GridMessaging}
  * is obtained from grid projection as follows:
  * <pre name="code" class="java">
- * GridMessaging m = GridGain.grid().message();
+ * GridMessaging m = Ignition.ignite().message();
  * </pre>
  * <p>
  * There are {@code 2} ways to subscribe to message listening, {@code local} and {@code remote}.
  * <p>
- * Local subscription, defined by {@link #localListen(Object, org.apache.ignite.lang.IgniteBiPredicate)} method, will add
+ * Local subscription, defined by {@link #localListen(Object, IgniteBiPredicate)} method, will add
  * a listener for a given topic on local node only. This listener will be notified whenever any
  * node within grid projection will send a message for a given topic to this node. Local listen
  * subscription will happen regardless of whether local node belongs to this grid projection or not.
  * <p>
- * Remote subscription, defined by {@link #remoteListen(Object, org.apache.ignite.lang.IgniteBiPredicate)}, will add a
+ * Remote subscription, defined by {@link #remoteListen(Object, IgniteBiPredicate)}, will add a
  * message listener for a given topic to all nodes in the projection (possibly including this node if
  * it belongs to the projection as well). This means that any node within this grid projection can send
  * a message for a given topic and all nodes within projection will receive listener notification.
  * <h1 class="header">Ordered vs Unordered</h1>
- * GridGain allows for sending ordered messages (see {@link #sendOrdered(Object, Object, long)}), i.e.
+ * Ignite allows for sending ordered messages (see {@link #sendOrdered(Object, Object, long)}), i.e.
  * messages will be received in the same order they were sent. Ordered messages have a {@code timeout}
  * parameter associated with them which specifies how long an out-of-order message will stay in a queue,
  * waiting for messages that are ordered ahead of it to arrive. If timeout expires, then all ordered
@@ -64,10 +65,10 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      *
      * @param topic Topic to send to, {@code null} for default topic.
      * @param msg Message to send.
-     * @throws IgniteCheckedException If failed to send a message to any of the nodes.
-     * @throws org.apache.ignite.cluster.ClusterGroupEmptyException Thrown in case when this projection is empty.
+     * @throws IgniteException If failed to send a message to any of the nodes.
+     * @throws ClusterGroupEmptyException Thrown in case when cluster group is empty.
      */
-    public void send(@Nullable Object topic, Object msg) throws IgniteCheckedException;
+    public void send(@Nullable Object topic, Object msg) throws IgniteException;
 
     /**
      * Sends given messages with specified topic to the nodes in this projection.
@@ -75,10 +76,10 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      * @param topic Topic to send to, {@code null} for default topic.
      * @param msgs Messages to send. Order of the sending is undefined. If the method produces
      *      the exception none or some messages could have been sent already.
-     * @throws IgniteCheckedException If failed to send a message to any of the nodes.
-     * @throws org.apache.ignite.cluster.ClusterGroupEmptyException Thrown in case when this projection is empty.
+     * @throws IgniteException If failed to send a message to any of the nodes.
+     * @throws ClusterGroupEmptyException Thrown in case when cluster group is empty.
      */
-    public void send(@Nullable Object topic, Collection<?> msgs) throws IgniteCheckedException;
+    public void send(@Nullable Object topic, Collection<?> msgs) throws IgniteException;
 
     /**
      * Sends given message with specified topic to the nodes in this projection. Messages sent with
@@ -93,11 +94,11 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      * @param topic Topic to send to, {@code null} for default topic.
      * @param msg Message to send.
      * @param timeout Message timeout in milliseconds, {@code 0} for default
-     *      which is {@link org.apache.ignite.configuration.IgniteConfiguration#getNetworkTimeout()}.
-     * @throws IgniteCheckedException If failed to send a message to any of the nodes.
-     * @throws org.apache.ignite.cluster.ClusterGroupEmptyException Thrown in case when this projection is empty.
+     *      which is {@link IgniteConfiguration#getNetworkTimeout()}.
+     * @throws IgniteException If failed to send a message to any of the nodes.
+     * @throws ClusterGroupEmptyException Thrown in case when cluster group is empty.
      */
-    public void sendOrdered(@Nullable Object topic, Object msg, long timeout) throws IgniteCheckedException;
+    public void sendOrdered(@Nullable Object topic, Object msg, long timeout) throws IgniteException;
 
     /**
      * Adds local listener for given topic on local node only. This listener will be notified whenever any
@@ -130,21 +131,21 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      * @param p Predicate that is called on each node for each received message. If predicate returns {@code false},
      *      then it will be unsubscribed from any further notifications.
      * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
-     * @throws IgniteCheckedException If failed to add listener.
+     * @throws IgniteException If failed to add listener.
      */
     @IgniteAsyncSupported
-    public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) throws IgniteCheckedException;
+    public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) throws IgniteException;
 
     /**
      * Unregisters all listeners identified with provided operation ID on all nodes in this projection.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
-     * @param opId Listen ID that was returned from {@link #remoteListen(Object, org.apache.ignite.lang.IgniteBiPredicate)} method.
-     * @throws IgniteCheckedException If failed to unregister listeners.
+     * @param opId Listen ID that was returned from {@link #remoteListen(Object, IgniteBiPredicate)} method.
+     * @throws IgniteException If failed to unregister listeners.
      */
     @IgniteAsyncSupported
-    public void stopRemoteListen(UUID opId) throws IgniteCheckedException;
+    public void stopRemoteListen(UUID opId) throws IgniteException;
 
     /** {@inheritDoc} */
     @Override IgniteMessaging withAsync();

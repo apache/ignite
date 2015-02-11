@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.fs.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -98,7 +99,7 @@ public final class GridGgfsFileInfo implements Externalizable {
     }
 
     /**
-     * Constructs directory or file info with {@link org.apache.ignite.fs.IgniteFsConfiguration#DFLT_BLOCK_SIZE default} block size.
+     * Constructs directory or file info with {@link org.apache.ignite.configuration.IgniteFsConfiguration#DFLT_BLOCK_SIZE default} block size.
      *
      * @param isDir Constructs directory info if {@code true} or file info if {@code false}.
      * @param props Meta properties to set.

@@ -18,23 +18,23 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import javax.cache.configuration.*;
 import javax.cache.processor.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -101,7 +101,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -257,7 +257,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
         nearStore.reset();
 
         for (String key : keys)
-            cache(0).clear(key);
+            cache(0).clearLocally(key);
 
         info(">>> Starting transform transaction");
 
@@ -315,16 +315,18 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
         while (keys.size() < 30) {
             String key = String.valueOf(numKey);
 
+            CacheAffinity<Object> affinity = ignite(0).affinity(null);
+
             if (nodeType == NEAR_NODE) {
-                if (!cache(0).affinity().isPrimaryOrBackup(grid(0).localNode(), key))
+                if (!affinity.isPrimaryOrBackup(grid(0).localNode(), key))
                     keys.add(key);
             }
             else if (nodeType == PRIMARY_NODE) {
-                if (cache(0).affinity().isPrimary(grid(0).localNode(), key))
+                if (affinity.isPrimary(grid(0).localNode(), key))
                     keys.add(key);
             }
             else if (nodeType == BACKUP_NODE) {
-                if (cache(0).affinity().isBackup(grid(0).localNode(), key))
+                if (affinity.isBackup(grid(0).localNode(), key))
                     keys.add(key);
             }
 

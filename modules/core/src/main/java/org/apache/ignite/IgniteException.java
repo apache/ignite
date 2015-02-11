@@ -20,8 +20,6 @@ package org.apache.ignite;
 import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
-import static org.apache.ignite.internal.util.IgniteUtils.*;
-
 /**
  * General grid exception. This exception is used to indicate any error condition
  * within Grid.
@@ -34,7 +32,7 @@ public class IgniteException extends RuntimeException {
      * Create empty exception.
      */
     public IgniteException() {
-        super();
+        // No-op.
     }
 
     /**
@@ -73,7 +71,8 @@ public class IgniteException extends RuntimeException {
      * @return {@code True} if one of the causing exception is an instance of passed in classes,
      *      {@code false} otherwise.
      */
-    public boolean hasCause(@Nullable Class<? extends Throwable>... cls) {
+    @SafeVarargs
+    public final boolean hasCause(@Nullable Class<? extends Throwable>... cls) {
         return X.hasCause(this, cls);
     }
 
@@ -85,28 +84,6 @@ public class IgniteException extends RuntimeException {
      */
     @Nullable public <T extends Throwable> T getCause(@Nullable Class<T> cls) {
         return X.cause(this, cls);
-    }
-
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Adds troubleshooting links if they where not added by below in {@code cause} hierarchy.
-     */
-    @Override public String getMessage() {
-        return X.hasCauseExcludeRoot(this, IgniteException.class, IgniteCheckedException.class) ?
-            super.getMessage() : errorMessageWithHelpUrls(super.getMessage());
-    }
-
-    /**
-     * Returns exception message.
-     * <p>
-     * Unlike {@link #getMessage()} this method never include troubleshooting links
-     * to the result string.
-     *
-     * @return Original message.
-     */
-    public String getOriginalMessage() {
-        return super.getMessage();
     }
 
     /** {@inheritDoc} */

@@ -20,16 +20,14 @@ package org.apache.ignite.loadtests.direct.newnodes;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.thread.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.loadtest.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
@@ -59,12 +57,7 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
 
         cfg.setMetricsHistorySize(1000);
 
-        // Set up new executor service because we have 1 per test and thus all
-        // nodes have the same executor service. As soon as node get stopped
-        // it stops executor service and may fail active nodes.
-        cfg.setExecutorService(new IgniteThreadPoolExecutor());
-
-        ((ThreadPoolExecutor)cfg.getExecutorService()).prestartAllCoreThreads();
+        cfg.setPublicThreadPoolSize(100);
 
         return cfg;
     }

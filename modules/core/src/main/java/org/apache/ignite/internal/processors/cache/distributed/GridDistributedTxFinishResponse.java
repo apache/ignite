@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -76,7 +76,7 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors",
         "OverriddenMethodCallDuringObjectConstruction"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDistributedTxFinishResponse _clone = new GridDistributedTxFinishResponse();
 
         clone0(_clone);
@@ -85,42 +85,42 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridDistributedTxFinishResponse _clone = (GridDistributedTxFinishResponse)_msg;
 
-        _clone.txId = txId;
+        _clone.txId = txId != null ? (GridCacheVersion)txId.clone() : null;
         _clone.futId = futId;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (!commState.putGridUuid(futId))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putCacheVersion(txId))
+                if (!writer.writeMessage("txId", txId))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -130,31 +130,27 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                IgniteUuid futId0 = commState.getGridUuid();
+                futId = reader.readIgniteUuid("futId");
 
-                if (futId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                futId = futId0;
-
-                commState.idx++;
+                state++;
 
             case 4:
-                GridCacheVersion txId0 = commState.getCacheVersion();
+                txId = reader.readMessage("txId");
 
-                if (txId0 == CACHE_VER_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                txId = txId0;
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -163,7 +159,7 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 25;
+        return 24;
     }
 
     /** {@inheritDoc} */

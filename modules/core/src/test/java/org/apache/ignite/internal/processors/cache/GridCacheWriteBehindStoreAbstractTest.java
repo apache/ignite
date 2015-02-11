@@ -21,11 +21,11 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
@@ -62,10 +62,10 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        GridCache<?, ?> cache = cache();
+        IgniteCache<?, ?> cache = jcache();
 
         if (cache != null)
-            cache.clearAll();
+            cache.clear();
 
         store.reset();
     }
@@ -107,17 +107,17 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
     /** @throws Exception If test fails. */
     public void testWriteThrough() throws Exception {
-        GridCache<Integer, String> cache = cache();
+        IgniteCache<Integer, String> cache = jcache();
 
         Map<Integer, String> map = store.getMap();
 
         assert map.isEmpty();
 
-        IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ);
+        IgniteTx tx = grid().transactions().txStart(OPTIMISTIC, REPEATABLE_READ);
 
         try {
             for (int i = 1; i <= 10; i++) {
-                cache.putx(i, Integer.toString(i));
+                cache.put(i, Integer.toString(i));
 
                 checkLastMethod(null);
             }
@@ -144,11 +144,11 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         store.resetLastMethod();
 
-        tx = cache.txStart();
+        tx = grid().transactions().txStart();
 
         try {
             for (int i = 1; i <= 10; i++) {
-                String val = cache.remove(i);
+                String val = cache.getAndRemove(i);
 
                 checkLastMethod(null);
 
@@ -172,15 +172,15 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
     /** @throws Exception If test failed. */
     public void testReadThrough() throws Exception {
-        GridCache<Integer, String> cache = cache();
+        IgniteCache<Integer, String> cache = jcache();
 
         Map<Integer, String> map = store.getMap();
 
         assert map.isEmpty();
 
-        try (IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
+        try (IgniteTx tx = grid().transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
             for (int i = 1; i <= 10; i++)
-                cache.putx(i, Integer.toString(i));
+                cache.put(i, Integer.toString(i));
 
             checkLastMethod(null);
 
@@ -199,10 +199,10 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
             assert val.equals(Integer.toString(i));
         }
 
-        cache.clearAll();
+        cache.clear();
 
-        assert cache.isEmpty();
-        assert cache.isEmpty();
+        assert cache.localSize() == 0;
+        assert cache.localSize() == 0;
 
         // Need to wait WFB flush timeout.
         U.sleep(WRITE_FROM_BEHIND_FLUSH_FREQUENCY + 100);
@@ -221,14 +221,14 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         assert cache.size() == 10;
 
-        cache.clearAll();
+        cache.clear();
 
-        assert cache.isEmpty();
-        assert cache.isEmpty();
+        assert cache.localSize() == 0;
+        assert cache.localSize() == 0;
 
         assert map.size() == 10;
 
-        Collection<Integer> keys = new ArrayList<>();
+        Set<Integer> keys = new HashSet<>();
 
         for (int i = 1; i <= 10; i++)
             keys.add(i);
@@ -256,8 +256,8 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         checkLastMethod("removeAll");
 
-        assert cache.isEmpty();
-        assert cache.isEmpty();
+        assert cache.localSize() == 0;
+        assert cache.localSize() == 0;
 
         assert map.isEmpty();
     }
@@ -268,7 +268,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        final GridCache<Integer, String> cache = cache();
+        final IgniteCache<Integer, String> cache = jcache();
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @SuppressWarnings({"NullableProblems"})
@@ -283,33 +283,26 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
                 Random rnd = new Random();
 
-                try {
-                    int keyCnt = 20000;
+                int keyCnt = 20000;
 
-                    while (running.get()) {
-                        int op = rnd.nextInt(2);
-                        int key = rnd.nextInt(keyCnt);
+                while (running.get()) {
+                    int op = rnd.nextInt(2);
+                    int key = rnd.nextInt(keyCnt);
 
-                        switch (op) {
-                            case 0:
-                                cache.put(key, "val" + key);
-                                set.add(key);
+                    switch (op) {
+                        case 0:
+                            cache.put(key, "val" + key);
+                            set.add(key);
 
-                                break;
+                            break;
 
-                            case 1:
-                            default:
-                                cache.remove(key);
-                                set.remove(key);
+                        case 1:
+                        default:
+                            cache.remove(key);
+                            set.remove(key);
 
-                                break;
-                        }
+                            break;
                     }
-                }
-                catch (IgniteCheckedException e) {
-                    error("Unexpected exception in put thread", e);
-
-                    assert false;
                 }
             }
         }, 10, "put");

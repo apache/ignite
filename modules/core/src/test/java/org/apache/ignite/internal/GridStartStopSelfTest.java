@@ -18,12 +18,11 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.concurrent.*;
 
@@ -53,7 +52,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
     public void testStartStop() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setRestEnabled(false);
+        cfg.setConnectorConfiguration(null);
 
         info("Grid start-stop test count: " + COUNT);
 
@@ -75,7 +74,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
     public void _testStopWhileInUse() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setRestEnabled(false);
+        cfg.setConnectorConfiguration(null);
 
         cfg.setGridName(getTestGridName(0));
 
@@ -137,7 +136,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
     public void testStoppedState() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setRestEnabled(false);
+        cfg.setConnectorConfiguration(null);
 
         Ignite ignite = G.start(cfg);
 

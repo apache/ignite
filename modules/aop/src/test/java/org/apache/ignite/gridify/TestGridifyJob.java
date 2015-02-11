@@ -28,7 +28,7 @@ import java.io.*;
  */
 public class TestGridifyJob extends ComputeJobAdapter {
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /**
@@ -39,7 +39,7 @@ public class TestGridifyJob extends ComputeJobAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Serializable execute() throws IgniteCheckedException {
+    @Override public Serializable execute() {
         if (log.isInfoEnabled())
             log.info("Execute TestGridifyJob.execute(" + argument(0) + ')');
 

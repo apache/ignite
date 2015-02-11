@@ -25,7 +25,7 @@ import org.yardstickframework.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.yardstickframework.BenchmarkUtils.*;
 
 /**
@@ -88,8 +88,8 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
     private void waitForNodes() throws Exception {
         final CountDownLatch nodesStartedLatch = new CountDownLatch(1);
 
-        ignite().events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent gridEvt) {
+        ignite().events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event gridEvt) {
                 if (nodesStarted())
                     nodesStartedLatch.countDown();
 

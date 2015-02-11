@@ -19,22 +19,22 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;
-
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
-import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  *
@@ -153,7 +153,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
             assertNull(asyncCache.invoke(key, incProcessor));
 
-            IgniteInternalFuture<Integer> fut = asyncCache.future();
+            IgniteFuture<Integer> fut = asyncCache.future();
 
             assertNotNull(fut);
 
@@ -404,7 +404,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
         assertNull(asyncCache.invokeAll(keys, new IncrementProcessor()));
 
-        IgniteInternalFuture<Map<Integer, EntryProcessorResult<Integer>>> fut = asyncCache.future();
+        IgniteFuture<Map<Integer, EntryProcessorResult<Integer>>> fut = asyncCache.future();
 
         resMap = fut.get();
 
@@ -465,10 +465,10 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
             for (int i = 0; i < gridCount(); i++) {
                 IgniteCache<Object, Object> cache = jcache(i);
 
-                Object val = cache.localPeek(key);
+                Object val = cache.localPeek(key, CachePeekMode.ONHEAP);
 
                 if (val == null)
-                    assertFalse(cache(0).affinity().isPrimaryOrBackup(ignite(i).cluster().localNode(), key));
+                    assertFalse(ignite(0).affinity(null).isPrimaryOrBackup(ignite(i).cluster().localNode(), key));
                 else
                     assertEquals("Unexpected value for grid " + i, expVal, val);
             }
@@ -477,7 +477,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
             for (int i = 0; i < gridCount(); i++) {
                 IgniteCache<Object, Object> cache = jcache(i);
 
-                assertNull("Unexpected non null value for grid " + i, cache.localPeek(key));
+                assertNull("Unexpected non null value for grid " + i, cache.localPeek(key, CachePeekMode.ONHEAP));
             }
         }
     }
@@ -487,7 +487,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
      * @throws Exception If failed.
      */
     protected Collection<Integer> keys() throws Exception {
-        GridCache<Integer, Object> cache = cache(0);
+        IgniteCache<Integer, Object> cache = jcache(0);
 
         ArrayList<Integer> keys = new ArrayList<>();
 
@@ -496,7 +496,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         if (gridCount() > 1) {
             keys.add(backupKeys(cache, 1, lastKey).get(0));
 
-            if (cache.configuration().getCacheMode() != REPLICATED)
+            if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() != REPLICATED)
                 keys.add(nearKeys(cache, 1, lastKey).get(0));
         }
 

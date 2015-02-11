@@ -24,12 +24,13 @@ import java.util.concurrent._
 import java.util.{HashSet => JHashSet, _}
 
 import org.apache.ignite.IgniteSystemProperties._
-import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterMetrics, ClusterNode}
+import org.apache.ignite.cluster.{ClusterGroup, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration
-import org.apache.ignite.events.IgniteEventType._
-import org.apache.ignite.events.{IgniteDiscoveryEvent, IgniteEvent}
+import org.apache.ignite.events.EventType._
+import org.apache.ignite.events.{DiscoveryEvent, Event}
 import org.apache.ignite.internal.IgniteComponentType._
-import org.apache.ignite.internal.GridNodeAttributes._
+import org.apache.ignite.internal.IgniteNodeAttributes._
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
 import org.apache.ignite.internal.processors.spring.IgniteSpringProcessor
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
@@ -39,11 +40,10 @@ import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.apache.ignite.internal.{IgniteEx, GridProductImpl}
 import org.apache.ignite.lang.{IgniteNotPeerDeployable, IgnitePredicate}
-import org.apache.ignite.lifecycle.IgniteListener
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import org.apache.ignite.{IgniteState, IgniteSystemProperties, Ignition, _}
+import org.apache.ignite._
 import org.jetbrains.annotations.Nullable
 
 import scala.collection.JavaConversions._
@@ -112,10 +112,10 @@ trait VisorTag
  * }}}
  *
  * ==Overview==
- * Visor console provides monitoring capabilities for GridGain.
+ * Visor console provides monitoring capabilities for Ignite.
  *
  * ==Usage==
- * GridGain ships with `IGNITE_HOME/bin/ignitevisorcmd.{sh|bat}` script that starts Visor console.
+ * Ignite ships with `IGNITE_HOME/bin/ignitevisorcmd.{sh|bat}` script that starts Visor console.
  *
  * Just type:<ex>help</ex> in Visor console to get help and get started.
  */
@@ -131,7 +131,7 @@ object visor extends VisorTag {
     type NodeFilter = ClusterNode => Boolean
 
     /** Type alias for general event filter. */
-    type EventFilter = IgniteEvent => Boolean
+    type EventFilter = Event => Boolean
 
     /** `Nil` is for empty list, `Til` is for empty tuple. */
     val Til: Arg = (null, null)
@@ -146,16 +146,16 @@ object visor extends VisorTag {
     private var cmdLst: Seq[VisorConsoleCommandHolder] = Nil
 
     /** Node left listener. */
-    private var nodeLeftLsnr: IgnitePredicate[IgniteEvent] = null
+    private var nodeLeftLsnr: IgnitePredicate[Event] = null
 
     /** Node join listener. */
-    private var nodeJoinLsnr: IgnitePredicate[IgniteEvent] = null
+    private var nodeJoinLsnr: IgnitePredicate[Event] = null
 
     /** Node segmentation listener. */
-    private var nodeSegLsnr: IgnitePredicate[IgniteEvent] = null
+    private var nodeSegLsnr: IgnitePredicate[Event] = null
 
     /** Node stop listener. */
-    private var nodeStopLsnr: IgniteListener = null
+    private var nodeStopLsnr: IgnitionListener = null
 
     /** Visor copyright blurb. */
     private final val COPYRIGHT = GridProductImpl.COPYRIGHT
@@ -205,7 +205,7 @@ object visor extends VisorTag {
      */
     private final val DFLT_LOG_PATH = "visor/visor-log"
 
-    /** Default configuration path relative to GridGain home. */
+    /** Default configuration path relative to Ignite home. */
     private final val DFLT_CFG = "config/default-config.xml"
 
     /** Log file. */
@@ -234,18 +234,18 @@ object visor extends VisorTag {
      *
      * @param nid Node ID.
      * @return GridNode instance.
-     * @throws IgniteCheckedException if Visor is disconnected or node not found.
+     * @throws IgniteException if Visor is disconnected or node not found.
      */
     def node(nid: UUID): ClusterNode = {
         val g = grid
 
         if (g == null)
-            throw new IgniteCheckedException("Visor disconnected")
+            throw new IgniteException("Visor disconnected")
         else {
             val node = g.node(nid)
 
             if (node == null)
-                throw new IgniteCheckedException("Node is gone: " + nid)
+                throw new IgniteException("Node is gone: " + nid)
 
             node
         }
@@ -389,7 +389,7 @@ object visor extends VisorTag {
             "should be enabled on all nodes.",
             " ",
             "If neither '-cpath' or '-d' are provided, command will ask",
-            "user to select GridGain configuration file in interactive mode."
+            "user to select Ignite configuration file in interactive mode."
         ),
         spec = Seq(
             "open -cpath=<path>",
@@ -397,21 +397,21 @@ object visor extends VisorTag {
         ),
         args = Seq(
             "-cpath=<path>" -> Seq(
-                "GridGain configuration path.",
-                "Can be absolute, relative to GridGain home folder or any well formed URL."
+                "Ignite configuration path.",
+                "Can be absolute, relative to Ignite home folder or any well formed URL."
             ),
             "-d" -> Seq(
-                "Flag forces the command to connect to grid using default GridGain configuration file.",
+                "Flag forces the command to connect to grid using default Ignite configuration file.",
                 "without interactive mode."
             )
         ),
         examples = Seq(
             "open" ->
-                "Prompts user to select GridGain configuration file in interactive mode.",
+                "Prompts user to select Ignite configuration file in interactive mode.",
             "open -d" ->
-                "Connects Visor console to grid using default GridGain configuration file.",
+                "Connects Visor console to grid using default Ignite configuration file.",
             "open -cpath=/gg/config/mycfg.xml" ->
-                "Connects Visor console to grid using GridGain configuration from provided file."
+                "Connects Visor console to grid using Ignite configuration from provided file."
         ),
         ref = VisorConsoleCommand(open, open)
     )
@@ -447,7 +447,7 @@ object visor extends VisorTag {
             "Logging starts by default when Visor starts.",
             " ",
             "Events are logged to a file. If path is not provided,",
-            "it will log into '<GridGain home folder>/work/visor/visor-log'.",
+            "it will log into '<Ignite home folder>/work/visor/visor-log'.",
             " ",
             "File is always opened in append mode.",
             "If file doesn't exist, it will be created.",
@@ -476,7 +476,7 @@ object visor extends VisorTag {
             ),
             "-f=<path>" -> Seq(
                 "Provides path to the file.",
-                "Path to the file can be absolute or relative to GridGain home folder."
+                "Path to the file can be absolute or relative to Ignite home folder."
             ),
             "-p=<num>" -> Seq(
                 "Provides period of querying events (in seconds).",
@@ -501,15 +501,15 @@ object visor extends VisorTag {
             "log -l -f=/home/user/visor-log" ->
                 "Starts logging to file 'visor-log' located at '/home/user'.",
             "log -l -f=log/visor-log" ->
-                "Starts logging to file 'visor-log' located at '<GridGain home folder>/log'.",
+                "Starts logging to file 'visor-log' located at '<Ignite home folder>/log'.",
             ("log -l -p=20",
-                "Starts logging to file '<GridGain home folder>/work/visor/visor-log' " +
+                "Starts logging to file '<Ignite home folder>/work/visor/visor-log' " +
                 "with querying events period of 20 seconds."),
             ("log -l -t=30",
-                "Starts logging to file '<GridGain home folder>/work/visor/visor-log' " +
+                "Starts logging to file '<Ignite home folder>/work/visor/visor-log' " +
                 "with topology snapshot logging period of 30 seconds."),
             ("log -l -dl",
-                "Starts logging to file '<GridGain home folder>/work/visor/visor-log' " +
+                "Starts logging to file '<Ignite home folder>/work/visor/visor-log' " +
                 "with disabled collection events from remote nodes."),
             "log -s" ->
                 "Stops logging."
@@ -1474,10 +1474,10 @@ object visor extends VisorTag {
                         new URL(path)
                     catch {
                         case e: Exception =>
-                            val url = IgniteUtils.resolveGridGainUrl(path)
+                            val url = IgniteUtils.resolveIgniteUrl(path)
 
                             if (url == null)
-                                throw new IgniteCheckedException("GridGain configuration path is invalid: " + path, e)
+                                throw new IgniteException("Ignite configuration path is invalid: " + path, e)
 
                             url
                     }
@@ -1502,10 +1502,10 @@ object visor extends VisorTag {
                     }
 
                 if (cfgs == null || cfgs.isEmpty)
-                    throw new IgniteCheckedException("Can't find grid configuration in: " + url)
+                    throw new IgniteException("Can't find grid configuration in: " + url)
 
                 if (cfgs.size > 1)
-                    throw new IgniteCheckedException("More than one grid configuration found in: " + url)
+                    throw new IgniteException("More than one grid configuration found in: " + url)
 
                 val cfg = cfgs.iterator().next()
 
@@ -1517,14 +1517,12 @@ object visor extends VisorTag {
                 if (cpuCnt < 4)
                     cpuCnt = 4
 
-                cfg.setClientConnectionConfiguration(null)
-
-                def createExecutor = new IgniteThreadPoolExecutor(cpuCnt, cpuCnt, Long.MaxValue, new LinkedBlockingQueue[Runnable])
+                cfg.setConnectorConfiguration(null)
 
                 // All thread pools are overridden to have size equal to number of CPUs.
-                cfg.setExecutorService(createExecutor)
-                cfg.setSystemExecutorService(createExecutor)
-                cfg.setPeerClassLoadingExecutorService(createExecutor)
+                cfg.setPublicThreadPoolSize(cpuCnt)
+                cfg.setSystemThreadPoolSize(cpuCnt)
+                cfg.setPeerClassLoadingThreadPoolSize(cpuCnt)
 
                 var ioSpi = cfg.getCommunicationSpi
 
@@ -1564,7 +1562,7 @@ object visor extends VisorTag {
             open(cfg, cfgPath)
         }
         catch {
-            case e: IgniteCheckedException =>
+            case e: IgniteException =>
                 warn(e.getMessage)
                 warn("Type 'help open' to see how to use this command.")
 
@@ -1607,7 +1605,7 @@ object visor extends VisorTag {
                 case _: IllegalStateException =>
                     this.cfgPath = null
 
-                    throw new IgniteCheckedException("Named grid unavailable: " + startedGridName)
+                    throw new IgniteException("Named grid unavailable: " + startedGridName)
             }
 
         assert(cfgPath != null)
@@ -1625,10 +1623,10 @@ object visor extends VisorTag {
                 setVarIfAbsent(ip.get, "h")
         })
 
-        nodeJoinLsnr = new IgnitePredicate[IgniteEvent]() {
-            override def apply(e: IgniteEvent): Boolean = {
+        nodeJoinLsnr = new IgnitePredicate[Event]() {
+            override def apply(e: Event): Boolean = {
                 e match {
-                    case de: IgniteDiscoveryEvent =>
+                    case de: DiscoveryEvent =>
                         setVarIfAbsent(nid8(de.eventNode()), "n")
 
                         val node = grid.node(de.eventNode().id())
@@ -1654,10 +1652,10 @@ object visor extends VisorTag {
 
         grid.events().localListen(nodeJoinLsnr, EVT_NODE_JOINED)
 
-        nodeLeftLsnr = new IgnitePredicate[IgniteEvent]() {
-            override def apply(e: IgniteEvent): Boolean = {
+        nodeLeftLsnr = new IgnitePredicate[Event]() {
+            override def apply(e: Event): Boolean = {
                 e match {
-                    case (de: IgniteDiscoveryEvent) =>
+                    case (de: DiscoveryEvent) =>
                         val nv = mfind(nid8(de.eventNode()))
 
                         if (nv.isDefined)
@@ -1685,10 +1683,10 @@ object visor extends VisorTag {
 
         grid.events().localListen(nodeLeftLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED)
 
-        nodeSegLsnr = new IgnitePredicate[IgniteEvent] {
-            override def apply(e: IgniteEvent): Boolean = {
+        nodeSegLsnr = new IgnitePredicate[Event] {
+            override def apply(e: Event): Boolean = {
                 e match {
-                    case de: IgniteDiscoveryEvent =>
+                    case de: DiscoveryEvent =>
                         if (de.eventNode().id() == grid.localNode.id) {
                             warn("Closing Visor console due to topology segmentation.")
                             warn("Contact your system administrator.")
@@ -1705,7 +1703,7 @@ object visor extends VisorTag {
 
         grid.events().localListen(nodeSegLsnr, EVT_NODE_SEGMENTED)
 
-        nodeStopLsnr = new IgniteListener {
+        nodeStopLsnr = new IgnitionListener {
             def onStateChange(name: String, state: IgniteState) {
                 if (name == grid.name && state == IgniteState.STOPPED) {
                     warn("Closing Visor console due to stopping of host grid instance.")
@@ -2255,7 +2253,7 @@ object visor extends VisorTag {
      * Starts logging to file `visor-log` located at `/home/user`.
      * <br>
      * <ex>log -l -f=log/visor-log</ex>
-     * Starts logging to file `visor-log` located at &lt`GridGain home folder`&gt`/log`.
+     * Starts logging to file `visor-log` located at &lt`Ignite home folder`&gt`/log`.
      * <br>
      * <ex>log -l -p=20</ex>
      * Starts logging with querying events period of 20 seconds.
@@ -2461,7 +2459,7 @@ object visor extends VisorTag {
                         }
                     }
                     catch {
-                        case _: ClusterGroupEmptyException => // Ignore.
+                        case _: ClusterGroupEmptyCheckedException => // Ignore.
                         case e: Exception => logText("Failed to collect log.")
                     }
                 }
@@ -2493,7 +2491,7 @@ object visor extends VisorTag {
             try
                 drawBar(g.metrics())
             catch {
-                case e: ClusterGroupEmptyException => logText("Topology is empty.")
+                case e: ClusterGroupEmptyCheckedException => logText("Topology is empty.")
                 case e: Exception => ()
             }
     }

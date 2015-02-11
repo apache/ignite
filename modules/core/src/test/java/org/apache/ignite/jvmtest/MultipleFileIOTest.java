@@ -17,7 +17,7 @@
 
 package org.apache.ignite.jvmtest;
 
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.*;
 
 import java.io.*;
 import java.util.*;

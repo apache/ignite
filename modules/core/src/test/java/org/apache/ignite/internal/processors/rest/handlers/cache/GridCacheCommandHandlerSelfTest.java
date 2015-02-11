@@ -22,13 +22,13 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.rest.handlers.*;
 import org.apache.ignite.internal.processors.rest.request.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.lang.reflect.*;
@@ -62,7 +62,11 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration();
 
         cfg.setLocalHost("localhost");
-        cfg.setRestEnabled(true);
+
+        ConnectorConfiguration clnCfg = new ConnectorConfiguration();
+        clnCfg.setHost("localhost");
+
+        cfg.setConnectorConfiguration(clnCfg);
         cfg.setDiscoverySpi(disco);
         cfg.setCacheConfiguration(cacheCfg); // Add 'null' cache configuration.
 
@@ -192,13 +196,13 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         try {
             // Change cache state.
-            cache().putx(key, curVal);
+            jcache().put(key, curVal);
 
             // Validate behavior for initialized cache (has current value).
             assertTrue("Expects succeed.", (Boolean)hnd.handleAsync(req).get().getResponse());
         }
         finally {
-            res = (T)cache().remove(key);
+            res = (T)jcache().getAndRemove(key);
         }
 
         return res;

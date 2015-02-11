@@ -28,7 +28,7 @@ import java.util.*;
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskAdapter&lt;String, String&gt; {
  *     // Inject load balancer.
- *     &#64;IgniteLoadBalancerResource
+ *     &#64;LoadBalancerResource
  *     ComputeLoadBalancer balancer;
  *
  *     // Map jobs to grid nodes.
@@ -84,11 +84,11 @@ public abstract class ComputeTaskAdapter<T, R> implements ComputeTask<T, R> {
      * @param rcvd All previously received results.
      * @return Result policy that dictates how to process further upcoming
      *       job results.
-     * @throws IgniteCheckedException If handling a job result caused an error effectively rejecting
+     * @throws IgniteException If handling a job result caused an error effectively rejecting
      *      a failover. This exception will be thrown out of {@link ComputeTaskFuture#get()} method.
      */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
-        IgniteCheckedException e = res.getException();
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
+        IgniteException e = res.getException();
 
         // Try to failover if result is failed.
         if (e != null) {
@@ -99,7 +99,7 @@ public abstract class ComputeTaskAdapter<T, R> implements ComputeTask<T, R> {
                 e.hasCause(ComputeJobFailoverException.class))
                 return ComputeJobResultPolicy.FAILOVER;
 
-            throw new IgniteCheckedException("Remote job threw user exception (override or implement GridComputeTask.result(..) " +
+            throw new IgniteException("Remote job threw user exception (override or implement ComputeTask.result(..) " +
                 "method if you would like to have automatic failover for this exception).", e);
         }
 

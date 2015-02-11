@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -30,7 +29,6 @@ import org.hibernate.cfg.*;
 import org.hibernate.service.*;
 
 import javax.persistence.*;
-
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -79,7 +77,7 @@ public class GridHibernateL2CacheConfigurationSelfTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (GridCache<?, ?> cache : grid(0).caches())
-            cache.clearAll();
+            cache.clear();
     }
 
     /** {@inheritDoc} */

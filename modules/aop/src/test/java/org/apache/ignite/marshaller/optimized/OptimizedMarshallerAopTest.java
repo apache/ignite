@@ -20,13 +20,13 @@ package org.apache.ignite.marshaller.optimized;
 import org.apache.ignite.compute.gridify.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Test use GridOptimizedMarshaller and AspectJ AOP.
@@ -58,7 +58,7 @@ public class OptimizedMarshallerAopTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller());
+        cfg.setMarshaller(new OptimizedMarshaller());
 
         G.start(cfg);
 
@@ -78,8 +78,8 @@ public class OptimizedMarshallerAopTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testUp() throws Exception {
-        G.ignite().events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        G.ignite().events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 cntr.incrementAndGet();
 
                 return true;

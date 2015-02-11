@@ -28,11 +28,11 @@ import java.io.*;
  */
 public class GridSessionLoadTestJob extends ComputeJobAdapter {
     /** */
-    @IgniteTaskSessionResource
+    @TaskSessionResource
     private ComputeTaskSession taskSes;
 
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** */
@@ -48,7 +48,7 @@ public class GridSessionLoadTestJob extends ComputeJobAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Serializable execute() throws IgniteCheckedException {
+    @Override public Serializable execute() {
         assert taskSes != null;
 
         Object arg = argument(0);

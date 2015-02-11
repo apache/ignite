@@ -23,24 +23,25 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.security.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
@@ -57,7 +58,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         new EnumMap<>(GridTaskThreadContextKey.class);
 
     /** */
-    private final IgniteMarshaller marsh;
+    private final Marshaller marsh;
 
     /** */
     private final ConcurrentMap<IgniteUuid, GridTaskWorker<?, ?>> tasks = GridConcurrentFactory.newMap();
@@ -136,7 +137,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     try {
                         task.getTaskFuture().get();
                     }
-                    catch (ComputeTaskCancelledException e) {
+                    catch (ComputeTaskCancelledCheckedException e) {
                         U.warn(log, e.getMessage());
                     }
                     catch (IgniteCheckedException e) {
@@ -151,7 +152,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
                     task.cancel();
 
-                    Throwable ex = new ComputeTaskCancelledException("Task cancelled due to stopping of the grid: " +
+                    Throwable ex = new ComputeTaskCancelledCheckedException("Task cancelled due to stopping of the grid: " +
                         task);
 
                     task.finishTask(null, ex, false);
@@ -278,7 +279,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> ComputeTaskFuture<R> execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) {
+    public <T, R> ComputeTaskInternalFuture<R> execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) {
         assert taskCls != null;
 
         lock.readLock();
@@ -301,7 +302,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> ComputeTaskFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg) {
+    public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg) {
         return execute(task, arg, false);
     }
 
@@ -313,7 +314,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> ComputeTaskFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys) {
+    public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys) {
         lock.readLock();
 
         try {
@@ -349,7 +350,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> ComputeTaskFuture<R> execute(String taskName, @Nullable T arg) {
+    public <T, R> ComputeTaskInternalFuture<R> execute(String taskName, @Nullable T arg) {
         assert taskName != null;
 
         lock.readLock();
@@ -375,7 +376,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @return Task future.
      */
     @SuppressWarnings("unchecked")
-    private <T, R> ComputeTaskFuture<R> startTask(
+    private <T, R> ComputeTaskInternalFuture<R> startTask(
         @Nullable String taskName,
         @Nullable Class<?> taskCls,
         @Nullable ComputeTask<T, R> task,
@@ -426,13 +427,13 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                 dep = ctx.deploy().getDeployment(taskName);
 
                 if (dep == null)
-                    throw new IgniteDeploymentException("Unknown task name or failed to auto-deploy " +
+                    throw new IgniteDeploymentCheckedException("Unknown task name or failed to auto-deploy " +
                         "task (was task (re|un)deployed?): " + taskName);
 
                 taskCls = dep.deployedClass(taskName);
 
                 if (taskCls == null)
-                    throw new IgniteDeploymentException("Unknown task name or failed to auto-deploy " +
+                    throw new IgniteDeploymentCheckedException("Unknown task name or failed to auto-deploy " +
                         "task (was task (re|un)deployed?) [taskName=" + taskName + ", dep=" + dep + ']');
 
                 if (!ComputeTask.class.isAssignableFrom(taskCls))
@@ -452,7 +453,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                 dep = ctx.deploy().deploy(taskCls, U.detectClassLoader(taskCls));
 
                 if (dep == null)
-                    throw new IgniteDeploymentException("Failed to auto-deploy task (was task (re|un)deployed?): " +
+                    throw new IgniteDeploymentCheckedException("Failed to auto-deploy task (was task (re|un)deployed?): " +
                         taskCls);
 
                 taskName = taskName(dep, taskCls, map);
@@ -492,7 +493,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                 dep = ctx.deploy().deploy(cls, ldr);
 
                 if (dep == null)
-                    throw new IgniteDeploymentException("Failed to auto-deploy task (was task (re|un)deployed?): " + cls);
+                    throw new IgniteDeploymentCheckedException("Failed to auto-deploy task (was task (re|un)deployed?): " + cls);
 
                 taskName = taskName(dep, taskCls, map);
             }
@@ -535,7 +536,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             fullSup,
             subjId);
 
-        GridTaskFutureImpl<R> fut = new GridTaskFutureImpl<>(ses, ctx);
+        ComputeTaskInternalFuture<R> fut = new ComputeTaskInternalFuture<>(ses, ctx);
 
         IgniteCheckedException securityEx = null;
 
@@ -550,7 +551,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         if (deployEx == null && securityEx == null) {
             if (dep == null || !dep.acquire())
-                handleException(new IgniteDeploymentException("Task not deployed: " + ses.getTaskName()), fut);
+                handleException(new IgniteDeploymentCheckedException("Task not deployed: " + ses.getTaskName()), fut);
             else {
                 GridTaskWorker<?, ?> taskWorker = new GridTaskWorker<>(
                     ctx,
@@ -586,9 +587,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     try {
                         // Start task execution in another thread.
                         if (sys)
-                            ctx.config().getSystemExecutorService().execute(taskWorker);
+                            ctx.getSystemExecutorService().execute(taskWorker);
                         else
-                            ctx.config().getExecutorService().execute(taskWorker);
+                            ctx.getExecutorService().execute(taskWorker);
                     }
                     catch (RejectedExecutionException e) {
                         tasks.remove(sesId);
@@ -615,12 +616,12 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
     /**
      * @param sesId Task's session id.
-     * @return A {@link org.apache.ignite.compute.ComputeTaskFuture} instance or {@code null} if no such task found.
+     * @return A {@link ComputeTaskInternalFuture} instance or {@code null} if no such task found.
      */
-    @Nullable public <R> ComputeTaskFuture<R> taskFuture(IgniteUuid sesId) {
+    @Nullable public <R> ComputeTaskInternalFuture<R> taskFuture(IgniteUuid sesId) {
         GridTaskWorker<?, ?> taskWorker = tasks.get(sesId);
 
-        return taskWorker != null ? (ComputeTaskFuture<R>)taskWorker.getTaskFuture() : null;
+        return taskWorker != null ? (ComputeTaskInternalFuture<R>)taskWorker.getTaskFuture() : null;
     }
 
     /**
@@ -631,9 +632,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         Map<IgniteUuid, ComputeTaskFuture<R>> res = U.newHashMap(tasks.size());
 
         for (GridTaskWorker taskWorker : tasks.values()) {
-            ComputeTaskFuture<R> fut = taskWorker.getTaskFuture();
+            ComputeTaskInternalFuture<R> fut = taskWorker.getTaskFuture();
 
-            res.put(fut.getTaskSession().getId(), fut);
+            res.put(fut.getTaskSession().getId(), fut.publicFuture());
         }
 
         return res;
@@ -719,7 +720,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param fut Task future.
      * @param <R> Result type.
      */
-    private <R> void handleException(Throwable ex, GridTaskFutureImpl<R> fut) {
+    private <R> void handleException(Throwable ex, ComputeTaskInternalFuture<R> fut) {
         assert ex != null;
         assert fut != null;
 
@@ -799,7 +800,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         }
 
         if (ctx.event().isRecordable(EVT_TASK_SESSION_ATTR_SET)) {
-            IgniteEvent evt = new IgniteTaskEvent(
+            Event evt = new TaskEvent(
                 ctx.discovery().localNode(),
                 "Changed attributes: " + attrs,
                 EVT_TASK_SESSION_ATTR_SET,
@@ -987,7 +988,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                 return;
             }
 
-            task.finishTask(null, new ComputeTaskCancelledException("Task was cancelled."), true);
+            task.finishTask(null, new ComputeTaskCancelledCheckedException("Task was cancelled."), true);
         }
         finally {
             lock.readUnlock();
@@ -1109,7 +1110,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                         ctx.io().removeMessageListener(s.taskTopic(), msgLsnr);
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     U.error(log, "Failed to unregister job communication message listeners and counters.", e);
                 }
             }
@@ -1155,10 +1156,10 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      */
     private class TaskDiscoveryListener implements GridLocalEventListener {
         /** {@inheritDoc} */
-        @Override public void onEvent(IgniteEvent evt) {
+        @Override public void onEvent(Event evt) {
             assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
-            UUID nodeId = ((IgniteDiscoveryEvent)evt).eventNode().id();
+            UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
             lock.readLock();
 
@@ -1203,7 +1204,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     try {
                         siblings = worker.getSession().getJobSiblings();
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         U.error(log, "Failed to get job siblings [request=" + msg +
                             ", ses=" + worker.getSession() + ']', e);
 

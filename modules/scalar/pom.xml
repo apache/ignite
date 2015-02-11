@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
     POM file.
@@ -104,8 +104,8 @@
                             <goal>doc</goal>
                         </goals>
                         <configuration>
-                            <doctitle>GridGain Scalar</doctitle>
-                            <windowtitle>GridGain Scalar</windowtitle>
+                            <doctitle>Ignite Scalar</doctitle>
+                            <windowtitle>Ignite Scalar</windowtitle>
                         </configuration>
                     </execution>
                 </executions>
@@ -165,13 +165,13 @@
 
                                 <replace dir="target/site/scaladocs">
                                     <replacetoken>src="package.html"</replacetoken>
-                                    <replacevalue>src=org/gridgain/scalar/scalar$.html</replacevalue>
+                                    <replacevalue>src=org/apache/ignite/scalar/scalar$.html</replacevalue>
                                     <include name="**/index.html"/>
                                 </replace>
 
                                 <replace dir="target/site/scaladocs">
                                     <replacetoken>location.replace("package.html")</replacetoken>
-                                    <replacevalue>location.replace("org/gridgain/scalar/scalar$.html")</replacevalue>
+                                    <replacevalue>location.replace("org/apache/ignite/scalar/scalar$.html")</replacevalue>
                                     <include name="**/index.js"/>
                                 </replace>
 

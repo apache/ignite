@@ -23,12 +23,12 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.deployment.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.Map.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Storage for local deployments.
@@ -235,7 +235,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
      * @param recordEvt {@code True} to record event.
      * @return Deployment.
      */
-    private GridDeployment deploy(IgniteDeploymentMode depMode, ClassLoader ldr, Class<?> cls, String alias,
+    private GridDeployment deploy(DeploymentMode depMode, ClassLoader ldr, Class<?> cls, String alias,
         boolean recordEvt) {
         GridDeployment dep = null;
 
@@ -349,7 +349,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
             if (e.getCause() instanceof IgniteCheckedException)
                 throw (IgniteCheckedException)e.getCause();
 
-            throw new IgniteDeploymentException("Failed to deploy class: " + cls.getName(), e);
+            throw new IgniteDeploymentCheckedException("Failed to deploy class: " + cls.getName(), e);
         }
     }
 
@@ -385,7 +385,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
         String msg = (isTask ? "Task" : "Class") + " locally deployed: " + cls;
 
         if (recordEvt && ctx.event().isRecordable(isTask ? EVT_TASK_DEPLOYED : EVT_CLASS_DEPLOYED)) {
-            IgniteDeploymentEvent evt = new IgniteDeploymentEvent();
+            DeploymentEvent evt = new DeploymentEvent();
 
             evt.message(msg);
             evt.node(ctx.discovery().localNode());
@@ -422,7 +422,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
         if (recordEvt && ctx.event().isRecordable(isTask ? EVT_CLASS_DEPLOY_FAILED : EVT_TASK_DEPLOY_FAILED)) {
             String taskName = isTask ? U.getTaskName((Class<? extends ComputeTask<?, ?>>)cls) : null;
 
-            IgniteDeploymentEvent evt = new IgniteDeploymentEvent();
+            DeploymentEvent evt = new DeploymentEvent();
 
             evt.message(msg);
             evt.node(ctx.discovery().localNode());
@@ -452,7 +452,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
                 String msg = isTask ? "Task locally undeployed: " + cls : "Class locally undeployed: " + cls;
 
                 if (ctx.event().isRecordable(isTask ? EVT_TASK_UNDEPLOYED : EVT_CLASS_UNDEPLOYED)) {
-                    IgniteDeploymentEvent evt = new IgniteDeploymentEvent();
+                    DeploymentEvent evt = new DeploymentEvent();
 
                     evt.message(msg);
                     evt.node(ctx.discovery().localNode());
@@ -524,7 +524,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
                 ctx.resource().onUndeployed(dep);
 
                 // Clear optimized marshaller's cache. If another marshaller is used, this is no-op.
-                IgniteOptimizedMarshaller.onUndeploy(ldr);
+                OptimizedMarshaller.onUndeploy(ldr);
 
                 clearSerializationCaches();
 

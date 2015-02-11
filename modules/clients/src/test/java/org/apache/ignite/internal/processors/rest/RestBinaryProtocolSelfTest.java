@@ -18,21 +18,18 @@
 package org.apache.ignite.internal.processors.rest;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.rest.client.message.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.processors.rest.client.message.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -79,8 +76,8 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         client.shutdown();
 
-        grid().cache(null).clearAll();
-        grid().cache(CACHE_NAME).clearAll();
+        grid().cache(null).clear();
+        grid().cache(CACHE_NAME).clear();
     }
 
     /** {@inheritDoc} */
@@ -89,13 +86,13 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
 
         cfg.setLocalHost(HOST);
 
-        assert cfg.getClientConnectionConfiguration() == null;
+        assert cfg.getConnectorConfiguration() == null;
 
-        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
+        ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
-        clientCfg.setRestTcpPort(PORT);
+        clientCfg.setPort(PORT);
 
-        cfg.setClientConnectionConfiguration(clientCfg);
+        cfg.setConnectorConfiguration(clientCfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -313,7 +310,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         assertTrue(grid().cache(null).putx("key2", "val1"));
         assertTrue(client.cacheReplace(null, "key2", "val2"));
 
-        grid().cache(null).clearAll();
+        grid().cache(null).clear();
 
         assertFalse(client.cacheReplace(CACHE_NAME, "key1", "val1"));
         assertTrue(grid().cache(CACHE_NAME).putx("key1", "val1"));
@@ -550,56 +547,11 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testLog() throws Exception {
-        String path = "work/log/ignite.log." + System.currentTimeMillis();
-
-        File file = new File(U.getGridGainHome(), path);
-
-        assert !file.exists();
-
-        FileWriter writer = new FileWriter(file);
-
-        String sep = System.getProperty("line.separator");
-
-        writer.write("Line 1" + sep);
-        writer.write(sep);
-        writer.write("Line 2" + sep);
-        writer.write("Line 3" + sep);
-
-        writer.flush();
-        writer.close();
-
-        List<String> log = client.log(path, 0, 10);
-
-        assertNotNull(log);
-        assertEquals(4, log.size());
-
-        file.delete();
-
-        GridTestUtils.assertThrows(
-            log(),
-            new Callable<Object>() {
-                @Override
-                public Object call() throws Exception {
-                    client.log("wrong/path", 0, 10);
-
-                    return null;
-                }
-            },
-            IgniteCheckedException.class,
-            null
-        );
-    }
-
-    /**
      * Test task.
      */
     private static class TestTask extends ComputeTaskSplitAdapter<List<Object>, Integer> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> args)
-            throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> args) {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(args.size());
 
             for (final Object arg : args) {
@@ -622,7 +574,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             int sum = 0;
 
             for (ComputeJobResult res : results)

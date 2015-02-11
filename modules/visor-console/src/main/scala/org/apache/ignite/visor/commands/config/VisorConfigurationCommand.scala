@@ -17,19 +17,17 @@
 
 package org.apache.ignite.visor.commands.config
 
-import org.apache.ignite.internal.util.IgniteUtils
-import org.apache.ignite.internal.visor.node.VisorNodeConfigurationCollectorTask
-
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.internal.util.IgniteUtils
+import org.apache.ignite.internal.visor.node.VisorNodeConfigurationCollectorTask
 import org.apache.ignite.lang.IgniteBiTuple
-
-import java.lang.System._
-
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor.visor._
+import org.apache.ignite.visor.visor._
+
+import java.lang.System._
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
@@ -212,7 +210,7 @@ class VisorConfigurationCommand {
                     .withNoFailover()
                     .execute(classOf[VisorNodeConfigurationCollectorTask], emptyTaskArgument(node.id()))
             catch {
-                case e: IgniteCheckedException =>
+                case e: IgniteException =>
                     scold(e.getMessage)
 
                     break()
@@ -223,7 +221,7 @@ class VisorConfigurationCommand {
             val cmnT = VisorTextTable()
 
             cmnT += ("Grid name", safe(cfg.basic().gridName(), "<default>"))
-            cmnT += ("GridGain home", safe(cfg.basic().ggHome(), DFLT))
+            cmnT += ("Ignite home", safe(cfg.basic().ggHome(), DFLT))
             cmnT += ("Localhost", safe(cfg.basic().localHost(), DFLT))
             cmnT += ("Node ID", safe(cfg.basic().nodeId(), DFLT))
             cmnT += ("Marshaller", cfg.basic().marshaller())
@@ -232,7 +230,6 @@ class VisorConfigurationCommand {
             cmnT += ("Remote JMX", bool2Str(cfg.basic().jmxRemote()))
             cmnT += ("Restart", bool2Str(cfg.basic().restart()))
             cmnT += ("Network timeout", cfg.basic().networkTimeout() + "ms")
-            cmnT += ("License URL", safe(cfg.basic().licenseUrl(), DFLT))
             cmnT += ("Grid logger", safe(cfg.basic().logger(), DFLT))
             cmnT += ("Discovery startup delay", cfg.basic().discoStartupDelay() + "ms")
             cmnT += ("MBean server", safe(cfg.basic().mBeanServer(), DFLT))
@@ -326,13 +323,9 @@ class VisorConfigurationCommand {
             val execCfg = cfg.executeService()
 
             execSvcT += ("Executor service", safe(execCfg.executeService(), DFLT))
-            execSvcT += ("Executor service shutdown", bool2Str(execCfg.executeServiceShutdown()))
             execSvcT += ("System executor service", safe(execCfg.systemExecutorService(), DFLT))
-            execSvcT += ("System executor service shutdown", bool2Str(execCfg.systemExecutorServiceShutdown()))
             execSvcT += ("Peer-to-Peer executor service", safe(execCfg.p2pExecutorService(), DFLT))
-            execSvcT += ("Peer-to-Peer executor service shutdown", bool2Str(execCfg.p2pExecutorServiceShutdown()))
             execSvcT += ("REST Executor Service", safe(execCfg.restExecutorService(), DFLT))
-            execSvcT += ("REST Executor Service Shutdown", bool2Str(execCfg.restExecutorServiceShutdown()))
 
             execSvcT.render()
 

@@ -17,13 +17,12 @@
 
 package org.apache.ignite.visor.commands.cache
 
-import org.apache.ignite.cache.CacheConfiguration
 import org.apache.ignite.cache.CacheMode
 import CacheMode._
 import org.apache.ignite.visor.{VisorRuntimeBaseSpec, visor}
 
 import org.apache.ignite.Ignition
-import org.apache.ignite.configuration.IgniteConfiguration
+import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
 import org.jetbrains.annotations.Nullable
@@ -79,7 +78,7 @@ class VisorCacheCompactCommandSpec extends VisorRuntimeBaseSpec(2) {
     it should "show correct result for default cache" in {
         Ignition.ignite("node-1").cache[Int, Int](null).putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        Ignition.ignite("node-1").cache[Int, Int](null).clear(1)
+        Ignition.ignite("node-1").cache[Int, Int](null).clearLocally(1)
 
         VisorCacheCompactCommand().compact(Nil, None)
     }
@@ -87,7 +86,7 @@ class VisorCacheCompactCommandSpec extends VisorRuntimeBaseSpec(2) {
     it should "show correct result for named cache" in {
         Ignition.ignite("node-1").cache[Int, Int]("cache").putAll(Map(1 -> 1, 2 -> 2, 3 -> 3))
 
-        Ignition.ignite("node-1").cache[Int, Int]("cache").clear(1)
+        Ignition.ignite("node-1").cache[Int, Int]("cache").clearLocally(1)
 
         visor.cache("-compact -c=cache")
     }

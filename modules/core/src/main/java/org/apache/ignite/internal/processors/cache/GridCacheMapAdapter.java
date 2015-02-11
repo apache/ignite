@@ -152,7 +152,7 @@ public class GridCacheMapAdapter<K, V> implements ConcurrentMap<K, V> {
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        prj.clearAll();
+        prj.clearLocally();
     }
 
     /** {@inheritDoc} */

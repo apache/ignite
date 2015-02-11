@@ -19,15 +19,15 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.transactions.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -40,7 +40,7 @@ import java.util.concurrent.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests that transaction is invalidated in case of {@link IgniteTxHeuristicException}.
+ * Tests that transaction is invalidated in case of {@link org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException}.
  */
 public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** Index SPI throwing exception. */
@@ -67,7 +67,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.getTransactionsConfiguration().setTxSerializableEnabled(true);
+        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         return cfg;
     }
@@ -331,7 +331,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
             fail("Transaction should fail.");
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             log.info("Expected exception: " + e);
         }
 
@@ -349,7 +349,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
         info("Check key: " + key);
 
         for (int i = 0; i < gridCount(); i++) {
-            IgniteKernal grid = (IgniteKernal) grid(i);
+            IgniteKernal grid = (IgniteKernal)grid(i);
 
             GridCacheAdapter cache = grid.internalCache(null);
 
@@ -412,7 +412,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
                 return null;
             }
-        }, IgniteTxRollbackException.class, null);
+        }, IgniteTxRollbackCheckedException.class, null);
 
         checkValue(key, putBefore);
     }
@@ -500,7 +500,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
                 return null;
             }
-        }, IgniteTxRollbackException.class, null);
+        }, IgniteTxRollbackCheckedException.class, null);
 
         for (Integer key : m.keySet())
             checkValue(key, putBefore);
@@ -534,7 +534,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
                 return null;
             }
-        }, IgniteTxRollbackException.class, null);
+        }, IgniteTxRollbackCheckedException.class, null);
 
         checkValue(key, putBefore);
     }

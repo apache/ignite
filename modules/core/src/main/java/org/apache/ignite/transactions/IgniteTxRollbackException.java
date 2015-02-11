@@ -22,7 +22,7 @@ import org.apache.ignite.*;
 /**
  * Exception thrown whenever grid transactions has been automatically rolled back.
  */
-public class IgniteTxRollbackException extends IgniteCheckedException {
+public class IgniteTxRollbackException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 

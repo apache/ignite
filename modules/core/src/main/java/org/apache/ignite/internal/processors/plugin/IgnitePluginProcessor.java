@@ -21,8 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.plugin.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
 
 import java.lang.reflect.*;
@@ -63,14 +64,14 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
                         throw new IgniteException("Provider class is null.");
 
                     try {
-                        Constructor<? extends  PluginProvider> ctr =
+                        Constructor<? extends PluginProvider> ctr =
                             pluginCfg.providerClass().getConstructor(PluginContext.class);
 
                         provider = ctr.newInstance(pluginCtx);
                     }
                     catch (NoSuchMethodException ignore) {
                         try {
-                            Constructor<? extends  PluginProvider> ctr =
+                            Constructor<? extends PluginProvider> ctr =
                                 pluginCfg.providerClass().getConstructor(pluginCfg.getClass());
 
                             provider = ctr.newInstance(pluginCfg);
@@ -132,8 +133,9 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
      * @param name Plugin name.
      * @return Plugin provider.
      */
-    @Nullable public PluginProvider pluginProvider(String name) {
-        return plugins.get(name);
+    @SuppressWarnings("unchecked")
+    @Nullable public <T extends PluginProvider> T pluginProvider(String name) {
+        return (T)plugins.get(name);
     }
 
     /**
@@ -147,8 +149,9 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
      * @param provider Plugin context.
      * @return Plugin context.
      */
-    public PluginContext pluginContextForProvider(PluginProvider provider) {
-        return pluginCtxMap.get(provider);
+    @SuppressWarnings("unchecked")
+    public <T extends PluginContext> T pluginContextForProvider(PluginProvider provider) {
+        return (T)pluginCtxMap.get(provider);
     }
 
     /**
@@ -158,7 +161,9 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
      */
     public <T> T createComponent(Class<T> cls) {
         for (PluginProvider plugin : plugins.values()) {
-            T comp = (T)plugin.createComponent(cls);
+            PluginContext ctx = pluginContextForProvider(plugin);
+
+            T comp = (T)plugin.createComponent(ctx, cls);
 
             if (comp != null)
                 return comp;
@@ -167,10 +172,49 @@ public class IgnitePluginProcessor extends GridProcessorAdapter {
         return null;
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return DiscoveryDataExchangeType.PLUGIN;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Object collectDiscoveryData(UUID nodeId) {
+        Map<String, Object> discData = null;
+
+        for (Map.Entry<String, PluginProvider> e : plugins.entrySet()) {
+            Object data = e.getValue().provideDiscoveryData(nodeId);
+
+            if (data != null) {
+                if (discData == null)
+                    discData = new HashMap<>();
+
+                discData.put(e.getKey(), data);
+            }
+        }
+
+        return discData;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDiscoveryDataReceived(Object data) {
+        Map<String, Object> discData = (Map<String, Object>)data;
+
+        if (discData != null) {
+            for (Map.Entry<String, Object> e : discData.entrySet()) {
+                PluginProvider provider = plugins.get(e.getKey());
+
+                if (provider != null)
+                    provider.receiveDiscoveryData(e.getValue());
+                else
+                    U.warn(log, "Received discovery data for unknown plugin: " + e.getKey());
+            }
+        }
+    }
+
     /**
      *
      */
-    private static class ExtensionRegistry implements IgniteExtensionRegistry {
+    private static class ExtensionRegistry implements org.apache.ignite.plugin.ExtensionRegistry {
         /** */
         private final Map<Class<?>, List<Object>> extensionsCollector = new HashMap<>();
 

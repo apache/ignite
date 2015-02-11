@@ -18,9 +18,7 @@
 package org.apache.ignite.transactions;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
-
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -55,7 +53,7 @@ import java.util.*;
  *  Read access with this level happens the same way as with {@link IgniteTxIsolation#REPEATABLE_READ} level.
  *  However, in {@link IgniteTxConcurrency#OPTIMISTIC} mode, if some transactions cannot be serially isolated
  *  from each other, then one winner will be picked and the other transactions in conflict will result in
- * {@link IgniteTxOptimisticException} being thrown.
+ * {@link org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException} being thrown.
  * </li>
  * </ul>
  * <p>
@@ -68,7 +66,7 @@ import java.util.*;
  *  all nodes reply {@code 'OK'} (i.e. {@code Phase 1} completes successfully), a one-way' {@code 'COMMIT'}
  *  message is sent without waiting for reply. If it is necessary to know whenever remote nodes have committed
  *  as well, synchronous commit or synchronous rollback should be enabled via
- *  {@link CacheConfiguration#setWriteSynchronizationMode}
+ *  {@link org.apache.ignite.configuration.CacheConfiguration#setWriteSynchronizationMode}
  *  or by setting proper flags on cache projection, such as {@link org.apache.ignite.internal.processors.cache.CacheFlag#SYNC_COMMIT}.
  *  <p>
  *  Note that in this mode, optimistic failures are only possible in conjunction with
@@ -89,7 +87,7 @@ import java.util.*;
  * </ul>
  * <p>
  * <h1 class="header">Cache Atomicity Mode</h1>
- * In addition to standard {@link org.apache.ignite.cache.CacheAtomicityMode#TRANSACTIONAL} behavior, GridGain also supports
+ * In addition to standard {@link org.apache.ignite.cache.CacheAtomicityMode#TRANSACTIONAL} behavior, Ignite also supports
  * a lighter {@link org.apache.ignite.cache.CacheAtomicityMode#ATOMIC} mode as well. In this mode distributed transactions
  * and distributed locking are not supported. Disabling transactions and locking allows to achieve much higher
  * performance and throughput ratios. It is recommended that {@link org.apache.ignite.cache.CacheAtomicityMode#ATOMIC} mode
@@ -98,7 +96,7 @@ import java.util.*;
  * <h1 class="header">Usage</h1>
  * You can use cache transactions as follows:
  * <pre name="code" class="java">
- * Cache&lt;String, Integer&gt; cache = GridGain.grid().cache();
+ * Cache&lt;String, Integer&gt; cache = Ignition.ignite().cache();
  *
  * try (GridCacheTx tx = cache.txStart()) {
  *     // Perform transactional operations.
@@ -190,7 +188,7 @@ public interface IgniteTx extends AutoCloseable, IgniteAsyncSupport {
 
     /**
      * Gets timeout value in milliseconds for this transaction. If transaction times
-     * out prior to it's completion, {@link IgniteTxTimeoutException} will be thrown.
+     * out prior to it's completion, {@link org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException} will be thrown.
      *
      * @return Transaction timeout value.
      */
@@ -226,25 +224,25 @@ public interface IgniteTx extends AutoCloseable, IgniteAsyncSupport {
     /**
      * Commits this transaction by initiating {@code two-phase-commit} process.
      *
-     * @throws IgniteCheckedException If commit failed.
+     * @throws IgniteException If commit failed.
      */
     @IgniteAsyncSupported
-    public void commit() throws IgniteCheckedException;
+    public void commit() throws IgniteException;
 
     /**
      * Ends the transaction. Transaction will be rolled back if it has not been committed.
      *
-     * @throws IgniteCheckedException If transaction could not be gracefully ended.
+     * @throws IgniteException If transaction could not be gracefully ended.
      */
-    @Override public void close() throws IgniteCheckedException;
+    @Override public void close() throws IgniteException;
 
     /**
      * Rolls back this transaction.
      *
-     * @throws IgniteCheckedException If rollback failed.
+     * @throws IgniteException If rollback failed.
      */
     @IgniteAsyncSupported
-    public void rollback() throws IgniteCheckedException;
+    public void rollback() throws IgniteException;
 
     /**
      * Removes metadata by name.

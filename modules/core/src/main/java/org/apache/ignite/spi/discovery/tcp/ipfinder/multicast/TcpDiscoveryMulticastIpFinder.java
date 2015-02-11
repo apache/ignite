@@ -18,14 +18,15 @@
 package org.apache.ignite.spi.discovery.tcp.ipfinder.multicast;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -76,10 +77,10 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     private static final byte[] MSG_ADDR_REQ_DATA = U.IGNITE_HEADER;
 
     /** */
-    private static final IgniteMarshaller marsh = new IgniteJdkMarshaller();
+    private static final Marshaller marsh = new JdkMarshaller();
 
     /** Grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Ignite instance . */
@@ -483,7 +484,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
             return rmtAddrs;
         }
-        catch (IgniteInterruptedException ignored) {
+        catch (IgniteInterruptedCheckedException ignored) {
             U.warn(log, "Got interrupted while sending address request.");
 
             Thread.currentThread().interrupt();

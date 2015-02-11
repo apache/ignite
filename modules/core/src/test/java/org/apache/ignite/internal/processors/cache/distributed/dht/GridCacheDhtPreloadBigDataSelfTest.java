@@ -28,11 +28,11 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
-import static org.apache.ignite.cache.CacheConfiguration.*;
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
 
 /**
  * Test large cache counts.
@@ -128,7 +128,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
 
             int cnt = 10000;
 
-            populate(grid(0).<Integer, byte[]>cache(null), cnt, KBSIZE);
+            populate(grid(0).<Integer, byte[]>jcache(null), cnt, KBSIZE);
 
             int gridCnt = 3;
 
@@ -165,11 +165,11 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
                 @IgniteInstanceResource
                 private Ignite ignite;
 
-                @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
+                @Override public void onLifecycleEvent(LifecycleEventType evt) {
                     if (evt == LifecycleEventType.AFTER_GRID_START) {
-                        GridCache<Integer, byte[]> c = ignite.cache(null);
+                        IgniteCache<Integer, byte[]> c = ignite.jcache(null);
 
-                        if (c.putxIfAbsent(-1, new byte[1])) {
+                        if (c.putIfAbsent(-1, new byte[1])) {
                             populate(c, cnt, KBSIZE);
 
                             info(">>> POPULATED GRID <<<");
@@ -208,7 +208,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
      * @param kbSize Size in KB.
      * @throws IgniteCheckedException If failed.
      */
-    private void populate(GridCache<Integer, byte[]> c, int cnt, int kbSize) throws IgniteCheckedException {
+    private void populate(IgniteCache<Integer, byte[]> c, int cnt, int kbSize) {
         for (int i = 0; i < cnt; i++)
             c.put(i, value(kbSize));
     }

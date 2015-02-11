@@ -20,26 +20,24 @@ package org.apache.ignite.marshaller;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.executor.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.affinity.*;
+import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.streamer.*;
+import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.internal.product.*;
+import org.apache.ignite.p2p.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.streamer.window.*;
-import org.apache.ignite.internal.executor.*;
-import org.apache.ignite.internal.processors.cache.affinity.*;
-import org.apache.ignite.internal.processors.cache.datastructures.*;
-import org.apache.ignite.internal.processors.service.*;
-import org.apache.ignite.p2p.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -49,7 +47,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Common test for marshallers.
@@ -59,7 +57,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     private static final String CACHE_NAME = "namedCache";
 
     /** */
-    private static IgniteMarshaller marsh;
+    private static Marshaller marsh;
 
     /** Closure job. */
     protected IgniteInClosure<String> c1 = new IgniteInClosure<String>() {
@@ -108,7 +106,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         namedCache.setAtomicityMode(TRANSACTIONAL);
         namedCache.setQueryIndexEnabled(true);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
         cfg.setStreamerConfiguration(streamerConfiguration());
         cfg.setCacheConfiguration(new CacheConfiguration(), namedCache);
 
@@ -144,7 +142,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /**
      * @return Grid marshaller.
      */
-    protected abstract IgniteMarshaller createMarshaller();
+    protected abstract Marshaller createMarshaller();
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -622,7 +620,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     public void testScheduler() throws Exception {
         IgniteScheduler scheduler = grid().scheduler();
 
-        IgniteInternalFuture<?> fut = scheduler.runLocal(new Runnable() {
+        IgniteFuture<?> fut = scheduler.runLocal(new Runnable() {
             @Override public void run() {
                 // No-op.
             }
@@ -657,7 +655,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         try (Ignite g1 = G.start(cfg)) {
             IgniteCompute compute = compute(grid().forNode(g1.cluster().localNode()));
 
-            compute.run(new Runnable() {
+            compute.run(new IgniteRunnable() {
                 @Override
                 public void run() {
                     // No-op.
@@ -698,8 +696,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         try (Ignite g1 = G.start(cfg)) {
             IgniteEvents evts = events(grid().forNode(g1.cluster().localNode()));
 
-            evts.localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent gridEvt) {
+            evts.localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event gridEvt) {
                     return true;
                 }
             }, EVTS_CACHE);
@@ -774,7 +772,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         IgniteConfiguration cfg = optimize(getConfiguration("g1"));
 
         try (Ignite g1 = G.start(cfg)) {
-            IgniteManaged services = grid().managed(grid().forNode(g1.cluster().localNode()));
+            IgniteServices services = grid().services(grid().forNode(g1.cluster().localNode()));
 
             services.deployNodeSingleton("test", new DummyService());
 
@@ -787,50 +785,20 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
             assert inBean.getObjectField() != null;
             assert outBean.getObjectField() != null;
 
-            assert inBean.getObjectField().getClass().equals(IgniteManagedImpl.class);
-            assert outBean.getObjectField().getClass().equals(IgniteManagedImpl.class);
+            assert inBean.getObjectField().getClass().equals(IgniteServicesImpl.class);
+            assert outBean.getObjectField().getClass().equals(IgniteServicesImpl.class);
 
             assert inBean != outBean;
             assert inBean.equals(outBean);
 
             ClusterGroup inPrj = services.clusterGroup();
-            ClusterGroup outPrj = ((IgniteManaged)outBean.getObjectField()).clusterGroup();
+            ClusterGroup outPrj = ((IgniteServices)outBean.getObjectField()).clusterGroup();
 
             assert inPrj.getClass().equals(outPrj.getClass());
             assert F.eqNotOrdered(inPrj.nodes(), outPrj.nodes());
 
             outBean.checkNullResources();
         }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDataStructures() throws Exception {
-        CacheDataStructures dataStructures = grid().cache(CACHE_NAME).dataStructures();
-
-        CacheAtomicLong atomicLong = dataStructures.atomicLong("test", 0, true);
-
-        assert atomicLong != null;
-
-        atomicLong.addAndGet(1);
-
-        GridMarshallerTestBean inBean = newTestBean(dataStructures);
-
-        byte[] buf = marshal(inBean);
-
-        GridMarshallerTestBean outBean = unmarshal(buf);
-
-        assert inBean.getObjectField() != null;
-        assert outBean.getObjectField() != null;
-
-        assert inBean.getObjectField().getClass().equals(GridCacheDataStructuresProxy.class);
-        assert outBean.getObjectField().getClass().equals(GridCacheDataStructuresProxy.class);
-
-        assert inBean != outBean;
-        assert inBean.equals(outBean);
-
-        outBean.checkNullResources();
     }
 
     /**
@@ -915,7 +883,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @param obj Object field to use.
      * @return New test bean.
      */
-    static GridMarshallerTestBean newTestBean(@Nullable Object obj) {
+    public static GridMarshallerTestBean newTestBean(@Nullable Object obj) {
         GridByteArrayList buf = new GridByteArrayList(1);
 
         buf.add((byte)321);

@@ -18,16 +18,17 @@
 package org.apache.ignite.internal.util.ipc.shmem;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.thread.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.resource.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.resources.*;
+import org.apache.ignite.thread.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -96,7 +97,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     private File tokDir;
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Local node ID. */
@@ -318,7 +319,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
             }
         } // while
 
-        throw new IgniteInterruptedException("Socket accept was interrupted.");
+        throw new IgniteInterruptedCheckedException("Socket accept was interrupted.");
     }
 
     /**
@@ -448,7 +449,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
             try {
                 U.join(gcWorker);
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 U.warn(log, "Interrupted when stopping GC worker.", e);
             }
             finally {
@@ -519,7 +520,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             if (log.isDebugEnabled())
                 log.debug("GC worker started.");
 

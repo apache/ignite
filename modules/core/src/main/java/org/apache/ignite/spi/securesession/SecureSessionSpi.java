@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.securesession;
 
-import org.apache.ignite.spi.*;
 import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -32,7 +32,7 @@ import java.util.*;
  * The default secure session SPI is {@link org.apache.ignite.spi.securesession.noop.NoopSecureSessionSpi}
  * which permits any request.
  * <p>
- * Gridgain provides the following {@code GridSecureSessionSpi} implementations:
+ * Ignite provides the following {@code GridSecureSessionSpi} implementations:
  * <ul>
  * <li>
  *     {@link org.apache.ignite.spi.securesession.noop.NoopSecureSessionSpi} - permits any request.
@@ -44,12 +44,12 @@ import java.util.*;
  * </ul>
  * <p>
  * <b>NOTE:</b> that multiple secure session SPIs may be started on the same grid node. In this case
- * GridGain will differentiate between them based on {@link #supported(GridSecuritySubjectType)}
+ * Ignite will differentiate between them based on {@link #supported(GridSecuritySubjectType)}
  * value. The first SPI which returns {@code true} for a given subject type will be used for
  * session validation.
  * <p>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
- * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when
+ * internal view on the subsystem and is used internally by Ignite kernal. In rare use cases when
  * access to a specific implementation of this SPI is required - an instance of this SPI can be obtained
  * via {@link org.apache.ignite.Ignite#configuration()} method to check its configuration properties or call other non-SPI
  * methods. Note again that calling methods from this interface on the obtained instance can lead
@@ -73,7 +73,7 @@ public interface SecureSessionSpi extends IgniteSpi {
      * @param tok Token to validate.
      * @param params Additional implementation-specific parameters.
      * @return {@code True} if session token is valid, {@code false} otherwise.
-     * @throws org.apache.ignite.spi.IgniteSpiException If validation resulted in system error. Note that
+     * @throws IgniteSpiException If validation resulted in system error. Note that
      *      bad credentials should not cause this exception.
      */
     public boolean validate(GridSecuritySubjectType subjType, UUID subjId, byte[] tok,

@@ -18,20 +18,20 @@
 package org.apache.ignite.events;
 
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * GGFS event.
  * <p>
  * Grid events are used for notification about what happens within the grid. Note that by
- * design GridGain keeps all events generated on the local node locally and it provides
+ * design Ignite keeps all events generated on the local node locally and it provides
  * APIs for performing a distributed queries across multiple nodes:
  * <ul>
  *      <li>
@@ -49,21 +49,21 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * </ul>
  * User can also wait for events using method {@link org.apache.ignite.IgniteEvents#waitForLocal(org.apache.ignite.lang.IgnitePredicate, int...)}.
  * <h1 class="header">Events and Performance</h1>
- * Note that by default all events in GridGain are enabled and therefore generated and stored
- * by whatever event storage SPI is configured. GridGain can and often does generate thousands events per seconds
+ * Note that by default all events in Ignite are enabled and therefore generated and stored
+ * by whatever event storage SPI is configured. Ignite can and often does generate thousands events per seconds
  * under the load and therefore it creates a significant additional load on the system. If these events are
  * not needed by the application this load is unnecessary and leads to significant performance degradation.
  * <p>
  * It is <b>highly recommended</b> to enable only those events that your application logic requires
- * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in GridGain configuration. Note that certain
- * events are required for GridGain's internal operations and such events will still be generated but not stored by
- * event storage SPI if they are disabled in GridGain configuration.
+ * by using {@link org.apache.ignite.configuration.IgniteConfiguration#getIncludeEventTypes()} method in Ignite configuration. Note that certain
+ * events are required for Ignite's internal operations and such events will still be generated but not stored by
+ * event storage SPI if they are disabled in Ignite configuration.
  *
- * @see IgniteEventType#EVT_GGFS_FILE_CREATED
- * @see IgniteEventType#EVT_GGFS_FILE_RENAMED
- * @see IgniteEventType#EVT_GGFS_FILE_DELETED
+ * @see EventType#EVT_GGFS_FILE_CREATED
+ * @see EventType#EVT_GGFS_FILE_RENAMED
+ * @see EventType#EVT_GGFS_FILE_DELETED
  */
-public class IgniteFsEvent extends IgniteEventAdapter {
+public class IgniteFsEvent extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -95,8 +95,8 @@ public class IgniteFsEvent extends IgniteEventAdapter {
 
     /**
      * Constructs an event instance for path modification event
-     * ({@link IgniteEventType#EVT_GGFS_FILE_RENAMED},
-     * {@link IgniteEventType#EVT_GGFS_DIR_RENAMED}).
+     * ({@link EventType#EVT_GGFS_FILE_RENAMED},
+     * {@link EventType#EVT_GGFS_DIR_RENAMED}).
      *
      * @param path File or directory path.
      * @param newPath New file or directory path.
@@ -111,8 +111,8 @@ public class IgniteFsEvent extends IgniteEventAdapter {
 
     /**
      * Constructs an event instance for close events:
-     * ({@link IgniteEventType#EVT_GGFS_FILE_CLOSED_READ},
-     * {@link IgniteEventType#EVT_GGFS_FILE_CLOSED_WRITE}).
+     * ({@link EventType#EVT_GGFS_FILE_CLOSED_READ},
+     * {@link EventType#EVT_GGFS_FILE_CLOSED_WRITE}).
      *
      * @param path File path.
      * @param node Node.
@@ -127,7 +127,7 @@ public class IgniteFsEvent extends IgniteEventAdapter {
 
     /**
      * Constructs an event instance for file metadata update events
-     * ({@link IgniteEventType#EVT_GGFS_META_UPDATED}).
+     * ({@link EventType#EVT_GGFS_META_UPDATED}).
      *
      * @param path File path.
      * @param node Node.
@@ -151,7 +151,7 @@ public class IgniteFsEvent extends IgniteEventAdapter {
 
     /**
      * New file or directory path for this event (used in
-     * {@link IgniteEventType#EVT_GGFS_FILE_RENAMED} event).
+     * {@link EventType#EVT_GGFS_FILE_RENAMED} event).
      *
      * @return New file or directory path or {@code null},
      *         if not relevant for this event.

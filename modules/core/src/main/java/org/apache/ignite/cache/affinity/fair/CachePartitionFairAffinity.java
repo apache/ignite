@@ -17,13 +17,12 @@
 
 package org.apache.ignite.cache.affinity.fair;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 
 import java.io.*;
 import java.util.*;
@@ -32,7 +31,7 @@ import java.util.*;
  * Fair affinity function which tries to ensure that all nodes get equal number of partitions with
  * minimum amount of reassignments between existing nodes.
  * <p>
- * Cache affinity can be configured for individual caches via {@link CacheConfiguration#getAffinity()} method.
+ * Cache affinity can be configured for individual caches via {@link org.apache.ignite.configuration.CacheConfiguration#getAffinity()} method.
  */
 @CacheCentralizedAffinityFunction
 public class CachePartitionFairAffinity implements CacheAffinityFunction {
@@ -391,9 +390,9 @@ public class CachePartitionFairAffinity implements CacheAffinityFunction {
      */
     private IgniteBiTuple<List<List<ClusterNode>>, Map<UUID, PartitionSet>> createCopy(
         CacheAffinityFunctionContext ctx, Iterable<ClusterNode> topSnapshot) {
-        IgniteDiscoveryEvent discoEvt = ctx.discoveryEvent();
+        DiscoveryEvent discoEvt = ctx.discoveryEvent();
 
-        UUID leftNodeId = discoEvt.type() == IgniteEventType.EVT_NODE_JOINED ? null : discoEvt.eventNode().id();
+        UUID leftNodeId = discoEvt.type() == EventType.EVT_NODE_JOINED ? null : discoEvt.eventNode().id();
 
         List<List<ClusterNode>> cp = new ArrayList<>(parts);
 

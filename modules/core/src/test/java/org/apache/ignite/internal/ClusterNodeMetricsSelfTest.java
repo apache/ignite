@@ -21,16 +21,16 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.messaging.*;
-import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Grid node metrics self test.
@@ -74,8 +74,8 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         // Let metrics update twice.
         final CountDownLatch latch = new CountDownLatch(2);
 
-        ignite.events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        ignite.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 assert evt.type() == EVT_NODE_METRICS_UPDATED;
 
                 latch.countDown();
@@ -130,8 +130,8 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         // Let metrics update twice.
         final CountDownLatch latch = new CountDownLatch(2);
 
-        ignite.events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        ignite.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 assert evt.type() == EVT_NODE_METRICS_UPDATED;
 
                 latch.countDown();

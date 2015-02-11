@@ -19,9 +19,9 @@ package org.apache.ignite.loadtests.mergesort;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 
 import java.util.*;
 
@@ -55,13 +55,13 @@ public class GridMergeSortLoadTask extends ComputeTaskSplitAdapter<int[], int[]>
         for (final int[] arr : splitArray(initArr)) {
             jobs.add(new ComputeJobAdapter() {
                 // Auto-inject job context.
-                @IgniteJobContextResource
+                @JobContextResource
                 private ComputeJobContext jobCtx;
 
                 // Task execution result future.
                 private ComputeTaskFuture<int[]> fut;
 
-                @Override public Object execute() throws IgniteCheckedException {
+                @Override public Object execute() {
                     if (arr.length == 1)
                         return arr;
 
@@ -77,8 +77,8 @@ public class GridMergeSortLoadTask extends ComputeTaskSplitAdapter<int[], int[]>
 
                         // Add a listener to the future, that will resume the
                         // parent task once the child one is completed.
-                        fut.listenAsync(new CI1<IgniteInternalFuture<int[]>>() {
-                            @Override public void apply(IgniteInternalFuture<int[]> fut) {
+                        fut.listenAsync(new CI1<IgniteFuture<int[]>>() {
+                            @Override public void apply(IgniteFuture<int[]> fut) {
                                 // CONTINUATION:
                                 // =============
                                 // Resume suspended job execution.

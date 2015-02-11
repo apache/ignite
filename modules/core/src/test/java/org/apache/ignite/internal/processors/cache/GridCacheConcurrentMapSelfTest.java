@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -225,13 +225,13 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
             }
         }, 10);
 
-        cache().get(rand.nextInt(cnt));
+        jcache().get(rand.nextInt(cnt));
 
         System.gc();
 
         Thread.sleep(1000);
 
-        cache().get(rand.nextInt(cnt));
+        jcache().get(rand.nextInt(cnt));
 
         assertEquals(0, local().map.iteratorMapSize());
     }
@@ -320,13 +320,13 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
             }
         }, 10);
 
-        cache().get(rand.nextInt(cnt));
+        jcache().get(rand.nextInt(cnt));
 
         System.gc();
 
         Thread.sleep(1000);
 
-        cache().get(rand.nextInt(cnt));
+        jcache().get(rand.nextInt(cnt));
 
         assertEquals(0, local().map.iteratorMapSize());
     }

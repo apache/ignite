@@ -22,13 +22,13 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.sql.*;
@@ -42,11 +42,11 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
     private static final long serialVersionUID = 0L;
 
     /** Marshaller. */
-    private static final IgniteMarshaller MARSHALLER = new IgniteJdkMarshaller();
+    private static final Marshaller MARSHALLER = new JdkMarshaller();
 
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable String cacheName) throws IgniteCheckedException {
+        @Nullable String cacheName) {
         Map<JdbcDriverMetadataJob, ClusterNode> map = new HashMap<>();
 
         for (ClusterNode n : subgrid)
@@ -60,14 +60,14 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public byte[] reduce(List<ComputeJobResult> results) {
         return F.first(results).getData();
     }
 
     /**
      * Job for JDBC adapter.
      */
-    private static class JdbcDriverMetadataJob extends ComputeJobAdapter implements IgniteOptimizedMarshallable {
+    private static class JdbcDriverMetadataJob extends ComputeJobAdapter implements OptimizedMarshallable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -83,7 +83,7 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
         private Ignite ignite;
 
         /** Logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /**
@@ -99,7 +99,7 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
         }
 
         /** {@inheritDoc} */
-        @Override public Object execute() throws IgniteCheckedException {
+        @Override public Object execute() {
             byte status;
             byte[] data;
 
@@ -151,7 +151,12 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
 
                 status = 1;
 
-                data = MARSHALLER.marshal(err);
+                try {
+                    data = MARSHALLER.marshal(err);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
             }
 
             byte[] packet = new byte[data.length + 1];

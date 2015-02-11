@@ -21,10 +21,11 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.compute.gridify.*;
-import org.apache.ignite.resources.*;
+import org.apache.ignite.internal.util.gridify.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.gridify.*;
+import org.apache.ignite.resources.*;
+
 import java.util.*;
 
 /**
@@ -52,7 +53,7 @@ public class GridifyDefaultTask extends ComputeTaskAdapter<GridifyArgument, Obje
     private Ignite ignite;
 
     /** Load balancer. */
-    @IgniteLoadBalancerResource
+    @LoadBalancerResource
     private ComputeLoadBalancer balancer;
 
     /**
@@ -79,7 +80,7 @@ public class GridifyDefaultTask extends ComputeTaskAdapter<GridifyArgument, Obje
     }
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, GridifyArgument arg) throws IgniteCheckedException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, GridifyArgument arg) {
         assert !subgrid.isEmpty() : "Subgrid should not be empty: " + subgrid;
 
         assert ignite != null : "Grid instance could not be injected";
@@ -98,7 +99,7 @@ public class GridifyDefaultTask extends ComputeTaskAdapter<GridifyArgument, Obje
     }
 
     /** {@inheritDoc} */
-    @Override public final Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public final Object reduce(List<ComputeJobResult> results) {
         assert results.size() == 1;
 
         ComputeJobResult res = results.get(0);

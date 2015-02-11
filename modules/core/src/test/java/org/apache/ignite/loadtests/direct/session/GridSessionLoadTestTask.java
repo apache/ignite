@@ -29,18 +29,18 @@ import java.util.*;
  */
 public class GridSessionLoadTestTask extends ComputeTaskAdapter<Integer, Boolean> {
     /** */
-    @IgniteTaskSessionResource
+    @TaskSessionResource
     private ComputeTaskSession taskSes;
 
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** */
     private Map<String, Integer> params;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) throws IgniteCheckedException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) {
         assert taskSes != null;
         assert arg != null;
         assert arg > 0;
@@ -85,7 +85,7 @@ public class GridSessionLoadTestTask extends ComputeTaskAdapter<Integer, Boolean
 
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
-    @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Boolean reduce(List<ComputeJobResult> results) {
         assert taskSes != null;
         assert results != null;
         assert params != null;
@@ -119,7 +119,7 @@ public class GridSessionLoadTestTask extends ComputeTaskAdapter<Integer, Boolean
                     Thread.sleep(100);
                 }
                 catch (InterruptedException e) {
-                    throw new IgniteCheckedException("Thread interrupted.", e);
+                    throw new IgniteException("Thread interrupted.", e);
                 }
             }
         }

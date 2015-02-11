@@ -24,20 +24,20 @@ import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Unit tests for dht entry.
@@ -100,7 +100,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"SizeReplaceableByIsEmpty"})
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            near(grid(i)).removeAll(F.<CacheEntry<Integer, String>>alwaysTrue());
+            near(grid(i)).removeAll();
 
             assertEquals("Near cache size is not zero for grid: " + i, 0, near(grid(i)).size());
             assertEquals("DHT cache size is not zero for grid: " + i, 0, dht(grid(i)).size());
@@ -121,7 +121,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @return Near cache.
      */
-    private CacheProjection<Integer, String> near(Ignite g) {
+    private GridCache<Integer, String> near(Ignite g) {
         return g.cache(null);
     }
 
@@ -151,8 +151,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         ClusterNode primary = t.get1();
         ClusterNode other = t.get2();
 
-        CacheProjection<Integer, String> near0 = near(grid(primary.id()));
-        CacheProjection<Integer, String> near1 = near(grid(other.id()));
+        GridCache<Integer, String> near0 = near(grid(primary.id()));
+        GridCache<Integer, String> near1 = near(grid(other.id()));
 
         assert near0 != near1;
 
@@ -178,7 +178,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         assert e0.readers().contains(other.id());
         assert e1 == null || e1.readers().isEmpty();
 
-        assert !near0.clear(key);
+        assert !near0.clearLocally(key);
 
         assertEquals(1, near0.size());
         assertEquals(1, dht0.size());
@@ -196,8 +196,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         ClusterNode primary = t.get1();
         ClusterNode other = t.get2();
 
-        CacheProjection<Integer, String> near0 = near(grid(primary.id()));
-        CacheProjection<Integer, String> near1 = near(grid(other.id()));
+        GridCache<Integer, String> near0 = near(grid(primary.id()));
+        GridCache<Integer, String> near1 = near(grid(other.id()));
 
         assert near0 != near1;
 
@@ -242,8 +242,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         ClusterNode primary = t.get1();
         ClusterNode other = t.get2();
 
-        CacheProjection<Integer, String> near0 = near(grid(primary.id()));
-        CacheProjection<Integer, String> near1 = near(grid(other.id()));
+        GridCache<Integer, String> near0 = near(grid(primary.id()));
+        GridCache<Integer, String> near1 = near(grid(other.id()));
 
         assert near0 != near1;
 

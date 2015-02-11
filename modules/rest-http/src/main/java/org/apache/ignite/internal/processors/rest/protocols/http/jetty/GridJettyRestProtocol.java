@@ -19,16 +19,16 @@ package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.rest.*;
+import org.apache.ignite.internal.processors.rest.protocols.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.*;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.*;
 import org.eclipse.jetty.util.log.*;
 import org.eclipse.jetty.util.thread.*;
 import org.eclipse.jetty.xml.*;
-import org.apache.ignite.internal.processors.rest.*;
-import org.apache.ignite.internal.processors.rest.protocols.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 import org.xml.sax.*;
 
@@ -103,7 +103,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("BusyWait")
     @Override public void start(GridRestProtocolHandler hnd) throws IgniteCheckedException {
-        assert ctx.config().getClientConnectionConfiguration() != null;
+        assert ctx.config().getConnectorConfiguration() != null;
 
         InetAddress locHost;
 
@@ -122,7 +122,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             }
         }, log);
 
-        String jettyPath = config().getRestJettyPath();
+        String jettyPath = config().getJettyPath();
 
         final URL cfgUrl;
 
@@ -133,7 +133,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 log.debug("Jetty configuration file is not provided, using defaults.");
         }
         else {
-            cfgUrl = U.resolveGridGainUrl(jettyPath);
+            cfgUrl = U.resolveIgniteUrl(jettyPath);
 
             if (cfgUrl == null)
                 throw new IgniteSpiException("Invalid Jetty configuration file: " + jettyPath);
@@ -154,7 +154,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
         int initPort = connector.getPort();
 
-        int lastPort = initPort + config().getRestPortRange() - 1;
+        int lastPort = initPort + config().getPortRange() - 1;
 
         for (port = initPort; port <= lastPort; port++) {
             connector.setPort(port);
@@ -389,17 +389,17 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
     /** {@inheritDoc} */
     @Override protected String getAddressPropertyName() {
-        return GridNodeAttributes.ATTR_REST_JETTY_ADDRS;
+        return IgniteNodeAttributes.ATTR_REST_JETTY_ADDRS;
     }
 
     /** {@inheritDoc} */
     @Override protected String getHostNamePropertyName() {
-        return GridNodeAttributes.ATTR_REST_JETTY_HOST_NAMES;
+        return IgniteNodeAttributes.ATTR_REST_JETTY_HOST_NAMES;
     }
 
     /** {@inheritDoc} */
     @Override protected String getPortPropertyName() {
-        return GridNodeAttributes.ATTR_REST_JETTY_PORT;
+        return IgniteNodeAttributes.ATTR_REST_JETTY_PORT;
     }
 
     /** {@inheritDoc} */

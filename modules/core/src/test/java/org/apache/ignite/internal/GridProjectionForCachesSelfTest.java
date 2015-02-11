@@ -21,11 +21,11 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -34,7 +34,7 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests for {@link org.apache.ignite.cluster.ClusterGroup#forCache(String, String...)} method.
+ * Tests for {@link org.apache.ignite.cluster.ClusterGroup#forCacheNodes(String)} method.
  */
 public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     /** */
@@ -53,11 +53,12 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(discoverySpi());
 
         if (gridName.equals(getTestGridName(0)))
-            cfg.setCacheConfiguration(cacheConfiguration(null));
+            cfg.setCacheConfiguration(cacheConfiguration(null, CacheDistributionMode.PARTITIONED_ONLY));
         else if (gridName.equals(getTestGridName(1)))
-            cfg.setCacheConfiguration(cacheConfiguration(CACHE_NAME));
+            cfg.setCacheConfiguration(cacheConfiguration(CACHE_NAME, CacheDistributionMode.NEAR_ONLY));
         else if (gridName.equals(getTestGridName(2)) || gridName.equals(getTestGridName(3)))
-            cfg.setCacheConfiguration(cacheConfiguration(null), cacheConfiguration(CACHE_NAME));
+            cfg.setCacheConfiguration(cacheConfiguration(null, CacheDistributionMode.CLIENT_ONLY),
+                cacheConfiguration(CACHE_NAME, CacheDistributionMode.NEAR_PARTITIONED));
         else
             cfg.setCacheConfiguration();
 
@@ -79,11 +80,14 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @param cacheName Cache name.
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfiguration(@Nullable String cacheName) {
+    private CacheConfiguration cacheConfiguration(@Nullable String cacheName, CacheDistributionMode distributionMode) {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setName(cacheName);
         cfg.setCacheMode(PARTITIONED);
+
+        cfg.setDistributionMode(distributionMode);
+
         cfg.setBackups(1);
 
         return cfg;
@@ -109,7 +113,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForDefaultCache() throws Exception {
-        ClusterGroup prj = ignite.cluster().forCache(null);
+        ClusterGroup prj = ignite.cluster().forCacheNodes(null);
 
         assert prj != null;
         assert prj.nodes().size() == 3;
@@ -124,7 +128,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForNamedCache() throws Exception {
-        ClusterGroup prj = ignite.cluster().forCache(CACHE_NAME);
+        ClusterGroup prj = ignite.cluster().forCacheNodes(CACHE_NAME);
 
         assert prj != null;
         assert prj.nodes().size() == 3;
@@ -138,23 +142,30 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testProjectionForBothCaches() throws Exception {
-        ClusterGroup prj = ignite.cluster().forCache(null, CACHE_NAME);
+    public void testProjectionForDataCaches() throws Exception {
+        ClusterGroup prj = ignite.cluster().forDataNodes(null);
 
         assert prj != null;
-        assert prj.nodes().size() == 2;
-        assert !prj.nodes().contains(grid(0).localNode());
-        assert !prj.nodes().contains(grid(1).localNode());
-        assert prj.nodes().contains(grid(2).localNode());
-        assert prj.nodes().contains(grid(3).localNode());
-        assert !prj.nodes().contains(grid(4).localNode());
+        assert prj.nodes().size() == 1;
+        assert prj.nodes().contains(grid(0).localNode());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testProjectionForClientCaches() throws Exception {
+        ClusterGroup prj = ignite.cluster().forClientNodes(CACHE_NAME);
+
+        assert prj != null;
+        assert prj.nodes().size() == 1;
+        assert prj.nodes().contains(grid(1).localNode());
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testProjectionForWrongCacheName() throws Exception {
-        ClusterGroup prj = ignite.cluster().forCache("wrong");
+        ClusterGroup prj = ignite.cluster().forCacheNodes("wrong");
 
         assert prj != null;
         assert prj.nodes().isEmpty();

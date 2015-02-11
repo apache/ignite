@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.clock;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Message containing time delta map for all nodes.
  */
-public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAdapter {
+public class GridClockDeltaSnapshotMessage extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -73,7 +73,7 @@ public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAd
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridClockDeltaSnapshotMessage _clone = new GridClockDeltaSnapshotMessage();
 
         clone0(_clone);
@@ -82,69 +82,37 @@ public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAd
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridClockDeltaSnapshotMessage _clone = (GridClockDeltaSnapshotMessage)_msg;
 
-        _clone.snapVer = snapVer;
+        _clone.snapVer = snapVer != null ? (GridClockDeltaVersion)snapVer.clone() : null;
         _clone.deltas = deltas;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (deltas != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(deltas.size()))
-                            return false;
-
-                        commState.it = deltas.entrySet().iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        Map.Entry<UUID, Long> e = (Map.Entry<UUID, Long>)commState.cur;
-
-                        if (!commState.keyDone) {
-                            if (!commState.putUuid(e.getKey()))
-                                return false;
-
-                            commState.keyDone = true;
-                        }
-
-                        if (!commState.putLong(e.getValue()))
-                            return false;
-
-                        commState.keyDone = false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
-
-            case 1:
-                if (!commState.putClockDeltaVersion(snapVer))
+                if (!writer.writeMap("deltas", deltas, UUID.class, long.class))
                     return false;
 
-                commState.idx++;
+                state++;
+
+            case 1:
+                if (!writer.writeMessage("snapVer", snapVer))
+                    return false;
+
+                state++;
 
         }
 
@@ -154,60 +122,24 @@ public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAd
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                deltas = reader.readMap("deltas", UUID.class, long.class, false);
 
-                    commState.readSize = commState.getInt();
-                }
-
-                if (commState.readSize >= 0) {
-                    if (deltas == null)
-                        deltas = U.newHashMap(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        if (!commState.keyDone) {
-                            UUID _val = commState.getUuid();
-
-                            if (_val == UUID_NOT_READ)
-                                return false;
-
-                            commState.cur = _val;
-                            commState.keyDone = true;
-                        }
-
-                        if (buf.remaining() < 8)
-                            return false;
-
-                        long _val = commState.getLong();
-
-                        deltas.put((UUID)commState.cur, _val);
-
-                        commState.keyDone = false;
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-                commState.cur = null;
-
-                commState.idx++;
-
-            case 1:
-                GridClockDeltaVersion snapVer0 = commState.getClockDeltaVersion();
-
-                if (snapVer0 == CLOCK_DELTA_VER_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                snapVer = snapVer0;
+                state++;
 
-                commState.idx++;
+            case 1:
+                snapVer = reader.readMessage("snapVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
 
         }
 
@@ -216,7 +148,7 @@ public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAd
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 59;
+        return 60;
     }
 
     /** {@inheritDoc} */

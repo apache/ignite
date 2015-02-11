@@ -23,18 +23,18 @@ import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  */
@@ -92,15 +92,15 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
 
         Thread.sleep(5000);
 
-        Collection<IgniteEvent> objEvts =
-            g1.events().localQuery(F.<IgniteEvent>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_UNLOADED);
+        Collection<Event> objEvts =
+            g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_PRELOAD_OBJECT_UNLOADED);
 
         checkObjectUnloadEvents(objEvts, g1, g2Keys);
 
-        Collection <IgniteEvent> partEvts =
-            g1.events().localQuery(F.<IgniteEvent>alwaysTrue(), EVT_CACHE_PRELOAD_PART_UNLOADED);
+        Collection <Event> partEvts =
+            g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_PRELOAD_PART_UNLOADED);
 
-        checkPartitionUnloadEvents(partEvts, g1, dht(g2.cache(null)).topology().localPartitions());
+        checkPartitionUnloadEvents(partEvts, g1, dht(g2.jcache(null)).topology().localPartitions());
     }
 
     /**
@@ -108,11 +108,11 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
      * @param g Grid.
      * @param keys Keys.
      */
-    private void checkObjectUnloadEvents(Collection<IgniteEvent> evts, Ignite g, Collection<?> keys) {
+    private void checkObjectUnloadEvents(Collection<Event> evts, Ignite g, Collection<?> keys) {
         assertEquals(keys.size(), evts.size());
 
-        for (IgniteEvent evt : evts) {
-            IgniteCacheEvent cacheEvt = ((IgniteCacheEvent)evt);
+        for (Event evt : evts) {
+            CacheEvent cacheEvt = ((CacheEvent)evt);
 
             assertEquals(EVT_CACHE_PRELOAD_OBJECT_UNLOADED, cacheEvt.type());
             assertEquals(g.cache(null).name(), cacheEvt.cacheName());
@@ -127,12 +127,12 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
      * @param g Grid.
      * @param parts Parts.
      */
-    private void checkPartitionUnloadEvents(Collection<IgniteEvent> evts, Ignite g,
+    private void checkPartitionUnloadEvents(Collection<Event> evts, Ignite g,
         Collection<GridDhtLocalPartition<Object, Object>> parts) {
         assertEquals(parts.size(), evts.size());
 
-        for (IgniteEvent evt : evts) {
-            IgniteCachePreloadingEvent unloadEvt = (IgniteCachePreloadingEvent)evt;
+        for (Event evt : evts) {
+            CachePreloadingEvent unloadEvt = (CachePreloadingEvent)evt;
 
             final int part = unloadEvt.partition();
 

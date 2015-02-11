@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.jta.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.testframework.*;
@@ -67,7 +66,8 @@ public class GridCacheJtaConfigurationValidationSelfTest extends GridCommonAbstr
      */
     @SuppressWarnings("PublicInnerClass")
     public static class TestTxLookup implements CacheTmLookup {
-        @Nullable @Override public TransactionManager getTm() throws IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Nullable @Override public TransactionManager getTm() {
             return null;
         }
     }

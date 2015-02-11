@@ -21,6 +21,7 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.testframework.junits.common.*;
+
 import java.util.*;
 
 /**
@@ -30,11 +31,11 @@ public class IgniteExternalizableAbstractTest extends GridCommonAbstractTest {
     /**
      * @return Marshallers.
      */
-    protected List<IgniteMarshaller> getMarshallers() {
-        List<IgniteMarshaller> marshallers = new ArrayList<>();
+    protected List<Marshaller> getMarshallers() {
+        List<Marshaller> marshallers = new ArrayList<>();
 
-        marshallers.add(new IgniteJdkMarshaller());
-        marshallers.add(new IgniteOptimizedMarshaller());
+        marshallers.add(new JdkMarshaller());
+        marshallers.add(new OptimizedMarshaller());
 
         return marshallers;
     }

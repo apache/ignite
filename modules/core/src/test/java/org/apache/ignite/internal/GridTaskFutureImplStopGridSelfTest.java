@@ -19,8 +19,9 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -66,9 +67,9 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
         try {
             final ComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridStopTestTask.class.getName(), null);
 
-            fut.listenAsync(new CI1<IgniteInternalFuture>() {
+            fut.listenAsync(new CI1<IgniteFuture>() {
                 @SuppressWarnings({"NakedNotify"})
-                @Override public void apply(IgniteInternalFuture gridFut) {
+                @Override public void apply(IgniteFuture gridFut) {
                     synchronized (mux) {
                         mux.notifyAll();
                     }
@@ -144,11 +145,11 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass", "UnusedDeclaration"})
     public static class GridStopTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
 
@@ -161,7 +162,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) {
             if (log.isInfoEnabled())
                 log.info("Aggregating job [job=" + this + ", results=" + results + ']');
 
@@ -179,7 +180,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     public static class GridStopTestJob extends ComputeJobAdapter {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */

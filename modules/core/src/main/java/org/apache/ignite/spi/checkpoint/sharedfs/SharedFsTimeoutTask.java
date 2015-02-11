@@ -18,10 +18,11 @@
 package org.apache.ignite.spi.checkpoint.sharedfs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.checkpoint.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+
 import java.io.*;
 import java.util.*;
 
@@ -42,7 +43,7 @@ class SharedFsTimeoutTask extends IgniteSpiThread {
     private IgniteLogger log;
 
     /** Messages marshaller. */
-    private IgniteMarshaller marshaller;
+    private Marshaller marshaller;
 
     /** */
     private final Object mux = new Object();
@@ -57,7 +58,7 @@ class SharedFsTimeoutTask extends IgniteSpiThread {
      * @param marshaller Messages marshaller.
      * @param log Messages logger.
      */
-    SharedFsTimeoutTask(String gridName, IgniteMarshaller marshaller, IgniteLogger log) {
+    SharedFsTimeoutTask(String gridName, Marshaller marshaller, IgniteLogger log) {
         super(gridName, "grid-sharedfs-timeout-worker", log);
 
         assert marshaller != null;

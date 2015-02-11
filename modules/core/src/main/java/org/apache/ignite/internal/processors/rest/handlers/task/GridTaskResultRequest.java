@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.rest.handlers.task;
 
 import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  * Task result request.
  */
-public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
+public class GridTaskResultRequest extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -100,7 +100,7 @@ public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridTaskResultRequest _clone = new GridTaskResultRequest();
 
         clone0(_clone);
@@ -109,7 +109,7 @@ public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridTaskResultRequest _clone = (GridTaskResultRequest)_msg;
 
         _clone.taskId = taskId;
@@ -120,27 +120,27 @@ public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putGridUuid(taskId))
+                if (!writer.writeIgniteUuid("taskId", taskId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putByteArray(topicBytes))
+                if (!writer.writeByteArray("topicBytes", topicBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -150,28 +150,24 @@ public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                IgniteUuid taskId0 = commState.getGridUuid();
+                taskId = reader.readIgniteUuid("taskId");
 
-                if (taskId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                taskId = taskId0;
-
-                commState.idx++;
+                state++;
 
             case 1:
-                byte[] topicBytes0 = commState.getByteArray();
+                topicBytes = reader.readByteArray("topicBytes");
 
-                if (topicBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                topicBytes = topicBytes0;
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -180,6 +176,6 @@ public class GridTaskResultRequest extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 73;
+        return 76;
     }
 }

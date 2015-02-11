@@ -18,17 +18,17 @@
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.thread.*;
 import org.apache.ignite.internal.processors.hadoop.message.*;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -141,7 +141,7 @@ public class GridHadoopExternalCommunication {
     private GridHadoopProcessDescriptor locProcDesc;
 
     /** Marshaller. */
-    private IgniteMarshaller marsh;
+    private Marshaller marsh;
 
     /** Message notification executor service. */
     private ExecutorService execSvc;
@@ -230,7 +230,7 @@ public class GridHadoopExternalCommunication {
     public GridHadoopExternalCommunication(
         UUID parentNodeId,
         UUID procId,
-        IgniteMarshaller marsh,
+        Marshaller marsh,
         IgniteLogger log,
         ExecutorService execSvc,
         String gridName

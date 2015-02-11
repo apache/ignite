@@ -20,11 +20,11 @@ package org.apache.ignite.session;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.spi.collision.fifoqueue.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -67,21 +67,21 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
     @ComputeTaskSessionFullSupport
     private static class GridSessionTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<ComputeJobAdapter> split(int gridSize, Object arg) {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             for (int i = 0; i < gridSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
                     /** */
-                    @IgniteTaskSessionResource
+                    @TaskSessionResource
                     private ComputeTaskSession taskSes;
 
                     /** */
-                    @IgniteJobContextResource
+                    @JobContextResource
                     private ComputeJobContext jobCtx;
 
                     /** */
-                    @IgniteLoggerResource
+                    @LoggerResource
                     private IgniteLogger log;
 
                     /** {@inheritDoc} */
@@ -105,7 +105,7 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             // Nothing to reduce.
             return null;
         }
@@ -116,7 +116,7 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
      */
     private static class GridSessionCollisionSpi extends FifoQueueCollisionSpi {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
@@ -132,7 +132,7 @@ public class GridSessionCollisionSpiSelfTest extends GridCommonAbstractTest {
                     if (log.isInfoEnabled())
                         log.info("Set session attribute for job: " + jobId);
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     log.error("Failed to set session attribute: " + job, e);
                 }
 

@@ -121,7 +121,7 @@ import java.util.*;
  * of which may hinder performance. In such cases it may make sense to disable task
  * result caching by attaching {@link ComputeTaskNoResultCache @GridComputeTaskNoResultCache} annotation to task class, and
  * processing all results as they come in {@link #result(ComputeJobResult, List)} method.
- * When GridGain sees this annotation it will disable tracking of job results and
+ * When Ignite sees this annotation it will disable tracking of job results and
  * list of all job results passed into {@link #result(ComputeJobResult, List)} or
  * {@link #reduce(List)} methods will always be empty. Note that list of
  * job siblings on {@link ComputeTaskSession} will also be empty to prevent number
@@ -132,11 +132,11 @@ import java.util.*;
  * ignite resources. Both, field and method based injection are supported.
  * The following ignite resources can be injected:
  * <ul>
- * <li>{@link org.apache.ignite.resources.IgniteTaskSessionResource}</li>
+ * <li>{@link org.apache.ignite.resources.TaskSessionResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteInstanceResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteLoggerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteSpringApplicationContextResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteSpringResource}</li>
+ * <li>{@link org.apache.ignite.resources.LoggerResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringApplicationContextResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  * <p>
@@ -152,7 +152,7 @@ import java.util.*;
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskAdapter&lt;String, String&gt; {
  *     // Inject load balancer.
- *     &#64;IgniteLoadBalancerResource
+ *     &#64;LoadBalancerResource
  *     ComputeLoadBalancer balancer;
  *
  *     // Map jobs to grid nodes.
@@ -242,10 +242,10 @@ public interface ComputeTask<T, R> extends Serializable {
      *      over time should result into all nodes being used equally.
      * @return Map of grid jobs assigned to subgrid node. Unless {@link ComputeTaskContinuousMapper} is
      *      injected into task, if {@code null} or empty map is returned, exception will be thrown.
-     * @throws IgniteCheckedException If mapping could not complete successfully. This exception will be
+     * @throws IgniteException If mapping could not complete successfully. This exception will be
      *      thrown out of {@link ComputeTaskFuture#get()} method.
      */
-    @Nullable public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable T arg) throws IgniteCheckedException;
+    @Nullable public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable T arg) throws IgniteException;
 
     /**
      * Asynchronous callback invoked every time a result from remote execution is
@@ -259,10 +259,10 @@ public interface ComputeTask<T, R> extends Serializable {
      *      {@link ComputeTaskNoResultCache} annotation, then this list will be empty.
      * @return Result policy that dictates how to process further upcoming
      *       job results.
-     * @throws IgniteCheckedException If handling a job result caused an error. This exception will
+     * @throws IgniteException If handling a job result caused an error. This exception will
      *      be thrown out of {@link ComputeTaskFuture#get()} method.
      */
-    public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException;
+    public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException;
 
     /**
      * Reduces (or aggregates) results received so far into one compound result to be returned to
@@ -275,8 +275,8 @@ public interface ComputeTask<T, R> extends Serializable {
      * @param results Received results of broadcasted remote executions. Note that if task class has
      *      {@link ComputeTaskNoResultCache} annotation, then this list will be empty.
      * @return Grid job result constructed from results of remote executions.
-     * @throws IgniteCheckedException If reduction or results caused an error. This exception will
+     * @throws IgniteException If reduction or results caused an error. This exception will
      *      be thrown out of {@link ComputeTaskFuture#get()} method.
      */
-    @Nullable public R reduce(List<ComputeJobResult> results) throws IgniteCheckedException;
+    @Nullable public R reduce(List<ComputeJobResult> results) throws IgniteException;
 }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import org.apache.ignite.portables.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
@@ -116,30 +115,6 @@ public class GridClientTopologyRequest extends GridClientAbstractMessage {
     @Override public int hashCode() {
         return 31 * (includeMetrics ? 1 : 0) +
             (includeAttrs ? 1 : 0);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writePortable(PortableWriter writer) throws PortableException {
-        super.writePortable(writer);
-
-        PortableRawWriter raw = writer.rawWriter();
-
-        raw.writeUuid(nodeId);
-        raw.writeString(nodeIp);
-        raw.writeBoolean(includeMetrics);
-        raw.writeBoolean(includeAttrs);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readPortable(PortableReader reader) throws PortableException {
-        super.readPortable(reader);
-
-        PortableRawReader raw = reader.rawReader();
-
-        nodeId = raw.readUuid();
-        nodeIp = raw.readString();
-        includeMetrics = raw.readBoolean();
-        includeAttrs = raw.readBoolean();
     }
 
     /** {@inheritDoc} */

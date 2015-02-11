@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Affinity range.
  */
-public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapter implements Externalizable {
+public class GridGgfsFileAffinityRange extends MessageAdapter implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -264,7 +264,7 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridGgfsFileAffinityRange _clone = new GridGgfsFileAffinityRange();
 
         clone0(_clone);
@@ -273,7 +273,7 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridGgfsFileAffinityRange _clone = (GridGgfsFileAffinityRange)_msg;
 
         _clone.affKey = affKey;
@@ -286,45 +286,45 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putGridUuid(affKey))
+                if (!writer.writeIgniteUuid("affKey", affKey))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putBoolean(done))
+                if (!writer.writeBoolean("done", done))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putLong(endOff))
+                if (!writer.writeLong("endOff", endOff))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                if (!commState.putLong(startOff))
+                if (!writer.writeLong("startOff", startOff))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putInt(status))
+                if (!writer.writeInt("status", status))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -334,50 +334,48 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
     /** {@inheritDoc} */
     @SuppressWarnings("fallthrough")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                IgniteUuid affKey0 = commState.getGridUuid();
+                affKey = reader.readIgniteUuid("affKey");
 
-                if (affKey0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                affKey = affKey0;
-
-                commState.idx++;
+                state++;
 
             case 1:
-                if (buf.remaining() < 1)
+                done = reader.readBoolean("done");
+
+                if (!reader.isLastRead())
                     return false;
 
-                done = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 2:
-                if (buf.remaining() < 8)
+                endOff = reader.readLong("endOff");
+
+                if (!reader.isLastRead())
                     return false;
 
-                endOff = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 3:
-                if (buf.remaining() < 8)
+                startOff = reader.readLong("startOff");
+
+                if (!reader.isLastRead())
                     return false;
 
-                startOff = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 4:
-                if (buf.remaining() < 4)
+                status = reader.readInt("status");
+
+                if (!reader.isLastRead())
                     return false;
 
-                status = commState.getInt();
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -386,7 +384,7 @@ public class GridGgfsFileAffinityRange extends GridTcpCommunicationMessageAdapte
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 69;
+        return 68;
     }
 
     /** {@inheritDoc} */

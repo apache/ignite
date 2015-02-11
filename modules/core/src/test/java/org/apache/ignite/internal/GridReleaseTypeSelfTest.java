@@ -57,9 +57,9 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
                 super.setNodeAttributes(attrs, ver);
 
                 if (idx % 2 == 0)
-                    attrs.put(GridNodeAttributes.ATTR_BUILD_VER, firstNodeVer);
+                    attrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, firstNodeVer);
                 else
-                    attrs.put(GridNodeAttributes.ATTR_BUILD_VER, secondNodeVer);
+                    attrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, secondNodeVer);
             }
         };
 

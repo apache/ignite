@@ -18,20 +18,20 @@
 package org.apache.ignite.internal.processors.cache.local.atomic;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
@@ -467,8 +467,19 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public void removeAll(IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
-        removeAll(keySet(filter));
+    @Override public void removeAll() throws IgniteCheckedException {
+        removeAll(keySet());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> removeAllAsync() {
+        return ctx.closures().callLocalSafe(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                removeAll();
+
+                return null;
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -663,7 +674,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public <T> EntryProcessorResult<T> invoke(K key,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) throws IgniteCheckedException {
-        return invokeAsync(key, entryProcessor, args).get();
+        EntryProcessorResult<T> res = invokeAsync(key, entryProcessor, args).get();
+
+        return res != null ? res : new CacheInvokeResult<>((T)null);
     }
 
     /** {@inheritDoc} */
@@ -1125,7 +1138,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             CU.<K, V>empty(),
                             null);
 
-                        CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(entry.key(), old);
+                        CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(ctx, entry.key(), old);
 
                         V updated;
                         CacheInvokeResult invokeRes = null;

@@ -19,15 +19,17 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.thread.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.thread.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -208,7 +210,7 @@ class GridDhtPartitionSupplyPool<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             while (!isCancelled()) {
                 DemandMessage<K, V> msg = poll(queue, this);
 
@@ -514,7 +516,7 @@ class GridDhtPartitionSupplyPool<K, V> {
 
                 return true;
             }
-            catch (ClusterTopologyException ignore) {
+            catch (ClusterTopologyCheckedException ignore) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to send partition supply message because node left grid: " + n.id());
 

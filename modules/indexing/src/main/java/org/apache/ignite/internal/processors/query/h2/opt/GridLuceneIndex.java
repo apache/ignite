@@ -19,7 +19,11 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.commons.codec.binary.*;
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.offheap.unsafe.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.spi.indexing.*;
@@ -29,10 +33,6 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.queryParser.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.*;
-import org.apache.ignite.internal.processors.query.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.offheap.unsafe.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -55,7 +55,7 @@ public class GridLuceneIndex implements Closeable {
     public static final String EXPIRATION_TIME_FIELD_NAME = "_gg_expires__";
 
     /** */
-    private final IgniteMarshaller marshaller;
+    private final Marshaller marshaller;
 
     /** */
     private final String spaceName;
@@ -91,7 +91,7 @@ public class GridLuceneIndex implements Closeable {
      * @param storeVal Store value in index.
      * @throws IgniteCheckedException If failed.
      */
-    public GridLuceneIndex(IgniteMarshaller marshaller, @Nullable GridUnsafeMemory mem,
+    public GridLuceneIndex(Marshaller marshaller, @Nullable GridUnsafeMemory mem,
         @Nullable String spaceName, GridQueryTypeDescriptor type, boolean storeVal) throws IgniteCheckedException {
         this.marshaller = marshaller;
         this.spaceName = spaceName;

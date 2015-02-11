@@ -15,10 +15,10 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
-    GridGain Spring configuration file to startup grid cache.
+    Ignite Spring configuration file to startup grid cache.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -31,7 +31,7 @@
 
         <property name="cacheConfiguration">
             <list>
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="cache"/>
 
                     <property name="swapEnabled" value="false"/>
@@ -41,7 +41,7 @@
             </list>
         </property>
 
-        <property name="restEnabled" value="false"/>
+        <property name="connectorConfiguration"><null/></property>
 
         <property name="includeEventTypes">
             <list/>

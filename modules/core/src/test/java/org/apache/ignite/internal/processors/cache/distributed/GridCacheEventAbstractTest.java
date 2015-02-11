@@ -19,22 +19,23 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -138,11 +139,11 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     private void clearCaches() throws IgniteCheckedException {
         for (int i = 0; i < gridCnt; i++) {
-            GridCache<String, Integer> cache = cache(i);
+            IgniteCache<String, Integer> cache = jcache(i);
 
             cache.removeAll();
 
-            assert cache.isEmpty();
+            assert cache.localSize() == 0;
         }
     }
 
@@ -222,7 +223,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testGetPutRemove() throws Exception {
         // TODO: GG-7578.
-        if (cache(0).configuration().getCacheMode() == CacheMode.REPLICATED)
+        if (jcache(0).getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.REPLICATED)
             return;
 
         runTest(
@@ -321,7 +322,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testGetPutRemoveAsync() throws Exception {
         // TODO: GG-7578.
-        if (cache(0).configuration().getCacheMode() == CacheMode.REPLICATED)
+        if (jcache(0).getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.REPLICATED)
             return;
 
         runTest(new TestCacheRunnable() {
@@ -678,7 +679,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     public void testFilteredPutRemovexTx1() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
-                assert cache.keySet().isEmpty() : "Key set is not empty: " + cache().keySet();
+                assert cache.keySet().isEmpty() : "Key set is not empty.";
 
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 
@@ -764,7 +765,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * Local event listener.
      */
-    private static class TestEventListener implements IgnitePredicate<IgniteEvent> {
+    private static class TestEventListener implements IgnitePredicate<Event> {
         /** Events count map. */
         private static ConcurrentMap<Integer, AtomicInteger> cntrs = new ConcurrentHashMap<>();
 
@@ -820,8 +821,8 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
-            assert evt instanceof IgniteCacheEvent;
+        @Override public boolean apply(Event evt) {
+            assert evt instanceof CacheEvent;
 
             if (!listen)
                 return true;
@@ -880,7 +881,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
             try {
                 cf.get(WAIT_TIMEOUT);
             }
-            catch (IgniteFutureTimeoutException e) {
+            catch (IgniteFutureTimeoutCheckedException e) {
                 throw new RuntimeException("Timed out waiting for events: " + cf, e);
             }
         }

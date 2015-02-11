@@ -21,9 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -48,7 +48,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
         cfg.setPeerClassLoadingLocalClassPathExclude(GridDeploymentResourceTestTask.class.getName(),
             GridDeploymentResourceTestJob.class.getName());
 
-        cfg.setDeploymentMode(IgniteDeploymentMode.ISOLATED);
+        cfg.setDeploymentMode(DeploymentMode.ISOLATED);
 
         return cfg;
     }
@@ -402,7 +402,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
         private Ignite ignite;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             boolean ignoreLocNode = false;
@@ -426,7 +426,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             return results.get(0).getData();
         }
     }
@@ -437,11 +437,11 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
     @SuppressWarnings({"PublicInnerClass"})
     public static final class GridDeploymentResourceTestJob extends ComputeJobAdapter {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Serializable execute() throws IgniteCheckedException {
+        @Override public Serializable execute() {
             if (log.isInfoEnabled())
                 log.info("Executing grid job: " + this);
 
@@ -469,7 +469,7 @@ public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstract
                 return null;
             }
             catch (IOException e) {
-                throw new IgniteCheckedException("Failed to execute job.", e);
+                throw new IgniteException("Failed to execute job.", e);
             }
         }
     }

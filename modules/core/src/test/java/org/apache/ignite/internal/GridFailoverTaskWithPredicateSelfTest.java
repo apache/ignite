@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
@@ -49,9 +48,8 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
 
     /** Predicate to exclude the second node from topology */
     private final IgnitePredicate<ClusterNode> p = new IgnitePredicate<ClusterNode>() {
-        @Override
-        public boolean apply(ClusterNode e) {
-            return !NODE2.equals(e.attribute(GridNodeAttributes.ATTR_GRID_NAME));
+        @Override public boolean apply(ClusterNode e) {
+            return !NODE2.equals(e.attribute(IgniteNodeAttributes.ATTR_GRID_NAME));
         }
     };
 
@@ -79,7 +77,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
             }
         });
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }
@@ -199,31 +197,30 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
     @ComputeTaskSessionFullSupport
     private static class JobFailTask implements ComputeTask<String, Object> {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) {
             ses.setAttribute("fail", true);
 
             return Collections.singletonMap(new ComputeJobAdapter(arg) {
                 /** {@inheritDoc} */
                 @SuppressWarnings({"RedundantTypeArguments"})
-                @Override
-                public Serializable execute() throws IgniteCheckedException {
+                @Override public Serializable execute() {
                     boolean fail;
 
                     try {
                         fail = ses.<String, Boolean>waitForAttribute("fail", 0);
                     }
                     catch (InterruptedException e) {
-                        throw new IgniteCheckedException("Got interrupted while waiting for attribute to be set.", e);
+                        throw new IgniteException("Got interrupted while waiting for attribute to be set.", e);
                     }
 
                     if (fail) {
                         ses.setAttribute("fail", false);
 
-                        throw new IgniteCheckedException("Job exception.");
+                        throw new IgniteException("Job exception.");
                     }
 
                     // This job does not return any result.
@@ -233,8 +230,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received)
-                throws IgniteCheckedException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) {
             if (res.getException() != null && !(res.getException() instanceof ComputeUserUndeclaredException))
                 return ComputeJobResultPolicy.FAILOVER;
 
@@ -242,7 +238,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             assert results.size() == 1;
 
             return results.get(0).getData();

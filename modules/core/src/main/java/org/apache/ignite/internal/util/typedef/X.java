@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.util.typedef;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -183,25 +183,6 @@ public final class X {
             v = System.getenv(name);
 
         return v;
-    }
-
-    /**
-     * Gets either system property or environment variable with given name.
-     *
-     * @param name Name of the system property or environment variable.
-     * @param dflt Default value.
-     * @return Value of the system property or environment variable.
-     *         Returns the default value if neither can be found for given name.
-     * @deprecated This method will be removed in the next major release.
-     *             Use {@link org.apache.ignite.IgniteSystemProperties#getString(String)} instead.
-     */
-    @Deprecated
-    @Nullable public static String getSystemOrEnv(String name, String dflt) {
-        assert name != null;
-
-        String v = getSystemOrEnv(name);
-
-        return F.isEmpty(v) ? dflt : v;
     }
 
     /**
@@ -484,42 +465,6 @@ public final class X {
                 if (hasSuppressed(th, cls))
                     return true;
             }
-        }
-
-        return false;
-    }
-
-    /**
-     * Checks if passed in {@code 'Throwable'} has given class in {@code 'cause'} hierarchy
-     * <b>excluding</b> that throwable itself.
-     * <p>
-     * Note that this method follows includes {@link Throwable#getSuppressed()}
-     * into check.
-     *
-     * @param t Throwable to check (if {@code null}, {@code false} is returned).
-     * @param cls Cause classes to check (if {@code null} or empty, {@code false} is returned).
-     * @return {@code True} if one of the causing exception is an instance of passed in classes,
-     *      {@code false} otherwise.
-     */
-    public static boolean hasCauseExcludeRoot(@Nullable Throwable t, @Nullable Class<? extends Throwable>... cls) {
-        if (t == null || F.isEmpty(cls))
-            return false;
-
-        assert cls != null;
-
-        for (Throwable th = t.getCause(); th != null; th = th.getCause()) {
-            for (Class<? extends Throwable> c : cls) {
-                if (c.isAssignableFrom(th.getClass()))
-                    return true;
-            }
-
-            if (th.getCause() == th)
-                break;
-        }
-
-        for (Throwable n : t.getSuppressed()) {
-            if (hasCause(n, cls))
-                return true;
         }
 
         return false;
@@ -821,11 +766,11 @@ public final class X {
      * @param futs Futures to wait for.
      * @throws IgniteCheckedException If any of the futures threw exception.
      */
-    public static void waitAll(@Nullable Iterable<IgniteInternalFuture<?>> futs) throws IgniteCheckedException {
+    public static void waitAll(@Nullable Iterable<IgniteFuture<?>> futs) throws IgniteCheckedException {
         if (F.isEmpty(futs))
             return;
 
-        for (IgniteInternalFuture fut : futs)
+        for (IgniteFuture fut : futs)
             fut.get();
     }
 
@@ -903,18 +848,18 @@ public final class X {
     }
 
     /**
-     * Tries to resolve GridGain installation home folder.
+     * Tries to resolve Ignite installation home folder.
      *
      * @return Installation home folder.
-     * @throws IgniteCheckedException If GridGain home folder was not set.
+     * @throws IgniteCheckedException If Ignite home folder was not set.
      */
-    public static String resolveGridGainHome() throws IgniteCheckedException {
+    public static String resolveIgniteHome() throws IgniteCheckedException {
         String var = IgniteSystemProperties.getString(IGNITE_HOME);
 
         if (var != null)
             return var;
         else
-            throw new IgniteCheckedException("Failed to resolve GridGain home folder " +
+            throw new IgniteCheckedException("Failed to resolve Ignite home folder " +
                 "(please set 'IGNITE_HOME' environment or system variable)");
     }
 

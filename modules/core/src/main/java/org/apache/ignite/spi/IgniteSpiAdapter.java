@@ -21,26 +21,25 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.spi.securesession.*;
-import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.authentication.*;
+import org.apache.ignite.spi.securesession.*;
+import org.apache.ignite.spi.swapspace.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
 import java.io.*;
-import java.nio.*;
 import java.text.*;
 import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * This class provides convenient adapter for SPI implementations.
@@ -53,7 +52,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     private long startTstamp;
 
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Ignite instance */
@@ -111,8 +110,8 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     }
 
     /** {@inheritDoc} */
-    @Override public final String getGridGainHome() {
-        return ignite.configuration().getGridGainHome();
+    @Override public final String getIgniteHome() {
+        return ignite.configuration().getIgniteHome();
     }
 
     /** {@inheritDoc} */
@@ -144,11 +143,11 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
         if (check) {
             spiCtx.addLocalEventListener(paramsLsnr = new GridLocalEventListener() {
-                @Override public void onEvent(IgniteEvent evt) {
-                    assert evt instanceof IgniteDiscoveryEvent : "Invalid event [expected=" + EVT_NODE_JOINED +
+                @Override public void onEvent(Event evt) {
+                    assert evt instanceof DiscoveryEvent : "Invalid event [expected=" + EVT_NODE_JOINED +
                         ", actual=" + evt.type() + ", evt=" + evt + ']';
 
-                    ClusterNode node = spiCtx.node(((IgniteDiscoveryEvent)evt).eventNode().id());
+                    ClusterNode node = spiCtx.node(((DiscoveryEvent)evt).eventNode().id());
 
                     if (node != null)
                         try {
@@ -424,7 +423,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         if (!enabled)
             return;
 
-        String clsAttr = createSpiAttributeName(GridNodeAttributes.ATTR_SPI_CLASS);
+        String clsAttr = createSpiAttributeName(IgniteNodeAttributes.ATTR_SPI_CLASS);
 
         String name = getName();
 
@@ -559,7 +558,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Override public void recordEvent(IgniteEvent evt) {
+        @Override public void recordEvent(Event evt) {
             /* No-op. */
         }
 
@@ -579,22 +578,22 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> V get(String cacheName, K key) throws IgniteCheckedException {
+        @Override public <K, V> V get(String cacheName, K key) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> V put(String cacheName, K key, V val, long ttl) throws IgniteCheckedException {
+        @Override public <K, V> V put(String cacheName, K key, V val, long ttl) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl) throws IgniteCheckedException {
+        @Override public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public <K, V> V remove(String cacheName, K key) throws IgniteCheckedException {
+        @Override public <K, V> V remove(String cacheName, K key) {
             return null;
         }
 
@@ -605,32 +604,30 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
         /** {@inheritDoc} */
         @Override public void writeToSwap(String spaceName, Object key, @Nullable Object val,
-            @Nullable ClassLoader ldr) throws IgniteCheckedException {
+            @Nullable ClassLoader ldr) {
             /* No-op. */
         }
 
         /** {@inheritDoc} */
-        @Override public <T> T readFromSwap(String spaceName, SwapKey key, @Nullable ClassLoader ldr)
-            throws IgniteCheckedException {
+        @Override public <T> T readFromSwap(String spaceName, SwapKey key, @Nullable ClassLoader ldr) {
             return null;
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public <T> T readFromOffheap(String spaceName, int part, Object key, byte[] keyBytes,
-            @Nullable ClassLoader ldr) throws IgniteCheckedException {
+            @Nullable ClassLoader ldr) {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public boolean removeFromOffheap(@Nullable String spaceName, int part, Object key,
-            @Nullable byte[] keyBytes) throws IgniteCheckedException {
+            @Nullable byte[] keyBytes) {
             return false;
         }
 
         /** {@inheritDoc} */
         @Override public void writeToOffheap(@Nullable String spaceName, int part, Object key,
-            @Nullable byte[] keyBytes, Object val, @Nullable byte[] valBytes, @Nullable ClassLoader ldr)
-            throws IgniteCheckedException {
+            @Nullable byte[] keyBytes, Object val, @Nullable byte[] valBytes, @Nullable ClassLoader ldr) {
             // No-op.
         }
 
@@ -640,8 +637,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Override public void removeFromSwap(String spaceName, Object key, @Nullable ClassLoader ldr)
-            throws IgniteCheckedException {
+        @Override public void removeFromSwap(String spaceName, Object key, @Nullable ClassLoader ldr) {
             // No-op.
         }
 
@@ -702,33 +698,27 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         }
 
         /** {@inheritDoc} */
-        @Override public boolean writeDelta(UUID nodeId, Object msg, ByteBuffer buf) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean readDelta(UUID nodeId, Class<?> msgCls, ByteBuffer buf) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<GridSecuritySubject> authenticatedSubjects() throws IgniteCheckedException {
+        @Override public Collection<GridSecuritySubject> authenticatedSubjects() {
             return Collections.emptyList();
         }
 
         /** {@inheritDoc} */
-        @Override public GridSecuritySubject authenticatedSubject(UUID subjId) throws IgniteCheckedException {
+        @Override public GridSecuritySubject authenticatedSubject(UUID subjId) {
             return null;
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public <T> T readValueFromOffheapAndSwap(@Nullable String spaceName, Object key,
-            @Nullable ClassLoader ldr) throws IgniteCheckedException {
+            @Nullable ClassLoader ldr) {
+            return null;
+        }
+
+        @Override public MessageFormatter messageFormatter() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridTcpMessageFactory messageFactory() {
+        @Override public MessageFactory messageFactory() {
             return null;
         }
     }

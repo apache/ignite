@@ -19,11 +19,12 @@ package org.apache.ignite.cache.store.hibernate;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.resources.*;
+import org.apache.ignite.transactions.*;
 import org.hibernate.*;
 import org.hibernate.cfg.*;
 import org.jetbrains.annotations.*;
@@ -85,7 +86,7 @@ import java.util.concurrent.atomic.*;
  *               &lt;property name=&quot;mappingResources&quot;&gt;
  *                   &lt;list&gt;
  *                       &lt;value&gt;
- *                           org/gridgain/grid/cache/store/hibernate/CacheHibernateBlobStoreEntry.hbm.xml
+ *                           org/apache/ignite/cache/store/hibernate/CacheHibernateBlobStoreEntry.hbm.xml
  *                       &lt;/value&gt;
  *                   &lt;/list&gt;
  *               &lt;/property&gt;
@@ -184,7 +185,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     private String hibernateCfgPath;
 
     /** Log. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Ignite instance. */
@@ -511,7 +512,7 @@ public class CacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
             try {
                 U.await(initLatch);
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 throw new IgniteException(e);
             }
         }

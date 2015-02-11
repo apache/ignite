@@ -15,16 +15,16 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
-    GridGain Spring configuration file to startup grid cache.
+    Ignite Spring configuration file to startup grid cache.
 
-    When starting a standalone GridGain node, you need to execute the following command:
+    When starting a standalone Ignite node, you need to execute the following command:
     {IGNITE_HOME}/bin/ignite.{bat|sh} examples/config/spring-cache.xml
 
-    When starting GridGain from Java IDE, pass path to this file into GridGain:
-    GridGain.start("examples/config/spring-cache.xml");
+    When starting Ignite from Java IDE, pass path to this file into Ignition:
+    Ignition.start("examples/config/spring-cache.xml");
 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -51,7 +51,7 @@
             Configure optimized marshaller.
         -->
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
+            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
                 <!--
                     For better performance set this property to true in case
                     all marshalled classes implement java.io.Serializable.
@@ -69,13 +69,17 @@
         <property name="localHost" value="127.0.0.1"/>
 
         <!-- Configure REST TCP server address. -->
-        <property name="restTcpHost" value="127.0.0.1"/>
+        <property name="connectorConfiguration">
+            <bean class="org.apache.ignite.configuration.ConnectorConfiguration">
+                <property name="host" value="127.0.0.1"/>
+            </bean>
+        </property>
 
         <!--
             Enable cache events.
         -->
         <property name="includeEventTypes">
-            <util:constant static-field="org.apache.ignite.events.IgniteEventType.EVTS_CACHE"/>
+            <util:constant static-field="org.apache.ignite.events.EventType.EVTS_CACHE"/>
         </property>
 
         <property name="cacheConfiguration">
@@ -88,7 +92,7 @@
                 <!--
                     Partitioned cache example configuration (Atomic mode).
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="partitioned"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -133,7 +137,7 @@
                 <!--
                     Partitioned cache example configuration (Transactional mode).
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="partitioned_tx"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -182,7 +186,7 @@
                 <!--
                     Replicated cache example configuration.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="replicated"/>
 
                     <!--
@@ -220,7 +224,7 @@
                 <!--
                     Local cache example configuration.
                 -->
-                <bean class="org.apache.ignite.cache.CacheConfiguration">
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <!-- Cache name is 'local'. -->
                     <property name="name" value="local"/>
 
@@ -253,9 +257,9 @@
         -->
         <!--
         <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.s3.GridTcpDiscoveryS3IpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinder">
                         <property name="awsCredentials">
                             <bean class="com.amazonaws.auth.BasicAWSCredentials">
                                 <constructor-arg value="YOUR_ACCESS_KEY_ID" />
@@ -278,9 +282,9 @@
         -->
         <!--
         <property name="discoverySpi">
-            <bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.sharedfs.GridTcpDiscoverySharedFsIpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder">
                         <property name="path" value="work/disco/tcp"/>
                     </bean>
                 </property>
@@ -329,7 +333,7 @@
                     list of addresses.
                     -->
                     <!--
-                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.GridTcpDiscoveryMulticastIpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
                         <property name="addresses">
                             <list>
                                 <value>host1:port1</value>

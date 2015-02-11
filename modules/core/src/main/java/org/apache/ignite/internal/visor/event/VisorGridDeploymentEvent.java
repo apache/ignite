@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.visor.event;
 
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
 /**
- * Lightweight counterpart for {@link org.apache.ignite.events.IgniteDeploymentEvent}.
+ * Lightweight counterpart for {@link org.apache.ignite.events.DeploymentEvent}.
  */
 public class VisorGridDeploymentEvent extends VisorGridEvent {
     /** */

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.rest;
 
 import junit.framework.*;
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -71,8 +70,8 @@ public class RestMemcacheProtocolSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         client.shutdown();
 
-        grid().cache(null).clearAll();
-        grid().cache(CACHE_NAME).clearAll();
+        grid().cache(null).clear();
+        grid().cache(CACHE_NAME).clear();
     }
 
     /** {@inheritDoc} */
@@ -81,13 +80,13 @@ public class RestMemcacheProtocolSelfTest extends GridCommonAbstractTest {
 
         cfg.setLocalHost(HOST);
 
-        assert cfg.getClientConnectionConfiguration() == null;
+        assert cfg.getConnectorConfiguration() == null;
 
-        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
+        ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
-        clientCfg.setRestTcpPort(PORT);
+        clientCfg.setPort(PORT);
 
-        cfg.setClientConnectionConfiguration(clientCfg);
+        cfg.setConnectorConfiguration(clientCfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -194,7 +193,7 @@ public class RestMemcacheProtocolSelfTest extends GridCommonAbstractTest {
         assertTrue(grid().cache(null).putx("key2", "val1"));
         assertTrue(client.cacheReplace(null, "key2", "val2"));
 
-        grid().cache(null).clearAll();
+        grid().cache(null).clear();
 
         assertFalse(client.cacheReplace(CACHE_NAME, "key1", "val1"));
         assertTrue(grid().cache(CACHE_NAME).putx("key1", "val1"));
@@ -243,38 +242,46 @@ public class RestMemcacheProtocolSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIncrement() throws Exception {
-        assertEquals(15L, client().cacheIncrement(null, "key", 10L, 5L));
-        assertEquals(15L, grid().cache(null).dataStructures().atomicLong("key", 0, true).get());
-        assertEquals(18L, client().cacheIncrement(null, "key", 20L, 3L));
-        assertEquals(18L, grid().cache(null).dataStructures().atomicLong("key", 0, true).get());
-        assertEquals(20L, client().cacheIncrement(null, "key", null, 2L));
-        assertEquals(20L, grid().cache(null).dataStructures().atomicLong("key", 0, true).get());
+        assertEquals(15L, client().increment("key", 10L, 5L));
+        assertEquals(15L, grid().atomicLong("key", 0, true).get());
 
-        assertEquals(15L, client().cacheIncrement(CACHE_NAME, "key", 10L, 5L));
-        assertEquals(15L, grid().cache(CACHE_NAME).dataStructures().atomicLong("key", 0, true).get());
-        assertEquals(18L, client().cacheIncrement(CACHE_NAME, "key", 20L, 3L));
-        assertEquals(18L, grid().cache(CACHE_NAME).dataStructures().atomicLong("key", 0, true).get());
-        assertEquals(20L, client().cacheIncrement(CACHE_NAME, "key", null, 2L));
-        assertEquals(20L, grid().cache(CACHE_NAME).dataStructures().atomicLong("key", 0, true).get());
+        assertEquals(18L, client().increment("key", 20L, 3L));
+        assertEquals(18L, grid().atomicLong("key", 0, true).get());
+
+        assertEquals(20L, client().increment("key", null, 2L));
+        assertEquals(20L, grid().atomicLong("key", 0, true).get());
+
+        assertEquals(15L, client().increment("key1", 10L, 5L));
+        assertEquals(15L, grid().atomicLong("key1", 0, true).get());
+
+        assertEquals(18L, client().increment("key1", 20L, 3L));
+        assertEquals(18L, grid().atomicLong("key1", 0, true).get());
+
+        assertEquals(20L, client().increment("key1", null, 2L));
+        assertEquals(20L, grid().atomicLong("key1", 0, true).get());
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDecrement() throws Exception {
-        assertEquals(15L, client().cacheDecrement(null, "key", 20L, 5L));
-        assertEquals(15L, grid().cache(null).dataStructures().atomicLong("key", 0, true).get());
-        assertEquals(12L, client().cacheDecrement(null, "key", 20L, 3L));
-        assertEquals(12L, grid().cache(null).dataStructures().atomicLong("key", 0, true).get());
-        assertEquals(10L, client().cacheDecrement(null, "key", null, 2L));
-        assertEquals(10L, grid().cache(null).dataStructures().atomicLong("key", 0, true).get());
+        assertEquals(15L, client().decrement("key", 20L, 5L));
+        assertEquals(15L, grid().atomicLong("key", 0, true).get());
 
-        assertEquals(15L, client().cacheDecrement(CACHE_NAME, "key", 20L, 5L));
-        assertEquals(15L, grid().cache(CACHE_NAME).dataStructures().atomicLong("key", 0, true).get());
-        assertEquals(12L, client().cacheDecrement(CACHE_NAME, "key", 20L, 3L));
-        assertEquals(12L, grid().cache(CACHE_NAME).dataStructures().atomicLong("key", 0, true).get());
-        assertEquals(10L, client().cacheDecrement(CACHE_NAME, "key", null, 2L));
-        assertEquals(10L, grid().cache(CACHE_NAME).dataStructures().atomicLong("key", 0, true).get());
+        assertEquals(12L, client().decrement("key", 20L, 3L));
+        assertEquals(12L, grid().atomicLong("key", 0, true).get());
+
+        assertEquals(10L, client().decrement("key", null, 2L));
+        assertEquals(10L, grid().atomicLong("key", 0, true).get());
+
+        assertEquals(15L, client().decrement("key1", 20L, 5L));
+        assertEquals(15L, grid().atomicLong("key1", 0, true).get());
+
+        assertEquals(12L, client().decrement("key1", 20L, 3L));
+        assertEquals(12L, grid().atomicLong("key1", 0, true).get());
+
+        assertEquals(10L, client().decrement("key1", null, 2L));
+        assertEquals(10L, grid().atomicLong("key1", 0, true).get());
     }
 
     /**

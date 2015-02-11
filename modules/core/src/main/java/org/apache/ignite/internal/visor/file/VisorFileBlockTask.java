@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.visor.file;
 
-import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.lang.*;
 
 import java.io.*;
 import java.net.*;
@@ -99,9 +98,9 @@ public class VisorFileBlockTask extends VisorOneNodeTask<VisorFileBlockTask.Viso
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteBiTuple<? extends IOException, VisorFileBlock> run(VisorFileBlockArg arg) throws IgniteCheckedException {
+        @Override protected IgniteBiTuple<? extends IOException, VisorFileBlock> run(VisorFileBlockArg arg) {
             try {
-                URL url = U.resolveGridGainUrl(arg.path);
+                URL url = U.resolveIgniteUrl(arg.path);
 
                 if (url == null)
                     return new IgniteBiTuple<>(new NoSuchFileException("File path not found: " + arg.path), null);

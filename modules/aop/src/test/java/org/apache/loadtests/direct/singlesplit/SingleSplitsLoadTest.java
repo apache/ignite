@@ -20,17 +20,15 @@ package org.apache.loadtests.direct.singlesplit;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.logger.log4j.*;
-import org.apache.log4j.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.loadtest.*;
+import org.apache.ignite.logger.log4j.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.common.*;
-
-import java.util.concurrent.*;
+import org.apache.log4j.*;
 
 /**
  * Single split load test.
@@ -50,11 +48,9 @@ public class SingleSplitsLoadTest extends GridCommonAbstractTest {
         cfg.setCommunicationSpi(new TcpCommunicationSpi());
         cfg.setDiscoverySpi(new TcpDiscoverySpi());
 
-        IgniteLog4jLogger log = (IgniteLog4jLogger)cfg.getGridLogger().getLogger(null);
+        Log4JLogger log = (Log4JLogger)cfg.getGridLogger().getLogger(null);
 
         log.setLevel(Level.INFO);
-
-        ((ThreadPoolExecutor)cfg.getExecutorService()).prestartAllCoreThreads();
 
         return cfg;
     }
@@ -121,7 +117,7 @@ public class SingleSplitsLoadTest extends GridCommonAbstractTest {
                         if (taskCnt % 500 == 0)
                             info(stats.toString());
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         error("Failed to execute grid task.", e);
 
                         fail();

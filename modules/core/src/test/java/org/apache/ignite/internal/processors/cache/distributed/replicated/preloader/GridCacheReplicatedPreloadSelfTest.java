@@ -23,23 +23,23 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.eventstorage.memory.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests for replicated cache preloader.
@@ -164,10 +164,10 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             Ignite g2 = startGrid(2);
 
-            Collection<IgniteEvent> evts = null;
+            Collection<Event> evts = null;
 
             for (int i = 0; i < 3; i++) {
-                evts = g2.events().localQuery(F.<IgniteEvent>alwaysTrue(),
+                evts = g2.events().localQuery(F.<Event>alwaysTrue(),
                     EVT_CACHE_PRELOAD_STARTED, EVT_CACHE_PRELOAD_STOPPED);
 
                 if (evts.size() != 2) {
@@ -181,7 +181,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             assert evts != null && evts.size() == 2 : "Wrong events received: " + evts;
 
-            Iterator<IgniteEvent> iter = evts.iterator();
+            Iterator<Event> iter = evts.iterator();
 
             assertEquals(EVT_CACHE_PRELOAD_STARTED, iter.next().type());
             assertEquals(EVT_CACHE_PRELOAD_STOPPED, iter.next().type());
@@ -298,13 +298,13 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < keyCnt; i++)
                 cache1.put(i, "val" + i);
 
-            GridCache<Integer, String> cache2 = startGrid(2).cache(null);
+            IgniteCache<Integer, String> cache2 = startGrid(2).jcache(null);
 
-            int size = cache2.size();
+            int size = cache2.localSize();
 
             info("Size of cache2: " + size);
 
-            assert waitCacheSize(cache2, keyCnt, getTestTimeout()) : "Actual cache size: " + cache2.size();
+            assert waitCacheSize(cache2, keyCnt, getTestTimeout()) : "Actual cache size: " + cache2.localSize();
         }
         finally {
             stopAllGrids();
@@ -319,7 +319,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      * @throws InterruptedException If thread was interrupted.
      */
     @SuppressWarnings({"BusyWait"})
-    private boolean waitCacheSize(CacheProjection<Integer, String> cache, int expSize, long timeout)
+    private boolean waitCacheSize(IgniteCache<Integer, String> cache, int expSize, long timeout)
         throws InterruptedException {
         assert cache != null;
         assert expSize > 0;
@@ -327,14 +327,14 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
         long end = System.currentTimeMillis() + timeout;
 
-        while (cache.size() < expSize) {
+        while (cache.localSize() < expSize) {
             Thread.sleep(50);
 
             if (end - System.currentTimeMillis() <= 0)
                 break;
         }
 
-        return cache.size() >= expSize;
+        return cache.localSize() >= expSize;
     }
 
     /**
@@ -451,7 +451,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
                 info("Cache size is OK for grid index: " + gridIdx);
             }
 
-            GridCache<Integer, String> lastCache = startGrid(gridCnt).cache(null);
+            IgniteCache<Integer, String> lastCache = startGrid(gridCnt).jcache(null);
 
             // Let preloading start.
             Thread.sleep(1000);
@@ -463,7 +463,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             stopGrid(idx);
 
-            assert waitCacheSize(lastCache, cnt, 20 * 1000) : "Actual cache size: " + lastCache.size();
+            assert waitCacheSize(lastCache, cnt, 20 * 1000) : "Actual cache size: " + lastCache.localSize();
         }
         finally {
             stopAllGrids();

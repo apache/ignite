@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.port;
 
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.*;
 
 /**
  * This class defines record about port use.

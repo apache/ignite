@@ -22,15 +22,15 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -41,10 +41,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
- *
- * Forum example <a
- * href="http://www.gridgainsystems.com/jiveforums/thread.jspa?threadID=1449">
- * http://www.gridgainsystems.com/jiveforums/thread.jspa?threadID=1449</a>
  */
 public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest {
     /** Key count. */
@@ -145,7 +141,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
         private Collection<GridDhtPartitionsSingleMessage> sentMsgs = new ConcurrentLinkedQueue<>();
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
             throws IgniteSpiException {
             recordMessage((GridIoMessage)msg);
 

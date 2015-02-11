@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.transactions.*;
 
 import java.io.*;
 
@@ -26,6 +26,9 @@ import java.io.*;
  * Tx metrics adapter.
  */
 public class IgniteTxMetricsAdapter implements IgniteTxMetrics, Externalizable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Number of transaction commits. */
     private volatile int txCommits;
 
