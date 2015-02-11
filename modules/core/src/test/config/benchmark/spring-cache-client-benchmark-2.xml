@@ -46,7 +46,11 @@
         <!-- Set to local host address just for examples. -->
         <property name="localHost" value="127.0.0.1"/>
 
-        <property name="restTcpPort" value="11212"/>
+        <property name="connectorConfiguration">
+            <bean class="org.apache.ignite.configuration.ConnectorConfiguration">
+                <property name="port" value="11212"/>
+            </bean>
+        </property>
 
         <!--<property name="peerClassLoadingEnabled" value="false"/>-->
 

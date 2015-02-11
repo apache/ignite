@@ -77,7 +77,7 @@ public class GridHadoopClassLoader extends URLClassLoader {
         String gg = "org.apache.ignite";
         int len = gg.length();
 
-        return cls.startsWith(gg) && (cls.indexOf("ggfs.", len) != -1 || cls.indexOf(".fs.", len) != -1 || cls.indexOf("hadoop.", len) != -1);
+        return cls.startsWith(gg) && (cls.indexOf("ignitefs.", len) != -1 || cls.indexOf(".fs.", len) != -1 || cls.indexOf("hadoop.", len) != -1);
     }
 
     /**
