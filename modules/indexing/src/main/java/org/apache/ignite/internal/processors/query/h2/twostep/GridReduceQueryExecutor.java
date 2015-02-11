@@ -135,6 +135,9 @@ public class GridReduceQueryExecutor {
 
         idx.addPage(new GridResultPage<UUID>(node.id(), msg) {
             @Override public void fetchNextPage() {
+                if (res.isLast())
+                    return; // No-op if this message known to be the last.
+
                 try {
                     ctx.io().sendUserMessage(F.asList(node), new GridNextPageRequest(qryReqId, qry, pageSize),
                         GridTopic.TOPIC_QUERY, false, 0);

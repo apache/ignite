@@ -28,7 +28,7 @@ public class GridResultPage<Z> {
     private final Z src;
 
     /** */
-    private final GridNextPageResponse res;
+    protected final GridNextPageResponse res;
 
     /**
      * @param src Source.
