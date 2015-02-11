@@ -542,6 +542,7 @@
                             <goal>clean</goal>
                         </goals>
                         <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
                             <filesets>
                                 <fileset>
                                     <directory>${project.basedir}</directory>
