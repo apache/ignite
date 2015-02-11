@@ -148,42 +148,41 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
      * @throws Exception If failed.
      */
     public void testNearOnlyAffinity() throws Exception {
-        assert false;
-//        for (int i = 0; i < gridCount(); i++) {
-//            Ignite g = grid(i);
-//
-//            if (F.eq(g.name(), nearOnlyGridName)) {
-//                for (int k = 0; k < 10000; k++) {
-//                    GridCache<Object, Object> cache = g.cache(null);
-//
-//                    String key = "key" + k;
-//
-//                    if (cacheMode() == PARTITIONED)
-//                        assertFalse(cache.entry(key).primary() || cache.entry(key).backup());
-//
-//                    assertFalse(cache.affinity().mapKeyToPrimaryAndBackups(key).contains(g.cluster().localNode()));
-//                }
-//            }
-//            else {
-//                boolean foundEntry = false;
-//                boolean foundAffinityNode = false;
-//
-//                for (int k = 0; k < 10000; k++) {
-//                    GridCache<Object, Object> cache = g.cache(null);
-//
-//                    String key = "key" + k;
-//
-//                    if (cache.entry(key).primary() || cache.entry(key).backup())
-//                        foundEntry = true;
-//
-//                    if (cache.affinity().mapKeyToPrimaryAndBackups(key).contains(g.cluster().localNode()))
-//                        foundAffinityNode = true;
-//                }
-//
-//                assertTrue("Did not found primary or backup entry for grid: " + i, foundEntry);
-//                assertTrue("Did not found affinity node for grid: " + i, foundAffinityNode);
-//            }
-//        }
+        for (int i = 0; i < gridCount(); i++) {
+            Ignite g = grid(i);
+
+            if (F.eq(g.name(), nearOnlyGridName)) {
+                for (int k = 0; k < 10000; k++) {
+                    GridCache<Object, Object> cache = g.cache(null);
+
+                    String key = "key" + k;
+
+                    if (cacheMode() == PARTITIONED)
+                        assertFalse(cache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key));
+
+                    assertFalse(cache.affinity().mapKeyToPrimaryAndBackups(key).contains(g.cluster().localNode()));
+                }
+            }
+            else {
+                boolean foundEntry = false;
+                boolean foundAffinityNode = false;
+
+                for (int k = 0; k < 10000; k++) {
+                    GridCache<Object, Object> cache = g.cache(null);
+
+                    String key = "key" + k;
+
+                    if (cache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key))
+                        foundEntry = true;
+
+                    if (cache.affinity().mapKeyToPrimaryAndBackups(key).contains(g.cluster().localNode()))
+                        foundAffinityNode = true;
+                }
+
+                assertTrue("Did not found primary or backup entry for grid: " + i, foundEntry);
+                assertTrue("Did not found affinity node for grid: " + i, foundAffinityNode);
+            }
+        }
     }
 
     /**

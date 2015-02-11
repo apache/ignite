@@ -1041,7 +1041,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
 
             fail("Exception should be thrown.");
         }
-        catch (IgniteException ignored) {
+        catch (CacheException ignored) {
             // Expected exception.
         }
 
@@ -1305,15 +1305,15 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public void writeAll(Collection<javax.cache.Cache.Entry<?, ?>> entries) {
-            for (javax.cache.Cache.Entry<?, ?> e : entries)
+        @Override public void writeAll(Collection<Cache.Entry<?, ?>> entries) {
+            for (Cache.Entry<?, ?> e : entries)
                 storeMap.put(e.getKey(), e.getValue());
 
             putCnt.incrementAndGet();
         }
 
         /** {@inheritDoc} */
-        @Override public void write(javax.cache.Cache.Entry<?, ?> e) {
+        @Override public void write(Cache.Entry<?, ?> e) {
             storeMap.put(e.getKey(), e.getValue());
 
             putCnt.incrementAndGet();

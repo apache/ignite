@@ -150,11 +150,11 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
                 IgniteCache<String, MyValue> c1 = grid(j).jcache("one");
                 IgniteCache<String, MyValue> c2 = grid(j).jcache("two");
 
-                int size1 = c1.size();
-                int size2 = c2.size();
+                int size1 = c1.localSize();
+                int size2 = c2.localSize();
 
-                assert size1 == keys.length : " Invalid cache1 size [i=" + i + ", j=" + j + ", size=" + size1 + ']';
-                assert size2 == keys.length / 2 : " Invalid cache2 size [i=" + i + ", j=" + j + ", size=" + size2 + ']';
+                assertEquals(" Invalid cache1 size [i=" + i + ", j=" + j + ", size=" + size1 + ']', keys.length, size1);
+                assertEquals(" Invalid cache2 size [i=" + i + ", j=" + j + ", size=" + size2 + ']', keys.length / 2, size2);
             }
         }
     }
