@@ -96,6 +96,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
         cfg.setSystemThreadPoolSize(RETRIES * 2);
 
         cfg.setMarshaller(new OptimizedMarshaller(false));
+        cfg.setConnectorConfiguration(null);
 
         return cfg;
     }

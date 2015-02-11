@@ -1361,7 +1361,6 @@ public class IgnitionEx {
             myCfg.setIgniteHome(ggHome);
 
             // Copy values that don't need extra processing.
-            myCfg.setLicenseUrl(cfg.getLicenseUrl());
             myCfg.setPeerClassLoadingEnabled(cfg.isPeerClassLoadingEnabled());
             myCfg.setDeploymentMode(cfg.getDeploymentMode());
             myCfg.setNetworkTimeout(cfg.getNetworkTimeout());
@@ -1389,11 +1388,10 @@ public class IgnitionEx {
             myCfg.setQueryConfiguration(cfg.getQueryConfiguration());
             myCfg.setAtomicConfiguration(cfg.getAtomicConfiguration());
 
-            ClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
+            ConnectorConfiguration clientCfg = cfg.getConnectorConfiguration();
 
             if (clientCfg != null)
-                clientCfg = new ClientConnectionConfiguration(clientCfg);
-
+                clientCfg = new ConnectorConfiguration(clientCfg);
 
             String ntfStr = IgniteSystemProperties.getString(IGNITE_LIFECYCLE_EMAIL_NOTIFY);
 
@@ -1510,10 +1508,10 @@ public class IgnitionEx {
             if (clientCfg != null) {
                 restExecSvc = new IgniteThreadPoolExecutor(
                     "rest-" + cfg.getGridName(),
-                    clientCfg.getRestThreadPoolSize(),
-                    clientCfg.getRestThreadPoolSize(),
-                    DFLT_REST_KEEP_ALIVE_TIME,
-                    new LinkedBlockingQueue<Runnable>(DFLT_REST_THREADPOOL_QUEUE_CAP)
+                    clientCfg.getThreadPoolSize(),
+                    clientCfg.getThreadPoolSize(),
+                    ConnectorConfiguration.DFLT_KEEP_ALIVE_TIME,
+                    new LinkedBlockingQueue<Runnable>(ConnectorConfiguration.DFLT_THREADPOOL_QUEUE_CAP)
                 );
             }
 
@@ -1669,7 +1667,7 @@ public class IgnitionEx {
             myCfg.setAdminEmails(cfg.getAdminEmails());
 
             // REST configuration.
-            myCfg.setClientConnectionConfiguration(clientCfg);
+            myCfg.setConnectorConfiguration(clientCfg);
 
             // Hadoop configuration.
             myCfg.setHadoopConfiguration(cfg.getHadoopConfiguration());

@@ -77,16 +77,6 @@ public class GridTestJobContext implements ComputeJobContext {
     }
 
     /** {@inheritDoc} */
-    @Override public String cacheName() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> T affinityKey() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public <T> T holdcc() {
         return null;
     }

@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.portable;
 
 import org.apache.ignite.*;
-import org.apache.ignite.client.marshaller.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.client.marshaller.*;
 import org.apache.ignite.internal.processors.*;
 import org.jetbrains.annotations.*;
 
