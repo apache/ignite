@@ -282,7 +282,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
         for (IgniteCache<Integer, Object> cache : caches) {
             Ignite ignite = ignites[i++];
 
-            if (ignite.affinity(null).isPrimary(ignite.cluster().localNode(), SWAP_TEST_KEY)) {
+            if (affinity(cache).isPrimary(ignite.cluster().localNode(), SWAP_TEST_KEY)) {
                 primaryCache = cache;
 
                 break;
