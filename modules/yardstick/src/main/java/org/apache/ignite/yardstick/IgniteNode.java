@@ -86,14 +86,14 @@ public class IgniteNode implements BenchmarkServer {
             cc.setBackups(args.backups());
 
             if (args.restTcpPort() != 0) {
-                ClientConnectionConfiguration ccc = new ClientConnectionConfiguration();
+                ConnectorConfiguration ccc = new ConnectorConfiguration();
 
-                ccc.setRestTcpPort(args.restTcpPort());
+                ccc.setPort(args.restTcpPort());
 
                 if (args.restTcpHost() != null)
-                    ccc.setRestTcpHost(args.restTcpHost());
+                    ccc.setHost(args.restTcpHost());
 
-                c.setClientConnectionConfiguration(ccc);
+                c.setConnectorConfiguration(ccc);
             }
 
             if (args.isOffHeap()) {
