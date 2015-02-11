@@ -327,9 +327,6 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
     public void testDeployment6() throws Exception {
-        if (true)
-            throw new RuntimeException("This test hangs");
-
         try {
             depMode = SHARED;
 
