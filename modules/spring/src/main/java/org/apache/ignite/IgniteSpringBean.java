@@ -235,13 +235,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public GridSecurity security() {
-        assert g != null;
-
-        return g.security();
-    }
-
-    /** {@inheritDoc} */
     @Override public String name() {
         assert g != null;
 

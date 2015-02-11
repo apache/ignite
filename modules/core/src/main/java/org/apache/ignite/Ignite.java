@@ -21,11 +21,9 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.configuration.IgniteFsConfiguration;
-import org.apache.ignite.plugin.*;
 import org.apache.ignite.internal.product.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.plugin.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -188,13 +186,6 @@ public interface Ignite extends AutoCloseable {
      * @return Instance of scheduler.
      */
     public IgniteScheduler scheduler();
-
-    /**
-     * Gets an instance of {@code GridSecurity} interface. Available in enterprise edition only.
-     *
-     * @return Instance of {@code GridSecurity} interface.
-     */
-    public GridSecurity security();
 
     /**
      * Gets the cache instance for the given name, if one does not

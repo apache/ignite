@@ -500,11 +500,21 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                     }
 
                     @Override public Collection<GridSecuritySubject> authenticatedSubjects() {
-                        return ctx.grid().security().authenticatedSubjects();
+                        try {
+                            return ctx.security().authenticatedSubjects();
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw U.convertException(e);
+                        }
                     }
 
                     @Override public GridSecuritySubject authenticatedSubject(UUID subjId) {
-                        return ctx.grid().security().authenticatedSubject(subjId);
+                        try {
+                            return ctx.security().authenticatedSubject(subjId);
+                        }
+                        catch (IgniteCheckedException e) {
+                            throw U.convertException(e);
+                        }
                     }
 
                     @SuppressWarnings("unchecked")
