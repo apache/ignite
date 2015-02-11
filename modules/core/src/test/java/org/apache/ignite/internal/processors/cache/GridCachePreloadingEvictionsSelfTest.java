@@ -114,8 +114,6 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
 
             int oldSize = cache1.localSize();
 
-            assert false;
-
             IgniteInternalFuture fut = multithreadedAsync(
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {

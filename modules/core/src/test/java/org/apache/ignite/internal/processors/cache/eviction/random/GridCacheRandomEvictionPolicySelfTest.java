@@ -105,62 +105,54 @@ public class GridCacheRandomEvictionPolicySelfTest extends
      * @throws Exception If failed.
      */
     public void testAllowEmptyEntries() throws Exception {
-        assert false : "ignite-96";
+        try {
+            startGrid();
 
-//        try {
-//            startGrid();
-//
-//            GridCache<String, String> c = cache();
-//
-//            MockEntry e1 = new MockEntry("1", c);
-//
-//            e1.setValue("val");
-//
-//            MockEntry e2 = new MockEntry("2", c);
-//
-//            MockEntry e3 = new MockEntry("3", c);
-//
-//            e3.setValue("val");
-//
-//            MockEntry e4 = new MockEntry("4", c);
-//
-//            MockEntry e5 = new MockEntry("5", c);
-//
-//            e5.setValue("val");
-//
-//            CacheRandomEvictionPolicy<String, String> p = policy();
-//
-//            p.setMaxSize(10);
-//
-//            p.onEntryAccessed(false, e1);
-//
-//            assertFalse(e1.isEvicted());
-//
-//            p.onEntryAccessed(false, e2);
-//
-//            assertFalse(e1.isEvicted());
-//            assertFalse(e2.isEvicted());
-//
-//            p.onEntryAccessed(false, e3);
-//
-//            assertFalse(e1.isEvicted());
-//            assertFalse(e3.isEvicted());
-//
-//            p.onEntryAccessed(false, e4);
-//
-//            assertFalse(e1.isEvicted());
-//            assertFalse(e3.isEvicted());
-//            assertFalse(e4.isEvicted());
-//
-//            p.onEntryAccessed(false, e5);
-//
-//            assertFalse(e1.isEvicted());
-//            assertFalse(e3.isEvicted());
-//            assertFalse(e5.isEvicted());
-//        }
-//        finally {
-//            stopAllGrids();
-//        }
+            IgniteCache<String, String> c = jcache();
+
+            MockEntry e1 = new MockEntry("1", c);
+
+            MockEntry e2 = new MockEntry("2", c);
+
+            MockEntry e3 = new MockEntry("3", c);
+
+            MockEntry e4 = new MockEntry("4", c);
+
+            MockEntry e5 = new MockEntry("5", c);
+
+            CacheRandomEvictionPolicy<String, String> p = policy();
+
+            p.setMaxSize(10);
+
+            p.onEntryAccessed(false, e1);
+
+            assertFalse(e1.isEvicted());
+
+            p.onEntryAccessed(false, e2);
+
+            assertFalse(e1.isEvicted());
+            assertFalse(e2.isEvicted());
+
+            p.onEntryAccessed(false, e3);
+
+            assertFalse(e1.isEvicted());
+            assertFalse(e3.isEvicted());
+
+            p.onEntryAccessed(false, e4);
+
+            assertFalse(e1.isEvicted());
+            assertFalse(e3.isEvicted());
+            assertFalse(e4.isEvicted());
+
+            p.onEntryAccessed(false, e5);
+
+            assertFalse(e1.isEvicted());
+            assertFalse(e3.isEvicted());
+            assertFalse(e5.isEvicted());
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**

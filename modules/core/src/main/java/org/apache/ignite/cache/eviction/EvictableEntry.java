@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache.eviction;
 
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -28,12 +29,25 @@ import javax.cache.*;
  * @version @java.version
  */
 public interface EvictableEntry<K, V> extends Cache.Entry<K, V> {
+    /**
+     * Evicts entry associated with given key from cache. Note, that entry will be evicted
+     * only if it's not used (not participating in any locks or transactions).
+     *
+     * @return {@code True} if entry could be evicted, {@code false} otherwise.
+     */
     public boolean evict();
 
+    /**
+     * Checks whether entry is currently present in cache or not. If entry is not in
+     * cache (e.g. has been removed) {@code false} is returned. In this case all
+     * operations on this entry will cause creation of a new entry in cache.
+     *
+     * @return {@code True} if entry is in cache, {@code false} otherwise.
+     */
     public boolean isCached();
 
     /**
-     * Gets metadata by name.
+     * Gets metadata added by eviction policy.
      *
      * @return Metadata value or {@code null}.
      */
@@ -43,7 +57,7 @@ public interface EvictableEntry<K, V> extends Cache.Entry<K, V> {
      * Adds a new metadata.
      *
      * @param val Metadata value.
-     * @return Metadata previously associated with given name, or
+     * @return Metadata previously added, or
      *      {@code null} if there was none.
      */
     @Nullable public <T> T addMeta(T val);

@@ -208,7 +208,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
 
         asyncCache.getAll(F.asSet("key5", "key6"));
 
-        assertTrue(((Collection)asyncCache.future().get()).isEmpty());
+        assertTrue(((Map)asyncCache.future().get()).isEmpty());
 
         cache.put("key7", "key7");
         cache.remove("key7", "key7");
@@ -266,7 +266,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
         try {
             asyncCache.getAll(F.asSet("key5", "key6"));
 
-            assertTrue(((Collection)asyncCache.future().get()).isEmpty());
+            assertTrue(((Map)asyncCache.future().get()).isEmpty());
 
             tx.commit();
         }

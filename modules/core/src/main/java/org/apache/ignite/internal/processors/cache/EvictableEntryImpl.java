@@ -19,16 +19,16 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.eviction.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.io.*;
-
 /**
  * Entry wrapper that never obscures obsolete entries from user.
  */
-public class GridCacheEvictionEntry<K, V> implements EvictableEntry<K, V> {
+public class EvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
     /** */
     private static final String META_KEY = "ignite-eviction-entry-meta";
 
@@ -37,17 +37,10 @@ public class GridCacheEvictionEntry<K, V> implements EvictableEntry<K, V> {
     protected GridCacheEntryEx<K, V> cached;
 
     /**
-     * Empty constructor required for {@link Externalizable}.
-     */
-    public GridCacheEvictionEntry() {
-        // No-op.
-    }
-
-    /**
      * @param cached Cached entry.
      */
     @SuppressWarnings({"TypeMayBeWeakened"})
-    protected GridCacheEvictionEntry(GridCacheEntryEx<K, V> cached) {
+    protected EvictableEntryImpl(GridCacheEntryEx<K, V> cached) {
         this.cached = cached;
     }
 
@@ -79,6 +72,7 @@ public class GridCacheEvictionEntry<K, V> implements EvictableEntry<K, V> {
     /**
      * @return Peeks value.
      */
+    @SuppressWarnings("unchecked")
     @Nullable public V peek() {
         try {
             return cached.peek(GridCachePeekMode.GLOBAL);
@@ -89,48 +83,76 @@ public class GridCacheEvictionEntry<K, V> implements EvictableEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V getValue() throws IllegalStateException {
-        throw new UnsupportedOperationException("Operation not supported during eviction.");
+    @SuppressWarnings("unchecked")
+    @Override public V getValue() {
+        try {
+            IgniteInternalTx<K, V> tx = cached.context().tm().userTx();
+
+            if (tx != null) {
+                GridTuple<V> peek = tx.peek(cached.context(), false, cached.key(), null);
+
+                if (peek != null)
+                    return peek.get();
+            }
+
+            if (cached.detached())
+                return cached.rawGet();
+
+            for (;;) {
+                GridCacheEntryEx<K, V> e = cached.context().cache().peekEx(cached.key());
+
+                if (e == null)
+                    return null;
+
+                try {
+                    return e.peek(GridCachePeekMode.GLOBAL, CU.<K, V>empty());
+                }
+                catch (GridCacheEntryRemovedException ignored) {
+                    // No-op.
+                }
+            }
+        }
+        catch (GridCacheFilterFailedException ignored) {
+            throw new IgniteException("Should never happen.");
+        }
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Nullable @Override public <T> T addMeta(T val) {
         return cached.addMeta(META_KEY, val);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Nullable @Override public <T> T meta() {
         return cached.meta(META_KEY);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Nullable @Override public <T> T removeMeta() {
         return cached.removeMeta(META_KEY);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Override public <T> boolean removeMeta(T val) {
         return cached.removeMeta(META_KEY, val);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
     @Nullable @Override public <T> T putMetaIfAbsent(T val) {
         return cached.putMetaIfAbsent(META_KEY, val);
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"RedundantTypeArguments"})
     @Override public <T> boolean replaceMeta(T curVal, T newVal) {
         return cached.replaceMeta(META_KEY,curVal, newVal);
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> clazz) {
+        if (clazz.isAssignableFrom(IgniteCache.class))
+            return (T)cached.context().grid().jcache(cached.context().name());
+
         if(clazz.isAssignableFrom(getClass()))
             return clazz.cast(this);
 
@@ -148,8 +170,8 @@ public class GridCacheEvictionEntry<K, V> implements EvictableEntry<K, V> {
         if (obj == this)
             return true;
 
-        if (obj instanceof GridCacheEvictionEntry) {
-            GridCacheEvictionEntry<K, V> other = (GridCacheEvictionEntry<K, V>)obj;
+        if (obj instanceof EvictableEntryImpl) {
+            EvictableEntryImpl<K, V> other = (EvictableEntryImpl<K, V>)obj;
 
             return cached.key().equals(other.getKey());
         }
@@ -159,6 +181,6 @@ public class GridCacheEvictionEntry<K, V> implements EvictableEntry<K, V> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheEvictionEntry.class, this);
+        return S.toString(EvictableEntryImpl.class, this);
     }
 }

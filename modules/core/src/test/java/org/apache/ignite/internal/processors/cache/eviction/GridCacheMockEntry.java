@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.eviction;
 
+import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 
@@ -27,10 +29,18 @@ import javax.cache.*;
 /**
  * Mock cache entry.
  */
-public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implements Cache.Entry<K, V> {
+public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implements Cache.Entry<K, V>,
+    EvictableEntry<K, V> {
+    /** */
+    private static final String META_KEY = "ignite-mock-eviction-entry-meta";
+
     /** */
     @GridToStringInclude
     private K key;
+
+    /** */
+    @GridToStringInclude
+    private boolean evicted;
 
     /**
      * Constructor.
@@ -49,6 +59,66 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     /** {@inheritDoc} */
     @Override public V getValue() throws IllegalStateException {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean evict() {
+        evicted = true;
+
+        onEvicted();
+
+        return true;
+    }
+
+    /**
+     *
+     */
+    private void onEvicted() {
+        for (String key : allMeta().keySet())
+            removeMeta(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isCached() {
+        return !evicted;
+    }
+
+    /**
+     *
+     * @return Evicted or not.
+     */
+    public boolean isEvicted() {
+        return evicted;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> T addMeta(T val) {
+        return addMeta(META_KEY, val);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> T meta() {
+        return meta(META_KEY);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> T removeMeta() {
+        return removeMeta(META_KEY);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> boolean removeMeta(T val) {
+        return removeMeta(META_KEY, val);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> T putMetaIfAbsent(T val) {
+        return putMetaIfAbsent(META_KEY, val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> boolean replaceMeta(T curVal, T newVal) {
+        return replaceMeta(META_KEY,curVal, newVal);
     }
 
     /** {@inheritDoc} */

@@ -23,6 +23,7 @@ import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -131,8 +132,8 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
     protected MockEntry entry(MockEntry[] arr, int idx) {
         MockEntry e = arr[idx];
 
-//        if (e.isEvicted()) // TODO ignite-96
-//            e = arr[idx] = new MockEntry(e.getKey());
+        if (e.isEvicted())
+            e = arr[idx] = new MockEntry(e.getKey());
 
         return e;
     }
@@ -154,7 +155,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
      * @param c1 Policy collection.
      * @param c2 Expected list.
      */
-    protected void check(Collection<Cache.Entry<String, String>> c1, MockEntry... c2) {
+    protected void check(Collection<EvictableEntry<String, String>> c1, MockEntry... c2) {
         check(c1, F.asList(c2));
     }
 
@@ -186,7 +187,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
      * @param c1 Policy collection.
      * @param c2 Expected list.
      */
-    protected void check(Collection<Cache.Entry<String, String>> c1, List<MockEntry> c2) {
+    protected void check(Collection<EvictableEntry<String, String>> c1, List<MockEntry> c2) {
         assert c1.size() == c2.size() : "Mismatch [actual=" + string(c1) + ", expected=" + string(c2) + ']';
 
         assert c1.containsAll(c2) : "Mismatch [actual=" + string(c1) + ", expected=" + string(c2) + ']';
@@ -202,12 +203,18 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
      * @param c Collection.
      * @return String.
      */
+    @SuppressWarnings("unchecked")
     protected String string(Iterable<? extends Cache.Entry> c) {
-        return "[" + F.fold(c, "", new C2<Cache.Entry, String, String>() {
-            @Override public String apply(Cache.Entry e, String b) {
-                return b.isEmpty() ? e.getKey().toString() : b + ", " + e.getKey();
-            }
-        }) + "]]";
+        return "[" +
+            F.fold(
+                c,
+                "",
+                new C2<Cache.Entry, String, String>() {
+                    @Override public String apply(Cache.Entry e, String b) {
+                        return b.isEmpty() ? e.getKey().toString() : b + ", " + e.getKey();
+                    }
+                }) +
+            "]]";
     }
 
     /** @throws Exception If failed. */
@@ -412,7 +419,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
     @SuppressWarnings({"PublicConstructorInNonPublicClass"})
     protected static class MockEntry extends GridCacheMockEntry<String, String> {
         /** */
-        private final CacheProjection<String, String> parent;
+        private IgniteCache<String, String> parent;
 
         /** Entry value. */
         private String val;
@@ -420,8 +427,6 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
         /** @param key Key. */
         public MockEntry(String key) {
             super(key);
-
-            parent = null;
         }
 
         /**
@@ -432,22 +437,35 @@ public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolic
             super(key);
 
             this.val = val;
-            parent = null;
         }
 
         /**
          * @param key Key.
          * @param parent Parent.
          */
-        public MockEntry(String key, @Nullable CacheProjection<String, String> parent) {
+        public MockEntry(String key, @Nullable IgniteCache<String, String> parent) {
             super(key);
 
             this.parent = parent;
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public <T> T unwrap(Class<T> clazz) {
+            if (clazz.isAssignableFrom(IgniteCache.class))
+                return (T)parent;
+
+            return super.unwrap(clazz);
+        }
+
+        /** {@inheritDoc} */
         @Override public String getValue() throws IllegalStateException {
             return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(MockEntry.class, this, super.toString());
         }
     }
 }

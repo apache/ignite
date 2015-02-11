@@ -228,8 +228,8 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
                 info("Near node near key set: " + new TreeSet<>(this.<Integer, Integer>near(2).keySet()));
 
                 try {
-                    assert cache.size() == 10 : "Invalid cache size [size=" + cache.size() + ']';
-                    assert cache.size() == 10 : "Invalid key size [size=" + cache.size() + ']';
+                    assert cache.localSize() == 10 : "Invalid cache size [size=" + cache.localSize() + ']';
+                    assert cache.localSize() == 10 : "Invalid key size [size=" + cache.localSize() + ']';
 
                     assert jcache(2).localSize() == 0;
 

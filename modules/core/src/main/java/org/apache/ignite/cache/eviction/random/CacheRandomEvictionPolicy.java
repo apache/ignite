@@ -17,9 +17,12 @@
 
 package org.apache.ignite.cache.eviction.random;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+
+import javax.cache.*;
 
 /**
  * Cache eviction policy which will select random cache entry for eviction if cache
@@ -74,22 +77,21 @@ public class CacheRandomEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void onEntryAccessed(boolean rmv, EvictableEntry<K, V> entry) {
         if (!entry.isCached())
             return;
 
-        assert false : "ignite-96";
-//        TODO ignite-96
-//        GridCache<K, V> cache = entry.projection().cache();
-//
-//        int size = cache.size();
-//
-//        for (int i = max; i < size; i++) {
-//            Entry<K, V> e = cache.randomEntry();
-//
-//            if (e != null)
-//                e.evict();
-//        }
+        IgniteCache<K, V> cache = entry.unwrap(IgniteCache.class);
+
+        int size = cache.size();
+
+        for (int i = max; i < size; i++) {
+            Cache.Entry<K, V> e = cache.randomEntry();
+
+            if (e != null)
+                e.unwrap(EvictableEntry.class).evict();
+        }
     }
 
     /** {@inheritDoc} */

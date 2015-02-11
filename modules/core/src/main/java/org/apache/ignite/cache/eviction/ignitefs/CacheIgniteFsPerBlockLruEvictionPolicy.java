@@ -184,7 +184,7 @@ public class CacheIgniteFsPerBlockLruEvictionPolicy implements CacheEvictionPoli
      * @return Peeked value.
      */
     @Nullable private byte[] peek(EvictableEntry<GridGgfsBlockKey, byte[]> entry) {
-        return (byte[])((GridCacheEvictionEntry)entry).peek();
+        return (byte[])((EvictableEntryImpl)entry).peek();
     }
 
     /**

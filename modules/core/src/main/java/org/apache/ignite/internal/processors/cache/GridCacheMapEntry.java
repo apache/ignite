@@ -3707,7 +3707,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @Override public Cache.Entry<K, V> wrapLazyValue() {
-        return new IteratorEntry(key);
+        return new LazyValueEntry(key);
     }
 
         /** {@inheritDoc} */
@@ -3717,7 +3717,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @Override public EvictableEntry<K, V> wrapEviction() {
-        return new GridCacheEvictionEntry<>(this);
+        return new EvictableEntryImpl<>(this);
     }
 
     /** {@inheritDoc} */
@@ -4319,14 +4319,14 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     /**
      *
      */
-    private class IteratorEntry implements Cache.Entry<K, V> {
+    private class LazyValueEntry implements Cache.Entry<K, V> {
         /** */
         private final K key;
 
         /**
          * @param key Key.
          */
-        private IteratorEntry(K key) {
+        private LazyValueEntry(K key) {
             this.key = key;
         }
 
@@ -4373,6 +4373,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public <T> T unwrap(Class<T> cls) {
+            if (cls.isAssignableFrom(IgniteCache.class))
+                return (T)cctx.grid().jcache(cctx.name());
+
+            if (cls.isAssignableFrom(EvictableEntry.class))
+                return (T)wrapEviction();
+
             if (!cls.equals(getClass()))
                 throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
 
