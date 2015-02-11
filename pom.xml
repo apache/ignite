@@ -766,7 +766,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: Indexing</title>
-                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.h2</packages>
+                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.h2:org.apache.ignite.spi.indexing.noop</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Load Balancing</title>
@@ -976,7 +976,7 @@
                                         </group>
                                         <group>
                                             <title>SPI: Indexing</title>
-                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.h2</packages>
+                                            <packages>org.apache.ignite.spi.indexing:org.apache.ignite.spi.indexing.h2:org.apache.ignite.spi.indexing.noop</packages>
                                         </group>
                                         <group>
                                             <title>SPI: Load Balancing</title>
