@@ -737,16 +737,14 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         final GridCacheQueryManager<K, V> qryMgr = cctx.queries();
 
-        Collection<K> keysList = new ArrayList<>(keys);
+        Collection<? extends K> unprocessedKeys;
         final Collection<GridCacheBatchSwapEntry<K, V>> res = new ArrayList<>(keys.size());
 
         // First try removing from offheap.
         if (offheapEnabled) {
-            Iterator<K> iter = keysList.iterator();
+            Collection<K> unprocessedKeysList = new ArrayList<>(keys.size());
 
-            while (iter.hasNext()) {
-                K key = iter.next();
-
+            for (K key : keys) {
                 int part = cctx.affinity().partition(key);
 
                 byte[] keyBytes = CU.marshal(cctx.shared(), key);
@@ -756,45 +754,50 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 if (entryBytes != null) {
                     GridCacheSwapEntry<V> entry = swapEntry(unmarshalSwapEntry(entryBytes));
 
-                    if (entry == null)
+                    if (entry != null) {
+                        // Always fire this event, since preloading depends on it.
+                        onOffHeaped(part, key, keyBytes, entry);
+
+                        if (cctx.events().isRecordable(EVT_CACHE_OBJECT_FROM_OFFHEAP))
+                            cctx.events().addEvent(part, key, cctx.nodeId(), (IgniteUuid)null, null,
+                                EVT_CACHE_OBJECT_FROM_OFFHEAP, null, false, null, true, null, null, null);
+
+                        if (qryMgr != null)
+                            qryMgr.onUnswap(key, entry.value(), entry.valueBytes());
+
+                        GridCacheBatchSwapEntry<K, V> unswapped = new GridCacheBatchSwapEntry<>(key,
+                            keyBytes,
+                            part,
+                            ByteBuffer.wrap(entry.valueBytes()),
+                            entry.valueIsByteArray(),
+                            entry.version(), entry.ttl(),
+                            entry.expireTime(),
+                            entry.keyClassLoaderId(),
+                            entry.valueClassLoaderId());
+
+                        unswapped.value(entry.value());
+
+                        res.add(unswapped);
+
                         continue;
-
-                    iter.remove();
-
-                    // Always fire this event, since preloading depends on it.
-                    onOffHeaped(part, key, keyBytes, entry);
-
-                    if (cctx.events().isRecordable(EVT_CACHE_OBJECT_FROM_OFFHEAP))
-                        cctx.events().addEvent(part, key, cctx.nodeId(), (IgniteUuid)null, null,
-                            EVT_CACHE_OBJECT_FROM_OFFHEAP, null, false, null, true, null, null, null);
-
-                    if (qryMgr != null)
-                        qryMgr.onUnswap(key, entry.value(), entry.valueBytes());
-
-                    GridCacheBatchSwapEntry<K, V> unswapped = new GridCacheBatchSwapEntry<>(key,
-                        keyBytes,
-                        part,
-                        ByteBuffer.wrap(entry.valueBytes()),
-                        entry.valueIsByteArray(),
-                        entry.version(), entry.ttl(),
-                        entry.expireTime(),
-                        entry.keyClassLoaderId(),
-                        entry.valueClassLoaderId());
-
-                    unswapped.value(entry.value());
-
-                    res.add(unswapped);
+                    }
                 }
+
+                unprocessedKeysList.add(key);
             }
 
-            if (!swapEnabled || keysList.isEmpty())
+            unprocessedKeys = unprocessedKeysList;
+
+            if (!swapEnabled || unprocessedKeys.isEmpty())
                 return res;
         }
+        else
+            unprocessedKeys = keys;
 
         // Swap is enabled.
         final GridTuple<IgniteCheckedException> err = F.t1();
 
-        Collection<SwapKey> converted = new ArrayList<>(F.viewReadOnly(keysList, new C1<K, SwapKey>() {
+        Collection<SwapKey> converted = new ArrayList<>(F.viewReadOnly(unprocessedKeys, new C1<K, SwapKey>() {
             @Override public SwapKey apply(K key) {
                 try {
                     return new SwapKey(key, cctx.affinity().partition(key), CU.marshal(cctx.shared(), key));
