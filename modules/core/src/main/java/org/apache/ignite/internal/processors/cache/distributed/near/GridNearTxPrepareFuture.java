@@ -653,7 +653,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             add(fut); // Append new future.
 
             try {
-                cctx.io().send(n, req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                cctx.io().send(n, req, tx.ioPolicy());
             }
             catch (IgniteCheckedException e) {
                 // Fail the whole thing.

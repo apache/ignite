@@ -387,7 +387,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 cctx.tm().beforeFinishRemote(n.id(), tx.threadId());
 
             try {
-                cctx.io().send(n, req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                cctx.io().send(n, req, tx.ioPolicy());
 
                 // If we don't wait for result, then mark future as done.
                 if (!isSync() && !m.explicitLock())

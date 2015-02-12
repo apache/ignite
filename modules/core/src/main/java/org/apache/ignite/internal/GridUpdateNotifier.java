@@ -18,8 +18,6 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.license.*;
-import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
@@ -81,9 +79,6 @@ class GridUpdateNotifier {
 
     /** */
     private long lastLog = -1;
-
-    /** */
-    private GridLicenseProcessor licProc;
 
     /**
      * Creates new notifier with default values.
@@ -161,13 +156,6 @@ class GridUpdateNotifier {
      */
     void topologySize(int topSize) {
         this.topSize = topSize;
-    }
-
-    /**
-     * @param licProc License processor.
-     */
-    void licenseProcessor(GridLicenseProcessor licProc) {
-        this.licProc = licProc;
     }
 
     /**
@@ -275,15 +263,12 @@ class GridUpdateNotifier {
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             try {
-                IgniteProductLicense lic = licProc != null ? licProc.license() : null;
-
                 String stackTrace = gw != null ? gw.userStackTrace() : null;
 
                 String postParams =
                     "gridName=" + encode(gridName, CHARSET) +
                     (!F.isEmpty(UPD_STATUS_PARAMS) ? "&" + UPD_STATUS_PARAMS : "") +
                     (topSize > 0 ? "&topSize=" + topSize : "") +
-                    (lic != null ? "&licenseId=" + lic.id() : "") +
                     (!F.isEmpty(stackTrace) ? "&stackTrace=" + encode(stackTrace, CHARSET) : "") +
                     (!F.isEmpty(vmProps) ? "&vmProps=" + encode(vmProps, CHARSET) : "");
 

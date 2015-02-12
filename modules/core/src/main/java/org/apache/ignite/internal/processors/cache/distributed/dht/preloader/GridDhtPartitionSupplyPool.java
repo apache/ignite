@@ -247,9 +247,6 @@ class GridDhtPartitionSupplyPool<K, V> {
 
             boolean ack = false;
 
-            // If demander node left grid.
-            boolean nodeLeft = false;
-
             boolean convertPortable = cctx.portableEnabled() && cctx.offheapTiered();
 
             try {
@@ -302,11 +299,8 @@ class GridDhtPartitionSupplyPool<K, V> {
                             if (s.messageSize() >= cctx.config().getPreloadBatchSize()) {
                                 ack = true;
 
-                                if (!reply(node, d, s)) {
-                                    nodeLeft = true;
-
+                                if (!reply(node, d, s))
                                     return;
-                                }
 
                                 // Throttle preloading.
                                 if (preloadThrottle > 0)
@@ -357,11 +351,8 @@ class GridDhtPartitionSupplyPool<K, V> {
                                         if (s.messageSize() >= cctx.config().getPreloadBatchSize()) {
                                             ack = true;
 
-                                            if (!reply(node, d, s)) {
-                                                nodeLeft = true;
-
+                                            if (!reply(node, d, s))
                                                 return;
-                                            }
 
                                             // Throttle preloading.
                                             if (preloadThrottle > 0)
@@ -455,11 +446,8 @@ class GridDhtPartitionSupplyPool<K, V> {
                                 if (s.messageSize() >= cctx.config().getPreloadBatchSize()) {
                                     ack = true;
 
-                                    if (!reply(node, d, s)) {
-                                        nodeLeft = true;
-
+                                    if (!reply(node, d, s))
                                         return;
-                                    }
 
                                     s = new GridDhtPartitionSupplyMessage<>(d.workerId(), d.updateSequence(),
                                         cctx.cacheId());
@@ -512,7 +500,7 @@ class GridDhtPartitionSupplyPool<K, V> {
                 if (log.isDebugEnabled())
                     log.debug("Replying to partition demand [node=" + n.id() + ", demand=" + d + ", supply=" + s + ']');
 
-                cctx.io().sendOrderedMessage(n, d.topic(), s, d.timeout());
+                cctx.io().sendOrderedMessage(n, d.topic(), s, cctx.ioPolicy(), d.timeout());
 
                 return true;
             }

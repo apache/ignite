@@ -614,7 +614,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                         log.debug("Sending demand message [node=" + node.id() + ", demand=" + d + ']');
 
                     // Send demand message.
-                    cctx.io().send(node, d);
+                    cctx.io().send(node, d, cctx.ioPolicy());
 
                     // While.
                     // =====

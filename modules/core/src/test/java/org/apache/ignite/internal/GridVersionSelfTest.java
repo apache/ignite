@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -37,14 +36,14 @@ public class GridVersionSelfTest extends GridCommonAbstractTest {
         System.setProperty(IGNITE_UPDATE_NOTIFIER, "true");
 
         try {
-            Ignite ignite = startGrid();
+            IgniteEx ignite = (IgniteEx)startGrid();
 
-            IgniteProductVersion currVer = ignite.product().version();
+            IgniteProductVersion currVer = ignite.version();
 
             String newVer = null;
 
             for (int i = 0; i < 30; i++) {
-                newVer = ignite.product().latestVersion();
+                newVer = ignite.latestVersion();
 
                 if (newVer != null)
                     break;

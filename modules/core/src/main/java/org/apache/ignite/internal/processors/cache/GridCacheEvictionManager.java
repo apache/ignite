@@ -471,7 +471,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      */
     private void sendEvictionResponse(UUID nodeId, GridCacheEvictionResponse<K, V> res) {
         try {
-            cctx.io().send(nodeId, res);
+            cctx.io().send(nodeId, res, cctx.ioPolicy());
 
             if (log.isDebugEnabled())
                 log.debug("Sent eviction response [node=" + nodeId + ", localNode=" + cctx.nodeId() +
@@ -1741,7 +1741,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                     log.debug("Sending eviction request [node=" + nodeId + ", req=" + req + ']');
 
                 try {
-                    cctx.io().send(nodeId, req);
+                    cctx.io().send(nodeId, req, cctx.ioPolicy());
                 }
                 catch (ClusterTopologyCheckedException ignored) {
                     // Node left the topology.
