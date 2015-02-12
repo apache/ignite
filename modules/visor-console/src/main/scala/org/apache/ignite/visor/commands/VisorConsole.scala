@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.commands
 
-import org.apache.ignite.internal.GridProductImpl
+import org.apache.ignite.internal.IgniteVersionUtils._
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.startup.cmdline.AboutDialog
