@@ -884,12 +884,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T unwrap(Class<T> clazz) {
-        if (clazz.equals(IgniteCache.class))
+        if (clazz.isAssignableFrom(IgniteCache.class))
             return (T)this;
-        else if (clazz.equals(Ignite.class))
+        else if (clazz.isAssignableFrom(Ignite.class))
             return (T)ctx.grid();
 
-        throw new IllegalArgumentException("Unsupported class: " + clazz);
+        throw new IllegalArgumentException("Unwrapping to class is not supported: " + clazz);
     }
 
     /** {@inheritDoc} */

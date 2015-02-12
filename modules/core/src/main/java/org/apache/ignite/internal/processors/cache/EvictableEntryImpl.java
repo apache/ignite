@@ -49,10 +49,12 @@ public class EvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
         return cached.key();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isCached() {
         return !cached.obsoleteOrDeleted();
     }
 
+    /** {@inheritDoc} */
     @Override public boolean evict() {
         GridCacheContext<K, V> ctx = cached.context();
 

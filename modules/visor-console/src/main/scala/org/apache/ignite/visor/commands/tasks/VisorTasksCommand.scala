@@ -17,23 +17,20 @@
 
 package org.apache.ignite.visor.commands.tasks
 
-import org.apache.ignite.internal.util.IgniteUtils
-import org.apache.ignite.internal.util.typedef.internal.U
+import org.apache.ignite._
+import org.apache.ignite.events.EventType._
+import org.apache.ignite.internal.util.typedef.X
+import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.internal.visor.event.{VisorGridEvent, VisorGridJobEvent, VisorGridTaskEvent}
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
-import org.apache.ignite.internal.util.typedef.X
-
-import org.apache.ignite._
-import org.apache.ignite.events.EventType
-import org.apache.ignite.events.EventType._
 import org.apache.ignite.lang.IgniteUuid
 
 import java.util.UUID
 
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor.visor._
+import org.apache.ignite.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.language.implicitConversions
@@ -75,8 +72,7 @@ private case class VisorExecution(
     /**
      * ID8 form of task execution ID.
      */
-    lazy val id8: String =
-        IgniteUtils.id8(id)
+    lazy val id8: String = U.id8(id)
 
     /**
      * ID8 of the task execution + its associated variable.

@@ -17,20 +17,18 @@
 
 package org.apache.ignite.visor.commands.top
 
-import org.apache.ignite.internal.IgniteNodeAttributes
-import org.apache.ignite.internal.util.IgniteUtils
-import IgniteNodeAttributes._
-import org.apache.ignite.internal.util.typedef._
-
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
+import org.apache.ignite.internal.IgniteNodeAttributes._
+import org.apache.ignite.internal.util.typedef.X
+import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.lang.IgnitePredicate
 
 import java.net.{InetAddress, UnknownHostException}
 
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import visor.visor._
+import org.apache.ignite.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.language.{implicitConversions, reflectiveCalls}
@@ -262,7 +260,7 @@ class VisorTopologyCommand {
                     nodeId8Addr(n.id),
                     formatDateTime(m.getStartTime),
                     X.timeSpan2HMS(m.getUpTime),
-                    n.metrics.getTotalCpus,
+                    m.getTotalCpus,
                     safePercent(cpuLoadPct),
                     formatDouble(freeHeapPct) + " %"
                 )
@@ -275,7 +273,7 @@ class VisorTopologyCommand {
             nl()
         }
 
-        val neighborhood = IgniteUtils.neighborhood(nodes)
+        val neighborhood = U.neighborhood(nodes)
 
         val hostsT = VisorTextTable()
 
@@ -336,12 +334,12 @@ class VisorTopologyCommand {
 
         val sumT = VisorTextTable()
 
-        sumT += ("Total hosts", IgniteUtils.neighborhood(ignite.nodes()).size)
-        sumT += ("Total nodes", ignite.nodes().size)
+        sumT += ("Total hosts", U.neighborhood(nodes).size)
+        sumT += ("Total nodes", nodes.size)
         sumT += ("Total CPUs", m.getTotalCpus)
         sumT += ("Avg. CPU load", safePercent(m.getAverageCpuLoad * 100))
         sumT += ("Avg. free heap", formatDouble(freeHeap) + " %")
-        sumT += ("Avg. Up time", X.timeSpan2HMS(m.getUpTime.toLong))
+        sumT += ("Avg. Up time", X.timeSpan2HMS(m.getUpTime))
         sumT += ("Snapshot time", formatDateTime(System.currentTimeMillis))
 
         println("Summary:")
@@ -427,5 +425,5 @@ object VisorTopologyCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromTop2Visor(vs: VisorTag) = cmd
+    implicit def fromTop2Visor(vs: VisorTag): VisorTopologyCommand = cmd
 }
