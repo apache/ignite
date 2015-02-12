@@ -18,34 +18,33 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 /**
  * Entry set backed by cache itself.
  */
-public class GridCacheEntrySet<K, V> extends AbstractSet<CacheEntry<K, V>> {
+public class GridCacheEntrySet<K, V> extends AbstractSet<Cache.Entry<K, V>> {
     /** Cache context. */
     private final GridCacheContext<K, V> ctx;
 
     /** Filter. */
-    private final IgnitePredicate<CacheEntry<K, V>>[] filter;
+    private final IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Base set. */
-    private final Set<CacheEntry<K, V>> set;
+    private final Set<Cache.Entry<K, V>> set;
 
     /**
      * @param ctx Cache context.
      * @param c Entry collection.
      * @param filter Filter.
      */
-    public GridCacheEntrySet(GridCacheContext<K, V> ctx, Collection<? extends CacheEntry<K, V>> c,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+    public GridCacheEntrySet(GridCacheContext<K, V> ctx, Collection<? extends Cache.Entry<K, V>> c,
+        @Nullable IgnitePredicate<Cache.Entry<K, V>>... filter) {
         set = new HashSet<>(c.size(), 1.0f);
 
         assert ctx != null;
@@ -53,35 +52,33 @@ public class GridCacheEntrySet<K, V> extends AbstractSet<CacheEntry<K, V>> {
         this.ctx = ctx;
         this.filter = filter;
 
-        for (CacheEntry<K, V> e : c) {
+        for (Cache.Entry<K, V> e : c) {
             if (e != null)
                 set.add(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public Iterator<CacheEntry<K, V>> iterator() {
-        return new GridCacheIterator<>(set, F.<CacheEntry<K, V>>identity(), filter);
+    @Override public Iterator<Cache.Entry<K, V>> iterator() {
+        return new GridCacheIterator<>(ctx, set, F.<Cache.Entry<K, V>>identity(), filter);
     }
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        ctx.cache().clearAll0(F.viewReadOnly(set, F.<K>mapEntry2Key(), filter), CU.<K, V>empty());
-
-        set.clear();
+        throw new UnsupportedOperationException("clear");
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public boolean remove(Object o) {
-        if (!(o instanceof GridCacheEntryImpl))
+        if (!(o instanceof CacheEntryImpl))
             return false;
 
-        CacheEntry<K, V> e = (CacheEntry<K,V>)o;
+        Cache.Entry<K, V> e = (Cache.Entry<K,V>)o;
 
         if (F.isAll(e, filter) && set.remove(e)) {
             try {
-                e.removex();
+                ctx.grid().cache(ctx.name()).remove(e.getKey(), e.getValue());
             }
             catch (IgniteCheckedException ex) {
                 throw new IgniteException(ex);
@@ -101,10 +98,10 @@ public class GridCacheEntrySet<K, V> extends AbstractSet<CacheEntry<K, V>> {
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public boolean contains(Object o) {
-        if (!(o instanceof GridCacheEntryImpl))
+        if (!(o instanceof CacheEntryImpl))
             return false;
 
-        CacheEntry<K,V> e = (CacheEntry<K, V>)o;
+        Cache.Entry<K,V> e = (Cache.Entry<K, V>)o;
 
         return F.isAll(e, filter) && set.contains(e);
     }

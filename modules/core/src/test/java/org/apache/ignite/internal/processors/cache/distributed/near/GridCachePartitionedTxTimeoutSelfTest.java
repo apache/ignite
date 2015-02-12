@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -41,7 +40,7 @@ public class GridCachePartitionedTxTimeoutSelfTest extends IgniteTxTimeoutAbstra
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        TransactionsConfiguration txCfg = c.getTransactionsConfiguration();
+        TransactionConfiguration txCfg = c.getTransactionConfiguration();
 
         txCfg.setTxSerializableEnabled(true);
         txCfg.setDefaultTxTimeout(TIMEOUT);

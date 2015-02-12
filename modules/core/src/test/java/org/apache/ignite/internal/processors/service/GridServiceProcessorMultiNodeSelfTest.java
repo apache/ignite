@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.service;
 
 import junit.framework.*;
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.lang.*;
 
 import java.util.concurrent.*;
 
@@ -44,11 +44,11 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         DummyService.exeLatch(name, latch);
 
-        IgniteManaged svcs = g.managed().withAsync();
+        IgniteServices svcs = g.services().withAsync();
 
         svcs.deployClusterSingleton(name, new DummyService());
 
-        IgniteInternalFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -71,7 +71,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
             info(">>> Passed checks.");
 
-            checkCount(name, g.managed().deployedServices(), 1);
+            checkCount(name, g.services().serviceDescriptors(), 1);
         }
         finally {
             stopExtraNodes(nodeCnt);
@@ -87,16 +87,16 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
         final Integer affKey = 1;
 
         // Store a cache key.
-        g.cache(CACHE_NAME).put(affKey, affKey.toString());
+        g.jcache(CACHE_NAME).put(affKey, affKey.toString());
 
         String name = "serviceAffinityUpdateTopology";
 
-        IgniteManaged svcs = g.managed().withAsync();
+        IgniteServices svcs = g.services().withAsync();
 
         svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
             CACHE_NAME, affKey);
 
-        IgniteInternalFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -104,14 +104,14 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         info("Finished waiting for service future: " + name);
 
-        checkCount(name, g.managed().deployedServices(), 1);
+        checkCount(name, g.services().serviceDescriptors(), 1);
 
         int nodeCnt = 2;
 
         startExtraNodes(nodeCnt);
 
         try {
-            checkCount(name, g.managed().deployedServices(), 1);
+            checkCount(name, g.services().serviceDescriptors(), 1);
         }
         finally {
             stopExtraNodes(nodeCnt);
@@ -130,11 +130,11 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         DummyService.exeLatch(name, latch);
 
-        IgniteManaged svcs = g.managed().withAsync();
+        IgniteServices svcs = g.services().withAsync();
 
         svcs.deployNodeSingleton(name, new DummyService());
 
-        IgniteInternalFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -161,7 +161,7 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
             TestCase.assertEquals(name, nodeCount() + newNodes, DummyService.started(name));
             TestCase.assertEquals(name, 0, DummyService.cancelled(name));
 
-            checkCount(name, g.managed().deployedServices(), nodeCount() + newNodes);
+            checkCount(name, g.services().serviceDescriptors(), nodeCount() + newNodes);
         }
         finally {
             stopExtraNodes(newNodes);

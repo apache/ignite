@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.rest.protocols;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
@@ -61,13 +61,13 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
     @SuppressWarnings({"OverriddenMethodCallDuringObjectConstruction"})
     protected GridRestProtocolAdapter(GridKernalContext ctx) {
         assert ctx != null;
-        assert ctx.config().getClientConnectionConfiguration() != null;
+        assert ctx.config().getConnectorConfiguration() != null;
 
         this.ctx = ctx;
 
         log = ctx.log(getClass());
 
-        secretKey = ctx.config().getClientConnectionConfiguration().getRestSecretKey();
+        secretKey = ctx.config().getConnectorConfiguration().getSecretKey();
     }
 
     /**
@@ -144,8 +144,8 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
     /**
      * @return Client configuration.
      */
-    protected ClientConnectionConfiguration config() {
-        return ctx.config().getClientConnectionConfiguration();
+    protected ConnectorConfiguration config() {
+        return ctx.config().getConnectorConfiguration();
     }
 
     /** {@inheritDoc} */

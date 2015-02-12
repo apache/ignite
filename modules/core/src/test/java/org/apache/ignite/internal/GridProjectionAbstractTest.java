@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Abstract test for {@link org.apache.ignite.cluster.ClusterGroup}
@@ -51,10 +51,10 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private ClusterGroup prj;
 
     /** Runnable job. */
-    private Runnable runJob = new TestRunnable();
+    private IgniteRunnable runJob = new TestRunnable();
 
     /** Callable job. */
-    private Callable<String> calJob = new TestCallable<>();
+    private IgniteCallable<String> calJob = new TestCallable<>();
 
     /** Closure job. */
     private IgniteClosure<String, String> clrJob = new IgniteClosure<String, String>() {
@@ -248,18 +248,18 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     public void testExecution() throws Exception {
         String name = "oneMoreGrid";
 
-        Collection<IgniteBiTuple<Ignite, IgnitePredicate<IgniteEvent>>> lsnrs = new LinkedList<>();
+        Collection<IgniteBiTuple<Ignite, IgnitePredicate<Event>>> lsnrs = new LinkedList<>();
 
         try {
             final AtomicInteger cnt = new AtomicInteger();
 
             Ignite g = startGrid(name);
 
-            IgnitePredicate<IgniteEvent> lsnr;
+            IgnitePredicate<Event> lsnr;
 
             if (!Ignite.class.isAssignableFrom(projection().getClass())) {
-                g.events().localListen(lsnr = new IgnitePredicate<IgniteEvent>() {
-                    @Override public boolean apply(IgniteEvent evt) {
+                g.events().localListen(lsnr = new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
                         assert evt.type() == EVT_JOB_STARTED;
 
                         assert false;
@@ -274,8 +274,8 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
             for (ClusterNode node : prj.nodes()) {
                 g = G.ignite(node.id());
 
-                g.events().localListen(lsnr = new IgnitePredicate<IgniteEvent>() {
-                    @Override public boolean apply(IgniteEvent evt) {
+                g.events().localListen(lsnr = new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
                         assert evt.type() == EVT_JOB_STARTED;
 
                         synchronized (mux) {
@@ -311,7 +311,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
             checkActiveFutures();
         }
         finally {
-            for (IgniteBiTuple<Ignite, IgnitePredicate<IgniteEvent>> t : lsnrs)
+            for (IgniteBiTuple<Ignite, IgnitePredicate<Event>> t : lsnrs)
                 t.get1().events().stopLocalListen(t.get2(), EVT_JOB_STARTED);
 
             stopGrid(name);
@@ -327,7 +327,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.broadcast(runJob);
 
-        IgniteInternalFuture fut = comp.future();
+        ComputeTaskFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -343,13 +343,13 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void run2(AtomicInteger cnt) throws Exception {
-        Collection<Runnable> jobs = F.asList(runJob);
+        Collection<IgniteRunnable> jobs = F.asList(runJob);
 
         IgniteCompute comp = compute(prj).withAsync();
 
         comp.run(jobs);
 
-        IgniteInternalFuture fut = comp.future();
+        ComputeTaskFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -369,7 +369,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.broadcast(calJob);
 
-        IgniteInternalFuture fut = comp.future();
+        ComputeTaskFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -387,11 +387,11 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     private void call2(AtomicInteger cnt) throws Exception {
         IgniteCompute comp = compute(prj).withAsync();
 
-        Collection<Callable<String>> jobs = F.asList(calJob);
+        Collection<IgniteCallable<String>> jobs = F.asList(calJob);
 
         comp.call(jobs);
 
-        IgniteInternalFuture fut = comp.future();
+        ComputeTaskFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -411,7 +411,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.apply(clrJob, (String) null);
 
-        IgniteInternalFuture fut = comp.future();
+        ComputeTaskFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -433,7 +433,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.apply(clrJob, args);
 
-        IgniteInternalFuture fut = comp.future();
+        ComputeTaskFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -453,7 +453,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.broadcast(new TestClosure(), "arg");
 
-        IgniteInternalFuture<Collection<String>> fut = comp.future();
+        ComputeTaskFuture<Collection<String>> fut = comp.future();
 
         waitForExecution(fut);
 
@@ -480,7 +480,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.apply(clrJob, args, rdc);
 
-        IgniteInternalFuture fut = comp.future();
+        ComputeTaskFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -496,13 +496,13 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void forkjoin2(AtomicInteger cnt) throws Exception {
-        Collection<Callable<String>> jobs = F.asList(calJob);
+        Collection<IgniteCallable<String>> jobs = F.asList(calJob);
 
         IgniteCompute comp = compute(prj).withAsync();
 
         comp.call(jobs, rdc);
 
-        IgniteInternalFuture fut = comp.future();
+        ComputeTaskFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -602,7 +602,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws InterruptedException Thrown if wait was interrupted.
      */
     @SuppressWarnings({"UnconditionalWait"})
-    private void waitForExecution(IgniteInternalFuture fut) throws InterruptedException {
+    private void waitForExecution(IgniteFuture fut) throws InterruptedException {
         long sleep = 250;
 
         long threshold = System.currentTimeMillis() + WAIT_TIMEOUT;
@@ -652,7 +652,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
         Collection<ComputeTaskFuture<Object>> futsList = new ArrayList<>();
 
         for (int i = 0; i < 10; i++) {
-            comp.call(new TestWaitCallable<Object>());
+            comp.call(new TestWaitCallable<>());
 
             ComputeTaskFuture<Object> fut = comp.future();
 
@@ -692,7 +692,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     /**
      * Test runnable.
      */
-    private static class TestRunnable implements Runnable, Serializable {
+    private static class TestRunnable implements IgniteRunnable {
         /** {@inheritDoc} */
         @Override public void run() {
             // No-op.
@@ -702,7 +702,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     /**
      * Test callable.
      */
-    private static class TestCallable<T> implements Callable<T>, Serializable {
+    private static class TestCallable<T> implements IgniteCallable<T> {
         /** {@inheritDoc} */
         @Nullable @Override public T call() throws Exception {
             return null;
@@ -712,7 +712,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     /**
      * Test callable.
      */
-    private static class TestWaitCallable<T> implements Callable<T>, Serializable {
+    private static class TestWaitCallable<T> implements IgniteCallable<T> {
         /** {@inheritDoc} */
         @Nullable @Override public T call() throws Exception {
             synchronized (mux) {
@@ -730,7 +730,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestTask extends ComputeTaskSplitAdapter<String, Void> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
             Collection<ComputeJob> jobs = new HashSet<>();
 
             for (int i = 0; i < gridSize; i++)
@@ -740,7 +740,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -751,7 +751,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestJob extends ComputeJobAdapter {
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() throws IgniteCheckedException {
+        @Nullable @Override public Object execute() {
             return null;
         }
     }

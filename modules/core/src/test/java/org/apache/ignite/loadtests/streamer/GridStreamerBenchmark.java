@@ -18,9 +18,9 @@
 package org.apache.ignite.loadtests.streamer;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.springframework.beans.factory.xml.*;
 import org.springframework.context.support.*;
 import org.springframework.core.io.*;
@@ -121,7 +121,7 @@ public class GridStreamerBenchmark {
             cfgUrl = new URL(cfgPath);
         }
         catch (MalformedURLException ignore) {
-            cfgUrl = U.resolveGridGainUrl(cfgPath);
+            cfgUrl = U.resolveIgniteUrl(cfgPath);
         }
 
         if (cfgUrl == null)

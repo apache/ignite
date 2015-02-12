@@ -18,13 +18,13 @@
 package org.apache.ignite.spi.eventstorage.memory;
 
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.spi.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests for {@link MemoryEventStorageSpi}.
@@ -56,10 +56,10 @@ public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<Memor
     public void testMemoryEventStorage() throws Exception {
         MemoryEventStorageSpi spi = getSpi();
 
-        IgnitePredicate<IgniteEvent> filter = F.alwaysTrue();
+        IgnitePredicate<Event> filter = F.alwaysTrue();
 
         // Get all events.
-        Collection<IgniteEvent> evts = spi.localEvents(filter);
+        Collection<Event> evts = spi.localEvents(filter);
 
         // Check.
         assert evts != null : "Events can't be null.";
@@ -106,7 +106,7 @@ public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<Memor
         try {
             spi.clearAll();
 
-            spi.setFilter(F.<IgniteEvent>alwaysFalse());
+            spi.setFilter(F.<Event>alwaysFalse());
 
             // This event should not record.
             spi.record(createEvent());
@@ -116,7 +116,7 @@ public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<Memor
             spi.record(createEvent());
 
             // Get all events.
-            Collection<IgniteEvent> evts = spi.localEvents(F.<IgniteEvent>alwaysTrue());
+            Collection<Event> evts = spi.localEvents(F.<Event>alwaysTrue());
 
             assert evts != null : "Events can't be null.";
             assert evts.size() == 1 : "Invalid events count: " + evts.size();
@@ -131,8 +131,8 @@ public class GridMemoryEventStorageSpiSelfTest extends GridSpiAbstractTest<Memor
      * @return Discovery event.
      * @throws Exception If error occurred.
      */
-    private IgniteEvent createEvent() throws Exception {
-        return new IgniteDiscoveryEvent(null, "Test Event", EVT_NODE_METRICS_UPDATED, null);
+    private Event createEvent() throws Exception {
+        return new DiscoveryEvent(null, "Test Event", EVT_NODE_METRICS_UPDATED, null);
     }
 }
 

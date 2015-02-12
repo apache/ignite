@@ -17,8 +17,8 @@
 
 package org.apache.ignite.loadtests.offheap;
 
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.offheap.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;

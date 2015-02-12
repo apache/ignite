@@ -22,7 +22,7 @@ import java.lang.annotation.*;
 /**
  * Annotates public static methods in classes to be used in SQL queries as custom functions.
  * Annotated class must be registered in H2 indexing SPI using following method
- * {@link org.apache.ignite.configuration.IgniteQueryConfiguration#setIndexCustomFunctionClasses(java.lang.Class[])}.
+ * {@link org.apache.ignite.configuration.QueryConfiguration#setIndexCustomFunctionClasses(java.lang.Class[])}.
  * <p>
  * Example usage:
  * <pre name="code" class="java">

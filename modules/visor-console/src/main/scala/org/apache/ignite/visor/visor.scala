@@ -24,26 +24,27 @@ import java.util.concurrent._
 import java.util.{HashSet => JHashSet, _}
 
 import org.apache.ignite.IgniteSystemProperties._
-import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterMetrics, ClusterNode}
+import org.apache.ignite.cluster.{ClusterGroup, ClusterMetrics, ClusterNode}
 import org.apache.ignite.configuration.IgniteConfiguration
-import org.apache.ignite.events.IgniteEventType._
-import org.apache.ignite.events.{IgniteDiscoveryEvent, IgniteEvent}
+import org.apache.ignite.events.EventType._
+import org.apache.ignite.events.{DiscoveryEvent, Event}
 import org.apache.ignite.internal.IgniteComponentType._
-import org.apache.ignite.internal.GridNodeAttributes._
+import org.apache.ignite.internal.IgniteNodeAttributes._
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
 import org.apache.ignite.internal.processors.spring.IgniteSpringProcessor
+import org.apache.ignite.internal.{IgniteVersionUtils, IgniteEx}
+import IgniteVersionUtils._
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils}
 import org.apache.ignite.internal.visor.VisorTaskArgument
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
-import org.apache.ignite.internal.{IgniteEx, GridProductImpl}
 import org.apache.ignite.lang.{IgniteNotPeerDeployable, IgnitePredicate}
-import org.apache.ignite.lifecycle.IgniteListener
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
-import org.apache.ignite.{IgniteState, IgniteSystemProperties, Ignition, _}
+import org.apache.ignite._
 import org.jetbrains.annotations.Nullable
 
 import scala.collection.JavaConversions._
@@ -112,10 +113,10 @@ trait VisorTag
  * }}}
  *
  * ==Overview==
- * Visor console provides monitoring capabilities for GridGain.
+ * Visor console provides monitoring capabilities for Ignite.
  *
  * ==Usage==
- * GridGain ships with `IGNITE_HOME/bin/ignitevisorcmd.{sh|bat}` script that starts Visor console.
+ * Ignite ships with `IGNITE_HOME/bin/ignitevisorcmd.{sh|bat}` script that starts Visor console.
  *
  * Just type:<ex>help</ex> in Visor console to get help and get started.
  */
@@ -131,7 +132,7 @@ object visor extends VisorTag {
     type NodeFilter = ClusterNode => Boolean
 
     /** Type alias for general event filter. */
-    type EventFilter = IgniteEvent => Boolean
+    type EventFilter = Event => Boolean
 
     /** `Nil` is for empty list, `Til` is for empty tuple. */
     val Til: Arg = (null, null)
@@ -146,19 +147,16 @@ object visor extends VisorTag {
     private var cmdLst: Seq[VisorConsoleCommandHolder] = Nil
 
     /** Node left listener. */
-    private var nodeLeftLsnr: IgnitePredicate[IgniteEvent] = null
+    private var nodeLeftLsnr: IgnitePredicate[Event] = null
 
     /** Node join listener. */
-    private var nodeJoinLsnr: IgnitePredicate[IgniteEvent] = null
+    private var nodeJoinLsnr: IgnitePredicate[Event] = null
 
     /** Node segmentation listener. */
-    private var nodeSegLsnr: IgnitePredicate[IgniteEvent] = null
+    private var nodeSegLsnr: IgnitePredicate[Event] = null
 
     /** Node stop listener. */
-    private var nodeStopLsnr: IgniteListener = null
-
-    /** Visor copyright blurb. */
-    private final val COPYRIGHT = GridProductImpl.COPYRIGHT
+    private var nodeStopLsnr: IgnitionListener = null
 
     /** */
     @volatile private var isCon: Boolean = false
@@ -205,7 +203,7 @@ object visor extends VisorTag {
      */
     private final val DFLT_LOG_PATH = "visor/visor-log"
 
-    /** Default configuration path relative to GridGain home. */
+    /** Default configuration path relative to Ignite home. */
     private final val DFLT_CFG = "config/default-config.xml"
 
     /** Log file. */
@@ -227,25 +225,25 @@ object visor extends VisorTag {
     @volatile var cfgPath: String = null
 
     /** */
-    @volatile var grid: IgniteEx = null
+    @volatile var ignite: IgniteEx = null
 
     /**
      * Get grid node for specified ID.
      *
      * @param nid Node ID.
      * @return GridNode instance.
-     * @throws IgniteCheckedException if Visor is disconnected or node not found.
+     * @throws IgniteException if Visor is disconnected or node not found.
      */
     def node(nid: UUID): ClusterNode = {
-        val g = grid
+        val g = ignite
 
         if (g == null)
-            throw new IgniteCheckedException("Visor disconnected")
+            throw new IgniteException("Visor disconnected")
         else {
             val node = g.node(nid)
 
             if (node == null)
-                throw new IgniteCheckedException("Node is gone: " + nid)
+                throw new IgniteException("Node is gone: " + nid)
 
             node
         }
@@ -254,7 +252,7 @@ object visor extends VisorTag {
     Runtime.getRuntime.addShutdownHook(new Thread() {
         override def run() {
             try
-                if (grid != null && isConnected) {
+                if (ignite != null && isConnected) {
                     // Call all shutdown callbacks.
                     shutdownCbs foreach(_.apply())
 
@@ -389,7 +387,7 @@ object visor extends VisorTag {
             "should be enabled on all nodes.",
             " ",
             "If neither '-cpath' or '-d' are provided, command will ask",
-            "user to select GridGain configuration file in interactive mode."
+            "user to select Ignite configuration file in interactive mode."
         ),
         spec = Seq(
             "open -cpath=<path>",
@@ -397,21 +395,21 @@ object visor extends VisorTag {
         ),
         args = Seq(
             "-cpath=<path>" -> Seq(
-                "GridGain configuration path.",
-                "Can be absolute, relative to GridGain home folder or any well formed URL."
+                "Ignite configuration path.",
+                "Can be absolute, relative to Ignite home folder or any well formed URL."
             ),
             "-d" -> Seq(
-                "Flag forces the command to connect to grid using default GridGain configuration file.",
+                "Flag forces the command to connect to grid using default Ignite configuration file.",
                 "without interactive mode."
             )
         ),
         examples = Seq(
             "open" ->
-                "Prompts user to select GridGain configuration file in interactive mode.",
+                "Prompts user to select Ignite configuration file in interactive mode.",
             "open -d" ->
-                "Connects Visor console to grid using default GridGain configuration file.",
+                "Connects Visor console to grid using default Ignite configuration file.",
             "open -cpath=/gg/config/mycfg.xml" ->
-                "Connects Visor console to grid using GridGain configuration from provided file."
+                "Connects Visor console to grid using Ignite configuration from provided file."
         ),
         ref = VisorConsoleCommand(open, open)
     )
@@ -447,7 +445,7 @@ object visor extends VisorTag {
             "Logging starts by default when Visor starts.",
             " ",
             "Events are logged to a file. If path is not provided,",
-            "it will log into '<GridGain home folder>/work/visor/visor-log'.",
+            "it will log into '<Ignite home folder>/work/visor/visor-log'.",
             " ",
             "File is always opened in append mode.",
             "If file doesn't exist, it will be created.",
@@ -476,7 +474,7 @@ object visor extends VisorTag {
             ),
             "-f=<path>" -> Seq(
                 "Provides path to the file.",
-                "Path to the file can be absolute or relative to GridGain home folder."
+                "Path to the file can be absolute or relative to Ignite home folder."
             ),
             "-p=<num>" -> Seq(
                 "Provides period of querying events (in seconds).",
@@ -501,15 +499,15 @@ object visor extends VisorTag {
             "log -l -f=/home/user/visor-log" ->
                 "Starts logging to file 'visor-log' located at '/home/user'.",
             "log -l -f=log/visor-log" ->
-                "Starts logging to file 'visor-log' located at '<GridGain home folder>/log'.",
+                "Starts logging to file 'visor-log' located at '<Ignite home folder>/log'.",
             ("log -l -p=20",
-                "Starts logging to file '<GridGain home folder>/work/visor/visor-log' " +
+                "Starts logging to file '<Ignite home folder>/work/visor/visor-log' " +
                 "with querying events period of 20 seconds."),
             ("log -l -t=30",
-                "Starts logging to file '<GridGain home folder>/work/visor/visor-log' " +
+                "Starts logging to file '<Ignite home folder>/work/visor/visor-log' " +
                 "with topology snapshot logging period of 30 seconds."),
             ("log -l -dl",
-                "Starts logging to file '<GridGain home folder>/work/visor/visor-log' " +
+                "Starts logging to file '<Ignite home folder>/work/visor/visor-log' " +
                 "with disabled collection events from remote nodes."),
             "log -s" ->
                 "Stops logging."
@@ -851,7 +849,7 @@ object visor extends VisorTag {
         }
         else if (id.isDefined)
             try {
-                val node = Option(grid.node(java.util.UUID.fromString(id.get)))
+                val node = Option(ignite.node(java.util.UUID.fromString(id.get)))
 
                 if (node.isDefined)
                     Right(node)
@@ -1257,7 +1255,7 @@ object visor extends VisorTag {
      * Gets global projection as an option.
      */
     def gridOpt =
-        Option(grid)
+        Option(ignite)
 
     def noop() {}
 
@@ -1289,10 +1287,10 @@ object visor extends VisorTag {
 
         t += ("Status", if (isCon) "Connected" else "Disconnected")
         t += ("Grid name",
-            if (grid == null)
+            if (ignite == null)
                 "<n/a>"
             else {
-                val n = grid.name
+                val n = ignite.name
 
                 if (n == null) "<default>" else n
             }
@@ -1474,10 +1472,10 @@ object visor extends VisorTag {
                         new URL(path)
                     catch {
                         case e: Exception =>
-                            val url = IgniteUtils.resolveGridGainUrl(path)
+                            val url = IgniteUtils.resolveIgniteUrl(path)
 
                             if (url == null)
-                                throw new IgniteCheckedException("GridGain configuration path is invalid: " + path, e)
+                                throw new IgniteException("Ignite configuration path is invalid: " + path, e)
 
                             url
                     }
@@ -1502,10 +1500,10 @@ object visor extends VisorTag {
                     }
 
                 if (cfgs == null || cfgs.isEmpty)
-                    throw new IgniteCheckedException("Can't find grid configuration in: " + url)
+                    throw new IgniteException("Can't find grid configuration in: " + url)
 
                 if (cfgs.size > 1)
-                    throw new IgniteCheckedException("More than one grid configuration found in: " + url)
+                    throw new IgniteException("More than one grid configuration found in: " + url)
 
                 val cfg = cfgs.iterator().next()
 
@@ -1517,14 +1515,12 @@ object visor extends VisorTag {
                 if (cpuCnt < 4)
                     cpuCnt = 4
 
-                cfg.setClientConnectionConfiguration(null)
-
-                def createExecutor = new IgniteThreadPoolExecutor(cpuCnt, cpuCnt, Long.MaxValue, new LinkedBlockingQueue[Runnable])
+                cfg.setConnectorConfiguration(null)
 
                 // All thread pools are overridden to have size equal to number of CPUs.
-                cfg.setExecutorService(createExecutor)
-                cfg.setSystemExecutorService(createExecutor)
-                cfg.setPeerClassLoadingExecutorService(createExecutor)
+                cfg.setPublicThreadPoolSize(cpuCnt)
+                cfg.setSystemThreadPoolSize(cpuCnt)
+                cfg.setPeerClassLoadingThreadPoolSize(cpuCnt)
 
                 var ioSpi = cfg.getCommunicationSpi
 
@@ -1564,7 +1560,7 @@ object visor extends VisorTag {
             open(cfg, cfgPath)
         }
         catch {
-            case e: IgniteCheckedException =>
+            case e: IgniteException =>
                 warn(e.getMessage)
                 warn("Type 'help open' to see how to use this command.")
 
@@ -1600,14 +1596,14 @@ object visor extends VisorTag {
 
         this.cfgPath = cfgPath
 
-        grid =
+        ignite =
             try
                 Ignition.ignite(startedGridName).asInstanceOf[IgniteEx]
             catch {
                 case _: IllegalStateException =>
                     this.cfgPath = null
 
-                    throw new IgniteCheckedException("Named grid unavailable: " + startedGridName)
+                    throw new IgniteException("Named grid unavailable: " + startedGridName)
             }
 
         assert(cfgPath != null)
@@ -1616,7 +1612,7 @@ object visor extends VisorTag {
         conOwner = true
         conTs = System.currentTimeMillis
 
-        grid.nodes().foreach(n => {
+        ignite.nodes().foreach(n => {
             setVarIfAbsent(nid8(n), "n")
 
             val ip = n.addresses().headOption
@@ -1625,13 +1621,13 @@ object visor extends VisorTag {
                 setVarIfAbsent(ip.get, "h")
         })
 
-        nodeJoinLsnr = new IgnitePredicate[IgniteEvent]() {
-            override def apply(e: IgniteEvent): Boolean = {
+        nodeJoinLsnr = new IgnitePredicate[Event]() {
+            override def apply(e: Event): Boolean = {
                 e match {
-                    case de: IgniteDiscoveryEvent =>
+                    case de: DiscoveryEvent =>
                         setVarIfAbsent(nid8(de.eventNode()), "n")
 
-                        val node = grid.node(de.eventNode().id())
+                        val node = ignite.node(de.eventNode().id())
 
                         if (node != null) {
                             val ip = node.addresses().headOption
@@ -1652,12 +1648,12 @@ object visor extends VisorTag {
             }
         }
 
-        grid.events().localListen(nodeJoinLsnr, EVT_NODE_JOINED)
+        ignite.events().localListen(nodeJoinLsnr, EVT_NODE_JOINED)
 
-        nodeLeftLsnr = new IgnitePredicate[IgniteEvent]() {
-            override def apply(e: IgniteEvent): Boolean = {
+        nodeLeftLsnr = new IgnitePredicate[Event]() {
+            override def apply(e: Event): Boolean = {
                 e match {
-                    case (de: IgniteDiscoveryEvent) =>
+                    case (de: DiscoveryEvent) =>
                         val nv = mfind(nid8(de.eventNode()))
 
                         if (nv.isDefined)
@@ -1666,7 +1662,7 @@ object visor extends VisorTag {
                         val ip = de.eventNode().addresses.headOption
 
                         if (ip.isDefined) {
-                            val last = !grid.nodes().exists(n =>
+                            val last = !ignite.nodes().exists(n =>
                                 n.addresses.size > 0 && n.addresses.head == ip.get
                             )
 
@@ -1683,13 +1679,13 @@ object visor extends VisorTag {
             }
         }
 
-        grid.events().localListen(nodeLeftLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED)
+        ignite.events().localListen(nodeLeftLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED)
 
-        nodeSegLsnr = new IgnitePredicate[IgniteEvent] {
-            override def apply(e: IgniteEvent): Boolean = {
+        nodeSegLsnr = new IgnitePredicate[Event] {
+            override def apply(e: Event): Boolean = {
                 e match {
-                    case de: IgniteDiscoveryEvent =>
-                        if (de.eventNode().id() == grid.localNode.id) {
+                    case de: DiscoveryEvent =>
+                        if (de.eventNode().id() == ignite.localNode.id) {
                             warn("Closing Visor console due to topology segmentation.")
                             warn("Contact your system administrator.")
 
@@ -1703,11 +1699,11 @@ object visor extends VisorTag {
             }
         }
 
-        grid.events().localListen(nodeSegLsnr, EVT_NODE_SEGMENTED)
+        ignite.events().localListen(nodeSegLsnr, EVT_NODE_SEGMENTED)
 
-        nodeStopLsnr = new IgniteListener {
+        nodeStopLsnr = new IgnitionListener {
             def onStateChange(name: String, state: IgniteState) {
-                if (name == grid.name && state == IgniteState.STOPPED) {
+                if (name == ignite.name && state == IgniteState.STOPPED) {
                     warn("Closing Visor console due to stopping of host grid instance.")
 
                     nl()
@@ -1765,12 +1761,12 @@ object visor extends VisorTag {
         assert(id != null)
         assert(isCon)
 
-        val g = grid
+        val g = ignite
 
         if (g != null && g.localNode.id == id)
             "<visor>"
         else {
-            val n = grid.node(id)
+            val n = ignite.node(id)
 
             val id8 = nid8(id)
             val v = mfind(id8)
@@ -1838,7 +1834,7 @@ object visor extends VisorTag {
 
         t #= ("#", "Node ID8(@), IP", "Up Time", "CPUs", "CPU Load", "Free Heap")
 
-        val nodes = grid.nodes().toList
+        val nodes = ignite.nodes().toList
 
         if (nodes.isEmpty) {
             warn("Topology is empty.")
@@ -1902,7 +1898,7 @@ object visor extends VisorTag {
 
         t #= ("#", "Int./Ext. IPs", "Node ID8(@)", "OS", "CPUs", "MACs", "CPU Load")
 
-        val neighborhood = IgniteUtils.neighborhood(grid.nodes()).values().toIndexedSeq
+        val neighborhood = IgniteUtils.neighborhood(ignite.nodes()).values().toIndexedSeq
 
         if (neighborhood.isEmpty) {
             warn("Topology is empty.")
@@ -1960,7 +1956,7 @@ object visor extends VisorTag {
                 None
             else {
                 try
-                    Some(grid.forNodes(neighborhood(a.toInt)))
+                    Some(ignite.forNodes(neighborhood(a.toInt)))
                 catch {
                     case e: Throwable =>
                         warn("Invalid selection: " + a)
@@ -2061,7 +2057,7 @@ object visor extends VisorTag {
     def askNodeId(): Option[String] = {
         assert(isConnected)
 
-        val ids = grid.forRemotes().nodes().map(nid8).toList
+        val ids = ignite.forRemotes().nodes().map(nid8).toList
 
         (0 until ids.size).foreach(i => println((i + 1) + ": " + ids(i)))
 
@@ -2162,23 +2158,23 @@ object visor extends VisorTag {
             // Call all close callbacks.
             cbs foreach(_.apply())
 
-            if (grid != null && Ignition.state(grid.name) == IgniteState.STARTED) {
+            if (ignite != null && Ignition.state(ignite.name) == IgniteState.STARTED) {
                 if (nodeJoinLsnr != null)
-                    grid.events().stopLocalListen(nodeJoinLsnr)
+                    ignite.events().stopLocalListen(nodeJoinLsnr)
 
                 if (nodeLeftLsnr != null)
-                    grid.events().stopLocalListen(nodeLeftLsnr)
+                    ignite.events().stopLocalListen(nodeLeftLsnr)
 
                 if (nodeSegLsnr != null)
-                    grid.events().stopLocalListen(nodeSegLsnr)
+                    ignite.events().stopLocalListen(nodeSegLsnr)
             }
 
             if (nodeStopLsnr != null)
                 Ignition.removeListener(nodeStopLsnr)
 
-            if (grid != null && conOwner)
+            if (ignite != null && conOwner)
                 try
-                    Ignition.stop(grid.name, true)
+                    Ignition.stop(ignite.name, true)
                 catch {
                     case e: Exception => warn(e.getMessage)
                 }
@@ -2197,7 +2193,7 @@ object visor extends VisorTag {
             isCon = false
             conOwner = false
             conTs = 0
-            grid = null
+            ignite = null
             nodeJoinLsnr = null
             nodeLeftLsnr = null
             nodeSegLsnr = null
@@ -2255,7 +2251,7 @@ object visor extends VisorTag {
      * Starts logging to file `visor-log` located at `/home/user`.
      * <br>
      * <ex>log -l -f=log/visor-log</ex>
-     * Starts logging to file `visor-log` located at &lt`GridGain home folder`&gt`/log`.
+     * Starts logging to file `visor-log` located at &lt`Ignite home folder`&gt`/log`.
      * <br>
      * <ex>log -l -p=20</ex>
      * Starts logging with querying events period of 20 seconds.
@@ -2408,17 +2404,13 @@ object visor extends VisorTag {
                 EVT_TASK_DEPLOYED,
                 EVT_TASK_UNDEPLOYED,
 
-                EVT_LIC_CLEARED,
-                EVT_LIC_VIOLATION,
-                EVT_LIC_GRACE_EXPIRED,
-
                 EVT_CACHE_PRELOAD_STARTED,
                 EVT_CACHE_PRELOAD_STOPPED,
                 EVT_CLASS_DEPLOY_FAILED
             )
 
             override def run() {
-                val g = grid
+                val g = ignite
 
                 if (g != null) {
                     try {
@@ -2461,7 +2453,7 @@ object visor extends VisorTag {
                         }
                     }
                     catch {
-                        case _: ClusterGroupEmptyException => // Ignore.
+                        case _: ClusterGroupEmptyCheckedException => // Ignore.
                         case e: Exception => logText("Failed to collect log.")
                     }
                 }
@@ -2487,13 +2479,13 @@ object visor extends VisorTag {
      * Does topology snapshot.
      */
     private def snapshot() {
-        val g = grid
+        val g = ignite
 
         if (g != null)
             try
                 drawBar(g.metrics())
             catch {
-                case e: ClusterGroupEmptyException => logText("Topology is empty.")
+                case e: ClusterGroupEmptyCheckedException => logText("Topology is empty.")
                 case e: Exception => ()
             }
     }
@@ -2521,8 +2513,8 @@ object visor extends VisorTag {
         }
 
         logText("H/N/C" + pipe +
-            IgniteUtils.neighborhood(grid.nodes()).size.toString.padTo(4, ' ') + pipe +
-            grid.nodes().size().toString.padTo(4, ' ') + pipe +
+            IgniteUtils.neighborhood(ignite.nodes()).size.toString.padTo(4, ' ') + pipe +
+            ignite.nodes().size().toString.padTo(4, ' ') + pipe +
             m.getTotalCpus.toString.padTo(4, ' ') + pipe +
             bar(m.getAverageCpuLoad, m.getHeapMemoryUsed / m.getHeapMemoryMaximum) + pipe
         )
@@ -2624,7 +2616,7 @@ object visor extends VisorTag {
      * @return Collection of nodes that has specified ID8.
      */
     def nodeById8(id8: String) = {
-        grid.nodes().filter(n => id8.equalsIgnoreCase(nid8(n)))
+        ignite.nodes().filter(n => id8.equalsIgnoreCase(nid8(n)))
     }
 
     /**

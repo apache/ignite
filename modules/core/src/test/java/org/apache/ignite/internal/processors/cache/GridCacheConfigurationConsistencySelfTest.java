@@ -30,12 +30,12 @@ import org.apache.ignite.cache.eviction.random.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -46,12 +46,12 @@ import javax.cache.integration.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
 
 /**
  *
@@ -67,7 +67,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     private CacheMode cacheMode = REPLICATED;
 
     /** */
-    private IgniteDeploymentMode depMode = SHARED;
+    private DeploymentMode depMode = SHARED;
 
     /** */
     private C1<CacheConfiguration, Void> initCache;
@@ -187,7 +187,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         cacheMode = null;
         depMode = SHARED;
 
-        assert startGrid(1).cache("myCache").configuration().getCacheMode() == CacheConfiguration.DFLT_CACHE_MODE;
+        assert startGrid(1).jcache("myCache").getConfiguration(CacheConfiguration.class).getCacheMode() == CacheConfiguration.DFLT_CACHE_MODE;
     }
 
     /**
@@ -397,7 +397,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictionFilter(new CacheEvictionFilter<Object, Object>() {
-                        @Override public boolean evictAllowed(CacheEntry<Object, Object> entry) {
+                        @Override public boolean evictAllowed(Cache.Entry<Object, Object> entry) {
                             return false;
                         }
                     });
@@ -408,7 +408,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setEvictionFilter(new CacheEvictionFilter<Object, Object>() {
-                        @Override public boolean evictAllowed(CacheEntry<Object, Object> entry) {
+                        @Override public boolean evictAllowed(Cache.Entry<Object, Object> entry) {
                             return true;
                         }
                     });
@@ -653,7 +653,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         initCache = new C1<CacheConfiguration, Void>() {
             /** {@inheritDoc} */
             @Override public Void apply(CacheConfiguration cfg) {
-                cfg.setAtomicSequenceReserveSize(1000);
                 cfg.setCloner(new CacheCloner() {
                     @Nullable @Override public <T> T cloneValue(T val) {
                         return null;
@@ -662,6 +661,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cfg.setDefaultLockTimeout(1000);
                 cfg.setDefaultQueryTimeout(1000);
                 cfg.setDefaultTimeToLive(1000);
+
                 return null;
             }
         };
@@ -673,7 +673,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         initCache = new C1<CacheConfiguration, Void>() {
             /** {@inheritDoc} */
             @Override public Void apply(CacheConfiguration cfg) {
-                cfg.setAtomicSequenceReserveSize(2 * 1000);
                 cfg.setCloner(new CacheCloner() {
                     @Nullable @Override public <T> T cloneValue(T val) {
                         return null;
@@ -682,6 +681,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cfg.setDefaultLockTimeout(2 * 1000);
                 cfg.setDefaultQueryTimeout(2 * 1000);
                 cfg.setDefaultTimeToLive(2 * 1000);
+
                 return null;
             }
         };
@@ -690,7 +690,6 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
 
         String log = strLog.toString();
 
-        assertTrue(log.contains("Atomic sequence reserve size mismatch"));
         assertTrue(log.contains("Cache cloner mismatch"));
         assertTrue(log.contains("Default lock timeout"));
         assertTrue(log.contains("Default query timeout"));

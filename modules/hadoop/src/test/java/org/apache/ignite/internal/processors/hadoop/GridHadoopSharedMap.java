@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.jdk8.backport.ConcurrentHashMap8;
+import org.jdk8.backport.*;
 
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.*;
 
 /**
  * For tests.

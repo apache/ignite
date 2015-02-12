@@ -21,13 +21,15 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheDistributionMode.*;
@@ -41,7 +43,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private final GridCacheContext<?, ?> cctx;
 
     /** */
-    private final IgnitePredicate<CacheEntry<Object, Object>> prjPred;
+    private final IgnitePredicate<Cache.Entry<Object, Object>> prjPred;
 
     /** */
     private final GridCacheQueryType type;
@@ -103,7 +105,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
-        @Nullable IgnitePredicate<CacheEntry<Object, Object>> prjPred,
+        @Nullable IgnitePredicate<Cache.Entry<Object, Object>> prjPred,
         @Nullable String clsName,
         @Nullable String clause,
         @Nullable IgniteBiPredicate<Object, Object> filter,
@@ -146,7 +148,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param taskHash Task hash.
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
-        IgnitePredicate<CacheEntry<Object, Object>> prjPred,
+        IgnitePredicate<Cache.Entry<Object, Object>> prjPred,
         GridCacheQueryType type,
         IgniteLogger log,
         int pageSize,
@@ -184,7 +186,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /**
      * @return cache projection filter.
      */
-    @Nullable public IgnitePredicate<CacheEntry<Object, Object>> projectionFilter() {
+    @Nullable public IgnitePredicate<Cache.Entry<Object, Object>> projectionFilter() {
         return prjPred;
     }
 
@@ -352,7 +354,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @throws IgniteCheckedException If query is invalid.
      */
     public void validate() throws IgniteCheckedException {
-        if (type != SCAN && !cctx.config().isQueryIndexEnabled())
+        if ((type != SCAN && type != SET) && !cctx.config().isQueryIndexEnabled())
             throw new IgniteCheckedException("Indexing is disabled for cache: " + cctx.cache().name());
     }
 
@@ -413,7 +415,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         cctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (nodes.isEmpty())
-            return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), new ClusterGroupEmptyException());
+            return new GridCacheQueryErrorFuture<>(cctx.kernalContext(), new ClusterGroupEmptyCheckedException());
 
         if (log.isDebugEnabled())
             log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');

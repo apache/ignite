@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
@@ -28,7 +28,7 @@ import java.util.concurrent.*;
 /**
  * Externalizable wrapper for {@link ExpiryPolicy}.
  */
-public class IgniteExternalizableExpiryPolicy implements ExpiryPolicy, Externalizable, IgniteOptimizedMarshallable {
+public class IgniteExternalizableExpiryPolicy implements ExpiryPolicy, Externalizable, OptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -100,10 +100,12 @@ public class IgniteExternalizableExpiryPolicy implements ExpiryPolicy, Externali
      */
     private void writeDuration(ObjectOutput out, @Nullable Duration duration) throws IOException {
         if (duration != null) {
-            if (duration.isEternal())
-                out.writeLong(0);
-            else if (duration.getDurationAmount() == 0)
-                out.writeLong(1);
+            if (duration.getDurationAmount() == 0L) {
+                if (duration.isEternal())
+                    out.writeLong(0);
+                else
+                    out.writeLong(CU.TTL_ZERO);
+            }
             else
                 out.writeLong(duration.getTimeUnit().toMillis(duration.getDurationAmount()));
         }
@@ -117,10 +119,12 @@ public class IgniteExternalizableExpiryPolicy implements ExpiryPolicy, Externali
     private Duration readDuration(ObjectInput in) throws IOException {
         long ttl = in.readLong();
 
-        assert ttl >= 0;
+        assert ttl >= 0 || ttl == CU.TTL_ZERO : ttl;
 
         if (ttl == 0)
             return Duration.ETERNAL;
+        else if (ttl == CU.TTL_ZERO)
+            return Duration.ZERO;
 
         return new Duration(TimeUnit.MILLISECONDS, ttl);
     }

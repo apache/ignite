@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.visor.streamer;
 
-import org.apache.ignite.streamer.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.streamer.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -48,7 +48,7 @@ public class VisorStreamerConfiguration implements Serializable {
     /** Maximum number of concurrent events to be processed. */
     private int maxConcurrentSessions;
 
-    /** Flag indicating whether streamer executor service should be shut down on GridGain stop. */
+    /** Flag indicating whether streamer executor service should be shut down on Ignite stop. */
     private boolean executorServiceShutdown;
 
     /**
@@ -157,7 +157,7 @@ public class VisorStreamerConfiguration implements Serializable {
     }
 
     /**
-     * @return Flag indicating whether streamer executor service should be shut down on GridGain stop.
+     * @return Flag indicating whether streamer executor service should be shut down on Ignite stop.
      */
     public boolean executorServiceShutdown() {
         return executorServiceShutdown;
@@ -165,7 +165,7 @@ public class VisorStreamerConfiguration implements Serializable {
 
     /**
      * @param executorSrvcShutdown New flag indicating whether streamer executor service should be shutdown
-     *      on GridGain stop.
+     *      on Ignite stop.
      */
     public void executorServiceShutdown(boolean executorSrvcShutdown) {
         executorServiceShutdown = executorSrvcShutdown;

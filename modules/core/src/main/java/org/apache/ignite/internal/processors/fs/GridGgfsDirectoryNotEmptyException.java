@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.fs;
 
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 
 /**
  * Exception indicating that directory can not be deleted because it is not empty.

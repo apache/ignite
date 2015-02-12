@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
 
 /**
@@ -27,7 +26,7 @@ import org.apache.ignite.cache.eviction.*;
  */
 public class GridCacheAlwaysEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V> {
     /** {@inheritDoc} */
-    @Override public void onEntryAccessed(boolean rmv, CacheEntry<K, V> entry) {
+    @Override public void onEntryAccessed(boolean rmv, EvictableEntry<K, V> entry) {
         if (!rmv && entry.isCached())
             entry.evict();
     }

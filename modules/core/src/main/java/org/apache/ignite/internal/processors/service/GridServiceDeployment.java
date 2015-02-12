@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.managed.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.services.*;
 
 import java.io.*;
 import java.util.*;
@@ -35,13 +35,13 @@ public class GridServiceDeployment implements GridCacheInternal, Serializable {
     private UUID nodeId;
 
     /** Service configuration. */
-    private ManagedServiceConfiguration cfg;
+    private ServiceConfiguration cfg;
 
     /**
      * @param nodeId Node ID.
      * @param cfg Service configuration.
      */
-    public GridServiceDeployment(UUID nodeId, ManagedServiceConfiguration cfg) {
+    public GridServiceDeployment(UUID nodeId, ServiceConfiguration cfg) {
         this.nodeId = nodeId;
         this.cfg = cfg;
     }
@@ -56,7 +56,7 @@ public class GridServiceDeployment implements GridCacheInternal, Serializable {
     /**
      * @return Service configuration.
      */
-    public ManagedServiceConfiguration configuration() {
+    public ServiceConfiguration configuration() {
         return cfg;
     }
 

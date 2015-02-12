@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -28,6 +29,9 @@ import javax.cache.processor.*;
  */
 public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
     /** */
+    private final GridCacheContext cctx;
+
+    /** */
     @GridToStringInclude
     private final K key;
 
@@ -36,17 +40,25 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
     private V val;
 
     /** */
-    private boolean modified;
+    private final boolean hadVal;
+
+    /** */
+    private Operation op = Operation.NONE;
 
     /**
+     * @param cctx Cache context.
      * @param key Key.
      * @param val Value.
      */
-    public CacheInvokeEntry(K key, @Nullable V val) {
+    public CacheInvokeEntry(GridCacheContext cctx, K key, @Nullable V val) {
+        assert cctx != null;
         assert key != null;
 
+        this.cctx = cctx;
         this.key = key;
         this.val = val;
+
+        hadVal = val != null;
     }
 
     /** {@inheritDoc} */
@@ -58,7 +70,10 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
     @Override public void remove() {
         val = null;
 
-        modified = true;
+        if (op == Operation.CREATE)
+            op = Operation.NONE;
+        else
+            op = Operation.REMOVE;
     }
 
     /** {@inheritDoc} */
@@ -68,7 +83,7 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
 
         this.val = val;
 
-        modified = true;
+        op = hadVal ? Operation.UPDATE : Operation.CREATE;
     }
 
     /** {@inheritDoc} */
@@ -82,19 +97,42 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T unwrap(Class<T> clazz) {
-        throw new IllegalArgumentException();
+    @SuppressWarnings("unchecked")
+    @Override public <T> T unwrap(Class<T> cls) {
+        if (cls.isAssignableFrom(Ignite.class))
+            return (T)cctx.kernalContext().grid();
+        else if (cls.isAssignableFrom(getClass()))
+            return cls.cast(this);
+
+        throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
     }
 
     /**
      * @return {@code True} if {@link #setValue} or {@link #remove was called}.
      */
     public boolean modified() {
-        return modified;
+        return op != Operation.NONE;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheInvokeEntry.class, this);
+    }
+
+    /**
+     *
+     */
+    private static enum Operation {
+        /** */
+        NONE,
+
+        /** */
+        CREATE,
+
+        /** */
+        UPDATE,
+
+        /** */
+        REMOVE
     }
 }

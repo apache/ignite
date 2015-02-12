@@ -19,15 +19,14 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
 
@@ -35,8 +34,8 @@ import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -212,9 +211,8 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
             cache.reloadAll(map.keySet());
 
             for (Integer key : map.keySet()) {
-                CacheEntry entry = cache.entry(key);
-
-                if (entry.primary() || entry.backup() || nearEnabled())
+                if (cache.affinity().isPrimaryOrBackup(grid(caches.indexOf(cache)).localNode(), key) ||
+                    nearEnabled())
                     assertEquals(map.get(key), cache.peek(key));
                 else
                     assertNull(cache.peek(key));
@@ -231,11 +229,11 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
      * @param cnt Keys count.
      * @return Collection of keys for which given cache is primary.
      */
-    private Iterable<Integer> primaryKeysForCache(CacheProjection<Integer,String> cache, int cnt) {
+    private Iterable<Integer> primaryKeysForCache(GridCache<Integer,String> cache, int cnt) {
         Collection<Integer> found = new ArrayList<>(cnt);
 
         for (int i = 0; i < 10000; i++) {
-            if (cache.entry(i).primary()) {
+            if (cache.affinity().isPrimary(grid(caches.indexOf(cache)).localNode(), i)) {
                 found.add(i);
 
                 if (found.size() == cnt)

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.streamer;
 
-import org.apache.ignite.streamer.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.streamer.*;
 
 /**
  * Streamer window metrics adapter.

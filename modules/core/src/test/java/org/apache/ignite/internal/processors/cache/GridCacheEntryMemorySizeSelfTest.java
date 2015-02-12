@@ -20,14 +20,14 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -39,7 +39,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests from {@link org.apache.ignite.cache.CacheEntry#memorySize()} method.
+ *
  */
 public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
@@ -82,7 +82,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
             NEAR_ENTRY_OVERHEAD = U.<Integer>staticField(GridNearCacheEntry.class, "NEAR_SIZE_OVERHEAD");
             REPLICATED_ENTRY_OVERHEAD = DHT_ENTRY_OVERHEAD;
 
-            IgniteMarshaller marsh = new IgniteOptimizedMarshaller();
+            Marshaller marsh = new OptimizedMarshaller();
 
             KEY_SIZE = marsh.marshal(1).length;
             ONE_KB_VAL_SIZE = marsh.marshal(new Value(new byte[1024])).length;
@@ -129,17 +129,19 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         mode = LOCAL;
 
         try {
-            GridCache<Integer, Value> cache = startGrid().cache(null);
+            IgniteCache<Integer, Value> cache = startGrid().jcache(null);
 
-            assertTrue(cache.putx(1, new Value(new byte[1024])));
-            assertTrue(cache.putx(2, new Value(new byte[2048])));
+            cache.put(1, new Value(new byte[1024]));
+            cache.put(2, new Value(new byte[2048]));
 
-            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + extrasSize(cache.entry(0)),
-                cache.entry(0).memorySize());
-            assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + extrasSize(cache.entry(1)),
-                cache.entry(1).memorySize());
-            assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + extrasSize(cache.entry(2)),
-                cache.entry(2).memorySize());
+            GridCacheAdapter<Integer, Value> internalCache = internalCache(cache);
+
+            assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + extrasSize(internalCache.entryEx(0)),
+                internalCache.entryEx(0).memorySize());
+            assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + extrasSize(internalCache.entryEx(1)),
+                internalCache.entryEx(1).memorySize());
+            assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + extrasSize(internalCache.entryEx(2)),
+                internalCache.entryEx(2).memorySize());
         }
         finally {
             stopAllGrids();
@@ -151,17 +153,19 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         mode = REPLICATED;
 
         try {
-            GridCache<Integer, Value> cache = startGrid().cache(null);
+            IgniteCache<Integer, Value> cache = startGrid().jcache(null);
 
-            assertTrue(cache.putx(1, new Value(new byte[1024])));
-            assertTrue(cache.putx(2, new Value(new byte[2048])));
+            cache.put(1, new Value(new byte[1024]));
+            cache.put(2, new Value(new byte[2048]));
+
+            GridCacheAdapter<Integer, Value> internalCache = dht(cache);
 
             assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + REPLICATED_ENTRY_OVERHEAD +
-                extrasSize(cache.entry(0)), cache.entry(0).memorySize());
+                extrasSize(internalCache.entryEx(0)), internalCache.entryEx(0).memorySize());
             assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + REPLICATED_ENTRY_OVERHEAD +
-                extrasSize(cache.entry(1)), cache.entry(1).memorySize());
+                extrasSize(internalCache.entryEx(1)), internalCache.entryEx(1).memorySize());
             assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + REPLICATED_ENTRY_OVERHEAD +
-                extrasSize(cache.entry(2)), cache.entry(2).memorySize());
+                extrasSize(internalCache.entryEx(2)), internalCache.entryEx(2).memorySize());
         }
         finally {
             stopAllGrids();
@@ -186,7 +190,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
                     if (grid(0).mapKeyToNode(null, key).equals(grid(0).localNode())) {
                         if (i > 0)
-                            assertTrue(cache(0).putx(key, new Value(new byte[i * 1024])));
+                            jcache(0).put(key, new Value(new byte[i * 1024]));
 
                         keys[i] = key;
 
@@ -196,22 +200,26 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
             }
 
             // Create near entries.
-            assertNotNull(cache(1).get(keys[1]));
-            assertNotNull(cache(1).get(keys[2]));
+            assertNotNull(jcache(1).get(keys[1]));
+            assertNotNull(jcache(1).get(keys[2]));
+
+            GridCacheAdapter<Object, Object> cache0 = dht(jcache(0));
 
             assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
-                extrasSize(cache(0).entry(keys[0])), cache(0).entry(keys[0]).memorySize());
+                extrasSize(cache0.entryEx(keys[0])), cache0.entryEx(keys[0]).memorySize());
             assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD + READER_SIZE +
-                extrasSize(cache(0).entry(keys[1])), cache(0).entry(keys[1]).memorySize());
+                extrasSize(cache0.entryEx(keys[1])), cache0.entryEx(keys[1]).memorySize());
             assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD + READER_SIZE +
-                extrasSize(cache(0).entry(keys[2])), cache(0).entry(keys[2]).memorySize());
+                extrasSize(cache0.entryEx(keys[2])), cache0.entryEx(keys[2]).memorySize());
+
+            GridCacheAdapter<Object, Object> cache1 = near(jcache(1));
 
             assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + NEAR_ENTRY_OVERHEAD +
-                extrasSize(cache(1).entry(keys[0])), cache(1).entry(keys[0]).memorySize());
+                extrasSize(cache1.entryEx(keys[0])), cache1.entryEx(keys[0]).memorySize());
             assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + NEAR_ENTRY_OVERHEAD +
-                extrasSize(cache(1).entry(keys[1])), cache(1).entry(keys[1]).memorySize());
+                extrasSize(cache1.entryEx(keys[1])), cache1.entryEx(keys[1]).memorySize());
             assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + NEAR_ENTRY_OVERHEAD +
-                extrasSize(cache(1).entry(keys[2])), cache(1).entry(keys[2]).memorySize());
+                extrasSize(cache1.entryEx(keys[2])), cache1.entryEx(keys[2]).memorySize());
         }
         finally {
             stopAllGrids();
@@ -236,7 +244,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
                     if (grid(0).mapKeyToNode(null, key).equals(grid(0).localNode())) {
                         if (i > 0)
-                            assertTrue(cache(0).putx(key, new Value(new byte[i * 1024])));
+                            jcache(0).put(key, new Value(new byte[i * 1024]));
 
                         keys[i] = key;
 
@@ -246,15 +254,17 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
             }
 
             // Create near entries.
-            assertNotNull(cache(1).get(keys[1]));
-            assertNotNull(cache(1).get(keys[2]));
+            assertNotNull(jcache(1).get(keys[1]));
+            assertNotNull(jcache(1).get(keys[2]));
+
+            GridCacheAdapter<Object, Object> cache = dht(jcache(0));
 
             assertEquals(KEY_SIZE + NULL_REF_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
-                extrasSize(cache(0).entry(keys[0])), cache(0).entry(keys[0]).memorySize());
+                extrasSize(cache.entryEx(keys[0])), cache.entryEx(keys[0]).memorySize());
             assertEquals(KEY_SIZE + ONE_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
-                extrasSize(cache(0).entry(keys[1])), cache(0).entry(keys[1]).memorySize());
+                extrasSize(cache.entryEx(keys[1])), cache.entryEx(keys[1]).memorySize());
             assertEquals(KEY_SIZE + TWO_KB_VAL_SIZE + ENTRY_OVERHEAD + DHT_ENTRY_OVERHEAD +
-                extrasSize(cache(0).entry(keys[2])), cache(0).entry(keys[2]).memorySize());
+                extrasSize(cache.entryEx(keys[2])), cache.entryEx(keys[2]).memorySize());
 
             // Do not test other node since there are no backups.
         }
@@ -270,16 +280,12 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
      * @return Extras size.
      * @throws Exception If failed.
      */
-    private int extrasSize(CacheEntry entry) throws Exception {
+    private int extrasSize(GridCacheEntryEx<?, ?> entry) throws Exception {
         Method mthd = GridCacheMapEntry.class.getDeclaredMethod("extrasSize");
 
         mthd.setAccessible(true);
 
-        GridCacheContext ctx = U.field(entry, "ctx");
-
-        GridCacheEntryEx entry0 = ((GridCacheEntryImpl)entry).entryEx(false, ctx.discovery().topologyVersion());
-
-        return (Integer)mthd.invoke(entry0);
+        return (Integer)mthd.invoke(entry);
     }
 
     /** Value. */

@@ -18,25 +18,26 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.query.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 
 /**
@@ -89,8 +90,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         });
 
         cctx.events().addListener(new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
-                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+            @Override public void onEvent(Event evt) {
+                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                 for (GridCacheDistributedQueryFuture fut : futs.values())
                     fut.onNodeLeft(discoEvt.eventNode().id());
@@ -197,8 +198,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      */
     @Nullable private GridCacheQueryInfo distributedQueryInfo(UUID sndId, GridCacheQueryRequest<K, V> req)
         throws ClassNotFoundException {
-        IgnitePredicate<CacheEntry<Object, Object>> prjPred = req.projectionFilter() == null ?
-            F.<CacheEntry<Object, Object>>alwaysTrue() : req.projectionFilter();
+        IgnitePredicate<Cache.Entry<Object, Object>> prjPred = req.projectionFilter() == null ?
+            F.<Cache.Entry<Object, Object>>alwaysTrue() : req.projectionFilter();
 
         IgniteReducer<Object, Object> rdc = req.reducer();
         IgniteClosure<Object, Object> trans = req.transformer();
@@ -273,11 +274,12 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                     node,
                     topic,
                     res,
+                    cctx.ioPolicy(),
                     timeout > 0 ? timeout : Long.MAX_VALUE);
 
                 return true;
             }
-            catch (ClusterTopologyException ignored) {
+            catch (ClusterTopologyCheckedException ignored) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to send query response since node left grid [nodeId=" + nodeId +
                         ", res=" + res + "]");
@@ -300,7 +302,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                         try {
                             U.sleep(RESEND_FREQ);
                         }
-                        catch (IgniteInterruptedException e1) {
+                        catch (IgniteInterruptedCheckedException e1) {
                             U.error(log,
                                 "Waiting for queries response resending was interrupted (response will not be sent) " +
                                 "[nodeId=" + nodeId + ", response=" + res + "]", e1);
@@ -417,6 +419,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override protected boolean onFieldsPageReady(boolean loc, GridCacheQueryInfo qryInfo,
         @Nullable List<GridQueryFieldMetadata> metadata,
         @Nullable Collection<?> entities,
@@ -653,9 +656,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      * @param req Request.
      * @param nodes Nodes.
      * @throws IgniteCheckedException In case of error.
-     * @deprecated Need to remove nodes filtration after breaking compatibility.
      */
-    @Deprecated
     @SuppressWarnings("unchecked")
     private void sendRequest(
         final GridCacheDistributedQueryFuture<?, ?, ?> fut,
@@ -687,7 +688,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         // For example, a remote reducer has a state, we should not serialize and then send
         // the reducer changed by the local node.
         if (!F.isEmpty(rmtNodes)) {
-            cctx.io().safeSend(rmtNodes, req, new P1<ClusterNode>() {
+            cctx.io().safeSend(rmtNodes, req, cctx.ioPolicy(), new P1<ClusterNode>() {
                 @Override public boolean apply(ClusterNode node) {
                     fut.onNodeLeft(node.id());
 

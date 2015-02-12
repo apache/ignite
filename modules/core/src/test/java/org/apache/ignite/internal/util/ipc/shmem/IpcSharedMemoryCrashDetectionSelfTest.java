@@ -49,12 +49,12 @@ public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testGgfsServerClientInteractionsUponClientKilling() throws Exception {
-        U.setWorkDirectory(null, U.getGridGainHome());
+        U.setWorkDirectory(null, U.getIgniteHome());
 
         // Run server endpoint.
         IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint();
 
-        new GridTestResources().inject(srv);
+        new IgniteTestResources().inject(srv);
 
         try {
             srv.start();

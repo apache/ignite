@@ -21,6 +21,7 @@ import org.apache.tools.ant.*;
 import org.apache.tools.ant.taskdefs.*;
 import org.apache.tools.ant.types.*;
 import org.apache.tools.zip.*;
+
 import java.io.*;
 
 /**
@@ -30,15 +31,15 @@ import java.io.*;
  * <li>{@code basedir} - Base directory for GAR archive.</li>
  * <li>
  *      {@code descrdir} - Directory where descriptor {@link #DESC_NAME} file is located.
- *      If not specified, it is assumed that GridGain descriptor will be searched in base directory
+ *      If not specified, it is assumed that Ignite descriptor will be searched in base directory
  *      (see {@link #setBasedir(File)}). <b>Note</b> further that GAR descriptor file is fully optional
  *      itself for GAR archive.
  * </li>
  * </ul>
  */
 public class IgniteDeploymentGarAntTask extends Zip {
-    /** GAR descriptor name. Its value is {@code gridgain.xml}. */
-    public static final String DESC_NAME = "gridgain.xml";
+    /** GAR descriptor name. Its value is {@code ignite.xml}. */
+    public static final String DESC_NAME = "ignite.xml";
 
     /**  Default descriptor path. */
     private static final String DESC_PATH = "META-INF";
@@ -117,7 +118,7 @@ public class IgniteDeploymentGarAntTask extends Zip {
             // File was defined in source.
             if (desc != null) {
                 if (descDir != null) {
-                    throw new BuildException("GridGain descriptor '" + DESC_NAME + "' is already " +
+                    throw new BuildException("Ignite descriptor '" + DESC_NAME + "' is already " +
                         "defined in source folder.");
                 }
             }
@@ -132,7 +133,7 @@ public class IgniteDeploymentGarAntTask extends Zip {
                 descFile = new File(getFullPath(descDir.getAbsolutePath(), DESC_NAME));
 
                 if (!descFile.exists()) {
-                    throw new BuildException("Folder doesn't contain GridGain descriptor [path=" +
+                    throw new BuildException("Folder doesn't contain Ignite descriptor [path=" +
                             descDir.getAbsolutePath() + ']');
                 }
             }

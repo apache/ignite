@@ -19,7 +19,9 @@ package org.apache.ignite.internal.visor.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -33,7 +35,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Data transfer object for {@link org.apache.ignite.cache.GridCache}.
+ * Data transfer object for {@link IgniteCache}.
  */
 public class VisorCache implements Serializable {
     /** */
@@ -90,20 +92,26 @@ public class VisorCache implements Serializable {
     /** Cache partitions states. */
     private GridDhtPartitionMap partsMap;
 
+    /** Collection of type metadata. */
+    private Collection<VisorCacheTypeMetadata> typeMeta;
+
+    /** Check that cache have JDBC store. */
+    private boolean jdbcStore;
+
     /**
-     * @param g Grid.
+     * @param ignite Grid.
      * @param c Actual cache.
      * @param sample Sample size.
      * @return Data transfer object for given cache.
      * @throws IgniteCheckedException
      */
-    public static VisorCache from(Ignite g, GridCache c, int sample) throws IgniteCheckedException {
-        assert g != null;
+    public static VisorCache from(Ignite ignite, GridCache c, int sample) throws IgniteCheckedException {
+        assert ignite != null;
         assert c != null;
 
         String cacheName = c.name();
 
-        GridCacheAdapter ca = ((IgniteKernal)g).internalCache(cacheName);
+        GridCacheAdapter ca = ((IgniteKernal)ignite).internalCache(cacheName);
 
         long swapSize;
         long swapKeys;
@@ -160,7 +168,7 @@ public class VisorCache implements Serializable {
             }
             else {
                 // Old way of collecting partitions info.
-                ClusterNode node = g.cluster().localNode();
+                ClusterNode node = ignite.cluster().localNode();
 
                 int[] pp = ca.affinity().primaryPartitions(node);
 
@@ -187,11 +195,11 @@ public class VisorCache implements Serializable {
         int size = ca.size();
         int near = ca.nearSize();
 
-        Set<CacheEntry> set = ca.entrySet();
+        Set<GridCacheEntryEx> set = ca.map().entries0();
 
         long memSz = 0;
 
-        Iterator<CacheEntry> it = set.iterator();
+        Iterator<GridCacheEntryEx> it = set.iterator();
 
         int sz = sample > 0 ? sample : DFLT_CACHE_SIZE_SAMPLING;
 
@@ -205,6 +213,20 @@ public class VisorCache implements Serializable {
 
         if (cnt > 0)
             memSz = (long)((double)memSz / cnt * size);
+
+        Collection<CacheTypeMetadata> cacheMetadata = c.configuration().getTypeMetadata();
+
+        if (cacheMetadata == null)
+            cacheMetadata = Collections.emptyList();
+
+        List<VisorCacheTypeMetadata> typeMeta = new ArrayList<>(cacheMetadata!= null ? cacheMetadata.size() : 0);
+
+        for (CacheTypeMetadata m: cacheMetadata)
+            typeMeta.add(VisorCacheTypeMetadata.from(m));
+
+        GridCacheContext cctx = ((IgniteKernal)ignite).internalCache(c.name()).context();
+
+        boolean jdbcStore = cctx.store().configuredStore() instanceof CacheAbstractJdbcStore;
 
         VisorCache cache = new VisorCache();
 
@@ -224,6 +246,8 @@ public class VisorCache implements Serializable {
         cache.backupPartitions(bps);
         cache.metrics(VisorCacheMetrics.from(ca));
         cache.partitionMap(partsMap);
+        cache.typeMeta(typeMeta);
+        cache.jdbcStore(jdbcStore);
 
         return cache;
     }
@@ -480,5 +504,33 @@ public class VisorCache implements Serializable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(VisorCache.class, this);
+    }
+
+    /**
+     * @param typeMeta New collection of type metadata.
+     */
+    public void typeMeta(Collection<VisorCacheTypeMetadata> typeMeta) {
+        this.typeMeta = typeMeta;
+    }
+
+    /**
+     * @return Collection of type metadata.
+     */
+    public Collection<VisorCacheTypeMetadata> typeMeta() {
+        return typeMeta;
+    }
+
+    /**
+     * @return Check that cache have JDBC store.
+     */
+    public boolean jdbcStore() {
+        return jdbcStore;
+    }
+
+    /**
+     * @param jdbcStore Check that cache have JDBC store.
+     */
+    public void jdbcStore(boolean jdbcStore) {
+        this.jdbcStore = jdbcStore;
     }
 }

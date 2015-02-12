@@ -17,15 +17,15 @@
 
 package org.apache.ignite.cache.eviction;
 
-import org.apache.ignite.cache.*;
+import javax.cache.*;
 
 /**
  * Eviction filter to specify which entries should not be evicted. Not applicable when
- * calling explicit evict via {@link org.apache.ignite.cache.CacheEntry#evict()}.
- * If {@link #evictAllowed(org.apache.ignite.cache.CacheEntry)} method returns {@code false} then eviction
+ * calling explicit evict via {@link org.apache.ignite.cache.Entry#evict()}.
+ * If {@link #evictAllowed(org.apache.ignite.cache.Entry)} method returns {@code false} then eviction
  * policy will not be notified and entry will never be evicted.
  * <p>
- * Eviction filter can be configured via {@link CacheConfiguration#getEvictionFilter()}
+ * Eviction filter can be configured via {@link org.apache.ignite.configuration.CacheConfiguration#getEvictionFilter()}
  * configuration property. Default value is {@code null} which means that all
  * cache entries will be tracked by eviction policy.
  */
@@ -36,5 +36,5 @@ public interface CacheEvictionFilter<K, V> {
      * @param entry Cache entry.
      * @return {@code True} if it is allowed to evict this entry.
      */
-    public boolean evictAllowed(CacheEntry<K, V> entry);
+    public boolean evictAllowed(Cache.Entry<K, V> entry);
 }

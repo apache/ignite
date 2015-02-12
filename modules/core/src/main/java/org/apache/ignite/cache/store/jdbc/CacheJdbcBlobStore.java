@@ -19,11 +19,12 @@ package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
+import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -72,7 +73,7 @@ import java.util.concurrent.atomic.*;
  * <pre name="code" class="xml">
  *     ...
  *     &lt;bean id=&quot;cache.jdbc.store&quot;
- *         class=&quot;org.gridgain.grid.cache.store.jdbc.GridCacheJdbcBlobStore&quot;&gt;
+ *         class=&quot;org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStore&quot;&gt;
  *         &lt;property name=&quot;connectionUrl&quot; value=&quot;jdbc:h2:mem:&quot;/&gt;
  *         &lt;property name=&quot;createTableQuery&quot;
  *             value=&quot;create table if not exists ENTRIES (key other, val other)&quot;/&gt;
@@ -142,7 +143,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     private boolean initSchema = true;
 
     /** Log. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Marshaller. */
@@ -435,7 +436,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
                 try {
                     U.await(initLatch);
                 }
-                catch (IgniteInterruptedException e) {
+                catch (IgniteInterruptedCheckedException e) {
                     throw new IgniteException(e);
                 }
             }
@@ -446,10 +447,10 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     }
 
     /**
-     * Flag indicating whether DB schema should be initialized by GridGain (default behaviour) or
+     * Flag indicating whether DB schema should be initialized by Ignite (default behaviour) or
      * was explicitly created by user.
      *
-     * @param initSchema {@code True} if DB schema should be initialized by GridGain (default behaviour),
+     * @param initSchema {@code True} if DB schema should be initialized by Ignite (default behaviour),
      *      {code @false} if schema was explicitly created by user.
      */
     public void setInitSchema(boolean initSchema) {

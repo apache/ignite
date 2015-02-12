@@ -32,7 +32,7 @@ import java.lang.annotation.*;
  * <li>java array</li>
  * </ul>
  * If grid-enabled method contains several parameters with types described above
- * then GridGain searches for parameters with {@link GridifyInput} annotation.
+ * then Ignite searches for parameters with {@link GridifyInput} annotation.
  * <b>Only one</b> method parameter with {@link GridifyInput} annotation allowed.
  * @see GridifySetToValue
  * @see GridifySetToSet

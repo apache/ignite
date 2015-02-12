@@ -21,13 +21,12 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.dataload.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import javax.cache.processor.*;
 import java.util.*;
@@ -53,7 +52,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         // DiscoverySpi
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -63,12 +62,12 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         // Cache.
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
 
-        TransactionsConfiguration tCfg = new TransactionsConfiguration();
+        TransactionConfiguration tCfg = new TransactionConfiguration();
 
         tCfg.setDefaultTxConcurrency(IgniteTxConcurrency.PESSIMISTIC);
         tCfg.setDefaultTxIsolation(IgniteTxIsolation.REPEATABLE_READ);
 
-        cfg.setTransactionsConfiguration(tCfg);
+        cfg.setTransactionConfiguration(tCfg);
 
         return cfg;
     }
@@ -102,7 +101,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     }
 
     /**
-     * This test is just a wrapper for org.gridgain.examples1.data.realtime.GridPopularNumbersRealTimeExample
+     * This test is just a wrapper for org.apache.ignite.examples.datagrid.CachePopularNumbersExample
      *
      * @throws Exception If failed.
      */
@@ -157,7 +156,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     /**
      * Increments value for key.
      */
-    private static class IncrementingUpdater implements IgniteDataLoadCacheUpdater<Integer, Long> {
+    private static class IncrementingUpdater implements IgniteDataLoader.Updater<Integer, Long> {
         /** */
         private static final EntryProcessor<Integer, Long, Void> INC = new EntryProcessor<Integer, Long, Void>() {
             @Override public Void process(MutableEntry<Integer, Long> e, Object... args) {
@@ -170,8 +169,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         };
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<Integer, Long> cache,
-            Collection<Map.Entry<Integer, Long>> entries) throws IgniteCheckedException {
+        @Override public void update(IgniteCache<Integer, Long> cache, Collection<Map.Entry<Integer, Long>> entries) {
             for (Map.Entry<Integer, Long> entry : entries)
                 cache.invoke(entry.getKey(), INC);
         }

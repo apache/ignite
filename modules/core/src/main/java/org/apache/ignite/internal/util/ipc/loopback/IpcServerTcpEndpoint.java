@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.util.ipc.loopback;
 
 import org.apache.ignite.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.ipc.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
 
 import java.io.*;
 import java.net.*;
@@ -46,7 +46,7 @@ public class IpcServerTcpEndpoint implements IpcServerEndpoint {
     private boolean mgmt;
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** {@inheritDoc} */

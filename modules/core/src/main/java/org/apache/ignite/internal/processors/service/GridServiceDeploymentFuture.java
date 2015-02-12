@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.managed.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.services.*;
 
 /**
  * Service deployment future.
@@ -30,13 +30,13 @@ public class GridServiceDeploymentFuture extends GridFutureAdapter<Object> {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final ManagedServiceConfiguration cfg;
+    private final ServiceConfiguration cfg;
 
     /**
      * @param ctx Context.
      * @param cfg Configuration.
      */
-    public GridServiceDeploymentFuture(GridKernalContext ctx, ManagedServiceConfiguration cfg) {
+    public GridServiceDeploymentFuture(GridKernalContext ctx, ServiceConfiguration cfg) {
         super(ctx);
 
         this.cfg = cfg;
@@ -45,7 +45,7 @@ public class GridServiceDeploymentFuture extends GridFutureAdapter<Object> {
     /**
      * @return Service configuration.
      */
-    ManagedServiceConfiguration configuration() {
+    ServiceConfiguration configuration() {
         return cfg;
     }
 

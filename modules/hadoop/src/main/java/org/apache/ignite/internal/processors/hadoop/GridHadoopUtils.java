@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.hadoop;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
-import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapreduce.JobID;
+import org.apache.hadoop.mapreduce.JobPriority;
+import org.apache.hadoop.mapreduce.JobStatus;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.ignite.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.v2.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -35,16 +37,16 @@ import java.util.*;
  */
 public class GridHadoopUtils {
     /** Property to store timestamp of new job id request. */
-    public static final String REQ_NEW_JOBID_TS_PROPERTY = "gridgain.job.requestNewIdTs";
+    public static final String REQ_NEW_JOBID_TS_PROPERTY = "ignite.job.requestNewIdTs";
 
     /** Property to store timestamp of response of new job id request. */
-    public static final String RESPONSE_NEW_JOBID_TS_PROPERTY = "gridgain.job.responseNewIdTs";
+    public static final String RESPONSE_NEW_JOBID_TS_PROPERTY = "ignite.job.responseNewIdTs";
 
     /** Property to store timestamp of job submission. */
-    public static final String JOB_SUBMISSION_START_TS_PROPERTY = "gridgain.job.submissionStartTs";
+    public static final String JOB_SUBMISSION_START_TS_PROPERTY = "ignite.job.submissionStartTs";
 
     /** Property to set custom writer of job statistics. */
-    public static final String JOB_COUNTER_WRITER_PROPERTY = "gridgain.counters.writer";
+    public static final String JOB_COUNTER_WRITER_PROPERTY = "ignite.counters.writer";
 
     /** Staging constant. */
     private static final String STAGING_CONSTANT = ".staging";

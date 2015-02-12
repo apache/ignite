@@ -21,17 +21,16 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
-import org.apache.ignite.fs.mapreduce.*;
-import org.apache.ignite.fs.mapreduce.records.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.ignitefs.mapreduce.*;
+import org.apache.ignite.ignitefs.mapreduce.records.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -40,10 +39,10 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.fs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 
 /**
- * Tests for {@link org.apache.ignite.fs.mapreduce.IgniteFsTask}.
+ * Tests for {@link org.apache.ignite.ignitefs.mapreduce.IgniteFsTask}.
  */
 public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
     /** Predefined words dictionary. */
@@ -186,7 +185,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
             assertNull(ggfsAsync.execute(
                 new Task(), new IgniteFsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg));
 
-            IgniteInternalFuture<IgniteBiTuple<Long, Integer>> fut = ggfsAsync.future();
+            IgniteFuture<IgniteBiTuple<Long, Integer>> fut = ggfsAsync.future();
 
             assertNotNull(fut);
 
@@ -198,16 +197,11 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
 
         ggfsAsync.format();
 
-        IgniteInternalFuture<?> fut = ggfsAsync.future();
+        IgniteFuture<?> fut = ggfsAsync.future();
 
         assertNotNull(fut);
 
         fut.get();
-    }
-
-    // TODO: Remove.
-    @Override protected long getTestTimeout() {
-        return Long.MAX_VALUE;
     }
 
     /**
@@ -239,12 +233,12 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
     private static class Task extends IgniteFsTask<String, IgniteBiTuple<Long, Integer>> {
         /** {@inheritDoc} */
         @Override public IgniteFsJob createJob(IgniteFsPath path, IgniteFsFileRange range,
-            IgniteFsTaskArgs<String> args) throws IgniteCheckedException {
+            IgniteFsTaskArgs<String> args) {
             return new Job();
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteBiTuple<Long, Integer> reduce(List<ComputeJobResult> ress) throws IgniteCheckedException {
+        @Override public IgniteBiTuple<Long, Integer> reduce(List<ComputeJobResult> ress) {
             long totalLen = 0;
             int argCnt = 0;
 
@@ -268,15 +262,15 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
         @IgniteInstanceResource
         private Ignite ignite;
 
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession ses;
 
-        @IgniteJobContextResource
+        @JobContextResource
         private ComputeJobContext ctx;
 
         /** {@inheritDoc} */
         @Override public Object execute(IgniteFs ggfs, IgniteFsFileRange range, IgniteFsInputStream in)
-            throws IgniteCheckedException, IOException {
+            throws IOException {
             assert ignite != null;
             assert ses != null;
             assert ctx != null;

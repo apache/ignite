@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.managers.checkpoint;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.resources.*;
@@ -31,8 +32,6 @@ import org.apache.ignite.spi.checkpoint.jdbc.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.hsqldb.jdbc.*;
@@ -43,9 +42,9 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.compute.ComputeTaskSessionScope.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.compute.ComputeTaskSessionScope.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  *
@@ -177,11 +176,11 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         try {
             Ignite ignite = startGrid(gridName);
 
-            ignite.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    assert evt instanceof IgniteCheckpointEvent;
+            ignite.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    assert evt instanceof CheckpointEvent;
 
-                    IgniteCheckpointEvent e = (IgniteCheckpointEvent) evt;
+                    CheckpointEvent e = (CheckpointEvent) evt;
 
                     info("Checkpoint event: " + e);
 
@@ -250,7 +249,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
             Ignite ignite = startGrid(gridName);
 
-            IgniteInternalFuture fut = executeAsync(ignite.compute(), new GridMultiNodeGlobalConsumerTask(), null);
+            ComputeTaskFuture fut = executeAsync(ignite.compute(), new GridMultiNodeGlobalConsumerTask(), null);
 
             executeAsync(ignite.compute(), GridMultiNodeTestCheckPointTask.class, null).get(2 * 60 * 1000);
 
@@ -297,12 +296,12 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         private Ignite ignite;
 
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
         @SuppressWarnings({"TooBroadScope"})
-        @Override public String execute() throws IgniteCheckedException {
+        @Override public String execute() {
             assert ignite != null;
             assert taskSes != null;
 
@@ -372,7 +371,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 Thread.sleep(6000);
             }
             catch (InterruptedException e) {
-                throw new IgniteCheckedException(e);
+                throw new IgniteException(e);
             }
 
             assertWithRetries(new GridAbsClosureX() {
@@ -395,12 +394,12 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     @ComputeTaskSessionFullSupport
     private static class GridTestCheckpointTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return Collections.singleton(new GridTestCheckpointJob());
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -414,11 +413,11 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         private Ignite ignite;
 
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override public String execute() throws IgniteCheckedException {
+        @Override public String execute() {
             assert ignite != null;
             assert taskSes != null;
 
@@ -440,7 +439,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 startLatch.await();
             }
             catch (InterruptedException e) {
-                throw new IgniteCheckedException("Thread has been interrupted.", e);
+                throw new IgniteException("Thread has been interrupted.", e);
             }
 
             X.println(">>> Producer started.");
@@ -454,7 +453,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 read1FinishedLatch.await();
             }
             catch (InterruptedException e) {
-                throw new IgniteCheckedException("Thread has been interrupted.", e);
+                throw new IgniteException("Thread has been interrupted.", e);
             }
 
             // No retries here as other thread should have seen checkpoint already.
@@ -470,7 +469,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 read2FinishedLatch.await();
             }
             catch (InterruptedException e) {
-                throw new IgniteCheckedException("Thread has been interrupted.", e);
+                throw new IgniteException("Thread has been interrupted.", e);
             }
 
             assert GLOBAL_VAL.equals(taskSes.loadCheckpoint(GLOBAL_KEY));
@@ -486,7 +485,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 read3FinishedLatch.await();
             }
             catch (InterruptedException e) {
-                throw new IgniteCheckedException("Thread has been interrupted.", e);
+                throw new IgniteException("Thread has been interrupted.", e);
             }
 
             assert SES_VAL_OVERWRITTEN.equals(taskSes.loadCheckpoint(GLOBAL_KEY));
@@ -518,11 +517,11 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
      */
     private static class GridMultiNodeTestCheckpointConsumerJob extends ComputeJobAdapter {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override public String execute() throws IgniteCheckedException {
+        @Override public String execute() {
             assert taskSes != null;
 
             assert startLatch != null;
@@ -543,7 +542,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 startLatch.await();
             }
             catch (InterruptedException e) {
-                throw new IgniteCheckedException("Thread has been interrupted.", e);
+                throw new IgniteException("Thread has been interrupted.", e);
             }
 
             X.println(">>> Consumer started.");
@@ -552,7 +551,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 read1Latch.await();
             }
             catch (InterruptedException e) {
-                throw new IgniteCheckedException("Thread has been interrupted.", e);
+                throw new IgniteException("Thread has been interrupted.", e);
             }
 
             // Test that checkpoints were saved properly.
@@ -569,7 +568,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 read2Latch.await();
             }
             catch (InterruptedException e) {
-                throw new IgniteCheckedException("Thread has been interrupted.", e);
+                throw new IgniteException("Thread has been interrupted.", e);
             }
 
             // Test that checkpoints were not overwritten.
@@ -586,7 +585,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 read3Latch.await();
             }
             catch (InterruptedException e) {
-                throw new IgniteCheckedException("Thread has been interrupted.", e);
+                throw new IgniteException("Thread has been interrupted.", e);
             }
 
             assertWithRetries(new GridAbsClosureX() {
@@ -602,7 +601,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 rmvLatch.await();
             }
             catch (InterruptedException e) {
-                throw new IgniteCheckedException("Thread has been interrupted.", e);
+                throw new IgniteException("Thread has been interrupted.", e);
             }
             // Check checkpoints are actually removed.
             assert !taskSes.removeCheckpoint(GLOBAL_KEY);
@@ -625,7 +624,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     @ComputeTaskSessionFullSupport
     private static class GridMultiNodeTestCheckPointTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             assert gridSize == 2;
 
             return Arrays.asList(
@@ -635,7 +634,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -644,13 +643,13 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     @ComputeTaskSessionFullSupport
     private static class GridMultiNodeGlobalConsumerTask extends ComputeTaskSplitAdapter<Object, Integer> {
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return Collections.singleton(new ComputeJobAdapter() {
-                @Nullable @Override public Object execute() throws IgniteCheckedException {
+                @Nullable @Override public Object execute() {
                     assert taskSes != null;
 
                     assert startLatch != null;
@@ -671,7 +670,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                         startLatch.await();
                     }
                     catch (InterruptedException e) {
-                        throw new IgniteCheckedException("Thread has been interrupted.", e);
+                        throw new IgniteException("Thread has been interrupted.", e);
                     }
 
                     X.println(">>> Global consumer started.");
@@ -680,7 +679,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                         read1Latch.await();
                     }
                     catch (InterruptedException e) {
-                        throw new IgniteCheckedException("Thread has been interrupted.", e);
+                        throw new IgniteException("Thread has been interrupted.", e);
                     }
 
                     // Test that checkpoints were saved properly.
@@ -693,7 +692,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                         read2Latch.await();
                     }
                     catch (InterruptedException e) {
-                        throw new IgniteCheckedException("Thread has been interrupted.", e);
+                        throw new IgniteException("Thread has been interrupted.", e);
                     }
 
                     // Test that checkpoints were not overwritten.
@@ -706,7 +705,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                         read3Latch.await();
                     }
                     catch (InterruptedException e) {
-                        throw new IgniteCheckedException("Thread has been interrupted.", e);
+                        throw new IgniteException("Thread has been interrupted.", e);
                     }
 
                     assert GLOBAL_VAL_OVERWRITTEN.equals(taskSes.loadCheckpoint(SES_KEY));
@@ -718,7 +717,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                         rmvLatch.await();
                     }
                     catch (InterruptedException e) {
-                        throw new IgniteCheckedException("Thread has been interrupted.", e);
+                        throw new IgniteException("Thread has been interrupted.", e);
                     }
                     // Check checkpoints are actually removed.
                     assert !taskSes.removeCheckpoint(GLOBAL_KEY);
@@ -733,7 +732,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Integer reduce(List<ComputeJobResult> results) {
             int sum = 0;
 
             for (ComputeJobResult res : results)
@@ -747,9 +746,13 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
      * Wrapper around {@link GridTestUtils#retryAssert(org.apache.ignite.IgniteLogger, int, long, GridAbsClosure)}.
      * For the given closure provides count of retries, configured by {@link #retries} attribute.
      * @param assertion Closure with assertion inside.
-     * @throws org.apache.ignite.IgniteInterruptedException If was interrupted.
      */
-    private static void assertWithRetries(GridAbsClosureX assertion) throws IgniteInterruptedException {
-        GridTestUtils.retryAssert(null, retries, 5000, assertion);
+    private static void assertWithRetries(GridAbsClosureX assertion) {
+        try {
+            GridTestUtils.retryAssert(null, retries, 5000, assertion);
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 }

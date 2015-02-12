@@ -21,24 +21,23 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
-import javax.swing.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Test cases for multi-threaded tests.
@@ -431,7 +430,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws Exception If error occur.
      */
     public void testBasicOps() throws Exception {
-        GridCache<Integer, String> cache = ignite.cache(null);
+        IgniteCache<Integer, String> cache = ignite.jcache(null);
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -595,19 +594,19 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
      * @throws IgniteCheckedException If test failed.
      */
     public void testGetPutRemove() throws IgniteCheckedException {
-        GridCache<Integer, String> cache = ignite.cache(null);
+        IgniteCache<Integer, String> cache = ignite.jcache(null);
 
         int key = (int)System.currentTimeMillis();
 
         assert cache.get(key) == null;
-        assert cache.put(key, "1") == null;
+        assert cache.getAndPut(key, "1") == null;
 
         String val = cache.get(key);
 
         assert val != null;
         assert "1".equals(val);
 
-        val = cache.remove(key);
+        val = cache.getAndRemove(key);
 
         assert val != null;
         assert "1".equals(val);
@@ -648,7 +647,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     /**
      * Event listener.
      */
-    private class CacheEventListener implements IgnitePredicate<IgniteEvent> {
+    private class CacheEventListener implements IgnitePredicate<Event> {
         /** Wait latch. */
         private CountDownLatch latch;
 
@@ -684,7 +683,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
+        @Override public boolean apply(Event evt) {
             info("Grid cache event: " + evt);
 
             if (U.containsIntArray(types, evt.type()))

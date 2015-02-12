@@ -21,20 +21,21 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.thread.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.timeout.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -43,7 +44,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.continuous.GridContinuousMessageType.*;
@@ -98,7 +99,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     private long ackTimeout;
 
     /** Marshaller. */
-    private IgniteMarshaller marsh;
+    private Marshaller marsh;
 
     /**
      * @param ctx Kernal context.
@@ -128,10 +129,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         ctx.event().addLocalEventListener(new GridLocalEventListener() {
             @SuppressWarnings({"fallthrough", "TooBroadScope"})
-            @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof IgniteDiscoveryEvent;
+            @Override public void onEvent(Event evt) {
+                assert evt instanceof DiscoveryEvent;
 
-                UUID nodeId = ((IgniteDiscoveryEvent)evt).eventNode().id();
+                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
                 Collection<GridContinuousMessage> reqs;
 
@@ -159,7 +160,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                                     sendWithRetries(nodeId, req, null);
                                 }
                             }
-                            catch (ClusterTopologyException ignored) {
+                            catch (ClusterTopologyCheckedException ignored) {
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to send pending start request to node (is node alive?): " +
                                         nodeId);
@@ -223,7 +224,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                                 SyncMessageAckFuture fut0 = syncMsgFuts.remove(e.getKey());
 
                                 if (fut0 != null) {
-                                    ClusterTopologyException err = new ClusterTopologyException(
+                                    ClusterTopologyCheckedException err = new ClusterTopologyCheckedException(
                                         "Node left grid while sending message to: " + nodeId);
 
                                     fut0.onDone(err);
@@ -307,6 +308,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Continuous processor stopped.");
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return DiscoveryDataExchangeType.CONTINUOUS_PROC;
     }
 
     /** {@inheritDoc} */
@@ -401,7 +407,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     GridDeployment dep = ctx.deploy().deploy(cls, U.detectClassLoader(cls));
 
                     if (dep == null)
-                        throw new IgniteDeploymentException("Failed to deploy projection predicate: " + prjPred);
+                        throw new IgniteDeploymentCheckedException("Failed to deploy projection predicate: " + prjPred);
 
                     reqData.clsName = clsName;
                     reqData.depInfo = new GridDeploymentInfoBean(dep);
@@ -454,7 +460,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             // Stop with exception if projection is empty.
             if (nodes.isEmpty() && !locIncluded) {
                 return new GridFinishedFuture<>(ctx,
-                    new ClusterTopologyException("Failed to register remote continuous listener (projection is empty)."));
+                    new ClusterTopologyCheckedException("Failed to register remote continuous listener (projection is empty)."));
             }
 
             // IDs of nodes where request will be sent.
@@ -633,7 +639,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                                 new GridContinuousMessage(MSG_STOP_REQ, routineId, null, null),
                                 null);
                         }
-                        catch (ClusterTopologyException ignored) {
+                        catch (ClusterTopologyCheckedException ignored) {
                             U.warn(log, "Failed to send stop request (node left topology): " + node.id());
                         }
                     }
@@ -754,7 +760,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
 
                     if (dep == null)
-                        throw new IgniteDeploymentException("Failed to obtain deployment for class: " + clsName);
+                        throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
 
                     data.p2pUnmarshal(marsh, dep.classLoader());
                 }
@@ -789,7 +795,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         try {
             sendWithRetries(nodeId, new GridContinuousMessage(MSG_START_ACK, routineId, null, err), null);
         }
-        catch (ClusterTopologyException ignored) {
+        catch (ClusterTopologyCheckedException ignored) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send start acknowledgement to node (is node alive?): " + nodeId);
         }
@@ -850,7 +856,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         try {
             sendWithRetries(nodeId, new GridContinuousMessage(MSG_STOP_ACK, routineId, null, null), null);
         }
-        catch (ClusterTopologyException ignored) {
+        catch (ClusterTopologyCheckedException ignored) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send stop acknowledgement to node (is node alive?): " + nodeId);
         }
@@ -1001,7 +1007,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             try {
                                 U.sleep(interval0);
                             }
-                            catch (IgniteInterruptedException ignored) {
+                            catch (IgniteInterruptedCheckedException ignored) {
                                 break;
                             }
 
@@ -1013,7 +1019,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                                 try {
                                     sendNotification(nodeId, routineId, null, toSnd, hnd.orderedTopic());
                                 }
-                                catch (ClusterTopologyException ignored) {
+                                catch (ClusterTopologyCheckedException ignored) {
                                     if (log.isDebugEnabled())
                                         log.debug("Failed to send notification to node (is node alive?): " + nodeId);
                                 }
@@ -1093,7 +1099,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (node != null)
             sendWithRetries(node, msg, orderedTopic);
         else
-            throw new ClusterTopologyException("Node for provided ID doesn't exist (did it leave the grid?): " + nodeId);
+            throw new ClusterTopologyCheckedException("Node for provided ID doesn't exist (did it leave the grid?): " + nodeId);
     }
 
     /**
@@ -1126,13 +1132,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (msg.data() != null && (nodes.size() > 1 || !ctx.localNodeId().equals(F.first(nodes).id())))
             msg.dataBytes(marsh.marshal(msg.data()));
 
-        boolean first = true;
-
         for (ClusterNode node : nodes) {
-            msg = first ? msg : (GridContinuousMessage)msg.clone();
-
-            first = false;
-
             int cnt = 0;
 
             while (cnt <= retryCnt) {
@@ -1153,12 +1153,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                     break;
                 }
-                catch (IgniteInterruptedException e) {
+                catch (IgniteInterruptedCheckedException e) {
                     throw e;
                 }
                 catch (IgniteCheckedException e) {
                     if (!ctx.discovery().alive(node.id()))
-                        throw new ClusterTopologyException("Node left grid while sending message to: " + node.id(), e);
+                        throw new ClusterTopologyCheckedException("Node left grid while sending message to: " + node.id(), e);
 
                     if (cnt == retryCnt)
                         throw e;
@@ -1270,7 +1270,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * @return Object to send or {@code null} if there is nothing to send for now.
          */
         @Nullable Collection<Object> add(@Nullable Object obj) {
-            Collection<Object> toSnd = null;
+            ConcurrentLinkedDeque8 buf0 = null;
 
             if (buf.sizex() >= bufSize - 1) {
                 lock.writeLock().lock();
@@ -1278,7 +1278,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 try {
                     buf.add(obj);
 
-                    toSnd = buf;
+                    buf0 = buf;
 
                     buf = new ConcurrentLinkedDeque8<>();
 
@@ -1300,7 +1300,16 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 }
             }
 
-            return toSnd != null ? new ArrayList<>(toSnd) : null;
+            Collection<Object> toSnd = null;
+
+            if (buf0 != null) {
+                toSnd = new ArrayList<>(buf0.sizex());
+
+                for (Object o : buf0)
+                    toSnd.add(o);
+            }
+
+            return toSnd;
         }
 
         /**
@@ -1399,7 +1408,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * @param marsh Marshaller.
          * @throws IgniteCheckedException In case of error.
          */
-        void p2pMarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
+        void p2pMarshal(Marshaller marsh) throws IgniteCheckedException {
             assert marsh != null;
 
             prjPredBytes = marsh.marshal(prjPred);
@@ -1410,7 +1419,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * @param ldr Class loader.
          * @throws IgniteCheckedException In case of error.
          */
-        void p2pUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
+        void p2pUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
             assert marsh != null;
 
             assert prjPred == null;
@@ -1819,7 +1828,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             try {
                                 sendWithRetries(id, req, null);
                             }
-                            catch (ClusterTopologyException ignored) {
+                            catch (ClusterTopologyCheckedException ignored) {
                                 if (log.isDebugEnabled())
                                     log.debug("Failed to resend stop request to node (is node alive?): " + id);
                             }

@@ -22,12 +22,12 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -101,7 +101,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
 
         // Clean up all caches.
         for (int i = 0; i < GRID_CNT; i++)
-            grid(i).cache(null).removeAll(F.<CacheEntry<Object, Object>>alwaysTrue());
+            grid(i).jcache(null).removeAll();
     }
 
     /** {@inheritDoc} */
@@ -199,7 +199,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         for (Map.Entry<UUID, Person> entry : entries) {
             assertEquals(entry.getKey(), entry.getValue().id());
 
-            assert F.<Person>asList(persons).contains(entry.getValue());
+            assert F.asList(persons).contains(entry.getValue());
         }
     }
 

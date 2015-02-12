@@ -19,9 +19,9 @@ package org.apache.ignite.p2p;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.deployment.uri.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -43,7 +43,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
     private static ClassLoader extLdr;
 
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /** */
     private boolean initGar;
@@ -104,7 +104,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
 
                 assert false;
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 info("Received expected exception: " + e);
             }
         }
@@ -124,7 +124,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
         String garDir = "modules/extdata/p2p/deploy";
         String garFileName = "p2p.gar";
 
-        File origGarPath = U.resolveGridGainPath(garDir + '/' + garFileName);
+        File origGarPath = U.resolveIgnitePath(garDir + '/' + garFileName);
 
         File tmpPath = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
 
@@ -171,7 +171,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testGarPrivateMode() throws Exception {
-        depMode = IgniteDeploymentMode.PRIVATE;
+        depMode = DeploymentMode.PRIVATE;
 
         checkGar();
     }
@@ -182,7 +182,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testGarIsolatedMode() throws Exception {
-        depMode = IgniteDeploymentMode.ISOLATED;
+        depMode = DeploymentMode.ISOLATED;
 
         checkGar();
     }
@@ -193,7 +193,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testGarContinuousMode() throws Exception {
-        depMode = IgniteDeploymentMode.CONTINUOUS;
+        depMode = DeploymentMode.CONTINUOUS;
 
         checkGar();
     }
@@ -204,7 +204,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testGarSharedMode() throws Exception {
-        depMode = IgniteDeploymentMode.SHARED;
+        depMode = DeploymentMode.SHARED;
 
         checkGar();
     }

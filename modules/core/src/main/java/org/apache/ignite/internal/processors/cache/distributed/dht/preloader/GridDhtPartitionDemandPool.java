@@ -21,17 +21,18 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.thread.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.timeout.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.thread.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -41,7 +42,7 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
@@ -241,7 +242,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      * @param type Type.
      * @param discoEvt Discovery event.
      */
-    private void preloadEvent(int type, IgniteDiscoveryEvent discoEvt) {
+    private void preloadEvent(int type, DiscoveryEvent discoEvt) {
         preloadEvent(-1, type, discoEvt);
     }
 
@@ -250,7 +251,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      * @param type Type.
      * @param discoEvt Discovery event.
      */
-    private void preloadEvent(int part, int type, IgniteDiscoveryEvent discoEvt) {
+    private void preloadEvent(int part, int type, DiscoveryEvent discoEvt) {
         assert discoEvt != null;
 
         cctx.events().addPreloadEvent(part, type, discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
@@ -478,7 +479,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @param entry Preloaded entry.
          * @param topVer Topology version.
          * @return {@code False} if partition has become invalid during preloading.
-         * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+         * @throws IgniteInterruptedCheckedException If interrupted.
          */
         private boolean preloadEntry(ClusterNode pick, int p, GridCacheEntryInfo<K, V> entry, long topVer)
             throws IgniteCheckedException {
@@ -539,7 +540,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                     return false;
                 }
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 throw e;
             }
             catch (IgniteCheckedException e) {
@@ -565,7 +566,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @param exchFut Exchange future.
          * @return Missed partitions.
          * @throws InterruptedException If interrupted.
-         * @throws ClusterTopologyException If node left.
+         * @throws ClusterTopologyCheckedException If node left.
          * @throws IgniteCheckedException If failed to send message.
          */
         private Set<Integer> demandFromNode(ClusterNode node, final long topVer, GridDhtPartitionDemandMessage<K, V> d,
@@ -613,7 +614,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                         log.debug("Sending demand message [node=" + node.id() + ", demand=" + d + ']');
 
                     // Send demand message.
-                    cctx.io().send(node, d);
+                    cctx.io().send(node, d, cctx.ioPolicy());
 
                     // While.
                     // =====
@@ -806,7 +807,7 @@ public class GridDhtPartitionDemandPool<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
                 int preloadOrder = cctx.config().getPreloadOrder();
 
@@ -822,7 +823,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                             fut.get();
                         }
                     }
-                    catch (IgniteInterruptedException ignored) {
+                    catch (IgniteInterruptedCheckedException ignored) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to wait for ordered preload future (grid is stopping): " +
                                 "[cacheName=" + cctx.name() + ", preloadOrder=" + preloadOrder + ']');
@@ -902,10 +903,10 @@ public class GridDhtPartitionDemandPool<K, V> {
                                         missed.addAll(set);
                                     }
                                 }
-                                catch (IgniteInterruptedException e) {
+                                catch (IgniteInterruptedCheckedException e) {
                                     throw e;
                                 }
-                                catch (ClusterTopologyException e) {
+                                catch (ClusterTopologyCheckedException e) {
                                     if (log.isDebugEnabled())
                                         log.debug("Node left during preloading (will retry) [node=" + node.id() +
                                             ", msg=" + e.getMessage() + ']');

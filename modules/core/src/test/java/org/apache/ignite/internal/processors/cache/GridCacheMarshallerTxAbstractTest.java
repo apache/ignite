@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.io.*;
 import java.util.*;
@@ -91,9 +91,9 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
         String key2 = UUID.randomUUID().toString();
         GridCacheWrongValue1 wrongValue = new GridCacheWrongValue1();
 
-        IgniteTx tx = grid().cache(null).txStart(PESSIMISTIC, REPEATABLE_READ);
+        IgniteTx tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
         try {
-            grid().cache(null).put(key, value);
+            grid().jcache(null).put(key, value);
 
             tx.commit();
         }
@@ -101,14 +101,14 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
             tx.close();
         }
 
-        tx = grid().cache(null).txStart(PESSIMISTIC, REPEATABLE_READ);
+        tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
         try {
-            assert value.equals(grid().cache(null).get(key));
+            assert value.equals(grid().jcache(null).get(key));
 
-            grid().cache(null).put(key, newValue);
+            grid().jcache(null).put(key, newValue);
 
-            grid().cache(null).put(key2, wrongValue);
+            grid().jcache(null).put(key2, wrongValue);
 
             tx.commit();
         }
@@ -116,10 +116,10 @@ public abstract class GridCacheMarshallerTxAbstractTest extends GridCommonAbstra
             tx.close();
         }
 
-        tx = grid().cache(null).txStart(PESSIMISTIC, REPEATABLE_READ);
+        tx = grid().transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
         try {
-            String locVal = (String)grid().cache(null).get(key);
+            String locVal = (String)grid().jcache(null).get(key);
 
             assert locVal != null;
 

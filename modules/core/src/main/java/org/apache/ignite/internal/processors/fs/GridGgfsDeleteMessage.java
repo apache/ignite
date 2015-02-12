@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -91,7 +91,7 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
+    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         super.prepareMarshal(marsh);
 
         if (err != null)
@@ -99,7 +99,7 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
+    @Override public void finishUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(marsh, ldr);
 
         if (errBytes != null)
@@ -108,7 +108,7 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridGgfsDeleteMessage _clone = new GridGgfsDeleteMessage();
 
         clone0(_clone);
@@ -117,7 +117,7 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridGgfsDeleteMessage _clone = (GridGgfsDeleteMessage)_msg;
@@ -130,30 +130,30 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putByteArray(errBytes))
+                if (!writer.writeByteArray("errBytes", errBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putGridUuid(id))
+                if (!writer.writeIgniteUuid("id", id))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -163,31 +163,27 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                byte[] errBytes0 = commState.getByteArray();
+                errBytes = reader.readByteArray("errBytes");
 
-                if (errBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                errBytes = errBytes0;
-
-                commState.idx++;
+                state++;
 
             case 1:
-                IgniteUuid id0 = commState.getGridUuid();
+                id = reader.readIgniteUuid("id");
 
-                if (id0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                id = id0;
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -196,7 +192,7 @@ public class GridGgfsDeleteMessage extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 68;
+        return 67;
     }
 
     /** {@inheritDoc} */

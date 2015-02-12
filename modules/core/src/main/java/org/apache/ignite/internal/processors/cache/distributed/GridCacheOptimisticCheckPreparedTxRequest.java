@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -46,6 +46,9 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
     /** Expected number of transactions on node. */
     private int txNum;
 
+    /** System transaction flag. */
+    private boolean sys;
+
     /**
      * Empty constructor required by {@link Externalizable}
      */
@@ -59,10 +62,13 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
      * @param futId Future ID.
      * @param miniId Mini future ID.
      */
-    public GridCacheOptimisticCheckPreparedTxRequest(IgniteTxEx<K, V> tx, int txNum, IgniteUuid futId, IgniteUuid miniId) {
+    public GridCacheOptimisticCheckPreparedTxRequest(IgniteInternalTx<K, V> tx, int txNum, IgniteUuid futId,
+        IgniteUuid miniId) {
         super(tx.xidVersion(), 0);
 
         nearXidVer = tx.nearXidVersion();
+        sys = tx.system();
+
         this.futId = futId;
         this.miniId = miniId;
         this.txNum = txNum;
@@ -96,9 +102,16 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
         return txNum;
     }
 
+    /**
+     * @return System transaction flag.
+     */
+    public boolean system() {
+        return sys;
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridCacheOptimisticCheckPreparedTxRequest _clone = new GridCacheOptimisticCheckPreparedTxRequest();
 
         clone0(_clone);
@@ -107,56 +120,63 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridCacheOptimisticCheckPreparedTxRequest _clone = (GridCacheOptimisticCheckPreparedTxRequest)_msg;
 
         _clone.futId = futId;
         _clone.miniId = miniId;
-        _clone.nearXidVer = nearXidVer;
+        _clone.nearXidVer = nearXidVer != null ? (GridCacheVersion)nearXidVer.clone() : null;
         _clone.txNum = txNum;
+        _clone.sys = sys;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 8:
-                if (!commState.putGridUuid(futId))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 9:
-                if (!commState.putGridUuid(miniId))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 10:
-                if (!commState.putCacheVersion(nearXidVer))
+                if (!writer.writeMessage("nearXidVer", nearXidVer))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 11:
-                if (!commState.putInt(txNum))
+                if (!writer.writeBoolean("sys", sys))
                     return false;
 
-                commState.idx++;
+                state++;
+
+            case 12:
+                if (!writer.writeInt("txNum", txNum))
+                    return false;
+
+                state++;
 
         }
 
@@ -166,49 +186,51 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 8:
-                IgniteUuid futId0 = commState.getGridUuid();
+                futId = reader.readIgniteUuid("futId");
 
-                if (futId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                futId = futId0;
-
-                commState.idx++;
+                state++;
 
             case 9:
-                IgniteUuid miniId0 = commState.getGridUuid();
+                miniId = reader.readIgniteUuid("miniId");
 
-                if (miniId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                miniId = miniId0;
-
-                commState.idx++;
+                state++;
 
             case 10:
-                GridCacheVersion nearXidVer0 = commState.getCacheVersion();
+                nearXidVer = reader.readMessage("nearXidVer");
 
-                if (nearXidVer0 == CACHE_VER_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                nearXidVer = nearXidVer0;
-
-                commState.idx++;
+                state++;
 
             case 11:
-                if (buf.remaining() < 4)
+                sys = reader.readBoolean("sys");
+
+                if (!reader.isLastRead())
                     return false;
 
-                txNum = commState.getInt();
+                state++;
 
-                commState.idx++;
+            case 12:
+                txNum = reader.readInt("txNum");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                state++;
 
         }
 
@@ -217,7 +239,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 18;
+        return 16;
     }
 
     /** {@inheritDoc} */

@@ -1,4 +1,5 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="UTF-8"?>
+
 <!--
   Licensed to the Apache Software Foundation (ASF) under one or more
   contributor license agreements.  See the NOTICE file distributed with
@@ -14,14 +15,15 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
+
 
 <!DOCTYPE hibernate-configuration PUBLIC
     "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
     "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
 
 <!--
-    Configuration file for GridHibernateL2CacheExample.
+    Configuration file for HibernateL2CacheExample.
 -->
 
 <hibernate-configuration>
@@ -41,10 +43,10 @@
         <!-- Generate L2 cache statistics. -->
         <property name="generate_statistics">true</property>
 
-        <!-- Specify GridGain as L2 cache provider. -->
+        <!-- Specify Ignite as L2 cache provider. -->
         <property name="cache.region.factory_class">org.apache.ignite.cache.hibernate.GridHibernateRegionFactory</property>
 
-        <!-- Specify the name of the grid, that will be used for second level caching. -->
+        <!-- Specify the name of the ignite, that will be used for second level caching. -->
         <property name="org.apache.ignite.hibernate.grid_name">hibernate-grid</property>
 
         <!-- Specify connection release mode. -->

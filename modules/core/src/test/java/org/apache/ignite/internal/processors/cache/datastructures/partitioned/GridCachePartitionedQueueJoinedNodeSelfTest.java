@@ -18,35 +18,22 @@
 package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Test that joined node is able to poll values from cache queue in partitioned configuration.
  */
 public class GridCachePartitionedQueueJoinedNodeSelfTest extends GridCacheQueueJoinedNodeSelfAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected CacheMode collectionCacheMode() {
+        return PARTITIONED;
+    }
 
-        // Default cache configuration.
-        CacheConfiguration cc = defaultCacheConfiguration();
-
-        cc.setCacheMode(PARTITIONED);
-        cc.setBackups(1);
-        cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setPreloadMode(SYNC);
-        cc.setAtomicityMode(TRANSACTIONAL);
-        cc.setDistributionMode(PARTITIONED_ONLY);
-
-        c.setCacheConfiguration(cc);
-
-        return c;
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
+        return TRANSACTIONAL;
     }
 }

@@ -17,14 +17,10 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import org.apache.ignite.portables.*;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 
 /**
  * Cache query request.
@@ -321,50 +317,6 @@ public class GridClientCacheQueryRequest extends GridClientAbstractMessage {
      */
     public void queryArguments(Object[] qryArgs) {
         this.qryArgs = qryArgs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readPortable(PortableReader reader) throws PortableException {
-        super.readPortable(reader);
-
-        PortableRawReader rawReader = reader.rawReader();
-
-        qryId = rawReader.readLong();
-        op = GridQueryOperation.fromOrdinal(rawReader.readInt());
-        type = GridQueryType.fromOrdinal(rawReader.readInt());
-        cacheName = rawReader.readString();
-        clause = rawReader.readString();
-        pageSize = rawReader.readInt();
-        timeout = rawReader.readLong();
-        includeBackups = rawReader.readBoolean();
-        enableDedup = rawReader.readBoolean();
-        keepPortable = rawReader.readBoolean();
-        clsName = rawReader.readString();
-        rmtReducerClsName = rawReader.readString();
-        rmtTransformerClsName = rawReader.readString();
-        qryArgs = rawReader.readObjectArray();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writePortable(PortableWriter writer) throws PortableException {
-        super.writePortable(writer);
-
-        PortableRawWriter rawWriter = writer.rawWriter();
-
-        rawWriter.writeLong(qryId);
-        rawWriter.writeInt(op.ordinal());
-        rawWriter.writeInt(type == null ? -1 : type.ordinal());
-        rawWriter.writeString(cacheName);
-        rawWriter.writeString(clause);
-        rawWriter.writeInt(pageSize);
-        rawWriter.writeLong(timeout);
-        rawWriter.writeBoolean(includeBackups);
-        rawWriter.writeBoolean(enableDedup);
-        rawWriter.writeBoolean(keepPortable);
-        rawWriter.writeString(clsName);
-        rawWriter.writeString(rmtReducerClsName);
-        rawWriter.writeString(rmtTransformerClsName);
-        rawWriter.writeObjectArray(qryArgs);
     }
 
     /** {@inheritDoc} */

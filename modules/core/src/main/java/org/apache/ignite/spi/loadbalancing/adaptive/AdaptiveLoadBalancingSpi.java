@@ -21,13 +21,13 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.spi.loadbalancing.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -36,7 +36,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Load balancing SPI that adapts to overall node performance. It
@@ -142,7 +142,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskAdapter&lt;String, String&gt; {
  *    // Inject load balancer.
- *    &#64;IgniteLoadBalancerResource
+ *    &#64;LoadBalancerResource
  *    ComputeLoadBalancer balancer;
  *
  *    // Map jobs to grid nodes.
@@ -214,9 +214,9 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * Here is how you can configure {@code GridJobsLoadBalancingSpi} using Spring XML configuration:
  * <pre name="code" class="xml">
  * &lt;property name="loadBalancingSpi"&gt;
- *     &lt;bean class="org.gridgain.grid.spi.loadBalancing.adaptive.GridAdaptiveLoadBalancingSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.loadBalancing.adaptive.GridAdaptiveLoadBalancingSpi"&gt;
  *         &lt;property name="loadProbe"&gt;
- *             &lt;bean class="org.gridgain.grid.spi.loadBalancing.adaptive.GridAdaptiveProcessingTimeLoadProbe"&gt;
+ *             &lt;bean class="org.apache.ignite.spi.loadBalancing.adaptive.GridAdaptiveProcessingTimeLoadProbe"&gt;
  *                 &lt;constructor-arg value="false"/&gt;
  *             &lt;/bean&gt;
  *         &lt;/property&gt;
@@ -235,7 +235,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
     private static final Random RAND = new Random();
 
     /** Grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** */
@@ -310,11 +310,11 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
     /** {@inheritDoc} */
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         getSpiContext().addLocalEventListener(evtLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
+            @Override public void onEvent(Event evt) {
                 switch (evt.type()) {
                     case EVT_TASK_FINISHED:
                     case EVT_TASK_FAILED: {
-                        IgniteTaskEvent taskEvt = (IgniteTaskEvent)evt;
+                        TaskEvent taskEvt = (TaskEvent)evt;
 
                         taskTops.remove(taskEvt.taskSessionId());
 
@@ -329,7 +329,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
                         // We should keep topology and use cache in GridComputeTask#map() method to
                         // avoid O(n*n/2) complexity, after that we can drop caches.
                         // Here we set mapped property and later cache will be ignored
-                        IgniteJobEvent jobEvt = (IgniteJobEvent)evt;
+                        JobEvent jobEvt = (JobEvent)evt;
 
                         IgniteBiTuple<Boolean, WeightedTopology> weightedTop = taskTops.get(jobEvt.taskSessionId());
 
@@ -346,7 +346,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
                     case EVT_NODE_FAILED:
                     case EVT_NODE_JOINED:
                     case EVT_NODE_LEFT: {
-                        IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                        DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                         rwLock.writeLock().lock();
 
@@ -413,8 +413,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNode getBalancedNode(ComputeTaskSession ses, List<ClusterNode> top, ComputeJob job)
-    throws IgniteCheckedException {
+    @Override public ClusterNode getBalancedNode(ComputeTaskSession ses, List<ClusterNode> top, ComputeJob job) {
         A.notNull(ses, "ses");
         A.notNull(top, "top");
         A.notNull(job, "job");
@@ -440,10 +439,10 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
      * @param top List of all nodes.
      * @param node Node to get load for.
      * @return Node load.
-     * @throws IgniteCheckedException If returned load is negative.
+     * @throws IgniteException If returned load is negative.
      */
     @SuppressWarnings({"TooBroadScope"})
-    private double getLoad(Collection<ClusterNode> top, ClusterNode node) throws IgniteCheckedException {
+    private double getLoad(Collection<ClusterNode> top, ClusterNode node) throws IgniteException {
         assert !F.isEmpty(top);
 
         int jobsSentSinceLastUpdate = 0;
@@ -462,7 +461,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
         double load = probe.getLoad(node, jobsSentSinceLastUpdate);
 
         if (load < 0)
-            throw new IgniteCheckedException("Failed to obtain non-negative load from adaptive load probe: " + load);
+            throw new IgniteException("Failed to obtain non-negative load from adaptive load probe: " + load);
 
         return load;
     }
@@ -478,7 +477,7 @@ public class AdaptiveLoadBalancingSpi extends IgniteSpiAdapter implements LoadBa
          * @param top Task topology.
          * @throws IgniteCheckedException If any load was negative.
          */
-        WeightedTopology(List<ClusterNode> top) throws IgniteCheckedException {
+        WeightedTopology(List<ClusterNode> top) throws IgniteException {
             assert !F.isEmpty(top);
 
             double totalLoad = 0;

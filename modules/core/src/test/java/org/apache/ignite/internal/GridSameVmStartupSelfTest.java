@@ -20,14 +20,14 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Starts two grids on the same vm, checks topologies of each grid and discovery
@@ -68,17 +68,17 @@ public class GridSameVmStartupSelfTest extends GridCommonAbstractTest {
 
             final UUID grid1LocNodeId = ignite1.cluster().localNode().id();
 
-            ignite2.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            ignite2.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     assert evt.type() != EVT_NODE_FAILED :
                         "Node1 did not exit gracefully.";
 
-                    if (evt instanceof IgniteDiscoveryEvent) {
+                    if (evt instanceof DiscoveryEvent) {
                         // Local node can send METRICS_UPDATED event.
-                        assert ((IgniteDiscoveryEvent) evt).eventNode().id().equals(grid1LocNodeId) ||
+                        assert ((DiscoveryEvent) evt).eventNode().id().equals(grid1LocNodeId) ||
                             evt.type() == EVT_NODE_METRICS_UPDATED :
                             "Received event about invalid node [received=" +
-                                ((IgniteDiscoveryEvent) evt).eventNode().id() + ", expected=" + grid1LocNodeId +
+                                ((DiscoveryEvent) evt).eventNode().id() + ", expected=" + grid1LocNodeId +
                                 ", type=" + evt.type() + ']';
 
                         if (evt.type() == EVT_NODE_LEFT)

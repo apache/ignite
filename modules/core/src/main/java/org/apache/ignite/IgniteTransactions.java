@@ -17,10 +17,8 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
 
 /**
  * Transactions facade.
@@ -92,11 +90,11 @@ public interface IgniteTransactions {
      * @param isolation Cache transaction isolation level.
      * @return Started transaction.
      * @throws IllegalStateException If transaction is already started by this thread.
-     * @throws IgniteCheckedException If local node is not primary for any of provided keys.
+     * @throws IgniteException If local node is not primary for any of provided keys.
      * @throws UnsupportedOperationException If cache is {@link org.apache.ignite.cache.CacheAtomicityMode#ATOMIC}.
      */
     public IgniteTx txStartAffinity(String cacheName, Object affinityKey, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteException;
 
     /**
      * Starts {@code partition-group-locked} transaction based on partition ID. In this mode the whole partition
@@ -128,11 +126,11 @@ public interface IgniteTransactions {
      * @param isolation Cache transaction isolation level.
      * @return Started transaction.
      * @throws IllegalStateException If transaction is already started by this thread.
-     * @throws IgniteCheckedException If local node is not primary for any of provided keys.
+     * @throws IgniteException If local node is not primary for any of provided keys.
      * @throws UnsupportedOperationException If cache is {@link org.apache.ignite.cache.CacheAtomicityMode#ATOMIC}.
      */
     public IgniteTx txStartPartition(String cacheName, int partId, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
+        IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteException;
 
     /**
      * Gets transaction started by this thread or {@code null} if this thread does
@@ -141,7 +139,7 @@ public interface IgniteTransactions {
      * @return Transaction started by this thread or {@code null} if this thread
      *      does not have a transaction.
      */
-    @Nullable public IgniteTx tx();
+    public IgniteTx tx();
 
     /**
      * @return Transaction metrics.

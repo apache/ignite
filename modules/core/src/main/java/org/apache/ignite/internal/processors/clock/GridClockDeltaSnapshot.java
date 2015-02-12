@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.clock;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.discovery.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 
@@ -94,9 +94,9 @@ public class GridClockDeltaSnapshot {
      * Awaits either until snapshot is ready or timeout elapses.
      *
      * @param timeout Timeout to wait.
-     * @throws IgniteInterruptedException If wait was interrupted.
+     * @throws IgniteInterruptedCheckedException If wait was interrupted.
      */
-    public synchronized void awaitReady(long timeout) throws IgniteInterruptedException {
+    public synchronized void awaitReady(long timeout) throws IgniteInterruptedCheckedException {
         long start = System.currentTimeMillis();
 
         try {
@@ -112,7 +112,7 @@ public class GridClockDeltaSnapshot {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 

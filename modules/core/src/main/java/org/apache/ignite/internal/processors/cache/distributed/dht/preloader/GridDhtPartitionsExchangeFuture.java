@@ -22,12 +22,13 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.timeout.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -40,6 +41,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
+
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 
 /**
  * Future for exchanging partition maps.
@@ -59,7 +62,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     private final boolean reassign;
 
     /** Discovery event. */
-    private volatile IgniteDiscoveryEvent discoEvt;
+    private volatile DiscoveryEvent discoEvt;
 
     /** */
     @GridToStringInclude
@@ -147,7 +150,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param discoEvt Discovery event.
      * @param exchId Exchange id.
      */
-    public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, boolean reassign, IgniteDiscoveryEvent discoEvt,
+    public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, boolean reassign, DiscoveryEvent discoEvt,
         GridDhtPartitionExchangeId exchId) {
         super(cctx.kernalContext());
         dummy = true;
@@ -171,7 +174,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param discoEvt Discovery event.
      * @param exchId Exchange id.
      */
-    public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, IgniteDiscoveryEvent discoEvt,
+    public GridDhtPartitionsExchangeFuture(GridCacheSharedContext<K, V> cctx, DiscoveryEvent discoEvt,
         GridDhtPartitionExchangeId exchId) {
         super(cctx.kernalContext());
         dummy = false;
@@ -338,7 +341,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
      * @param exchId Exchange ID.
      * @param discoEvt Discovery event.
      */
-    public void onEvent(GridDhtPartitionExchangeId exchId, IgniteDiscoveryEvent discoEvt) {
+    public void onEvent(GridDhtPartitionExchangeId exchId, DiscoveryEvent discoEvt) {
         assert exchId.equals(this.exchId);
 
         this.discoEvt = discoEvt;
@@ -349,7 +352,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /**
      * @return Discovery event.
      */
-    public IgniteDiscoveryEvent discoveryEvent() {
+    public DiscoveryEvent discoveryEvent() {
         return discoEvt;
     }
 
@@ -404,9 +407,9 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /**
      * Starts activity.
      *
-     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+     * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    public void init() throws IgniteInterruptedException {
+    public void init() throws IgniteInterruptedCheckedException {
         assert oldestNode.get() != null;
 
         if (init.compareAndSet(false, true)) {
@@ -494,7 +497,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                     top.beforeExchange(exchId);
                 }
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 onDone(e);
 
                 throw e;
@@ -558,7 +561,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
         if (log.isDebugEnabled())
             log.debug("Sending local partitions [nodeId=" + node.id() + ", exchId=" + exchId + ", msg=" + m + ']');
 
-        cctx.io().send(node, m);
+        cctx.io().send(node, m, SYSTEM_POOL);
     }
 
     /**
@@ -583,7 +586,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
             log.debug("Sending full partition map [nodeIds=" + F.viewReadOnly(nodes, F.node2id()) +
                 ", exchId=" + exchId + ", msg=" + m + ']');
 
-        cctx.io().safeSend(nodes, m, null);
+        cctx.io().safeSend(nodes, m, SYSTEM_POOL, null);
     }
 
     /**
@@ -595,7 +598,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
         try {
             sendLocalPartitions(oldestNode, exchId);
         }
-        catch (ClusterTopologyException ignore) {
+        catch (ClusterTopologyCheckedException ignore) {
             if (log.isDebugEnabled())
                 log.debug("Oldest node left during partition exchange [nodeId=" + oldestNode.id() +
                     ", exchId=" + exchId + ']');
@@ -652,7 +655,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                 cctx.kernalContext().timeout().removeTimeoutObject(timeoutObj);
 
             for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
-                if (exchId.event() == IgniteEventType.EVT_NODE_FAILED || exchId.event() == IgniteEventType.EVT_NODE_LEFT)
+                if (exchId.event() == EventType.EVT_NODE_FAILED || exchId.event() == EventType.EVT_NODE_LEFT)
                     cacheCtx.config().getAffinity().removeNode(exchId.nodeId());
             }
 
@@ -997,7 +1000,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
             if (!remaining.isEmpty()) {
                 try {
                     cctx.io().safeSend(cctx.discovery().nodes(remaining),
-                        new GridDhtPartitionsSingleRequest<K, V>(exchId), null);
+                        new GridDhtPartitionsSingleRequest<K, V>(exchId), SYSTEM_POOL, null);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to request partitions from nodes [exchangeId=" + exchId +

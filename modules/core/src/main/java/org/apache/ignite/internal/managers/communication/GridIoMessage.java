@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.managers.communication;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -28,7 +28,7 @@ import java.nio.*;
 /**
  * Wrapper for all grid messages.
  */
-public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
+public class GridIoMessage extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,7 +56,7 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
     private boolean skipOnTimeout;
 
     /** Message. */
-    private GridTcpCommunicationMessageAdapter msg;
+    private MessageAdapter msg;
 
     /**
      * No-op constructor to support {@link Externalizable} interface.
@@ -79,7 +79,7 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
         GridIoPolicy plc,
         Object topic,
         int topicOrd,
-        GridTcpCommunicationMessageAdapter msg,
+        MessageAdapter msg,
         boolean ordered,
         long timeout,
         boolean skipOnTimeout
@@ -180,7 +180,7 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridIoMessage _clone = new GridIoMessage();
 
         clone0(_clone);
@@ -190,7 +190,7 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("RedundantCast")
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridIoMessage _clone = (GridIoMessage)_msg;
 
         _clone.plc = plc;
@@ -200,63 +200,63 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
         _clone.ordered = ordered;
         _clone.timeout = timeout;
         _clone.skipOnTimeout = skipOnTimeout;
-        _clone.msg = msg != null ? (GridTcpCommunicationMessageAdapter)msg.clone() : null;
+        _clone.msg = msg != null ? (MessageAdapter)msg.clone() : null;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putMessage(msg))
+                if (!writer.writeMessage("msg", msg))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putBoolean(ordered))
+                if (!writer.writeBoolean("ordered", ordered))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putEnum(plc))
+                if (!writer.writeEnum("plc", plc))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                if (!commState.putBoolean(skipOnTimeout))
+                if (!writer.writeBoolean("skipOnTimeout", skipOnTimeout))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putLong(timeout))
+                if (!writer.writeLong("timeout", timeout))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                if (!commState.putByteArray(topicBytes))
+                if (!writer.writeByteArray("topicBytes", topicBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 6:
-                if (!commState.putInt(topicOrd))
+                if (!writer.writeInt("topicOrd", topicOrd))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -266,70 +266,64 @@ public class GridIoMessage extends GridTcpCommunicationMessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                Object msg0 = commState.getMessage();
+                msg = reader.readMessage("msg");
 
-                if (msg0 == MSG_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                msg = (GridTcpCommunicationMessageAdapter)msg0;
-
-                commState.idx++;
+                state++;
 
             case 1:
-                if (buf.remaining() < 1)
+                ordered = reader.readBoolean("ordered");
+
+                if (!reader.isLastRead())
                     return false;
 
-                ordered = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 2:
-                if (buf.remaining() < 1)
+                plc = reader.readEnum("plc", GridIoPolicy.class);
+
+                if (!reader.isLastRead())
                     return false;
 
-                byte plc0 = commState.getByte();
-
-                plc = GridIoPolicy.fromOrdinal(plc0);
-
-                commState.idx++;
+                state++;
 
             case 3:
-                if (buf.remaining() < 1)
+                skipOnTimeout = reader.readBoolean("skipOnTimeout");
+
+                if (!reader.isLastRead())
                     return false;
 
-                skipOnTimeout = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 4:
-                if (buf.remaining() < 8)
+                timeout = reader.readLong("timeout");
+
+                if (!reader.isLastRead())
                     return false;
 
-                timeout = commState.getLong();
-
-                commState.idx++;
+                state++;
 
             case 5:
-                byte[] topicBytes0 = commState.getByteArray();
+                topicBytes = reader.readByteArray("topicBytes");
 
-                if (topicBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                topicBytes = topicBytes0;
-
-                commState.idx++;
+                state++;
 
             case 6:
-                if (buf.remaining() < 4)
+                topicOrd = reader.readInt("topicOrd");
+
+                if (!reader.isLastRead())
                     return false;
 
-                topicOrd = commState.getInt();
-
-                commState.idx++;
+                state++;
 
         }
 

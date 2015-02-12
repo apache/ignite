@@ -17,7 +17,10 @@
 
 package org.apache.ignite.visor.commands.gc
 
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
+
 import org.apache.ignite._
+
 import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}
 import org.apache.ignite.internal.visor.node.VisorNodeGcTask
 import org.apache.ignite.visor.VisorTag
@@ -126,7 +129,7 @@ class VisorGcCommand {
             }
             else if (id.isDefined)
                 try {
-                    node = grid.node(UUID.fromString(id.get))
+                    node = ignite.node(UUID.fromString(id.get))
 
                     if (node == null)
                         scold("'id' does not match any node: " + id.get).^^
@@ -140,13 +143,13 @@ class VisorGcCommand {
 
                 t #= ("Node ID8(@)", "Free Heap Before", "Free Heap After", "Free Heap Delta")
 
-                val prj = grid.forRemotes()
+                val prj = ignite.forRemotes()
 
                 val nids = prj.nodes().map(_.id())
 
                 val NULL: Void = null
 
-                grid.compute(prj).withNoFailover().execute(classOf[VisorNodeGcTask],
+                ignite.compute(prj).withNoFailover().execute(classOf[VisorNodeGcTask],
                     toTaskArgument(nids, NULL)).foreach { case (nid, stat) =>
                     val roundHb = stat.get1() / (1024L * 1024L)
                     val roundHa = stat.get2() / (1024L * 1024L)
@@ -164,7 +167,7 @@ class VisorGcCommand {
             }
             catch {
                 case e: ClusterGroupEmptyException => scold("Topology is empty.")
-                case e: IgniteCheckedException => scold(e.getMessage)
+                case e: IgniteException => scold(e.getMessage)
             }
         }
     }

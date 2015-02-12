@@ -19,8 +19,8 @@ package org.apache.ignite.internal.visor.streamer;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
 
@@ -53,17 +53,17 @@ public class VisorStreamerResetTask extends VisorOneNodeTask<String, Void> {
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(String streamerName) throws IgniteCheckedException {
+        @Override protected Void run(String streamerName) {
             try {
-                IgniteStreamer streamer = g.streamer(streamerName);
+                IgniteStreamer streamer = ignite.streamer(streamerName);
 
                 streamer.reset();
 
                 return null;
             }
             catch (IllegalArgumentException iae) {
-                throw new IgniteCheckedException("Failed to reset streamer: " + escapeName(streamerName)
-                    + " on node: " + g.localNode().id(), iae);
+                throw new IgniteException("Failed to reset streamer: " + escapeName(streamerName)
+                    + " on node: " + ignite.localNode().id(), iae);
             }
         }
 

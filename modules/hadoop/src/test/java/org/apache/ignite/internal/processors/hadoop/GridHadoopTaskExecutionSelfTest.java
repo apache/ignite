@@ -18,16 +18,17 @@
 package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.hadoop.conf.*;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.lib.output.*;
 import org.apache.ignite.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.ignitefs.hadoop.v1.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.fs.hadoop.v1.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

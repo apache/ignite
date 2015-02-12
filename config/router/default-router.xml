@@ -15,17 +15,17 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <!--
     Default rest router configuration.
 
     This file is automatically scanned by
     $IGNITE_HOME/bin/igniterouter.sh and $IGNITE_HOME/bin/igniterouter.bat
-    for org.gridgain.client.router.GridTcpRestRouterConfiguration  bean definition.
+    for org.apache.ignite.client.router.GridTcpRouterConfiguration  bean definition.
     First found is used to start router instance.
 
-    You can also use org.gridgain.client.router.GridRouterFactory to
+    You can also use org.apache.ignite.client.router.GridRouterFactory to
     programmatically start and stop router instances inside your application.
     Please refer to JavaDoc for more details.
 -->
@@ -39,7 +39,7 @@
     <!--
         Configuration of TCP router.
     -->
-    <bean id="tcp.router.cfg" class="org.apache.ignite.client.router.GridTcpRouterConfiguration">
+    <bean id="tcp.router.cfg" class="org.apache.ignite.internal.client.router.GridTcpRouterConfiguration">
 
         <property name="logger" ref="router.log" />
     </bean>
@@ -47,5 +47,5 @@
     <!--
         Logger with the same configuration as in default grid instances.
     -->
-    <bean id="router.log" class="org.apache.ignite.logger.java.IgniteJavaLogger"/>
+    <bean id="router.log" class="org.apache.ignite.logger.java.JavaLogger"/>
 </beans>

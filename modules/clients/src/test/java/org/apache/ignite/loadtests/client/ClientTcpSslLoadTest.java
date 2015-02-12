@@ -17,7 +17,8 @@
 
 package org.apache.ignite.loadtests.client;
 
-import org.apache.ignite.client.*;
+import org.apache.ignite.*;
+import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
@@ -78,6 +79,10 @@ public class ClientTcpSslLoadTest extends ClientTcpSslMultiThreadedSelfTest {
     @SuppressWarnings("ConstantConditions")
     private void clearCaches() {
         for (int i = 0; i < NODES_CNT; i++)
-            grid(i).cache(PARTITIONED_CACHE_NAME).clearAll();
+            try {
+                grid(i).jcache(PARTITIONED_CACHE_NAME).clear();
+            } catch (IgniteException e) {
+                log.error("Cache clear failed.", e);
+            }
     }
 }

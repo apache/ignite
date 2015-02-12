@@ -20,11 +20,12 @@ package org.apache.ignite.compute.gridify.aop.aspectj;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.gridify.*;
 import org.apache.ignite.compute.gridify.aop.*;
+import org.apache.ignite.internal.util.gridify.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.aspectj.lang.*;
 import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.gridify.*;
+
 import java.lang.reflect.*;
 
 import static org.apache.ignite.IgniteState.*;

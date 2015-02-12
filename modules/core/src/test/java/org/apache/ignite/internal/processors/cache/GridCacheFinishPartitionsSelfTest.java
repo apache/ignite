@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -31,8 +31,8 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -84,7 +84,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
         String key = "key";
         String val = "value";
 
-        GridCache<String, String> cache = grid.cache(null);
+        IgniteCache<String, String> cache = grid.jcache(null);
 
         int keyPart = grid.<String, String>internalCache().context().affinity().partition(key);
 
@@ -127,9 +127,9 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
                 if (barrier.await() == 0)
                     start.set(System.currentTimeMillis());
 
-                GridCache<String, String> cache = grid(0).cache(null);
+                IgniteCache<String, String> cache = grid(0).jcache(null);
 
-                IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 cache.get(key);
 
@@ -187,9 +187,9 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
      * @throws Exception If failed.
      */
     public void testMvccFinishKeys() throws Exception {
-        GridCache<String, Integer> cache = grid(0).cache(null);
+        IgniteCache<String, Integer> cache = grid(0).jcache(null);
 
-        try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (IgniteTx tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             final String key = "key";
 
             cache.get(key);

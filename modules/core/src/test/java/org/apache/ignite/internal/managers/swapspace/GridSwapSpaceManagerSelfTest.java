@@ -21,17 +21,17 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests for {@link GridSwapSpaceManager}.
@@ -81,13 +81,13 @@ public class GridSwapSpaceManagerSelfTest extends GridCommonAbstractTest {
         final CountDownLatch storeCnt = new CountDownLatch(2);
         final CountDownLatch rmvCnt = new CountDownLatch(1);
 
-        ignite.events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
-                assert evt instanceof IgniteSwapSpaceEvent;
+        ignite.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                assert evt instanceof SwapSpaceEvent;
 
                 info("Received event: " + evt);
 
-                IgniteSwapSpaceEvent e = (IgniteSwapSpaceEvent) evt;
+                SwapSpaceEvent e = (SwapSpaceEvent) evt;
 
                 assert spaceName.equals(e.space());
                 assert ignite.cluster().localNode().id().equals(e.node().id());

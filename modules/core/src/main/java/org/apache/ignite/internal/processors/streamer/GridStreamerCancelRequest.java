@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.streamer;
 
 import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -26,7 +26,7 @@ import java.nio.*;
 /**
  * Streamer cancel request.
  */
-public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapter {
+public class GridStreamerCancelRequest extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,7 +56,7 @@ public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapte
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridStreamerCancelRequest _clone = new GridStreamerCancelRequest();
 
         clone0(_clone);
@@ -65,7 +65,7 @@ public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapte
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridStreamerCancelRequest _clone = (GridStreamerCancelRequest)_msg;
 
         _clone.cancelledFutId = cancelledFutId;
@@ -74,21 +74,21 @@ public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapte
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putGridUuid(cancelledFutId))
+                if (!writer.writeIgniteUuid("cancelledFutId", cancelledFutId))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -98,18 +98,16 @@ public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapte
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                IgniteUuid cancelledFutId0 = commState.getGridUuid();
+                cancelledFutId = reader.readIgniteUuid("cancelledFutId");
 
-                if (cancelledFutId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                cancelledFutId = cancelledFutId0;
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -118,6 +116,6 @@ public class GridStreamerCancelRequest extends GridTcpCommunicationMessageAdapte
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 75;
+        return 79;
     }
 }

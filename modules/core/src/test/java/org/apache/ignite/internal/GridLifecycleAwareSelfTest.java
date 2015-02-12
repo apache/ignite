@@ -19,11 +19,11 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.client.ssl.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.logger.java.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.plugin.segmentation.*;
-import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -35,11 +35,11 @@ import javax.net.ssl.*;
 public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /**
      */
-    private static class TestClientMessageInterceptor extends TestLifecycleAware
-        implements ClientMessageInterceptor {
+    private static class TestConnectorMessageInterceptor extends TestLifecycleAware
+        implements ConnectorMessageInterceptor {
         /**
          */
-        TestClientMessageInterceptor() {
+        TestConnectorMessageInterceptor() {
             super(null);
         }
 
@@ -94,24 +94,24 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
         }
 
         /** {@inheritDoc} */
-        @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
+        @Override public void onLifecycleEvent(LifecycleEventType evt) {
             // No-op.
         }
     }
 
     /**
      */
-    private static class TestMarshaller extends IgniteOptimizedMarshaller implements LifecycleAware {
+    private static class TestMarshaller extends OptimizedMarshaller implements LifecycleAware {
         /** */
         private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(null);
 
         /** {@inheritDoc} */
-        @Override public void start() throws IgniteCheckedException {
+        @Override public void start() {
             lifecycleAware.start();
         }
 
         /** {@inheritDoc} */
-        @Override public void stop() throws IgniteCheckedException {
+        @Override public void stop() {
             lifecycleAware.stop();
         }
 
@@ -125,17 +125,17 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
     /**
      */
-    private static class TestLogger extends IgniteJavaLogger implements LifecycleAware {
+    private static class TestLogger extends JavaLogger implements LifecycleAware {
         /** */
         private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(null);
 
         /** {@inheritDoc} */
-        @Override public void start() throws IgniteCheckedException {
+        @Override public void start() {
             lifecycleAware.start();
         }
 
         /** {@inheritDoc} */
-        @Override public void stop() throws IgniteCheckedException {
+        @Override public void stop() {
             lifecycleAware.stop();
         }
 
@@ -151,13 +151,13 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
     @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TestClientMessageInterceptor interceptor = new TestClientMessageInterceptor();
+        TestConnectorMessageInterceptor interceptor = new TestConnectorMessageInterceptor();
 
-        ClientConnectionConfiguration clientCfg = new ClientConnectionConfiguration();
+        ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
-        clientCfg.setClientMessageInterceptor(interceptor);
+        clientCfg.setMessageInterceptor(interceptor);
 
-        cfg.setClientConnectionConfiguration(clientCfg);
+        cfg.setConnectorConfiguration(clientCfg);
 
         lifecycleAwares.add(interceptor);
 
@@ -169,7 +169,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
 
         TestContextFactory ctxFactory = new TestContextFactory();
 
-        clientCfg.setRestTcpSslContextFactory(ctxFactory);
+        clientCfg.setSslContextFactory(ctxFactory);
 
         lifecycleAwares.add(ctxFactory);
 

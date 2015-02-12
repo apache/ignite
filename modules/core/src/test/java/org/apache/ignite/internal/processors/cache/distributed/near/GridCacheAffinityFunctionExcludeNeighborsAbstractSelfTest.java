@@ -18,17 +18,16 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -61,7 +60,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
                 // Set unique mac addresses for every group of three nodes.
                 String macAddrs = "MOCK_MACS_" + (gridInstanceNum / 3);
 
-                attrs.put(GridNodeAttributes.ATTR_MACS, macAddrs);
+                attrs.put(IgniteNodeAttributes.ATTR_MACS, macAddrs);
 
                 gridInstanceNum++;
             }
@@ -92,14 +91,6 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
     protected abstract CacheAffinityFunction affinityFunction();
 
     /**
-     * @param ignite Grid.
-     * @return Affinity.
-     */
-    static CacheAffinity<Object> affinity(Ignite ignite) {
-        return ignite.cache(null).affinity();
-    }
-
-    /**
      * @param aff Affinity.
      * @param key Key.
      * @return Nodes.
@@ -124,7 +115,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
             for (int i = 0; i < grids; i++) {
                 final Ignite g = grid(i);
 
-                CacheAffinity<Object> aff = affinity(g);
+                CacheAffinity<Object> aff = g.affinity(null);
 
                 List<TcpDiscoveryNode> top = new ArrayList<>();
 
@@ -152,7 +143,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
                 Set<String> macs = new HashSet<>();
 
                 for (ClusterNode node : affNodes)
-                    macs.add((String)node.attribute(GridNodeAttributes.ATTR_MACS));
+                    macs.add((String)node.attribute(IgniteNodeAttributes.ATTR_MACS));
 
                 assertEquals(copies, macs.size());
             }
@@ -171,7 +162,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
         try {
             Object key = 12345;
 
-            Collection<? extends ClusterNode> affNodes = nodes(affinity(g), key);
+            Collection<? extends ClusterNode> affNodes = nodes(g.affinity(null), key);
 
             info("Affinity picture for grid: " + U.toShortString(affNodes));
 

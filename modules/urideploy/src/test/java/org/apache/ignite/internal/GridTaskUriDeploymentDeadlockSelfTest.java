@@ -20,10 +20,10 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.deployment.uri.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.deployment.uri.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.lang.reflect.*;
@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Test to reproduce gg-2852.
@@ -44,7 +44,7 @@ public class GridTaskUriDeploymentDeadlockSelfTest extends GridCommonAbstractTes
         UriDeploymentSpi deploymentSpi = new UriDeploymentSpi();
 
         deploymentSpi.setUriList(
-            Arrays.asList(U.resolveGridGainUrl("modules/core/src/test/resources/").toURI().toString()));
+            Arrays.asList(U.resolveIgniteUrl("modules/core/src/test/resources/").toURI().toString()));
 
         if (gridName.endsWith("2")) {
             // Delay deployment for 2nd grid only.
@@ -69,8 +69,8 @@ public class GridTaskUriDeploymentDeadlockSelfTest extends GridCommonAbstractTes
 
             final CountDownLatch latch = new CountDownLatch(1);
 
-            g.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            g.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     assert evt.type() == EVT_NODE_JOINED;
 
                     latch.countDown();

@@ -18,15 +18,15 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 
@@ -238,7 +238,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
      * @return Optional projection filter.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private IgnitePredicate<CacheEntry<Object, Object>> filter() {
+    @Nullable private IgnitePredicate<Cache.Entry<Object, Object>> filter() {
         return prj == null ? null : ((GridCacheProjectionImpl<Object, Object>)prj).predicate();
     }
 

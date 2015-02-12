@@ -18,12 +18,11 @@
 package org.apache.ignite.loadtests.dsi.cacheget;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 
 import java.util.concurrent.atomic.*;
 
 /**
- * This is an adapted test case from DSI-49 (http://www.gridgainsystems.com/jira/browse/DSI-49).
+ * Benchmark cache get load test.
  */
 public class GridBenchmarkCacheGetLoadTest {
     /** */
@@ -51,25 +50,16 @@ public class GridBenchmarkCacheGetLoadTest {
     public static void main(String[] args) throws Exception {
         Ignition.start("modules/core/src/test/config/load/dsi-49-server-production.xml");
 
-        GridCache<Long, Long> cache = Ignition.ignite("dsi").cache("PARTITIONED_CACHE");
+        IgniteCache<Long, Long> cache = Ignition.ignite("dsi").jcache("PARTITIONED_CACHE");
 
         stats();
-
-        boolean usePrj = true;
-
-        CacheProjection<Long, Long> cachePrj = cache.projection(Long.class, Long.class);
 
         for (int i = 0; i < 5000000; i++) {
             long t0 = System.currentTimeMillis();
 
             cnt.incrementAndGet();
 
-            if (usePrj)
-                // This is slow
-                cachePrj.get(id.incrementAndGet());
-            else
-                // This is fast
-                cache.get(id.incrementAndGet());
+            cache.get(id.incrementAndGet());
 
             latency.addAndGet(System.currentTimeMillis() - t0);
         }

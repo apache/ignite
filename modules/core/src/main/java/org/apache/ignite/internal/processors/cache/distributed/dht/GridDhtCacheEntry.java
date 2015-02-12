@@ -18,18 +18,17 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -234,7 +233,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tmLock(IgniteTxEx<K, V> tx, long timeout)
+    @Override public boolean tmLock(IgniteInternalTx<K, V> tx, long timeout)
         throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (tx.local()) {
             GridDhtTxLocalAdapter<K, V> dhtTx = (GridDhtTxLocalAdapter<K, V>)tx;
@@ -436,7 +435,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
             if (!F.isEmpty(cands)) {
                 for (GridCacheMvccCandidate<K> c : cands) {
-                    IgniteTxEx<K, V> tx = cctx.tm().tx(c.version());
+                    IgniteInternalTx<K, V> tx = cctx.tm().tx(c.version());
 
                     if (tx != null) {
                         assert tx.local();
@@ -622,18 +621,6 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
         GridCacheMvcc<K> mvcc = mvccExtras();
 
         return mvcc == null ? null : mvcc.candidate(ver);
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheEntry<K, V> wrap(boolean prjAware) {
-        GridCacheContext<K, V> nearCtx = cctx.dht().near().context();
-
-        GridCacheProjectionImpl<K, V> prjPerCall = nearCtx.projectionPerCall();
-
-        if (prjPerCall != null && prjAware)
-            return new GridPartitionedCacheEntryImpl<>(prjPerCall, nearCtx, key, this);
-
-        return new GridPartitionedCacheEntryImpl<>(null, nearCtx, key, this);
     }
 
     /**

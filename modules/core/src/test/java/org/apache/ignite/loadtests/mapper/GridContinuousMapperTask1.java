@@ -18,10 +18,11 @@
 package org.apache.ignite.loadtests.mapper;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -38,7 +39,7 @@ public class GridContinuousMapperTask1 extends ComputeTaskAdapter<Integer, Integ
     private final transient AtomicInteger jobIdGen = new AtomicInteger();
 
     /** Mapper. */
-    @IgniteTaskContinuousMapperResource
+    @TaskContinuousMapperResource
     private ComputeTaskContinuousMapper mapper;
 
     /** Grid. */
@@ -71,9 +72,9 @@ public class GridContinuousMapperTask1 extends ComputeTaskAdapter<Integer, Integ
      * Sends job to node.
      *
      * @param n Node.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private void sendJob(ClusterNode n) throws IgniteCheckedException {
+    private void sendJob(ClusterNode n) {
         try {
             int jobId = queue.take();
 
@@ -88,18 +89,17 @@ public class GridContinuousMapperTask1 extends ComputeTaskAdapter<Integer, Integ
 
                     X.println(">>> Received job for ID: " + jobId);
 
-                    return g.cache("replicated").peek(jobId);
+                    return g.jcache("replicated").localPeek(jobId, CachePeekMode.ONHEAP);
                 }
             }, n);
         }
         catch (InterruptedException e) {
-            throw new IgniteCheckedException(e);
+            throw new IgniteException(e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Integer arg)
-        throws IgniteCheckedException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Integer arg) {
         maxExecs = arg;
 
         // Start worker thread.
@@ -115,9 +115,9 @@ public class GridContinuousMapperTask1 extends ComputeTaskAdapter<Integer, Integ
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         if (res.getException() != null)
-            throw new IgniteCheckedException(res.getException());
+            throw new IgniteException(res.getException());
 
         TestObject o = res.getData();
 
@@ -132,7 +132,7 @@ public class GridContinuousMapperTask1 extends ComputeTaskAdapter<Integer, Integ
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Integer reduce(List<ComputeJobResult> results) {
         X.println(">>> Reducing task...");
 
         t.interrupt();
@@ -141,7 +141,7 @@ public class GridContinuousMapperTask1 extends ComputeTaskAdapter<Integer, Integ
             t.join();
         }
         catch (InterruptedException e) {
-            throw new IgniteCheckedException(e);
+            throw new IgniteException(e);
         }
 
         return null;

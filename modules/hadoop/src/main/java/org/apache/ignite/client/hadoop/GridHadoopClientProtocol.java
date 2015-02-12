@@ -18,6 +18,7 @@
 package org.apache.ignite.client.hadoop;
 
 import org.apache.hadoop.conf.*;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.ipc.*;
@@ -30,9 +31,8 @@ import org.apache.hadoop.security.*;
 import org.apache.hadoop.security.authorize.*;
 import org.apache.hadoop.security.token.*;
 import org.apache.ignite.*;
-import org.apache.ignite.client.*;
 import org.apache.ignite.client.hadoop.counter.*;
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.client.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.proto.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -45,14 +45,14 @@ import static org.apache.ignite.internal.processors.hadoop.GridHadoopUtils.*;
  * Hadoop client protocol.
  */
 public class GridHadoopClientProtocol implements ClientProtocol {
-    /** GridGain framework name property. */
-    public static final String FRAMEWORK_NAME = "gridgain";
+    /** Ignite framework name property. */
+    public static final String FRAMEWORK_NAME = "ignite";
 
     /** Protocol version. */
     private static final long PROTO_VER = 1L;
 
-    /** Default GridGain system directory. */
-    private static final String SYS_DIR = ".gridgain/system";
+    /** Default Ignite system directory. */
+    private static final String SYS_DIR = ".ignite/system";
 
     /** Configuration. */
     private final Configuration conf;

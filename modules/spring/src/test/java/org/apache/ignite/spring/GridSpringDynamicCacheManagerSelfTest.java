@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spring;
 
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.spring.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -26,7 +26,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.springframework.beans.factory.*;
-import org.springframework.cache.*;
 import org.springframework.context.support.*;
 
 import java.lang.reflect.*;
@@ -93,7 +92,7 @@ public class GridSpringDynamicCacheManagerSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid().cache(DATA_CACHE_NAME).removeAll();
+        grid().jcache(DATA_CACHE_NAME).removeAll();
     }
 
     /**
@@ -111,7 +110,7 @@ public class GridSpringDynamicCacheManagerSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testCacheAndEvict() throws Exception {
-        GridCache<Object, String> c = grid().cache(DATA_CACHE_NAME);
+        IgniteCache<Object, String> c = grid().jcache(DATA_CACHE_NAME);
 
         assertEquals("value1", svc.cacheable(1));
 
@@ -132,7 +131,7 @@ public class GridSpringDynamicCacheManagerSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testPutAndEvict() throws Exception {
-        GridCache<Object, String> c = grid().cache(DATA_CACHE_NAME);
+        IgniteCache<Object, String> c = grid().jcache(DATA_CACHE_NAME);
 
         assertEquals("value1", svc.cachePut(1));
 
@@ -153,7 +152,7 @@ public class GridSpringDynamicCacheManagerSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testCacheAndEvictAll() throws Exception {
-        GridCache<Object, String> c = grid().cache(DATA_CACHE_NAME);
+        IgniteCache<Object, String> c = grid().jcache(DATA_CACHE_NAME);
 
         assertEquals("value1", svc.cacheable(1));
         assertEquals("value2", svc.cacheable(2));
@@ -180,7 +179,7 @@ public class GridSpringDynamicCacheManagerSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testPutAndEvictAll() throws Exception {
-        GridCache<Object, String> c = grid().cache(DATA_CACHE_NAME);
+        IgniteCache<Object, String> c = grid().jcache(DATA_CACHE_NAME);
 
         assertEquals("value1", svc.cachePut(1));
         assertEquals("value2", svc.cachePut(2));

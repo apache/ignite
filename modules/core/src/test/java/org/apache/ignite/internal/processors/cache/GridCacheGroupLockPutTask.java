@@ -21,10 +21,10 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -72,7 +72,7 @@ class GridCacheGroupLockPutTask extends ComputeTaskAdapter<Collection<Integer>, 
      *                       org.apache.ignite.compute.ComputeTaskFuture#get()} method.
      */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable final Collection<Integer> data) throws IgniteCheckedException {
+        @Nullable final Collection<Integer> data) {
         assert !subgrid.isEmpty();
 
         // Give preference to wanted node. Otherwise, take the first one.
@@ -84,39 +84,45 @@ class GridCacheGroupLockPutTask extends ComputeTaskAdapter<Collection<Integer>, 
 
         return Collections.singletonMap(
             new ComputeJobAdapter() {
-                @IgniteLoggerResource
+                @LoggerResource
                 private IgniteLogger log;
 
                 @IgniteInstanceResource
                 private Ignite ignite;
 
-                @Override public Object execute() throws IgniteCheckedException {
-                    log.info("Going to put data: " + data.size());
+                @Override public Object execute() {
+                    try {
+                        log.info("Going to put data: " + data.size());
 
-                    GridCache<Object, Object> cache = ignite.cache(cacheName);
+                        IgniteCache<Object, Object> cache = ignite.jcache(cacheName);
 
-                    assert cache != null;
+                        assert cache != null;
 
-                    Map<Integer, T2<Integer, Collection<Integer>>> putMap = groupData(data);
+                        Map<Integer, T2<Integer, Collection<Integer>>> putMap = groupData(data);
 
-                    for (Map.Entry<Integer, T2<Integer, Collection<Integer>>> entry : putMap.entrySet()) {
-                        T2<Integer, Collection<Integer>> pair = entry.getValue();
+                        for (Map.Entry<Integer, T2<Integer, Collection<Integer>>> entry : putMap.entrySet()) {
+                            T2<Integer, Collection<Integer>> pair = entry.getValue();
 
-                        Object affKey = pair.get1();
+                            Object affKey = pair.get1();
 
-                        // Group lock partition.
-                        try (IgniteTx tx = cache.txStartPartition(cache.affinity().partition(affKey),
-                            optimistic ? OPTIMISTIC : PESSIMISTIC, REPEATABLE_READ, 0, pair.get2().size())) {
-                            for (Integer val : pair.get2())
-                                cache.put(val, val);
+                            // Group lock partition.
+                            try (IgniteTx tx = ignite.transactions().txStartPartition(cacheName,
+                                ignite.affinity(cacheName).partition(affKey), optimistic ? OPTIMISTIC : PESSIMISTIC,
+                                REPEATABLE_READ, 0, pair.get2().size())) {
+                                for (Integer val : pair.get2())
+                                    cache.put(val, val);
 
-                            tx.commit();
+                                tx.commit();
+                            }
                         }
+
+                        log.info("Finished put data: " + data.size());
+
+                        return data;
                     }
-
-                    log.info("Finished put data: " + data.size());
-
-                    return data;
+                    catch (Exception e) {
+                        throw new IgniteException(e);
+                    }
                 }
 
                 /**
@@ -126,12 +132,10 @@ class GridCacheGroupLockPutTask extends ComputeTaskAdapter<Collection<Integer>, 
                  * @return Grouped map.
                  */
                 private Map<Integer, T2<Integer, Collection<Integer>>> groupData(Iterable<Integer> data) {
-                    GridCache<Object, Object> cache = ignite.cache(cacheName);
-
                     Map<Integer, T2<Integer, Collection<Integer>>> res = new HashMap<>();
 
                     for (Integer val : data) {
-                        int part = cache.affinity().partition(val);
+                        int part = ignite.affinity(cacheName).partition(val);
 
                         T2<Integer, Collection<Integer>> tup = res.get(part);
 
@@ -151,7 +155,7 @@ class GridCacheGroupLockPutTask extends ComputeTaskAdapter<Collection<Integer>, 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
         return null;
     }
 }

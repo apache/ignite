@@ -18,30 +18,31 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  *
@@ -100,7 +101,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
         try {
             final Ignite ignite1 = startGrid(1);
 
-            GridCache<Integer, Object> cache1 = ignite1.cache(null);
+            IgniteCache<Integer, Object> cache1 = ignite1.jcache(null);
 
             for (int i = 0; i < 5000; i++)
                 cache1.put(i, VALUE + i);
@@ -111,7 +112,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
 
             final CountDownLatch startLatch = new CountDownLatch(1);
 
-            int oldSize = cache1.size();
+            int oldSize = cache1.localSize();
 
             IgniteInternalFuture fut = multithreadedAsync(
                 new Callable<Object>() {
@@ -121,10 +122,10 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                         info("Started evicting...");
 
                         for (int i = 0; i < 3000 && !done.get(); i++) {
-                            CacheEntry<Integer, Object> entry = randomEntry(ignite1);
+                            Cache.Entry<Integer, Object> entry = randomEntry(ignite1);
 
                             if (entry != null)
-                                entry.evict();
+                                ignite1.jcache(null).localEvict(Collections.<Object>singleton(entry.getKey()));
                             else
                                 info("Entry is null.");
                         }
@@ -137,8 +138,8 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                 1);
 
             ignite1.events().localListen(
-                new IgnitePredicate<IgniteEvent>() {
-                    @Override public boolean apply(IgniteEvent evt) {
+                new IgnitePredicate<Event>() {
+                    @Override public boolean apply(Event evt) {
                         startLatch.countDown();
 
                         return true;
@@ -161,10 +162,10 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
             info("Evicting on constant topology.");
 
             for (int i = 0; i < 1000; i++) {
-                CacheEntry<Integer, Object> entry = randomEntry(ignite1);
+                Cache.Entry<Integer, Object> entry = randomEntry(ignite1);
 
                 if (entry != null)
-                    entry.evict();
+                    cache1.localEvict(Collections.singleton(entry.getKey()));
                 else
                     info("Entry is null.");
             }
@@ -184,16 +185,16 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @param ignite1 Grid 1.
      * @param ignite2 Grid 2.
      * @param oldSize Old size, stable size should be .
-     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
     private void sleepUntilCashesEqualize(final Ignite ignite1, final Ignite ignite2, final int oldSize)
-        throws IgniteInterruptedException {
+        throws IgniteInterruptedCheckedException {
         info("Sleeping...");
 
         assertTrue(GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
-                int size1 = ignite1.cache(null).size();
-                return size1 != oldSize && size1 == ignite2.cache(null).size();
+                int size1 = ignite1.jcache(null).localSize();
+                return size1 != oldSize && size1 == ignite2.jcache(null).localSize();
             }
         }, getTestTimeout()));
 
@@ -204,7 +205,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @param g Grid.
      * @return Random entry from cache.
      */
-    @Nullable private CacheEntry<Integer, Object> randomEntry(Ignite g) {
+    @Nullable private Cache.Entry<Integer, Object> randomEntry(Ignite g) {
         IgniteKernal g1 = (IgniteKernal)g;
 
         return g1.<Integer, Object>internalCache().randomEntry();

@@ -21,10 +21,10 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -97,10 +97,10 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
 
             for (Integer key : map.keySet()) {
                 info("Affinity nodes [key=" + key + ", nodes=" +
-                    F.viewReadOnly(grid(0).cache(null).affinity().mapKeyToPrimaryAndBackups(key), F.node2id()) + ']');
+                    F.viewReadOnly(grid(0).affinity(null).mapKeyToPrimaryAndBackups(key), F.node2id()) + ']');
             }
 
-            grid(0).cache(null).putAll(map);
+            grid(0).jcache(null).putAll(map);
 
             for (int g = 0; g < 3; g++) {
                 IgniteKernal grid = (IgniteKernal)grid(g);
@@ -127,7 +127,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
 
             startGrid(3);
 
-            grid(0).cache(null).putAll(map);
+            grid(0).jcache(null).putAll(map);
 
             for (int g = 0; g < 4; g++) {
                 IgniteKernal grid = (IgniteKernal)grid(g);

@@ -18,24 +18,25 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
+import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -143,20 +144,22 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
             for (int i = 0; i < putCnt; i++) {
                 ClusterNode locNode = grid(0).localNode();
 
+                CacheAffinity<Object> affinity = ignite(0).affinity(null);
+
                 if (writeOrderMode == CLOCK) {
-                    if (cache(0).affinity().isPrimary(locNode, i) || cache(0).affinity().isBackup(locNode, i))
+                    if (affinity.isPrimary(locNode, i) || affinity.isBackup(locNode, i))
                         expNearCnt++;
                     else
                         expNearCnt += 2;
                 }
                 else {
-                    if (cache(0).affinity().isPrimary(locNode, i))
+                    if (affinity.isPrimary(locNode, i))
                         expDhtCnt++;
                     else
                         expNearCnt ++;
                 }
 
-                cache(0).put(i, i);
+                jcache(0).put(i, i);
             }
 
             assertEquals(expNearCnt, commSpi.messageCount(GridNearAtomicUpdateRequest.class));
@@ -191,7 +194,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
         private Map<Class<?>, AtomicInteger> cntMap = new HashMap<>();
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
             throws IgniteSpiException {
             AtomicInteger cntr = cntMap.get(((GridIoMessage)msg).message().getClass());
 

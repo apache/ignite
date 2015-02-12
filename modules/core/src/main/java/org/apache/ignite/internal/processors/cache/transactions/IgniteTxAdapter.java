@@ -20,37 +20,41 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.transactions.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.transactions.IgniteTxState.*;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 
 /**
  * Managed transaction adapter.
  */
 public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
-    implements IgniteTxEx<K, V>, Externalizable {
+    implements IgniteInternalTx<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -177,7 +181,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** */
     @GridToStringExclude
-    private AtomicReference<GridFutureAdapter<IgniteTx>> finFut = new AtomicReference<>();
+    private AtomicReference<GridFutureAdapter<IgniteInternalTx>> finFut = new AtomicReference<>();
 
     /** Topology version. */
     private AtomicLong topVer = new AtomicLong(-1);
@@ -202,6 +206,10 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** Store used flag. */
     protected boolean storeEnabled = true;
+
+    /** */
+    @GridToStringExclude
+    private IgniteTxProxyImpl proxy;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -403,6 +411,11 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public GridIoPolicy ioPolicy() {
+        return sys ? UTILITY_CACHE_POOL : SYSTEM_POOL;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean storeUsed() {
         return storeEnabled() && store() != null;
     }
@@ -475,7 +488,8 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public boolean markPreparing() {
+    @Override
+    public boolean markPreparing() {
         return preparing.compareAndSet(false, true);
     }
 
@@ -529,21 +543,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
      */
     protected FinalizationStatus finalizationStatus() {
         return finalizing.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteAsyncSupport withAsync() {
-        throw new UnsupportedOperationException("withAsync() should not be called on IgniteTxAdapter directly.");
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isAsync() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> IgniteInternalFuture<R> future() {
-        throw new UnsupportedOperationException("future() should not be called on IgniteTxAdapter directly.");
     }
 
     /**
@@ -934,11 +933,11 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    @Override public IgniteInternalFuture<IgniteTx> finishFuture() {
-        GridFutureAdapter<IgniteTx> fut = finFut.get();
+    @Override public IgniteInternalFuture<IgniteInternalTx> finishFuture() {
+        GridFutureAdapter<IgniteInternalTx> fut = finFut.get();
 
         if (fut == null) {
-            fut = new GridFutureAdapter<IgniteTx>(cctx.kernalContext()) {
+            fut = new GridFutureAdapter<IgniteInternalTx>(cctx.kernalContext()) {
                 @Override public String toString() {
                     return S.toString(GridFutureAdapter.class, this, "tx", IgniteTxAdapter.this);
                 }
@@ -1060,7 +1059,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         if (notify) {
-            GridFutureAdapter<IgniteTx> fut = finFut.get();
+            GridFutureAdapter<IgniteInternalTx> fut = finFut.get();
 
             if (fut != null)
                 fut.onDone(this);
@@ -1205,7 +1204,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                 boolean modified = false;
 
                 for (T2<EntryProcessor<K, V, ?>, Object[]> t : txEntry.entryProcessors()) {
-                    CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(txEntry.key(), val);
+                    CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(txEntry.context(), txEntry.key(), val);
 
                     try {
                         EntryProcessor processor = t.get1();
@@ -1222,6 +1221,22 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                 }
 
                 GridCacheOperation op = modified ? (val == null ? DELETE : UPDATE) : NOOP;
+
+                if (op == NOOP) {
+                    ExpiryPolicy expiry = txEntry.expiry();
+
+                    if (expiry == null)
+                        expiry = cacheCtx.expiry();
+
+                    if (expiry != null) {
+                        long ttl = CU.toTtl(expiry.getExpiryForAccess());
+
+                        txEntry.ttl(ttl);
+
+                        if (ttl == CU.TTL_ZERO)
+                            op = DELETE;
+                    }
+                }
 
                 return F.t(op, (V)cacheCtx.<V>unwrapTemporary(val), null);
             }
@@ -1258,7 +1273,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
      * @throws org.apache.ignite.IgniteCheckedException In case of eny exception.
      * @throws GridCacheEntryRemovedException If entry got removed.
      */
-    protected IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContextImpl<K, V>> conflictResolve(
+    protected IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContext<K, V>> conflictResolve(
         GridCacheOperation op, K key, V newVal, byte[] newValBytes, long newTtl, long newDrExpireTime,
         GridCacheVersion newVer, GridCacheEntryEx<K, V> old)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
@@ -1272,9 +1287,9 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         long newExpireTime = newDrExpireTime >= 0L ? newDrExpireTime : CU.toExpireTime(newTtl);
 
         GridCacheVersionedEntryEx<K, V> newEntry =
-            new GridCachePlainVersionedEntry<K, V>(key, newVal, newTtl, newExpireTime, newVer);
+            new GridCachePlainVersionedEntry<>(key, newVal, newTtl, newExpireTime, newVer);
 
-        GridCacheVersionConflictContextImpl<K, V> ctx = old.context().conflictResolve(oldEntry, newEntry, false);
+        GridCacheVersionConflictContext<K, V> ctx = old.context().conflictResolve(oldEntry, newEntry, false);
 
         if (ctx.isMerge()) {
             V resVal = ctx.mergeValue();
@@ -1410,6 +1425,14 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteTxProxy proxy() {
+        if (proxy == null)
+            proxy = new IgniteTxProxyImpl(this, cctx, false);
+
+        return proxy;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         return o == this || (o instanceof IgniteTxAdapter && xidVer.equals(((IgniteTxAdapter)o).xidVer));
     }
@@ -1429,7 +1452,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     /**
      * Transaction shadow class to be used for deserialization.
      */
-    private static class TxShadow extends GridMetadataAwareAdapter implements IgniteTx {
+    private static class TxShadow implements IgniteInternalTx {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1551,21 +1574,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteAsyncSupport withAsync() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isAsync() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <R> IgniteInternalFuture<R> future() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
         @Override public long timeout(long timeout) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
@@ -1591,8 +1599,453 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
+        @Override public Collection<Integer> activeCacheIds() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object addMeta(String name, Object val) {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object removeMeta(String name) {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object meta(String name) {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public int size() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean storeEnabled() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean storeUsed() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean system() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        @Override public GridIoPolicy ioPolicy() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public long topologyVersion() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean implicitSingle() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public long topologyVersion(long topVer) {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean empty() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean groupLock() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public IgniteTxKey groupLockKey() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean markPreparing() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean markFinalizing(FinalizationStatus status) {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public void addInvalidPartition(GridCacheContext cacheCtx, int part) {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public Set<Integer> invalidPartitions() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public GridCacheVersion ownedVersion(IgniteTxKey key) {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public UUID otherNodeId() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public UUID eventNodeId() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public UUID originatingNodeId() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<UUID> masterNodeIds() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public GridCacheVersion nearXidVersion() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Map<UUID, Collection<UUID>> transactionNodes() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean ownsLock(GridCacheEntryEx entry) throws GridCacheEntryRemovedException {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean ownsLockUnsafe(GridCacheEntryEx entry) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean enforceSerializable() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean near() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean dht() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean colocated() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean local() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean replicated() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public UUID subjectId() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int taskNameHash() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean user() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean syncCommit() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean syncRollback() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasWriteKey(IgniteTxKey key) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Set<IgniteTxKey> readSet() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Set<IgniteTxKey> writeSet() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<IgniteTxEntry> allEntries() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<IgniteTxEntry> writeEntries() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<IgniteTxEntry> readEntries() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<IgniteTxKey, IgniteTxEntry> writeMap() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<IgniteTxKey, IgniteTxEntry> readMap() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<IgniteTxEntry> recoveryWrites() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<IgniteTxEntry> optimisticLockEntries() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void seal() {
+
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public IgniteTxEntry entry(IgniteTxKey key) {
+            return null;
+        }
+
+        @Nullable
+        @Override
+        public GridTuple peek(GridCacheContext ctx, boolean failFast, Object key, @Nullable IgnitePredicate[] filter) throws GridCacheFilterFailedException {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCacheVersion startVersion() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCacheVersion xidVersion() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCacheVersion commitVersion() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean commitVersion(GridCacheVersion commitVer) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCacheVersion endVersion() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void prepare() throws IgniteCheckedException {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<IgniteInternalTx> prepareAsync() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void endVersion(GridCacheVersion endVer) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCacheVersion writeVersion() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeVersion(GridCacheVersion ver) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<IgniteInternalTx> finishFuture() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean state(IgniteTxState state) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void invalidate(boolean invalidate) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void systemInvalidate(boolean sysInvalidate) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isSystemInvalidate() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture<IgniteInternalTx> commitAsync() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean timedOut() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean done() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean optimistic() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean pessimistic() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean readCommitted() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean repeatableRead() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean serializable() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean removed(IgniteTxKey key) {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long remainingTime() throws IgniteTxTimeoutCheckedException {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<GridCacheVersion> alternateVersions() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean needsCompletedVersions() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void completedVersions(GridCacheVersion base, Collection committed, Collection rolledback) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean internal() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onePhaseCommit() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasTransforms() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteTxProxy proxy() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteUuid timeoutId() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long endTime() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onTimeout() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            return this == o || o instanceof IgniteTx && xid.equals(((IgniteTx)o).xid());
+            return this == o || o instanceof IgniteInternalTx && xid.equals(((IgniteInternalTx)o).xid());
         }
 
         /** {@inheritDoc} */

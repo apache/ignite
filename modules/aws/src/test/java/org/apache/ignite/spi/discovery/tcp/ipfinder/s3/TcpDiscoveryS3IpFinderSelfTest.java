@@ -18,8 +18,8 @@
 package org.apache.ignite.spi.discovery.tcp.ipfinder.s3;
 
 import com.amazonaws.auth.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.testsuites.*;
 
 import java.net.*;
@@ -29,7 +29,7 @@ import java.util.*;
  * TcpDiscoveryS3IpFinder test.
  */
 public class TcpDiscoveryS3IpFinderSelfTest
-    extends GridTcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryS3IpFinder> {
+    extends TcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryS3IpFinder> {
     /**
      * Constructor.
      *

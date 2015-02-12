@@ -21,19 +21,20 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
@@ -54,8 +55,8 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
 
     /** Policy. */
     private CacheEvictionPolicy<Object, Object> plc = new CacheEvictionPolicy<Object, Object>() {
-        @Override public void onEntryAccessed(boolean rmv, CacheEntry entry) {
-            assert !(entry.peek() instanceof Integer);
+        @Override public void onEntryAccessed(boolean rmv, EvictableEntry entry) {
+            assert !(entry.getValue() instanceof Integer);
         }
     };
 
@@ -131,12 +132,12 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
         try {
             Ignite g = grid(0);
 
-            GridCache<Object, Object> c = g.cache(null);
+            IgniteCache<Object, Object> c = g.jcache(null);
 
             int cnt = 1;
 
             for (int i = 0; i < cnt; i++)
-                c.putx(i, i);
+                c.put(i, i);
 
             Map<Object, AtomicInteger> cnts = filter.counts();
 
@@ -186,18 +187,18 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
 
         Ignite g = startGrid();
 
-        GridCache<Object, Object> cache = g.cache(null);
+        IgniteCache<Object, Object> cache = g.jcache(null);
 
         try {
             int id = 1;
 
-            cache.putx(id++, 1);
-            cache.putx(id++, 2);
+            cache.put(id++, 1);
+            cache.put(id++, 2);
 
             for (int i = id + 1; i < 10; i++) {
-                cache.putx(id, id);
+                cache.put(id, id);
 
-                cache.putx(i, String.valueOf(i));
+                cache.put(i, String.valueOf(i));
             }
 
             info(">>>> " + cache.get(1));
@@ -217,7 +218,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
         private final ConcurrentMap<Object, AtomicInteger> cnts = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
-        @Override public boolean evictAllowed(CacheEntry<Object, Object> entry) {
+        @Override public boolean evictAllowed(Cache.Entry<Object, Object> entry) {
             AtomicInteger i = cnts.get(entry.getKey());
 
             if (i == null) {
@@ -229,14 +230,12 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
 
             i.incrementAndGet();
 
-            String grid = entry.projection().gridProjection().ignite().name();
-
-            boolean ret = !(entry.peek() instanceof Integer);
+            boolean ret = !(entry.getValue() instanceof Integer);
 
             if (!ret)
-                info(">>> Not evicting key [grid=" + grid + ", key=" + entry.getKey() + ", cnt=" + i.get() + ']');
+                info(">>> Not evicting key [key=" + entry.getKey() + ", cnt=" + i.get() + ']');
             else
-                info(">>> Evicting key [grid=" + grid + ", key=" + entry.getKey() + ", cnt=" + i.get() + ']');
+                info(">>> Evicting key [key=" + entry.getKey() + ", cnt=" + i.get() + ']');
 
             return ret;
         }

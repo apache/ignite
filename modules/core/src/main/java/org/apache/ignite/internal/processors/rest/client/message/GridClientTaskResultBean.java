@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import org.apache.ignite.internal.util.portable.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
@@ -26,7 +24,7 @@ import java.io.*;
 /**
  * Task result.
  */
-public class GridClientTaskResultBean implements Externalizable, PortableMarshalAware {
+public class GridClientTaskResultBean implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -97,30 +95,6 @@ public class GridClientTaskResultBean implements Externalizable, PortableMarshal
      */
     public void setError(String error) {
         this.error = error;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writePortable(PortableWriter writer) throws PortableException {
-        PortableRawWriterEx raw = (PortableRawWriterEx)writer.rawWriter();
-
-        raw.writeString(id);
-        raw.writeBoolean(finished);
-
-        raw.writeObject(res);
-
-        raw.writeString(error);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readPortable(PortableReader reader) throws PortableException {
-        PortableRawReaderEx raw = (PortableRawReaderEx)reader.rawReader();
-
-        id = raw.readString();
-        finished = raw.readBoolean();
-
-        res = raw.readObject();
-
-        error = raw.readString();
     }
 
     /** {@inheritDoc} */

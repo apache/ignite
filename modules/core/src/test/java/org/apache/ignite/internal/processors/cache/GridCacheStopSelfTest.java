@@ -18,14 +18,13 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -131,12 +130,12 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch readyLatch = new CountDownLatch(PUT_THREADS);
 
-            final GridCache<Integer, Integer> cache = grid(0).cache(null);
+            final IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
             assertNotNull(cache);
 
-            assertEquals(atomic ? ATOMIC : TRANSACTIONAL, cache.configuration().getAtomicityMode());
-            assertEquals(replicated ? REPLICATED : PARTITIONED, cache.configuration().getCacheMode());
+            assertEquals(atomic ? ATOMIC : TRANSACTIONAL, cache.getConfiguration(CacheConfiguration.class).getAtomicityMode());
+            assertEquals(replicated ? REPLICATED : PARTITIONED, cache.getConfiguration(CacheConfiguration.class).getCacheMode());
 
             Collection<IgniteInternalFuture<?>> putFuts = new ArrayList<>();
 
@@ -146,7 +145,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
                 putFuts.add(GridTestUtils.runAsync(new Callable<Void>() {
                     @Override public Void call() throws Exception {
                         if (startTx) {
-                            try (IgniteTx tx = cache.txStart()) {
+                            try (IgniteTx tx = grid(0).transactions().txStart()) {
                                 cache.put(key, key);
 
                                 readyLatch.countDown();

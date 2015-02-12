@@ -21,18 +21,19 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -112,7 +113,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             }
 
             for (int i = 0; i < 100; i++)
-                assertFalse("For key: " + i, grid(0).cache(null).affinity().isPrimaryOrBackup(grid(0).localNode(), i));
+                assertFalse("For key: " + i, grid(0).affinity(null).isPrimaryOrBackup(grid(0).localNode(), i));
         }
         finally {
             stopAllGrids();
@@ -158,36 +159,37 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             }
 
             for (int i = 0; i < 10; i++)
-                grid(1).cache(null).put(i, i);
+                grid(1).jcache(null).put(i, i);
 
-            final GridCache<Object, Object> nearOnly = grid(0).cache(null);
+            final Ignite igniteNearOnly = grid(0);
+            final IgniteCache<Object, Object> nearOnly = igniteNearOnly.jcache(null);
 
             // Populate near cache.
             for (int i = 0; i < 10; i++) {
                 assertEquals(i, nearOnly.get(i));
-                assertEquals(i, nearOnly.peek(i));
+                assertEquals(i, nearOnly.localPeek(i, CachePeekMode.ONHEAP));
             }
 
             // Stop the only dht node.
             stopGrid(1);
 
             for (int i = 0; i < 10; i++) {
-                assertNull(nearOnly.peek(i));
+                assertNull(nearOnly.localPeek(i, CachePeekMode.ONHEAP));
 
                 final int key = i;
 
-                GridTestUtils.assertThrows(log, new Callable<Object>() {
+                GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         return nearOnly.get(key);
                     }
-                }, ClusterTopologyException.class, null);
+                }, ClusterTopologyCheckedException.class);
             }
 
             // Test optimistic transaction.
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    try (IgniteTx tx = nearOnly.txStart(OPTIMISTIC, REPEATABLE_READ)) {
-                        nearOnly.putx("key", "val");
+                    try (IgniteTx tx = igniteNearOnly.transactions().txStart(OPTIMISTIC, REPEATABLE_READ)) {
+                        nearOnly.put("key", "val");
 
                         tx.commit();
                     }
@@ -197,9 +199,9 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             }, ClusterTopologyException.class, null);
 
             // Test pessimistic transaction.
-            GridTestUtils.assertThrows(log, new Callable<Object>() {
+            GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    try (IgniteTx tx = nearOnly.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = igniteNearOnly.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         nearOnly.put("key", "val");
 
                         tx.commit();
@@ -207,7 +209,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, ClusterTopologyException.class, null);
+            }, ClusterTopologyCheckedException.class);
 
         }
         finally {

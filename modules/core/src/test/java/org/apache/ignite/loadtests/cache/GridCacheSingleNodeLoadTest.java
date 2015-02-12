@@ -17,15 +17,14 @@
 
 package org.apache.ignite.loadtests.cache;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.*;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.thread.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.collision.fifoqueue.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
 
@@ -33,8 +32,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  */
@@ -77,14 +76,14 @@ public class GridCacheSingleNodeLoadTest {
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
-                GridCache<Integer, Student> cache = G.ignite().cache(null);
+                IgniteCache<Integer, Student> cache = G.ignite().jcache(null);
 
                 assert cache != null;
 
                 long startTime = System.currentTimeMillis();
 
                 for (int i = 0; i < putCnt; i++) {
-                    cache.putx(keyGen.incrementAndGet(), new Student());
+                    cache.put(keyGen.incrementAndGet(), new Student());
 
                     int cnt = txCntr.incrementAndGet();
 
@@ -122,9 +121,8 @@ public class GridCacheSingleNodeLoadTest {
 
         c.setCollisionSpi(cols);
 
-        c.setExecutorService(new IgniteThreadPoolExecutor(THREADS / 2, THREADS / 2, 0L, new LinkedBlockingQueue<Runnable>()));
-        c.setSystemExecutorService(new IgniteThreadPoolExecutor(THREADS * 2, THREADS * 2, 0L,
-            new LinkedBlockingQueue<Runnable>()));
+        c.setPublicThreadPoolSize(THREADS / 2);
+        c.setSystemThreadPoolSize(THREADS * 2);
 
         CacheConfiguration cc = new CacheConfiguration();
 

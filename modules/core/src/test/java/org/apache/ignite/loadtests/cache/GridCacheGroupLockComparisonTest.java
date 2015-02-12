@@ -20,17 +20,17 @@ package org.apache.ignite.loadtests.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.IgniteTxIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Performance comparison between putAll and group lock.
@@ -66,24 +66,24 @@ public class GridCacheGroupLockComparisonTest {
             System.out.println("batchSize=" + BATCH_SIZE);
 
             // Populate and warm-up.
-            gridGainGroupLock(g, OBJECT_CNT, THREADS);
+            igniteGroupLock(g, OBJECT_CNT, THREADS);
 
-            gridGainGroupLock(g, OBJECT_CNT, THREADS);
+            igniteGroupLock(g, OBJECT_CNT, THREADS);
         }
     }
 
     /**
-     * @param ignite Grid.
+     * @param ignite Ignite.
      * @param max Maximum cache size.
      * @param threads Threads.
      * @throws Exception If failed.
      */
-    private static void gridGainPutAll(Ignite ignite, final long max, int threads) throws Exception {
+    private static void ignitePutAll(Ignite ignite, final long max, int threads) throws Exception {
         X.println(">>>");
         X.println(">>> Testing putAll");
         X.println(">>>");
 
-        final GridCache<CacheAffinityKey<Long>, Long> cache = ignite.cache(CACHE);
+        final IgniteCache<CacheAffinityKey<Long>, Long> cache = ignite.jcache(CACHE);
 
         assert cache != null;
 
@@ -128,17 +128,17 @@ public class GridCacheGroupLockComparisonTest {
     }
 
     /**
-     * @param ignite Grid.
+     * @param ignite Ignite.
      * @param max Maximum cache size.
      * @param threads Threads.
      * @throws Exception If failed.
      */
-    private static void gridGainGroupLock(Ignite ignite, final long max, int threads) throws Exception {
+    private static void igniteGroupLock(final Ignite ignite, final long max, int threads) throws Exception {
         X.println(">>>");
         X.println(">>> Testing group lock");
         X.println(">>>");
 
-        final GridCache<CacheAffinityKey<Long>, Long> cache = ignite.cache(CACHE);
+        final IgniteCache<CacheAffinityKey<Long>, Long> cache = ignite.jcache(CACHE);
 
         assert cache != null;
 
@@ -172,7 +172,8 @@ public class GridCacheGroupLockComparisonTest {
 
                     // Threads should not lock the same key.
 
-                    try (IgniteTx tx = cache.txStartAffinity(affKey, PESSIMISTIC, REPEATABLE_READ, 0, BATCH_SIZE)) {
+                    try (IgniteTx tx = ignite.transactions().txStartAffinity(cache.getName(), affKey, PESSIMISTIC,
+                        REPEATABLE_READ, 0, BATCH_SIZE)) {
                         for (long i = 0; i < BATCH_SIZE; i++) {
                             cache.put(new CacheAffinityKey<>((key % rangeCnt) + base, affKey), i);
 

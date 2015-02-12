@@ -98,11 +98,11 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
         private Ignite ignite;
 
         /** Logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
             assert subgrid.size() == 2 : "Invalid subgrid size: " + subgrid.size();
 
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
@@ -115,7 +115,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             assert results.size() == 2;
 
             for (ComputeJobResult res : results) {
@@ -151,7 +151,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable execute() throws IgniteCheckedException {
+        @Override public Serializable execute() {
             try {
                 Long sleep = argument(0);
 
@@ -160,7 +160,7 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
                 Thread.sleep(sleep);
             }
             catch (InterruptedException e) {
-                throw new IgniteCheckedException("Job got interrupted.", e);
+                throw new IgniteException("Job got interrupted.", e);
             }
 
             return ignite.name();

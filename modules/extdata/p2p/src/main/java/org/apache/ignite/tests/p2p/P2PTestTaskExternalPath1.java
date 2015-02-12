@@ -20,9 +20,9 @@ package org.apache.ignite.tests.p2p;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.resources.*;
 
 import java.util.*;
 
@@ -31,14 +31,14 @@ import java.util.*;
  */
 public class P2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, Integer> {
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /**
      * {@inheritDoc}
      */
     @SuppressWarnings({"unchecked"})
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
         if (log.isInfoEnabled()) {
             log.info("Mapping [task=" + this + ", subgrid=" + F.viewReadOnly(subgrid, F.node2id()) +
                 ", arg=" + arg + ']');
@@ -74,13 +74,13 @@ public class P2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, Integer
         if (!jobs.isEmpty())
             return jobs;
 
-        throw new IgniteCheckedException("Failed to find target node: " + arg);
+        throw new IgniteException("Failed to find target node: " + arg);
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Integer reduce(List<ComputeJobResult> results) {
         return results.get(0).getData();
     }
 
@@ -90,11 +90,11 @@ public class P2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, Integer
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestJob extends ComputeJobAdapter {
         /** Task session. */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession ses;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
@@ -122,7 +122,7 @@ public class P2PTestTaskExternalPath1 extends ComputeTaskAdapter<Object, Integer
         }
 
         /** {@inheritDoc} */
-        @Override public Integer execute() throws IgniteCheckedException {
+        @Override public Integer execute() {
             assert g.configuration().getNodeId().equals(argument(0));
 
             log.info("Running job on node: " + g.cluster().localNode().id());

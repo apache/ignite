@@ -19,17 +19,16 @@ package org.apache.ignite.loadtests.swap;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.loadtests.util.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.loadtests.util.*;
 import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
 
@@ -84,7 +83,7 @@ public class GridSwapEvictAllBenchmark {
             });
 
             try {
-                GridCache<Object, Object> cache = g.cache(null);
+                IgniteCache<Object, Object> cache = g.jcache(null);
 
                 assert cache != null;
 
@@ -153,7 +152,7 @@ public class GridSwapEvictAllBenchmark {
 
         long start = System.currentTimeMillis();
 
-        GridCache<Object, Object> cache = G.ignite().cache(null);
+        IgniteCache<Object, Object> cache = G.ignite().jcache(null);
 
         assert cache != null;
 
@@ -163,7 +162,8 @@ public class GridSwapEvictAllBenchmark {
             keys.add(i);
 
             if (keys.size() == batchSize) {
-                cache.evictAll(keys);
+                for (Long key : keys)
+                    cache.localEvict(Collections.<Object>singleton(key));
 
                 evictedKeysCnt.addAndGet(batchSize);
 
@@ -217,7 +217,8 @@ public class GridSwapEvictAllBenchmark {
             keys.add(i);
 
             if (keys.size() == batchSize) {
-                cache.promoteAll(keys);
+                for (Long key : keys)
+                    cache.localPromote(Collections.singleton(key));
 
                 unswappedKeys.addAndGet(batchSize);
 

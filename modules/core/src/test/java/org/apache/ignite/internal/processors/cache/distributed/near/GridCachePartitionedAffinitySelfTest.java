@@ -24,26 +24,25 @@ import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Partitioned affinity test.
@@ -100,7 +99,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
      * @return Affinity.
      */
     static CacheAffinity<Object> affinity(Ignite ignite) {
-        return ignite.cache(null).affinity();
+        return ignite.affinity(null);
     }
 
     /**
@@ -197,7 +196,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         for (Map.Entry<Object, Integer> entry : data.entrySet()) {
             int part = aff.partition(entry.getKey());
             Collection<ClusterNode> affNodes = aff.nodes(part, nodes, 1);
-            UUID act = F.<ClusterNode>first(affNodes).id();
+            UUID act = F.first(affNodes).id();
             UUID exp = nodes.get(entry.getValue()).id();
 
             if (!exp.equals(act)) {
@@ -379,7 +378,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     /** @param g Grid. */
     private static void partitionMap(Ignite g) {
         X.println(">>> Full partition map for grid: " + g.name());
-        X.println(">>> " + dht(g.cache(null)).topology().partitionMap(false).toFullString());
+        X.println(">>> " + dht(g.jcache(null)).topology().partitionMap(false).toFullString());
     }
 
     /** @throws Exception If failed. */
@@ -394,7 +393,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
         Ignite mg = grid(0);
 
-        GridCache<Integer, String> mc = mg.cache(null);
+        IgniteCache<Integer, String> mc = mg.jcache(null);
 
         int keyCnt = 10;
 
@@ -411,7 +410,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
             info("Before putting key [key=" + i + ", grid=" + mg.name() + ']');
 
-            mc.putx(i, Integer.toString(i));
+            mc.put(i, Integer.toString(i));
 
             if (failFlag.get())
                 fail("testAffinityWithPut failed.");
@@ -426,13 +425,13 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     /**
      *
      */
-    private static class ListenerJob implements Runnable, Serializable {
+    private static class ListenerJob implements IgniteRunnable {
         /** Grid. */
         @IgniteInstanceResource
         private Ignite ignite;
 
         /** Logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
@@ -464,9 +463,9 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         @Override public void run() {
             printAffinity(ignite, keyCnt);
 
-            IgnitePredicate<IgniteEvent> lsnr = new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
-                    IgniteCacheEvent e = (IgniteCacheEvent)evt;
+            IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
+                    CacheEvent e = (CacheEvent)evt;
 
                     switch (e.type()) {
                         case EVT_CACHE_OBJECT_PUT:
@@ -486,7 +485,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
                                     ignite.name() + ']');
                             }
 
-                            Collection<? extends ClusterNode> affNodes = nodes(affinity(ignite), e.<Object>key());
+                            Collection<? extends ClusterNode> affNodes = nodes(affinity(ignite), e.key());
 
                             if (!affNodes.contains(ignite.cluster().localNode())) {
                                 failFlag.set(true);

@@ -20,11 +20,11 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.spi.eventstorage.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -64,7 +64,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
 
         try {
             try {
-                ignite.events().localQuery(F.<IgniteEvent>alwaysTrue());
+                ignite.events().localQuery(F.<Event>alwaysTrue());
 
                 assert false : "Exception should be thrown";
             }
@@ -77,10 +77,14 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
 
                 assert false : "Exception should be thrown";
             }
-            catch (IgniteCheckedException e) {
-                assert e.getCause() instanceof GridTestSpiException : "Wrong cause exception type. " + e;
+            catch (IgniteException e) {
+                assertTrue(e.getCause() instanceof  IgniteCheckedException);
 
-                assert e.getCause().getMessage().startsWith(TEST_MSG) : "Wrong exception message." + e.getMessage();
+                Throwable err = e.getCause().getCause();
+
+                assert err instanceof GridTestSpiException : "Wrong cause exception type. " + e;
+
+                assert err.getMessage().startsWith(TEST_MSG) : "Wrong exception message." + e.getMessage();
             }
         }
         finally {
@@ -104,12 +108,12 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public <T extends IgniteEvent> Collection<T> localEvents(IgnitePredicate<T> p) {
+        @Override public <T extends Event> Collection<T> localEvents(IgnitePredicate<T> p) {
             throw new IgniteException(TEST_MSG);
         }
 
         /** {@inheritDoc} */
-        @Override public void record(IgniteEvent evt) throws IgniteSpiException {
+        @Override public void record(Event evt) throws IgniteSpiException {
             // No-op.
         }
     }

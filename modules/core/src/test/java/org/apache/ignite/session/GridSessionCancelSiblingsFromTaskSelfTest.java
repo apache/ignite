@@ -20,11 +20,11 @@ package org.apache.ignite.session;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -72,14 +72,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
 
         c.setDiscoverySpi(discoSpi);
 
-        c.setExecutorService(
-            new ThreadPoolExecutor(
-                SPLIT_COUNT * EXEC_COUNT,
-                SPLIT_COUNT * EXEC_COUNT,
-                0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>()));
-
-        c.setExecutorServiceShutdown(true);
+        c.setPublicThreadPoolSize(SPLIT_COUNT * EXEC_COUNT);
 
         return c;
     }
@@ -183,18 +176,18 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
     @SuppressWarnings({"PublicInnerClass"})
     public static class GridTaskSessionTestTask extends ComputeTaskSplitAdapter<Serializable, String> {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** */
         private volatile int taskNum = -1;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) {
             if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
 
@@ -265,8 +258,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
 
         /** {@inheritDoc} */
         @SuppressWarnings("deprecation")
-        @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received)
-            throws IgniteCheckedException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received) {
             if (received.size() == 1) {
                 Collection<ComputeJobSibling> jobSiblings = taskSes.getJobSiblings();
 
@@ -285,7 +277,7 @@ public class GridSessionCancelSiblingsFromTaskSelfTest extends GridCommonAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public String reduce(List<ComputeJobResult> results) {
             if (log.isInfoEnabled())
                 log.info("Aggregating job [job=" + this + ", results=" + results + ']');
 

@@ -19,10 +19,10 @@ package org.apache.ignite.internal.visor.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.lang.*;
 
 import java.util.*;
 
@@ -55,27 +55,32 @@ public class VisorCacheCompactTask extends VisorOneNodeTask<Set<String>, Map<Str
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, IgniteBiTuple<Integer, Integer>> run(Set<String> names) throws IgniteCheckedException {
-            final Map<String, IgniteBiTuple<Integer, Integer>> res = new HashMap<>();
+        @Override protected Map<String, IgniteBiTuple<Integer, Integer>> run(Set<String> names) {
+            try {
+                final Map<String, IgniteBiTuple<Integer, Integer>> res = new HashMap<>();
 
-            for(GridCache cache : g.cachesx()) {
-                String cacheName = cache.name();
+                for(GridCache cache : ignite.cachesx()) {
+                    String cacheName = cache.name();
 
-                if (names.contains(cacheName)) {
-                    final Set keys = cache.keySet();
+                    if (names.contains(cacheName)) {
+                        final Set keys = cache.keySet();
 
-                    int before = keys.size(), after = before;
+                        int before = keys.size(), after = before;
 
-                    for (Object key : keys) {
-                        if (cache.compact(key))
-                            after--;
+                        for (Object key : keys) {
+                            if (cache.compact(key))
+                                after--;
+                        }
+
+                        res.put(cacheName, new IgniteBiTuple<>(before, after));
                     }
-
-                    res.put(cacheName, new IgniteBiTuple<>(before, after));
                 }
-            }
 
-            return res;
+                return res;
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
         }
 
         /** {@inheritDoc} */

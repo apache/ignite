@@ -18,6 +18,7 @@
 package org.apache.ignite.spi;
 
 import org.jetbrains.annotations.*;
+
 import java.util.*;
 
 /**
@@ -28,9 +29,9 @@ import java.util.*;
  * with ignite resources. Both, field and method based injection are supported.
  * The following ignite resources can be injected:
  * <ul>
- * <li>{@link org.apache.ignite.resources.IgniteLoggerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteSpringApplicationContextResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteSpringResource}</li>
+ * <li>{@link org.apache.ignite.resources.LoggerResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringApplicationContextResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  */

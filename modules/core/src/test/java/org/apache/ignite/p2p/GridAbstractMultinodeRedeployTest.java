@@ -36,7 +36,7 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
     private static final int ITERATIONS = 1000;
 
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /** */
     private static final String TASK_NAME = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1";
@@ -77,7 +77,7 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
      * @param depMode deployment mode.
      * @throws Throwable If task execution failed.
      */
-    protected void processTest(IgniteDeploymentMode depMode) throws Throwable {
+    protected void processTest(DeploymentMode depMode) throws Throwable {
         this.depMode = depMode;
 
         try {
@@ -89,12 +89,12 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
                 ignite1.compute().localDeployTask(loadTaskClass(), loadTaskClass().getClassLoader());
                 ignite2.compute().localDeployTask(loadTaskClass(), loadTaskClass().getClassLoader());
 
-                ComputeTaskFuture<Integer> fut1 = executeAsync(ignite1.compute(), TASK_NAME, Arrays.<UUID>asList(
+                ComputeTaskFuture<Integer> fut1 = executeAsync(ignite1.compute(), TASK_NAME, Arrays.asList(
                     ignite1.cluster().localNode().id(),
                     ignite2.cluster().localNode().id(),
                     ignite3.cluster().localNode().id()));
 
-                ComputeTaskFuture<Integer> fut2 = executeAsync(ignite2.compute(), TASK_NAME, Arrays.<UUID>asList(
+                ComputeTaskFuture<Integer> fut2 = executeAsync(ignite2.compute(), TASK_NAME, Arrays.asList(
                     ignite1.cluster().localNode().id(),
                     ignite2.cluster().localNode().id(),
                     ignite3.cluster().localNode().id()));

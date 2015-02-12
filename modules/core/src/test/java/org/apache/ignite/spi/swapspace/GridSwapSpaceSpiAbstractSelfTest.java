@@ -17,10 +17,10 @@
 
 package org.apache.ignite.spi.swapspace;
 
-import org.apache.ignite.lang.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -29,7 +29,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.junit.Assert.*;
 
 /**
@@ -55,7 +55,7 @@ public abstract class GridSwapSpaceSpiAbstractSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        U.setWorkDirectory(null, U.getGridGainHome());
+        U.setWorkDirectory(null, U.getIgniteHome());
 
         spi = spi();
 

@@ -18,10 +18,10 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Job execution response.
  */
-public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter implements GridTaskMessage {
+public class GridJobExecuteResponse extends MessageAdapter implements GridTaskMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -49,7 +49,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
 
     /** */
     @GridDirectTransient
-    private IgniteCheckedException gridEx;
+    private IgniteException gridEx;
 
     /** */
     private byte[] resBytes;
@@ -71,7 +71,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
     /** */
     @GridToStringExclude
     @GridDirectTransient
-    private IgniteCheckedException fakeEx;
+    private IgniteException fakeEx;
 
     /**
      * No-op constructor to support {@link Externalizable} interface. This
@@ -93,9 +93,17 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
      * @param jobAttrs Job attributes.
      * @param isCancelled Whether job was cancelled or not.
      */
-    public GridJobExecuteResponse(UUID nodeId, IgniteUuid sesId, IgniteUuid jobId, byte[] gridExBytes,
-        IgniteCheckedException gridEx, byte[] resBytes, Object res, byte[] jobAttrsBytes,
-        Map<Object, Object> jobAttrs, boolean isCancelled) {
+    public GridJobExecuteResponse(UUID nodeId,
+        IgniteUuid sesId,
+        IgniteUuid jobId,
+        byte[] gridExBytes,
+        IgniteException gridEx,
+        byte[] resBytes,
+        Object res,
+        byte[] jobAttrsBytes,
+        Map<Object, Object> jobAttrs,
+        boolean isCancelled)
+    {
         assert nodeId != null;
         assert sesId != null;
         assert jobId != null;
@@ -150,7 +158,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
     /**
      * @return Job exception.
      */
-    @Nullable public IgniteCheckedException getException() {
+    @Nullable public IgniteException getException() {
         return gridEx;
     }
 
@@ -185,20 +193,20 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
     /**
      * @return Fake exception.
      */
-    public IgniteCheckedException getFakeException() {
+    public IgniteException getFakeException() {
         return fakeEx;
     }
 
     /**
      * @param fakeEx Fake exception.
      */
-    public void setFakeException(IgniteCheckedException fakeEx) {
+    public void setFakeException(IgniteException fakeEx) {
         this.fakeEx = fakeEx;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridJobExecuteResponse _clone = new GridJobExecuteResponse();
 
         clone0(_clone);
@@ -207,7 +215,7 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridJobExecuteResponse _clone = (GridJobExecuteResponse)_msg;
 
         _clone.nodeId = nodeId;
@@ -226,57 +234,57 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putByteArray(gridExBytes))
+                if (!writer.writeByteArray("gridExBytes", gridExBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putBoolean(isCancelled))
+                if (!writer.writeBoolean("isCancelled", isCancelled))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putByteArray(jobAttrsBytes))
+                if (!writer.writeByteArray("jobAttrsBytes", jobAttrsBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 3:
-                if (!commState.putGridUuid(jobId))
+                if (!writer.writeIgniteUuid("jobId", jobId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putUuid(nodeId))
+                if (!writer.writeUuid("nodeId", nodeId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                if (!commState.putByteArray(resBytes))
+                if (!writer.writeByteArray("resBytes", resBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 6:
-                if (!commState.putGridUuid(sesId))
+                if (!writer.writeIgniteUuid("sesId", sesId))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -286,76 +294,64 @@ public class GridJobExecuteResponse extends GridTcpCommunicationMessageAdapter i
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                byte[] gridExBytes0 = commState.getByteArray();
+                gridExBytes = reader.readByteArray("gridExBytes");
 
-                if (gridExBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                gridExBytes = gridExBytes0;
-
-                commState.idx++;
+                state++;
 
             case 1:
-                if (buf.remaining() < 1)
+                isCancelled = reader.readBoolean("isCancelled");
+
+                if (!reader.isLastRead())
                     return false;
 
-                isCancelled = commState.getBoolean();
-
-                commState.idx++;
+                state++;
 
             case 2:
-                byte[] jobAttrsBytes0 = commState.getByteArray();
+                jobAttrsBytes = reader.readByteArray("jobAttrsBytes");
 
-                if (jobAttrsBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                jobAttrsBytes = jobAttrsBytes0;
-
-                commState.idx++;
+                state++;
 
             case 3:
-                IgniteUuid jobId0 = commState.getGridUuid();
+                jobId = reader.readIgniteUuid("jobId");
 
-                if (jobId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                jobId = jobId0;
-
-                commState.idx++;
+                state++;
 
             case 4:
-                UUID nodeId0 = commState.getUuid();
+                nodeId = reader.readUuid("nodeId");
 
-                if (nodeId0 == UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                nodeId = nodeId0;
-
-                commState.idx++;
+                state++;
 
             case 5:
-                byte[] resBytes0 = commState.getByteArray();
+                resBytes = reader.readByteArray("resBytes");
 
-                if (resBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                resBytes = resBytes0;
-
-                commState.idx++;
+                state++;
 
             case 6:
-                IgniteUuid sesId0 = commState.getGridUuid();
+                sesId = reader.readIgniteUuid("sesId");
 
-                if (sesId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                sesId = sesId0;
-
-                commState.idx++;
+                state++;
 
         }
 

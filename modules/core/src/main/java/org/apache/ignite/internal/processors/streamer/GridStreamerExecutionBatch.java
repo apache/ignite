@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.streamer;
 
+import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.internal.managers.deployment.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -30,7 +30,7 @@ import java.util.*;
 /**
  * Streamer execution batch which should be processed on one node.
  */
-public class GridStreamerExecutionBatch implements Externalizable, IgniteOptimizedMarshallable {
+public class GridStreamerExecutionBatch implements Externalizable, OptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 

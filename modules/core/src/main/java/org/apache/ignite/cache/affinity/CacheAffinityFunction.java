@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cache.affinity;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 
 import java.io.*;
@@ -26,7 +25,7 @@ import java.util.*;
 /**
  * Cache key affinity which maps keys to nodes. This interface is utilized for
  * both, replicated and partitioned caches. Cache affinity can be configured
- * for individual caches via {@link CacheConfiguration#getAffinity()} method.
+ * for individual caches via {@link org.apache.ignite.configuration.CacheConfiguration#getAffinity()} method.
  * <p>
  * Whenever a key is given to cache, it is first passed to a pluggable
  * {@link CacheAffinityKeyMapper} which may potentially map this key to an alternate

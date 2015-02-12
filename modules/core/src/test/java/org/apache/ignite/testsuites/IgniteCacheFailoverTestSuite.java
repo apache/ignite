@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.*;
  */
 public class IgniteCacheFailoverTestSuite extends TestSuite {
     /**
-     * @return Gridgain Cache Group Lock Failover test suite.
+     * @return Ignite Cache Group Lock Failover test suite.
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {

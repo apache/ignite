@@ -69,7 +69,7 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     public static class GridFailoverTestTask extends ComputeTaskSplitAdapter<Serializable, Integer> {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
@@ -93,8 +93,7 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws
-            IgniteCheckedException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) {
             if (res.getException() != null)
                 throw res.getException();
 

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.fs.hadoop;
 
 import org.apache.commons.logging.*;
 import org.apache.ignite.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.jetbrains.annotations.*;
@@ -49,6 +49,7 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
      * Constructor.
      *
      * @param ggfs Target GGFS.
+     * @param log Log.
      */
     public GridGgfsHadoopInProc(GridGgfsEx ggfs, Log log) {
         this.ggfs = ggfs;
@@ -84,6 +85,9 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
         try {
             return ggfs.info(path);
         }
+        catch (IgniteException e) {
+            throw new IgniteCheckedException(e);
+        }
         catch (IllegalStateException e) {
             throw new GridGgfsHadoopCommunicationException("Failed to get file info because Grid is stopping: " + path);
         }
@@ -93,6 +97,9 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws IgniteCheckedException {
         try {
             return ggfs.update(path, props);
+        }
+        catch (IgniteException e) {
+            throw new IgniteCheckedException(e);
         }
         catch (IllegalStateException e) {
             throw new GridGgfsHadoopCommunicationException("Failed to update file because Grid is stopping: " + path);
@@ -105,6 +112,9 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
             ggfs.setTimes(path, accessTime, modificationTime);
 
             return true;
+        }
+        catch (IgniteException e) {
+            throw new IgniteCheckedException(e);
         }
         catch (IllegalStateException e) {
             throw new GridGgfsHadoopCommunicationException("Failed to set path times because Grid is stopping: " +
@@ -119,6 +129,9 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
 
             return true;
         }
+        catch (IgniteException e) {
+            throw new IgniteCheckedException(e);
+        }
         catch (IllegalStateException e) {
             throw new GridGgfsHadoopCommunicationException("Failed to rename path because Grid is stopping: " + src);
         }
@@ -128,6 +141,9 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     @Override public Boolean delete(IgniteFsPath path, boolean recursive) throws IgniteCheckedException {
         try {
             return ggfs.delete(path, recursive);
+        }
+        catch (IgniteException e) {
+            throw new IgniteCheckedException(e);
         }
         catch (IllegalStateException e) {
             throw new GridGgfsHadoopCommunicationException("Failed to delete path because Grid is stopping: " + path);
@@ -150,6 +166,9 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
         try {
             return ggfs.listPaths(path);
         }
+        catch (IgniteException e) {
+            throw new IgniteCheckedException(e);
+        }
         catch (IllegalStateException e) {
             throw new GridGgfsHadoopCommunicationException("Failed to list paths because Grid is stopping: " + path);
         }
@@ -159,6 +178,9 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws IgniteCheckedException {
         try {
             return ggfs.listFiles(path);
+        }
+        catch (IgniteException e) {
+            throw new IgniteCheckedException(e);
         }
         catch (IllegalStateException e) {
             throw new GridGgfsHadoopCommunicationException("Failed to list files because Grid is stopping: " + path);
@@ -172,6 +194,9 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
 
             return true;
         }
+        catch (IgniteException e) {
+            throw new IgniteCheckedException(e);
+        }
         catch (IllegalStateException e) {
             throw new GridGgfsHadoopCommunicationException("Failed to create directory because Grid is stopping: " +
                 path);
@@ -182,6 +207,9 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
     @Override public IgniteFsPathSummary contentSummary(IgniteFsPath path) throws IgniteCheckedException {
         try {
             return ggfs.summary(path);
+        }
+        catch (IgniteException e) {
+            throw new IgniteCheckedException(e);
         }
         catch (IllegalStateException e) {
             throw new GridGgfsHadoopCommunicationException("Failed to get content summary because Grid is stopping: " +
@@ -195,6 +223,9 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
         try {
             return ggfs.affinity(path, start, len);
         }
+        catch (IgniteException e) {
+            throw new IgniteCheckedException(e);
+        }
         catch (IllegalStateException e) {
             throw new GridGgfsHadoopCommunicationException("Failed to get affinity because Grid is stopping: " + path);
         }
@@ -206,6 +237,9 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
             GridGgfsInputStreamAdapter stream = ggfs.open(path, bufSize);
 
             return new GridGgfsHadoopStreamDelegate(this, stream, stream.fileInfo().length());
+        }
+        catch (IgniteException e) {
+            throw new IgniteCheckedException(e);
         }
         catch (IllegalStateException e) {
             throw new GridGgfsHadoopCommunicationException("Failed to open file because Grid is stopping: " + path);
@@ -219,6 +253,9 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
             GridGgfsInputStreamAdapter stream = ggfs.open(path, bufSize, seqReadsBeforePrefetch);
 
             return new GridGgfsHadoopStreamDelegate(this, stream, stream.fileInfo().length());
+        }
+        catch (IgniteException e) {
+            throw new IgniteCheckedException(e);
         }
         catch (IllegalStateException e) {
             throw new GridGgfsHadoopCommunicationException("Failed to open file because Grid is stopping: " + path);
@@ -234,6 +271,9 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
 
             return new GridGgfsHadoopStreamDelegate(this, stream);
         }
+        catch (IgniteException e) {
+            throw new IgniteCheckedException(e);
+        }
         catch (IllegalStateException e) {
             throw new GridGgfsHadoopCommunicationException("Failed to create file because Grid is stopping: " + path);
         }
@@ -246,6 +286,9 @@ public class GridGgfsHadoopInProc implements GridGgfsHadoopEx {
             IgniteFsOutputStream stream = ggfs.append(path, bufSize, create, props);
 
             return new GridGgfsHadoopStreamDelegate(this, stream);
+        }
+        catch (IgniteException e) {
+            throw new IgniteCheckedException(e);
         }
         catch (IllegalStateException e) {
             throw new GridGgfsHadoopCommunicationException("Failed to append file because Grid is stopping: " + path);

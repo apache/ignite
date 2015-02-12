@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
 
 /**
  * Grid configuration data collect job.
@@ -37,7 +37,7 @@ public class VisorNodeConfigurationCollectorJob extends VisorJob<Void, VisorGrid
 
     /** {@inheritDoc} */
     @Override protected VisorGridConfiguration run(Void arg) {
-        return new VisorGridConfiguration().from(g);
+        return new VisorGridConfiguration().from(ignite);
     }
 
     /** {@inheritDoc} */

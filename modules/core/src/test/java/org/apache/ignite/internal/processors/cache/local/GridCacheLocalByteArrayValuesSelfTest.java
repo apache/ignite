@@ -21,9 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.transactions.*;
-import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.spi.swapspace.file.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -43,16 +43,16 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
     private static Ignite ignite;
 
     /** Regular cache. */
-    private static GridCache<Integer, Object> cache;
+    private static IgniteCache<Integer, Object> cache;
 
     /** Offheap cache. */
-    private static GridCache<Integer, Object> cacheOffheap;
+    private static IgniteCache<Integer, Object> cacheOffheap;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+        c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         CacheConfiguration cc1 = new CacheConfiguration();
 
@@ -85,8 +85,8 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
     @Override protected void beforeTestsStarted() throws Exception {
         ignite = startGrid(1);
 
-        cache = ignite.cache(CACHE_REGULAR);
-        cacheOffheap = ignite.cache(CACHE_OFFHEAP);
+        cache = ignite.jcache(CACHE_REGULAR);
+        cacheOffheap = ignite.jcache(CACHE_OFFHEAP);
     }
 
     /** {@inheritDoc} */
@@ -178,7 +178,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      */
     @SuppressWarnings("TooBroadScope")
     public void testSwap() throws Exception {
-        assert cache.configuration().isSwapEnabled();
+        assert cache.getConfiguration(CacheConfiguration.class).isSwapEnabled();
 
         byte[] val1 = wrap(1);
         Object val2 = 2;
@@ -189,14 +189,11 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
         assert Arrays.equals(val1, (byte[])cache.get(KEY_1));
         assert F.eq(val2, cache.get(KEY_2));
 
-        assert cache.evict(KEY_1);
-        assert cache.evict(KEY_2);
+        cache.localEvict(Collections.singleton(KEY_1));
+        cache.localEvict(Collections.singleton(KEY_2));
 
-        assert cache.peek(KEY_1) == null;
-        assert cache.peek(KEY_2) == null;
-
-        assert Arrays.equals(val1, (byte[])cache.promote(KEY_1));
-        assert F.eq(val2, cache.promote(KEY_2));
+        assert cache.localPeek(KEY_1, CachePeekMode.ONHEAP) == null;
+        assert cache.localPeek(KEY_2, CachePeekMode.ONHEAP) == null;
     }
 
     /**
@@ -208,7 +205,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      * @param val Value.
      * @throws Exception If failed.
      */
-    private void testTransaction(GridCache<Integer, Object> cache, IgniteTxConcurrency concurrency,
+    private void testTransaction(IgniteCache<Integer, Object> cache, IgniteTxConcurrency concurrency,
         Integer key, byte[] val) throws Exception {
         testTransactionMixed(cache, concurrency, key, val, null, null);
     }
@@ -224,10 +221,10 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      * @param val2 Value 2.
      * @throws Exception If failed.
      */
-    private void testTransactionMixed(GridCache<Integer, Object> cache, IgniteTxConcurrency concurrency,
+    private void testTransactionMixed(IgniteCache<Integer, Object> cache, IgniteTxConcurrency concurrency,
         Integer key1, byte[] val1, @Nullable Integer key2, @Nullable Object val2) throws Exception {
 
-        IgniteTx tx = cache.txStart(concurrency, REPEATABLE_READ);
+        IgniteTx tx = ignite.transactions().txStart(concurrency, REPEATABLE_READ);
 
         try {
             cache.put(key1, val1);
@@ -241,7 +238,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
             tx.close();
         }
 
-        tx = cache.txStart(concurrency, REPEATABLE_READ);
+        tx = ignite.transactions().txStart(concurrency, REPEATABLE_READ);
 
         try {
             assert Arrays.equals(val1, (byte[])cache.get(key1));

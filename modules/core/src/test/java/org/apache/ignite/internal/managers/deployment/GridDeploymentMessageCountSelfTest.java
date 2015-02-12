@@ -17,17 +17,18 @@
 
 package org.apache.ignite.internal.managers.deployment;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
 
@@ -130,12 +131,12 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
         try {
             startGrids(2);
 
-            GridCache<Object, Object> cache = grid(0).cache(null);
+            IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
             cache.put("key", valCls.newInstance());
 
             for (int i = 0; i < 2; i++)
-                assertNotNull("For grid: " + i, grid(i).cache(null).peek("key"));
+                assertNotNull("For grid: " + i, grid(i).jcache(null).localPeek("key", CachePeekMode.ONHEAP));
 
             for (MessageCountingCommunicationSpi spi : commSpis.values()) {
                 assertTrue(spi.deploymentMessageCount() > 0);
@@ -149,7 +150,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
                 cache.put(key, valCls.newInstance());
 
                 for (int k = 0; k < 2; k++)
-                    assertNotNull(grid(k).cache(null).peek(key));
+                    assertNotNull(grid(k).jcache(null).localPeek(key, CachePeekMode.ONHEAP));
             }
 
             for (MessageCountingCommunicationSpi spi : commSpis.values())
@@ -168,7 +169,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
         private AtomicInteger msgCnt = new AtomicInteger();
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
+        @Override public void sendMessage(ClusterNode node, MessageAdapter msg)
             throws IgniteSpiException {
             if (isDeploymentMessage((GridIoMessage)msg))
                 msgCnt.incrementAndGet();

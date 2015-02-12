@@ -17,9 +17,9 @@
 
 package org.apache.ignite.loadtests.communication;
 
-import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  *
  */
-class GridTestMessage extends GridTcpCommunicationMessageAdapter implements Externalizable {
+class GridTestMessage extends MessageAdapter implements Externalizable {
     /** */
     private IgniteUuid id;
 
@@ -109,12 +109,12 @@ class GridTestMessage extends GridTcpCommunicationMessageAdapter implements Exte
 
     /** {@inheritDoc} */
     @SuppressWarnings("CloneDoesntCallSuperClone")
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         // No-op.
     }
 

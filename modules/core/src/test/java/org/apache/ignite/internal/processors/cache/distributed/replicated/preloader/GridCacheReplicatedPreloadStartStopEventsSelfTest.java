@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.replicated.preloader;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -30,7 +29,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests that preload start/preload stop events are fired only once for replicated cache.
@@ -70,8 +69,8 @@ public class GridCacheReplicatedPreloadStartStopEventsSelfTest extends GridCommo
         final AtomicInteger preloadStartCnt = new AtomicInteger();
         final AtomicInteger preloadStopCnt = new AtomicInteger();
 
-        ignite.events().localListen(new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent e) {
+        ignite.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event e) {
                 if (e.type() == EVT_CACHE_PRELOAD_STARTED)
                     preloadStartCnt.incrementAndGet();
                 else if (e.type() == EVT_CACHE_PRELOAD_STOPPED)

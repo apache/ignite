@@ -18,10 +18,11 @@
 package org.apache.ignite.loadtests.mapper;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -35,8 +36,7 @@ public class GridContinuousMapperTask2 extends ComputeTaskAdapter<int[], Integer
     private Ignite g;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable int[] jobIds)
-        throws IgniteCheckedException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable int[] jobIds) {
         Map<ComputeJob, ClusterNode> mappings = new HashMap<>(jobIds.length);
 
         Iterator<ClusterNode> nodeIter = g.cluster().forRemotes().nodes().iterator();
@@ -51,7 +51,7 @@ public class GridContinuousMapperTask2 extends ComputeTaskAdapter<int[], Integer
 
                     X.println(">>> Received job for ID: " + jobId);
 
-                    return g.cache("replicated").peek(jobId);
+                    return g.jcache("replicated").localPeek(jobId, CachePeekMode.ONHEAP);
                 }
             };
 
@@ -70,7 +70,7 @@ public class GridContinuousMapperTask2 extends ComputeTaskAdapter<int[], Integer
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         TestObject o = res.getData();
 
         X.println("Received job result from node [resId=" + o.getId() + ", node=" + res.getNode().id() + ']');
@@ -79,7 +79,7 @@ public class GridContinuousMapperTask2 extends ComputeTaskAdapter<int[], Integer
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Integer reduce(List<ComputeJobResult> results) {
         X.println(">>> Reducing task...");
 
         return null;

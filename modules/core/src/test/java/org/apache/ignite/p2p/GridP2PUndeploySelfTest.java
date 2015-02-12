@@ -36,7 +36,7 @@ import java.util.*;
 @GridCommonTest(group = "P2P")
 public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /** Class Name of task. */
     private static final String TEST_TASK_NAME = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1";
@@ -46,7 +46,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName,
-        GridTestResources rsrcs) throws Exception {
+        IgniteTestResources rsrcs) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName, rsrcs);
 
         LocalDeploymentSpi spi = new LocalDeploymentSpi();
@@ -65,7 +65,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void processTestUndeployLocalTasks(IgniteDeploymentMode depMode) throws Exception {
+    private void processTestUndeployLocalTasks(DeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;
 
@@ -117,7 +117,7 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void processTestUndeployP2PTasks(IgniteDeploymentMode depMode) throws Exception {
+    private void processTestUndeployP2PTasks(DeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;
 
@@ -164,48 +164,48 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link org.apache.ignite.configuration.IgniteDeploymentMode#PRIVATE} mode.
+     * Test {@link org.apache.ignite.configuration.DeploymentMode#PRIVATE} mode.
      *
      * @throws Exception if error occur.
      */
     public void testUndeployLocalPrivateMode() throws Exception {
-        processTestUndeployLocalTasks(IgniteDeploymentMode.PRIVATE);
+        processTestUndeployLocalTasks(DeploymentMode.PRIVATE);
     }
 
     /**
-     * Test {@link org.apache.ignite.configuration.IgniteDeploymentMode#ISOLATED} mode.
+     * Test {@link org.apache.ignite.configuration.DeploymentMode#ISOLATED} mode.
      *
      * @throws Exception if error occur.
      */
     public void testUndeployLocalIsolatedMode() throws Exception {
-        processTestUndeployLocalTasks(IgniteDeploymentMode.ISOLATED);
+        processTestUndeployLocalTasks(DeploymentMode.ISOLATED);
     }
 
     /**
-     * Test {@link org.apache.ignite.configuration.IgniteDeploymentMode#CONTINUOUS} mode.
+     * Test {@link org.apache.ignite.configuration.DeploymentMode#CONTINUOUS} mode.
      *
      * @throws Exception if error occur.
      */
     public void testUndeployLocalContinuousMode() throws Exception {
-        processTestUndeployLocalTasks(IgniteDeploymentMode.CONTINUOUS);
+        processTestUndeployLocalTasks(DeploymentMode.CONTINUOUS);
     }
 
     /**
-     * Test {@link org.apache.ignite.configuration.IgniteDeploymentMode#SHARED} mode.
+     * Test {@link org.apache.ignite.configuration.DeploymentMode#SHARED} mode.
      *
      * @throws Exception if error occur.
      */
     public void testUndeployLocalSharedMode() throws Exception {
-        processTestUndeployLocalTasks(IgniteDeploymentMode.SHARED);
+        processTestUndeployLocalTasks(DeploymentMode.SHARED);
     }
 
     /**
-     * Test {@link org.apache.ignite.configuration.IgniteDeploymentMode#PRIVATE} mode.
+     * Test {@link org.apache.ignite.configuration.DeploymentMode#PRIVATE} mode.
      *
      * @throws Exception if error occur.
      */
     public void testUndeployP2PPrivateMode() throws Exception {
-        processTestUndeployP2PTasks(IgniteDeploymentMode.PRIVATE);
+        processTestUndeployP2PTasks(DeploymentMode.PRIVATE);
     }
 
     /**
@@ -214,24 +214,24 @@ public class GridP2PUndeploySelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testUndeployP2PIsolatedMode() throws Exception {
-        processTestUndeployP2PTasks(IgniteDeploymentMode.ISOLATED);
+        processTestUndeployP2PTasks(DeploymentMode.ISOLATED);
     }
 
     /**
-     * Test {@link org.apache.ignite.configuration.IgniteDeploymentMode#CONTINUOUS} mode.
+     * Test {@link org.apache.ignite.configuration.DeploymentMode#CONTINUOUS} mode.
      *
      * @throws Exception if error occur.
      */
     public void testUndeployP2PContinuousMode() throws Exception {
-        processTestUndeployP2PTasks(IgniteDeploymentMode.CONTINUOUS);
+        processTestUndeployP2PTasks(DeploymentMode.CONTINUOUS);
     }
 
     /**
-     * Test {@link org.apache.ignite.configuration.IgniteDeploymentMode#SHARED} mode.
+     * Test {@link org.apache.ignite.configuration.DeploymentMode#SHARED} mode.
      *
      * @throws Exception if error occur.
      */
     public void testUndeployP2PSharedMode() throws Exception {
-        processTestUndeployP2PTasks(IgniteDeploymentMode.SHARED);
+        processTestUndeployP2PTasks(DeploymentMode.SHARED);
     }
 }

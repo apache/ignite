@@ -18,22 +18,21 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.configuration.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
@@ -104,23 +103,23 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testClear() throws Exception {
-        GridCache cache = cacheForIndex(0);
+        IgniteCache cache = cacheForIndex(0);
 
         int key = primaryKey0(grid(0), cache);
 
-        cache.putx(key, 1);
-        cache.clear(key);
+        cache.put(key, 1);
+        cache.clear();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCache cache0 = cacheForIndex(i);
+            IgniteCache cache0 = cacheForIndex(i);
 
             cache0.removeAll();
 
-            assert cache0.isEmpty();
+            assert cache0.localSize() == 0;
         }
 
-        cache.putx(key, 1);
-        cache.clear(key);
+        cache.put(key, 1);
+        cache.clear();
 
         assertEquals(0, cache.size());
     }
@@ -132,11 +131,11 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
      * @return Primary key.
      * @throws Exception If failed.
      */
-    private int primaryKey0(Ignite ignite, GridCache cache) throws Exception {
+    private int primaryKey0(Ignite ignite, IgniteCache cache) throws Exception {
         ClusterNode locNode = ignite.cluster().localNode();
 
         for (int i = 0; i < Integer.MAX_VALUE; i++) {
-            if (cache.affinity().isPrimary(locNode, i))
+            if (affinity(cache).isPrimary(locNode, i))
                 return i;
         }
 
@@ -149,7 +148,7 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
      * @param idx Index.
      * @return Cache.
      */
-    private GridCache cacheForIndex(int idx) {
-        return grid(idx).cache(CACHE_NAME);
+    private IgniteCache cacheForIndex(int idx) {
+        return grid(idx).jcache(CACHE_NAME);
     }
 }

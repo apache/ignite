@@ -23,19 +23,20 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.client.ssl.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.config.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.net.ssl.*;
 import java.io.*;
 import java.lang.annotation.*;
@@ -126,9 +127,13 @@ public final class GridTestUtils {
         }
         catch (Throwable e) {
             if (cls != e.getClass()) {
-                U.error(log, "Unexpected exception.", e);
+                if (e.getClass() == CacheException.class && e.getCause() != null && e.getCause().getClass() == cls)
+                    e = e.getCause();
+                else {
+                    U.error(log, "Unexpected exception.", e);
 
-                fail("Exception class is not as expected [expected=" + cls + ", actual=" + e.getClass() + ']', e);
+                    fail("Exception class is not as expected [expected=" + cls + ", actual=" + e.getClass() + ']', e);
+                }
             }
 
             if (msg != null && (e.getMessage() == null || !e.getMessage().startsWith(msg))) {
@@ -639,11 +644,11 @@ public final class GridTestUtils {
     }
 
     /**
-     * @return GridGain home.
+     * @return Ignite home.
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ProhibitedExceptionThrown"})
-    public static String getGridGainHome() throws Exception {
+    public static String getIgniteHome() throws Exception {
         String ggHome = System.getProperty("IGNITE_HOME");
 
         if (ggHome == null)
@@ -655,10 +660,10 @@ public final class GridTestUtils {
         File dir = new File(ggHome);
 
         if (!dir.exists())
-            throw new Exception("Gridgain home does not exist [girdgain-home=" + dir.getAbsolutePath() + ']');
+            throw new Exception("Ignite home does not exist [ignite-home=" + dir.getAbsolutePath() + ']');
 
         if (!dir.isDirectory())
-            throw new Exception("Gridgain home is not a directory [gridgain-home=" + dir.getAbsolutePath() + ']');
+            throw new Exception("Ignite home is not a directory [ignite-home=" + dir.getAbsolutePath() + ']');
 
         return ggHome;
     }
@@ -734,7 +739,7 @@ public final class GridTestUtils {
                 // Exclude log4j because of the design - 1 per VM.
                 if (name.startsWith("spring") || name.startsWith("log4j") ||
                     name.startsWith("commons-logging") || name.startsWith("junit") ||
-                    name.startsWith("gridgain-tests"))
+                    name.startsWith("ignite-tests"))
                     return false;
 
                 boolean ret = true;
@@ -795,37 +800,37 @@ public final class GridTestUtils {
      * If not, then the check is made if path is relative to ${IGNITE_HOME}. If both checks fail,
      * then {@code null} is returned, otherwise file representing path is returned.
      * <p>
-     * See {@link #getGridGainHome()} for information on how {@code IGNITE_HOME} is retrieved.
+     * See {@link #getIgniteHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
      * @param path Path to resolve.
      * @return Resolved path, or {@code null} if file cannot be resolved.
-     * @see #getGridGainHome()
+     * @see #getIgniteHome()
      */
-    @Nullable public static File resolveGridGainPath(String path) {
-        return resolveGridGainPath(null, path);
+    @Nullable public static File resolveIgnitePath(String path) {
+        return resolveIgnitePath(null, path);
     }
 
     /**
-     * @param ggHome Optional gridgain home path.
+     * @param igniteHome Optional ignite home path.
      * @param path Path to resolve.
      * @return Resolved path, or {@code null} if file cannot be resolved.
      */
-    @Nullable public static File resolveGridGainPath(@Nullable String ggHome, String path) {
-        File file = resolvePath(ggHome, path);
+    @Nullable public static File resolveIgnitePath(@Nullable String igniteHome, String path) {
+        File file = resolvePath(igniteHome, path);
 
-        return file != null ? file : resolvePath(ggHome, "os/" + path);
+        return file != null ? file : resolvePath(igniteHome, "os/" + path);
     }
 
     /**
-     * @param ggHome Optional gridgain home path.
+     * @param igniteHome Optional ignite home path.
      * @param path Path to resolve.
      * @return Resolved path, or {@code null} if file cannot be resolved.
      */
-    @Nullable private static File resolvePath(@Nullable String ggHome, String path) {
+    @Nullable private static File resolvePath(@Nullable String igniteHome, String path) {
         File file = new File(path).getAbsoluteFile();
 
         if (!file.exists()) {
-            String home = ggHome != null ? ggHome : U.getGridGainHome();
+            String home = igniteHome != null ? igniteHome : U.getIgniteHome();
 
             if (home == null)
                 return null;
@@ -842,15 +847,23 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return Cache context.
      */
-    public static <K, V> GridCacheContext<K, V> cacheContext(CacheProjection<K, V> cache) {
+    public static <K, V> GridCacheContext<K, V> cacheContext(GridCache<K, V> cache) {
         return ((IgniteKernal)cache.gridProjection().ignite()).<K, V>internalCache().context();
+    }
+
+    /**
+     * @param cache Cache.
+     * @return Cache context.
+     */
+    public static <K, V> GridCacheContext<K, V> cacheContext(IgniteCache<K, V> cache) {
+        return ((IgniteKernal)cache.unwrap(Ignite.class)).<K, V>internalCache().context();
     }
 
     /**
      * @param cache Cache.
      * @return Near cache.
      */
-    public static <K, V> GridNearCacheAdapter<K, V> near(CacheProjection<K, V> cache) {
+    public static <K, V> GridNearCacheAdapter<K, V> near(GridCache<K, V> cache) {
         return cacheContext(cache).near();
     }
 
@@ -858,7 +871,7 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return DHT cache.
      */
-    public static <K, V> GridDhtCacheAdapter<K, V> dht(CacheProjection<K, V> cache) {
+    public static <K, V> GridDhtCacheAdapter<K, V> dht(GridCache<K, V> cache) {
         return near(cache).dht();
     }
 
@@ -866,7 +879,7 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return Affinity.
      */
-    static <K, V> CacheConsistentHashAffinityFunction affinity(CacheProjection<K, V> cache) {
+    static <K, V> CacheConsistentHashAffinityFunction affinity(GridCache<K, V> cache) {
         return (CacheConsistentHashAffinityFunction)cache.cache().configuration().getAffinity();
     }
 
@@ -1215,11 +1228,11 @@ public final class GridTestUtils {
      * @param retryInterval Interval between retries in milliseconds.
      * @param c Closure with assertion. All {@link AssertionError}s thrown
      *      from this closure will be ignored {@code retries} times.
-     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
     @SuppressWarnings("ErrorNotRethrown")
     public static void retryAssert(@Nullable IgniteLogger log, int retries, long retryInterval, GridAbsClosure c)
-        throws IgniteInterruptedException {
+        throws IgniteInterruptedCheckedException {
         for (int i = 0; i < retries; i++) {
             try {
                 c.apply();
@@ -1272,9 +1285,9 @@ public final class GridTestUtils {
      * @param sleepDur Sleep duration in milliseconds.
      * @param i Integer to increment.
      * @return Incremented value.
-     * @throws org.apache.ignite.IgniteInterruptedException If sleep was interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If sleep was interrupted.
      */
-    public static int sleepAndIncrement(int sleepDur, int i) throws IgniteInterruptedException {
+    public static int sleepAndIncrement(int sleepDur, int i) throws IgniteInterruptedCheckedException {
         U.sleep(sleepDur);
 
         return i + 1;
@@ -1286,9 +1299,9 @@ public final class GridTestUtils {
      * @param cond Condition to wait for.
      * @param timeout Max time to wait in milliseconds.
      * @return {@code true} if condition was achieved, {@code false} otherwise.
-     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
-    public static boolean waitForCondition(GridAbsPredicate cond, long timeout) throws IgniteInterruptedException {
+    public static boolean waitForCondition(GridAbsPredicate cond, long timeout) throws IgniteInterruptedCheckedException {
         long curTime = U.currentTimeMillis();
         long endTime = curTime + timeout;
 
@@ -1323,7 +1336,7 @@ public final class GridTestUtils {
 
         KeyStore keyStore = KeyStore.getInstance("JKS");
 
-        keyStore.load(new FileInputStream(U.resolveGridGainPath(GridTestProperties.getProperty("ssl.keystore.path"))),
+        keyStore.load(new FileInputStream(U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path"))),
             storePass);
 
         keyMgrFactory.init(keyStore, storePass);
@@ -1343,7 +1356,7 @@ public final class GridTestUtils {
         GridSslBasicContextFactory factory = new GridSslBasicContextFactory();
 
         factory.setKeyStoreFilePath(
-            U.resolveGridGainPath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
+            U.resolveIgnitePath(GridTestProperties.getProperty("ssl.keystore.path")).getAbsolutePath());
         factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
 
         factory.setTrustManagers(GridSslBasicContextFactory.getDisabledTrustManager());
@@ -1433,6 +1446,6 @@ public final class GridTestUtils {
      * @return Path to apache ignite.
      */
     public static String apacheIgniteTestPath() {
-        return System.getProperty("IGNITE_TEST_PATH", U.getGridGainHome() + "/target/ignite");
+        return System.getProperty("IGNITE_TEST_PATH", U.getIgniteHome() + "/target/ignite");
     }
 }

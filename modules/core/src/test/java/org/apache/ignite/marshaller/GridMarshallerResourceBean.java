@@ -20,10 +20,10 @@ package org.apache.ignite.marshaller;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.managers.loadbalancer.*;
 import org.apache.ignite.logger.java.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.thread.*;
-import org.apache.ignite.internal.managers.loadbalancer.*;
 import org.springframework.context.*;
 import org.springframework.context.support.*;
 
@@ -41,7 +41,7 @@ class GridMarshallerResourceBean implements Serializable {
     private IgniteLogger log;
 
     /** Marshaller. */
-    private IgniteMarshaller marshaller;
+    private Marshaller marshaller;
 
     /** Load balancer. */
     private ComputeLoadBalancer balancer;
@@ -65,8 +65,8 @@ class GridMarshallerResourceBean implements Serializable {
      * Initialization.
      */
     GridMarshallerResourceBean() {
-        log = new IgniteJavaLogger();
-        marshaller = new IgniteJdkMarshaller();
+        log = new JavaLogger();
+        marshaller = new JdkMarshaller();
         mbeanSrv = ManagementFactory.getPlatformMBeanServer();
         ses = new GridTestTaskSession();
         execSvc = new IgniteThreadPoolExecutor(1, 1, 0, new LinkedBlockingQueue<Runnable>());
@@ -78,7 +78,7 @@ class GridMarshallerResourceBean implements Serializable {
     /**
      * Checks that all resources are null.
      */
-    void checkNullResources() {
+    public void checkNullResources() {
         assert log == null;
         assert marshaller == null;
         assert balancer == null;

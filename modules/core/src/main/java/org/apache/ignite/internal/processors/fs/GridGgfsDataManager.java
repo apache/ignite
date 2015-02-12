@@ -21,23 +21,25 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.thread.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.task.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -50,12 +52,12 @@ import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Cache based file's data container.
@@ -185,21 +187,21 @@ public class GridGgfsDataManager extends GridGgfsManager {
         });
 
         ggfsCtx.kernalContext().event().addLocalEventListener(new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
+            @Override public void onEvent(Event evt) {
                 assert evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT;
 
-                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                 if (ggfsCtx.ggfsNode(discoEvt.eventNode())) {
                     for (WriteCompletionFuture future : pendingWrites.values()) {
                         future.onError(discoEvt.eventNode().id(),
-                            new ClusterTopologyException("Node left grid before write completed: " + evt.node().id()));
+                            new ClusterTopologyCheckedException("Node left grid before write completed: " + evt.node().id()));
                     }
                 }
             }
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        ggfsSvc = ggfsCtx.kernalContext().config().getGgfsExecutorService();
+        ggfsSvc = ggfsCtx.kernalContext().getGgfsExecutorService();
 
         trashPurgeTimeout = ggfsCtx.configuration().getTrashPurgeTimeout();
 
@@ -238,7 +240,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             // Always wait thread exit.
             U.join(delWorker);
         }
-        catch (IgniteInterruptedException e) {
+        catch (IgniteInterruptedCheckedException e) {
             log.warning("Got interrupter while waiting for delete worker to stop (will continue stopping).", e);
         }
 
@@ -390,14 +392,10 @@ public class GridGgfsDataManager extends GridGgfsManager {
         // Schedule block request BEFORE prefetch requests.
         final GridGgfsBlockKey key = blockKey(blockIdx, fileInfo);
 
-        if (log.isDebugEnabled()) {
-            CacheEntry<GridGgfsBlockKey, byte[]> entry = dataCachePrj.entry(key);
-
-            assert entry != null;
-
-            if (!entry.primary() && !entry.backup())
-                log.debug("Reading non-local data block [path=" + path + ", fileInfo=" + fileInfo +
-                    ", blockIdx=" + blockIdx + ']');
+        if (log.isDebugEnabled() &&
+            dataCache.affinity().isPrimaryOrBackup(ggfsCtx.kernalContext().discovery().localNode(), key)) {
+            log.debug("Reading non-local data block [path=" + path + ", fileInfo=" + fileInfo +
+                ", blockIdx=" + blockIdx + ']');
         }
 
         IgniteInternalFuture<byte[]> fut = dataCachePrj.getAsync(key);
@@ -653,7 +651,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 }
             }
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             log.error("Failed to clean up file range [fileInfo=" + fileInfo + ", range=" + range + ']', e);
         }
     }
@@ -685,7 +683,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                         // Need to check if block is partially written.
                         // If so, must update it in pessimistic transaction.
                         if (block.length != fileInfo.blockSize()) {
-                            try (IgniteTx tx = dataCachePrj.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            try (IgniteInternalTx tx = dataCachePrj.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                                 Map<GridGgfsBlockKey, byte[]> vals = dataCachePrj.getAll(F.asList(colocatedKey, key));
 
                                 byte[] val = vals.get(colocatedKey);
@@ -1083,7 +1081,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             try {
                 ggfs.awaitDeletesAsync().get(trashPurgeTimeout);
             }
-            catch (IgniteFutureTimeoutException ignore) {
+            catch (IgniteFutureTimeoutCheckedException ignore) {
                 // Ignore.
             }
 
@@ -1099,9 +1097,12 @@ public class GridGgfsDataManager extends GridGgfsManager {
                     return;
                 }
 
-                completionFut.onLocalError(new IgniteFsOutOfSpaceException("Failed to write data block " +
+                IgniteFsOutOfSpaceException e = new IgniteFsOutOfSpaceException("Failed to write data block " +
                     "(GGFS maximum data size exceeded) [used=" + dataCachePrj.ggfsDataSpaceUsed() +
-                        ", allowed=" + dataCachePrj.ggfsDataSpaceMax() + ']'));
+                    ", allowed=" + dataCachePrj.ggfsDataSpaceMax() + ']');
+
+                completionFut.onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " +
+                    ggfsCtx.kernalContext().localNodeId(), e));
 
                 return;
             }
@@ -1125,7 +1126,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         GridGgfsBlockKey key = new GridGgfsBlockKey(colocatedKey.getFileId(), null,
             colocatedKey.evictExclude(), colocatedKey.getBlockId());
 
-        try (IgniteTx tx = dataCachePrj.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (IgniteInternalTx tx = dataCachePrj.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
             // Lock keys.
             Map<GridGgfsBlockKey, byte[]> vals = dataCachePrj.getAll(F.asList(colocatedKey, key));
 
@@ -1250,7 +1251,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 try {
                     ggfs.awaitDeletesAsync().get(trashPurgeTimeout);
                 }
-                catch (IgniteFutureTimeoutException ignore) {
+                catch (IgniteFutureTimeoutCheckedException ignore) {
                     // Ignore.
                 }
 
@@ -1690,7 +1691,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
                 while (!isCancelled()) {
                     IgniteBiTuple<GridFutureAdapter<Object>, GridGgfsFileInfo> req = delReqs.take();
@@ -1724,7 +1725,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                     catch (IgniteInterruptedException ignored) {
                         // Ignore interruption during shutdown.
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         log.error("Failed to remove file contents: " + fileInfo, e);
                     }
                     finally {
@@ -1735,14 +1736,14 @@ public class GridGgfsDataManager extends GridGgfsManager {
                                 ldr.removeData(new GridGgfsBlockKey(fileId, fileInfo.affinityKey(),
                                     fileInfo.evictExclude(), block));
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (IgniteException e) {
                             log.error("Failed to remove file contents: " + fileInfo, e);
                         }
                         finally {
                             try {
                                 ldr.close(isCancelled());
                             }
-                            catch (IgniteCheckedException e) {
+                            catch (IgniteException e) {
                                 log.error("Failed to stop data loader while shutting down ggfs async delete thread.", e);
                             }
                             finally {
@@ -1842,25 +1843,12 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
             // If waiting for ack from this node.
             if (reqIds != null && !reqIds.isEmpty()) {
-                if (e instanceof IgniteFsOutOfSpaceException)
+                if (e.hasCause(IgniteFsOutOfSpaceException.class))
                     onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " + nodeId, e));
                 else
                     onDone(new IgniteCheckedException(
                         "Failed to wait for write completion (write failed on node): " + nodeId, e));
             }
-        }
-
-        /**
-         * @param e Error.
-         */
-        private void onLocalError(IgniteCheckedException e) {
-            if (e instanceof IgniteFsOutOfSpaceException)
-                onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " +
-                    ggfsCtx.kernalContext().localNodeId(), e));
-            else
-                onDone(new IgniteCheckedException(
-                    "Failed to wait for write completion (write failed on node): " +
-                        ggfsCtx.kernalContext().localNodeId(), e));
         }
 
         /**

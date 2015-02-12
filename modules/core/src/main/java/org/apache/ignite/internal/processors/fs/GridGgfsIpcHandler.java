@@ -18,23 +18,20 @@
 package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.fs.common.*;
 import org.apache.ignite.internal.processors.closure.*;
-import org.apache.ignite.internal.processors.license.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
-
-import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
 
 /**
  * GGFS IPC handler.
@@ -62,16 +59,14 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
     /** Stopping flag. */
     private volatile boolean stopping;
 
-    /** Management connection. */
-    private final boolean mgmt;
-
     /**
      * Constructs GGFS IPC handler.
+     *
+     * @param ggfsCtx Context.
      */
-    GridGgfsIpcHandler(GridGgfsContext ggfsCtx, boolean mgmt) {
+    GridGgfsIpcHandler(GridGgfsContext ggfsCtx) {
         assert ggfsCtx != null;
 
-        this.mgmt = mgmt;
         ctx = ggfsCtx.kernalContext();
         ggfs = ggfsCtx.ggfs();
 
@@ -106,9 +101,6 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<GridGgfsMessage> handleAsync(final GridGgfsClientSession ses,
         final GridGgfsMessage msg, DataInput in) {
-        if (!mgmt)
-            GridLicenseUseRegistry.onUsage(HADOOP, getClass());
-
         try {
             // Even if will be closed right after this call, response write error will be ignored.
             if (stopping)
@@ -228,6 +220,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
      * Processes status request.
      *
      * @return Status response.
+     * @throws IgniteCheckedException If failed.
      */
     private GridGgfsMessage processStatusRequest() throws IgniteCheckedException {
         GridGgfsStatus status = ggfs.globalSpace();
@@ -257,127 +250,132 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
 
         GridGgfsControlResponse res = new GridGgfsControlResponse();
 
-        switch (cmd) {
-            case EXISTS:
-                res.response(ggfs.exists(req.path()));
+        try {
+            switch (cmd) {
+                case EXISTS:
+                    res.response(ggfs.exists(req.path()));
 
-                break;
+                    break;
 
-            case INFO:
-                res.response(ggfs.info(req.path()));
+                case INFO:
+                    res.response(ggfs.info(req.path()));
 
-                break;
+                    break;
 
-            case PATH_SUMMARY:
-                res.response(ggfs.summary(req.path()));
+                case PATH_SUMMARY:
+                    res.response(ggfs.summary(req.path()));
 
-                break;
+                    break;
 
-            case UPDATE:
-                res.response(ggfs.update(req.path(), req.properties()));
+                case UPDATE:
+                    res.response(ggfs.update(req.path(), req.properties()));
 
-                break;
+                    break;
 
-            case RENAME:
-                ggfs.rename(req.path(), req.destinationPath());
+                case RENAME:
+                    ggfs.rename(req.path(), req.destinationPath());
 
-                res.response(true);
+                    res.response(true);
 
-                break;
+                    break;
 
-            case DELETE:
-                res.response(ggfs.delete(req.path(), req.flag()));
+                case DELETE:
+                    res.response(ggfs.delete(req.path(), req.flag()));
 
-                break;
+                    break;
 
-            case MAKE_DIRECTORIES:
-                ggfs.mkdirs(req.path(), req.properties());
+                case MAKE_DIRECTORIES:
+                    ggfs.mkdirs(req.path(), req.properties());
 
-                res.response(true);
+                    res.response(true);
 
-                break;
+                    break;
 
-            case LIST_PATHS:
-                res.paths(ggfs.listPaths(req.path()));
+                case LIST_PATHS:
+                    res.paths(ggfs.listPaths(req.path()));
 
-                break;
+                    break;
 
-            case LIST_FILES:
-                res.files(ggfs.listFiles(req.path()));
+                case LIST_FILES:
+                    res.files(ggfs.listFiles(req.path()));
 
-                break;
+                    break;
 
-            case SET_TIMES:
-                ggfs.setTimes(req.path(), req.accessTime(), req.modificationTime());
+                case SET_TIMES:
+                    ggfs.setTimes(req.path(), req.accessTime(), req.modificationTime());
 
-                res.response(true);
+                    res.response(true);
 
-                break;
+                    break;
 
-            case AFFINITY:
-                res.locations(ggfs.affinity(req.path(), req.start(), req.length()));
+                case AFFINITY:
+                    res.locations(ggfs.affinity(req.path(), req.start(), req.length()));
 
-                break;
+                    break;
 
-            case OPEN_READ: {
-                GridGgfsInputStreamAdapter ggfsIn = !req.flag() ? ggfs.open(req.path(), bufSize) :
-                    ggfs.open(req.path(), bufSize, req.sequentialReadsBeforePrefetch());
+                case OPEN_READ: {
+                    GridGgfsInputStreamAdapter ggfsIn = !req.flag() ? ggfs.open(req.path(), bufSize) :
+                        ggfs.open(req.path(), bufSize, req.sequentialReadsBeforePrefetch());
 
-                long streamId = registerResource(ses, ggfsIn);
+                    long streamId = registerResource(ses, ggfsIn);
 
-                if (log.isDebugEnabled())
-                    log.debug("Opened GGFS input stream for file read [ggfsName=" + ggfs.name() + ", path=" +
-                        req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
+                    if (log.isDebugEnabled())
+                        log.debug("Opened GGFS input stream for file read [ggfsName=" + ggfs.name() + ", path=" +
+                            req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
 
-                GridGgfsFileInfo info = new GridGgfsFileInfo(ggfsIn.fileInfo(), null,
-                    ggfsIn.fileInfo().modificationTime());
+                    GridGgfsFileInfo info = new GridGgfsFileInfo(ggfsIn.fileInfo(), null,
+                        ggfsIn.fileInfo().modificationTime());
 
-                res.response(new GridGgfsInputStreamDescriptor(streamId, info.length()));
+                    res.response(new GridGgfsInputStreamDescriptor(streamId, info.length()));
 
-                break;
+                    break;
+                }
+
+                case OPEN_CREATE: {
+                    long streamId = registerResource(ses, ggfs.create(
+                        req.path(),       // Path.
+                        bufSize,          // Buffer size.
+                        req.flag(),       // Overwrite if exists.
+                        affinityKey(req), // Affinity key based on replication factor.
+                        req.replication(),// Replication factor.
+                        req.blockSize(),  // Block size.
+                        req.properties()  // File properties.
+                    ));
+
+                    if (log.isDebugEnabled())
+                        log.debug("Opened GGFS output stream for file create [ggfsName=" + ggfs.name() + ", path=" +
+                            req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
+
+                    res.response(streamId);
+
+                    break;
+                }
+
+                case OPEN_APPEND: {
+                    long streamId = registerResource(ses, ggfs.append(
+                        req.path(),        // Path.
+                        bufSize,           // Buffer size.
+                        req.flag(),        // Create if absent.
+                        req.properties()   // File properties.
+                    ));
+
+                    if (log.isDebugEnabled())
+                        log.debug("Opened GGFS output stream for file append [ggfsName=" + ggfs.name() + ", path=" +
+                            req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
+
+                    res.response(streamId);
+
+                    break;
+                }
+
+                default:
+                    assert false : "Unhandled path control request command: " + cmd;
+
+                    break;
             }
-
-            case OPEN_CREATE: {
-                long streamId = registerResource(ses, ggfs.create(
-                    req.path(),       // Path.
-                    bufSize,          // Buffer size.
-                    req.flag(),       // Overwrite if exists.
-                    affinityKey(req), // Affinity key based on replication factor.
-                    req.replication(),// Replication factor.
-                    req.blockSize(),  // Block size.
-                    req.properties()  // File properties.
-                ));
-
-                if (log.isDebugEnabled())
-                    log.debug("Opened GGFS output stream for file create [ggfsName=" + ggfs.name() + ", path=" +
-                        req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
-
-                res.response(streamId);
-
-                break;
-            }
-
-            case OPEN_APPEND: {
-                long streamId = registerResource(ses, ggfs.append(
-                    req.path(),        // Path.
-                    bufSize,           // Buffer size.
-                    req.flag(),        // Create if absent.
-                    req.properties()   // File properties.
-                ));
-
-                if (log.isDebugEnabled())
-                    log.debug("Opened GGFS output stream for file append [ggfsName=" + ggfs.name() + ", path=" +
-                        req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
-
-                res.response(streamId);
-
-                break;
-            }
-
-            default:
-                assert false : "Unhandled path control request command: " + cmd;
-
-                break;
+        }
+        catch (IgniteException e) {
+            throw new IgniteCheckedException(e);
         }
 
         if (log.isDebugEnabled())

@@ -17,20 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Test ensuring that PRIMARY_SYNC mode works correctly.
@@ -89,10 +90,10 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
     public void testPrimarySync() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
             for (int j = 0; j < GRID_CNT; j++) {
-                GridCache<Integer, Integer> cache = grid(j).cache(null);
+                IgniteCache<Integer, Integer> cache = grid(j).jcache(null);
 
-                if (cache.entry(i).primary()) {
-                    try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                if (grid(j).affinity(null).isPrimary(grid(j).localNode(), i)) {
+                    try (IgniteTx tx = grid(j).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         cache.put(i, i);
 
                         tx.commit();

@@ -21,11 +21,11 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 
@@ -114,9 +114,9 @@ public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
             cache.context().tm().slowTxWarnTimeout(500);
         }
 
-        GridCache<Object, Object> cache1 = g.cache(cacheName);
+        IgniteCache<Object, Object> cache1 = g.jcache(cacheName);
 
-        IgniteTx tx = cache1.txStart();
+        IgniteTx tx = g.transactions().txStart();
 
         try {
             cache1.put(1, 1);
@@ -130,7 +130,7 @@ public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
             tx.close();
         }
 
-        tx = cache1.txStart();
+        tx = g.transactions().txStart();
 
         try {
             cache1.put(1, 1);

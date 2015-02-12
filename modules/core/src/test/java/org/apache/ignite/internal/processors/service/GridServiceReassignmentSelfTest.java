@@ -67,7 +67,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
      * @throws Exception If failed.
      */
     private CounterService proxy(Ignite g) throws Exception {
-        return g.managed().serviceProxy("testService", CounterService.class, false);
+        return g.services().serviceProxy("testService", CounterService.class, false);
     }
 
     /**
@@ -80,7 +80,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
 
         DummyService.exeLatch("testService", latch);
 
-        grid(0).managed().deployMultiple("testService", new CounterServiceImpl(), total, maxPerNode);
+        grid(0).services().deployMultiple("testService", new CounterServiceImpl(), total, maxPerNode);
 
         for (int i = 0; i < 10; i++)
             proxy(randomGrid()).increment();
@@ -122,13 +122,16 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
                         grow = true;
                 }
 
-                U.sleep(500);
+                for (int attempt = 0; attempt <= 10; ++attempt) {
+                    U.sleep(500);
 
-                checkServices(total, maxPerNode, F.first(startedGrids));
+                    if (checkServices(total, maxPerNode, F.first(startedGrids), attempt == 10))
+                        break;
+                }
             }
         }
         finally {
-            grid(F.first(startedGrids)).managed().cancel("testService");
+            grid(F.first(startedGrids)).services().cancel("testService");
 
             stopAllGrids();
 
@@ -144,7 +147,7 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
      * @param gridIdx Grid index to check.
      * @throws Exception If failed.
      */
-    private void checkServices(int total, int maxPerNode, int gridIdx) throws Exception {
+    private boolean checkServices(int total, int maxPerNode, int gridIdx, boolean lastTry) throws Exception {
         IgniteEx grid = grid(gridIdx);
 
         GridCacheProjectionEx<GridServiceAssignmentsKey, GridServiceAssignments> cache = grid.
@@ -161,6 +164,9 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
         for (Map.Entry<UUID, Integer> entry : assignments.assigns().entrySet()) {
             UUID nodeId = entry.getKey();
 
+            if (!lastTry && !nodes.contains(nodeId))
+                return false;
+
             assertTrue("Dead node is in assignments: " + nodeId, nodes.contains(nodeId));
 
             Integer nodeCnt = entry.getValue();
@@ -176,7 +182,12 @@ public class GridServiceReassignmentSelfTest extends GridServiceProcessorAbstrac
             assertTrue("Total number of services limit exceeded [sum=" + sum +
                 ", assigns=" + assignments.assigns() + ']', sum <= total);
 
+        if (!lastTry && proxy(grid).get() != 10)
+            return false;
+
         assertEquals(10, proxy(grid).get());
+
+        return true;
     }
 
     /**

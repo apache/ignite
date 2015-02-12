@@ -39,15 +39,15 @@ public class GridLocalEventListenerSelfTest extends GridCommonAbstractTest {
         int idx = getTestGridIndex(gridName);
 
         if (idx == 0) {
-            Map<IgnitePredicate<? extends IgniteEvent>, int[]> lsnrs = new HashMap<>();
+            Map<IgnitePredicate<? extends Event>, int[]> lsnrs = new HashMap<>();
 
-            lsnrs.put(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            lsnrs.put(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     fired.countDown();
 
                     return true;
                 }
-            }, new int[] { IgniteEventType.EVT_NODE_JOINED } );
+            }, new int[] { EventType.EVT_NODE_JOINED } );
 
             cfg.setLocalEventListeners(lsnrs);
         }

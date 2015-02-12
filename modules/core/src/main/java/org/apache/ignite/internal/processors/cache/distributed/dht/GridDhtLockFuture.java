@@ -18,30 +18,30 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.timeout.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 
 /**
@@ -107,7 +107,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     private IgniteLogger log;
 
     /** Filter. */
-    private IgnitePredicate<CacheEntry<K, V>>[] filter;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Transaction. */
     private GridDhtTxLocalAdapter<K, V> tx;
@@ -161,7 +161,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         GridDhtTxLocalAdapter<K, V> tx,
         long threadId,
         long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert nearNodeId != null;
@@ -472,7 +472,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new ClusterTopologyException("Remote node left grid (will ignore): " + nodeId));
+                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will ignore): " + nodeId));
 
                     found = true;
                 }
@@ -874,12 +874,12 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                         if (log.isDebugEnabled())
                             log.debug("Sending DHT lock request to DHT node [node=" + n.id() + ", req=" + req + ']');
 
-                        cctx.io().send(n, req, cctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                        cctx.io().send(n, req, cctx.ioPolicy());
                     }
                     catch (IgniteCheckedException e) {
                         // Fail the whole thing.
-                        if (e instanceof ClusterTopologyException)
-                            fut.onResult((ClusterTopologyException)e);
+                        if (e instanceof ClusterTopologyCheckedException)
+                            fut.onResult((ClusterTopologyCheckedException)e);
                         else
                             fut.onResult(e);
                     }
@@ -1027,7 +1027,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         /**
          * @param e Node failure.
          */
-        void onResult(ClusterTopologyException e) {
+        void onResult(ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will ignore): " + this);
 

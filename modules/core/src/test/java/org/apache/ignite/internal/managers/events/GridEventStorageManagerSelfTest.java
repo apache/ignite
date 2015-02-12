@@ -20,13 +20,12 @@ package org.apache.ignite.internal.managers.events;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests for {@link GridEventStorageManager}.
@@ -62,8 +61,8 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
 
         final int usrType = Integer.MAX_VALUE - 1;
 
-        IgniteInternalFuture<IgniteEvent> fut = waitForLocalEvent(ignite.events(), new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent e) {
+        IgniteFuture<Event> fut = waitForLocalEvent(ignite.events(), new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event e) {
                 return e.type() == usrType;
             }
         }, usrType);
@@ -77,7 +76,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
             info("Caught expected exception: " + e);
         }
 
-        ignite.events().recordLocal(new IgniteEventAdapter(null, "Test message.", usrType) {
+        ignite.events().recordLocal(new EventAdapter(null, "Test message.", usrType) {
             // No-op.
         });
 
@@ -96,7 +95,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
             // We'll never wait for nonexistent type of event.
             int usrType = Integer.MAX_VALUE - 1;
 
-            waitForLocalEvent(ignite.events(), F.<IgniteEvent>alwaysTrue(), usrType).get(1000);
+            waitForLocalEvent(ignite.events(), F.<Event>alwaysTrue(), usrType).get(1000);
 
             fail("GridFutureTimeoutException must have been thrown.");
         }
@@ -112,7 +111,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
         Ignite ignite = grid();
 
         try {
-            ignite.events().recordLocal(new IgniteEventAdapter(null, "Test message.", IgniteEventType.EVT_NODE_FAILED) {
+            ignite.events().recordLocal(new EventAdapter(null, "Test message.", EventType.EVT_NODE_FAILED) {
                 // No-op.
             });
 

@@ -25,9 +25,9 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.*;
@@ -43,13 +43,14 @@ import org.apache.ignite.spi.indexing.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridClosureCallMode.*;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
 
@@ -91,8 +92,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         maxIterCnt = cctx.config().getMaximumQueryIteratorCount();
 
         cctx.events().addListener(new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
-                UUID nodeId = ((IgniteDiscoveryEvent)evt).eventNode().id();
+            @Override public void onEvent(Event evt) {
+                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
                 Map<Long, GridFutureAdapter<QueryResult<K, V>>> futs = qryIters.remove(nodeId);
 
@@ -481,7 +482,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             switch (qry.type()) {
                 case SQL:
                     if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                        cctx.gridEvents().record(new IgniteCacheQueryExecutedEvent<>(
+                        cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                             cctx.localNode(),
                             "SQL query executed.",
                             EVT_CACHE_QUERY_EXECUTED,
@@ -503,7 +504,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 case SCAN:
                     if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                        cctx.gridEvents().record(new IgniteCacheQueryExecutedEvent<>(
+                        cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                             cctx.localNode(),
                             "Scan query executed.",
                             EVT_CACHE_QUERY_EXECUTED,
@@ -524,7 +525,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 case TEXT:
                     if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                        cctx.gridEvents().record(new IgniteCacheQueryExecutedEvent<>(
+                        cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                             cctx.localNode(),
                             "Full text query executed.",
                             EVT_CACHE_QUERY_EXECUTED,
@@ -598,7 +599,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                cctx.gridEvents().record(new IgniteCacheQueryExecutedEvent<>(
+                cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                     cctx.localNode(),
                     "SQL fields query executed.",
                     EVT_CACHE_QUERY_EXECUTED,
@@ -630,7 +631,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             assert qry.type() == SPI;
 
             if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
-                cctx.gridEvents().record(new IgniteCacheQueryExecutedEvent<>(
+                cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                     cctx.localNode(),
                     "SPI query executed.",
                     EVT_CACHE_QUERY_EXECUTED,
@@ -733,12 +734,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @SuppressWarnings({"unchecked"})
     private GridCloseableIterator<IgniteBiTuple<K, V>> scanIterator(final GridCacheQueryAdapter<?> qry)
         throws IgniteCheckedException {
-        IgnitePredicate<CacheEntry<K, V>> filter = null;
+        IgnitePredicate<Cache.Entry<K, V>> filter = null;
 
         if (qry.projectionFilter() != null) {
-            filter = new P1<CacheEntry<K, V>>() {
-                @Override public boolean apply(CacheEntry<K, V> e) {
-                    return qry.projectionFilter().apply((CacheEntry<Object, Object>)e);
+            filter = new P1<Cache.Entry<K, V>>() {
+                @Override public boolean apply(Cache.Entry<K, V> e) {
+                    return qry.projectionFilter().apply((Cache.Entry<Object, Object>)e);
                 }
             };
         }
@@ -859,7 +860,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     private GridIterator<IgniteBiTuple<K, V>> swapIterator(GridCacheQueryAdapter<?> qry)
         throws IgniteCheckedException {
-        IgnitePredicate<CacheEntry<Object, Object>> prjPred = qry.projectionFilter();
+        IgnitePredicate<Cache.Entry<Object, Object>> prjPred = qry.projectionFilter();
 
         IgniteBiPredicate<K, V> filter = qry.scanFilter();
 
@@ -873,7 +874,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Offheap iterator.
      */
     private GridIterator<IgniteBiTuple<K, V>> offheapIterator(GridCacheQueryAdapter<?> qry) {
-        IgnitePredicate<CacheEntry<Object, Object>> prjPred = qry.projectionFilter();
+        IgnitePredicate<Cache.Entry<Object, Object>> prjPred = qry.projectionFilter();
 
         IgniteBiPredicate<K, V> filter = qry.scanFilter();
 
@@ -898,7 +899,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     private GridIteratorAdapter<IgniteBiTuple<K, V>> scanIterator(
         @Nullable final Iterator<Map.Entry<byte[], byte[]>> it,
-        @Nullable final IgnitePredicate<CacheEntry<Object, Object>> prjPred,
+        @Nullable final IgnitePredicate<Cache.Entry<Object, Object>> prjPred,
         @Nullable final IgniteBiPredicate<K, V> filter,
         final boolean keepPortable) {
         if (it == null)
@@ -937,9 +938,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     final LazySwapEntry e = new LazySwapEntry(it.next());
 
                     if (prjPred != null) {
-                        CacheEntry<K, V> cacheEntry = new GridCacheScanSwapEntry(e);
+                        Cache.Entry<K, V> Entry = new GridCacheScanSwapEntry(e);
 
-                        if (!prjPred.apply((CacheEntry<Object, Object>)cacheEntry))
+                        if (!prjPred.apply((Cache.Entry<Object, Object>)Entry))
                             continue;
                     }
 
@@ -999,7 +1000,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             try {
                 // Preparing query closures.
-                IgnitePredicate<CacheEntry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
+                IgnitePredicate<Cache.Entry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
                 IgniteClosure<Object, Object> trans = (IgniteClosure<Object, Object>)qryInfo.transformer();
                 IgniteReducer<Object, Object> rdc = (IgniteReducer<Object, Object>)qryInfo.reducer();
 
@@ -1063,7 +1064,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     }
 
                     if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
-                        cctx.gridEvents().record(new IgniteCacheQueryReadEvent<K, V>(
+                        cctx.gridEvents().record(new CacheQueryReadEvent<K, V>(
                             cctx.localNode(),
                             "SQL fields query result set row read.",
                             EVT_CACHE_QUERY_OBJECT_READ,
@@ -1166,7 +1167,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             try {
                 // Preparing query closures.
-                IgnitePredicate<CacheEntry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
+                IgnitePredicate<Cache.Entry<Object, Object>> prjFilter = qryInfo.projectionPredicate();
                 IgniteClosure<Map.Entry<K, V>, Object> trans = (IgniteClosure<Map.Entry<K, V>, Object>)qryInfo.transformer();
                 IgniteReducer<Map.Entry<K, V>, Object> rdc = (IgniteReducer<Map.Entry<K, V>, Object>)qryInfo.reducer();
 
@@ -1250,7 +1251,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     switch (type) {
                         case SQL:
                             if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
-                                cctx.gridEvents().record(new IgniteCacheQueryReadEvent<>(
+                                cctx.gridEvents().record(new CacheQueryReadEvent<>(
                                     cctx.localNode(),
                                     "SQL query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
@@ -1273,7 +1274,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         case TEXT:
                             if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
-                                cctx.gridEvents().record(new IgniteCacheQueryReadEvent<>(
+                                cctx.gridEvents().record(new CacheQueryReadEvent<>(
                                     cctx.localNode(),
                                     "Full text query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
@@ -1296,7 +1297,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                         case SCAN:
                             if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ)) {
-                                cctx.gridEvents().record(new IgniteCacheQueryReadEvent<>(
+                                cctx.gridEvents().record(new CacheQueryReadEvent<>(
                                     cctx.localNode(),
                                     "Scan query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
@@ -1755,7 +1756,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @Nullable private GridIndexingQueryFilter projectionFilter(GridCacheQueryAdapter<?> qry) {
         assert qry != null;
 
-        final IgnitePredicate<CacheEntry<Object, Object>> prjFilter = qry.projectionFilter();
+        final IgnitePredicate<Cache.Entry<Object, Object>> prjFilter = qry.projectionFilter();
 
         if (prjFilter == null || F.isAlwaysTrue(prjFilter))
             return null;
@@ -1768,9 +1769,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 return new IgniteBiPredicate<K, V>() {
                     @Override public boolean apply(K k, V v) {
                         try {
-                            CacheEntry<K, V> entry = context().cache().entry(k);
+                            Cache.Entry<K, V> entry = context().cache().entry(k);
 
-                            return entry != null && prjFilter.apply((CacheEntry<Object, Object>)entry);
+                            return entry != null && prjFilter.apply((Cache.Entry<Object, Object>)entry);
                         }
                         catch (GridDhtInvalidPartitionException ignore) {
                             return false;
@@ -1892,7 +1893,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 },
                 new P1<GridCache<?, ?>>() {
                     @Override public boolean apply(GridCache<?, ?> c) {
-                        return !CU.UTILITY_CACHE_NAME.equals(c.name());
+                        return !CU.UTILITY_CACHE_NAME.equals(c.name()) && !CU.ATOMICS_CACHE_NAME.equals(c.name());
                     }
                 }
             );
@@ -2437,7 +2438,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private static final long serialVersionUID = 7410163202728985912L;
 
         /** */
-        private IgnitePredicate<CacheEntry<Object, Object>> prjPred;
+        private IgnitePredicate<Cache.Entry<Object, Object>> prjPred;
 
         /** */
         private IgniteBiPredicate<K, V> filter;
@@ -2451,7 +2452,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
          * @param keepPortable Keep portable flag.
          */
         private OffheapIteratorClosure(
-            @Nullable IgnitePredicate<CacheEntry<Object, Object>> prjPred,
+            @Nullable IgnitePredicate<Cache.Entry<Object, Object>> prjPred,
             @Nullable IgniteBiPredicate<K, V> filter,
             boolean keepPortable) {
             assert prjPred != null || filter != null;
@@ -2468,9 +2469,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             LazyOffheapEntry e = new LazyOffheapEntry(keyPtr, valPtr);
 
             if (prjPred != null) {
-                CacheEntry<K, V> cacheEntry = new GridCacheScanSwapEntry(e);
+                Cache.Entry<K, V> entry = new GridCacheScanSwapEntry(e);
 
-                if (!prjPred.apply((CacheEntry<Object, Object>)cacheEntry))
+                if (!prjPred.apply((Cache.Entry<Object, Object>)entry))
                     return null;
             }
 
@@ -2550,7 +2551,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      *
      */
-    private class GridCacheScanSwapEntry implements CacheEntry<K, V> {
+    private class GridCacheScanSwapEntry implements Cache.Entry<K, V> {
         /** */
         private static final long serialVersionUID = 1262515168518736214L;
 
@@ -2565,26 +2566,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public V peek() {
-            return e.value();
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object version() {
-            return e.version();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long expirationTime() {
-            return e.expireTime();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long timeToLive() {
-            return e.timeToLive();
-        }
-
-        /** {@inheritDoc} */
         @Nullable @Override public V getValue() {
             return e.value();
         }
@@ -2592,249 +2573,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @Override public K getKey() {
             return e.key();
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheProjection<K, V> projection() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public V peek(@Nullable Collection<GridCachePeekMode> modes) throws IgniteCheckedException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public V reload() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<V> reloadAsync() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isLocked() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isLockedByThread() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void timeToLive(long ttl) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean primary() {
-            return cctx.affinity().
-                primary(cctx.localNode(), getKey(), cctx.affinity().affinityTopologyVersion());
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean backup() {
-            return cctx.affinity().
-                backups(getKey(), cctx.affinity().affinityTopologyVersion()).contains(cctx.localNode());
-        }
-
-        /** {@inheritDoc} */
-        @Override public int partition() {
-            return cctx.affinity().partition(getKey());
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public V get() {
-            return getValue();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<V> getAsync() {
-            return new GridFinishedFuture<V>(cctx.kernalContext(), getValue());
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public V setValue(V val) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public V set(V val, IgnitePredicate<CacheEntry<K, V>>... filter) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<V> setAsync(V val, IgnitePredicate<CacheEntry<K, V>>... filter) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public V setIfAbsent(V val) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<V> setIfAbsentAsync(V val) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean setx(V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<Boolean> setxAsync(V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean setxIfAbsent(@Nullable V val) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<Boolean> setxIfAbsentAsync(V val) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public V replace(V val) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<V> replaceAsync(V val) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean replacex(V val) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<Boolean> replacexAsync(V val) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean replace(V oldVal, V newVal) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<Boolean> replaceAsync(V oldVal, V newVal) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public V remove(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<V> removeAsync(IgnitePredicate<CacheEntry<K, V>>... filter) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean removex(IgnitePredicate<CacheEntry<K, V>>... filter) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<Boolean> removexAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean remove(V val) throws IgniteCheckedException {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<Boolean> removeAsync(V val) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean evict() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean clear() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean compact() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean lock(long timeout, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<Boolean> lockAsync(long timeout,
-            @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void unlock(IgnitePredicate<CacheEntry<K, V>>... filter) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isCached() {
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int memorySize() {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public <V> V addMeta(String name, V val) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public <V> V putMetaIfAbsent(String name, V val) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public <V> V putMetaIfAbsent(String name, Callable<V> c) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public <V> V meta(String name) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <V> V removeMeta(String name) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public <V> boolean removeMeta(String name, V val) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public <V> boolean replaceMeta(String name, V curVal, V newVal) {
-            throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */

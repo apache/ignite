@@ -18,14 +18,13 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -86,9 +85,9 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
         super.afterTest();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            grid(i).cache(null).removeAll();
+            grid(i).jcache(null).removeAll();
 
-            assert grid(i).cache(null).isEmpty();
+            assert grid(i).jcache(null).localSize() == 0;
         }
     }
 
@@ -106,14 +105,14 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTwoTx() throws Exception {
-        final GridCache<String, Integer> c = grid(0).cache(null);
+        final IgniteCache<String, Integer> c = grid(0).jcache(null);
 
         GridKernalContext ctx = ((IgniteKernal)grid(0)).context();
 
         c.put(CNTR_KEY, 0);
 
         for (int i = 0; i < 10; i++) {
-            try (IgniteTx tx = c.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 c.get(CNTR_KEY);
 
                 ctx.closure().callLocalSafe((new Callable<Boolean>() {
@@ -159,7 +158,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
 
                         tx.commit();
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         error("Failed tx thread", e);
                     }
                 }
@@ -252,7 +251,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
 
                             tx.commit();
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (IgniteException e) {
                             error("Failed tx thread", e);
                         }
 

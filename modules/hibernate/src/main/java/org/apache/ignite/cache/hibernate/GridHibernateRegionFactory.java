@@ -39,20 +39,20 @@ import static org.hibernate.cache.spi.access.AccessType.*;
  * hibernate.cache.use_second_level_cache=true
  * hibernate.cache.region.factory_class=org.apache.ignite.cache.hibernate.GridHibernateRegionFactory
  * </pre>
- * Note that before region factory is started you need to start properly configured GridGain node in the same JVM.
- * For example to start GridGain node one of loader provided in {@code org.gridgain.grid.startup} package can be used.
+ * Note that before region factory is started you need to start properly configured Ignite node in the same JVM.
+ * For example to start Ignite node one of loader provided in {@code org.apache.ignite.grid.startup} package can be used.
  * <p>
  * Name of grid to be used for region factory must be specified as following Hibernate property:
  * <pre name="code" class="brush: xml; gutter: false;">
- * org.gridgain.hibernate.grid_name=&lt;grid name&gt;
+ * org.apache.ignite.hibernate.grid_name=&lt;grid name&gt;
  * </pre>
  * Each Hibernate cache region must be associated with some {@link org.apache.ignite.cache.GridCache}, by default it is assumed that
  * for each cache region there is a {@link org.apache.ignite.cache.GridCache} with the same name. Also it is possible to define
- * region to cache mapping using properties with prefix {@code org.gridgain.hibernate.region_cache}.
+ * region to cache mapping using properties with prefix {@code org.apache.ignite.hibernate.region_cache}.
  * For example if for region with name "region1" cache with name "cache1" should be used then following
  * Hibernate property should be specified:
  * <pre name="code" class="brush: xml; gutter: false;">
- * org.gridgain.hibernate.region_cache.region1=cache1
+ * org.apache.ignite.hibernate.region_cache.region1=cache1
  * </pre>
  */
 public class GridHibernateRegionFactory implements RegionFactory {
@@ -104,7 +104,7 @@ public class GridHibernateRegionFactory implements RegionFactory {
             try {
                 ignite = G.start(gridCfg);
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 throw new CacheException(e);
             }
         }

@@ -103,7 +103,7 @@ class VisorCacheCompactCommand {
             case Some(name) => name
         }
 
-        val prj = if (node.isDefined) grid.forNode(node.get) else grid.forCache(cacheName)
+        val prj = if (node.isDefined) ignite.forNode(node.get) else ignite.forCacheNodes(cacheName)
 
         if (prj.nodes().isEmpty) {
             val msg =
@@ -122,7 +122,7 @@ class VisorCacheCompactCommand {
         val cacheSet = Collections.singleton(cacheName)
 
         prj.nodes().foreach(node => {
-            val r = grid.compute(grid.forNode(node))
+            val r = ignite.compute(ignite.forNode(node))
                 .withName("visor-ccompact-task")
                 .withNoFailover()
                 .execute(classOf[VisorCacheCompactTask], toTaskArgument(node.id(), cacheSet))

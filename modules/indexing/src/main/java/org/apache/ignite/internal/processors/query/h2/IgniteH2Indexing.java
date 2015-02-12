@@ -19,28 +19,27 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.query.*;
+import org.apache.ignite.internal.processors.query.h2.opt.*;
 import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.future.GridFinishedFutureEx;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.offheap.unsafe.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
-import org.apache.ignite.internal.processors.query.*;
-import org.apache.ignite.internal.processors.query.h2.opt.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.offheap.unsafe.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.h2.api.*;
 import org.h2.command.*;
 import org.h2.constant.*;
@@ -131,14 +130,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private CacheLongKeyLIRS<GridH2KeyValueRowOffheap> rowCache = new CacheLongKeyLIRS<>(32 * 1024, 1, 128, 256);
 
     /** Logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Node ID. */
     private UUID nodeId;
 
     /** */
-    private IgniteMarshaller marshaller;
+    private Marshaller marshaller;
 
     /** */
     private GridUnsafeMemory offheap;
@@ -226,7 +225,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     };
 
     /** */
-    private volatile IgniteQueryConfiguration cfg = new IgniteQueryConfiguration();
+    private volatile QueryConfiguration cfg = new QueryConfiguration();
 
     /** */
     private volatile GridKernalContext ctx;
@@ -587,7 +586,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * @return Configuration.
      */
-    public IgniteQueryConfiguration configuration() {
+    public QueryConfiguration configuration() {
         return cfg;
     }
 
@@ -1112,14 +1111,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             log.debug("Starting cache query index...");
 
         if (ctx == null) // This is allowed in some tests.
-            marshaller = new IgniteOptimizedMarshaller();
+            marshaller = new OptimizedMarshaller();
         else {
             this.ctx = ctx;
 
             nodeId = ctx.localNodeId();
             marshaller = ctx.config().getMarshaller();
 
-            IgniteQueryConfiguration cfg0 = ctx.config().getQueryConfiguration();
+            QueryConfiguration cfg0 = ctx.config().getQueryConfiguration();
 
             if (cfg0 != null)
                 cfg = cfg0;
@@ -1684,13 +1683,49 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     if (idx.type() == SORTED)
                         idxs.add(new GridH2TreeIndex(name, tbl, false, KEY_COL, VAL_COL, cols));
                     else if (idx.type() == GEO_SPATIAL)
-                        idxs.add(new GridH2SpatialIndex(tbl, name, cols, KEY_COL, VAL_COL));
+                        idxs.add(createH2SpatialIndex(tbl, name, cols, KEY_COL, VAL_COL));
                     else
                         throw new IllegalStateException();
                 }
             }
 
             return idxs;
+        }
+
+        /**
+         * @param tbl Table.
+         * @param idxName Index name.
+         * @param cols Columns.
+         * @param keyCol Key column.
+         * @param valCol Value column.
+         */
+        private SpatialIndex createH2SpatialIndex(
+            Table tbl,
+            String idxName,
+            IndexColumn[] cols,
+            int keyCol,
+            int valCol
+        ) {
+            String className = "org.apache.ignite.internal.processors.query.h2.opt.GridH2SpatialIndex";
+
+            try {
+                Class<?> cls = Class.forName(className);
+
+                Constructor<?> ctor = cls.getConstructor(
+                    Table.class,
+                    String.class,
+                    IndexColumn[].class,
+                    int.class,
+                    int.class);
+
+                if (!ctor.isAccessible())
+                    ctor.setAccessible(true);
+
+                return (SpatialIndex)ctor.newInstance(tbl, idxName, cols, keyCol, valCol);
+            }
+            catch (Exception e) {
+                throw new IgniteException("Failed to instantiate: " + className, e);
+            }
         }
     }
 
@@ -1959,7 +1994,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (cctx.isNear())
                 cctx = cctx.near().dht().context();
 
-            GridCacheSwapEntry e = cctx.swap().read(key);
+            GridCacheSwapEntry e = cctx.swap().read(key, true, true);
 
             return e != null ? e.value() : null;
         }

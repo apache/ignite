@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 
@@ -58,11 +58,11 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
     private void checkNonLocalKey(IgniteTxConcurrency concurrency) throws Exception {
         final UUID key = primaryKeyForCache(grid(1));
 
-        GridCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
         IgniteTx tx = null;
         try {
-            tx = cache.txStartAffinity(key, concurrency, READ_COMMITTED, 0, 2);
+            tx = grid(0).transactions().txStartAffinity(null, key, concurrency, READ_COMMITTED, 0, 2);
 
             cache.put(new CacheAffinityKey<>("1", key), "2");
 
@@ -70,14 +70,14 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
 
             fail("Exception should be thrown.");
         }
-        catch (IgniteCheckedException ignored) {
+        catch (IgniteException ignored) {
             // Expected exception.
         }
         finally {
             if (tx != null)
                 tx.close();
 
-            assertNull(cache.tx());
+            assertNull(grid(0).transactions().tx());
         }
     }
 
@@ -119,9 +119,9 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
         CacheAffinityKey<String> key2 = new CacheAffinityKey<>("key2", affinityKey);
         CacheAffinityKey<String> key3 = new CacheAffinityKey<>("key3", affinityKey);
 
-        grid(0).cache(null).put(affinityKey, "aff");
+        grid(0).jcache(null).put(affinityKey, "aff");
 
-        GridCache<CacheAffinityKey<String>, String> cache = grid(0).cache(null);
+        IgniteCache<CacheAffinityKey<String>, String> cache = grid(0).jcache(null);
 
         cache.putAll(F.asMap(
             key1, "val1",
@@ -132,7 +132,7 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
         Ignite reader = null;
 
         for (int i = 0; i < gridCount(); i++) {
-            if (!grid(i).cache(null).affinity().isPrimaryOrBackup(grid(i).localNode(), affinityKey))
+            if (!grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), affinityKey))
                 reader = grid(i);
         }
 
@@ -142,19 +142,20 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
 
         // Add reader.
         if (touchAffKey)
-            assertEquals("aff", reader.cache(null).get(affinityKey));
+            assertEquals("aff", reader.jcache(null).get(affinityKey));
 
-        assertEquals("val1", reader.cache(null).get(key1));
-        assertEquals("val2", reader.cache(null).get(key2));
-        assertEquals("val3", reader.cache(null).get(key3));
+        assertEquals("val1", reader.jcache(null).get(key1));
+        assertEquals("val2", reader.jcache(null).get(key2));
+        assertEquals("val3", reader.jcache(null).get(key3));
 
         if (nearEnabled()) {
-            assertEquals("val1", reader.cache(null).peek(key1));
-            assertEquals("val2", reader.cache(null).peek(key2));
-            assertEquals("val3", reader.cache(null).peek(key3));
+            assertEquals("val1", reader.jcache(null).localPeek(key1, CachePeekMode.ONHEAP));
+            assertEquals("val2", reader.jcache(null).localPeek(key2, CachePeekMode.ONHEAP));
+            assertEquals("val3", reader.jcache(null).localPeek(key3, CachePeekMode.ONHEAP));
         }
 
-        try (IgniteTx tx = cache.txStartAffinity(affinityKey, concurrency, READ_COMMITTED, 0, 3)) {
+        try (IgniteTx tx = grid(0).transactions()
+            .txStartAffinity(null, affinityKey, concurrency, READ_COMMITTED, 0, 3)) {
             cache.putAll(F.asMap(
                 key1, "val01",
                 key2, "val02",
@@ -165,9 +166,9 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
         }
 
         if (nearEnabled()) {
-            assertEquals("val01", reader.cache(null).peek(key1));
-            assertEquals("val02", reader.cache(null).peek(key2));
-            assertEquals("val03", reader.cache(null).peek(key3));
+            assertEquals("val01", reader.jcache(null).localPeek(key1, CachePeekMode.ONHEAP));
+            assertEquals("val02", reader.jcache(null).localPeek(key2, CachePeekMode.ONHEAP));
+            assertEquals("val03", reader.jcache(null).localPeek(key3, CachePeekMode.ONHEAP));
         }
     }
 }

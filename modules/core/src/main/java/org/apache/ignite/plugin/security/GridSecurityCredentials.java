@@ -17,7 +17,7 @@
 
 package org.apache.ignite.plugin.security;
 
-import org.apache.ignite.portables.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -31,13 +31,13 @@ import java.io.*;
  * client or node startup in configuration.
  * <p>
  * For grid node, security credentials provider is specified in
- * {@link org.apache.ignite.configuration.IgniteConfiguration#setSecurityCredentialsProvider(GridSecurityCredentialsProvider)}
+ * {@link IgniteConfiguration#setSecurityCredentialsProvider(GridSecurityCredentialsProvider)}
  * configuration property. For Java clients, you can provide credentials in
  * {@code GridClientConfiguration.setSecurityCredentialsProvider(...)} method.
  * <p>
  * Getting credentials through {@link GridSecurityCredentialsProvider} abstraction allows
  * users to provide custom implementations for storing user names and passwords in their
- * environment, possibly in encrypted format. GridGain comes with
+ * environment, possibly in encrypted format. Ignite comes with
  * {@link GridSecurityCredentialsBasicProvider} which simply provides
  * the passed in {@code login} and {@code password} when encryption or custom logic is not required.
  * <p>
@@ -45,7 +45,7 @@ import java.io.*;
  * specifying {@link #setUserObject(Object) userObject} as well, which can be used
  * to pass in any additional information required for authentication.
  */
-public class GridSecurityCredentials implements Externalizable, PortableMarshalAware {
+public class GridSecurityCredentials implements Externalizable {
     /** */
     private static final long serialVersionUID = -2655741071578326256L;
 
@@ -181,20 +181,6 @@ public class GridSecurityCredentials implements Externalizable, PortableMarshalA
         res = 31 * res + (userObj != null ? userObj.hashCode() : 0);
 
         return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writePortable(PortableWriter writer) throws PortableException {
-        writer.rawWriter().writeObject(login);
-        writer.rawWriter().writeObject(password);
-        writer.rawWriter().writeObject(userObj);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readPortable(PortableReader reader) throws PortableException {
-        login = reader.rawReader().readObject();
-        password = reader.rawReader().readObject();
-        userObj = reader.rawReader().readObject();
     }
 
     /** {@inheritDoc} */

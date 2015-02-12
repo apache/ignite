@@ -17,17 +17,17 @@
 
 package org.apache.ignite.spi.swapspace.inmemory;
 
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Test swap space SPI that stores values in map.
@@ -70,6 +70,13 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceS
         Space space = space(spaceName);
 
         return space != null ? space.count() : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long count(@Nullable String spaceName, Set<Integer> parts) throws IgniteSpiException {
+        Space space = space(spaceName);
+
+        return space.count(parts);
     }
 
     /** {@inheritDoc} */
@@ -171,6 +178,11 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceS
         return space;
     }
 
+    /**
+     * @param evtType Event type.
+     * @param spaceName Space name.
+     * @param key Key bytes.
+     */
     private void fireEvent(int evtType, String spaceName, @Nullable byte[] key) {
         SwapSpaceSpiListener lsnr0 = lsnr;
 
@@ -178,10 +190,14 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceS
             lsnr0.onSwapEvent(evtType, spaceName, key);
     }
 
+    /**
+     *
+     */
     private class Space {
         /** Data storage. */
         private ConcurrentMap<SwapKey, byte[]> data = new ConcurrentHashMap8<>();
 
+        /** */
         private final String name;
 
         /**
@@ -212,6 +228,21 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceS
          */
         public long count() {
             return data.size();
+        }
+
+        /**
+         * @param parts Partitions.
+         * @return Number of entries for given partitions.
+         */
+        public long count(Set<Integer> parts) {
+            int cnt = 0;
+
+            for (SwapKey key : data.keySet()) {
+                if (parts.contains(key.partition()))
+                    cnt++;
+            }
+
+            return cnt;
         }
 
         /**
@@ -318,6 +349,9 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceS
             return parts;
         }
 
+        /**
+         * @return Iterator.
+         */
         public <K> IgniteSpiCloseableIterator<K> keyIterator() {
             final Iterator<SwapKey> it = data.keySet().iterator();
 
@@ -342,6 +376,9 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceS
             };
         }
 
+        /**
+         * @return Raw iterator.
+         */
         public IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator() {
             final Iterator<Map.Entry<SwapKey, byte[]>> it = data.entrySet().iterator();
 
@@ -378,6 +415,10 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceS
             };
         }
 
+        /**
+         * @param part Partition.
+         * @return Raw iterator for partition.
+         */
         public IgniteSpiCloseableIterator<Map.Entry<byte[], byte[]>> rawIterator(final int part) {
             final Iterator<Map.Entry<SwapKey, byte[]>> it = data.entrySet().iterator();
 

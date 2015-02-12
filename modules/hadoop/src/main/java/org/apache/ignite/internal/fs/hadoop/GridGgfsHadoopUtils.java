@@ -20,7 +20,7 @@ package org.apache.ignite.internal.fs.hadoop;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.ignite.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.jetbrains.annotations.*;
 
@@ -110,13 +110,13 @@ public class GridGgfsHadoopUtils {
         // First check for any nested IOException; if exists - re-throw it.
         if (e.hasCause(IOException.class))
             return e.getCause(IOException.class);
-        else if (e instanceof IgniteFsFileNotFoundException)
+        else if (e.hasCause(IgniteFsFileNotFoundException.class))
             return new FileNotFoundException(path); // TODO: Or PathNotFoundException?
-        else if (e instanceof IgniteFsParentNotDirectoryException)
+        else if (e.hasCause(IgniteFsParentNotDirectoryException.class))
             return new ParentNotDirectoryException(path);
-        else if (path != null && e instanceof GridGgfsDirectoryNotEmptyException)
+        else if (path != null && e.hasCause(GridGgfsDirectoryNotEmptyException.class))
             return new PathIsNotEmptyDirectoryException(path);
-        else if (path != null && e instanceof IgniteFsPathAlreadyExistsException)
+        else if (path != null && e.hasCause(IgniteFsPathAlreadyExistsException.class))
             return new PathExistsException(path);
         else
             return new IOException(e);

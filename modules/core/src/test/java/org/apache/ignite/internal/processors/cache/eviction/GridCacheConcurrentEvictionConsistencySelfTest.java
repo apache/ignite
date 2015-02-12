@@ -18,27 +18,27 @@
 package org.apache.ignite.internal.processors.cache.eviction;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  *
@@ -66,8 +66,8 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
-        c.getTransactionsConfiguration().setDefaultTxIsolation(READ_COMMITTED);
+        c.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
+        c.getTransactionConfiguration().setDefaultTxIsolation(READ_COMMITTED);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -170,9 +170,9 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      */
     private void checkPolicyConsistency() throws Exception {
         try {
-            Ignite ignite = startGrid(1);
+            final Ignite ignite = startGrid(1);
 
-            final GridCache<Integer, Integer> cache = ignite.cache(null);
+            final IgniteCache<Integer, Integer> cache = ignite.jcache(null);
 
             long start = System.currentTimeMillis();
 
@@ -186,10 +186,10 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
 
                             int j = rnd.nextInt(keyCnt);
 
-                            try (IgniteTx tx = cache.txStart()) {
+                            try (IgniteTx tx = ignite.transactions().txStart()) {
                                 // Put or remove?
                                 if (rnd.nextBoolean())
-                                    cache.putx(j, j);
+                                    cache.put(j, j);
                                 else
                                     cache.remove(j);
 
@@ -208,13 +208,13 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
 
             fut.get();
 
-            Collection<CacheEntry<Integer, Integer>> queue = internalQueue(plc);
+            Collection<EvictableEntry<Integer, Integer>> queue = internalQueue(plc);
 
             info("Test results [threadCnt=" + threadCnt + ", iterCnt=" + ITERATION_CNT + ", cacheSize=" + cache.size() +
                 ", internalQueueSize" + queue.size() + ", duration=" + (System.currentTimeMillis() - start) + ']');
 
-            for (CacheEntry<Integer, Integer> e : queue) {
-                Integer rmv = cache.remove(e.getKey());
+            for (Cache.Entry<Integer, Integer> e : queue) {
+                Integer rmv = cache.getAndRemove(e.getKey());
 
                 if (rmv == null)
                     fail("Eviction policy contains key that is not present in cache: " + e);
@@ -222,10 +222,10 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
                     info("Entry removed: " + rmv);
             }
 
-            if (!cache.isEmpty()) {
+            if (!(cache.localSize() == 0)) {
                 boolean zombies = false;
 
-                for (CacheEntry<Integer, Integer> e : cache) {
+                for (Cache.Entry<Integer, Integer> e : cache) {
                     U.warn(log, "Zombie entry: " + e);
 
                     zombies = true;
@@ -248,7 +248,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
      * @param plc Policy to get queue from.
      * @return Internal entries collection.
      */
-    private Collection<CacheEntry<Integer, Integer>> internalQueue(CacheEvictionPolicy<?, ?> plc) {
+    private Collection<EvictableEntry<Integer, Integer>> internalQueue(CacheEvictionPolicy<?, ?> plc) {
         if (plc instanceof CacheFifoEvictionPolicy) {
             CacheFifoEvictionPolicy<Integer, Integer> plc0 = (CacheFifoEvictionPolicy<Integer, Integer>)plc;
 

@@ -24,7 +24,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
 
 /**
  * Tests for node attributes consistency checks.
@@ -37,7 +37,7 @@ public class GridDiscoveryManagerAttributesSelfTest extends GridCommonAbstractTe
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static IgniteDeploymentMode mode = SHARED;
+    private static DeploymentMode mode = SHARED;
 
     /** */
     private static boolean p2pEnabled;

@@ -26,7 +26,7 @@ public interface SwapSpaceSpiListener {
     /**
      * Notification for swap space events.
      *
-     * @param evtType Event type. See {@link org.apache.ignite.events.IgniteSwapSpaceEvent}
+     * @param evtType Event type. See {@link org.apache.ignite.events.SwapSpaceEvent}
      * @param spaceName Space name for this event or {@code null} for default space.
      * @param keyBytes Key bytes of affected entry. Not {@code null} only for evict notifications.
      */

@@ -38,7 +38,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
     /**
      * Current deployment mode. Used in {@link #getConfiguration(String)}.
      */
-    private IgniteDeploymentMode depMode;
+    private DeploymentMode depMode;
 
     /** */
     private static ClassLoader jobLdr;
@@ -60,7 +60,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      * @param depMode deployment mode.
      * @throws Exception if error occur.
      */
-    private void processSharedModeTest(IgniteDeploymentMode depMode) throws Exception {
+    private void processSharedModeTest(DeploymentMode depMode) throws Exception {
         this.depMode = depMode;
 
         try {
@@ -88,7 +88,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked"})
     public void testLocalDeployment() throws Exception {
-        depMode = IgniteDeploymentMode.PRIVATE;
+        depMode = DeploymentMode.PRIVATE;
 
         try {
             Ignite ignite1 = startGrid(1);
@@ -129,7 +129,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     @SuppressWarnings({"unchecked"})
-    private void processIsolatedModeTest(IgniteDeploymentMode depMode) throws Exception {
+    private void processIsolatedModeTest(DeploymentMode depMode) throws Exception {
         this.depMode = depMode;
 
         try {
@@ -165,7 +165,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testPrivateMode() throws Exception {
-        processIsolatedModeTest(IgniteDeploymentMode.PRIVATE);
+        processIsolatedModeTest(DeploymentMode.PRIVATE);
     }
 
     /**
@@ -174,7 +174,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testIsolatedMode() throws Exception {
-        processIsolatedModeTest(IgniteDeploymentMode.ISOLATED);
+        processIsolatedModeTest(DeploymentMode.ISOLATED);
     }
 
     /**
@@ -183,7 +183,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testContinuousMode() throws Exception {
-        processSharedModeTest(IgniteDeploymentMode.CONTINUOUS);
+        processSharedModeTest(DeploymentMode.CONTINUOUS);
     }
 
     /**
@@ -192,7 +192,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      * @throws Exception if error occur.
      */
     public void testSharedMode() throws Exception {
-        processSharedModeTest(IgniteDeploymentMode.SHARED);
+        processSharedModeTest(DeploymentMode.SHARED);
     }
 
     /**
@@ -207,8 +207,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
      */
     public static class TestTask extends ComputeTaskAdapter<UUID, Serializable> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(final List<ClusterNode> subgrid, UUID arg)
-            throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(final List<ClusterNode> subgrid, UUID arg) {
             taskLdr = getClass().getClassLoader();
 
             for (ClusterNode node : subgrid) {
@@ -216,11 +215,11 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
                     return Collections.singletonMap(new TestJob(arg), node);
             }
 
-            throw new IgniteCheckedException("Failed to find target node: " + arg);
+            throw new IgniteException("Failed to find target node: " + arg);
         }
 
         /** {@inheritDoc} */
-        @Override public int[] reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public int[] reduce(List<ComputeJobResult> results) {
             assert results.size() == 1;
 
             assert taskLdr == getClass().getClassLoader();
@@ -242,7 +241,7 @@ public class GridP2PLocalDeploymentSelfTest extends GridCommonAbstractTest {
             public TestJob(UUID nodeId) { super(nodeId); }
 
             /** {@inheritDoc} */
-            @Override public Serializable execute() throws IgniteCheckedException {
+            @Override public Serializable execute() {
                 assert ignite.configuration().getNodeId().equals(argument(0));
 
                 jobLdr = getClass().getClassLoader();

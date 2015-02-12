@@ -18,18 +18,18 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
  * {@link #equals(Object)} method, as transaction entries should use referential
  * equality.
  */
-public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable, IgniteOptimizedMarshallable {
+public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable, OptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -53,7 +53,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
 
     /** Owning transaction. */
     @GridToStringExclude
-    private IgniteTxEx<K, V> tx;
+    private IgniteInternalTx<K, V> tx;
 
     /** Cache key. */
     @GridToStringInclude
@@ -102,7 +102,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
 
     /** Put filters. */
     @GridToStringInclude
-    private IgnitePredicate<CacheEntry<K, V>>[] filters;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filters;
 
     /** Flag indicating whether filters passed. Used for fast-commit transactions. */
     private boolean filtersPassed;
@@ -164,7 +164,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @param drVer Data center replication version.
      */
     public IgniteTxEntry(GridCacheContext<K, V> ctx,
-        IgniteTxEx<K, V> tx,
+        IgniteInternalTx<K, V> tx,
         GridCacheOperation op,
         V val,
         long ttl,
@@ -207,14 +207,14 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      * @param drVer Data center replication version.
      */
     public IgniteTxEntry(GridCacheContext<K, V> ctx,
-        IgniteTxEx<K, V> tx,
+        IgniteInternalTx<K, V> tx,
         GridCacheOperation op,
         V val,
         EntryProcessor<K, V, ?> entryProcessor,
         Object[] invokeArgs,
         long ttl,
         GridCacheEntryEx<K, V> entry,
-        IgnitePredicate<CacheEntry<K, V>>[] filters,
+        IgnitePredicate<Cache.Entry<K, V>>[] filters,
         GridCacheVersion drVer) {
         assert ctx != null;
         assert tx != null;
@@ -630,7 +630,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     public V applyEntryProcessors(V val) {
         for (T2<EntryProcessor<K, V, ?>, Object[]> t : entryProcessors()) {
             try {
-                CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(key, val);
+                CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(ctx, key, val);
 
                 EntryProcessor processor = t.get1();
 
@@ -708,14 +708,14 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     /**
      * @return Put filters.
      */
-    public IgnitePredicate<CacheEntry<K, V>>[] filters() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] filters() {
         return filters;
     }
 
     /**
      * @param filters Put filters.
      */
-    public void filters(IgnitePredicate<CacheEntry<K, V>>[] filters) {
+    public void filters(IgnitePredicate<Cache.Entry<K, V>>[] filters) {
         filterBytes = null;
 
         this.filters = filters;
@@ -871,7 +871,7 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
         else {
             key = (K)in.readObject();
             entryProcessorsCol = U.readCollection(in);
-            filters = U.readEntryFilterArray(in);
+            filters = GridCacheUtils.readEntryFilterArray(in);
         }
 
         cacheId = in.readInt();

@@ -19,17 +19,18 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -61,7 +62,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         return cfg;
     }
@@ -122,7 +123,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
         Ignite ignite = grid(0);
 
-        Collection<IgniteInternalFuture<?>> futs = new LinkedList<>();
+        Collection<ComputeTaskFuture<?>> futs = new LinkedList<>();
 
         IgniteCompute comp = ignite.compute().withAsync();
 
@@ -159,7 +160,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
             futs.add(comp.future());
         }
 
-        for (IgniteInternalFuture<?> fut : futs)
+        for (ComputeTaskFuture<?> fut : futs)
             fut.get(); // Wait for completion.
 
         for (int i = 0; i < GRID_CNT; i++) {
@@ -173,12 +174,11 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
                 info("Entry: " + testEntry);
             }
 
-            CacheProjection<String, int[]> c = grid(i).cache(null).projection(String.class, int[].class);
+            IgniteCache<String, int[]> c = grid(i).jcache(null);
 
             // Do within transaction to make sure that lock is acquired
             // which means that all previous transactions have committed.
-
-            try (IgniteTx tx = c.txStart(concur, isolation)) {
+            try (IgniteTx tx = grid(i).transactions().txStart(concur, isolation)) {
                 int[] arr = c.get("TestKey");
 
                 assertNotNull(arr);

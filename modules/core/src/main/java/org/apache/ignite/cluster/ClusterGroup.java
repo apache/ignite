@@ -18,6 +18,7 @@
 package org.apache.ignite.cluster;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -34,7 +35,7 @@ import java.util.*;
  * projection will include a subset of nodes from current projection. The following code snippet
  * shows how to create and nest grid projections:
  * <pre name="code" class="java">
- * Grid g = GridGain.grid();
+ * Grid g = Ignition.ignite();
  *
  * // Projection over remote nodes.
  * GridProjection remoteNodes = g.forRemotes();
@@ -43,7 +44,7 @@ import java.util.*;
  * GridProjection randomNode = remoteNodes.forRandom();
  *
  * // Projection over all nodes with cache named "myCache" enabled.
- * GridProjection cacheNodes = g.forCache("myCache");
+ * GridProjection cacheNodes = g.forCacheNodes("myCache");
  *
  * // Projection over all nodes that have user attribute "group" set to value "worker".
  * GridProjection workerNodes = g.forAttribute("group", "worker");
@@ -142,10 +143,29 @@ public interface ClusterGroup {
      * Creates projection for all nodes that have cache with specified name running.
      *
      * @param cacheName Cache name.
-     * @param cacheNames Optional additional cache names to include into projection.
      * @return Projection over nodes that have specified cache running.
      */
-    public ClusterGroup forCache(String cacheName, @Nullable String... cacheNames);
+    public ClusterGroup forCacheNodes(String cacheName);
+
+    /**
+     * Creates projection for all nodes that have cache with specified name running and cache distribution mode is
+     * {@link CacheDistributionMode#PARTITIONED_ONLY} or {@link CacheDistributionMode#NEAR_PARTITIONED}.
+     *
+     * @param cacheName Cache name.
+     * @return Projection over nodes that have specified cache running.
+     * @see org.apache.ignite.configuration.CacheConfiguration#getDistributionMode()
+     */
+    public ClusterGroup forDataNodes(String cacheName);
+
+    /**
+     * Creates projection for all nodes that have cache with specified name running and cache distribution mode is
+     * {@link CacheDistributionMode#CLIENT_ONLY} or {@link CacheDistributionMode#NEAR_ONLY}.
+     *
+     * @param cacheName Cache name.
+     * @return Projection over nodes that have specified cache running.
+     * @see org.apache.ignite.configuration.CacheConfiguration#getDistributionMode()
+     */
+    public ClusterGroup forClientNodes(String cacheName);
 
     /**
      * Creates projection for all nodes that have streamer with specified name running.
@@ -180,7 +200,7 @@ public interface ClusterGroup {
      * way to see daemon nodes is to use this method.
      * <p>
      * Daemon nodes are used primarily for management and monitoring functionality that
-     * is build on GridGain and needs to participate in the topology but also needs to be
+     * is build on Ignite and needs to participate in the topology but also needs to be
      * excluded from "normal" topology so that it won't participate in task execution
      * or in-memory data grid storage.
      *
@@ -250,7 +270,7 @@ public interface ClusterGroup {
      * Gets a metrics snapshot for this projection.
      *
      * @return Grid projection metrics snapshot.
-     * @throws IgniteCheckedException If projection is empty.
+     * @throws IgniteException If projection is empty.
      */
-    public ClusterMetrics metrics() throws IgniteCheckedException;
+    public ClusterMetrics metrics() throws IgniteException;
 }

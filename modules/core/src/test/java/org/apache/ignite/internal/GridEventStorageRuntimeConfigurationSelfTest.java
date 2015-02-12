@@ -20,16 +20,16 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.junit.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests for runtime events configuration.
@@ -59,8 +59,8 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
 
             final AtomicInteger cnt = new AtomicInteger();
 
-            g.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            g.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     cnt.incrementAndGet();
 
                     return true;
@@ -93,8 +93,8 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
 
             final AtomicInteger cnt = new AtomicInteger();
 
-            g.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            g.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     cnt.incrementAndGet();
 
                     return true;
@@ -129,8 +129,8 @@ public class GridEventStorageRuntimeConfigurationSelfTest extends GridCommonAbst
 
             final AtomicInteger cnt = new AtomicInteger();
 
-            g.events().localListen(new IgnitePredicate<IgniteEvent>() {
-                @Override public boolean apply(IgniteEvent evt) {
+            g.events().localListen(new IgnitePredicate<Event>() {
+                @Override public boolean apply(Event evt) {
                     cnt.incrementAndGet();
 
                     return true;

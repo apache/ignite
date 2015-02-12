@@ -20,12 +20,12 @@ package org.apache.ignite.loadtests.direct.redeploy;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.loadtest.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -38,7 +38,7 @@ import java.util.concurrent.*;
 @GridCommonTest(group = "Load Test")
 public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
     /** Load test task type ID. */
-    public static final String TASK_NAME = "org.gridgain.grid.tests.p2p.GridSingleSplitTestTask";
+    public static final String TASK_NAME = "org.apache.ignite.tests.p2p.SingleSplitTestTask";
 
     /** */
     public GridSingleSplitsRedeployLoadTest() {
@@ -57,9 +57,7 @@ public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        ((ThreadPoolExecutor)cfg.getExecutorService()).prestartAllCoreThreads();
-
-        cfg.setDeploymentMode(IgniteDeploymentMode.CONTINUOUS);
+        cfg.setDeploymentMode(DeploymentMode.CONTINUOUS);
 
         return cfg;
     }
@@ -152,7 +150,7 @@ public class GridSingleSplitsRedeployLoadTest extends GridCommonAbstractTest {
                             info(stats.toString());
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     error("Failed to execute grid task.", e);
 
                     fail();

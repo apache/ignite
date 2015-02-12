@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.visor.query;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -44,7 +43,7 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<Map<UUID, Collecti
 
     /** {@inheritDoc} */
     @Override protected Map<? extends ComputeJob, ClusterNode> map0(List<ClusterNode> subgrid,
-        @Nullable VisorTaskArgument<Map<UUID, Collection<String>>> arg) throws IgniteCheckedException {
+        @Nullable VisorTaskArgument<Map<UUID, Collection<String>>> arg) {
         Set<UUID> nodeIds = taskArg.keySet();
 
         Map<ComputeJob, ClusterNode> map = U.newHashMap(nodeIds.size());
@@ -63,7 +62,7 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<Map<UUID, Collecti
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List list) throws IgniteCheckedException {
+    @Nullable @Override protected Void reduce0(List list) {
         return null;
     }
 
@@ -85,8 +84,8 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<Map<UUID, Collecti
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Collection<String> qryIds) throws IgniteCheckedException {
-            ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder> locMap = g.nodeLocalMap();
+        @Override protected Void run(Collection<String> qryIds) {
+            ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder> locMap = ignite.nodeLocalMap();
 
             for (String qryId : qryIds)
                 locMap.remove(qryId);

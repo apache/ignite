@@ -18,18 +18,18 @@
 package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -82,7 +82,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     private IgniteLogger log;
 
     /** Filter. */
-    private IgnitePredicate<CacheEntry<K, V>>[] filter;
+    private IgnitePredicate<Cache.Entry<K, V>>[] filter;
 
     /** Transaction. */
     private IgniteTxLocalEx<K, V> tx;
@@ -111,7 +111,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         IgniteTxLocalEx<K, V> tx,
         GridLocalCache<K, V> cache,
         long timeout,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        IgnitePredicate<Cache.Entry<K, V>>[] filter) {
         super(cctx.kernalContext());
 
         assert keys != null;

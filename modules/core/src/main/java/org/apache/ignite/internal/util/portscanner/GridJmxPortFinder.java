@@ -24,7 +24,7 @@ import java.net.*;
 import java.nio.channels.*;
 
 /**
- * GridGain port scanner.
+ * Ignite port scanner.
  */
 public class GridJmxPortFinder {
     /** Environment variable for overriding JMX port. */
@@ -71,7 +71,7 @@ public class GridJmxPortFinder {
         FileLock lock = null;
 
         try {
-            File file = new File(System.getProperty("java.io.tmpdir"), "gridgain.lastport.tmp");
+            File file = new File(System.getProperty("java.io.tmpdir"), "ignite.lastport.tmp");
 
             file.setReadable(true, false);
             file.setWritable(true, false);

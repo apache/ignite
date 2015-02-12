@@ -29,4 +29,4 @@ import org.apache.ignite.internal.util.lang.*;
 public abstract class CAX extends GridAbsClosureX {
     /** */
     private static final long serialVersionUID = 0L;
- /* No-op. */ }
+}

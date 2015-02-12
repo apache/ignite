@@ -24,9 +24,8 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.ignite.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.counter.*;
 import org.apache.ignite.internal.processors.hadoop.examples.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -185,12 +184,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                try {
-                    return ggfs.exists(statPath);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
-                }
+                return ggfs.exists(statPath);
             }
         }, 10000);
 

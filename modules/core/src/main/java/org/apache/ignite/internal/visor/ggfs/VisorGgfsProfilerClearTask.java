@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.visor.ggfs;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.lang.*;
 
 import java.io.*;
 import java.nio.file.*;
@@ -54,12 +54,12 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteB
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteBiTuple<Integer, Integer> run(String arg) throws IgniteCheckedException {
+        @Override protected IgniteBiTuple<Integer, Integer> run(String arg) {
             int deleted = 0;
             int notDeleted = 0;
 
             try {
-                IgniteFs ggfs = g.fileSystem(arg);
+                IgniteFs ggfs = ignite.fileSystem(arg);
 
                 Path logsDir = resolveGgfsProfilerLogsDir(ggfs);
 
@@ -84,15 +84,18 @@ public class VisorGgfsProfilerClearTask extends VisorOneNodeTask<String, IgniteB
                                 catch (IOException io) {
                                     notDeleted++;
 
-                                    g.log().warning("Profiler log file was not deleted: " + p, io);
+                                    ignite.log().warning("Profiler log file was not deleted: " + p, io);
                                 }
                             }
                         }
                     }
                 }
             }
-            catch (IOException | IllegalArgumentException ioe) {
-                throw new IgniteCheckedException("Failed to clear profiler logs for GGFS: " + arg, ioe);
+            catch (IOException | IllegalArgumentException e) {
+                throw new IgniteException("Failed to clear profiler logs for GGFS: " + arg, e);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
             }
 
             return new IgniteBiTuple<>(deleted, notDeleted);

@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -30,8 +31,8 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -180,7 +181,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
         Ignite g = startGrid();
 
         try {
-            GridCache<Integer, Integer> cache = g.cache(null);
+            GridCache<Integer, Integer> cache = ((IgniteKernal)g).internalCache(null);
 
 //            int max = 17 * 1024 * 1024;
             int max = Integer.MAX_VALUE;
@@ -210,7 +211,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
         Ignite g = startGrid();
 
         try {
-            final GridCache<Integer, Integer> c = g.cache(null);
+            final GridCache<Integer, Integer> c = ((IgniteKernal)g).internalCache(null);
 
             final long start = System.currentTimeMillis();
 

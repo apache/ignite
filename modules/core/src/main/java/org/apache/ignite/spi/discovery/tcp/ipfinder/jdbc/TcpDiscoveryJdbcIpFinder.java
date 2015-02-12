@@ -18,12 +18,13 @@
 package org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
 
 import javax.sql.*;
 import java.net.*;
@@ -44,7 +45,7 @@ import static java.sql.Connection.*;
  * <h2 class="header">Optional</h2>
  * The following configuration parameters are optional:
  * <ul>
- *     <li>Flag indicating whether DB schema should be initialized by GridGain (default behaviour) or
+ *     <li>Flag indicating whether DB schema should be initialized by Ignite (default behaviour) or
  *         was explicitly created by user (see {@link #setInitSchema(boolean)})</li>
  * </ul>
  * <p>
@@ -70,7 +71,7 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
     public static final String CHK_QRY = "select count(*) from tbl_addrs";
 
     /** Grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Data source. */
@@ -251,10 +252,10 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /**
-     * Flag indicating whether DB schema should be initialized by GridGain (default behaviour) or
+     * Flag indicating whether DB schema should be initialized by Ignite (default behaviour) or
      * was explicitly created by user.
      *
-     * @param initSchema {@code True} if DB schema should be initialized by GridGain (default behaviour),
+     * @param initSchema {@code True} if DB schema should be initialized by Ignite (default behaviour),
      *      {code @false} if schema was explicitly created by user.
      */
     @IgniteSpiConfiguration(optional = true)
@@ -334,7 +335,7 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
         try {
             U.await(initLatch);
         }
-        catch (IgniteInterruptedException e) {
+        catch (IgniteInterruptedCheckedException e) {
             throw new IgniteSpiException("Thread has been interrupted.", e);
         }
 

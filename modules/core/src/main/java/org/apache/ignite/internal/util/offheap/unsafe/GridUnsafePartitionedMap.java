@@ -19,10 +19,10 @@ package org.apache.ignite.internal.util.offheap.unsafe;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -206,6 +206,16 @@ public class GridUnsafePartitionedMap implements GridOffHeapPartitionedMap {
     /** {@inheritDoc} */
     @Override public long size() {
         return totalCnt.sum();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long size(Set<Integer> parts) {
+        int cnt = 0;
+
+        for (Integer part : parts)
+            cnt += mapFor(part).size();
+
+        return cnt;
     }
 
     /** {@inheritDoc} */

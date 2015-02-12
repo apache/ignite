@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -44,8 +43,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Iterable<VisorCacheAggregatedMetrics> reduce0(List<ComputeJobResult> results)
-        throws IgniteCheckedException {
+    @Nullable @Override protected Iterable<VisorCacheAggregatedMetrics> reduce0(List<ComputeJobResult> results) {
         Map<String, VisorCacheAggregatedMetrics> grpAggrMetrics = U.newHashMap(results.size());
 
         for (ComputeJobResult res : results) {
@@ -89,8 +87,8 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
 
         /** {@inheritDoc} */
         @Override protected Map<String, VisorCacheMetrics>
-            run(IgniteBiTuple<Boolean, String> arg) throws IgniteCheckedException {
-            Collection<? extends GridCache<?, ?>> caches = arg.get1() ? g.cachesx() : F.asList(g.cachex(arg.get2()));
+            run(IgniteBiTuple<Boolean, String> arg) {
+            Collection<? extends GridCache<?, ?>> caches = arg.get1() ? ignite.cachesx() : F.asList(ignite.cachex(arg.get2()));
 
             if (caches != null) {
                 Map<String, VisorCacheMetrics> res = U.newHashMap(caches.size());

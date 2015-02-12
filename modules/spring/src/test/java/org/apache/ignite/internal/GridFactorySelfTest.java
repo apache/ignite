@@ -21,14 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.http.*;
@@ -88,7 +88,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         try {
             srv = GridEmbeddedHttpServer.startHttpServer().withFileDownloadingHandler(null,
-                GridTestUtils.resolveGridGainPath("/modules/core/src/test/config/default-spring-url-testing.xml"));
+                GridTestUtils.resolveIgnitePath("/modules/core/src/test/config/default-spring-url-testing.xml"));
 
             Ignite ignite = G.start(srv.getBaseUrl());
 
@@ -111,7 +111,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         try {
             srv = GridEmbeddedHttpServer.startHttpServer().withFileDownloadingHandler(null,
-                GridTestUtils.resolveGridGainPath("modules/core/src/test/config/default-spring-url-testing.xml"));
+                GridTestUtils.resolveIgnitePath("modules/core/src/test/config/default-spring-url-testing.xml"));
 
             Ignite ignite = G.start(new URL(srv.getBaseUrl()));
 
@@ -152,7 +152,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         cfg.setLifecycleBeans(bean1, bean2);
         cfg.setGridName(gridName);
 
-        cfg.setRestEnabled(false);
+        cfg.setConnectorConfiguration(null);
 
         try (Ignite g = IgniteSpring.start(cfg, new GenericApplicationContext())) {
             bean1.checkState(gridName, true);
@@ -208,7 +208,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter"})
     public void testStartMultipleGridsFromSpring() throws Exception {
         File cfgFile =
-            GridTestUtils.resolveGridGainPath(GridTestProperties.getProperty("loader.self.multipletest.config"));
+            GridTestUtils.resolveIgnitePath(GridTestProperties.getProperty("loader.self.multipletest.config"));
 
         assert cfgFile != null;
 
@@ -221,7 +221,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         final Object mux = new Object();
 
-        IgniteListener factoryLsnr = new IgniteListener() {
+        IgnitionListener factoryLsnr = new IgnitionListener() {
             @Override public void onStateChange(String name, IgniteState state) {
                 synchronized (mux) {
                     if ("grid-factory-test-1".equals(name))
@@ -268,7 +268,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                         try {
                             IgniteConfiguration cfg = new IgniteConfiguration();
 
-                            cfg.setRestEnabled(false);
+                            cfg.setConnectorConfiguration(null);
 
                             G.start(cfg);
                         }
@@ -306,7 +306,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                             IgniteConfiguration cfg = new IgniteConfiguration();
 
                             cfg.setGridName("TEST_NAME");
-                            cfg.setRestEnabled(false);
+                            cfg.setConnectorConfiguration(null);
 
                             G.start(cfg);
                         }
@@ -354,7 +354,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         final AtomicInteger startedCnt = new AtomicInteger();
         final AtomicInteger stoppedCnt = new AtomicInteger();
 
-        IgniteListener lsnr = new IgniteListener() {
+        IgnitionListener lsnr = new IgnitionListener() {
             @SuppressWarnings("StringEquality")
             @Override public void onStateChange(@Nullable String name, IgniteState state) {
                 assert name == gridName;
@@ -390,7 +390,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
                                 if (msg != null &&
                                     (msg.contains("Default grid instance has already been started.") ||
-                                    msg.contains("Grid instance with this name has already been started:")))
+                                    msg.contains("Ignite instance with this name has already been started:")))
                                     info("Caught expected exception: " + msg);
                                 else
                                     throw e; // Unexpected exception.
@@ -431,7 +431,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                 @Nullable @Override public Object call() throws Exception {
                     IgniteConfiguration cfg = new IgniteConfiguration();
 
-                    cfg.setRestEnabled(false);
+                    cfg.setConnectorConfiguration(null);
 
                     cfg.setDiscoverySpi(new TcpDiscoverySpi() {
                         @Override public void spiStart(String gridName) throws IgniteSpiException {
@@ -446,7 +446,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             },
-            IgniteCheckedException.class,
+            IgniteException.class,
             null
         );
     }
@@ -543,7 +543,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     @IgniteSpiMultipleInstancesSupport(true)
     private static class TestMultipleInstancesCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
         /** Grid logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
@@ -581,7 +581,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     @IgniteSpiMultipleInstancesSupport(true)
     private static class TestSingleInstancesCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
         /** Grid logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** {@inheritDoc} */
@@ -617,11 +617,11 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      */
     private static class TestLifecycleBean implements LifecycleBean {
         /** Grid logger. */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
-        @IgniteSpringApplicationContextResource
+        @SpringApplicationContextResource
         private ApplicationContext appCtx;
 
         /** */
@@ -668,7 +668,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
             if (exec)
                 // Execute any grid method.
-                G.ignite(gridName).events().localQuery(F.<IgniteEvent>alwaysTrue());
+                G.ignite(gridName).events().localQuery(F.<Event>alwaysTrue());
         }
 
         /**
@@ -709,7 +709,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         try {
             GenericApplicationContext ctx = new GenericApplicationContext();
 
-            new XmlBeanDefinitionReader(ctx).loadBeanDefinitions(new UrlResource(U.resolveGridGainUrl(path)));
+            new XmlBeanDefinitionReader(ctx).loadBeanDefinitions(new UrlResource(U.resolveIgniteUrl(path)));
 
             ctx.refresh();
 
@@ -749,7 +749,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     public void testStopCancel() throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setRestEnabled(false);
+        cfg.setConnectorConfiguration(null);
 
         Ignite ignite = G.start(cfg);
 
@@ -763,12 +763,12 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      */
     private static class TestTask extends ComputeTaskSplitAdapter<Void, Void> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) {
             return F.asSet(new TestJob());
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -779,7 +779,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     private static class TestJob extends ComputeJobAdapter {
         /** {@inheritDoc} */
         @SuppressWarnings("StatementWithEmptyBody")
-        @Override public Object execute() throws IgniteCheckedException {
+        @Override public Object execute() {
             long start = System.currentTimeMillis();
 
             while (System.currentTimeMillis() - start < 3000);

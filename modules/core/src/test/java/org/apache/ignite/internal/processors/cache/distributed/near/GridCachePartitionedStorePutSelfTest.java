@@ -17,16 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
+import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.configuration.*;
@@ -47,13 +46,13 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
     private static final AtomicInteger CNT = new AtomicInteger(0);
 
     /** */
-    private GridCache<Integer, Integer> cache1;
+    private IgniteCache<Integer, Integer> cache1;
 
     /** */
-    private GridCache<Integer, Integer> cache2;
+    private IgniteCache<Integer, Integer> cache2;
 
     /** */
-    private GridCache<Integer, Integer> cache3;
+    private IgniteCache<Integer, Integer> cache3;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -97,9 +96,9 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        cache1 = startGrid(1).cache(null);
-        cache2 = startGrid(2).cache(null);
-        cache3 = startGrid(3).cache(null);
+        cache1 = startGrid(1).jcache(null);
+        cache2 = startGrid(2).jcache(null);
+        cache3 = startGrid(3).jcache(null);
     }
 
     /** {@inheritDoc} */
@@ -113,15 +112,15 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
     public void testPutx() throws Throwable {
         info("Putting to the first node.");
 
-        cache1.putx(0, 1);
+        cache1.put(0, 1);
 
         info("Putting to the second node.");
 
-        cache2.putx(0, 2);
+        cache2.put(0, 2);
 
         info("Putting to the third node.");
 
-        cache3.putx(0, 3);
+        cache3.put(0, 3);
     }
 
     /**

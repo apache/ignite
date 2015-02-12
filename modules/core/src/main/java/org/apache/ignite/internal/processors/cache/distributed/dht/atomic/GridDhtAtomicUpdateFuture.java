@@ -20,14 +20,15 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -149,7 +150,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
         GridDhtAtomicUpdateRequest<K, V> req = mappings.get(nodeId);
 
         if (req != null) {
-            updateRes.addFailedKeys(req.keys(), new ClusterTopologyException("Failed to write keys on backup (node left" +
+            updateRes.addFailedKeys(req.keys(), new ClusterTopologyCheckedException("Failed to write keys on backup (node left" +
                 " grid before response is received): " + nodeId));
 
             // Remove only after added keys to failed set.
@@ -168,7 +169,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
         long mapTime0 = mapTime;
 
         if (mapTime0 > 0 && U.currentTimeMillis() > mapTime0 + timeout) {
-            IgniteCheckedException ex = new CacheAtomicUpdateTimeoutException("Cache update timeout out " +
+            IgniteCheckedException ex = new CacheAtomicUpdateTimeoutCheckedException("Cache update timeout out " +
                 "(consider increasing networkTimeout configuration property).");
 
             updateRes.addFailedKeys(keys, ex);
@@ -352,9 +353,9 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                     if (log.isDebugEnabled())
                         log.debug("Sending DHT atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
 
-                    cctx.io().send(req.nodeId(), req);
+                    cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
                 }
-                catch (ClusterTopologyException ignored) {
+                catch (ClusterTopologyCheckedException ignored) {
                     U.warn(log, "Failed to send update request to backup node because it left grid: " +
                         req.nodeId());
 

@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.websession;
 
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.*;
 import org.eclipse.jetty.webapp.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.servlet.*;
 import javax.servlet.http.*;
@@ -52,7 +52,7 @@ public class WebSessionServerStart {
     private static Server jettyServer(int port, HttpServlet servlet) throws Exception {
         Server srv = new Server(port);
 
-        WebAppContext ctx = new WebAppContext(U.resolveGridGainPath("modules/tests/webapp").getAbsolutePath(),
+        WebAppContext ctx = new WebAppContext(U.resolveIgnitePath("modules/tests/webapp").getAbsolutePath(),
             "/ggtest");
 
         ctx.setInitParameter("cfgFilePath", "/examples/config/spring-cache.xml");

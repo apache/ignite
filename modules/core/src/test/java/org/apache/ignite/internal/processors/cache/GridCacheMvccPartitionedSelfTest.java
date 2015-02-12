@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -29,8 +28,8 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Test cases for multi-threaded tests in partitioned cache.
@@ -265,7 +264,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
         entry.addNearLocal(node1, 1, ver1, 0, true);
 
-        entry.readyNearLocal(ver1, ver1, empty(), empty(), Collections.<GridCacheVersion>singletonList(ver0));
+        entry.readyNearLocal(ver1, ver1, empty(), empty(), Collections.singletonList(ver0));
 
         entry.addRemote(node1, 1, ver0, 0, false, true);
 

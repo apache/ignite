@@ -20,26 +20,28 @@ package org.apache.ignite.internal.processors.cache.expiry;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  *
@@ -67,6 +69,125 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         stopAllGrids();
 
         storeMap.clear();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testZeroOnCreate() throws Exception {
+        factory = CreatedExpiryPolicy.factoryOf(Duration.ZERO);
+
+        startGrids();
+
+        for (final Integer key : keys()) {
+            log.info("Test zero duration on create, key: " + key);
+
+            zeroOnCreate(key);
+        }
+    }
+
+    /**
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void zeroOnCreate(Integer key) throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache();
+
+        cache.put(key, 1); // Create with zero duration, should not create cache entry.
+
+        checkNoValue(F.asList(key));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testZeroOnUpdate() throws Exception {
+        factory = new Factory<ExpiryPolicy>() {
+            @Override public ExpiryPolicy create() {
+                return new ExpiryPolicy() {
+                    @Override public Duration getExpiryForCreation() {
+                        return null;
+                    }
+
+                    @Override public Duration getExpiryForAccess() {
+                        return null;
+                    }
+
+                    @Override public Duration getExpiryForUpdate() {
+                        return Duration.ZERO;
+                    }
+                };
+            }
+        };
+
+        startGrids();
+
+        for (final Integer key : keys()) {
+            log.info("Test zero duration on update, key: " + key);
+
+            zeroOnUpdate(key);
+        }
+    }
+
+    /**
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void zeroOnUpdate(Integer key) throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache();
+
+        cache.put(key, 1); // Create.
+
+        assertEquals((Integer)1, cache.get(key));
+
+        cache.put(key, 2); // Update should expire entry.
+
+        checkNoValue(F.asList(key));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testZeroOnAccess() throws Exception {
+        factory = new Factory<ExpiryPolicy>() {
+            @Override public ExpiryPolicy create() {
+                return new ExpiryPolicy() {
+                    @Override public Duration getExpiryForCreation() {
+                        return null;
+                    }
+
+                    @Override public Duration getExpiryForAccess() {
+                        return Duration.ZERO;
+                    }
+
+                    @Override public Duration getExpiryForUpdate() {
+                        return null;
+                    }
+                };
+            }
+        };
+
+        startGrids();
+
+        for (final Integer key : keys()) {
+            log.info("Test zero duration on access, key: " + key);
+
+            zeroOnAccess(key);
+        }
+    }
+
+    /**
+     * @param key Key.
+     * @throws Exception If failed.
+     */
+    private void zeroOnAccess(Integer key) throws Exception {
+        IgniteCache<Integer, Integer> cache = jcache();
+
+        cache.put(key, 1); // Create.
+
+        assertEquals((Integer)1, cache.get(key)); // Access should expire entry.
+
+        waitExpired(F.asList(key));
     }
 
     /**
@@ -265,11 +386,23 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         checkTtl(key, 62_000L, true);
 
-        assertEquals((Integer)1, cache.withExpiryPolicy(new TestPolicy(1100L, 1200L, TTL_FOR_EXPIRE)).get(key));
+        IgniteCache<Integer, Integer> cache0 = cache.withExpiryPolicy(new TestPolicy(1100L, 1200L, TTL_FOR_EXPIRE));
+
+        assertEquals((Integer)1, cache0.get(key));
 
         checkTtl(key, TTL_FOR_EXPIRE, true);
 
         waitExpired(key);
+
+        cache.put(key, 1);
+
+        checkTtl(key, 60_000L);
+
+        Integer res = cache.invoke(key, new GetEntryProcessor());
+
+        assertEquals((Integer)1, res);
+
+        checkTtl(key, 62_000L, true);
     }
 
     /**
@@ -609,11 +742,11 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
     private void nearReaderUpdate() throws Exception {
         log.info("Test near reader update.");
 
-        Integer key = nearKeys(cache(0), 1, 500_000).get(0);
+        Integer key = nearKeys(jcache(0), 1, 500_000).get(0);
 
         IgniteCache<Integer, Integer> cache0 = jcache(0);
 
-        assertEquals(NEAR_PARTITIONED, cache(0).configuration().getDistributionMode());
+        assertEquals(NEAR_PARTITIONED, jcache(0).getConfiguration(CacheConfiguration.class).getDistributionMode());
 
         cache0.put(key, 1);
 
@@ -721,7 +854,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         testAccess();
 
-        Integer key = primaryKeys(cache(0), 1, 500_000).get(0);
+        Integer key = primaryKeys(jcache(0), 1, 500_000).get(0);
 
         IgniteCache<Integer, Integer> cache0 = jcache(0);
 
@@ -741,7 +874,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         // Test reader update on get.
 
-        key = nearKeys(cache(0), 1, 600_000).get(0);
+        key = nearKeys(jcache(0), 1, 600_000).get(0);
 
         cache0.put(key, 1);
 
@@ -760,16 +893,16 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     private Collection<Integer> keys() throws Exception {
-        GridCache<Integer, Object> cache = cache(0);
+        IgniteCache<Integer, Object> cache = jcache(0);
 
-        ArrayList<Integer> keys = new ArrayList<>();
+        List<Integer> keys = new ArrayList<>();
 
         keys.add(primaryKeys(cache, 1, lastKey).get(0));
 
         if (gridCount() > 1) {
             keys.add(backupKeys(cache, 1, lastKey).get(0));
 
-            if (cache.configuration().getCacheMode() != REPLICATED)
+            if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() != REPLICATED)
                 keys.add(nearKeys(cache, 1, lastKey).get(0));
         }
 
@@ -795,7 +928,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             @Override public boolean apply() {
                 for (int i = 0; i < gridCount(); i++) {
                     for (Integer key : keys) {
-                        Object val = jcache(i).localPeek(key);
+                        Object val = jcache(i).localPeek(key, CachePeekMode.ONHEAP);
 
                         if (val != null) {
                             // log.info("Value [grid=" + i + ", val=" + val + ']');
@@ -809,18 +942,26 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             }
         }, 3000);
 
-        GridCache<Integer, Object> cache = cache(0);
+        checkNoValue(keys);
+    }
+
+    /**
+     * @param keys Keys.
+     * @throws Exception If failed.
+     */
+    private void checkNoValue(Collection<Integer> keys) throws Exception {
+        IgniteCache<Integer, Object> cache = jcache(0);
 
         for (int i = 0; i < gridCount(); i++) {
             ClusterNode node = grid(i).cluster().localNode();
 
             for (Integer key : keys) {
-                Object val = jcache(i).localPeek(key);
+                Object val = jcache(i).localPeek(key, CachePeekMode.ONHEAP);
 
                 if (val != null) {
                     log.info("Unexpected value [grid=" + i +
-                        ", primary=" + cache.affinity().isPrimary(node, key) +
-                        ", backup=" + cache.affinity().isBackup(node, key) + ']');
+                        ", primary=" + affinity(cache).isPrimary(node, key) +
+                        ", backup=" + affinity(cache).isBackup(node, key) + ']');
                 }
 
                 assertNull("Unexpected non-null value for grid " + i, val);
@@ -885,8 +1026,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                     }, 3000);
                 }
 
-                boolean primary = cache.entry(key).primary();
-                boolean backup = cache.entry(key).backup();
+                boolean primary = cache.affinity().isPrimary(grid.localNode(), key);
+                boolean backup = cache.affinity().isBackup(grid.localNode(), key);
 
                 assertEquals("Unexpected ttl [grid=" + i + ", key=" + key + ", e=" + e +
                     ", primary=" + primary + ", backup=" + backup + ']', ttl, e.ttl());
@@ -911,6 +1052,16 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         cfg.setExpiryPolicyFactory(factory);
 
         return cfg;
+    }
+
+    /**
+     *
+     */
+    private static class GetEntryProcessor implements EntryProcessor<Integer, Integer, Integer> {
+        /** {@inheritDoc} */
+        @Override public Integer process(MutableEntry<Integer, Integer> e, Object... args) {
+            return e.getValue();
+        }
     }
 
     /**

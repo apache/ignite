@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
 
@@ -140,7 +140,7 @@ public class GridDsiClient implements Callable {
                 if (res2 != null)
                     srvStats = res2;
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 e.printStackTrace();
             }
         }
@@ -234,7 +234,7 @@ public class GridDsiClient implements Callable {
 
                 // No 2 client should use the same simulator.
                 HashMap<UUID, Collection<String>> terminals = (HashMap<UUID, Collection<String>>)
-                    g.cache("CLIENT_PARTITIONED_CACHE").get("terminals");
+                    g.jcache("CLIENT_PARTITIONED_CACHE").get("terminals");
 
                 if (terminals == null) {
                     X.println(">>> Terminals map has not been initialized.");
@@ -279,7 +279,7 @@ public class GridDsiClient implements Callable {
                         terminals.put(srvrId, list);
                     }
 
-                    g.cache("CLIENT_PARTITIONED_CACHE").putx("terminals", terminals);
+                    g.jcache("CLIENT_PARTITIONED_CACHE").put("terminals", terminals);
                 }
                 else {
                     X.println(">>> Terminals map has been initialized.");

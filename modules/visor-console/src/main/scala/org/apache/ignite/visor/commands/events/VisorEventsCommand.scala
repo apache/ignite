@@ -17,21 +17,18 @@
 
 package org.apache.ignite.visor.commands.events
 
-import org.apache.ignite.internal.util.IgniteUtils
-import org.apache.ignite.internal.util.typedef.internal.U
+import org.apache.ignite._
+import org.apache.ignite.events.EventType._
+import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.internal.visor.event.VisorGridEvent
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
-
-import org.apache.ignite._
-import org.apache.ignite.events.IgniteEventType
-import org.apache.ignite.events.IgniteEventType._
 
 import java.util.UUID
 
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands._
-import visor.visor._
+import org.apache.ignite.visor.visor._
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable._
@@ -46,14 +43,14 @@ import scala.language.implicitConversions
  * +----------------------------------------------------------------------------------------+
  * | events | Prints events from a node.                                                     |
  * |        |                                                                               |
- * |        | Note that this command depends on GridGain events.                            |
+ * |        | Note that this command depends on Ignite events.                            |
  * |        |                                                                               |
- * |        | GridGain events can be individually enabled and disabled and disabled events  |
+ * |        | Ignite events can be individually enabled and disabled and disabled events  |
  * |        | can affect the results produced by this command. Note also that configuration |
  * |        | of Event Storage SPI that is responsible for temporary storage of generated   |
  * |        | events on each node can also affect the functionality of this command.        |
  * |        |                                                                               |
- * |        | By default - all events are DISABLED and GridGain stores last 10,000 local     |
+ * |        | By default - all events are DISABLED and Ignite stores last 10,000 local     |
  * |        | events on each node. Both of these defaults can be changed in configuration.  |
  * +----------------------------------------------------------------------------------------+
  * }}}
@@ -257,7 +254,7 @@ class VisorEventsCommand {
             }
             else {
                 val node = try
-                    grid.node(UUID.fromString(id.get))
+                    ignite.node(UUID.fromString(id.get))
                 catch {
                     case _: IllegalArgumentException =>
                         scold("Invalid node 'id': " + id.get)
@@ -295,10 +292,10 @@ class VisorEventsCommand {
             }
 
             val evts = try
-                grid.compute(grid.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
+                ignite.compute(ignite.forNode(node)).execute(classOf[VisorNodeEventsCollectorTask],
                     toTaskArgument(nid, VisorNodeEventsCollectorTaskArg.createEventsArg(tpFilter, tmFilter)))
             catch {
-                case e: IgniteCheckedException =>
+                case e: IgniteException =>
                     scold(e.getMessage)
 
                     return
@@ -395,7 +392,7 @@ class VisorEventsCommand {
             all #= ("Timestamp", "Description")
 
             sorted.take(cnt).foreach(evt =>
-                all += (formatDateTime(evt.timestamp()), IgniteUtils.compact(evt.shortDisplay))
+                all += (formatDateTime(evt.timestamp()), U.compact(evt.shortDisplay))
             )
 
             all.render()
@@ -437,14 +434,14 @@ object VisorEventsCommand {
         longInfo = List(
             "Print events from a node.",
             " ",
-            "Note that this command depends on GridGain events.",
+            "Note that this command depends on Ignite events.",
             " ",
-            "GridGain events can be individually enabled and disabled and disabled events",
+            "Ignite events can be individually enabled and disabled and disabled events",
             "can affect the results produced by this command. Note also that configuration",
             "of Event Storage SPI that is responsible for temporary storage of generated",
             "events on each node can also affect the functionality of this command.",
             " ",
-            "By default - all events are disabled and GridGain stores last 10,000 local",
+            "By default - all events are disabled and Ignite stores last 10,000 local",
             "events on each node. Both of these defaults can be changed in configuration."
         ),
         spec = List(
@@ -526,5 +523,5 @@ object VisorEventsCommand {
      *
      * @param vs Visor tagging trait.
      */
-    implicit def fromEvts2Visor(vs: VisorTag) = cmd
+    implicit def fromEvts2Visor(vs: VisorTag): VisorEventsCommand = cmd
 }

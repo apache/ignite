@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
-import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -27,19 +27,19 @@ import java.nio.*;
 /**
  * Base class for all GGFS communication messages sent between nodes.
  */
-public abstract class GridGgfsCommunicationMessage extends GridTcpCommunicationMessageAdapter {
+public abstract class GridGgfsCommunicationMessage extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
     }
 
     /**
      * @param marsh Marshaller.
      * @throws IgniteCheckedException In case of error.
      */
-    public void prepareMarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
+    public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         // No-op.
     }
 
@@ -48,19 +48,19 @@ public abstract class GridGgfsCommunicationMessage extends GridTcpCommunicationM
      * @param ldr Class loader.
      * @throws IgniteCheckedException In case of error.
      */
-    public void finishUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
+    public void finishUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
         return true;
@@ -68,7 +68,7 @@ public abstract class GridGgfsCommunicationMessage extends GridTcpCommunicationM
 
     /** {@inheritDoc} */
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         return true;
     }

@@ -26,13 +26,13 @@ import org.apache.ignite.resources.*;
  * Simple event filter
  */
 @SuppressWarnings({"ProhibitedExceptionThrown"})
-public class GridP2PEventFilterExternalPath1 implements IgnitePredicate<IgniteEvent> {
+public class GridP2PEventFilterExternalPath1 implements IgnitePredicate<Event> {
     /** Instance of grid. Used for save class loader and injected resource. */
     @IgniteInstanceResource
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override public boolean apply(IgniteEvent evt) {
+    @Override public boolean apply(Event evt) {
         try {
             int[] res = new int[] {
                 System.identityHashCode(getClass().getClassLoader())
@@ -40,7 +40,7 @@ public class GridP2PEventFilterExternalPath1 implements IgnitePredicate<IgniteEv
 
             ignite.message(ignite.cluster().forRemotes()).send(null, res);
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             throw new RuntimeException(e);
         }
 

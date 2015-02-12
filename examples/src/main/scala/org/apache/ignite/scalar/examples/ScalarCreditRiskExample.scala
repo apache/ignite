@@ -60,12 +60,12 @@ object ScalarCreditRiskExample {
             val start = System.currentTimeMillis
 
             // Calculate credit risk and print it out.
-            // As you can see the grid enabling is completely hidden from the caller
+            // As you can see the ignite cluster enabling is completely hidden from the caller
             // and it is fully transparent to him. In fact, the caller is never directly
-            // aware if method was executed just locally or on the 100s of grid nodes.
+            // aware if method was executed just locally or on the 100s of cluster nodes.
             // Credit risk crdRisk is the minimal amount that creditor has to have
             // available to cover possible defaults.
-            val crdRisk = grid$ @< (closures(grid$.cluster().nodes().size(), portfolio, horizon, iter, percentile),
+            val crdRisk = ignite$ @< (closures(ignite$.cluster().nodes().size(), portfolio, horizon, iter, percentile),
                 (s: Seq[Double]) => s.sum / s.size, null)
 
             println("Credit risk [crdRisk=" + crdRisk + ", duration=" +
@@ -76,22 +76,22 @@ object ScalarCreditRiskExample {
     /**
      * Creates closures for calculating credit risks.
      *
-     * @param gridSize Size of the grid.
+     * @param clusterSize Size of the cluster.
      * @param portfolio Portfolio.
      * @param horizon Forecast horizon in days.
      * @param iter Number of Monte-Carlo iterations.
      * @param percentile Percentile.
      * @return Collection of closures.
      */
-    private def closures(gridSize: Int, portfolio: Seq[Credit], horizon: Int, iter: Int,
+    private def closures(clusterSize: Int, portfolio: Seq[Credit], horizon: Int, iter: Int,
         percentile: Double): Seq[() => Double] = {
-        val iterPerNode: Int = math.round(iter / gridSize.asInstanceOf[Float])
-        val lastNodeIter: Int = iter - (gridSize - 1) * iterPerNode
+        val iterPerNode: Int = math.round(iter / clusterSize.asInstanceOf[Float])
+        val lastNodeIter: Int = iter - (clusterSize - 1) * iterPerNode
 
         var cls = Seq.empty[() => Double]
 
-        (0 until gridSize).foreach(i => {
-            val nodeIter = if (i == gridSize - 1) lastNodeIter else iterPerNode
+        (0 until clusterSize).foreach(i => {
+            val nodeIter = if (i == clusterSize - 1) lastNodeIter else iterPerNode
 
             cls +:= (() => new CreditRiskManager().calculateCreditRiskMonteCarlo(
                 portfolio, horizon, nodeIter, percentile))
@@ -134,9 +134,9 @@ private case class Credit(
 private class CreditRiskManager {
     /**
      * Default randomizer with normal distribution.
-     * Note that since every JVM on the grid will have its own random
+     * Note that since every JVM on the ignite cluster will have its own random
      * generator (independently initialized) the Monte-Carlo simulation
-     * will be slightly skewed when performed on the grid due to skewed
+     * will be slightly skewed when performed on the ignite cluster due to skewed
      * normal distribution of the sub-jobs comparing to execution on the
      * local node only with single random generator. Real-life applications
      * may want to provide its own implementation of distributed random

@@ -21,8 +21,8 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.marshaller.optimized.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -55,7 +55,7 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.setMarshaller(new IgniteOptimizedMarshaller(false));
+        c.setMarshaller(new OptimizedMarshaller(false));
 
         return c;
     }

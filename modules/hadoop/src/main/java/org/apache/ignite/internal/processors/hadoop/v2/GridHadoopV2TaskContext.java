@@ -29,7 +29,6 @@ import org.apache.hadoop.mapred.TaskID;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.ignite.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.counter.*;
 import org.apache.ignite.internal.processors.hadoop.fs.*;
@@ -40,7 +39,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.fs.hadoop.GridGgfsHadoopParameters.*;
+import static org.apache.ignite.ignitefs.hadoop.GridGgfsHadoopParameters.*;
 import static org.apache.ignite.internal.processors.hadoop.GridHadoopUtils.*;
 
 /**

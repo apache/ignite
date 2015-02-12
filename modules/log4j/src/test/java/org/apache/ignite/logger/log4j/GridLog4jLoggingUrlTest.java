@@ -19,9 +19,9 @@ package org.apache.ignite.logger.log4j;
 
 import junit.framework.*;
 import org.apache.ignite.*;
-import org.apache.ignite.logger.log4j.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+
 import java.io.*;
 
 /**
@@ -34,12 +34,12 @@ public class GridLog4jLoggingUrlTest extends TestCase {
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
-        File xml = GridTestUtils.resolveGridGainPath("modules/core/src/test/config/log4j-test.xml");
+        File xml = GridTestUtils.resolveIgnitePath("modules/core/src/test/config/log4j-test.xml");
 
         assert xml != null;
         assert xml.exists();
 
-        log = new IgniteLog4jLogger(xml.toURI().toURL()).getLogger(getClass());
+        log = new Log4JLogger(xml.toURI().toURL()).getLogger(getClass());
     }
 
     /**

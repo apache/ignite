@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -166,7 +166,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridDhtForceKeysResponse _clone = new GridDhtForceKeysResponse();
 
         clone0(_clone);
@@ -175,7 +175,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         super.clone0(_msg);
 
         GridDhtForceKeysResponse _clone = (GridDhtForceKeysResponse)_msg;
@@ -191,63 +191,42 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
         if (!super.writeTo(buf))
             return false;
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                if (!commState.putGridUuid(futId))
+                if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 4:
-                if (!commState.putByteArray(infosBytes))
+                if (!writer.writeByteArray("infosBytes", infosBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 5:
-                if (!commState.putGridUuid(miniId))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 6:
-                if (missedKeyBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(missedKeyBytes.size()))
-                            return false;
+                if (!writer.writeCollection("missedKeyBytes", missedKeyBytes, byte[].class))
+                    return false;
 
-                        commState.it = missedKeyBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -257,70 +236,43 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
         if (!super.readFrom(buf))
             return false;
 
-        switch (commState.idx) {
+        switch (state) {
             case 3:
-                IgniteUuid futId0 = commState.getGridUuid();
+                futId = reader.readIgniteUuid("futId");
 
-                if (futId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                futId = futId0;
-
-                commState.idx++;
+                state++;
 
             case 4:
-                byte[] infosBytes0 = commState.getByteArray();
+                infosBytes = reader.readByteArray("infosBytes");
 
-                if (infosBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                infosBytes = infosBytes0;
-
-                commState.idx++;
+                state++;
 
             case 5:
-                IgniteUuid miniId0 = commState.getGridUuid();
+                miniId = reader.readIgniteUuid("miniId");
 
-                if (miniId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                miniId = miniId0;
-
-                commState.idx++;
+                state++;
 
             case 6:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
+                missedKeyBytes = reader.readCollection("missedKeyBytes", byte[].class);
 
-                    commState.readSize = commState.getInt();
-                }
+                if (!reader.isLastRead())
+                    return false;
 
-                if (commState.readSize >= 0) {
-                    if (missedKeyBytes == null)
-                        missedKeyBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        missedKeyBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
+                state++;
 
         }
 
@@ -329,7 +281,7 @@ public class GridDhtForceKeysResponse<K, V> extends GridCacheMessage<K, V> imple
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 42;
+        return 43;
     }
 
     /** {@inheritDoc} */

@@ -18,12 +18,11 @@
 package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.*;
@@ -52,7 +51,7 @@ public class GridCacheLocalLoadAllSelfTest extends GridCommonAbstractTest {
 
         assert ignite != null;
 
-        ignite.cache("test-cache").getAll(Collections.singleton(1));
+        ignite.jcache("test-cache").getAll(Collections.singleton(1));
     }
 
     /** {@inheritDoc} */

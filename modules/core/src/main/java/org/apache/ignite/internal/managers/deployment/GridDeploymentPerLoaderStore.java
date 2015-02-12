@@ -22,22 +22,21 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.deployment.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
- * Deployment storage for {@link org.apache.ignite.configuration.IgniteDeploymentMode#PRIVATE} and
- * {@link org.apache.ignite.configuration.IgniteDeploymentMode#ISOLATED} modes.
+ * Deployment storage for {@link org.apache.ignite.configuration.DeploymentMode#PRIVATE} and
+ * {@link org.apache.ignite.configuration.DeploymentMode#ISOLATED} modes.
  */
 public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
     /** Cache keyed by class loader ID. */
@@ -67,10 +66,10 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
         ctxLdr = U.detectClassLoader(getClass());
 
         discoLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof IgniteDiscoveryEvent;
+            @Override public void onEvent(Event evt) {
+                assert evt instanceof DiscoveryEvent;
 
-                UUID nodeId = ((IgniteDiscoveryEvent)evt).eventNode().id();
+                UUID nodeId = ((DiscoveryEvent)evt).eventNode().id();
 
                 if (evt.type() == EVT_NODE_LEFT ||
                     evt.type() == EVT_NODE_FAILED) {
@@ -410,7 +409,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
          * @param sndNode Sender node.
          * @param sampleClsName Sample class name.
          */
-        IsolatedDeployment(IgniteDeploymentMode depMode, ClassLoader clsLdr, IgniteUuid clsLdrId,
+        IsolatedDeployment(DeploymentMode depMode, ClassLoader clsLdr, IgniteUuid clsLdrId,
             String userVer, ClusterNode sndNode, String sampleClsName) {
             super(depMode, clsLdr, clsLdrId, userVer, sampleClsName, false);
 
@@ -445,7 +444,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
             String msg = (isTask ? "Task" : "Class") + " was deployed in Private or Isolated mode: " + cls;
 
             if (recordEvt && ctx.event().isRecordable(isTask(cls) ? EVT_TASK_DEPLOYED : EVT_CLASS_DEPLOYED)) {
-                IgniteDeploymentEvent evt = new IgniteDeploymentEvent();
+                DeploymentEvent evt = new DeploymentEvent();
 
                 // Record task event.
                 evt.type(isTask ? EVT_TASK_DEPLOYED : EVT_CLASS_DEPLOYED);
@@ -476,7 +475,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
                         "[cls=" + depCls.getValue() + ", alias=" + depCls.getKey() + ']';
 
                     if (evts.isRecordable(!isTask ? EVT_CLASS_UNDEPLOYED : EVT_TASK_UNDEPLOYED)) {
-                        IgniteDeploymentEvent evt = new IgniteDeploymentEvent();
+                        DeploymentEvent evt = new DeploymentEvent();
 
                         evt.node(sndNode);
                         evt.message(msg);
@@ -501,7 +500,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
                 ctx.stream().onUndeployed(ldr);
 
                 // Clear optimized marshaller's cache. If another marshaller is used, this is no-op.
-                IgniteOptimizedMarshaller.onUndeploy(ldr);
+                OptimizedMarshaller.onUndeploy(ldr);
 
                 clearSerializationCaches();
 

@@ -21,14 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests for projection metrics.
@@ -170,12 +170,12 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class JobFinishLock implements IgnitePredicate<IgniteEvent> {
+    private static class JobFinishLock implements IgnitePredicate<Event> {
         /** Latch. */
         private final CountDownLatch latch = new CountDownLatch(NODES_CNT);
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
+        @Override public boolean apply(Event evt) {
             assert evt.type() == EVT_JOB_FINISHED;
 
             latch.countDown();
@@ -196,7 +196,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class MetricsUpdateLock implements IgnitePredicate<IgniteEvent> {
+    private static class MetricsUpdateLock implements IgnitePredicate<Event> {
         /** Latch. */
         private final CountDownLatch latch = new CountDownLatch(NODES_CNT * 2);
 
@@ -204,8 +204,8 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
         private final Map<UUID, Integer> metricsRcvdCnt = new HashMap<>();
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
-            IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+        @Override public boolean apply(Event evt) {
+            DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
             Integer cnt = F.addIfAbsent(metricsRcvdCnt, discoEvt.eventNode().id(), 0);
 

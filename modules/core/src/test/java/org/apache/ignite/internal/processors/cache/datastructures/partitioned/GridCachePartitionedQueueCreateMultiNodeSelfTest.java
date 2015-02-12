@@ -19,14 +19,10 @@ package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.transactions.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.internal.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -36,30 +32,50 @@ import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  *
  */
-public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteCollectionAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheMode collectionCacheMode() {
+        return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
+        return TRANSACTIONAL;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        // No-op.
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(spi);
         c.setIncludeEventTypes();
         c.setPeerClassLoadingEnabled(false);
 
-        c.setCacheConfiguration(cacheConfiguration());
+        CacheConfiguration[] ccfg = c.getCacheConfiguration();
+
+        if (ccfg != null) {
+            assert ccfg.length == 1 : ccfg.length;
+
+            c.setCacheConfiguration(ccfg[0], cacheConfiguration());
+        }
+        else
+            c.setCacheConfiguration(cacheConfiguration());
 
         return c;
     }
@@ -96,11 +112,9 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
 
                     info("Started grid: " + locNodeId);
 
-                    GridCache<String, ?> cache = ignite.cache(null);
-
                     info("Creating queue: " + locNodeId);
 
-                    CacheQueue<String> q = cache.dataStructures().queue("queue", 1, true, true);
+                    IgniteQueue<String> q = ignite.queue("queue", 1, config(true));
 
                     assert q != null;
 
@@ -155,11 +169,11 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
                     // If output presents, test passes with greater probability.
                     // info("Start puts.");
 
-                    GridCache<Integer, String> cache = ignite.cache(null);
+                    IgniteCache<Integer, String> cache = ignite.jcache(null);
 
-                    info("Partition: " + cache.affinity().partition(1));
+                    info("Partition: " + ignite.affinity(null).partition(1));
 
-                    try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                         // info("Getting value for key 1");
 
                         String s = cache.get(1);
@@ -171,7 +185,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
 
                             // info("Putting value.");
 
-                            cache.putx(1, "val");
+                            cache.put(1, "val");
 
                             // info("Done putting value");
 

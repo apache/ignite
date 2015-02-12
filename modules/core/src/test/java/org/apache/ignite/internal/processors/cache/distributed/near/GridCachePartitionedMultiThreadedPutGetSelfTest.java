@@ -22,12 +22,12 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.concurrent.atomic.*;
 
@@ -60,7 +60,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+        c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -101,10 +101,13 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        for (int i = 0; i < GRID_CNT; i++) {
-            grid(i).cache(null).removeAll();
+        if (GRID_CNT > 0)
+            grid(0).jcache(null).removeAll();
 
-            assert grid(i).cache(null).isEmpty();
+        for (int i = 0; i < GRID_CNT; i++) {
+            internalCache(i).clearLocally();
+
+            assert internalCache(i).isEmpty();
         }
     }
 
@@ -175,20 +178,20 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         multithreaded(new CAX() {
             @SuppressWarnings({"BusyWait"})
             @Override public void applyx() throws IgniteCheckedException {
-                GridCache<Integer, Integer> c = grid(0).cache(null);
+                IgniteCache<Integer, Integer> c = grid(0).jcache(null);
 
                 for (int i = 0; i < TX_CNT; i++) {
                     int kv = cntr.incrementAndGet();
 
-                    try (IgniteTx tx = c.txStart(concurrency, isolation)) {
+                    try (IgniteTx tx = grid(0).transactions().txStart(concurrency, isolation)) {
                         assertNull(c.get(kv));
 
-                        assert c.putx(kv, kv);
+                        c.put(kv, kv);
 
                         assertEquals(Integer.valueOf(kv), c.get(kv));
 
                         // Again.
-                        assert c.putx(kv, kv);
+                        c.put(kv, kv);
 
                         assertEquals(Integer.valueOf(kv), c.get(kv));
 

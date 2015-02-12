@@ -20,10 +20,9 @@ package org.apache.ignite;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.failover.FailoverSpi;
-import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
+import org.apache.ignite.spi.failover.*;
+import org.apache.ignite.spi.loadbalancing.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -35,7 +34,7 @@ import java.util.concurrent.*;
  * in the {@link ClusterGroup}. Instance of {@code GridCompute} is obtained from grid projection
  * as follows:
  * <pre name="code" class="java">
- * GridCompute c = GridGain.grid().compute();
+ * GridCompute c = Ignition.ignite().compute();
  * </pre>
  * The methods are grouped as follows:
  * <ul>
@@ -52,23 +51,23 @@ import java.util.concurrent.*;
  * <li>{@code affinity(...)} methods colocate jobs with nodes on which a specified key is cached.</li>
  * </ul>
  * Note that if attempt is made to execute a computation over an empty projection (i.e. projection that does
- * not have any alive nodes), then {@link ClusterGroupEmptyException} will be thrown out of result future.
+ * not have any alive nodes), then {@link org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException} will be thrown out of result future.
  * <h1 class="header">Serializable</h1>
  * Also note that {@link Runnable} and {@link Callable} implementations must support serialization as required
- * by the configured marshaller. For example, {@link IgniteOptimizedMarshaller} requires {@link Serializable}
+ * by the configured marshaller. For example, {@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller} requires {@link Serializable}
  * objects by default, but can be configured not to. Generally speaking objects that implement {@link Serializable}
  * or {@link Externalizable} will perform better. For {@link Runnable} and {@link Callable} interfaces
- * GridGain provides analogous {@link IgniteRunnable} and {@link IgniteCallable} classes which are
+ * Ignite provides analogous {@link IgniteRunnable} and {@link IgniteCallable} classes which are
  * {@link Serializable} and should be used to run computations on the grid.
  * <h1 class="header">Load Balancing</h1>
- * In all cases other than {@code broadcast(...)}, GridGain must select a node for a computation
+ * In all cases other than {@code broadcast(...)}, Ignite must select a node for a computation
  * to be executed. The node will be selected based on the underlying {@link LoadBalancingSpi},
  * which by default sequentially picks next available node from grid projection. Other load balancing
  * policies, such as {@code random} or {@code adaptive}, can be configured as well by selecting
  * a different load balancing SPI in grid configuration. If your logic requires some custom
  * load balancing behavior, consider implementing {@link ComputeTask} directly.
  * <h1 class="header">Fault Tolerance</h1>
- * GridGain guarantees that as long as there is at least one grid node standing, every job will be
+ * Ignite guarantees that as long as there is at least one grid node standing, every job will be
  * executed. Jobs will automatically failover to another node if a remote node crashed
  * or has rejected execution due to lack of resources. By default, in case of failover, next
  * load balanced node will be picked for job execution. Also jobs will never be re-routed to the
@@ -79,11 +78,11 @@ import java.util.concurrent.*;
  * ignite resources. Both, field and method based injections are supported. The following grid
  * resources can be injected:
  * <ul>
- * <li>{@link IgniteTaskSessionResource}</li>
+ * <li>{@link org.apache.ignite.resources.TaskSessionResource}</li>
  * <li>{@link IgniteInstanceResource}</li>
- * <li>{@link IgniteLoggerResource}</li>
- * <li>{@link IgniteSpringApplicationContextResource}</li>
- * <li>{@link IgniteSpringResource}</li>
+ * <li>{@link org.apache.ignite.resources.LoggerResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringApplicationContextResource}</li>
+ * <li>{@link org.apache.ignite.resources.SpringResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  * Here is an example of how to inject instance of {@link Ignite} into a computation:
@@ -120,10 +119,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param job Job which will be co-located on the node with given affinity key.
      * @see ComputeJobContext#cacheName()
      * @see ComputeJobContext#affinityKey()
-     * @throws IgniteCheckedException If job failed.
+     * @throws IgniteException If job failed.
      */
     @IgniteAsyncSupported
-    public void affinityRun(@Nullable String cacheName, Object affKey, Runnable job) throws IgniteCheckedException;
+    public void affinityRun(@Nullable String cacheName, Object affKey, IgniteRunnable job) throws IgniteException;
 
     /**
      * Executes given job on the node where data for provided affinity key is located
@@ -135,12 +134,12 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
      * @return Job result.
-     * @throws IgniteCheckedException If job failed.
+     * @throws IgniteException If job failed.
      * @see ComputeJobContext#cacheName()
      * @see ComputeJobContext#affinityKey()
      */
     @IgniteAsyncSupported
-    public <R> R affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job) throws IgniteCheckedException;
+    public <R> R affinityCall(@Nullable String cacheName, Object affKey, IgniteCallable<R> job) throws IgniteException;
 
     /**
      * Executes given task on the grid projection. For step-by-step explanation of task execution process
@@ -153,10 +152,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *      class name is used as task name.
      * @param arg Optional argument of task execution, can be {@code null}.
      * @return Task result.
-     * @throws IgniteCheckedException If task failed.
+     * @throws IgniteException If task failed.
      */
     @IgniteAsyncSupported
-    public <T, R> R execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) throws IgniteCheckedException;
+    public <T, R> R execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) throws IgniteException;
 
     /**
      * Executes given task on this grid projection. For step-by-step explanation of task execution process
@@ -169,10 +168,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *      class name is used as task name.
      * @param arg Optional argument of task execution, can be {@code null}.
      * @return Task result.
-     * @throws IgniteCheckedException If task failed.
+     * @throws IgniteException If task failed.
      */
     @IgniteAsyncSupported
-    public <T, R> R execute(ComputeTask<T, R> task, @Nullable T arg) throws IgniteCheckedException;
+    public <T, R> R execute(ComputeTask<T, R> task, @Nullable T arg) throws IgniteException;
 
     /**
      * Executes given task on this grid projection. For step-by-step explanation of task execution process
@@ -186,11 +185,11 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param taskName Name of the task to execute.
      * @param arg Optional argument of task execution, can be {@code null}.
      * @return Task result.
-     * @throws IgniteCheckedException If task failed.
+     * @throws IgniteException If task failed.
      * @see ComputeTask for information about task execution.
      */
     @IgniteAsyncSupported
-    public <T, R> R execute(String taskName, @Nullable T arg) throws IgniteCheckedException;
+    public <T, R> R execute(String taskName, @Nullable T arg) throws IgniteException;
 
     /**
      * Broadcasts given job to all nodes in grid projection.
@@ -198,10 +197,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param job Job to broadcast to all projection nodes.
-     * @throws IgniteCheckedException If job failed.
+     * @throws IgniteException If job failed.
      */
     @IgniteAsyncSupported
-    public void broadcast(Runnable job) throws IgniteCheckedException;
+    public void broadcast(IgniteRunnable job) throws IgniteException;
 
     /**
      * Broadcasts given job to all nodes in grid projection. Every participating node will return a
@@ -211,10 +210,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *
      * @param job Job to broadcast to all projection nodes.
      * @return Collection of results for this execution.
-     * @throws IgniteCheckedException If execution failed.
+     * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public <R> Collection<R> broadcast(Callable<R> job) throws IgniteCheckedException;
+    public <R> Collection<R> broadcast(IgniteCallable<R> job) throws IgniteException;
 
     /**
      * Broadcasts given closure job with passed in argument to all nodes in grid projection.
@@ -226,10 +225,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param job Job to broadcast to all projection nodes.
      * @param arg Job closure argument.
      * @return Collection of results for this execution.
-     * @throws IgniteCheckedException If execution failed.
+     * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public <R, T> Collection<R> broadcast(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteCheckedException;
+    public <R, T> Collection<R> broadcast(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteException;
 
     /**
      * Executes provided job on a node in this grid projection.
@@ -237,10 +236,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param job Job closure to execute.
-     * @throws IgniteCheckedException If execution failed.
+     * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public void run(Runnable job) throws IgniteCheckedException;
+    public void run(IgniteRunnable job) throws IgniteException;
 
     /**
      * Executes collection of jobs on grid nodes within this grid projection.
@@ -248,10 +247,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param jobs Collection of jobs to execute.
-     * @throws IgniteCheckedException If execution failed.
+     * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public void run(Collection<? extends Runnable> jobs) throws IgniteCheckedException;
+    public void run(Collection<? extends IgniteRunnable> jobs) throws IgniteException;
 
     /**
      * Executes provided job on a node in this grid projection. The result of the
@@ -261,10 +260,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *
      * @param job Job to execute.
      * @return Job result.
-     * @throws IgniteCheckedException If execution failed.
+     * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public <R> R call(Callable<R> job) throws IgniteCheckedException;
+    public <R> R call(IgniteCallable<R> job) throws IgniteException;
 
     /**
      * Executes collection of jobs on nodes within this grid projection.
@@ -274,10 +273,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *
      * @param jobs Collection of jobs to execute.
      * @return Collection of job results for this execution.
-     * @throws IgniteCheckedException If execution failed.
+     * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public <R> Collection<R> call(Collection<? extends Callable<R>> jobs) throws IgniteCheckedException;
+    public <R> Collection<R> call(Collection<? extends IgniteCallable<R>> jobs) throws IgniteException;
 
     /**
      * Executes collection of jobs on nodes within this grid projection. The returned
@@ -288,10 +287,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param jobs Collection of jobs to execute.
      * @param rdc Reducer to reduce all job results into one individual return value.
      * @return Future with reduced job result for this execution.
-     * @throws IgniteCheckedException If execution failed.
+     * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public <R1, R2> R2 call(Collection<? extends Callable<R1>> jobs, IgniteReducer<R1, R2> rdc) throws IgniteCheckedException;
+    public <R1, R2> R2 call(Collection<? extends IgniteCallable<R1>> jobs, IgniteReducer<R1, R2> rdc) throws IgniteException;
 
     /**
      * Executes provided closure job on a node in this grid projection. This method is different
@@ -303,10 +302,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param job Job to run.
      * @param arg Job argument.
      * @return Job result.
-     * @throws IgniteCheckedException If execution failed.
+     * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public <R, T> R apply(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteCheckedException;
+    public <R, T> R apply(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteException;
 
     /**
      * Executes provided closure job on nodes within this grid projection. A new job is executed for
@@ -318,10 +317,10 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param job Job to run.
      * @param args Job arguments.
      * @return Collection of job results.
-     * @throws IgniteCheckedException If execution failed.
+     * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
-    public <T, R> Collection<R> apply(IgniteClosure<T, R> job, Collection<? extends T> args) throws IgniteCheckedException;
+    public <T, R> Collection<R> apply(IgniteClosure<T, R> job, Collection<? extends T> args) throws IgniteException;
 
     /**
      * Executes provided closure job on nodes within this grid projection. A new job is executed for
@@ -335,11 +334,11 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param args Job arguments.
      * @param rdc Reducer to reduce all job results into one individual return value.
      * @return Future with reduced job result for this execution.
-     * @throws IgniteCheckedException If execution failed.
+     * @throws IgniteException If execution failed.
      */
     @IgniteAsyncSupported
     public <R1, R2, T> R2 apply(IgniteClosure<T, R1> job, Collection<? extends T> args,
-        IgniteReducer<R1, R2> rdc) throws IgniteCheckedException;
+        IgniteReducer<R1, R2> rdc) throws IgniteException;
 
     /**
      * Gets tasks future for active tasks started on local node.
@@ -356,7 +355,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * <p>
      * Here is an example.
      * <pre name="code" class="java">
-     * GridGain.grid().withName("MyTask").run(new MyRunnable() {...});
+     * Ignition.ignite().withName("MyTask").run(new MyRunnable() {...});
      * </pre>
      *
      * @param taskName Task name.
@@ -372,7 +371,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * <p>
      * Here is an example.
      * <pre name="code" class="java">
-     * GridGain.grid().withTimeout(10000).run(new MyRunnable() {...});
+     * Ignition.ignite().withTimeout(10000).run(new MyRunnable() {...});
      * </pre>
      *
      * @param timeout Computation timeout in milliseconds.
@@ -388,7 +387,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * <p>
      * Here is an example.
      * <pre name="code" class="java">
-     * GridGain.grid().compute().withNoFailover().run(new MyRunnable() {...});
+     * Ignition.ignite().compute().withNoFailover().run(new MyRunnable() {...});
      * </pre>
      *
      * @return This {@code GridCompute} instance for chaining calls.
@@ -407,7 +406,7 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * Another way of class deployment is deployment from local class path.
      * Classes from local class path always have a priority over P2P deployed ones.
      * <p>
-     * Note that class can be deployed multiple times on remote nodes, i.e. re-deployed. GridGain
+     * Note that class can be deployed multiple times on remote nodes, i.e. re-deployed. Ignition
      * maintains internal version of deployment for each instance of deployment (analogous to
      * class and class loader in Java). Execution happens always on the latest deployed instance.
      * <p>
@@ -418,9 +417,9 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      *      class name will be used as task's name.
      * @param clsLdr Task class loader. This class loader is in charge
      *      of loading all necessary resources for task execution.
-     * @throws IgniteCheckedException If task is invalid and cannot be deployed.
+     * @throws IgniteException If task is invalid and cannot be deployed.
      */
-    public void localDeployTask(Class<? extends ComputeTask> taskCls, ClassLoader clsLdr) throws IgniteCheckedException;
+    public void localDeployTask(Class<? extends ComputeTask> taskCls, ClassLoader clsLdr) throws IgniteException;
 
     /**
      * Gets map of all locally deployed tasks keyed by their task name .
@@ -435,9 +434,9 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * undeployed on every node.
      *
      * @param taskName Name of the task to undeploy.
-     * @throws IgniteCheckedException Thrown if undeploy failed.
+     * @throws IgniteException Thrown if undeploy failed.
      */
-    public void undeployTask(String taskName) throws IgniteCheckedException;
+    public void undeployTask(String taskName) throws IgniteException;
 
     /** {@inheritDoc} */
     @Override public <R> ComputeTaskFuture<R> future();

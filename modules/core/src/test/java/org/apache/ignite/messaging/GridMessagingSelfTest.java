@@ -20,14 +20,14 @@ package org.apache.ignite.messaging;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -173,7 +173,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        ((IgniteOptimizedMarshaller)cfg.getMarshaller()).setRequireSerializable(false);
+        ((OptimizedMarshaller)cfg.getMarshaller()).setRequireSerializable(false);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -1025,9 +1025,9 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
         final String topic = "topic";
 
         UUID id = msg.remoteListen(topic, new P2<UUID, Object>() {
-            @Override
-            public boolean apply(UUID nodeId, Object msg) {
-                System.out.println(Thread.currentThread().getName() + " Listener received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
+            @Override public boolean apply(UUID nodeId, Object msg) {
+                System.out.println(Thread.currentThread().getName() +
+                    " Listener received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
 
                 msgCnt.incrementAndGet();
 
@@ -1037,7 +1037,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         Assert.assertNull(id);
 
-        IgniteInternalFuture<UUID> fut = msg.future();
+        IgniteFuture<UUID> fut = msg.future();
 
         Assert.assertNotNull(fut);
 
@@ -1065,7 +1065,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         msg.stopRemoteListen(id);
 
-        IgniteInternalFuture<?> stopFut = msg.future();
+        IgniteFuture<?> stopFut = msg.future();
 
         Assert.assertNotNull(stopFut);
 

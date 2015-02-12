@@ -21,31 +21,22 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  *  AtomicReference basic tests.
  */
 public class GridCachePartitionedAtomicStampedApiSelfTest extends GridCacheAtomicStampedApiSelfAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
+    @Override protected CacheMode atomicsCacheMode() {
+        return PARTITIONED;
+    }
 
-        // Default cache configuration.
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+    /** {@inheritDoc} */
+    @Override protected AtomicConfiguration atomicConfiguration() {
+        AtomicConfiguration cfg = super.atomicConfiguration();
 
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setPreloadMode(SYNC);
-        cacheCfg.setBackups(1);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
-
-        cfg.setCacheConfiguration(cacheCfg);
+        cfg.setBackups(1);
 
         return cfg;
     }

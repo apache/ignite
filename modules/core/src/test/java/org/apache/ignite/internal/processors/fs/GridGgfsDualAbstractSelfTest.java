@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
@@ -29,7 +29,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteFs.*;
-import static org.apache.ignite.fs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 
 /**
  * Tests for GGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
@@ -50,7 +50,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
      * @throws Exception If failed.
      */
     public void testDefaultDirectories() throws Exception {
-        IgniteFsPath gg = new IgniteFsPath("/gridgain");
+        IgniteFsPath gg = new IgniteFsPath("/ignite");
         IgniteFsPath[] paths = paths(
             gg, new IgniteFsPath(gg, "sync"), new IgniteFsPath(gg, "async"), new IgniteFsPath(gg, "primary"));
 
@@ -1400,7 +1400,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
                         return true;
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }
@@ -1456,7 +1456,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
                         return true;
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }
@@ -1508,7 +1508,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
                         return true;
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }
@@ -1523,7 +1523,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
                         return true;
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }
@@ -1568,7 +1568,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
                         return true;
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }
@@ -1583,7 +1583,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
                         return true;
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }

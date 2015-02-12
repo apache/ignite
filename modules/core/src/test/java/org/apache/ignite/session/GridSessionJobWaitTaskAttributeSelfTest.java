@@ -20,16 +20,15 @@ package org.apache.ignite.session;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
@@ -59,14 +58,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
 
         c.setDiscoverySpi(discoSpi);
 
-        c.setExecutorService(
-            new ThreadPoolExecutor(
-                SPLIT_COUNT * EXEC_COUNT,
-                SPLIT_COUNT * EXEC_COUNT,
-                0, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>()));
-
-        c.setExecutorServiceShutdown(true);
+        c.setPublicThreadPoolSize(SPLIT_COUNT * EXEC_COUNT);
 
         return c;
     }
@@ -129,15 +121,15 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
     @ComputeTaskSessionFullSupport
     private static class GridTaskSessionTestTask extends ComputeTaskSplitAdapter<Serializable, Integer> {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) {
             assert taskSes != null;
 
             if (log.isInfoEnabled())
@@ -147,7 +139,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
 
             for (int i = 1; i <= SPLIT_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
-                    @Override public Serializable execute() throws IgniteCheckedException {
+                    @Override public Serializable execute() {
                         assert taskSes != null;
 
                         if (log.isInfoEnabled())
@@ -166,7 +158,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
                                 fail("Invalid test session value: " + val);
                             }
                             catch (InterruptedException e) {
-                                throw new IgniteCheckedException("Failed to get attribute due to interruption.", e);
+                                throw new IgniteException("Failed to get attribute due to interruption.", e);
                             }
                         }
 
@@ -179,8 +171,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received)
-            throws IgniteCheckedException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received) {
             if (result.getException() != null)
                 throw result.getException();
 
@@ -196,7 +187,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
 

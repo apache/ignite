@@ -25,7 +25,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * Base class for tests against {@link org.apache.ignite.lifecycle.LifecycleAware} support.
+ * Base class for tests against {@link LifecycleAware} support.
  */
 public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstractTest {
     /** */
@@ -42,7 +42,7 @@ public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstr
         private AtomicInteger stopCnt = new AtomicInteger();
 
         /** */
-        @IgniteCacheNameResource
+        @CacheNameResource
         private String cacheName;
 
         /** */
@@ -68,14 +68,14 @@ public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstr
         }
 
         /**
-         * @return Number of times {@link org.apache.ignite.lifecycle.LifecycleAware#start} was called.
+         * @return Number of times {@link LifecycleAware#start} was called.
          */
         public int startCount() {
             return startCnt.get();
         }
 
         /**
-         * @return Number of times {@link org.apache.ignite.lifecycle.LifecycleAware#stop} was called.
+         * @return Number of times {@link LifecycleAware#stop} was called.
          */
         public int stopCount() {
             return stopCnt.get();

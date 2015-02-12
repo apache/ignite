@@ -17,13 +17,13 @@
 
 package org.apache.ignite.spi.deployment.uri.scanners.http;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.deployment.uri.*;
+import org.apache.ignite.testframework.config.*;
+import org.apache.ignite.testframework.junits.spi.*;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.*;
 import org.eclipse.jetty.util.resource.*;
-import org.apache.ignite.spi.deployment.uri.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.config.*;
-import org.apache.ignite.testframework.junits.spi.*;
 
 import javax.servlet.http.*;
 import java.util.*;
@@ -58,7 +58,7 @@ public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
 
         hnd.setDirectoriesListed(true);
         hnd.setResourceBase(
-            U.resolveGridGainPath(GridTestProperties.getProperty("ant.urideployment.gar.path")).getPath());
+            U.resolveIgnitePath(GridTestProperties.getProperty("ant.urideployment.gar.path")).getPath());
 
         srv.setHandler(hnd);
 

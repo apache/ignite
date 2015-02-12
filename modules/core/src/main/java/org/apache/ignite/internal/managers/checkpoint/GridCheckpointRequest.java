@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.managers.checkpoint;
 
-import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 
 import java.io.*;
 import java.nio.*;
@@ -27,7 +27,7 @@ import java.nio.*;
 /**
  * This class defines checkpoint request.
  */
-public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
+public class GridCheckpointRequest extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -85,7 +85,7 @@ public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridCheckpointRequest _clone = new GridCheckpointRequest();
 
         clone0(_clone);
@@ -94,7 +94,7 @@ public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridCheckpointRequest _clone = (GridCheckpointRequest)_msg;
 
         _clone.sesId = sesId;
@@ -105,33 +105,33 @@ public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putString(cpSpi))
+                if (!writer.writeString("cpSpi", cpSpi))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 1:
-                if (!commState.putString(key))
+                if (!writer.writeString("key", key))
                     return false;
 
-                commState.idx++;
+                state++;
 
             case 2:
-                if (!commState.putGridUuid(sesId))
+                if (!writer.writeIgniteUuid("sesId", sesId))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -141,38 +141,32 @@ public class GridCheckpointRequest extends GridTcpCommunicationMessageAdapter {
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                String cpSpi0 = commState.getString();
+                cpSpi = reader.readString("cpSpi");
 
-                if (cpSpi0 == STR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                cpSpi = cpSpi0;
-
-                commState.idx++;
+                state++;
 
             case 1:
-                String key0 = commState.getString();
+                key = reader.readString("key");
 
-                if (key0 == STR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                key = key0;
-
-                commState.idx++;
+                state++;
 
             case 2:
-                IgniteUuid sesId0 = commState.getGridUuid();
+                sesId = reader.readIgniteUuid("sesId");
 
-                if (sesId0 == GRID_UUID_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                sesId = sesId0;
-
-                commState.idx++;
+                state++;
 
         }
 

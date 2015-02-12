@@ -21,21 +21,21 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.security.*;
-import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.spi.discovery.*;
-import org.apache.ignite.spi.discovery.tcp.internal.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
-import org.apache.ignite.spi.discovery.tcp.messages.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.discovery.*;
+import org.apache.ignite.spi.discovery.tcp.internal.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
+import org.apache.ignite.spi.discovery.tcp.messages.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -45,8 +45,8 @@ import java.text.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
 import static org.apache.ignite.spi.IgnitePortProtocol.*;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.*;
 import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHeartbeatMessage.*;
@@ -114,17 +114,17 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
  * cfg.setDiscoverySpi(spi);
  *
  * // Start grid.
- * GridGain.start(cfg);
+ * Ignition.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * GridTcpDiscoverySpi can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
+ * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *         ...
  *         &lt;property name="discoverySpi"&gt;
- *             &lt;bean class="org.gridgain.grid.spi.discovery.tcp.GridTcpDiscoverySpi"&gt;
+ *             &lt;bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi"&gt;
  *                 &lt;property name="ipFinder"&gt;
- *                     &lt;bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder" /&gt;
+ *                     &lt;bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder" /&gt;
  *                 &lt;/property&gt;
  *             &lt;/bean&gt;
  *         &lt;/property&gt;
@@ -170,7 +170,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     public static final String ATTR_EXT_ADDRS = "disc.tcp.ext-addrs";
 
     /** Address resolver. */
-    private IgniteAddressResolver addrRslvr;
+    private AddressResolver addrRslvr;
 
     /** Local port which node uses. */
     private int locPort = DFLT_PORT;
@@ -297,7 +297,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      * @param addrRslvr Address resolver.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setAddressResolver(IgniteAddressResolver addrRslvr) {
+    public void setAddressResolver(AddressResolver addrRslvr) {
         // Injection should not override value already set by Spring or user.
         if (this.addrRslvr == null)
             this.addrRslvr = addrRslvr;
@@ -308,7 +308,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      *
      * @return Address resolver.
      */
-    public IgniteAddressResolver getAddressResolver() {
+    public AddressResolver getAddressResolver() {
         return addrRslvr;
     }
 
@@ -800,7 +800,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             try {
                 U.sleep(2000);
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 throw new IgniteSpiException("Thread has been interrupted.", e);
             }
         }
@@ -891,7 +891,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (log.isDebugEnabled())
                     log.debug("Context has been initialized.");
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 U.warn(log, "Thread has been interrupted while waiting for SPI context initialization.", e);
             }
         }
@@ -1259,7 +1259,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         }
 
         GridSecurityCredentials locCred = (GridSecurityCredentials)locNode.getAttributes()
-            .get(GridNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+            .get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
 
         // Marshal credentials for backward compatibility and security.
         marshalCredentials(locNode);
@@ -1278,13 +1278,13 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                     Map<String, Object> attrs = new HashMap<>(locNode.attributes());
 
-                    attrs.put(GridNodeAttributes.ATTR_SECURITY_SUBJECT,
+                    attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT,
                         ignite.configuration().getMarshaller().marshal(subj));
-                    attrs.remove(GridNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+                    attrs.remove(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
 
                     locNode.setAttributes(attrs);
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException | IgniteCheckedException e) {
                     throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
                 }
 
@@ -1370,31 +1370,6 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
         if (log.isDebugEnabled())
             log.debug("Discovery SPI has been connected to topology with order: " + locNode.internalOrder());
-    }
-
-    /**
-     * @param msg Error message.
-     * @return Remote grid version parsed from error message.
-     * @deprecated This method was created for preserving backward compatibility. During major version update
-     *      parsing of error message should be replaced with new {@link org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCheckFailedMessage}
-     *      which contains all necessary information.
-     */
-    @Deprecated
-    @Nullable private String parseRemoteVersion(String msg) {
-        msg = msg.replaceAll("\\s", "");
-
-        final String verPrefix = "rmtBuildVer=";
-
-        int startIdx = msg.indexOf(verPrefix);
-        int endIdx = msg.indexOf(',', startIdx);
-
-        if (endIdx < 0)
-            endIdx = msg.indexOf(']', startIdx);
-
-        if (startIdx < 0 || endIdx < 0)
-            return null;
-
-        return msg.substring(startIdx + verPrefix.length() - 1, endIdx);
     }
 
     /**
@@ -1487,7 +1462,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 try {
                     U.sleep(2000);
                 }
-                catch (IgniteInterruptedException e) {
+                catch (IgniteInterruptedCheckedException e) {
                     throw new IgniteSpiException("Thread has been interrupted.", e);
                 }
             }
@@ -1511,7 +1486,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 try {
                     U.sleep(2000);
                 }
-                catch (IgniteInterruptedException e) {
+                catch (IgniteInterruptedCheckedException e) {
                     throw new IgniteSpiException("Thread has been interrupted.", e);
                 }
             }
@@ -1666,8 +1641,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             // Use security-unsafe getter.
             Map<String, Object> attrs = new HashMap<>(node.getAttributes());
 
-            attrs.put(GridNodeAttributes.ATTR_SECURITY_CREDENTIALS,
-                marsh.marshal(attrs.get(GridNodeAttributes.ATTR_SECURITY_CREDENTIALS)));
+            attrs.put(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS,
+                marsh.marshal(attrs.get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS)));
 
             node.setAttributes(attrs);
         }
@@ -1685,7 +1660,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
      */
     private GridSecurityCredentials unmarshalCredentials(TcpDiscoveryNode node) throws IgniteSpiException {
         try {
-            byte[] credBytes = (byte[])node.getAttributes().get(GridNodeAttributes.ATTR_SECURITY_CREDENTIALS);
+            byte[] credBytes = (byte[])node.getAttributes().get(IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS);
 
             if (credBytes == null)
                 return null;
@@ -1717,7 +1692,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
     /**
      * Notify external listener on discovery event.
      *
-     * @param type Discovery event type. See {@link org.apache.ignite.events.IgniteDiscoveryEvent} for more details.
+     * @param type Discovery event type. See {@link org.apache.ignite.events.DiscoveryEvent} for more details.
      * @param topVer Topology version.
      * @param node Remote node this event is connected with.
      */
@@ -3149,13 +3124,13 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         // Stick in authentication subject to node (use security-safe attributes for copy).
                         Map<String, Object> attrs = new HashMap<>(node.getAttributes());
 
-                        attrs.put(GridNodeAttributes.ATTR_SECURITY_SUBJECT,
+                        attrs.put(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT,
                             ignite.configuration().getMarshaller().marshal(subj));
 
                         node.setAttributes(attrs);
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException | IgniteCheckedException e) {
                     LT.error(log, e, "Authentication failed [nodeId=" + node.id() + ", addrs=" +
                         U.addressesAsString(node) + ']');
 
@@ -3590,7 +3565,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                             GridSecurityContext subj = nodeAuth.authenticateNode(node, cred);
 
                             GridSecurityContext coordSubj = ignite.configuration().getMarshaller().unmarshal(
-                                node.<byte[]>attribute(GridNodeAttributes.ATTR_SECURITY_SUBJECT), U.gridClassLoader());
+                                node.<byte[]>attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT), U.gridClassLoader());
 
                             if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
                                 // Node has not pass authentication.
@@ -3610,7 +3585,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 authFailed = false;
                         }
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException | IgniteCheckedException e) {
                         U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
                     }
                     finally {
@@ -3638,7 +3613,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (topChanged) {
                     assert !node.visible() : "Added visible node [node=" + node + ", locNode=" + locNode + ']';
 
-                    List<Object> data = msg.newNodeDiscoveryData();
+                    Map<Integer, Object> data = msg.newNodeDiscoveryData();
 
                     if (data != null)
                         exchange.onExchange(data);
@@ -3653,7 +3628,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
             if (msg.verified() && locNodeId.equals(node.id())) {
                 // Discovery data.
-                Collection<List<Object>> dataList;
+                Collection<Map<Integer, Object>> dataList;
 
                 synchronized (mux) {
                     if (spiState == CONNECTING && locNode.internalOrder() != node.internalOrder()) {
@@ -3712,7 +3687,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                 // Notify outside of synchronized block.
                 if (dataList != null) {
-                    for (List<Object> discoData : dataList)
+                    for (Map<Integer, Object> discoData : dataList)
                         exchange.onExchange(discoData);
                 }
             }
@@ -4609,12 +4584,12 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     if (!U.bytesEqual(buf, 0, U.IGNITE_HEADER, 0, 4)) {
                         if (log.isDebugEnabled())
                             log.debug("Unknown connection detected (is some other software connecting to " +
-                                "this GridGain port?) " +
+                                "this Ignite port?) " +
                                 "[rmtAddr=" + sock.getRemoteSocketAddress() +
                                 ", locAddr=" + sock.getLocalSocketAddress() + ']');
 
                         LT.warn(log, null, "Unknown connection detected (is some other software connecting to " +
-                            "this GridGain port?) [rmtAddr=" + sock.getRemoteSocketAddress() +
+                            "this Ignite port?) [rmtAddr=" + sock.getRemoteSocketAddress() +
                             ", locAddr=" + sock.getLocalSocketAddress() + ']');
 
                         return;

@@ -20,11 +20,12 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 
 import java.io.*;
 import java.util.*;
@@ -38,7 +39,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
 
     /** Wrapped transaction. */
     @GridToStringInclude
-    private IgniteTxEx<K, V> tx;
+    private IgniteInternalTx<K, V> tx;
 
     /** Gateway. */
     @GridToStringExclude
@@ -48,7 +49,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
     private boolean async;
 
     /** Async call result. */
-    private IgniteInternalFuture asyncRes;
+    private IgniteFuture asyncRes;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -62,7 +63,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
      * @param cctx Shared context.
      * @param async Async flag.
      */
-    public IgniteTxProxyImpl(IgniteTxEx<K, V> tx, GridCacheSharedContext<K, V> cctx, boolean async) {
+    public IgniteTxProxyImpl(IgniteInternalTx<K, V> tx, GridCacheSharedContext<K, V> cctx, boolean async) {
         assert tx != null;
         assert cctx != null;
 
@@ -204,7 +205,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <R> IgniteInternalFuture<R> future() {
+    @Override public <R> IgniteFuture<R> future() {
         return asyncRes;
     }
 
@@ -236,16 +237,19 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void commit() throws IgniteCheckedException {
+    @Override public void commit() {
         enter();
 
         try {
-            IgniteInternalFuture<IgniteTx> commitFut = cctx.commitTxAsync(tx);
+            IgniteInternalFuture<IgniteInternalTx> commitFut = cctx.commitTxAsync(tx);
 
             if (async)
-                asyncRes = commitFut;
+                saveFuture(commitFut);
             else
                 commitFut.get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             leave();
@@ -253,28 +257,34 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws IgniteCheckedException {
+    @Override public void close() {
         enter();
 
         try {
             cctx.endTx(tx);
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             leave();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void rollback() throws IgniteCheckedException {
+    @Override public void rollback() {
         enter();
 
         try {
             IgniteInternalFuture rollbackFut = cctx.rollbackTxAsync(tx);
 
             if (async)
-                asyncRes = rollbackFut;
+                asyncRes = new IgniteFutureImpl(rollbackFut);
             else
                 rollbackFut.get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             leave();
@@ -285,8 +295,9 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
      * @param res Result to convert to finished future.
      */
     private void save(Object res) {
-        asyncRes = new GridFinishedFutureEx<>(res);
+        asyncRes = new IgniteFinishedFutureImplEx<>(res);
     }
+
     /** {@inheritDoc} */
     @Override public <V1> V1 addMeta(String name, V1 val) {
         return tx.addMeta(name, val);
@@ -304,6 +315,19 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
         return tx.<V1>removeMeta(name);
     }
 
+    /**
+     * @param fut Internal future.
+     */
+    private void saveFuture(IgniteInternalFuture<IgniteInternalTx> fut) {
+        IgniteInternalFuture<IgniteTx> fut0 = fut.chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, IgniteTx>() {
+            @Override public IgniteTx applyx(IgniteInternalFuture<IgniteInternalTx> fut) throws IgniteCheckedException {
+                return fut.get().proxy();
+            }
+        });
+
+        asyncRes = new IgniteFutureImpl(fut0);
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(tx);
@@ -311,7 +335,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        tx = (IgniteTxEx<K, V>)in.readObject();
+        tx = (IgniteInternalTx<K, V>)in.readObject();
     }
 
     /** {@inheritDoc} */

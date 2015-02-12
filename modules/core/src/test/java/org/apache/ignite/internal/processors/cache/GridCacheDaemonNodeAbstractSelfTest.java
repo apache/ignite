@@ -21,17 +21,17 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -64,7 +64,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
 
         c.setDiscoverySpi(disco);
 
-        c.setRestEnabled(false);
+        c.setConnectorConfiguration(null);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -95,7 +95,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
 
             startGrid(4);
 
-            GridCache<Integer, Integer> cache = grid(0).cache(null);
+            IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
             for (int i = 0; i < 30; i++)
                 cache.put(i, i);
@@ -126,10 +126,10 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
 
             startGrid(4);
 
-            GridCache<Integer, Integer> cache = grid(0).cache(null);
+            IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
             for (int i = 0; i < 30; i++) {
-                try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                try (IgniteTx tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                     cache.put(i, i);
 
                     tx.commit();
@@ -141,7 +141,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
             for (int i = 30; i < 60; i++)
                 batch.put(i, i);
 
-            try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteTx tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 cache.putAll(batch);
                 tx.commit();
             }

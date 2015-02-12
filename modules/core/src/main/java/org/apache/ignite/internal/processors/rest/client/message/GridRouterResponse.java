@@ -74,7 +74,7 @@ public class GridRouterResponse extends GridClientAbstractMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "GridRoutedResponse [" +
+        return "GridRouterResponse [" +
             "clientId=" + clientId() +
             ", reqId=" + requestId() +
             ", destId=" + destinationId() +

@@ -21,14 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.deployment.*;
-import org.apache.ignite.internal.managers.eventstorage.*;
-import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -36,12 +36,12 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
- * Deployment storage for {@link org.apache.ignite.configuration.IgniteDeploymentMode#SHARED} and
- * {@link org.apache.ignite.configuration.IgniteDeploymentMode#CONTINUOUS} modes.
+ * Deployment storage for {@link org.apache.ignite.configuration.DeploymentMode#SHARED} and
+ * {@link org.apache.ignite.configuration.DeploymentMode#CONTINUOUS} modes.
  */
 public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     /** Shared deployment cache. */
@@ -84,12 +84,12 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         discoLsnr = new GridLocalEventListener() {
-            @Override public void onEvent(IgniteEvent evt) {
-                assert evt instanceof IgniteDiscoveryEvent;
+            @Override public void onEvent(Event evt) {
+                assert evt instanceof DiscoveryEvent;
 
                 assert evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED;
 
-                IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+                DiscoveryEvent discoEvt = (DiscoveryEvent)evt;
 
                 Collection<SharedDeployment> undeployed = new LinkedList<>();
 
@@ -663,7 +663,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 meta.deploymentMode(),
                 true,
                 ctx,
-                U.gridClassLoader(),
+                ctx.config().getClassLoader() != null ? ctx.config().getClassLoader() : U.gridClassLoader(),
                 meta.classLoaderId(),
                 meta.senderNodeId(),
                 comm,
@@ -965,7 +965,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 meta.deploymentMode(),
                 false,
                 ctx,
-                U.gridClassLoader(),
+                ctx.config().getClassLoader() != null ? ctx.config().getClassLoader() : U.gridClassLoader(),
                 meta.classLoaderId(),
                 meta.senderNodeId(),
                 comm,
@@ -1057,7 +1057,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
          * @param sampleClsName Sample class name.
          */
         @SuppressWarnings({"TypeMayBeWeakened"})
-        SharedDeployment(IgniteDeploymentMode depMode,
+        SharedDeployment(DeploymentMode depMode,
             GridDeploymentClassLoader clsLdr, IgniteUuid clsLdrId,
             String userVer, String sampleClsName) {
             super(depMode, clsLdr, clsLdrId, userVer, sampleClsName, false);
@@ -1208,7 +1208,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
             int type = isTask ? EVT_TASK_DEPLOYED : EVT_CLASS_DEPLOYED;
 
             if (ctx.event().isRecordable(type)) {
-                IgniteDeploymentEvent evt = new IgniteDeploymentEvent();
+                DeploymentEvent evt = new DeploymentEvent();
 
                 evt.node(ctx.discovery().localNode());
                 evt.message(msg);
@@ -1239,7 +1239,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 int type = isTask ? EVT_TASK_UNDEPLOYED : EVT_CLASS_UNDEPLOYED;
 
                 if (ctx.event().isRecordable(type)) {
-                    IgniteDeploymentEvent evt = new IgniteDeploymentEvent();
+                    DeploymentEvent evt = new DeploymentEvent();
 
                     evt.node(ctx.discovery().localNode());
                     evt.message(msg);
@@ -1263,7 +1263,7 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
                 ctx.stream().onUndeployed(ldr);
 
                 // Clear optimized marshaller's cache. If another marshaller is used, this is no-op.
-                IgniteOptimizedMarshaller.onUndeploy(ldr);
+                OptimizedMarshaller.onUndeploy(ldr);
 
                 clearSerializationCaches();
 

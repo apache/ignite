@@ -17,10 +17,9 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.spi.*;
 
@@ -124,7 +123,7 @@ public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstrac
     public List<String> getUriList() {
         // No real gar file is required. Add one just to avoid failure because of missed to default directory.
         return Collections.singletonList(GridTestProperties.getProperty("ant.urideployment.gar.uri").
-            replace("EXTDATA", U.resolveGridGainPath("modules/extdata").getAbsolutePath()));
+            replace("EXTDATA", U.resolveIgnitePath("modules/extdata").getAbsolutePath()));
     }
 
     /**
@@ -132,11 +131,12 @@ public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstrac
      */
     private static class GridFileDeploymentTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return null;
         }
+
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

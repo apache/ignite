@@ -19,12 +19,12 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
@@ -35,7 +35,7 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Marshaller. */
-    private static final IgniteMarshaller MARSHALLER = new IgniteOptimizedMarshaller();
+    private static final Marshaller MARSHALLER = new OptimizedMarshaller();
 
     /** Attribute key. */
     private static final String ATTR_KEY = "checkAttr";
@@ -66,7 +66,7 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
 
         cfg.setUserAttributes(F.asMap(ATTR_KEY, true));
 
-        cfg.setRestEnabled(false);
+        cfg.setConnectorConfiguration(null);
 
         return cfg;
     }

@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.visor.event;
 
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 
 /**
- * Base class for lightweight counterpart for various {@link org.apache.ignite.events.IgniteEvent}.
+ * Base class for lightweight counterpart for various {@link org.apache.ignite.events.Event}.
  */
 public class VisorGridEvent implements Serializable {
     /** */

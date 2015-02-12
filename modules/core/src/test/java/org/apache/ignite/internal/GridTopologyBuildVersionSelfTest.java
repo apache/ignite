@@ -19,11 +19,11 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -54,14 +54,14 @@ public class GridTopologyBuildVersionSelfTest extends GridCommonAbstractTest {
             @Override public void setNodeAttributes(Map<String, Object> attrs, IgniteProductVersion ver) {
                 super.setNodeAttributes(attrs, ver);
 
-                attrs.put(GridNodeAttributes.ATTR_BUILD_VER, idx + ".0.0" + "-ent");
+                attrs.put(IgniteNodeAttributes.ATTR_BUILD_VER, idx + ".0.0" + "-ent");
 
                 if (idx < 3)
-                    attrs.remove(GridNodeAttributes.ATTR_BUILD_DATE);
+                    attrs.remove(IgniteNodeAttributes.ATTR_BUILD_DATE);
                 else
-                    attrs.put(GridNodeAttributes.ATTR_BUILD_DATE, "1385099743");
+                    attrs.put(IgniteNodeAttributes.ATTR_BUILD_DATE, "1385099743");
 
-                attrs.put(GridNodeAttributes.ATTR_COMPATIBLE_VERS, COMPATIBLE_VERS);
+                attrs.put(IgniteNodeAttributes.ATTR_COMPATIBLE_VERS, COMPATIBLE_VERS);
             }
         };
 

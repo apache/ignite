@@ -17,13 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
@@ -66,7 +64,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
                 try {
                     U.sleep(Long.MAX_VALUE);
                 }
-                catch (IgniteInterruptedException ignored) {
+                catch (IgniteInterruptedCheckedException ignored) {
                     interrupted = true;
                 }
             }
@@ -233,7 +231,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
                 fut.get();
                 return null;
             }
-        }, IgniteFutureCancelledException.class, null);
+        }, IgniteFutureCancelledCheckedException.class, null);
 
         assertTrue(spi.interrupted);
 

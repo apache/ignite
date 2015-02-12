@@ -21,13 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.transactions.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -121,14 +122,14 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
             private int cnt;
 
             @SuppressWarnings({"BusyWait"})
-            @Override public void applyx() throws IgniteCheckedException {
+            @Override public void applyx() {
                 while (cnt++ < txCnt && !done.get()) {
-                    GridCache<Object, Object> cache = grid(0).cache(null);
+                    IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
                     if (cnt % logMod == 0)
                         info("Starting transaction: " + cnt);
 
-                    try (IgniteTx tx = cache.txStart()) {
+                    try (IgniteTx tx = grid(0).transactions().txStart()) {
                         int kv = RAND.nextInt(keyRange);
 
                         cache.put(kv, kv);

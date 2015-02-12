@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest.client.message;
 
-import org.apache.ignite.portables.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
@@ -26,7 +25,7 @@ import java.util.*;
 /**
  * This class provides implementation for commit message fields and cannot be used directly.
  */
-public abstract class GridClientAbstractMessage implements GridClientMessage, Externalizable, PortableMarshalAware {
+public abstract class GridClientAbstractMessage implements GridClientMessage, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -94,20 +93,6 @@ public abstract class GridClientAbstractMessage implements GridClientMessage, Ex
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         sesTok = U.readByteArray(in);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writePortable(PortableWriter writer) throws PortableException {
-        PortableRawWriter raw = writer.rawWriter();
-
-        raw.writeByteArray(sesTok);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readPortable(PortableReader reader) throws PortableException {
-        PortableRawReader raw = reader.rawReader();
-
-        sesTok = raw.readByteArray();
     }
 
     /** {@inheritDoc} */

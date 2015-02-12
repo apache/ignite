@@ -40,7 +40,7 @@
 
 package org.jdk8.backport;
 
-import java.util.Random;
+import java.util.*;
 
 /**
  * A random number generator isolated to the current thread.  Like the

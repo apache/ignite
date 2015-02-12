@@ -20,12 +20,13 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.testframework.*;
 import org.jdk8.backport.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -109,7 +110,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
      * @throws Exception If failed.
      */
     public void testPutAndRemove() throws Exception {
-        final GridCache<Integer, Integer> sndCache0 = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> sndCache0 = grid(0).jcache(null);
 
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -145,7 +146,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
 
                                 break;
                             }
-                            catch (IgniteCheckedException e) {
+                            catch (CacheException e) {
                                 if (put)
                                     log.error("Put failed [key=" + key + ", val=" + i + ']', e);
                                 else
@@ -288,7 +289,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite ignite = grid(i);
 
-            GridCache<Integer, Integer> cache = ignite.cache(null);
+            IgniteCache<Integer, Integer> cache = ignite.jcache(null);
 
             for (Map.Entry<Integer, GridTuple<Integer>> expVal : expVals.entrySet()) {
                 Integer val = cache.get(expVal.getKey());
@@ -296,8 +297,8 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
                 if (!F.eq(expVal.getValue().get(), val)) {
                     failedKeys.add(expVal.getKey());
 
-                    boolean primary = cache.affinity().isPrimary(ignite.cluster().localNode(), expVal.getKey());
-                    boolean backup = cache.affinity().isBackup(ignite.cluster().localNode(), expVal.getKey());
+                    boolean primary = affinity(cache).isPrimary(ignite.cluster().localNode(), expVal.getKey());
+                    boolean backup = affinity(cache).isBackup(ignite.cluster().localNode(), expVal.getKey());
 
                     log.error("Unexpected cache data [exp=" + expVal + ", actual=" + val + ", nodePrimary=" + primary +
                         ", nodeBackup=" + backup + ", nodeId=" + ignite.cluster().localNode().id() + ']');

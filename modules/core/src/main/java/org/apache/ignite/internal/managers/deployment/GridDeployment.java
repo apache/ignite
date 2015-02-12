@@ -20,13 +20,13 @@ package org.apache.ignite.internal.managers.deployment;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.task.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -47,7 +47,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
     private final long ts = U.currentTimeMillis();
 
     /** Deployment mode. */
-    private final IgniteDeploymentMode depMode;
+    private final DeploymentMode depMode;
 
     /** Class loader. */
     private final ClassLoader clsLdr;
@@ -108,7 +108,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      * @param sampleClsName Sample class name.
      * @param loc {@code True} if local deployment.
      */
-    GridDeployment(IgniteDeploymentMode depMode, ClassLoader clsLdr, IgniteUuid clsLdrId, String userVer,
+    GridDeployment(DeploymentMode depMode, ClassLoader clsLdr, IgniteUuid clsLdrId, String userVer,
         String sampleClsName, boolean loc) {
         assert depMode != null;
         assert clsLdr != null;
@@ -145,7 +145,7 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      *
      * @return Property depMode.
      */
-    @Override public IgniteDeploymentMode deployMode() {
+    @Override public DeploymentMode deployMode() {
         return depMode;
     }
 
@@ -359,7 +359,6 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      */
     @SuppressWarnings("unchecked")
     public boolean internalTask(@Nullable ComputeTask task, Class<?> taskCls) {
-        assert task != null;
         assert taskCls != null;
 
         Boolean res = internalTasks.get(taskCls);

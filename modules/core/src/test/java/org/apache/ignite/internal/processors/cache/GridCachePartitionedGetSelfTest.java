@@ -32,8 +32,8 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.GridTopic.*;
@@ -117,11 +117,9 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      */
     public void testGetFromPrimaryNode() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCache<String, Integer> c = grid(i).cache(null);
+            IgniteCache<String, Integer> c = grid(i).jcache(null);
 
-            CacheEntry<String, Integer> e = c.entry(KEY);
-
-            if (e.primary()) {
+            if (grid(i).affinity(null).isPrimary(grid(i).localNode(), KEY)) {
                 info("Primary node: " + grid(i).localNode().id());
 
                 c.get(KEY);
@@ -138,11 +136,9 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      */
     public void testGetFromBackupNode() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCache<String, Integer> c = grid(i).cache(null);
+            IgniteCache<String, Integer> c = grid(i).jcache(null);
 
-            CacheEntry<String, Integer> e = c.entry(KEY);
-
-            if (e.backup()) {
+            if (grid(i).affinity(null).isBackup(grid(i).localNode(), KEY)) {
                 info("Backup node: " + grid(i).localNode().id());
 
                 Integer val = c.get(KEY);
@@ -151,9 +147,9 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
 
                 assert !await();
 
-                assert c.evict(KEY);
+                c.localEvict(Collections.singleton(KEY));
 
-                assert c.peek(KEY) == null;
+                assert c.localPeek(KEY, CachePeekMode.ONHEAP) == null;
 
                 val = c.get(KEY);
 
@@ -171,11 +167,9 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      */
     public void testGetFromNearNode() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCache<String, Integer> c = grid(i).cache(null);
+            IgniteCache<String, Integer> c = grid(i).jcache(null);
 
-            CacheEntry<String, Integer> e = c.entry(KEY);
-
-            if (!e.primary() && !e.backup()) {
+            if (!grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), KEY)) {
                 info("Near node: " + grid(i).localNode().id());
 
                 Integer val = c.get(KEY);
@@ -221,13 +215,11 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
 
-            CacheEntry<String, Integer> e = g.<String, Integer>cache(null).entry(KEY);
-
-            if (e.primary()) {
+            if (grid(i).affinity(null).isPrimary(grid(i).localNode(), KEY)) {
                 info("Primary node: " + g.cluster().localNode().id());
 
                 // Put value.
-                g.cache(null).put(KEY, VAL);
+                g.jcache(null).put(KEY, VAL);
 
                 // Register listener.
                 ((IgniteKernal)g).context().io().addMessageListener(

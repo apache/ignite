@@ -33,12 +33,12 @@ public class ExternalGridifyTask extends ComputeTaskSplitAdapter<GridifyArgument
     public static final String TASK_NAME = "org.test.gridify.ExternalGridifyTask";
 
     /** {@inheritDoc} */
-    @Override public Collection<? extends ComputeJob> split(int gridSize, GridifyArgument arg) throws IgniteCheckedException {
+    @Override public Collection<? extends ComputeJob> split(int gridSize, GridifyArgument arg) {
         assert arg.getMethodParameters().length == 1;
 
         return Collections.singletonList(new ComputeJobAdapter((String)arg.getMethodParameters()[0]) {
             /** */
-            @IgniteLoggerResource
+            @LoggerResource
             private IgniteLogger log;
 
             /** {@inheritDoc} */
@@ -71,7 +71,7 @@ public class ExternalGridifyTask extends ComputeTaskSplitAdapter<GridifyArgument
     }
 
     /** {@inheritDoc} */
-    @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Object reduce(List<ComputeJobResult> results) {
         assert results.size() == 1;
 
         return results.get(0).getData();

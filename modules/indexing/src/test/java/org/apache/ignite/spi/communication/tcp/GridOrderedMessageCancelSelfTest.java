@@ -18,19 +18,18 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.managers.communication.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -125,6 +124,26 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      * @param fut Future to cancel.
      * @throws Exception If failed.
      */
+    private void testMessageSet(IgniteFuture<?> fut) throws Exception {
+        cancelLatch.await();
+
+        assertTrue(fut.cancel());
+
+        resLatch.countDown();
+
+        assertTrue(U.await(finishLatch, 5000, MILLISECONDS));
+
+        Map map = U.field(((IgniteKernal)grid(0)).context().io(), "msgSetMap");
+
+        info("Map: " + map);
+
+        assertTrue(map.isEmpty());
+    }
+
+    /**
+     * @param fut Future to cancel.
+     * @throws Exception If failed.
+     */
     private void testMessageSet(IgniteInternalFuture<?> fut) throws Exception {
         cancelLatch.await();
 
@@ -146,7 +165,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      */
     private static class CommunicationSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override protected void notifyListener(UUID sndId, GridTcpCommunicationMessageAdapter msg,
+        @Override protected void notifyListener(UUID sndId, MessageAdapter msg,
             IgniteRunnable msgC) {
             try {
                 GridIoMessage ioMsg = (GridIoMessage)msg;
@@ -177,7 +196,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
     @ComputeTaskSessionFullSupport
     private static class Task extends ComputeTaskSplitAdapter<Void, Void> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) {
             return Collections.singleton(new ComputeJobAdapter() {
                 @Nullable @Override public Object execute() {
                     return null;
@@ -186,7 +205,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -197,16 +216,16 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
     @ComputeTaskSessionFullSupport
     private static class FailTask extends ComputeTaskSplitAdapter<Void, Void> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) {
             return Collections.singleton(new ComputeJobAdapter() {
-                @Nullable @Override public Object execute() throws IgniteCheckedException {
-                    throw new IgniteCheckedException("Task failed.");
+                @Nullable @Override public Object execute() {
+                    throw new IgniteException("Task failed.");
                 }
             });
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

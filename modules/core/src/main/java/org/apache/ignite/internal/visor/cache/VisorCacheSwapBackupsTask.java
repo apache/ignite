@@ -17,13 +17,17 @@
 
 package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 
+import javax.cache.*;
 import java.util.*;
 
 /**
@@ -48,6 +52,10 @@ public class VisorCacheSwapBackupsTask extends VisorOneNodeTask<Set<String>, Map
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
+        @IgniteInstanceResource
+        protected IgniteEx g;
+
         /**
          * Create job with specified argument.
          *
@@ -59,19 +67,21 @@ public class VisorCacheSwapBackupsTask extends VisorOneNodeTask<Set<String>, Map
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, IgniteBiTuple<Integer, Integer>> run(Set<String> names) throws IgniteCheckedException {
+        @Override protected Map<String, IgniteBiTuple<Integer, Integer>> run(Set<String> names) {
             Map<String, IgniteBiTuple<Integer, Integer>> total = new HashMap<>();
+            ClusterNode locNode = g.localNode();
 
-            for (GridCache c: g.cachesx()) {
+            for (GridCache c: ignite.cachesx()) {
                 String cacheName = c.name();
+                CacheAffinity<Object> aff = g.affinity(c.name());
 
                 if (names.contains(cacheName)) {
-                    Set<CacheEntry> entries = c.entrySet();
+                    Set<Cache.Entry> entries = c.entrySet();
 
                     int before = entries.size(), after = before;
 
-                    for (CacheEntry entry: entries) {
-                        if (entry.backup() && entry.evict())
+                    for (Cache.Entry entry : entries) {
+                        if (aff.isBackup(locNode, entry.getKey()) && c.evict(entry.getKey()))
                             after--;
                     }
 

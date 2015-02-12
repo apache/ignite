@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.processors.rest;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.client.marshaller.*;
+import org.apache.ignite.internal.client.marshaller.optimized.*;
+import org.apache.ignite.internal.processors.rest.client.message.*;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.logger.java.*;
-import org.apache.ignite.client.marshaller.*;
-import org.apache.ignite.client.marshaller.optimized.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -41,7 +43,7 @@ import static org.apache.ignite.internal.processors.rest.client.message.GridClie
  */
 final class TestBinaryClient {
     /** Logger. */
-    private final IgniteLogger log = new IgniteJavaLogger();
+    private final IgniteLogger log = new JavaLogger();
 
     /** Marshaller. */
     private final GridClientMarshaller marsh = new GridClientOptimizedMarshaller();
@@ -88,17 +90,18 @@ final class TestBinaryClient {
             req.marshallerId(GridClientOptimizedMarshaller.ID);
 
             // Write handshake.
-            sock.getOutputStream().write(GridClientHandshakeRequestWrapper.HANDSHAKE_HEADER);
+            sock.getOutputStream().write(GridMemcachedMessage.IGNITE_HANDSHAKE_FLAG);
             sock.getOutputStream().write(req.rawBytes());
 
-            byte[] buf = new byte[1];
+            byte[] buf = new byte[2];
 
             // Wait for handshake response.
             int read = input.read(buf);
 
-            assert read == 1 : read;
+            assert read == 2 : read;
 
-            assert buf[0] == GridClientHandshakeResponse.OK.resultCode() :
+            assert buf[0] == GridMemcachedMessage.IGNITE_HANDSHAKE_RES_FLAG;
+            assert buf[1] == GridClientHandshakeResponse.OK.resultCode() :
                 "Client handshake failed [code=" + buf[0] + ']';
         }
         catch (IOException e) {
@@ -568,22 +571,6 @@ final class TestBinaryClient {
 
         msg.includeAttributes(includeAttrs);
         msg.includeMetrics(includeMetrics);
-
-        return makeRequest(msg).getObject();
-    }
-
-    /**
-     * @param path Log file path.
-     * @return Log file contents.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public List<String> log(@Nullable String path, int from, int to) throws IgniteCheckedException {
-        GridClientLogRequest msg = new GridClientLogRequest();
-
-        msg.requestId(idCntr.getAndIncrement());
-        msg.path(path);
-        msg.from(from);
-        msg.to(to);
 
         return makeRequest(msg).getObject();
     }

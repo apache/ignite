@@ -17,10 +17,10 @@
 
 package org.apache.ignite.spi.deployment.uri.tasks;
 
-import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.springframework.beans.factory.xml.*;
 import org.springframework.core.io.*;
+
 import java.util.*;
 
 /**
@@ -34,7 +34,7 @@ public class GridUriDeploymentTestTask2 extends ComputeTaskSplitAdapter<Object, 
     @SuppressWarnings("unchecked")
     public GridUriDeploymentTestTask2() {
         XmlBeanFactory factory = new XmlBeanFactory(
-            new ClassPathResource("org/gridgain/grid/spi/deployment/uri/tasks/spring2.xml",
+            new ClassPathResource("org/apache/ignite/grid/spi/deployment/uri/tasks/spring2.xml",
                 getClass().getClassLoader()));
 
         factory.setBeanClassLoader(getClass().getClassLoader());
@@ -53,7 +53,7 @@ public class GridUriDeploymentTestTask2 extends ComputeTaskSplitAdapter<Object, 
     /**
      * {@inheritDoc}
      */
-    @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+    @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) {
         System.out.println("Split is called: " + this);
 
         return null;
@@ -62,7 +62,7 @@ public class GridUriDeploymentTestTask2 extends ComputeTaskSplitAdapter<Object, 
     /**
      * {@inheritDoc}
      */
-    @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Object reduce(List<ComputeJobResult> results) {
         System.out.println("Reduce is called.");
 
         return null;

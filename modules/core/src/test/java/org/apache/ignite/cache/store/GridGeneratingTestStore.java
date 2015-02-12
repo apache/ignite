@@ -17,10 +17,9 @@
 
 package org.apache.ignite.cache.store;
 
-import org.apache.ignite.cache.store.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -35,7 +34,7 @@ public class GridGeneratingTestStore extends CacheStore<String, String> {
     private static final int DFLT_GEN_CNT = 100;
 
     /** */
-    @IgniteCacheNameResource
+    @CacheNameResource
     private String cacheName;
 
     /** {@inheritDoc} */

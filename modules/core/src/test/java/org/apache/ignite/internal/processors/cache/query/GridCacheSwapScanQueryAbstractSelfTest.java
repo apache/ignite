@@ -22,7 +22,6 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -56,7 +55,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+        cfg.setMarshaller(new OptimizedMarshaller(false));
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -68,14 +67,6 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
 
         cfg.setCacheConfiguration(cacheConfiguration(ATOMIC_CACHE_NAME, ATOMIC),
             cacheConfiguration(TRANSACTIONAL_CACHE_NAME, TRANSACTIONAL));
-
-        if (portableEnabled()) {
-            PortableConfiguration pCfg = new PortableConfiguration();
-
-            pCfg.setClassNames(Arrays.asList(Key.class.getName(), Person.class.getName()));
-
-            cfg.setPortableConfiguration(pCfg);
-        }
 
         return cfg;
     }
@@ -102,17 +93,10 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
 
         ccfg.setAtomicWriteOrderMode(PRIMARY);
 
-        ccfg.setPortableEnabled(portableEnabled());
-
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return ccfg;
     }
-
-    /**
-     * @return Portable enabled flag.
-     */
-    protected abstract boolean portableEnabled();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -175,67 +159,12 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
 
             assertEquals(ENTRY_CNT, res.size());
 
-            checkProjectionFilter(cache, ENTRY_CNT / 2 - 5);
-
             testMultithreaded(cache, ENTRY_CNT / 2);
         }
         finally {
             for (int i = 0; i < ENTRY_CNT; i++)
                 assertTrue(cache.removex(new Key(i)));
         }
-    }
-
-    /**
-     * @param cache Cache.
-     * @param expCnt Expected entries in query result.
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings({"unchecked", "IfMayBeConditional"})
-    private void checkProjectionFilter(GridCache cache, int expCnt) throws Exception {
-        CacheProjection prj;
-
-        if (portableEnabled()) {
-            prj = cache.projection(new IgnitePredicate<CacheEntry<PortableObject, PortableObject>>() {
-                @Override public boolean apply(CacheEntry<PortableObject, PortableObject> e) {
-                    Key key = e.getKey().deserialize();
-                    Person val = e.peek().deserialize();
-
-                    assertNotNull(e.version());
-
-                    assertEquals(key.id, (Integer)val.salary);
-
-                    return key.id % 100 != 0;
-                }
-            });
-        }
-        else {
-            prj = cache.projection(new IgnitePredicate<CacheEntry<Key, Person>>() {
-                @Override public boolean apply(CacheEntry<Key, Person> e) {
-                    Key key = e.getKey();
-                    Person val = e.peek();
-
-                    assertNotNull(e.version());
-
-                    assertEquals(key.id, (Integer)val.salary);
-
-                    return key.id % 100 != 0;
-                }
-            });
-        }
-
-        CacheQuery<Map.Entry<Key, Person>> qry = prj.queries().createScanQuery(
-            new IgniteBiPredicate<Key, Person>() {
-                @Override public boolean apply(Key key, Person p) {
-                    assertEquals(key.id, (Integer)p.salary);
-
-                    return key.id % 2 == 0;
-                }
-            }
-        );
-
-        Collection<Map.Entry<Key, Person>> res = qry.execute().get();
-
-        assertEquals(expCnt, res.size());
     }
 
     /**

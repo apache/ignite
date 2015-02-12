@@ -21,18 +21,19 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.transactions.*;
-import org.apache.log4j.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
+import org.apache.log4j.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -58,7 +59,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        c.getTransactionsConfiguration().setTxSerializableEnabled(true);
+        c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -102,11 +103,11 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
 
-            GridCache<Integer, String> c = g.cache(null);
+            IgniteCache<Integer, String> c = g.jcache(null);
 
             c.removeAll();
 
-            assertEquals("Cache size mismatch for grid [grid=" + g.name() + ", entrySet=" + c.entrySet() + ']',
+            assertEquals("Cache size mismatch for grid [grid=" + g.name() + ", entrySet=" + entrySet(c) + ']',
                 0, c.size());
         }
     }
@@ -220,7 +221,8 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
      */
     private void checkDoubleGet(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation, boolean put)
         throws Exception {
-        GridCache<Integer, String> cache = grid(0).cache(null);
+        IgniteEx ignite = grid(0);
+        IgniteCache<Integer, String> cache = ignite.jcache(null);
 
         Integer key = 1;
 
@@ -229,13 +231,13 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
         if (put)
             cache.put(key, val = Integer.toString(key));
 
-        IgniteTx tx = cache.txStart(concurrency, isolation, 0, 0);
+        IgniteTx tx = ignite.transactions().txStart(concurrency, isolation, 0, 0);
 
         try {
             if (isTestDebug()) {
                 info("Started transaction.");
 
-                CacheAffinity<Integer> aff = cache.affinity();
+                CacheAffinity<Integer> aff = affinity(cache);
 
                 int part = aff.partition(key);
 
@@ -278,7 +280,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
             try {
                 tx.rollback();
             }
-            catch (IgniteCheckedException ex) {
+            catch (IgniteException ex) {
                 error("Failed to rollback optimistic failure: " + tx, ex);
 
                 throw ex;
@@ -299,7 +301,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
             throw e;
         }
         finally {
-            IgniteTx t = cache.tx();
+            IgniteTx t = ignite.transactions().tx();
 
             assert t == null : "Thread should not have transaction upon completion ['t==tx'=" + (t == tx) +
                 ", t=" + t + (t != tx ? "tx=" + tx : "tx=''") + ']';

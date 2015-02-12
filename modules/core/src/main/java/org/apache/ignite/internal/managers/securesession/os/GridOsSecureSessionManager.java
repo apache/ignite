@@ -19,10 +19,10 @@ package org.apache.ignite.internal.managers.securesession.os;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.securesession.*;
 import org.apache.ignite.internal.managers.security.*;
+import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

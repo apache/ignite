@@ -17,7 +17,6 @@
 
 package org.apache.ignite.yardstick.compute.model;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.jetbrains.annotations.*;
@@ -44,16 +43,16 @@ public class NoopTask implements ComputeTask<Object, Object> {
     /** {@inheritDoc} */
     @Override public ComputeJobResultPolicy result(
         ComputeJobResult res,
-        List<ComputeJobResult> rcvd
-    ) throws IgniteCheckedException {
+        List<ComputeJobResult> rcvd)
+    {
         return ComputeJobResultPolicy.WAIT;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid,
-        @Nullable Object arg
-    ) throws IgniteCheckedException {
+        @Nullable Object arg)
+    {
         Map<ComputeJob, ClusterNode> map = new HashMap<>((int)(subgrid.size() * jobs / 0.75));
 
         for (ClusterNode gridNode : subgrid) {
@@ -66,7 +65,7 @@ public class NoopTask implements ComputeTask<Object, Object> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
         return null;
     }
 
@@ -75,7 +74,7 @@ public class NoopTask implements ComputeTask<Object, Object> {
      */
     public static class NoopJob implements ComputeJob, Externalizable {
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() throws IgniteCheckedException {
+        @Nullable @Override public Object execute() {
             return null;
         }
 

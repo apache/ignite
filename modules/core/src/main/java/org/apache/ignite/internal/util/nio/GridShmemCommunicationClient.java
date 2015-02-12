@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.direct.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
-import org.jetbrains.annotations.*;
 import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.plugin.extensions.communication.*;
+import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.nio.*;
@@ -39,37 +39,35 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
     private final ByteBuffer writeBuf;
 
     /** */
-    private final GridNioMessageWriter msgWriter;
+    private final MessageFormatter formatter;
 
     /**
      * @param metricsLsnr Metrics listener.
      * @param port Shared memory IPC server port.
      * @param connTimeout Connection timeout.
      * @param log Logger.
-     * @param msgWriter Message writer.
+     * @param formatter Message formatter.
      * @throws IgniteCheckedException If failed.
      */
-    public GridShmemCommunicationClient(GridNioMetricsListener metricsLsnr, int port, long connTimeout, IgniteLogger log,
-        GridNioMessageWriter msgWriter)
-        throws IgniteCheckedException {
+    public GridShmemCommunicationClient(GridNioMetricsListener metricsLsnr, int port, long connTimeout,
+        IgniteLogger log, MessageFormatter formatter) throws IgniteCheckedException {
         super(metricsLsnr);
 
         assert metricsLsnr != null;
-        assert msgWriter != null;
         assert port > 0 && port < 0xffff;
         assert connTimeout >= 0;
 
         shmem = new IpcSharedMemoryClientEndpoint(port, (int)connTimeout, log);
 
-        this.msgWriter = msgWriter;
-
         writeBuf = ByteBuffer.allocate(8 << 10);
 
         writeBuf.order(ByteOrder.nativeOrder());
+
+        this.formatter = formatter;
     }
 
     /** {@inheritDoc} */
-    @Override public  synchronized void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC)
+    @Override public synchronized void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC)
         throws IgniteCheckedException {
         handshakeC.applyx(shmem.inputStream(), shmem.outputStream());
     }
@@ -110,7 +108,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized boolean sendMessage(@Nullable UUID nodeId, GridTcpCommunicationMessageAdapter msg)
+    @Override public synchronized boolean sendMessage(@Nullable UUID nodeId, MessageAdapter msg)
         throws IgniteCheckedException {
         if (closed())
             throw new IgniteCheckedException("Communication client was closed: " + this);
@@ -118,7 +116,9 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
         assert writeBuf.hasArray();
 
         try {
-            int cnt = msgWriter.writeFully(nodeId, msg, shmem.outputStream(), writeBuf);
+            msg.setWriter(formatter.writer());
+
+            int cnt = U.writeMessageFully(msg, shmem.outputStream(), writeBuf);
 
             metricsLsnr.onBytesSent(cnt);
         }

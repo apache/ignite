@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.spring;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.resource.*;
+import org.apache.ignite.lang.*;
 
 import java.net.*;
 import java.util.*;
@@ -60,8 +60,8 @@ public interface IgniteSpringProcessor {
 
     /**
      * Gets user version for given class loader by checking
-     * {@code META-INF/gridgain.xml} file for {@code userVersion} attribute. If
-     * {@code gridgain.xml} file is not found, or user version is not specified there,
+     * {@code META-INF/ignite.xml} file for {@code userVersion} attribute. If
+     * {@code ignite.xml} file is not found, or user version is not specified there,
      * then default version (empty string) is returned.
      *
      * @param ldr Class loader.

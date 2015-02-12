@@ -19,9 +19,9 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Job siblings response.
  */
-public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter {
+public class GridJobSiblingsResponse extends MessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -69,7 +69,7 @@ public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter 
      * @param marsh Marshaller.
      * @throws IgniteCheckedException In case of error.
      */
-    public void unmarshalSiblings(IgniteMarshaller marsh) throws IgniteCheckedException {
+    public void unmarshalSiblings(Marshaller marsh) throws IgniteCheckedException {
         assert marsh != null;
 
         if (siblingsBytes != null)
@@ -78,7 +78,7 @@ public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
-    @Override public GridTcpCommunicationMessageAdapter clone() {
+    @Override public MessageAdapter clone() {
         GridJobSiblingsResponse _clone = new GridJobSiblingsResponse();
 
         clone0(_clone);
@@ -87,7 +87,7 @@ public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter 
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+    @Override protected void clone0(MessageAdapter _msg) {
         GridJobSiblingsResponse _clone = (GridJobSiblingsResponse)_msg;
 
         _clone.siblings = siblings;
@@ -97,21 +97,21 @@ public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean writeTo(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        writer.setBuffer(buf);
 
-        if (!commState.typeWritten) {
-            if (!commState.putByte(directType()))
+        if (!typeWritten) {
+            if (!writer.writeByte(null, directType()))
                 return false;
 
-            commState.typeWritten = true;
+            typeWritten = true;
         }
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                if (!commState.putByteArray(siblingsBytes))
+                if (!writer.writeByteArray("siblingsBytes", siblingsBytes))
                     return false;
 
-                commState.idx++;
+                state++;
 
         }
 
@@ -121,18 +121,16 @@ public class GridJobSiblingsResponse extends GridTcpCommunicationMessageAdapter 
     /** {@inheritDoc} */
     @SuppressWarnings("all")
     @Override public boolean readFrom(ByteBuffer buf) {
-        commState.setBuffer(buf);
+        reader.setBuffer(buf);
 
-        switch (commState.idx) {
+        switch (state) {
             case 0:
-                byte[] siblingsBytes0 = commState.getByteArray();
+                siblingsBytes = reader.readByteArray("siblingsBytes");
 
-                if (siblingsBytes0 == BYTE_ARR_NOT_READ)
+                if (!reader.isLastRead())
                     return false;
 
-                siblingsBytes = siblingsBytes0;
-
-                commState.idx++;
+                state++;
 
         }
 

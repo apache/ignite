@@ -24,6 +24,8 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
@@ -32,8 +34,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.failover.always.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -259,14 +259,14 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                     resQueue.put(fut); // Blocks if queue is full.
 
-                    fut.listenAsync(new CI1<IgniteInternalFuture<Void>>() {
-                        @Override public void apply(IgniteInternalFuture<Void> f) {
+                    fut.listenAsync(new CI1<IgniteFuture<Void>>() {
+                        @Override public void apply(IgniteFuture<Void> f) {
                             ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
                             try {
                                 taskFut.get(); //if something went wrong - we'll get exception here
                             }
-                            catch (IgniteCheckedException e) {
+                            catch (IgniteException e) {
                                 log.error("Job failed", e);
 
                                 jobFailed.set(true);
@@ -340,9 +340,9 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             int primaryCacheSize = 0;
 
             for (Ignite g : runningWorkers) {
-                info(">>>>> " + g.cache(CACHE_NAME).size());
+                info(">>>>> " + g.jcache(CACHE_NAME).localSize());
 
-                primaryCacheSize += g.cache(CACHE_NAME).primarySize();
+                primaryCacheSize += ((IgniteKernal)g).internalCache(CACHE_NAME).primarySize();
             }
 
             assertEquals(TEST_MAP_SIZE, primaryCacheSize);
@@ -431,14 +431,14 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                     resQueue.put(fut); // Blocks if queue is full.
 
-                    fut.listenAsync(new CI1<IgniteInternalFuture<Void>>() {
-                        @Override public void apply(IgniteInternalFuture<Void> f) {
+                    fut.listenAsync(new CI1<IgniteFuture<Void>>() {
+                        @Override public void apply(IgniteFuture<Void> f) {
                             ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
                             try {
                                 taskFut.get(); //if something went wrong - we'll get exception here
                             }
-                            catch (IgniteCheckedException e) {
+                            catch (IgniteException e) {
                                 log.error("Job failed", e);
 
                                 jobFailed.set(true);
@@ -482,14 +482,14 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                 resQueue.put(fut); // Blocks if queue is full.
 
-                fut.listenAsync(new CI1<IgniteInternalFuture<Void>>() {
-                    @Override public void apply(IgniteInternalFuture<Void> f) {
+                fut.listenAsync(new CI1<IgniteFuture<Void>>() {
+                    @Override public void apply(IgniteFuture<Void> f) {
                         ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
                         try {
                             taskFut.get(); //if something went wrong - we'll get exception here
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (IgniteException e) {
                             log.error("Job failed", e);
 
                             jobFailed.set(true);
@@ -540,9 +540,9 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             int primaryCacheSize = 0;
 
             for (Ignite g : runningWorkers) {
-                info(">>>>> " + g.cache(CACHE_NAME).size());
+                info(">>>>> " + g.jcache(CACHE_NAME).localSize());
 
-                primaryCacheSize += g.cache(CACHE_NAME).primarySize();
+                primaryCacheSize += ((IgniteKernal)g).internalCache(CACHE_NAME).primarySize();
             }
 
             assertEquals(TEST_MAP_SIZE, primaryCacheSize);
@@ -565,7 +565,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> ret = new ArrayList<>(keys.size());
 
-        GridCache<Object, Object> cache = workerNode.cache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = workerNode.jcache(CACHE_NAME);
 
         for (Integer key : keys) {
             if (cache.get(key) == null) // Key is absent.
@@ -596,7 +596,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        cfg.setDeploymentMode(IgniteDeploymentMode.CONTINUOUS);
+        cfg.setDeploymentMode(DeploymentMode.CONTINUOUS);
 
         TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
 
@@ -652,7 +652,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
         private IgnitePredicate<? super ClusterNode>[] filter;
 
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /**

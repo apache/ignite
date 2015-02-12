@@ -18,11 +18,12 @@
 package org.apache.ignite.spi.checkpoint.jdbc;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.checkpoint.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+
 import javax.sql.*;
 import java.sql.*;
 import java.text.*;
@@ -82,10 +83,10 @@ import java.text.*;
  * <h2 class="header">Spring Example</h2>
  * {@link JdbcCheckpointSpi} can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
- * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
+ * &lt;bean id="grid.custom.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true"&gt;
  *     ...
  *     &lt;property name="checkpointSpi"&gt;
- *         &lt;bean class="org.gridgain.grid.spi.checkpoint.jdbc.GridJdbcCheckpointSpi"&gt;
+ *         &lt;bean class="org.apache.ignite.spi.checkpoint.jdbc.JdbcCheckpointSpi"&gt;
  *             &lt;property name="dataSrc"&gt;&lt;ref bean="anyPooledDataSourceBean" /&gt;&lt;/property&gt;
  *             &lt;property name="checkpointTableName" value="GRID_CHECKPOINTS" /&gt;
  *             &lt;property name="user" value="test" /&gt;
@@ -167,7 +168,7 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
     private static final String DELETE_EXPIRED_SQL = "DELETE FROM {0} WHERE {1} IS NOT NULL AND {1} <= ?";
 
     /** */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** */

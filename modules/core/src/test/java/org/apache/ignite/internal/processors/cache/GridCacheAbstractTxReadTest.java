@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 
@@ -32,7 +31,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.getTransactionsConfiguration().setTxSerializableEnabled(true);
+        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
         return cfg;
     }
@@ -99,11 +98,11 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
      */
     protected void checkTransactionalRead(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation)
         throws IgniteCheckedException {
-        GridCache<String, Integer> cache = cache(0);
+        IgniteCache<String, Integer> cache = jcache(0);
 
-        cache.clearAll();
+        cache.clear();
 
-        IgniteTx tx = cache.txStart(concurrency, isolation);
+        IgniteTx tx = grid(0).transactions().txStart(concurrency, isolation);
 
         try {
             cache.put("key", 1);
@@ -119,7 +118,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
         assertEquals("Invalid cache size after put", 1, cache.size());
 
         try {
-            tx = cache.txStart(concurrency, isolation);
+            tx = grid(0).transactions().txStart(concurrency, isolation);
 
             assertEquals("Invalid value inside transactional read", Integer.valueOf(1), cache.get("key"));
 

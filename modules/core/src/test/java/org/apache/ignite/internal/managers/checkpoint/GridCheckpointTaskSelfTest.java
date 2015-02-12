@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.managers.checkpoint;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.checkpoint.cache.*;
@@ -29,7 +29,6 @@ import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -105,8 +104,8 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        assert grid(1).cache(CACHE_NAME).isEmpty() : grid(1).cache(CACHE_NAME).entrySet();
-        assert grid(2).cache(CACHE_NAME).isEmpty() : grid(2).cache(CACHE_NAME).entrySet();
+        assert grid(1).jcache(CACHE_NAME).localSize() == 0 : grid(1).jcache(CACHE_NAME);
+        assert grid(2).jcache(CACHE_NAME).localSize() == 0 : grid(2).jcache(CACHE_NAME);
 
         stopAllGrids();
     }
@@ -135,12 +134,12 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** Task session. */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Void arg) throws IgniteCheckedException {
+            @Nullable Void arg) {
             assert ignite.cluster().nodes().size() == 2;
 
             ClusterNode rmt = F.first(ignite.cluster().forRemotes().nodes());
@@ -153,10 +152,10 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
                     @IgniteInstanceResource
                     private Ignite ignite;
 
-                    @IgniteTaskSessionResource
+                    @TaskSessionResource
                     private ComputeTaskSession ses;
 
-                    @Override public Object execute() throws IgniteCheckedException {
+                    @Override public Object execute() {
                         X.println("Executing FailoverTestTask job on node " + ignite.configuration().getNodeId());
 
                         Boolean cpVal = ses.loadCheckpoint(CP_KEY);
@@ -177,7 +176,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -192,12 +191,12 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         private Ignite ignite;
 
         /** Task session. */
-        @IgniteTaskSessionResource
+        @TaskSessionResource
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Void arg) throws IgniteCheckedException {
+            @Nullable Void arg) {
             assert ignite.cluster().nodes().size() == 2;
 
             ClusterNode rmt = F.first(ignite.cluster().forRemotes().nodes());
@@ -208,10 +207,10 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
                     @IgniteInstanceResource
                     private Ignite ignite;
 
-                    @IgniteTaskSessionResource
+                    @TaskSessionResource
                     private ComputeTaskSession ses;
 
-                    @Override public Object execute() throws IgniteCheckedException {
+                    @Override public Object execute() {
                         X.println("Executing ReduceTestTask job on node " + ignite.configuration().getNodeId());
 
                         ses.saveCheckpoint(CP_KEY, true);
@@ -224,7 +223,7 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Void reduce(List<ComputeJobResult> results) {
             assert ses.loadCheckpoint(CP_KEY) != null;
 
             return null;

@@ -23,7 +23,7 @@ import org.apache.ignite.internal.*;
 /**
  * Interface was introduced to avoid compile-time dependency on spring framework. Spring resource context
  * provides optional spring resource injectors, it can be passed to factory method
- * starting GridGain {@link IgnitionEx#start(GridSpringResourceContext)}.
+ * starting Ignite {@link IgnitionEx#start(GridSpringResourceContext)}.
  */
 public interface GridSpringResourceContext {
     /**

@@ -17,11 +17,11 @@
 
 package org.test.gridify;
 
-import org.apache.ignite.gridify.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.gridify.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.deployment.local.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
@@ -30,8 +30,8 @@ import org.apache.ignite.testframework.junits.common.*;
  * 1. The JVM is started with following parameters to enable jboss online weaving
  *      (replace ${IGNITE_HOME} to you $IGNITE_HOME):
  *      -javaagent:${IGNITE_HOME}libs/jboss-aop-jdk50-4.0.4.jar
- *      -Djboss.aop.class.path=[path to grid compiled classes (Idea out folder) or path to gridgain.jar]
- *      -Djboss.aop.exclude=org,com -Djboss.aop.include=org.gridgain
+ *      -Djboss.aop.class.path=[path to grid compiled classes (Idea out folder) or path to ignite.jar]
+ *      -Djboss.aop.exclude=org,com -Djboss.aop.include=org.apache.ignite
  *
  * 2. The following jars should be in a classpath:
  *      ${IGNITE_HOME}libs/javassist-3.x.x.jar
@@ -51,7 +51,7 @@ import org.apache.ignite.testframework.junits.common.*;
 @GridCommonTest(group="AOP")
 public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /** */
-    private IgniteDeploymentMode depMode = IgniteDeploymentMode.PRIVATE;
+    private DeploymentMode depMode = DeploymentMode.PRIVATE;
 
     /** */
     public ExternalNonSpringAopSelfTest() {
@@ -77,231 +77,231 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testDefaultPrivate() throws Exception {
-        checkDefault(IgniteDeploymentMode.PRIVATE);
+        checkDefault(DeploymentMode.PRIVATE);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testDefaultIsolated() throws Exception {
-        checkDefault(IgniteDeploymentMode.ISOLATED);
+        checkDefault(DeploymentMode.ISOLATED);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testDefaultContinuous() throws Exception {
-        checkDefault(IgniteDeploymentMode.CONTINUOUS);
+        checkDefault(DeploymentMode.CONTINUOUS);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testDefaultShared() throws Exception {
-        checkDefault(IgniteDeploymentMode.SHARED);
+        checkDefault(DeploymentMode.SHARED);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testNonDefaultClassPrivate() throws Exception {
-        checkNonDefaultClass(IgniteDeploymentMode.PRIVATE);
+        checkNonDefaultClass(DeploymentMode.PRIVATE);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testNonDefaultClassIsolated() throws Exception {
-        checkNonDefaultClass(IgniteDeploymentMode.ISOLATED);
+        checkNonDefaultClass(DeploymentMode.ISOLATED);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testNonDefaultContinuous() throws Exception {
-        checkNonDefaultClass(IgniteDeploymentMode.CONTINUOUS);
+        checkNonDefaultClass(DeploymentMode.CONTINUOUS);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testNonDefaultShared() throws Exception {
-        checkNonDefaultClass(IgniteDeploymentMode.SHARED);
+        checkNonDefaultClass(DeploymentMode.SHARED);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testNonDefaultNamePrivate() throws Exception {
-        checkNonDefaultName(IgniteDeploymentMode.PRIVATE);
+        checkNonDefaultName(DeploymentMode.PRIVATE);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testNonDefaultNameIsolated() throws Exception {
-        checkNonDefaultName(IgniteDeploymentMode.ISOLATED);
+        checkNonDefaultName(DeploymentMode.ISOLATED);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testNonDefaultNameContinuous() throws Exception {
-        checkNonDefaultName(IgniteDeploymentMode.CONTINUOUS);
+        checkNonDefaultName(DeploymentMode.CONTINUOUS);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testNonDefaultNameShared() throws Exception {
-        checkNonDefaultName(IgniteDeploymentMode.SHARED);
+        checkNonDefaultName(DeploymentMode.SHARED);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testTaskNameAndTaskClassPrivate() throws Exception {
-        checkTaskNameAndTaskClass(IgniteDeploymentMode.PRIVATE);
+        checkTaskNameAndTaskClass(DeploymentMode.PRIVATE);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testTaskNameAndTaskClassIsolated() throws Exception {
-        checkTaskNameAndTaskClass(IgniteDeploymentMode.ISOLATED);
+        checkTaskNameAndTaskClass(DeploymentMode.ISOLATED);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testTaskNameAndTaskClassContinuous() throws Exception {
-        checkTaskNameAndTaskClass(IgniteDeploymentMode.CONTINUOUS);
+        checkTaskNameAndTaskClass(DeploymentMode.CONTINUOUS);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testTaskNameAndTaskClassShared() throws Exception {
-        checkTaskNameAndTaskClass(IgniteDeploymentMode.SHARED);
+        checkTaskNameAndTaskClass(DeploymentMode.SHARED);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testDefaultExceptionPrivate() throws Exception {
-        checkDefaultException(IgniteDeploymentMode.PRIVATE);
+        checkDefaultException(DeploymentMode.PRIVATE);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testDefaultExceptionIsolated() throws Exception {
-        checkDefaultException(IgniteDeploymentMode.ISOLATED);
+        checkDefaultException(DeploymentMode.ISOLATED);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testDefaultExceptionContinuous() throws Exception {
-        checkDefaultException(IgniteDeploymentMode.CONTINUOUS);
+        checkDefaultException(DeploymentMode.CONTINUOUS);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testDefaultExceptionShared() throws Exception {
-        checkDefaultException(IgniteDeploymentMode.SHARED);
+        checkDefaultException(DeploymentMode.SHARED);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testDefaultResourcePrivate() throws Exception {
-        checkDefaultResource(IgniteDeploymentMode.PRIVATE);
+        checkDefaultResource(DeploymentMode.PRIVATE);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testDefaultResourceIsolated() throws Exception {
-        checkDefaultResource(IgniteDeploymentMode.ISOLATED);
+        checkDefaultResource(DeploymentMode.ISOLATED);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testDefaultResourceContinuous() throws Exception {
-        checkDefaultResource(IgniteDeploymentMode.CONTINUOUS);
+        checkDefaultResource(DeploymentMode.CONTINUOUS);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testDefaultResourceShared() throws Exception {
-        checkDefaultResource(IgniteDeploymentMode.SHARED);
+        checkDefaultResource(DeploymentMode.SHARED);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testNonDefaultClassResourcePrivate() throws Exception {
-        checkNonDefaultClassResource(IgniteDeploymentMode.PRIVATE);
+        checkNonDefaultClassResource(DeploymentMode.PRIVATE);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testNonDefaultClassResourceIsolated() throws Exception {
-        checkNonDefaultClassResource(IgniteDeploymentMode.ISOLATED);
+        checkNonDefaultClassResource(DeploymentMode.ISOLATED);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testNonDefaultClassResourceContinuous() throws Exception {
-        checkNonDefaultClassResource(IgniteDeploymentMode.CONTINUOUS);
+        checkNonDefaultClassResource(DeploymentMode.CONTINUOUS);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testNonDefaultClassResourceShared() throws Exception {
-        checkNonDefaultClassResource(IgniteDeploymentMode.SHARED);
+        checkNonDefaultClassResource(DeploymentMode.SHARED);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testNonDefaultNameResourcePrivate() throws Exception {
-        checkNonDefaultNameResource(IgniteDeploymentMode.PRIVATE);
+        checkNonDefaultNameResource(DeploymentMode.PRIVATE);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testNonDefaultNameResourceIsolated() throws Exception {
-        checkNonDefaultNameResource(IgniteDeploymentMode.ISOLATED);
+        checkNonDefaultNameResource(DeploymentMode.ISOLATED);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testNonDefaultNameResourceContinuous() throws Exception {
-        checkNonDefaultNameResource(IgniteDeploymentMode.CONTINUOUS);
+        checkNonDefaultNameResource(DeploymentMode.CONTINUOUS);
     }
 
     /**
      * @throws Exception If test failed.
      */
     public void testNonDefaultNameResourceShared() throws Exception {
-        checkNonDefaultNameResource(IgniteDeploymentMode.SHARED);
+        checkNonDefaultNameResource(DeploymentMode.SHARED);
     }
 
     /**
      * @param depMode Deployment mode to use.
      * @throws Exception If failed.
      */
-    private void checkDefault(IgniteDeploymentMode depMode) throws Exception {
+    private void checkDefault(DeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;
 
@@ -327,7 +327,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
      * @param depMode Deployment mode to use.
      * @throws Exception If failed.
      */
-    private void checkNonDefaultClass(IgniteDeploymentMode depMode) throws Exception {
+    private void checkNonDefaultClass(DeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;
 
@@ -353,7 +353,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
      * @param depMode Deployment mode to use.
      * @throws Exception If failed.
      */
-    private void checkNonDefaultName(IgniteDeploymentMode depMode) throws Exception {
+    private void checkNonDefaultName(DeploymentMode depMode) throws Exception {
         try {
             this.depMode = depMode;
 
@@ -379,7 +379,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
      * @param depMode Deployment mode to use.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    private void checkTaskNameAndTaskClass(IgniteDeploymentMode depMode) {
+    private void checkTaskNameAndTaskClass(DeploymentMode depMode) {
         this.depMode = depMode;
 
         info("Start Gridify test with Test AOP Task in Deployment Mode : " + depMode);
@@ -405,7 +405,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
      * @param depMode Deployment mode to use.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    private void checkDefaultException(IgniteDeploymentMode depMode) {
+    private void checkDefaultException(DeploymentMode depMode) {
         this.depMode = depMode;
 
         info("Start Gridify test with Default AOP Task and exception in Deployment Mode : " + depMode);
@@ -442,7 +442,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
      * @param depMode Deployment mode to use.
      * @throws Exception If failed.
      */
-    private void checkDefaultResource(IgniteDeploymentMode depMode) throws Exception {
+    private void checkDefaultResource(DeploymentMode depMode) throws Exception {
         this.depMode = depMode;
 
         info("Start Gridify test with Default AOP Task in Deployment Mode : " + depMode);
@@ -468,7 +468,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
      * @param depMode Deployment mode to use.
      * @throws Exception If failed.
      */
-    private void checkNonDefaultClassResource(IgniteDeploymentMode depMode) throws Exception {
+    private void checkNonDefaultClassResource(DeploymentMode depMode) throws Exception {
         this.depMode = depMode;
 
         info("Start Gridify test with Test AOP Task in Deployment Mode : " + depMode);
@@ -494,7 +494,7 @@ public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
      * @param depMode Deployment mode to use.
      * @throws Exception If failed.
      */
-    private void checkNonDefaultNameResource(IgniteDeploymentMode depMode) throws Exception {
+    private void checkNonDefaultNameResource(DeploymentMode depMode) throws Exception {
         this.depMode = depMode;
 
         info("Start Gridify test with Test AOP Task in Deployment Mode : " + depMode);

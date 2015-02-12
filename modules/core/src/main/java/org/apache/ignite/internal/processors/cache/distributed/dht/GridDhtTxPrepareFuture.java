@@ -20,19 +20,20 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.dr.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
@@ -43,14 +44,15 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.transactions.IgniteTxState.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 
 /**
  *
  */
-public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<IgniteTxEx<K, V>>
-    implements GridCacheMvccFuture<K, V, IgniteTxEx<K, V>> {
+public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<IgniteInternalTx<K, V>>
+    implements GridCacheMvccFuture<K, V, IgniteInternalTx<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -152,12 +154,12 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         Collection<UUID> lastBackups,
         IgniteInClosure<GridNearTxPrepareResponse<K, V>> completeCb
     ) {
-        super(cctx.kernalContext(), new IgniteReducer<IgniteTxEx<K, V>, IgniteTxEx<K, V>>() {
-            @Override public boolean collect(IgniteTxEx<K, V> e) {
+        super(cctx.kernalContext(), new IgniteReducer<IgniteInternalTx<K, V>, IgniteInternalTx<K, V>>() {
+            @Override public boolean collect(IgniteInternalTx<K, V> e) {
                 return true;
             }
 
-            @Override public IgniteTxEx<K, V> reduce() {
+            @Override public IgniteInternalTx<K, V> reduce() {
                 // Nothing to aggregate.
                 return tx;
             }
@@ -259,7 +261,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new ClusterTopologyException("Remote node left grid (will retry): " + nodeId));
+                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
 
                     return true;
                 }
@@ -423,7 +425,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      */
     public void onResult(UUID nodeId, GridDhtTxPrepareResponse<K, V> res) {
         if (!isDone()) {
-            for (IgniteInternalFuture<IgniteTxEx<K, V>> fut : pending()) {
+            for (IgniteInternalFuture<IgniteInternalTx<K, V>> fut : pending()) {
                 if (isMini(fut)) {
                     MiniFuture f = (MiniFuture)fut;
 
@@ -509,7 +511,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(IgniteTxEx<K, V> tx0, Throwable err) {
+    @Override public boolean onDone(IgniteInternalTx<K, V> tx0, Throwable err) {
         assert err != null || (initialized() && !hasPending()) : "On done called for prepare future that has " +
             "pending mini futures: " + this;
 
@@ -595,7 +597,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      */
     private void sendPrepareResponse(GridNearTxPrepareResponse<K, V> res) throws IgniteCheckedException {
         if (!tx.nearNodeId().equals(cctx.localNodeId()))
-            cctx.io().send(tx.nearNodeId(), res);
+            cctx.io().send(tx.nearNodeId(), res, tx.ioPolicy());
         else {
             assert completeCb != null;
 
@@ -926,9 +928,9 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                     //noinspection TryWithIdenticalCatches
                     try {
-                        cctx.io().send(n, req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                        cctx.io().send(n, req, tx.ioPolicy());
                     }
-                    catch (ClusterTopologyException e) {
+                    catch (ClusterTopologyCheckedException e) {
                         fut.onResult(e);
                     }
                     catch (IgniteCheckedException e) {
@@ -1141,7 +1143,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      * Mini-future for get operations. Mini-futures are only waiting on a single
      * node as opposed to multiple nodes.
      */
-    private class MiniFuture extends GridFutureAdapter<IgniteTxEx<K, V>> {
+    private class MiniFuture extends GridFutureAdapter<IgniteInternalTx<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1209,7 +1211,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         /**
          * @param e Node failure.
          */
-        void onResult(ClusterTopologyException e) {
+        void onResult(ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will ignore): " + this);
 

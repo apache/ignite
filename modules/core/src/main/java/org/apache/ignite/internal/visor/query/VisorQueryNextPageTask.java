@@ -20,10 +20,10 @@ package org.apache.ignite.internal.visor.query;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.lang.*;
 
 import java.util.*;
 
@@ -58,15 +58,20 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorQueryResult run(IgniteBiTuple<String, Integer> arg) throws IgniteCheckedException {
-            return arg.get1().startsWith(VisorQueryUtils.SCAN_QRY_NAME) ? nextScanPage(arg) : nextSqlPage(arg);
+        @Override protected VisorQueryResult run(IgniteBiTuple<String, Integer> arg) {
+            try {
+                return arg.get1().startsWith(VisorQueryUtils.SCAN_QRY_NAME) ? nextScanPage(arg) : nextSqlPage(arg);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
         }
 
         /** Collect data from SQL query */
         private VisorQueryResult nextSqlPage(IgniteBiTuple<String, Integer> arg) throws IgniteCheckedException {
             long start = U.currentTimeMillis();
 
-            ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder<List<?>>> storage = g.nodeLocalMap();
+            ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder<List<?>>> storage = ignite.nodeLocalMap();
 
             VisorQueryTask.VisorFutureResultSetHolder<List<?>> t = storage.get(arg.get1());
 
@@ -89,7 +94,7 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
         private VisorQueryResult nextScanPage(IgniteBiTuple<String, Integer> arg) throws IgniteCheckedException {
             long start = U.currentTimeMillis();
 
-            ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder<Map.Entry<Object, Object>>> storage = g.nodeLocalMap();
+            ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder<Map.Entry<Object, Object>>> storage = ignite.nodeLocalMap();
 
             VisorQueryTask.VisorFutureResultSetHolder<Map.Entry<Object, Object>> t = storage.get(arg.get1());
 

@@ -22,13 +22,13 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -37,8 +37,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.lang.IgniteProductVersion.*;
-import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
  *  GridDiscovery self test.
@@ -181,8 +181,8 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
         /** Left nodes counter. */
         final CountDownLatch leftCnt = new CountDownLatch(NODES_CNT);
 
-        IgnitePredicate<IgniteEvent> lsnr = new IgnitePredicate<IgniteEvent>() {
-            @Override public boolean apply(IgniteEvent evt) {
+        IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
                 if (EVT_NODE_JOINED == evt.type()) {
                     cnt.incrementAndGet();
 

@@ -17,8 +17,10 @@
 
 package org.apache.ignite.scalar.pimps
 
+import javax.cache.Cache
+
 import org.apache.ignite._
-import org.apache.ignite.cache.{CacheEntry, CacheProjection}
+import org.apache.ignite.cache.CacheProjection
 import org.apache.ignite.cluster.ClusterGroup
 import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.lang.{IgniteBiTuple, IgniteClosure, IgnitePredicate, IgniteReducer}
@@ -60,7 +62,7 @@ object ScalarCacheProjectionPimp {
  * Scalar's pimp and replace the original call with a call on that pimp.
  *
  * Note that Scalar provide extensive library of implicit conversion between Java and
- * Scala GridGain counterparts in `ScalarConversions` object
+ * Scala Ignite counterparts in `ScalarConversions` object
  *
  * ==Suffix '$' In Names==
  * Symbol `$` is used in names when they conflict with the names in the base Java class
@@ -69,7 +71,7 @@ object ScalarCacheProjectionPimp {
  * Scala's side method with `$` suffix.
  */
 class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedType[CacheProjection[K, V]]
-    with Iterable[CacheEntry[K, V]] {
+    with Iterable[Cache.Entry[K, V]] {
     /** */
     lazy val value: CacheProjection[K, V] = impl
 
@@ -77,7 +79,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
     protected var impl: CacheProjection[K, V] = _
 
     /** Type alias. */
-    protected type EntryPred = (CacheEntry[K, V]) => Boolean
+    protected type EntryPred = (Cache.Entry[K, V]) => Boolean
 
     /** Type alias. */
     protected type KvPred = (K, V) => Boolean
@@ -89,9 +91,9 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
         toScalaSeq(value.iterator).iterator
 
     /**
-     * Unwraps sequence of functions to sequence of GridGain predicates.
+     * Unwraps sequence of functions to sequence of Ignite predicates.
      */
-    private def unwrap(@Nullable p: Seq[EntryPred]): Seq[IgnitePredicate[CacheEntry[K, V]]] =
+    private def unwrap(@Nullable p: Seq[EntryPred]): Seq[IgnitePredicate[Cache.Entry[K, V]]] =
         if (p == null)
             null
         else

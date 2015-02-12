@@ -17,9 +17,10 @@
 
 package org.apache.ignite.scalar.examples
 
-import org.apache.ignite.cache.CacheEntry
-import org.apache.ignite.events.IgniteEvent
-import org.apache.ignite.events.IgniteEventType._
+import javax.cache.Cache
+
+import org.apache.ignite.events.Event
+import org.apache.ignite.events.EventType._
 import org.apache.ignite.lang.IgnitePredicate
 import org.apache.ignite.scalar.scalar
 import org.apache.ignite.scalar.scalar._
@@ -27,7 +28,7 @@ import org.apache.ignite.scalar.scalar._
 import scala.collection.JavaConversions._
 
 /**
- * Demonstrates basic In-Memory Data Grid operations with Scalar.
+ * Demonstrates basic In-Memory Data Ignite Cluster operations with Scalar.
  * <p>
  * Remote nodes should always be started with configuration file which includes
  * cache: `'ignite.sh examples/config/example-cache.xml'`. Local node can
@@ -39,7 +40,7 @@ object ScalarCacheExample extends App {
 
     scalar("examples/config/example-cache.xml") {
         // Clean up caches on all nodes before run.
-        cache$(NAME).get.globalClearAll(0)
+        cache$(NAME).get.clear(0)
 
         registerListener()
 
@@ -74,7 +75,7 @@ object ScalarCacheExample extends App {
         // Put one more value.
         c += (3.toString -> 11)
 
-        val gt10 = (e: CacheEntry[String, Int]) => e.peek() > 10
+        val gt10 = (e: Cache.Entry[String, Int]) => e.getValue() > 10
 
         // These should pass the predicate.
         // Note that the predicate checks current state of entry, not the new value.
@@ -126,11 +127,11 @@ object ScalarCacheExample extends App {
      * so we can actually see what happens underneath locally and remotely.
      */
     def registerListener() {
-        val g = grid$
+        val g = ignite$
 
         g *< (() => {
-            val lsnr = new IgnitePredicate[IgniteEvent] {
-                override def apply(e: IgniteEvent): Boolean = {
+            val lsnr = new IgnitePredicate[Event] {
+                override def apply(e: Event): Boolean = {
                     println(e.shortDisplay)
 
                     true

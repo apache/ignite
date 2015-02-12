@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.visor.ggfs;
 
 import org.apache.ignite.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
 
 import java.io.*;
 import java.nio.charset.*;
@@ -160,9 +160,9 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<VisorGgfsProfilerEntry> run(String arg) throws IgniteCheckedException {
+        @Override protected Collection<VisorGgfsProfilerEntry> run(String arg) {
             try {
-                Path logsDir = resolveGgfsProfilerLogsDir(g.fileSystem(arg));
+                Path logsDir = resolveGgfsProfilerLogsDir(ignite.fileSystem(arg));
 
                 if (logsDir != null)
                     return parse(logsDir, arg);
@@ -170,7 +170,10 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
                     return Collections.emptyList();
             }
             catch (IOException | IllegalArgumentException e) {
-                throw new IgniteCheckedException("Failed to parse profiler logs for GGFS: " + arg, e);
+                throw new IgniteException("Failed to parse profiler logs for GGFS: " + arg, e);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
             }
         }
 
@@ -482,7 +485,7 @@ public class VisorGgfsProfilerTask extends VisorOneNodeTask<String, Collection<V
                             // Files was deleted, skip it.
                         }
                         catch (Exception e) {
-                            g.log().warning("Failed to parse GGFS profiler log file: " + p, e);
+                            ignite.log().warning("Failed to parse GGFS profiler log file: " + p, e);
                         }
                     }
                 }

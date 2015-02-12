@@ -18,16 +18,15 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -38,7 +37,7 @@ import java.util.concurrent.*;
  * Test that joining node is able to take items from queue.
  * See GG-2311 for more information.
  */
-public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommonAbstractTest {
+public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends IgniteCollectionAbstractTest {
     /** */
     protected static final int GRID_CNT = 3;
 
@@ -49,26 +48,8 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
     protected static final int ITEMS_CNT = 300;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(GRID_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
-
-        return cfg;
+    @Override protected int gridCount() {
+        return GRID_CNT;
     }
 
     /**
@@ -77,8 +58,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
     public void testTakeFromJoined() throws Exception {
         String queueName = UUID.randomUUID().toString();
 
-        CacheQueue<Integer> queue = grid(0).cache(null).dataStructures()
-            .queue(queueName, 0, true, true);
+        IgniteQueue<Integer> queue = grid(0).queue(queueName, 0, config(true));
 
         assertNotNull(queue);
 
@@ -90,9 +70,9 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
 
         comp.run(putJob);
 
-        IgniteInternalFuture<?> fut = comp.future();
+        IgniteFuture<?> fut = comp.future();
 
-        Collection<IgniteInternalFuture<?>> futs = new ArrayList<>(GRID_CNT - 1);
+        Collection<IgniteFuture<?>> futs = new ArrayList<>(GRID_CNT - 1);
 
         Collection<TakeJob> jobs = new ArrayList<>(GRID_CNT - 1);
 
@@ -135,7 +115,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
 
         info(">>> Joined node polled " + polled);
 
-        for (IgniteInternalFuture<?> f : futs)
+        for (IgniteFuture<?> f : futs)
             f.cancel();
 
         putJob.stop(true);
@@ -176,7 +156,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
                 ", job=" + getClass().getSimpleName() + "]");
 
             try {
-                CacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, 0, true, false);
+                IgniteQueue<Integer> queue = ignite.queue(queueName, 0, null);
 
                 assertNotNull(queue);
 
@@ -245,18 +225,18 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
         /**
          * Awaits for a given count of items to be taken.
          *
-         * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+         * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
          */
-        private void awaitItems() throws IgniteInterruptedException {
+        private void awaitItems() throws IgniteInterruptedCheckedException {
             U.await(takeLatch);
         }
 
         /**
          * Awaits for a given count of items to be taken.
          *
-         * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+         * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
          */
-        private void awaitDone() throws IgniteInterruptedException {
+        private void awaitDone() throws IgniteInterruptedCheckedException {
             U.await(doneLatch);
         }
 
@@ -270,7 +250,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
             Integer lastPolled = null;
 
             try {
-                CacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, 0, true, false);
+                IgniteQueue<Integer> queue = ignite.queue(queueName, 0, null);
 
                 assertNotNull(queue);
 
@@ -281,12 +261,12 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
                 }
             }
             catch (IgniteException e) {
-                if (e.getCause() instanceof IgniteInterruptedException || e.getCause() instanceof InterruptedException)
+                if (e.getCause() instanceof IgniteInterruptedCheckedException || e.getCause() instanceof InterruptedException)
                     log.info("Cancelling job due to interruption: " + e.getMessage());
                 else
                     fail("Unexpected error: " + e);
             }
-            catch (IgniteCheckedException e) {
+            catch (Exception e) {
                 error("Failed to get value from the queue", e);
             }
             finally {

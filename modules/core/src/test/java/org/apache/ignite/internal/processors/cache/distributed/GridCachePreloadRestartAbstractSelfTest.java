@@ -22,19 +22,19 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheConfiguration.*;
-import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.configuration.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.configuration.DeploymentMode.*;
 
 /**
  * Test node restart.
@@ -217,25 +217,25 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     /**
      * @param c Cache projection.
      */
-    private void affinityBeforeStop(GridCache<Integer, String> c) {
+    private void affinityBeforeStop(IgniteCache<Integer, String> c) {
         for (int key = 0; key < keyCnt; key++) {
             int part = affinity(c).partition(key);
 
             info("Affinity nodes before stop [key=" + key + ", partition" + part + ", nodes=" +
-                U.nodeIds(c.affinity().mapPartitionToPrimaryAndBackups(part)) + ']');
+                U.nodeIds(affinity(c).mapPartitionToPrimaryAndBackups(part)) + ']');
         }
     }
 
     /**
      * @param c Cache projection.
      */
-    private void affinityAfterStart(GridCache<Integer, String> c) {
+    private void affinityAfterStart(IgniteCache<Integer, String> c) {
         if (DEBUG) {
             for (int key = 0; key < keyCnt; key++) {
                 int part = affinity(c).partition(key);
 
                 info("Affinity odes after start [key=" + key + ", partition" + part + ", nodes=" +
-                    U.nodeIds(c.affinity().mapPartitionToPrimaryAndBackups(part)) + ']');
+                    U.nodeIds(affinity(c).mapPartitionToPrimaryAndBackups(part)) + ']');
             }
         }
     }
@@ -249,11 +249,11 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
         startGrids();
 
         try {
-            GridCache<Integer, String> c = grid(idx).cache(CACHE_NAME);
+            IgniteCache<Integer, String> c = grid(idx).jcache(CACHE_NAME);
 
             for (int j = 0; j < retries; j++) {
                 for (int i = 0; i < keyCnt; i++)
-                    c.putx(i, Integer.toString(i));
+                    c.put(i, Integer.toString(i));
 
                 info("Stored items.");
 
@@ -269,7 +269,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
 
                 Ignite ignite = startGrid(idx);
 
-                c = ignite.cache(CACHE_NAME);
+                c = ignite.jcache(CACHE_NAME);
 
                 affinityAfterStart(c);
 
@@ -286,7 +286,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
      * @param attempt Attempt.
      * @throws Exception If failed.
      */
-    private void checkGet(GridCache<Integer, String> c, int attempt) throws Exception {
+    private void checkGet(IgniteCache<Integer, String> c, int attempt) throws Exception {
         for (int i = 0; i < keyCnt; i++) {
             String v = c.get(i);
 
@@ -312,11 +312,11 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
      * @param key Key.
      * @param attempt Attempt.
      */
-    private void printFailureDetails(GridCache<Integer, String> c, int key, int attempt) {
+    private void printFailureDetails(IgniteCache<Integer, String> c, int key, int attempt) {
         error("*** Failure details ***");
         error("Key: " + key);
-        error("Partition: " + c.configuration().getAffinity().partition(key));
+        error("Partition: " + c.getConfiguration(CacheConfiguration.class).getAffinity().partition(key));
         error("Attempt: " + attempt);
-        error("Node: " + c.gridProjection().ignite().cluster().localNode().id());
+        error("Node: " + c.unwrap(Ignite.class).cluster().localNode().id());
     }
 }

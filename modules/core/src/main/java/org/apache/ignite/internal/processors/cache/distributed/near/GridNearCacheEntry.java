@@ -18,22 +18,22 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Near cache entry.
@@ -315,8 +315,8 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected V readThrough(IgniteTxEx<K, V> tx, K key, boolean reload,
-        IgnitePredicate<CacheEntry<K, V>>[] filter, UUID subjId, String taskName) throws IgniteCheckedException {
+    @Override protected V readThrough(IgniteInternalTx<K, V> tx, K key, boolean reload,
+        IgnitePredicate<Cache.Entry<K, V>>[] filter, UUID subjId, String taskName) throws IgniteCheckedException {
         return cctx.near().loadAsync(tx,
             F.asList(key),
             reload,
@@ -346,7 +346,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    public boolean loadedValue(@Nullable IgniteTxEx tx, UUID primaryNodeId, V val, byte[] valBytes,
+    public boolean loadedValue(@Nullable IgniteInternalTx tx, UUID primaryNodeId, V val, byte[] valBytes,
         GridCacheVersion ver, GridCacheVersion dhtVer, @Nullable GridCacheVersion expVer, long ttl, long expireTime,
         boolean evt, long topVer, UUID subjId)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
@@ -609,16 +609,6 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     /** {@inheritDoc} */
     @Override protected void onInvalidate() {
         dhtVer = null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheEntry<K, V> wrap(boolean prjAware) {
-        GridCacheProjectionImpl<K, V> prjPerCall = null;
-
-        if (prjAware)
-            prjPerCall = cctx.projectionPerCall();
-
-        return new GridPartitionedCacheEntryImpl<>(prjPerCall, cctx, key, this);
     }
 
     /** {@inheritDoc} */

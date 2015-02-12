@@ -18,27 +18,28 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 
 /**
  * Replicated user transaction.
@@ -276,7 +277,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<IgniteTxEx<K, V>> prepareAsync() {
+    @Override public IgniteInternalFuture<IgniteInternalTx<K, V>> prepareAsync() {
         if (optimistic()) {
             assert isSystemInvalidate();
 
@@ -315,13 +316,13 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         if (!state(PREPARING)) {
             if (setRollbackOnly()) {
                 if (timedOut())
-                    fut.onError(new IgniteTxTimeoutException("Transaction timed out and was rolled back: " + this));
+                    fut.onError(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " + this));
                 else
                     fut.onError(new IgniteCheckedException("Invalid transaction state for prepare [state=" + state() +
                         ", tx=" + this + ']'));
             }
             else
-                fut.onError(new IgniteTxRollbackException("Invalid transaction state for prepare [state=" + state()
+                fut.onError(new IgniteTxRollbackCheckedException("Invalid transaction state for prepare [state=" + state()
                     + ", tx=" + this + ']'));
 
             return fut;
@@ -363,7 +364,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
      * @param lastBackups IDs of backup nodes receiving last prepare request.
      * @return Future that will be completed when locks are acquired.
      */
-    public IgniteInternalFuture<IgniteTxEx<K, V>> prepareAsync(
+    public IgniteInternalFuture<IgniteInternalTx<K, V>> prepareAsync(
         @Nullable Iterable<IgniteTxEntry<K, V>> reads,
         @Nullable Iterable<IgniteTxEntry<K, V>> writes,
         Map<IgniteTxKey<K>, GridCacheVersion> verMap,
@@ -412,14 +413,14 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                     fut.complete();
                 if (setRollbackOnly()) {
                     if (timedOut())
-                        fut.onError(new IgniteTxTimeoutException("Transaction timed out and was rolled back: " +
+                        fut.onError(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " +
                             this));
                     else
                         fut.onError(new IgniteCheckedException("Invalid transaction state for prepare [state=" + state() +
                             ", tx=" + this + ']'));
                 }
                 else
-                    fut.onError(new IgniteTxRollbackException("Invalid transaction state for prepare [state=" +
+                    fut.onError(new IgniteTxRollbackCheckedException("Invalid transaction state for prepare [state=" +
                         state() + ", tx=" + this + ']'));
 
                 return fut;
@@ -445,18 +446,18 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
             else
                 fut.prepare(reads, writes, txNodes);
         }
-        catch (IgniteTxTimeoutException | IgniteTxOptimisticException e) {
+        catch (IgniteTxTimeoutCheckedException | IgniteTxOptimisticCheckedException e) {
             fut.onError(e);
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();
 
-            fut.onError(new IgniteTxRollbackException("Failed to prepare transaction: " + this, e));
+            fut.onError(new IgniteTxRollbackCheckedException("Failed to prepare transaction: " + this, e));
 
             try {
                 rollback();
             }
-            catch (IgniteTxOptimisticException e1) {
+            catch (IgniteTxOptimisticCheckedException e1) {
                 if (log.isDebugEnabled())
                     log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e1 + ']');
 
@@ -472,7 +473,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ThrowableInstanceNeverThrown"})
-    @Override public IgniteInternalFuture<IgniteTx> commitAsync() {
+    @Override public IgniteInternalFuture<IgniteInternalTx> commitAsync() {
         if (log.isDebugEnabled())
             log.debug("Committing dht local tx: " + this);
 
@@ -496,7 +497,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                     else
                         fut.onError(new IgniteCheckedException("Failed to commit transaction: " + CU.txString(this)));
                 }
-                catch (IgniteTxOptimisticException e) {
+                catch (IgniteTxOptimisticCheckedException e) {
                     if (log.isDebugEnabled())
                         log.debug("Failed to optimistically prepare transaction [tx=" + this + ", e=" + e + ']');
 
@@ -509,8 +510,8 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                 }
             }
             else
-                prep.listenAsync(new CI1<IgniteInternalFuture<IgniteTxEx<K, V>>>() {
-                    @Override public void apply(IgniteInternalFuture<IgniteTxEx<K, V>> f) {
+                prep.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
+                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx<K, V>> f) {
                         try {
                             f.get(); // Check for errors of a parent future.
 
@@ -520,7 +521,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                                 fut.onError(new IgniteCheckedException("Failed to commit transaction: " +
                                     CU.txString(GridDhtTxLocal.this)));
                         }
-                        catch (IgniteTxOptimisticException e) {
+                        catch (IgniteTxOptimisticCheckedException e) {
                             if (log.isDebugEnabled())
                                 log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e + ']');
 
@@ -543,7 +544,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                 else
                     fut.onError(new IgniteCheckedException("Failed to commit transaction: " + CU.txString(this)));
             }
-            catch (IgniteTxOptimisticException e) {
+            catch (IgniteTxOptimisticCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e + ']');
 
@@ -567,7 +568,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<IgniteTx> rollbackAsync() {
+    @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
         GridDhtTxPrepareFuture<K, V> prepFut = this.prepFut.get();
 
         final GridDhtTxFinishFuture<K, V> fut = new GridDhtTxFinishFuture<>(cctx, this, /*rollback*/false);
@@ -581,7 +582,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                 else
                     fut.onError(new IgniteCheckedException("Failed to commit transaction: " + CU.txString(this)));
             }
-            catch (IgniteTxOptimisticException e) {
+            catch (IgniteTxOptimisticCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e + ']');
 
@@ -597,8 +598,8 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         else {
             prepFut.complete();
 
-            prepFut.listenAsync(new CI1<IgniteInternalFuture<IgniteTxEx<K, V>>>() {
-                @Override public void apply(IgniteInternalFuture<IgniteTxEx<K, V>> f) {
+            prepFut.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
+                @Override public void apply(IgniteInternalFuture<IgniteInternalTx<K, V>> f) {
                     try {
                         f.get(); // Check for errors of a parent future.
                     }
@@ -655,9 +656,9 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                 nearFinMiniId, err);
 
             try {
-                cctx.io().send(nearNodeId, res, system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                cctx.io().send(nearNodeId, res, ioPolicy());
             }
-            catch (ClusterTopologyException ignored) {
+            catch (ClusterTopologyCheckedException ignored) {
                 if (log.isDebugEnabled())
                     log.debug("Node left before sending finish response (transaction was committed) [node=" +
                         nearNodeId + ", res=" + res + ']');

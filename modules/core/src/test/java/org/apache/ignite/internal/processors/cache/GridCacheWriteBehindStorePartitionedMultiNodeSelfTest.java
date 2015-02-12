@@ -21,12 +21,13 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import javax.cache.configuration.*;
 import java.util.*;
@@ -138,7 +139,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     private void checkSingleWrites() throws Exception {
         prepare();
 
-        GridCache<Integer, String> cache = grid(0).cache(null);
+        IgniteCache<Integer, String> cache = grid(0).jcache(null);
 
         for (int i = 0; i < 100; i++)
             cache.put(i, String.valueOf(i));
@@ -157,7 +158,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
         for (int i = 0; i < 100; i++)
             map.put(i, String.valueOf(i));
 
-        grid(0).cache(null).putAll(map);
+        grid(0).jcache(null).putAll(map);
 
         checkWrites();
     }
@@ -168,9 +169,9 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     private void checkTxWrites() throws Exception {
         prepare();
 
-        GridCache<Object, Object> cache = grid(0).cache(null);
+        IgniteCache<Object, Object> cache = grid(0).jcache(null);
 
-        try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (IgniteTx tx = grid(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             for (int i = 0; i < 100; i++)
                 cache.put(i, String.valueOf(i));
 
@@ -181,9 +182,9 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     }
 
     /**
-     * @throws IgniteInterruptedException If sleep was interrupted.
+     * @throws IgniteInterruptedCheckedException If sleep was interrupted.
      */
-    private void checkWrites() throws IgniteInterruptedException {
+    private void checkWrites() throws IgniteInterruptedCheckedException {
         U.sleep(WRITE_BEHIND_FLUSH_FREQ * 2);
 
         Collection<Integer> allKeys = new ArrayList<>(100);

@@ -28,11 +28,11 @@ import java.io.*;
  */
 public class GridP2PTestJob extends ComputeJobAdapter {
     /** Injected job context. */
-    @IgniteTaskSessionResource
+    @TaskSessionResource
     private ComputeTaskSession taskSes;
 
     /** Injected logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Ignite instance. */
@@ -48,7 +48,7 @@ public class GridP2PTestJob extends ComputeJobAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Serializable execute() throws IgniteCheckedException {
+    @Override public Serializable execute() {
         assert taskSes != null;
 
         ClassLoader ldr = getClass().getClassLoader();

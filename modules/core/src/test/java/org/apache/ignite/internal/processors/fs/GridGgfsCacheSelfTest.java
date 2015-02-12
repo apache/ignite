@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.fs;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
@@ -114,7 +114,7 @@ public class GridGgfsCacheSelfTest extends GridGgfsCommonAbstractTest {
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                g.cache(META_CACHE_NAME);
+                g.jcache(META_CACHE_NAME);
 
                 return null;
             }
@@ -122,12 +122,12 @@ public class GridGgfsCacheSelfTest extends GridGgfsCommonAbstractTest {
 
         GridTestUtils.assertThrows(log(), new Callable<Object>() {
             @Override public Object call() throws Exception {
-                g.cache(DATA_CACHE_NAME);
+                g.jcache(DATA_CACHE_NAME);
 
                 return null;
             }
         }, IllegalStateException.class, null);
 
-        assert g.cache(CACHE_NAME) != null;
+        assert g.jcache(CACHE_NAME) != null;
     }
 }

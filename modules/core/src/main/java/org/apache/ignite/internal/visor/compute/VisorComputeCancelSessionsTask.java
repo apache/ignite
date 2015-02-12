@@ -19,10 +19,10 @@ package org.apache.ignite.internal.visor.compute;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -41,7 +41,7 @@ public class VisorComputeCancelSessionsTask extends VisorMultiNodeTask<Map<UUID,
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) {
         // No-op, just awaiting all jobs done.
         return null;
     }
@@ -62,11 +62,11 @@ public class VisorComputeCancelSessionsTask extends VisorMultiNodeTask<Map<UUID,
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Map<UUID, Set<IgniteUuid>> arg) throws IgniteCheckedException {
-            Set<IgniteUuid> sesIds = arg.get(g.localNode().id());
+        @Override protected Void run(Map<UUID, Set<IgniteUuid>> arg) {
+            Set<IgniteUuid> sesIds = arg.get(ignite.localNode().id());
 
             if (sesIds != null && !sesIds.isEmpty()) {
-                IgniteCompute compute = g.compute(g.forLocal());
+                IgniteCompute compute = ignite.compute(ignite.forLocal());
 
                 Map<IgniteUuid, ComputeTaskFuture<Object>> futs = compute.activeTaskFutures();
 

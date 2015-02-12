@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.eviction.random;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.random.*;
 import org.apache.ignite.internal.processors.cache.eviction.*;
 import org.jetbrains.annotations.*;
@@ -47,10 +46,10 @@ public class GridCacheRandomEvictionPolicySelfTest extends
             for (int i = 0; i < keys; i++) {
                 String s = Integer.toString(i);
 
-                g.cache(null).put(s, s);
+                g.jcache(null).put(s, s);
             }
 
-            assert g.cache(null).size() <= max;
+            assert g.jcache(null).size() <= max;
         }
         finally {
             stopAllGrids();
@@ -85,15 +84,15 @@ public class GridCacheRandomEvictionPolicySelfTest extends
                 int j = rand.nextInt(t.length);
 
                 if (rmv)
-                    g.cache(null).remove(t[j]);
+                    g.jcache(null).remove(t[j]);
                 else
-                    g.cache(null).put(t[j], t[j]);
+                    g.jcache(null).put(t[j], t[j]);
 
                 if (i % 1000 == 0)
                     info("Stats [cntr=" + i + ", total=" + runs + ']');
             }
 
-            assert g.cache(null).size() <= max;
+            assert g.jcache(null).size() <= max;
 
             info(policy(0));
         }
@@ -109,23 +108,17 @@ public class GridCacheRandomEvictionPolicySelfTest extends
         try {
             startGrid();
 
-            GridCache<String, String> c = cache();
+            IgniteCache<String, String> c = jcache();
 
             MockEntry e1 = new MockEntry("1", c);
-
-            e1.setValue("val");
 
             MockEntry e2 = new MockEntry("2", c);
 
             MockEntry e3 = new MockEntry("3", c);
 
-            e3.setValue("val");
-
             MockEntry e4 = new MockEntry("4", c);
 
             MockEntry e5 = new MockEntry("5", c);
-
-            e5.setValue("val");
 
             CacheRandomEvictionPolicy<String, String> p = policy();
 
@@ -192,9 +185,9 @@ public class GridCacheRandomEvictionPolicySelfTest extends
                         int j = rand.nextInt(t.length);
 
                         if (rmv)
-                            g.cache(null).remove(t[j]);
+                            g.jcache(null).remove(t[j]);
                         else
-                            g.cache(null).put(t[j], t[j]);
+                            g.jcache(null).put(t[j], t[j]);
 
                         if (i != 0 && i % 1000 == 0)
                             info("Stats [cntr=" + i + ", total=" + runs + ']');
@@ -204,7 +197,7 @@ public class GridCacheRandomEvictionPolicySelfTest extends
                 }
             }, 10);
 
-            assert g.cache(null).size() <= max;
+            assert g.jcache(null).size() <= max;
 
             info(policy(0));
         }

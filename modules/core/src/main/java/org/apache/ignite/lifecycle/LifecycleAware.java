@@ -20,7 +20,7 @@ package org.apache.ignite.lifecycle;
 import org.apache.ignite.*;
 
 /**
- * All components provided in GridGain configuration can implement this interface.
+ * All components provided in Ignite configuration can implement this interface.
  * If a component implements this interface, then method {@link #start()} will be called
  * during grid startup and {@link #stop()} will be called during stop.
  */
@@ -28,14 +28,14 @@ public interface LifecycleAware {
     /**
      * Starts grid component, called on grid start.
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    public void start() throws IgniteCheckedException;
+    public void start() throws IgniteException;
 
     /**
      * Stops grid component, called on grid shutdown.
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    public void stop() throws IgniteCheckedException;
+    public void stop() throws IgniteException;
 }

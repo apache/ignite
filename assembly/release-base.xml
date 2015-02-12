@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <component xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -24,6 +24,11 @@
     <files>
         <file>
             <source>LICENSE.txt</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+
+        <file>
+            <source>NOTICE.txt</source>
             <outputDirectory>/</outputDirectory>
         </file>
 
@@ -57,6 +62,7 @@
                 <exclude>**/*hadoop*.bat</exclude>
                 <exclude>igniterouter.bat</exclude>
                 <exclude>**/target-classpath.bat</exclude>
+                <exclude>ignitevisorcmd.bat</exclude>
             </excludes>
         </fileSet>
 
@@ -72,11 +78,12 @@
                 <exclude>igniterouter.sh</exclude>
                 <exclude>**/target-classpath.sh</exclude>
                 <exclude>**/service.sh</exclude>
+                <exclude>ignitevisorcmd.sh</exclude>
             </excludes>
         </fileSet>
 
         <fileSet>
-            <directory>config/${gridgain.edition}</directory>
+            <directory>config/${ignite.edition}</directory>
             <outputDirectory>/config</outputDirectory>
         </fileSet>
 

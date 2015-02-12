@@ -15,7 +15,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -71,6 +71,10 @@
         <fileSet>
             <directory>modules/core/licenses</directory>
             <outputDirectory>/licenses</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>modules/core/target/libs</directory>
+            <outputDirectory>/</outputDirectory>
         </fileSet>
     </fileSets>
 

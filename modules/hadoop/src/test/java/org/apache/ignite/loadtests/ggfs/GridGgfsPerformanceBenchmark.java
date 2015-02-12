@@ -19,6 +19,7 @@ package org.apache.ignite.loadtests.ggfs;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
@@ -205,7 +206,7 @@ public class GridGgfsPerformanceBenchmark {
     private static FileSystem ggfs(Path home, String cfgPath) throws IOException {
         Configuration cfg = new Configuration();
 
-        cfg.addResource(U.resolveGridGainUrl(cfgPath));
+        cfg.addResource(U.resolveIgniteUrl(cfgPath));
 
         return FileSystem.get(home.toUri(), cfg);
     }

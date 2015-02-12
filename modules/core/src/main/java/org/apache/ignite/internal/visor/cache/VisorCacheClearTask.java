@@ -18,71 +18,158 @@
 package org.apache.ignite.internal.visor.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+import org.apache.ignite.internal.visor.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
 
 /**
  * Task that clears specified caches on specified node.
  */
 @GridInternal
-public class VisorCacheClearTask extends VisorOneNodeTask<Set<String>, Map<String, IgniteBiTuple<Integer, Integer>>> {
+public class VisorCacheClearTask extends VisorOneNodeTask<String, IgniteBiTuple<Integer, Integer>> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorCachesClearJob job(Set<String> arg) {
-        return new VisorCachesClearJob(arg, debug);
+    @Override protected VisorCacheClearJob job(String arg) {
+        return new VisorCacheClearJob(arg, debug);
     }
 
     /**
      * Job that clear specified caches.
      */
-    private static class VisorCachesClearJob extends VisorJob<Set<String>, Map<String, IgniteBiTuple<Integer, Integer>>> {
+    private static class VisorCacheClearJob extends VisorJob<String, IgniteBiTuple<Integer, Integer>> {
         /** */
         private static final long serialVersionUID = 0L;
+
+        /** */
+        @JobContextResource
+        private ComputeJobContext jobCtx;
+
+        /** */
+        private final IgniteInClosure<IgniteFuture<Integer>> lsnr;
+
+        /** */
+        private final IgniteFuture<Integer>[] futs = new IgniteFuture[3];
+
+        /** */
+        private final String cacheName;
 
         /**
          * Create job.
          *
-         * @param arg Cache names to clear.
+         * @param cacheName Cache name to clear.
          * @param debug Debug flag.
          */
-        private VisorCachesClearJob(Set<String> arg, boolean debug) {
-            super(arg, debug);
+        private VisorCacheClearJob(String cacheName, boolean debug) {
+            super(cacheName, debug);
+
+            this.cacheName = cacheName;
+
+            lsnr = new IgniteInClosure<IgniteFuture<Integer>>() {
+                @Override public void apply(IgniteFuture<Integer> f) {
+                    assert futs[0].isDone();
+                    assert futs[1] == null || futs[1].isDone();
+                    assert futs[2] == null || futs[2].isDone();
+
+                    jobCtx.callcc();
+                }
+            };
+        }
+
+        /**
+         * @param subJob Sub job to execute asynchronously.
+         * @return {@code true} If subJob was not completed and this job should be suspended.
+         */
+        private boolean callAsync(IgniteCallable<Integer> subJob, int idx) {
+            IgniteCompute compute = ignite.compute(ignite.forCacheNodes(cacheName)).withAsync();
+
+            compute.call(subJob);
+
+            IgniteFuture<Integer> fut = compute.future();
+
+            futs[idx] = fut;
+
+            if (fut.isDone())
+                return false;
+
+            jobCtx.holdcc();
+
+            fut.listenAsync(lsnr);
+
+            return true;
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, IgniteBiTuple<Integer, Integer>> run(Set<String> arg) throws IgniteCheckedException {
-            Map<String, IgniteBiTuple<Integer, Integer>> res = new HashMap<>();
+        @Override protected IgniteBiTuple<Integer, Integer> run(final String cacheName) {
+            if (futs[0] == null || futs[1] == null || futs[2] == null) {
+                IgniteCache cache = ignite.jcache(cacheName);
 
-            for(GridCache cache : g.cachesx()) {
-                String cacheName = cache.name();
+                if (futs[0] == null && callAsync(new VisorCacheSizeCallable(cache), 0))
+                    return null;
 
-                if (arg.contains(cacheName)) {
-                    Set keys = cache.keySet();
+                if (futs[1] == null && callAsync(new VisorCacheClearCallable(cache), 1))
+                    return null;
 
-                    int before = keys.size(), after = before;
-
-                    for (Object key : keys) {
-                        if (cache.clear(key))
-                            after--;
-                    }
-
-                    res.put(cacheName, new IgniteBiTuple<>(before, after));
-                }
+                if (futs[2] == null && callAsync(new VisorCacheSizeCallable(cache), 2))
+                    return null;
             }
 
-            return res;
+            assert futs[0].isDone() && futs[1].isDone() && futs[2].isDone();
+
+            return new IgniteBiTuple<>(futs[0].get(), futs[2].get());
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(VisorCachesClearJob.class, this);
+            return S.toString(VisorCacheClearJob.class, this);
+        }
+    }
+
+    /**
+     * Callable to get cache size.
+     */
+    @GridInternal
+    private static class VisorCacheSizeCallable implements IgniteCallable<Integer> {
+        /** */
+        private final IgniteCache cache;
+
+        /**
+         * @param cache Cache to take size from.
+         */
+        private VisorCacheSizeCallable(IgniteCache cache) {
+            this.cache = cache;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer call() throws Exception {
+            return cache.size();
+        }
+    }
+
+    /**
+     * Callable to clear cache.
+     */
+    @GridInternal
+    private static class VisorCacheClearCallable implements IgniteCallable<Integer> {
+        /** */
+        private final IgniteCache cache;
+
+        /**
+         * @param cache Cache to clear.
+         */
+        private VisorCacheClearCallable(IgniteCache cache) {
+            this.cache = cache;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer call() throws Exception {
+            cache.clear();
+
+            return 0;
         }
     }
 }

@@ -21,18 +21,19 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.thread.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.processors.timeout.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -43,7 +44,8 @@ import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader.*;
 
 /**
@@ -93,11 +95,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
-        @Override public void onEvent(IgniteEvent evt) {
+        @Override public void onEvent(Event evt) {
             if (!enterBusy())
                 return;
 
-            IgniteDiscoveryEvent e = (IgniteDiscoveryEvent)evt;
+            DiscoveryEvent e = (DiscoveryEvent)evt;
 
             try {
                 ClusterNode loc = cctx.localNode();
@@ -201,7 +203,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         GridDhtPartitionExchangeId exchId = exchangeId(loc.id(), startTopVer, EVT_NODE_JOINED);
 
         // Generate dummy discovery event for local node joining.
-        IgniteDiscoveryEvent discoEvt = cctx.discovery().localJoinEvent();
+        DiscoveryEvent discoEvt = cctx.discovery().localJoinEvent();
 
         assert discoEvt != null;
 
@@ -228,7 +230,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     break;
                 }
-                catch (IgniteFutureTimeoutException ignored) {
+                catch (IgniteFutureTimeoutCheckedException ignored) {
                     if (first) {
                         U.warn(log, "Failed to wait for initial partition map exchange. " +
                             "Possible reasons are: " + U.nl() +
@@ -246,7 +248,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
                 cacheCtx.preloader().onInitialExchangeComplete(null);
         }
-        catch (IgniteFutureTimeoutException e) {
+        catch (IgniteFutureTimeoutCheckedException e) {
             IgniteCheckedException err = new IgniteCheckedException("Timed out waiting for exchange future: " + fut, e);
 
             for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
@@ -263,7 +265,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     @Override protected void onKernalStop0(boolean cancel) {
         // Finish all exchange futures.
         for (GridDhtPartitionsExchangeFuture<K, V> f : exchFuts.values())
-            f.onDone(new IgniteInterruptedException("Grid is stopping: " + cctx.gridName()));
+            f.onDone(new IgniteInterruptedCheckedException("Grid is stopping: " + cctx.gridName()));
 
         U.cancel(exchWorker);
 
@@ -285,6 +287,22 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         exchFuts = null;
     }
 
+    /** {@inheritDoc} */
+    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
+    @Override protected void stop0(boolean cancel) {
+        super.stop0(cancel);
+
+        // Do not allow any activity in exchange manager after stop.
+        busyLock.writeLock().lock();
+
+        exchFuts = null;
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param exchId Exchange ID.
+     * @return Topology.
+     */
     public GridDhtPartitionTopology<K, V> clientTopology(int cacheId, GridDhtPartitionExchangeId exchId) {
         GridClientPartitionTopology<K, V> top = clientTops.get(cacheId);
 
@@ -489,7 +507,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (log.isDebugEnabled())
             log.debug("Sending all partitions [nodeIds=" + U.nodeIds(nodes) + ", msg=" + m + ']');
 
-        cctx.io().safeSend(nodes, m, null);
+        cctx.io().safeSend(nodes, m, SYSTEM_POOL, null);
 
         return true;
     }
@@ -513,11 +531,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             log.debug("Sending local partitions [nodeId=" + node.id() + ", msg=" + m + ']');
 
         try {
-            cctx.io().send(node, m);
+            cctx.io().send(node, m, SYSTEM_POOL);
 
             return true;
         }
-        catch (ClusterTopologyException ignore) {
+        catch (ClusterTopologyCheckedException ignore) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send partition update to node because it left grid (will ignore) [node=" +
                     node.id() + ", msg=" + m + ']');
@@ -542,7 +560,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Exchange future.
      */
     GridDhtPartitionsExchangeFuture<K, V> exchangeFuture(GridDhtPartitionExchangeId exchId,
-        @Nullable IgniteDiscoveryEvent discoEvt) {
+        @Nullable DiscoveryEvent discoEvt) {
         GridDhtPartitionsExchangeFuture<K, V> fut;
 
         GridDhtPartitionsExchangeFuture<K, V> old = exchFuts.addx(
@@ -739,7 +757,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             long timeout = cctx.gridConfig().getNetworkTimeout();
 
             boolean startEvtFired = false;
@@ -813,9 +831,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 changed |= cacheCtx.topology().afterExchange(exchFut.exchangeId());
 
                                 // Preload event notification.
-                                if (!cacheCtx.system() && cctx.gridEvents().isRecordable(EVT_CACHE_PRELOAD_STARTED)) {
+                                if (cacheCtx.events().isRecordable(EVT_CACHE_PRELOAD_STARTED)) {
                                     if (!cacheCtx.isReplicated() || !startEvtFired) {
-                                        IgniteDiscoveryEvent discoEvt = exchFut.discoveryEvent();
+                                        DiscoveryEvent discoEvt = exchFut.discoveryEvent();
 
                                         cacheCtx.events().addPreloadEvent(-1, EVT_CACHE_PRELOAD_STARTED,
                                             discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
@@ -866,7 +884,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
                     }
                 }
-                catch (IgniteInterruptedException e) {
+                catch (IgniteInterruptedCheckedException e) {
                     throw e;
                 }
                 catch (IgniteCheckedException e) {

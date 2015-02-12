@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.GridCache;
+import org.apache.ignite.cache.*;
 import org.hibernate.*;
 import org.hibernate.cache.spi.*;
 
@@ -34,7 +34,7 @@ import org.hibernate.cache.spi.*;
  *     &lt;!-- Enable query cache. --&gt;
  *     &lt;property name="cache.use_second_level_cache"&gt;true&lt;/property&gt;
 
- *     &lt;!-- Use GridGain as L2 cache provider. --&gt;
+ *     &lt;!-- Use Ignite as L2 cache provider. --&gt;
  *     &lt;property name="cache.region.factory_class"&gt;org.apache.ignite.cache.hibernate.GridHibernateRegionFactory&lt;/property&gt;
  *
  *     &lt;!-- Specify entity. --&gt;

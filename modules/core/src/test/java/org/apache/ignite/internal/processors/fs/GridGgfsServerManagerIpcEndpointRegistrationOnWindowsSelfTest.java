@@ -45,9 +45,9 @@ public class GridGgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest
 
                 return G.start(cfg);
             }
-        }, IgniteCheckedException.class, null);
+        }, IgniteException.class, null);
 
-        assert e.getCause().getMessage().contains(" should not be configured on Windows (configure " +
+        assert e.getCause().getCause().getMessage().contains(" should not be configured on Windows (configure " +
             IpcServerTcpEndpoint.class.getSimpleName() + ")");
     }
 }

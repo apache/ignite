@@ -29,25 +29,25 @@ import java.util.*;
  * There are {@code 2} ways to subscribe to event listening, {@code local} and {@code remote}. Instance
  * of {@code GridMessaging} is obtained from grid projection as follows:
  * <pre name="code" class="java">
- * GridEvents evts = GridGain.grid().events();
+ * GridEvents evts = Ignition.ignite().events();
  * </pre> * <p>
- * Local subscription, defined by {@link #localListen(org.apache.ignite.lang.IgnitePredicate, int...)} method, will add
+ * Local subscription, defined by {@link #localListen(IgnitePredicate, int...)} method, will add
  * a listener for specified events on local node only. This listener will be notified whenever any
  * of subscribed events happen on local node regardless of whether local node belongs to underlying
  * grid projection or not.
  * <p>
- * Remote subscription, defined by {@link #remoteListen(org.apache.ignite.lang.IgniteBiPredicate, org.apache.ignite.lang.IgnitePredicate, int...)}, will add an
+ * Remote subscription, defined by {@link #remoteListen(IgniteBiPredicate, IgnitePredicate, int...)}, will add an
  * event listener for specified events on all nodes in the projection (possibly including local node if
  * it belongs to the projection as well). All projection nodes will then be notified of the subscribed events.
  * If the events pass the remote event filter, the events will be sent to local node for local listener notification.
  * <p>
- * Note that by default, all events in GridGain are disabled for performance reasons. You must only enable
+ * Note that by default, all events in Ignite are disabled for performance reasons. You must only enable
  * events that you need within your logic. You can enable/disable events either by calling {@link #enableLocal(int...)}
  * or {@link #disableLocal(int...)} methods, or from XML configuration.
  * For example, you can enable all cache events as follows:
  * <pre name="code" class="xml">
  * &lt;property name="includeEventTypes"&gt;
- *     &lt;util:constant static-field="org.gridgain.grid.events.GridEventType.EVTS_CACHE"/&gt;
+ *     &lt;util:constant static-field="org.apache.ignite.events.IgniteEventType.EVTS_CACHE"/&gt;
  * &lt;/property&gt;
  * </pre>
  */
@@ -69,11 +69,11 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param timeout Maximum time to wait for result, {@code 0} to wait forever.
      * @param types Event types to be queried.
      * @return Collection of grid events returned from specified nodes.
-     * @throws IgniteCheckedException If query failed.
+     * @throws IgniteException If query failed.
      */
     @IgniteAsyncSupported
-    public <T extends IgniteEvent> List<T> remoteQuery(IgnitePredicate<T> p, long timeout, @Nullable int... types)
-        throws IgniteCheckedException;
+    public <T extends Event> List<T> remoteQuery(IgnitePredicate<T> p, long timeout, @Nullable int... types)
+        throws IgniteException;
 
     /**
      * Adds event listener for specified events to all nodes in the projection (possibly including
@@ -97,13 +97,13 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      *      provided remote filter will be sent to local node.
      * @param <T> Type of the event.
      * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
-     * @throws IgniteCheckedException If failed to add listener.
+     * @throws IgniteException If failed to add listener.
      */
     @IgniteAsyncSupported
-    public <T extends IgniteEvent> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
+    public <T extends Event> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
         @Nullable IgnitePredicate<T> rmtFilter,
         @Nullable int... types)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Adds event listener for specified events to all nodes in the projection (possibly including
@@ -138,16 +138,16 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param <T> Type of the event.
      * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
      * @see #stopRemoteListen(UUID)
-     * @throws IgniteCheckedException If failed to add listener.
+     * @throws IgniteException If failed to add listener.
      */
     @IgniteAsyncSupported
-    public <T extends IgniteEvent> UUID remoteListen(int bufSize,
+    public <T extends Event> UUID remoteListen(int bufSize,
         long interval,
         boolean autoUnsubscribe,
         @Nullable IgniteBiPredicate<UUID, T> locLsnr,
         @Nullable IgnitePredicate<T> rmtFilter,
         @Nullable int... types)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Stops listening to remote events. This will unregister all listeners identified with provided
@@ -156,12 +156,12 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param opId Operation ID that was returned from
-     *      {@link #remoteListen(org.apache.ignite.lang.IgniteBiPredicate, org.apache.ignite.lang.IgnitePredicate, int...)} method.
-     * @see #remoteListen(org.apache.ignite.lang.IgniteBiPredicate, org.apache.ignite.lang.IgnitePredicate, int...)
-     * @throws IgniteCheckedException If failed to stop listeners.
+     *      {@link #remoteListen(IgniteBiPredicate, IgnitePredicate, int...)} method.
+     * @see #remoteListen(IgniteBiPredicate, IgnitePredicate, int...)
+     * @throws IgniteException If failed to stop listeners.
      */
     @IgniteAsyncSupported
-    public void stopRemoteListen(UUID opId) throws IgniteCheckedException;
+    public void stopRemoteListen(UUID opId) throws IgniteException;
 
     /**
      * Waits for the specified events.
@@ -172,11 +172,11 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      *      end the wait.
      * @param types Types of the events to wait for. If not provided, all events will be passed to the filter.
      * @return Grid event.
-     * @throws IgniteCheckedException If wait was interrupted.
+     * @throws IgniteException If wait was interrupted.
      */
     @IgniteAsyncSupported
-    public <T extends IgniteEvent> T waitForLocal(@Nullable IgnitePredicate<T> filter, @Nullable int... types)
-        throws IgniteCheckedException;
+    public <T extends Event> T waitForLocal(@Nullable IgnitePredicate<T> filter, @Nullable int... types)
+        throws IgniteException;
 
     /**
      * Queries local node for events using passed-in predicate filter for event selection.
@@ -186,21 +186,21 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param types Event types to be queried.
      * @return Collection of grid events found on local node.
      */
-    public <T extends IgniteEvent> Collection<T> localQuery(IgnitePredicate<T> p, @Nullable int... types);
+    public <T extends Event> Collection<T> localQuery(IgnitePredicate<T> p, @Nullable int... types);
 
     /**
      * Records customer user generated event. All registered local listeners will be notified.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
-     * internal GridGain events and should not be used by user-defined events.
+     * internal Ignite events and should not be used by user-defined events.
      * Attempt to record internal event with this method will cause {@code IllegalArgumentException}
      * to be thrown.
      *
      * @param evt Locally generated event.
-     * @throws IllegalArgumentException If event type is within GridGain reserved range between {@code 1} and
+     * @throws IllegalArgumentException If event type is within Ignite reserved range between {@code 1} and
      *      {@code 1000}.
      */
-    public void recordLocal(IgniteEvent evt);
+    public void recordLocal(Event evt);
 
     /**
      * Adds an event listener for local events. Note that listener will be added regardless of whether
@@ -211,7 +211,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @param types Event types for which this listener will be notified.
      * @throws IllegalArgumentException Thrown in case when passed in array of event types is empty.
      */
-    public void localListen(IgnitePredicate<? extends IgniteEvent> lsnr, int... types);
+    public void localListen(IgnitePredicate<? extends Event> lsnr, int... types);
 
     /**
      * Removes local event listener.
@@ -221,7 +221,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      *      then listener will be removed for all types it was registered for.
      * @return {@code true} if listener was removed, {@code false} otherwise.
      */
-    public boolean stopLocalListen(IgnitePredicate<? extends IgniteEvent> lsnr, @Nullable int... types);
+    public boolean stopLocalListen(IgnitePredicate<? extends Event> lsnr, @Nullable int... types);
 
     /**
      * Enables provided events. Allows to start recording events that

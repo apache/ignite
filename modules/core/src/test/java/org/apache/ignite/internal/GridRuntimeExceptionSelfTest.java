@@ -21,15 +21,15 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Tests runtime exception.
@@ -83,14 +83,14 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Got expected grid exception: " + e);
         }
 
         IgniteUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
-        List<IgniteEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
+        List<Event> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
 
         info("Job failed event: " + evts.get(0));
 
@@ -113,14 +113,14 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Got expected grid exception: " + e);
         }
 
         IgniteUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
-        List<IgniteEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
+        List<Event> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
 
         assert evts.size() == 1;
 
@@ -143,14 +143,14 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Got expected grid exception: " + e);
         }
 
         IgniteUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
-        List<IgniteEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
+        List<Event> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
 
         assert evts.size() == 1;
 
@@ -173,14 +173,14 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Got expected grid exception: " + e);
         }
 
         IgniteUuid sesId = fut.getTaskSession().getId();
 
         // Query for correct events.
-        List<IgniteEvent> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
+        List<Event> evts = ignite.events().remoteQuery(new TaskFailedEventFilter(sesId), 0);
 
         assert evts.size() == 1;
 
@@ -188,7 +188,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class TaskFailedEventFilter implements IgnitePredicate<IgniteEvent> {
+    private static class TaskFailedEventFilter implements IgnitePredicate<Event> {
         /** */
         private IgniteUuid sesId;
 
@@ -200,10 +200,10 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
-            return evt instanceof IgniteTaskEvent &&
-                ((IgniteTaskEvent)evt).taskSessionId() != null &&
-                ((IgniteTaskEvent)evt).taskSessionId().equals(sesId) &&
+        @Override public boolean apply(Event evt) {
+            return evt instanceof TaskEvent &&
+                ((TaskEvent)evt).taskSessionId() != null &&
+                ((TaskEvent)evt).taskSessionId().equals(sesId) &&
                 evt.type() == EVT_TASK_FAILED;
         }
     }
@@ -211,7 +211,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
     /** */
     private static class GridTaskFailedTestTask extends ComputeTaskAdapter<Serializable, Serializable> {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** Ignite instance. */
@@ -223,8 +223,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings({"ProhibitedExceptionThrown"})
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Serializable arg)
-            throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Serializable arg) {
             if (log.isInfoEnabled())
                 log.info("Mapping job [job=" + this + ", grid=" + subgrid + ", arg=" + arg + ']');
 
@@ -246,7 +245,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings({"ProhibitedExceptionThrown"})
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) throws IgniteCheckedException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) {
             if (failType == FailType.RESULT)
                 throw new RuntimeException("Failing out of result method.");
 
@@ -258,7 +257,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings({"ProhibitedExceptionThrown"})
-        @Override public Serializable reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) {
             assert results != null;
 
             if (failType == FailType.REDUCE)
@@ -271,7 +270,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
     /** */
     private static class GridTaskFailedTestJob extends ComputeJobAdapter {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger log;
 
         /** */

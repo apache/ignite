@@ -23,12 +23,6 @@ import org.apache.ignite.cache.cloner.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.internal.processors.portable.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
-import org.apache.ignite.portables.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.discovery.*;
@@ -43,18 +37,25 @@ import org.apache.ignite.internal.processors.cache.jta.*;
 import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
+import org.apache.ignite.internal.processors.cache.serialization.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.offheap.*;
+import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.plugin.security.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import java.io.*;
@@ -62,10 +63,11 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 
 /**
  * Cache context.
@@ -119,7 +121,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheEvictionManager<K, V> evictMgr;
 
     /** Data structures manager. */
-    private GridCacheDataStructuresManager<K, V> dataStructuresMgr;
+    private CacheDataStructuresManager<K, V> dataStructuresMgr;
 
     /** Eager TTL manager. */
     private GridCacheTtlManager<K, V> ttlMgr;
@@ -129,6 +131,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Replication manager. */
     private GridCacheDrManager<K, V> drMgr;
+
+    /** Serialization manager. */
+    private IgniteCacheSerializationManager<K, V> serMgr;
 
     /** JTA manager. */
     private CacheJtaManagerAdapter<K, V> jtaMgr;
@@ -143,19 +148,19 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheAdapter<K, V> cache;
 
     /** No-value filter array. */
-    private IgnitePredicate<CacheEntry<K, V>>[] noValArr;
+    private IgnitePredicate<Cache.Entry<K, V>>[] noValArr;
 
     /** Has-value filter array. */
-    private IgnitePredicate<CacheEntry<K, V>>[] hasValArr;
+    private IgnitePredicate<Cache.Entry<K, V>>[] hasValArr;
 
     /** No-peek-value filter array. */
-    private IgnitePredicate<CacheEntry<K, V>>[] noPeekArr;
+    private IgnitePredicate<Cache.Entry<K, V>>[] noPeekArr;
 
     /** Has-peek-value filter array. */
-    private IgnitePredicate<CacheEntry<K, V>>[] hasPeekArr;
+    private IgnitePredicate<Cache.Entry<K, V>>[] hasPeekArr;
 
     /** No-op filter array. */
-    private IgnitePredicate<CacheEntry<K, V>>[] trueArr;
+    private IgnitePredicate<Cache.Entry<K, V>>[] trueArr;
 
     /** Cached local rich node. */
     private ClusterNode locNode;
@@ -183,6 +188,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** System cache flag. */
     private boolean sys;
+
+    /** IO policy. */
+    private GridIoPolicy plc;
 
     /** Default expiry policy. */
     private ExpiryPolicy expiryPlc;
@@ -229,12 +237,13 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         GridCacheEventManager<K, V> evtMgr,
         GridCacheSwapManager<K, V> swapMgr,
+        IgniteCacheSerializationManager<K, V> serMgr,
         GridCacheStoreManager<K, V> storeMgr,
         GridCacheEvictionManager<K, V> evictMgr,
         GridCacheQueryManager<K, V> qryMgr,
         GridCacheContinuousQueryManager<K, V> contQryMgr,
         GridCacheAffinityManager<K, V> affMgr,
-        GridCacheDataStructuresManager<K, V> dataStructuresMgr,
+        CacheDataStructuresManager<K, V> dataStructuresMgr,
         GridCacheTtlManager<K, V> ttlMgr,
         GridCacheDrManager<K, V> drMgr,
         CacheJtaManagerAdapter<K, V> jtaMgr) {
@@ -262,6 +271,7 @@ public class GridCacheContext<K, V> implements Externalizable {
          */
         this.evtMgr = add(evtMgr);
         this.swapMgr = add(swapMgr);
+        this.serMgr = add(serMgr);
         this.storeMgr = add(storeMgr);
         this.evictMgr = add(evictMgr);
         this.qryMgr = add(qryMgr);
@@ -300,6 +310,8 @@ public class GridCacheContext<K, V> implements Externalizable {
             cacheId = 1;
 
         sys = CU.UTILITY_CACHE_NAME.equals(cacheName);
+
+        plc = sys ? UTILITY_CACHE_POOL : SYSTEM_POOL;
 
         Factory<ExpiryPolicy> factory = cacheCfg.getExpiryPolicyFactory();
 
@@ -363,6 +375,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean system() {
         return sys;
+    }
+
+    /**
+     * @return IO policy for the given cache.
+     */
+    public GridIoPolicy ioPolicy() {
+        return plc;
     }
 
     /**
@@ -698,7 +717,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Marshaller.
      */
-    public IgniteMarshaller marshaller() {
+    public Marshaller marshaller() {
         return ctx.config().getMarshaller();
     }
 
@@ -898,7 +917,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Data structures manager.
      */
-    public GridCacheDataStructuresManager<K, V> dataStructures() {
+    public CacheDataStructuresManager<K, V> dataStructures() {
         return dataStructuresMgr;
     }
 
@@ -925,28 +944,28 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return No get-value filter.
      */
-    public IgnitePredicate<CacheEntry<K, V>>[] noGetArray() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] noGetArray() {
         return noValArr;
     }
 
     /**
      * @return Has get-value filer.
      */
-    public IgnitePredicate<CacheEntry<K, V>>[] hasGetArray() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] hasGetArray() {
         return hasValArr;
     }
 
     /**
      * @return No get-value filter.
      */
-    public IgnitePredicate<CacheEntry<K, V>>[] noPeekArray() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] noPeekArray() {
         return noPeekArr;
     }
 
     /**
      * @return Has get-value filer.
      */
-    public IgnitePredicate<CacheEntry<K, V>>[] hasPeekArray() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] hasPeekArray() {
         return hasPeekArr;
     }
 
@@ -955,7 +974,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Predicate array that checks for value.
      */
     @SuppressWarnings({"unchecked"})
-    public IgnitePredicate<CacheEntry<K, V>>[] equalsPeekArray(V val) {
+    public IgnitePredicate<Cache.Entry<K, V>>[] equalsPeekArray(V val) {
         assert val != null;
 
         return new IgnitePredicate[]{F.cacheContainsPeek(val)};
@@ -964,14 +983,14 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Empty filter.
      */
-    public IgnitePredicate<CacheEntry<K, V>> truex() {
+    public IgnitePredicate<Cache.Entry<K, V>> truex() {
         return F.alwaysTrue();
     }
 
     /**
      * @return No-op array.
      */
-    public IgnitePredicate<CacheEntry<K, V>>[] trueArray() {
+    public IgnitePredicate<Cache.Entry<K, V>>[] trueArray() {
         return trueArr;
     }
 
@@ -987,7 +1006,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Array containing single predicate.
      */
     @SuppressWarnings({"unchecked"})
-    public IgnitePredicate<CacheEntry<K, V>>[] vararg(IgnitePredicate<CacheEntry<K, V>> p) {
+    public IgnitePredicate<Cache.Entry<K, V>>[] vararg(IgnitePredicate<Cache.Entry<K, V>> p) {
         return p == null ? CU.<K, V>empty() : new IgnitePredicate[]{p};
     }
 
@@ -999,10 +1018,11 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if predicates passed.
      * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings({"ErrorNotRethrown"})
-    public <K1, V1> boolean isAll(GridCacheEntryEx<K1, V1> e,
-        @Nullable IgnitePredicate<CacheEntry<K1, V1>>[] p) throws IgniteCheckedException {
-        return F.isEmpty(p) || isAll(e.wrap(false), p);
+    public <K1, V1> boolean isAll(
+        GridCacheEntryEx<K1, V1> e,
+        @Nullable IgnitePredicate<Cache.Entry<K1, V1>>[] p
+    ) throws IgniteCheckedException {
+        return F.isEmpty(p) || isAll(e.wrapLazyValue(), p);
     }
 
     /**
@@ -1578,11 +1598,11 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Conflict resolution result.
      * @throws IgniteCheckedException In case of exception.
      */
-    public GridCacheVersionConflictContextImpl<K, V> conflictResolve(GridCacheVersionedEntryEx<K, V> oldEntry,
+    public GridCacheVersionConflictContext<K, V> conflictResolve(GridCacheVersionedEntryEx<K, V> oldEntry,
         GridCacheVersionedEntryEx<K, V> newEntry, boolean atomicVerComparator) throws IgniteCheckedException {
         assert conflictRslvr != null : "Should not reach this place.";
 
-        GridCacheVersionConflictContextImpl<K, V> ctx = conflictRslvr.resolve(oldEntry, newEntry, atomicVerComparator);
+        GridCacheVersionConflictContext<K, V> ctx = conflictRslvr.resolve(oldEntry, newEntry, atomicVerComparator);
 
         if (ctx.isManualResolve())
             drMgr.onReceiveCacheConflictResolved(ctx.isUseNew(), ctx.isUseOld(), ctx.isMerge());
@@ -1611,7 +1631,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @param interceptorRes Result of {@link org.apache.ignite.cache.CacheInterceptor#onBeforeRemove} callback.
+     * @param interceptorRes Result of {@link CacheInterceptor#onBeforeRemove} callback.
      * @return {@code True} if interceptor cancels remove.
      */
     public boolean cancelRemove(@Nullable IgniteBiTuple<Boolean, ?> interceptorRes) {
@@ -1643,7 +1663,14 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Portable enabled flag.
      */
     public boolean portableEnabled() {
-        return cacheCfg.isPortableEnabled();
+        return serMgr.portableEnabled();
+    }
+
+    /**
+     * @return Keep portable in store flag.
+     */
+    public boolean keepPortableInStore() {
+        return serMgr.keepPortableInStore();
     }
 
     /**
@@ -1689,15 +1716,15 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @param obj Object.
      * @return Portable object.
-     * @throws PortableException In case of error.
+     * @throws IgniteException In case of error.
      */
-    @Nullable public Object marshalToPortable(@Nullable Object obj) throws PortableException {
+    @Nullable public Object marshalToPortable(@Nullable Object obj) throws IgniteException {
         assert portableEnabled();
 
         if (obj == null)
             return null;
 
-        if (obj instanceof PortableObject || obj instanceof GridCacheInternal)
+        if (ctx.portable().isPortableObject(obj) || obj instanceof GridCacheInternal)
             return obj;
 
         GridPortableProcessor proc = kernalContext().portable();
@@ -1715,58 +1742,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Unwrapped collection.
      */
     public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
-        if (keepPortable || !config().isPortableEnabled())
-            return col;
-
-        if (col instanceof ArrayList)
-            return unwrapPortables((ArrayList<Object>)col);
-
-        Collection<Object> col0 = new ArrayList<>(col.size());
-
-        for (Object obj : col)
-            col0.add(unwrapPortable(obj));
-
-        return col0;
-    }
-
-    /**
-     * Unwraps map.
-     *
-     * @param map Map to unwrap.
-     * @param keepPortable Keep portable flag.
-     * @return Unwrapped collection.
-     */
-    public Map<Object, Object> unwrapPortablesIfNeeded(Map<Object, Object> map, boolean keepPortable) {
-        if (keepPortable || !config().isPortableEnabled())
-            return map;
-
-        Map<Object, Object> map0 = U.newHashMap(map.size());
-
-        for (Map.Entry<Object, Object> e : map.entrySet())
-            map0.put(unwrapPortable(e.getKey()), unwrapPortable(e.getValue()));
-
-        return map0;
-    }
-
-    /**
-     * Unwraps array list.
-     *
-     * @param col List to unwrap.
-     * @return Unwrapped list.
-     */
-    private Collection<Object> unwrapPortables(ArrayList<Object> col) {
-        int size = col.size();
-
-        for (int i = 0; i < size; i++) {
-            Object o = col.get(i);
-
-            Object unwrapped = unwrapPortable(o);
-
-            if (o != unwrapped)
-                col.set(i, unwrapped);
-        }
-
-        return col;
+        return serMgr.unwrapPortablesIfNeeded(col, keepPortable);
     }
 
     /**
@@ -1778,53 +1754,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     @SuppressWarnings("IfMayBeConditional")
     public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
-        assert !portableEnabled() || o == null || U.isPortableOrCollectionType(o.getClass());
-
-        if (o == null)
-            return null;
-
-        if (keepPortable || !portableEnabled())
-            return o;
-
-        return unwrapPortable(o);
-    }
-
-    /**
-     * @param o Object to unwrap.
-     * @return Unwrapped object.
-     */
-    private Object unwrapPortable(Object o) {
-        if (o instanceof Map.Entry) {
-            Map.Entry entry = (Map.Entry)o;
-
-            Object key = entry.getKey();
-
-            boolean unwrapped = false;
-
-            if (key instanceof PortableObject) {
-                key = ((PortableObject)key).deserialize();
-
-                unwrapped = true;
-            }
-
-            Object val = entry.getValue();
-
-            if (val instanceof PortableObject) {
-                val = ((PortableObject)val).deserialize();
-
-                unwrapped = true;
-            }
-
-            return unwrapped ? F.t(key, val) : o;
-        }
-        else if (o instanceof Collection)
-            return unwrapPortablesIfNeeded((Collection<Object>)o, false);
-        else if (o instanceof Map)
-            return unwrapPortablesIfNeeded((Map<Object, Object>)o, false);
-        else if (o instanceof PortableObject)
-            return ((PortableObject)o).deserialize();
-
-        return o;
+        return serMgr.unwrapPortableIfNeeded(o, keepPortable);
     }
 
     /**

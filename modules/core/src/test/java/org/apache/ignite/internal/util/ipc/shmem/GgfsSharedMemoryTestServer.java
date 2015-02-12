@@ -35,7 +35,7 @@ public class GgfsSharedMemoryTestServer {
     public static void main(String[] args) throws IgniteCheckedException {
         System.out.println("Starting server ...");
 
-        U.setWorkDirectory(null, U.getGridGainHome());
+        U.setWorkDirectory(null, U.getIgniteHome());
 
         // Tell our process PID to the wrapper.
         X.println(GridJavaProcess.PID_MSG_PREFIX + U.jvmPid());
@@ -45,7 +45,7 @@ public class GgfsSharedMemoryTestServer {
         try {
             IpcServerEndpoint srv = new IpcSharedMemoryServerEndpoint();
 
-            new GridTestResources().inject(srv);
+            new IgniteTestResources().inject(srv);
 
             srv.start();
 

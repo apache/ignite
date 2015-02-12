@@ -17,9 +17,8 @@
 
 package org.apache.ignite.visor.commands.ack
 
-import org.apache.ignite.internal.visor.misc.VisorAckTask
-
 import org.apache.ignite.cluster.ClusterGroupEmptyException
+import org.apache.ignite.internal.visor.misc.VisorAckTask
 
 import java.util.{HashSet => JavaHashSet}
 
@@ -106,9 +105,9 @@ class VisorAckCommand {
             adviseToConnect()
         else
             try {
-                val nodeIds = grid.nodes().map(_.id())
+                val nodeIds = ignite.nodes().map(_.id())
 
-                grid.compute(grid.forNodeIds(nodeIds))
+                ignite.compute(ignite.forNodeIds(nodeIds))
                     .withName("visor-ack")
                     .withNoFailover()
                     .execute(classOf[VisorAckTask], toTaskArgument(nodeIds, msg))

@@ -75,6 +75,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
         cfg.setName(cacheName);
 
         cfg.setBackups(1);
+
         if (store != null) {
             cfg.setCacheStoreFactory(
                 new FactoryBuilder.SingletonFactory<CacheStore<? super Object, ? super Object>>(store));
@@ -99,9 +100,9 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        grid(0).cache("cacheA").removeAll();
-        grid(0).cache("cacheB").removeAll();
-        grid(0).cache("cacheC").removeAll();
+        grid(0).jcache("cacheA").removeAll();
+        grid(0).jcache("cacheB").removeAll();
+        grid(0).jcache("cacheC").removeAll();
     }
 
     /**
@@ -110,13 +111,23 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     public void testWriteThrough() throws Exception {
         IgniteEx grid = grid(0);
 
-        TestStore firstStore = (TestStore)grid(0).configuration().getCacheConfiguration()[1].getCacheStoreFactory().create();
+        TestStore firstStore = null;
+
+        for (CacheConfiguration ccfg : grid(0).configuration().getCacheConfiguration()) {
+            if (ccfg.getCacheStoreFactory() != null) {
+                firstStore = (TestStore)ccfg.getCacheStoreFactory().create();
+
+                break;
+            }
+        }
+
+        assertNotNull(firstStore);
 
         Collection<String> evts = firstStore.events();
 
         try (IgniteTx tx = grid.transactions().txStart()) {
-            GridCache<Object, Object> cacheA = grid.cache("cacheA");
-            GridCache<Object, Object> cacheB = grid.cache("cacheB");
+            IgniteCache<Object, Object> cacheA = grid.jcache("cacheA");
+            IgniteCache<Object, Object> cacheB = grid.jcache("cacheB");
 
             cacheA.put("1", "1");
             cacheA.put("2", "2");
@@ -156,8 +167,8 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
         IgniteEx grid = grid(0);
 
         try (IgniteTx ignored = grid.transactions().txStart()) {
-            GridCache<Object, Object> cacheA = grid.cache("cacheA");
-            GridCache<Object, Object> cacheC = grid.cache("cacheC");
+            IgniteCache<Object, Object> cacheA = grid.jcache("cacheA");
+            IgniteCache<Object, Object> cacheC = grid.jcache("cacheC");
 
             cacheA.put("1", "2");
 
@@ -165,8 +176,8 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
 
             fail("Must not allow to enlist caches with different stores to one transaction");
         }
-        catch (IgniteCheckedException e) {
-            assertTrue(e.getMessage().startsWith("Failed to enlist new cache to existing transaction"));
+        catch (CacheException e) {
+            assertTrue(e.getMessage().contains("Failed to enlist new cache to existing transaction"));
         }
     }
 
@@ -177,8 +188,8 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
         IgniteEx grid = grid(0);
 
         try (IgniteTx ignored = grid.transactions().txStart()) {
-            GridCache<Object, Object> cacheA = grid.cache("cacheA");
-            GridCache<Object, Object> cacheC = grid.cache("cacheD");
+            IgniteCache<Object, Object> cacheA = grid.jcache("cacheA");
+            IgniteCache<Object, Object> cacheC = grid.jcache("cacheD");
 
             cacheA.put("1", "2");
 
@@ -186,8 +197,8 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
 
             fail("Must not allow to enlist caches with different stores to one transaction");
         }
-        catch (IgniteCheckedException e) {
-            assertTrue(e.getMessage().startsWith("Failed to enlist new cache to existing transaction"));
+        catch (CacheException e) {
+            assertTrue(e.getMessage().contains("Failed to enlist new cache to existing transaction"));
         }
     }
 

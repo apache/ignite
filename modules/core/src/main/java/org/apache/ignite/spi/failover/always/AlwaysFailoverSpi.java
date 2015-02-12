@@ -19,11 +19,11 @@ package org.apache.ignite.spi.failover.always;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.failover.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 
@@ -68,7 +68,7 @@ import java.util.*;
  * Here is an example of how to configure {@code GridAlwaysFailoverSpi} from Spring XML configuration file.
  * <pre name="code" class="xml">
  * &lt;property name="failoverSpi"&gt;
- *     &lt;bean class="org.gridgain.grid.spi.failover.always.GridAlwaysFailoverSpi"&gt;
+ *     &lt;bean class="org.apache.ignite.spi.failover.always.GridAlwaysFailoverSpi"&gt;
  *         &lt;property name="maximumFailoverAttempts" value="5"/&gt;
  *     &lt;/bean&gt;
  * &lt;/property&gt;
@@ -96,7 +96,7 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
     public static final String MAX_FAILOVER_ATTEMPT_ATTR = "gg:failover:maxattempts";
 
     /** Injected grid logger. */
-    @IgniteLoggerResource
+    @LoggerResource
     private IgniteLogger log;
 
     /** Maximum number of attempts to execute a failed job on another node. */
@@ -226,7 +226,7 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
 
             return node;
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             U.error(log, "Failed to get next balanced node for failover: " + ctx, e);
 
             return null;

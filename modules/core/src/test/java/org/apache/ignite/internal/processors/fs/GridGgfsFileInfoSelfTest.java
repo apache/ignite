@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -32,7 +32,7 @@ import java.util.concurrent.*;
  */
 public class GridGgfsFileInfoSelfTest extends GridGgfsCommonAbstractTest {
     /** Marshaller to test {@link Externalizable} interface. */
-    private final IgniteMarshaller marshaller = new IgniteOptimizedMarshaller();
+    private final Marshaller marshaller = new OptimizedMarshaller();
 
     /**
      * Test node info serialization.

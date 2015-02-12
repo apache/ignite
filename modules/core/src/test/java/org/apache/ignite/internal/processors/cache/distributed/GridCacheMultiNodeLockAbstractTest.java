@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
@@ -36,7 +35,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.events.EventType.*;
 
 /**
  * Test cases for multi-threaded tests.
@@ -52,7 +51,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Listeners. */
-    private static Collection<IgnitePredicate<IgniteEvent>> lsnrs = new ArrayList<>();
+    private static Collection<IgnitePredicate<Event>> lsnrs = new ArrayList<>();
 
     /**
      *
@@ -107,11 +106,11 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         lsnrs.clear();
 
         for (int i = 1; i <= 3; i++) {
-            cache(i).clearAll();
+            jcache(i).clear();
 
             assertTrue(
                 "Cache isn't empty [i=" + i + ", entries=" + ((IgniteKernal)grid(i)).internalCache().entries() + "]",
-                cache(i).isEmpty());
+                jcache(i).localSize() == 0);
         }
     }
 
@@ -119,7 +118,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param ignite Grid to remove listeners from.
      */
     private void removeListeners(Ignite ignite) {
-        for (IgnitePredicate<IgniteEvent> lsnr : lsnrs)
+        for (IgnitePredicate<Event> lsnr : lsnrs)
             ignite.events().stopLocalListen(lsnr);
     }
 
@@ -127,20 +126,11 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param ignite Grid
      * @param lsnr Listener.
      */
-    void addListener(Ignite ignite, IgnitePredicate<IgniteEvent> lsnr) {
+    void addListener(Ignite ignite, IgnitePredicate<Event> lsnr) {
         if (!lsnrs.contains(lsnr))
             lsnrs.add(lsnr);
 
         ignite.events().localListen(lsnr, EVTS_CACHE);
-    }
-
-    /**
-     * @param cache Cache.
-     * @param key Key.
-     */
-    private void checkLocked(CacheProjection<Integer,String> cache, Integer key) {
-        assert cache.isLocked(key);
-        assert cache.isLockedByThread(key);
     }
 
     /**
@@ -156,44 +146,11 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param cache Cache.
      * @param key Key.
      */
-    private void checkRemoteLocked(CacheProjection<Integer,String> cache, Integer key) {
-        assert cache.isLocked(key);
-        assert !cache.isLockedByThread(key);
-    }
-
-    /**
-     * @param cache Cache.
-     * @param key Key.
-     */
     private void checkRemoteLocked(IgniteCache<Integer,String> cache, Integer key) {
         assert cache.isLocalLocked(key, false);
         assert !cache.isLocalLocked(key, true);
     }
 
-    /**
-     * @param cache Cache.
-     * @param key Key.
-     */
-    @SuppressWarnings({"BusyWait"})
-    private void checkUnlocked(CacheProjection<Integer,String> cache, Integer key) {
-        assert !cache.isLockedByThread(key);
-
-        if (partitioned()) {
-            for(int i = 0; i < 200; i++)
-                if (cache.isLocked(key)) {
-                    try {
-                        Thread.sleep(10);
-                    }
-                    catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-                else
-                    return;
-        }
-
-        assertFalse("Key locked [key=" + key + ", entries=" + entries(key) + "]", cache.isLocked(key));
-    }
     /**
      * @param cache Cache.
      * @param key Key.
@@ -223,16 +180,6 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param cache Cache.
      * @param keys Keys.
      */
-    private void checkLocked(CacheProjection<Integer,String> cache, Iterable<Integer> keys) {
-        for (Integer key : keys) {
-            checkLocked(cache, key);
-        }
-    }
-
-    /**
-     * @param cache Cache.
-     * @param keys Keys.
-     */
     private void checkLocked(IgniteCache<Integer,String> cache, Iterable<Integer> keys) {
         for (Integer key : keys)
             checkLocked(cache, key);
@@ -242,29 +189,9 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param cache Cache.
      * @param keys Keys.
      */
-    private void checkRemoteLocked(CacheProjection<Integer,String> cache, Iterable<Integer> keys) {
-        for (Integer key : keys) {
-            checkRemoteLocked(cache, key);
-        }
-    }
-
-    /**
-     * @param cache Cache.
-     * @param keys Keys.
-     */
     private void checkRemoteLocked(IgniteCache<Integer,String> cache, Iterable<Integer> keys) {
         for (Integer key : keys)
             checkRemoteLocked(cache, key);
-    }
-
-    /**
-     *
-     * @param cache Cache.
-     * @param keys Keys.
-     */
-    private void checkUnlocked(CacheProjection<Integer,String> cache, Iterable<Integer> keys) {
-        for (Integer key : keys)
-            checkUnlocked(cache, key);
     }
 
     /**
@@ -314,7 +241,8 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
                 ", de2=" + dht2.peekEx(key) + ']';
         }
 
-        return "Entries [e1=" + ignite1.cache(null).entry(key) + ", e2=" + ignite2.cache(null).entry(key) + ']';
+        return "Entries [e1=" + ((IgniteKernal)ignite1).internalCache(null).entry(key)
+            + ", e2=" + ((IgniteKernal)ignite2).internalCache(null).entry(key) + ']';
     }
 
     /**
@@ -325,18 +253,17 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         IgniteCache<Integer, String> cache2 = ignite2.jcache(null);
 
         Lock lock1_1 = cache1.lock(1);
+        Lock lock2_1 = cache2.lock(1);
 
         lock1_1.lock();
 
-        assert cache1.isLocalLocked(1, false) : entries(1);
-        assert cache1.isLocalLocked(1, true);
-
-        assert cache2.isLocalLocked(1, false) : entries(1);
-        assert !cache2.isLocalLocked(1, true);
-
-        Lock lock2_1 = cache2.lock(1);
-
         try {
+            assert cache1.isLocalLocked(1, false) : entries(1);
+            assert cache1.isLocalLocked(1, true);
+
+            assert cache2.isLocalLocked(1, false) : entries(1);
+            assert !cache2.isLocalLocked(1, true);
+
             assert !lock2_1.tryLock();
 
             assert cache2.isLocalLocked(1, false) : entries(1);
@@ -348,19 +275,19 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
             checkUnlocked(cache1, 1);
         }
 
-        lock2_1.lock();
-
-        assert cache2.isLocalLocked(1, false) : entries(1);
-        assert cache2.isLocalLocked(1, true);
-
-        assert cache1.isLocalLocked(1, false) : entries(1);
-        assert !cache1.isLocalLocked(1, true);
-
         CountDownLatch latch = new CountDownLatch(1);
 
-        addListener(ignite1, new UnlockListener(latch, 1));
+        lock2_1.lock();
 
         try {
+            assert cache2.isLocalLocked(1, false) : entries(1);
+            assert cache2.isLocalLocked(1, true);
+
+            assert cache1.isLocalLocked(1, false) : entries(1);
+            assert !cache1.isLocalLocked(1, true);
+
+            addListener(ignite1, new UnlockListener(latch, 1));
+
             assert !lock1_1.tryLock();
 
             assert cache1.isLocalLocked(1, false) : entries(1);
@@ -602,7 +529,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     /**
      * Cache unlock listener.
      */
-    private class UnlockListener implements IgnitePredicate<IgniteEvent> {
+    private class UnlockListener implements IgnitePredicate<Event> {
         /** Latch. */
         private final CountDownLatch latch;
 
@@ -630,11 +557,11 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(IgniteEvent evt) {
+        @Override public boolean apply(Event evt) {
             info("Received cache event: " + evt);
 
-            if (evt instanceof IgniteCacheEvent) {
-                IgniteCacheEvent cacheEvt = (IgniteCacheEvent)evt;
+            if (evt instanceof CacheEvent) {
+                CacheEvent cacheEvt = (CacheEvent)evt;
 
                 Integer key = cacheEvt.key();
 

@@ -19,15 +19,16 @@ package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.eviction.ggfs.*;
+import org.apache.ignite.cache.eviction.ignitefs.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.ignitefs.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 
 import java.util.*;
@@ -35,7 +36,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.fs.IgniteFsMode.*;
+import static org.apache.ignite.ignitefs.IgniteFsMode.*;
 
 /**
  * Tests for GGFS per-block LR eviction policy.
@@ -70,7 +71,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
     private static GridCacheAdapter<GridGgfsBlockKey, byte[]> dataCache;
 
     /** Eviction policy */
-    private static CacheGgfsPerBlockLruEvictionPolicy evictPlc;
+    private static CacheIgniteFsPerBlockLruEvictionPolicy evictPlc;
 
     /**
      * Start a grid with the primary file system.
@@ -103,7 +104,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        evictPlc = new CacheGgfsPerBlockLruEvictionPolicy();
+        evictPlc = new CacheIgniteFsPerBlockLruEvictionPolicy();
 
         dataCacheCfg.setEvictionPolicy(evictPlc);
         dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
@@ -132,7 +133,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
         cfg.setGgfsConfiguration(ggfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
-        cfg.setRestEnabled(false);
+        cfg.setConnectorConfiguration(null);
 
         Ignite g = G.start(cfg);
 
@@ -190,7 +191,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
         cfg.setGgfsConfiguration(ggfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
-        cfg.setRestEnabled(false);
+        cfg.setConnectorConfiguration(null);
 
         Ignite g = G.start(cfg);
 
@@ -458,14 +459,9 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
     public void checkMetrics(final long blocksRead, final long blocksReadRmt) throws Exception {
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                try {
-                    IgniteFsMetrics metrics = ggfsPrimary.metrics();
+                IgniteFsMetrics metrics = ggfsPrimary.metrics();
 
-                    return metrics.blocksReadTotal() == blocksRead && metrics.blocksReadRemote() == blocksReadRmt;
-                }
-                catch (IgniteCheckedException e) {
-                    throw new RuntimeException(e);
-                }
+                return metrics.blocksReadTotal() == blocksRead && metrics.blocksReadRemote() == blocksReadRmt;
             }
         }, 5000) : "Unexpected metrics [expectedBlocksReadTotal=" + blocksRead + ", actualBlocksReadTotal=" +
             ggfsPrimary.metrics().blocksReadTotal() + ", expectedBlocksReadRemote=" + blocksReadRmt +
@@ -478,7 +474,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
      * @param curBlocks Current blocks.
      * @param curBytes Current bytes.
      */
-    private void checkEvictionPolicy(final int curBlocks, final long curBytes) throws IgniteInterruptedException {
+    private void checkEvictionPolicy(final int curBlocks, final long curBytes) throws IgniteInterruptedCheckedException {
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return evictPlc.getCurrentBlocks() == curBlocks && evictPlc.getCurrentSize() == curBytes;

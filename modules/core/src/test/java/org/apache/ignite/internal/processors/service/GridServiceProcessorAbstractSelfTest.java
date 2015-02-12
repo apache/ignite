@@ -21,14 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.managed.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.processors.affinity.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.services.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -61,7 +61,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         c.setDiscoverySpi(discoSpi);
 
-        ManagedServiceConfiguration[] svcs = services();
+        ServiceConfiguration[] svcs = services();
 
         if (svcs != null)
             c.setServiceConfiguration(svcs);
@@ -89,7 +89,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      *
      * @return Services configuration.
      */
-    protected ManagedServiceConfiguration[] services() {
+    protected ServiceConfiguration[] services() {
         return null;
     }
 
@@ -141,16 +141,16 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testSameConfiguration() throws Exception {
         String name = "dupService";
 
-        IgniteManaged svcs1 = randomGrid().managed().withAsync();
-        IgniteManaged svcs2 = randomGrid().managed().withAsync();
+        IgniteServices svcs1 = randomGrid().services().withAsync();
+        IgniteServices svcs2 = randomGrid().services().withAsync();
 
         svcs1.deployClusterSingleton(name, new DummyService());
 
-        IgniteInternalFuture<?> fut1 = svcs1.future();
+        IgniteFuture<?> fut1 = svcs1.future();
 
         svcs2.deployClusterSingleton(name, new DummyService());
 
-        IgniteInternalFuture<?> fut2 = svcs2.future();
+        IgniteFuture<?> fut2 = svcs2.future();
 
         info("Deployed service: " + name);
 
@@ -170,16 +170,16 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     public void testDifferentConfiguration() throws Exception {
         String name = "dupService";
 
-        IgniteManaged svcs1 = randomGrid().managed().withAsync();
-        IgniteManaged svcs2 = randomGrid().managed().withAsync();
+        IgniteServices svcs1 = randomGrid().services().withAsync();
+        IgniteServices svcs2 = randomGrid().services().withAsync();
 
         svcs1.deployClusterSingleton(name, new DummyService());
 
-        IgniteInternalFuture<?> fut1 = svcs1.future();
+        IgniteFuture<?> fut1 = svcs1.future();
 
         svcs2.deployNodeSingleton(name, new DummyService());
 
-        IgniteInternalFuture<?> fut2 = svcs2.future();
+        IgniteFuture<?> fut2 = svcs2.future();
 
         info("Deployed service: " + name);
 
@@ -192,7 +192,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
             fail("Failed to receive mismatching configuration exception.");
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Received mismatching configuration exception: " + e.getMessage());
         }
     }
@@ -205,13 +205,13 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         Ignite g = randomGrid();
 
-        g.managed().deployNodeSingleton(name, new DummyService());
+        g.services().deployNodeSingleton(name, new DummyService());
 
-        DummyService svc = g.managed().service(name);
+        DummyService svc = g.services().service(name);
 
         assertNotNull(svc);
 
-        Collection<DummyService> svcs = g.managed().services(name);
+        Collection<DummyService> svcs = g.services().services(name);
 
         assertEquals(1, svcs.size());
     }
@@ -224,7 +224,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         Ignite g = randomGrid();
 
-        g.managed().deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
+        g.services().deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
 
         GridTestUtils.retryAssert(log, 50, 200, new CA() {
             @Override
@@ -232,7 +232,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
                 int cnt = 0;
 
                 for (int i = 0; i < nodeCount(); i++) {
-                    Collection<DummyService> svcs = grid(i).managed().services(name);
+                    Collection<DummyService> svcs = grid(i).services().services(name);
 
                     if (svcs != null)
                         cnt += svcs.size();
@@ -255,11 +255,11 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        IgniteManaged svcs = g.managed().withAsync();
+        IgniteServices svcs = g.services().withAsync();
 
         svcs.deployNodeSingleton(name, new DummyService());
 
-        IgniteInternalFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -272,7 +272,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         assertEquals(name, nodeCount(), DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
 
-        checkCount(name, g.managed().deployedServices(), nodeCount());
+        checkCount(name, g.services().serviceDescriptors(), nodeCount());
     }
 
     /**
@@ -287,11 +287,11 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        IgniteManaged svcs = g.managed().withAsync();
+        IgniteServices svcs = g.services().withAsync();
 
         svcs.deployClusterSingleton(name, new DummyService());
 
-        IgniteInternalFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -304,7 +304,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         assertEquals(name, 1, DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
 
-        checkCount(name, g.managed().deployedServices(), 1);
+        checkCount(name, g.services().serviceDescriptors(), 1);
     }
 
     /**
@@ -316,16 +316,16 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         final Integer affKey = 1;
 
         // Store a cache key.
-        g.cache(CACHE_NAME).put(affKey, affKey.toString());
+        g.jcache(CACHE_NAME).put(affKey, affKey.toString());
 
         String name = "serviceAffinity";
 
-        IgniteManaged svcs = g.managed().withAsync();
+        IgniteServices svcs = g.services().withAsync();
 
         svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
                 CACHE_NAME, affKey);
 
-        IgniteInternalFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -333,7 +333,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         info("Finished waiting for service future: " + name);
 
-        checkCount(name, g.managed().deployedServices(), 1);
+        checkCount(name, g.services().serviceDescriptors(), 1);
     }
 
     /**
@@ -348,11 +348,11 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        IgniteManaged svcs = g.managed().withAsync();
+        IgniteServices svcs = g.services().withAsync();
 
         svcs.deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
 
-        IgniteInternalFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -365,7 +365,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         assertEquals(name, nodeCount() * 2, DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
 
-        checkCount(name, g.managed().deployedServices(), nodeCount() * 2);
+        checkCount(name, g.services().serviceDescriptors(), nodeCount() * 2);
     }
 
     /**
@@ -382,11 +382,11 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        IgniteManaged svcs = g.managed().withAsync();
+        IgniteServices svcs = g.services().withAsync();
 
         svcs.deployMultiple(name, new DummyService(), cnt, 3);
 
-        IgniteInternalFuture<?> fut = svcs.future();
+        IgniteFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -399,7 +399,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         assertEquals(name, cnt, DummyService.started(name));
         assertEquals(name, 0, DummyService.cancelled(name));
 
-        checkCount(name, g.managed().deployedServices(), cnt);
+        checkCount(name, g.services().serviceDescriptors(), cnt);
     }
 
     /**
@@ -414,7 +414,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        g.managed().deployClusterSingleton(name, new DummyService());
+        g.services().deployClusterSingleton(name, new DummyService());
 
         info("Deployed service: " + name);
 
@@ -427,7 +427,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.cancelLatch(name, latch);
 
-        g.managed().cancel(name);
+        g.services().cancel(name);
 
         info("Cancelled service: " + name);
 
@@ -449,7 +449,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.exeLatch(name, latch);
 
-        g.managed().deployNodeSingleton(name, new DummyService());
+        g.services().deployNodeSingleton(name, new DummyService());
 
         info("Deployed service: " + name);
 
@@ -462,7 +462,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         DummyService.cancelLatch(name, latch);
 
-        g.managed().cancel(name);
+        g.services().cancel(name);
 
         info("Cancelled service: " + name);
 
@@ -477,7 +477,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      * @param descs Descriptors.
      * @param cnt Expected count.
      */
-    protected void checkCount(String svcName, Iterable<ManagedServiceDescriptor> descs, int cnt) {
+    protected void checkCount(String svcName, Iterable<ServiceDescriptor> descs, int cnt) {
         assertEquals(cnt, actualCount(svcName, descs));
     }
 
@@ -486,10 +486,10 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
      * @param descs Descriptors.
      * @return Services count.
      */
-    protected int actualCount(String svcName, Iterable<ManagedServiceDescriptor> descs) {
+    protected int actualCount(String svcName, Iterable<ServiceDescriptor> descs) {
         int sum = 0;
 
-        for (ManagedServiceDescriptor d : descs) {
+        for (ServiceDescriptor d : descs) {
             if (d.name().equals(svcName)) {
                 for (Integer i : d.topologySnapshot().values())
                     sum += i;
@@ -522,7 +522,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * Affinity service.
      */
-    protected static class AffinityService implements ManagedService {
+    protected static class AffinityService implements Service {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -541,22 +541,22 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         }
 
         /** {@inheritDoc} */
-        @Override public void cancel(ManagedServiceContext ctx) {
+        @Override public void cancel(ServiceContext ctx) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void init(ManagedServiceContext ctx) throws Exception {
+        @Override public void init(ServiceContext ctx) throws Exception {
             X.println("Initializing affinity service for key: " + affKey);
 
-            ClusterNode n = g.cache(CACHE_NAME).affinity().mapKeyToNode(affKey);
+            ClusterNode n = g.affinity(CACHE_NAME).mapKeyToNode(affKey);
 
             assertNotNull(n);
             assertTrue(n.isLocal());
         }
 
         /** {@inheritDoc} */
-        @Override public void execute(ManagedServiceContext ctx) {
+        @Override public void execute(ServiceContext ctx) {
             X.println("Executing affinity service for key: " + affKey);
         }
     }
@@ -564,13 +564,13 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     /**
      * Counter service implementation.
      */
-    protected static class CounterServiceImpl implements CounterService, ManagedService {
+    protected static class CounterServiceImpl implements CounterService, Service {
         /** Auto-injected grid instance. */
         @IgniteInstanceResource
         private Ignite ignite;
 
         /** */
-        private GridCache<String, Value> cache;
+        private IgniteCache<String, Value> cache;
 
         /** Cache key. */
         private String key;
@@ -592,7 +592,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
                     Value val = cache.get(key);
 
                     if (val == null) {
-                        Value old = cache.putIfAbsent(key, val = new Value(0));
+                        Value old = cache.getAndPutIfAbsent(key, val = new Value(0));
 
                         if (old != null)
                             val = old;
@@ -623,21 +623,21 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         }
 
         /** {@inheritDoc} */
-        @Override public void cancel(ManagedServiceContext ctx) {
+        @Override public void cancel(ServiceContext ctx) {
             X.println("Stopping counter service: " + ctx.name());
         }
 
         /** {@inheritDoc} */
-        @Override public void init(ManagedServiceContext ctx) throws Exception {
+        @Override public void init(ServiceContext ctx) throws Exception {
             X.println("Initializing counter service: " + ctx.name());
 
             key = ctx.name();
 
-            cache = ignite.cache(CACHE_NAME);
+            cache = ignite.jcache(CACHE_NAME);
         }
 
         /** {@inheritDoc} */
-        @Override public void execute(ManagedServiceContext ctx) throws Exception {
+        @Override public void execute(ServiceContext ctx) throws Exception {
             X.println("Executing counter service: " + ctx.name());
         }
 

@@ -29,7 +29,7 @@ import java.util.*;
  * Demonstrates how to explicitly deploy a task. Note that
  * it is very rare when you would need such functionality as tasks are
  * auto-deployed on demand first time you execute them. So in most cases
- * you would just apply any of the {@code Grid.execute(...)} methods directly.
+ * you would just apply any of the {@code Ignite.execute(...)} methods directly.
  * However, sometimes a task is not in local class path, so you may not even
  * know the code it will execute, but you still need to execute it. For example,
  * you have two independent components in the system, and one loads the task
@@ -43,7 +43,7 @@ import java.util.*;
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will
- * start GridGain node with {@code examples/config/example-compute.xml} configuration.
+ * start node with {@code examples/config/example-compute.xml} configuration.
  */
 public final class DeploymentExample {
     /** Name of the deployed task. */
@@ -53,10 +53,10 @@ public final class DeploymentExample {
      * Executes example.
      *
      * @param args Command line arguments, none required.
-     * @throws IgniteCheckedException If example execution failed.
+     * @throws Exception If example execution failed.
      */
-    public static void main(String[] args) throws IgniteCheckedException {
-        try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
+    public static void main(String[] args) throws Exception {
+        try (Ignite ignite = Ignition.start("examples/config/example-compute.xml")) {
             System.out.println();
             System.out.println(">>> Deployment example started.");
 
@@ -64,27 +64,27 @@ public final class DeploymentExample {
             // onto remote nodes on demand. For this example this task is
             // available on the classpath, however in real life that may not
             // always be the case. In those cases you should use explicit
-            // 'GridCompute.localDeployTask(Class, ClassLoader) apply and
-            // then use 'GridCompute.execute(String, Object)' method
+            // 'IgniteCompute.localDeployTask(Class, ClassLoader) apply and
+            // then use 'IgniteCompute.execute(String, Object)' method
             // passing your task name as first parameter.
-            g.compute().localDeployTask(ExampleTask.class, ExampleTask.class.getClassLoader());
+            ignite.compute().localDeployTask(ExampleTask.class, ExampleTask.class.getClassLoader());
 
-            for (Map.Entry<String, Class<? extends ComputeTask<?, ?>>> e : g.compute().localTasks().entrySet())
+            for (Map.Entry<String, Class<? extends ComputeTask<?, ?>>> e : ignite.compute().localTasks().entrySet())
                 System.out.println(">>> Found locally deployed task [alias=" + e.getKey() + ", taskCls=" + e.getValue());
 
             // Execute the task passing its name as a parameter. The system will find
             // the deployed task by its name and execute it.
-            g.compute().execute(TASK_NAME, null);
+            ignite.compute().execute(TASK_NAME, null);
 
             // Execute the task passing class name as a parameter. The system will find
             // the deployed task by its class name and execute it.
             // g.compute().execute(ExampleTask.class.getName(), null).get();
 
             // Undeploy task
-            g.compute().undeployTask(TASK_NAME);
+            ignite.compute().undeployTask(TASK_NAME);
 
             System.out.println();
-            System.out.println(">>> Finished executing Grid Direct Deployment Example.");
+            System.out.println(">>> Finished executing Ignite Direct Deployment Example.");
             System.out.println(">>> Check participating nodes output.");
         }
     }
@@ -93,8 +93,8 @@ public final class DeploymentExample {
      * Example task used to demonstrate direct task deployment through API.
      * For this example this task as available on the classpath, however
      * in real life that may not always be the case. In those cases
-     * you should use explicit {@link org.apache.ignite.IgniteCompute#localDeployTask(Class, ClassLoader)} apply and
-     * then use {@link org.apache.ignite.IgniteCompute#execute(String, Object)}
+     * you should use explicit {@link IgniteCompute#localDeployTask(Class, ClassLoader)} apply and
+     * then use {@link IgniteCompute#execute(String, Object)}
      * method passing your task name as first parameter.
      * <p>
      * Note that this task specifies explicit task name. Task name is optional
@@ -104,10 +104,10 @@ public final class DeploymentExample {
     @ComputeTaskName(TASK_NAME)
     public static class ExampleTask extends ComputeTaskSplitAdapter<String, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
-            Collection<ComputeJob> jobs = new ArrayList<>(gridSize);
+        @Override protected Collection<? extends ComputeJob> split(int clusterSize, String arg) {
+            Collection<ComputeJob> jobs = new ArrayList<>(clusterSize);
 
-            for (int i = 0; i < gridSize; i++) {
+            for (int i = 0; i < clusterSize; i++) {
                 jobs.add(new ComputeJobAdapter() {
                     @Nullable @Override public Serializable execute() {
                         System.out.println(">>> Executing deployment example job on this node.");
@@ -122,7 +122,7 @@ public final class DeploymentExample {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

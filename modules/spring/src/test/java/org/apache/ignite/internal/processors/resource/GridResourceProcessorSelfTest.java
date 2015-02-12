@@ -307,7 +307,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** */
-        @IgniteLoggerResource
+        @LoggerResource
         private IgniteLogger taskLog;
 
         /**
@@ -323,7 +323,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
          * @param gridSize Grid size.
          * @param arg Task argument.
          */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             assert taskLog != null;
 
             final IgniteOutClosure<Object> callable = new IgniteOutClosure<Object>() {
@@ -339,7 +339,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
                     @Override public void run() {
                         assert ignite != null;
                         assert ignite.configuration() != null;
-                        assert ignite.configuration().getGridGainHome() != null;
+                        assert ignite.configuration().getIgniteHome() != null;
                     }
                 };
 
@@ -360,7 +360,7 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             assert results.size() == 1;
 
             return results.get(0).getData();

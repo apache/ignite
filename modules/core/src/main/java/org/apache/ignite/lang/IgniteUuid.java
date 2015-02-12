@@ -17,10 +17,10 @@
 
 package org.apache.ignite.lang;
 
-import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.marshaller.optimized.*;
 
 import java.io.*;
 import java.util.*;
@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.*;
  * internal UUID.
  */
 public final class IgniteUuid implements Comparable<IgniteUuid>, Iterable<IgniteUuid>, Cloneable, Externalizable,
-    IgniteOptimizedMarshallable {
+    OptimizedMarshallable {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
@@ -30,8 +29,8 @@ import org.apache.ignite.testframework.junits.common.*;
 import javax.cache.configuration.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Checks that CacheProjection.reload() operations are performed correctly.
@@ -164,10 +163,10 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
         Ignite ignite = startGrid();
 
         try {
-            GridCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
+            IgniteCache<Integer, Integer> cache = ignite.jcache(CACHE_NAME);
 
             for (int i = 0; i < N_ENTRIES; i++)
-                cache.reload(i);
+                load(cache, i, true);
 
             assertEquals(MAX_CACHE_ENTRIES, cache.size());
         }

@@ -73,18 +73,18 @@ public class GridHibernateTransactionalDataRegion extends GridHibernateRegion im
 
             case READ_WRITE:
                 if (cache.configuration().getAtomicityMode() != TRANSACTIONAL)
-                    throw new CacheException("Hibernate READ-WRITE access strategy must have GridGain cache with " +
+                    throw new CacheException("Hibernate READ-WRITE access strategy must have Ignite cache with " +
                         "'TRANSACTIONAL' atomicity mode: " + cache.name());
 
                 return new GridHibernateReadWriteAccessStrategy(ignite, cache, factory.threadLocalForCache(cache.name()));
 
             case TRANSACTIONAL:
                 if (cache.configuration().getAtomicityMode() != TRANSACTIONAL)
-                    throw new CacheException("Hibernate TRANSACTIONAL access strategy must have GridGain cache with " +
+                    throw new CacheException("Hibernate TRANSACTIONAL access strategy must have Ignite cache with " +
                         "'TRANSACTIONAL' atomicity mode: " + cache.name());
 
                 if (cache.configuration().getTransactionManagerLookupClassName() == null)
-                    throw new CacheException("Hibernate TRANSACTIONAL access strategy must have GridGain cache with " +
+                    throw new CacheException("Hibernate TRANSACTIONAL access strategy must have Ignite cache with " +
                         "TransactionManagerLookup configured: " + cache.name());
 
                 return new GridHibernateTransactionalAccessStrategy(ignite, cache);

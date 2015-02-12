@@ -17,9 +17,9 @@
 
 package org.apache.ignite.internal.util.offheap;
 
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -123,6 +123,13 @@ public interface GridOffHeapMap<K> {
      * @param valBytes Value bytes.
      */
     public void insert(int hash, byte[] keyBytes, byte[] valBytes);
+
+    /**
+     * Gets number of elements in the map.
+     *
+     * @return Number of elements in the map.
+     */
+    public long totalSize();
 
     /**
      * Gets number of elements in the map.
