@@ -15,9 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.authentication;
-
-import org.apache.ignite.plugin.security.*;
+package org.apache.ignite.plugin.security;
 
 import java.net.*;
 import java.util.*;

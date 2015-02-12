@@ -15,27 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.authentication;
+package org.apache.ignite.plugin.security;
 
-import org.apache.ignite.*;
-import org.apache.ignite.plugin.security.*;
-
+import java.net.*;
 import java.util.*;
 
 /**
- * Access control list provider. Specific SPI implementation may use this
- * interface for declarative user permission specifications.
- * <p>
- * Abstracting access control specification through a provider allows users
- * to implement custom stores for per-user access control specifications,
- * e.g. encrypting them or storing in a separate file.
+ * Authentication context.
  */
-public interface AuthenticationAclProvider {
+public interface AuthenticationContext {
     /**
-     * Gets per-user access control map.
+     * Gets subject type.
      *
-     * @return Per-user access control map.
-     * @throws IgniteException If failed.
+     * @return Subject type.
      */
-    public Map<GridSecurityCredentials, GridSecurityPermissionSet> acl() throws IgniteException;
+    public GridSecuritySubjectType subjectType();
+
+    /**
+     * Gets subject ID.
+     *
+     * @return Subject ID.
+     */
+    public UUID subjectId();
+
+    /**
+     * Gets security credentials.
+     *
+     * @return Security credentials.
+     */
+    public GridSecurityCredentials credentials();
+
+    /**
+     * Gets subject network address.
+     *
+     * @return Subject network address.
+     */
+    public InetSocketAddress address();
 }

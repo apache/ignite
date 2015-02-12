@@ -24,14 +24,13 @@ import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.security.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.authentication.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
 import java.util.*;
 
 /**
- * No-op implementation for {@link org.apache.ignite.internal.processors.security.GridSecurityProcessor}.
+ * No-op implementation for {@link GridSecurityProcessor}.
  */
 public class GridOsSecurityProcessor extends GridNoopProcessorAdapter implements GridSecurityProcessor {
     /**
