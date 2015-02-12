@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
@@ -166,6 +167,19 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
+        if (store instanceof LifecycleAware) {
+            try {
+                // Avoid second start() call on store in case when near cache is enabled.
+                if (cctx.config().isWriteBehindEnabled()) {
+                    if (!cctx.isNear())
+                        ((LifecycleAware)store).start();
+                }
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to start cache store: " + e, e);
+            }
+        }
+
         boolean convertPortable = !cctx.keepPortableInStore();
 
         if (cctx.portableEnabled())
@@ -173,6 +187,22 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         else if (convertPortable)
             U.warn(log, "CacheConfiguration.isKeepPortableInStore() configuration property will " +
                 "be ignored because portable mode is not enabled for cache: " + cctx.namex());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void stop0(boolean cancel) {
+        if (store instanceof LifecycleAware) {
+            try {
+                // Avoid second start() call on store in case when near cache is enabled.
+                if (cctx.config().isWriteBehindEnabled()) {
+                    if (!cctx.isNear())
+                        ((LifecycleAware)store).stop();
+                }
+            }
+            catch (Exception e) {
+                U.error(log(), "Failed to stop cache store.", e);
+            }
+        }
     }
 
     /**

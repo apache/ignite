@@ -182,7 +182,7 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     }
 
     /**
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If sleep was interrupted.
+     * @throws IgniteInterruptedCheckedException If sleep was interrupted.
      */
     private void checkWrites() throws IgniteInterruptedCheckedException {
         U.sleep(WRITE_BEHIND_FLUSH_FREQ * 2);
