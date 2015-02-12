@@ -561,6 +561,10 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         /** {@inheritDoc} */
         @Override public Integer process(MutableEntry<Integer, Integer> e,
             Object... arguments) throws EntryProcessorException {
+            Ignite ignite = e.unwrap(Ignite.class);
+
+            assertNotNull(ignite);
+
             if (e.exists()) {
                 Integer val = e.getValue();
 
